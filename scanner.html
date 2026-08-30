@@ -1,0 +1,1775 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Scanner V9.7 - Confidence x Mercato</title>
+<style>
+:root { --bg: #f2f2f7; --card: #ffffff; --text: #1c1c1e; --sub: #8e8e93; --blue: #007aff; --red: #c62828; --green: #2d7d32; --orange: #f57c00; --purple: #6a1b9a; --knn: #d81b60; --tact: #00897b; --dark: #111;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:13px}
+.wrap{max-width:1050px;margin:0 auto;padding:1.5rem 1rem 4rem}
+h1{font-size:22px;font-weight:800;letter-spacing:-.03em;margin-bottom:1.5rem; display:flex; align-items:center; gap:10px;}
+h1 span{font-size:13px;font-weight:600;background:var(--dark);color:white;padding:3px 8px;border-radius:6px;}
+.card{background:var(--card);border-radius:12px;padding:1.2rem;margin-bottom:15px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.section-title{font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--text);margin-bottom:12px; border-bottom:2px solid #edf2f7; padding-bottom:6px; display:flex; align-items:center; gap:8px;}
+input[type=text],input[type=password],input[type=date],select,input[type=number]{width:100%;font-size:13px;border:1px solid #d1d1d6;border-radius:8px;padding:8px 12px;background:#fff;}
+input:focus,select:focus{outline:none;border-color:var(--blue);}
+textarea{width:100%;min-height:350px;font-size:11px;font-family:monospace;border:1px solid #d1d1d6;border-radius:8px;padding:12px;background:#f9f9fb;resize:vertical;line-height:1.5}
+.btn{border:none;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px; width:100%;}
+.btn:hover{opacity:0.9;}
+.btn-blue{background:var(--blue);color:#fff}
+.btn-green{background:var(--green);color:#fff;font-size:14px;padding:12px}
+.btn-purple{background:var(--purple);color:#fff}
+.btn-dark{background:var(--dark);color:#fff}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid-3{display:grid;grid-template-columns:repeat(3, 1fr);gap:12px}
+.grid-4{display:grid;grid-template-columns:repeat(4, 1fr);gap:8px}
+.table-ui{width:100%;border-collapse:collapse;font-size:12px; margin-bottom:10px;}
+.table-ui th{font-size:10px;font-weight:600;color:#8e8e93;padding:8px;text-align:center;border-bottom:2px solid #ddd;background:#fafafa}
+.table-ui th:first-child{text-align:left}
+.table-ui td{padding:8px;border-bottom:1px solid #f2f2f7;color:#3c3c43;text-align:center;}
+.table-ui td:first-child{text-align:left;color:#1c1c1e;font-weight:600}
+.table-ui tr:hover td{background:#fcfcfc}
+.td-highlight {background:#f0f8ff; font-weight:bold; color:var(--blue);}
+.td-highlight-red {background:#ffebee; font-weight:bold; color:var(--red);}
+.bucket-bar { height: 16px; border-radius: 4px; font-size:10px; font-weight:bold; color:white; text-align:right; padding-right:6px; line-height:16px; min-width: 15px;}
+.bg-hf { background: var(--blue); }
+.bg-hc { background: #90caf9; color: #1c1c1e; }
+.bg-af { background: var(--red); }
+.bg-ac { background: #ef9a9a; color: #1c1c1e; }
+.log-box{max-height:250px;overflow-y:auto;border:1px solid #eee;border-radius:8px;}
+.badge{padding:2px 6px;border-radius:4px;font-size:9px;font-weight:bold;color:white;}
+.bg-v{background:var(--green)} .bg-p{background:#f57c00} .bg-s{background:var(--red)}
+.card-small {background:var(--blue); color:white; padding:4px 6px; border-radius:6px; text-align:center;}
+#console-loader{background:#1e1e1e;color:#00ff00;font-family:monospace;padding:12px;border-radius:8px;font-size:11px;height:120px;overflow-y:auto;margin-top:15px;display:none; line-height:1.4}
+.odds-box {background:#fff; border:2px solid var(--blue); border-radius:8px; padding:10px; text-align:center;}
+.odds-val {font-size:18px; font-weight:900; color:var(--blue); margin-top:4px;}
+.tdi-box {padding:10px; border-radius:8px; background:#f9f9f9; color:#111; font-weight:bold; border:1px solid #eee; text-align:center;}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <h1>Scanner V9.7 <span>Confidence x Mercato + Limit Fix</span></h1>
+
+  <div class="card" id="setup-card">
+    <div class="section-title">🔍 Setup Simulazione: Database & Matchup</div>
+    <div class="grid-2" style="margin-bottom:15px;">
+      <div><label style="font-size:10px;font-weight:bold;color:#555">API Key (PitchAPI)</label><input id="api-key" type="password" value="pk_test_wEikakOLBy3PIW66teVOBc2lal0Xosi2XTjee30JHPw"></div>
+      <div><label style="font-size:10px;font-weight:bold;color:#555">Data Target (Time Machine)</label><input type="date" id="target-date"></div>
+    </div>
+    <div class="grid-3" style="align-items:end; margin-bottom:15px;">
+      <div><label style="font-size:10px;font-weight:bold;color:#555">1. Paese</label><select id="sel-country" onchange="updateLeagues()"><option value="">-- In caricamento... --</option></select></div>
+      <div><label style="font-size:10px;font-weight:bold;color:#555">2. Lega Roster</label><select id="sel-league" onchange="updateSeasons()"><option value="">-- Seleziona --</option></select></div>
+      <div><label style="font-size:10px;font-weight:bold;color:#555">3. Stagione Base</label><select id="sel-season"><option value="">-- Seleziona --</option></select></div>
+    </div>
+    <button class="btn btn-dark" id="btn-carica" onclick="caricaSquadreLega()">📥 1. Carica Database (Auto-include Leghe Minori)</button>
+    <div id="console-loader"></div>
+
+    <div id="matchup-builder" style="display:none; margin-top:25px; border-top:2px solid #edf2f7; padding-top:15px;">
+      <div class="section-title" style="color:var(--green)">⚡ Costruisci il Matchup</div>
+      <div class="grid-3" style="align-items:end">
+        <div><label style="font-size:10px;font-weight:bold;color:#555">Squadra Casa</label><select id="sel-home" style="font-weight:bold;color:var(--blue)"></select></div>
+        <div><label style="font-size:10px;font-weight:bold;color:#555">Squadra Trasferta</label><select id="sel-away" style="font-weight:bold;color:var(--red)"></select></div>
+        <div><label style="font-size:10px;font-weight:bold;color:#555">Limite Match (Taglio Esatto)</label><input type="number" id="history-limit" value="15" min="5" max="100" style="font-weight:bold;"></div>
+      </div>
+      <button class="btn btn-green" id="btn-avvia" style="margin-top:15px; width:100%; padding:12px; font-size:15px" onclick="avviaScanner()">🚀 2. ESTRAI DATI E SIMULA MODELLI</button>
+    </div>
+  </div>
+
+  <div id="dashboard-area" style="display:none">
+    <div style="text-align:center; margin-bottom:20px; padding:15px; background:var(--card); border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.06)">
+      <h2 id="ui-title" style="font-size:26px;color:var(--text); letter-spacing:-0.5px">Home vs Away</h2>
+      <div id="ui-streak" style="margin:10px 0; display:flex; justify-content:center; gap:20px; align-items:center;"></div>
+      <p id="ui-subtitle" style="font-size:12px;color:var(--sub)">Motore: V9.6 - Analisi Integrale su NPxG, Qualita' e Tracking Data</p>
+    </div>
+
+    <div class="card" style="border-top: 5px solid #000; background:#fefefe; box-shadow:0 8px 16px rgba(0,0,0,.08)">
+      <div class="section-title" style="color:#000; font-size:16px">👑 MASTER ENSEMBLE: La Sentenza Algoritmica</div>
+      <p style="font-size:11px;color:#555;margin-bottom:15px">Sintesi pesata dei motori (Dixon-Coles su NPxG, KNN tattico con peso dinamico, Markov 10%) e calcolo delle True Odds. Tutti i mercati derivano dalla stessa matrice Dixon-Coles.</p>
+      
+      <div class="grid-3" style="margin-bottom:15px">
+        <div style="text-align:center; background:#fff; padding:15px; border-radius:8px; border:2px solid var(--blue)">
+          <div style="font-size:12px;color:#888;font-weight:bold;text-transform:uppercase">1 (Casa)</div>
+          <div style="font-size:26px;font-weight:900;color:var(--blue)" id="master-1">--%</div>
+          <div style="font-size:11px;color:#888;margin-top:5px; padding-top:5px; border-top:1px dashed #eee">Quota Reale: <span id="m-odd-1" style="font-weight:bold;color:#333;font-size:14px">--</span></div>
+        </div>
+        <div style="text-align:center; background:#fff; padding:15px; border-radius:8px; border:2px solid #555">
+          <div style="font-size:12px;color:#888;font-weight:bold;text-transform:uppercase">X (Pareggio)</div>
+          <div style="font-size:26px;font-weight:900;color:#555" id="master-x">--%</div>
+          <div style="font-size:11px;color:#888;margin-top:5px; padding-top:5px; border-top:1px dashed #eee">Quota Reale: <span id="m-odd-x" style="font-weight:bold;color:#333;font-size:14px">--</span></div>
+        </div>
+        <div style="text-align:center; background:#fff; padding:15px; border-radius:8px; border:2px solid var(--red)">
+          <div style="font-size:12px;color:#888;font-weight:bold;text-transform:uppercase">2 (Trasf)</div>
+          <div style="font-size:26px;font-weight:900;color:var(--red)" id="master-2">--%</div>
+          <div style="font-size:11px;color:#888;margin-top:5px; padding-top:5px; border-top:1px dashed #eee">Quota Reale: <span id="m-odd-2" style="font-weight:bold;color:#333;font-size:14px">--</span></div>
+        </div>
+      </div>
+      
+      <div class="grid-2">
+        <div style="background:#fff; border-radius:8px; padding:12px; border:1px solid #ddd;">
+          <div style="font-size:11px;font-weight:bold;color:#555;margin-bottom:8px">Confidence Score (Armonia Modelli)</div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="font-size:22px; font-weight:900; color:var(--purple);" id="master-conf">--/100</div>
+            <div style="flex-grow:1; background:#eee; height:12px; border-radius:6px; overflow:hidden;">
+               <div id="conf-bar" style="height:100%; background:var(--purple); width:0%; transition: width 0.5s;"></div>
+            </div>
+          </div>
+          <div style="font-size:9px; color:#888; margin-top:5px">Misura la convergenza tra Dixon-Coles, KNN Storico e Markov.</div>
+        </div>
+        <div style="background:#fff; border-radius:8px; padding:12px; border:1px solid #ddd;">
+          <div style="font-size:11px;font-weight:bold;color:#555;margin-bottom:5px">Alert: Smart Money & Blood Scent</div>
+          <div id="hidden-value-msg" style="font-size:12px; line-height:1.4; color:#333;">--</div>
+        </div>
+      </div>
+      <div style="margin-top:15px; background:#fff; border:1px solid #ddd; border-radius:8px; padding:12px">
+        <div style="font-size:11px;font-weight:bold;color:#555;margin-bottom:8px">💶 Confronto col Book: Valore Atteso e Stake</div>
+        <div class="grid-4" style="align-items:end">
+          <div><label style="font-size:10px;color:#555">Quota book 1</label><input type="number" step="0.01" id="bk-1" oninput="calcValue()" placeholder="es. 2.10"></div>
+          <div><label style="font-size:10px;color:#555">Quota book X</label><input type="number" step="0.01" id="bk-x" oninput="calcValue()" placeholder="es. 3.40"></div>
+          <div><label style="font-size:10px;color:#555">Quota book 2</label><input type="number" step="0.01" id="bk-2" oninput="calcValue()" placeholder="es. 3.60"></div>
+          <div><label style="font-size:10px;color:#555">Bankroll</label><input type="number" step="1" id="bk-bank" value="100" oninput="calcValue()"></div>
+        </div>
+        <div id="value-out" style="margin-top:10px; font-size:11px; color:#333"><span style="color:#888">Inserisci le quote del bookmaker: senza confronto col mercato una probabilita' non e' una scommessa.</span></div>
+      </div>
+    </div>
+
+    <div class="card" style="border-top: 4px solid var(--orange); background:#fffaf5">
+      <div class="section-title" style="color:var(--orange)">🎯 Qualità del Tiro, Cinismo & Palle Inattive</div>
+      <p style="font-size:10px;color:#555;margin-bottom:10px">Misura la letalità (xG per Tiro / xGOT) vs i gol attesi (NPxG) e le grandi occasioni da rete.</p>
+      <table class="table-ui" style="background:transparent; margin-bottom:10px">
+          <tr><th>Squadra</th><th>NPxG vs Qualità Tiro</th><th>Dipendenza P.Inattiva</th><th>Big Chances (C / S)</th></tr>
+          <tr><td style="color:var(--blue); font-weight:bold">Casa</td><td id="l-xgot-h" style="font-weight:bold">--</td><td id="l-set-h">--%</td><td id="l-bc-h">-- / --</td></tr>
+          <tr><td style="color:var(--red); font-weight:bold">Trasf</td><td id="l-xgot-a" style="font-weight:bold">--</td><td id="l-set-a">--%</td><td id="l-bc-a">-- / --</td></tr>
+      </table>
+      <div id="lethality-dialogue" style="font-size:11px; line-height:1.5; color:#1c1c1e; padding:8px; background:#fff; border-radius:6px; border:1px solid #ffe0b2"></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card" style="border-top: 4px solid #d32f2f; background:#fffafa">
+        <div class="section-title" style="color:#d32f2f">🛡️ Fase di Non-Possesso & Gegenpressing</div>
+        <p style="font-size:10px;color:#555;margin-bottom:10px">Misura la compattezza e l'aggressività difensiva.</p>
+        <table class="table-ui" style="background:transparent">
+            <tr><th>Squadra</th><th>Altezza Dif.</th><th>Lunghezza Sq.</th><th>Recuperi &lt;5s</th><th>Choke Index</th></tr>
+            <tr><td style="color:var(--blue); font-weight:bold">Casa</td><td id="np-defx-h">--</td><td id="np-len-h">--</td><td id="np-cp-h">--</td><td id="np-choke-h" style="font-weight:bold; color:var(--blue)">--</td></tr>
+            <tr><td style="color:var(--red); font-weight:bold">Trasf</td><td id="np-defx-a">--</td><td id="np-len-a">--</td><td id="np-cp-a">--</td><td id="np-choke-a" style="font-weight:bold; color:var(--red)">--</td></tr>
+        </table>
+        <div id="defensive-dialogue" style="font-size:11px; line-height:1.5; color:#1c1c1e; padding:8px; background:#fff; border-radius:6px; border:1px solid #ffcdd2; margin-top:10px"></div>
+      </div>
+
+      <div class="card" style="border-top: 4px solid #009688; background:#f4fbf8">
+        <div class="section-title" style="color:#009688">🧭 Funnel Offensivo (Flusso e Penetrazione)</div>
+        <p style="font-size:10px;color:#555;margin-bottom:10px">Misura quanto è sterile il possesso e la capacità di entrare in area.</p>
+        <div class="grid-3" style="margin-bottom:10px">
+            <div class="tdi-box"><div style="font-size:10px; color:#666">Baricentro Casa</div><div id="tr-x-h" style="font-size:18px; color:var(--blue)">--m</div></div>
+            <div class="tdi-box"><div style="font-size:10px; color:#666">Stile Offensivo</div><div id="tr-style" style="font-size:12px; margin-top:5px; color:#111">--</div></div>
+            <div class="tdi-box"><div style="font-size:10px; color:#666">Baricentro Trasf</div><div id="tr-x-a" style="font-size:18px; color:var(--red)">--m</div></div>
+        </div>
+        <table class="table-ui" style="background:transparent; margin-bottom:10px">
+            <tr><th>Squadra</th><th>Ingressi Trequarti</th><th>Tocchi in Area</th><th>Indice Penetrazione</th></tr>
+            <tr><td style="color:var(--blue); font-weight:bold">Casa</td><td id="tr-f3-h">--</td><td id="tr-box-h">--</td><td id="tr-pen-h" style="font-weight:bold; color:var(--blue)">--%</td></tr>
+            <tr><td style="color:var(--red); font-weight:bold">Trasf</td><td id="tr-f3-a">--</td><td id="tr-box-a">--</td><td id="tr-pen-a" style="font-weight:bold; color:var(--red)">--%</td></tr>
+        </table>
+        <div id="tactical-dialogue" style="font-size:11px; line-height:1.5; color:#1c1c1e; padding:8px; background:#fff; border-radius:6px; border:1px solid #e0f2f1"></div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+        <div class="card" style="border-top: 4px solid var(--blue);">
+          <div class="section-title" style="color:var(--blue)">💰 1X2 Probabilità e Modelli (Base NPxG)</div>
+              <table class="table-ui" style="margin-bottom:0">
+                <tr><th>Mercato</th><th style="color:#555">GENERALE</th><th style="color:var(--blue)">SOLO RUOLO</th></tr>
+                <tr><td>1</td><td id="p1-over">--%</td><td id="p1-role" class="td-highlight">--%</td></tr>
+                <tr><td>X</td><td id="px-over">--%</td><td id="px-role" class="td-highlight">--%</td></tr>
+                <tr><td>2</td><td id="p2-over">--%</td><td id="p2-role" class="td-highlight">--%</td></tr>
+                <tr style="background:#f9f9f9"><td>1X</td><td id="p1x-over">--%</td><td id="p1x-role" class="td-highlight">--%</td></tr>
+                <tr style="background:#f9f9f9"><td>X2</td><td id="px2-over">--%</td><td id="px2-role" class="td-highlight">--%</td></tr>
+                <tr style="background:#f9f9f9"><td>12</td><td id="p12-over">--%</td><td id="p12-role" class="td-highlight">--%</td></tr>
+                <tr><td>Goal (GG)</td><td id="gg-over" style="color:var(--green)">--%</td><td id="gg-role" style="color:var(--green); font-weight:bold">--%</td></tr>
+                <tr><td>Over 2.5</td><td id="ov-over" style="color:var(--orange)">--%</td><td id="ov-role" style="color:var(--orange); font-weight:bold">--%</td></tr>
+              </table>
+              <div style="background:#fff; border:1px solid #ddd; border-radius:8px; padding:10px; margin-top:15px">
+                <div style="font-size:11px;font-weight:bold;color:#555;margin-bottom:6px">🎯 1X2 per Modello (con confidence specifico)</div>
+                <table class="table-ui" style="margin-bottom:0; font-size:11px">
+                  <tr><th>Modello</th><th>1</th><th>X</th><th>2</th></tr>
+                  <tr><td>Dixon-Coles (Ruolo)</td><td id="mdl-dc-1">--</td><td id="mdl-dc-x">--</td><td id="mdl-dc-2">--</td></tr>
+                  <tr><td>KNN Storico</td><td id="mdl-knn-1">--</td><td id="mdl-knn-x">--</td><td id="mdl-knn-2">--</td></tr>
+                  <tr><td>Markov (Score-flow)</td><td id="mdl-mk-1">--</td><td id="mdl-mk-x">--</td><td id="mdl-mk-2">--</td></tr>
+                  <tr style="background:#f0f8ff;font-weight:bold"><td>Ensemble</td><td id="mdl-ens-1" style="color:var(--purple)">--</td><td id="mdl-ens-x" style="color:var(--purple)">--</td><td id="mdl-ens-2" style="color:var(--purple)">--</td></tr>
+                  <tr style="background:#fef4e5"><td style="font-size:9px;color:#888">Confidence per esito</td>
+                    <td id="conf-p1" style="font-weight:bold;font-size:11px">--</td>
+                    <td id="conf-px" style="font-weight:bold;font-size:11px">--</td>
+                    <td id="conf-p2" style="font-weight:bold;font-size:11px">--</td>
+                  </tr>
+                </table>
+                <div style="font-size:9px; color:#888; margin-top:4px">Confidence per esito: quanto i 3 modelli concordano su QUELL'esito specifico.</div>
+              </div>
+              <div style="background:#fff; border:1px solid #ddd; border-radius:8px; padding:10px; margin-top:12px">
+                <div style="font-size:11px;font-weight:bold;color:#555;margin-bottom:6px">🎯 Doppie Chance & Gol (con confidence)</div>
+                <table class="table-ui" style="margin-bottom:0; font-size:11px">
+                  <tr><th>Modello</th><th>1X</th><th>X2</th><th>12</th><th>Goal</th><th>NoGoal</th><th>Ov 2.5</th><th>Un 2.5</th></tr>
+                  <tr><td>DC (Ruolo)</td>
+                    <td id="mdl-dc-1x">--</td><td id="mdl-dc-x2">--</td><td id="mdl-dc-12">--</td>
+                    <td id="mdl-dc-gg">--</td><td id="mdl-dc-ng">--</td>
+                    <td id="mdl-dc-ov">--</td><td id="mdl-dc-un">--</td>
+                  </tr>
+                  <tr><td>KNN</td>
+                    <td id="mdl-knn-1x">--</td><td id="mdl-knn-x2">--</td><td id="mdl-knn-12">--</td>
+                    <td id="mdl-knn-gg">--</td><td id="mdl-knn-ng">--</td>
+                    <td id="mdl-knn-ov">--</td><td id="mdl-knn-un">--</td>
+                  </tr>
+                  <tr style="background:#fef4e5"><td style="font-size:9px;color:#888">Confidence</td>
+                    <td id="conf-1x" style="font-weight:bold;font-size:11px">--</td>
+                    <td id="conf-x2" style="font-weight:bold;font-size:11px">--</td>
+                    <td id="conf-12" style="font-weight:bold;font-size:11px">--</td>
+                    <td id="conf-gg" style="font-weight:bold;font-size:11px">--</td>
+                    <td id="conf-ng" style="font-weight:bold;font-size:11px">--</td>
+                    <td id="conf-ov" style="font-weight:bold;font-size:11px">--</td>
+                    <td id="conf-un" style="font-weight:bold;font-size:11px">--</td>
+                  </tr>
+                </table>
+                <div style="font-size:9px; color:#888; margin-top:4px">Ciascun mercato ha il suo confidence — le doppie chance possono essere piu' robuste degli esiti singoli, i mercati gol dipendono dalla varianza totale.</div>
+              </div>
+              <div style="background:#f0f8ff; border-radius:8px; padding:15px; display:flex; flex-direction:column; justify-content:center; margin-top:15px">
+                  <div style="font-size:12px; font-weight:bold; text-align:center; color:var(--blue); margin-bottom:15px">QUOTE REALI (FAIR ODDS) SUL RUOLO</div>
+                  <div class="grid-3">
+                      <div class="odds-box"><div style="font-size:10px; color:#555">Quota 1</div><div class="odds-val" id="odd-1">--</div></div>
+                      <div class="odds-box"><div style="font-size:10px; color:#555">Quota X</div><div class="odds-val" id="odd-x" style="color:#555">--</div></div>
+                      <div class="odds-box"><div style="font-size:10px; color:#555">Quota 2</div><div class="odds-val" id="odd-2" style="color:var(--red)">--</div></div>
+                  </div>
+              </div>
+        </div>
+
+        <div class="card" style="border-top: 4px solid #fbc02d; background:#fffde7">
+            <div class="section-title" style="color:#fbc02d">⚖️ Punti Attesi dagli xG (con test di significativita')</div>
+            <p style="font-size:10px;color:#555;margin-bottom:10px">Punti reali vs punti attesi simulando ogni partita dagli xG. Lo scarto viene giudicato solo se supera l'errore standard: sotto quella soglia e' rumore, non fortuna.</p>
+            <table class="table-ui" style="background:transparent">
+                <tr><th>Squadra</th><th>Punti/Match Reali</th><th>Punti/Match Attesi</th><th>Diagnosi</th></tr>
+                <tr><td style="color:var(--blue); font-weight:bold" id="pyt-name-h">Casa</td><td id="pyt-act-h">--%</td><td id="pyt-exp-h">--%</td><td id="pyt-diag-h">--</td></tr>
+                <tr><td style="color:var(--red); font-weight:bold" id="pyt-name-a">Trasf</td><td id="pyt-act-a">--%</td><td id="pyt-exp-a">--%</td><td id="pyt-diag-a">--</td></tr>
+            </table>
+            <div class="section-title" style="color:#fbc02d; margin-top:20px">🔥 Top Scorers</div>
+            <div style="font-size:11px; line-height:1.4; color:#1c1c1e;">
+              <strong>Casa:</strong> <span id="ts-h"></span><br><br>
+              <strong>Trasf:</strong> <span id="ts-a"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" style="border-top: 4px solid var(--purple);">
+      <div class="section-title" style="color:var(--purple)">📈 Progressione Storica: Trend Analitico</div>
+      <div style="margin-bottom:5px; font-weight:bold; color:var(--blue); font-size:12px" id="prog-h-name">Casa</div>
+      <table class="table-ui" id="table-prog-h"></table>
+      <div style="margin-bottom:5px; margin-top:15px; font-weight:bold; color:var(--red); font-size:12px" id="prog-a-name">Trasferta</div>
+      <table class="table-ui" id="table-prog-a"></table>
+    </div>
+
+    <div class="grid-2">
+        <div class="card" style="border-top: 4px solid #e91e63;">
+          <div class="section-title" style="color:#e91e63">⏱️ Distribuzione Gol (Fatti e Subiti)</div>
+          <table class="table-ui" style="margin-bottom:0; text-align:left;">
+            <tr>
+              <th>Fascia</th>
+              <th colspan="2" style="color:var(--blue); border-left:1px solid #eee; text-align:center">Casa</th>
+              <th colspan="2" style="color:var(--red); border-left:1px solid #eee; text-align:center">Trasferta</th>
+            </tr>
+            <tr>
+              <th style="border-bottom:2px solid #ddd">Minuti</th>
+              <th style="border-bottom:2px solid #ddd; border-left:1px solid #eee">Fatti</th>
+              <th style="border-bottom:2px solid #ddd">Subiti</th>
+              <th style="border-bottom:2px solid #ddd; border-left:1px solid #eee">Fatti</th>
+              <th style="border-bottom:2px solid #ddd">Subiti</th>
+            </tr>
+            <tbody id="timing-body"></tbody>
+          </table>
+        </div>
+        <div class="card" style="border-top: 4px solid #9c27b0; background:#f3e5f5">
+          <div class="section-title" style="color:#9c27b0">⏳ Analisi di Sopravvivenza (Goal Timing)</div>
+          <p style="font-size:10px; color:#555; margin-bottom:15px">Modello Esponenziale calcolato sull'intensità di gioco.</p>
+          <div style="background:#fff; border-radius:8px; padding:12px; margin-bottom:10px; border:1px solid #e1bee7">
+              <div style="font-size:11px; font-weight:bold; color:#555">Probabilità 1° Gol prima del 30:00'</div>
+              <div style="font-size:22px; font-weight:900; color:#9c27b0" id="surv-30">--%</div>
+          </div>
+          <div style="background:#fff; border-radius:8px; padding:12px; border:1px solid #e1bee7">
+              <div style="font-size:11px; font-weight:bold; color:#555">Probabilità Over 0.5 Primo Tempo (45:00')</div>
+              <div style="font-size:22px; font-weight:900; color:#9c27b0" id="surv-45">--%</div>
+          </div>
+        </div>
+    </div>
+
+    <div class="card" style="border-top: 4px solid #607d8b;">
+      <div class="section-title" style="color:#607d8b">🎯 Modello Dixon-Coles (NPxG) & Skellam Distribution</div>
+      <div class="grid-2">
+          <div>
+            <div style="font-size:11px; font-weight:bold; margin-bottom:5px; color:#555">Top 6 Risultati Esatti</div>
+            <div class="grid-3" id="exact-scores" style="margin-bottom:15px"></div>
+          </div>
+          <div>
+              <div style="font-size:11px; font-weight:bold; margin-bottom:5px; color:#555">Asian Handicap (da matrice Dixon-Coles)</div>
+              <table class="table-ui" id="table-ah" style="margin-bottom:0"></table>
+          </div>
+      </div>
+      <div class="grid-3" style="margin-top:10px; border-top:1px dashed #ccc; padding-top:15px">
+        <div><div style="font-size:11px; font-weight:bold; margin-bottom:5px; color:#555">Multigol Match</div><div id="mg-tot" style="display:flex; flex-direction:column; gap:4px"></div></div>
+        <div><div style="font-size:11px; font-weight:bold; margin-bottom:5px; color:var(--blue)">Multigol Casa</div><div id="mg-h" style="display:flex; flex-direction:column; gap:4px"></div></div>
+        <div><div style="font-size:11px; font-weight:bold; margin-bottom:5px; color:var(--red)">Multigol Trasf.</div><div id="mg-a" style="display:flex; flex-direction:column; gap:4px"></div></div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card" style="border-top: 4px solid var(--orange);">
+        <div class="section-title" style="color:var(--orange)">📐 Alta Varianza e Disciplina</div>
+        <table class="table-ui">
+          <tr><th>Mercato</th><th style="color:#555">GENERALE</th><th style="color:var(--orange)">SOLO RUOLO</th></tr>
+          <tr><td>Corner Attesi (Tot)</td><td id="cor-tot-over">--</td><td id="cor-tot-role" class="td-highlight">--</td></tr>
+          <tr><td>Prob Over 9.5 Corner</td><td id="pov9-cor-over">--%</td><td id="pov9-cor-role" style="font-weight:bold; color:var(--blue)">--%</td></tr>
+          <tr style="background:#f9f9f9"><td>SoT Attesi (Tot)</td><td id="sot-tot-over">--</td><td id="sot-tot-role" class="td-highlight">--</td></tr>
+          <tr style="background:#f9f9f9"><td>Prob Over 8.5 SoT</td><td id="pov8-sot-over">--%</td><td id="pov8-sot-role" style="font-weight:bold; color:var(--purple)">--%</td></tr>
+          <tr><td>Falli Attesi (Tot)</td><td id="fls-tot-over">--</td><td id="fls-tot-role" class="td-highlight">--</td></tr>
+          <tr><td>Gialli Attesi (Tot)</td><td id="yel-tot-over">--</td><td id="yel-tot-role" class="td-highlight">--</td></tr>
+          <tr><td>Prob Over 3.5 Gialli</td><td id="pov3-yel-over">--%</td><td id="pov3-yel-role" style="font-weight:bold; color:var(--orange)">--%</td></tr>
+          <tr><td>Prob. Cart. Rosso</td><td id="red-tot-over" style="color:var(--red); font-weight:bold">--%</td><td id="red-tot-role" style="color:var(--red); font-weight:bold" class="td-highlight">--%</td></tr>
+        </table>
+      </div>
+
+      <div class="card" style="border-top: 4px solid #5a5a8a;">
+        <div class="section-title" style="color:#5a5a8a">🔬 Analisi Incrociata: Z-Score ed Efficienza</div>
+        <table class="table-ui">
+          <tr><th>Parametro (Z-Score)</th><th style="color:#555">GENERALE</th><th style="color:var(--blue)">SOLO RUOLO</th></tr>
+          <tr><td>NPxG Attesi Casa</td><td id="z-xg-h-ov">--</td><td id="z-xg-h-ro" class="td-highlight">--</td></tr>
+          <tr><td>Z-Score Casa</td><td id="z-b-h-ov">--</td><td id="z-b-h-ro" class="td-highlight">--</td></tr>
+          <tr style="background:#f9f9f9"><td>NPxG Attesi Trasf</td><td id="z-xg-a-ov">--</td><td id="z-xg-a-ro" class="td-highlight-red">--</td></tr>
+          <tr style="background:#f9f9f9"><td>Z-Score Trasf</td><td id="z-b-a-ov">--</td><td id="z-b-a-ro" class="td-highlight-red">--</td></tr>
+        </table>
+        
+        <div class="section-title" style="color:#7b1fa2; margin-top:15px">⚡ Efficienza Goal vs NPxG</div>
+        <table class="table-ui">
+          <tr><th>Contesto</th><th>Goal Fatti</th><th>xG Prodotti</th><th>Efficienza</th></tr>
+          <tr><td style="color:var(--blue); font-weight:bold" id="lbl-eff-h1">Casa (Gen)</td><td id="e-gf-ho">--</td><td id="e-xg-ho">--</td><td id="e-ef-ho">--</td></tr>
+          <tr style="background:#f0f8ff"><td style="color:var(--blue); font-weight:bold" id="lbl-eff-h2">Casa (Ruolo)</td><td id="e-gf-hr">--</td><td id="e-xg-hr">--</td><td id="e-ef-hr">--</td></tr>
+          <tr><td style="color:var(--red); font-weight:bold" id="lbl-eff-a1">Trasf (Gen)</td><td id="e-gf-ao">--</td><td id="e-xg-ao">--</td><td id="e-ef-ao">--</td></tr>
+          <tr style="background:#ffebee"><td style="color:var(--red); font-weight:bold" id="lbl-eff-a2">Trasf (Ruolo)</td><td id="e-gf-ar">--</td><td id="e-xg-ar">--</td><td id="e-ef-ar">--</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" style="border-top: 4px solid var(--knn);">
+      <div class="section-title" style="color:var(--knn)">🔍 K-Nearest Neighbors (11 dimensioni tattiche, kernel pesato) &amp; Formazioni</div>
+      <table class="table-ui">
+        <tr><th>Squadra</th><th>Modulo Usato</th><th>Contro Modulo Avv.</th><th>Contesto</th><th>Match vs Avv.</th><th>Punti/Match</th></tr>
+        <tr id="row-form-ho"><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
+        <tr id="row-form-hr" style="background:#f0f8ff"><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
+        <tr id="row-form-ao"><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
+        <tr id="row-form-ar" style="background:#ffebee"><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
+      </table>
+      
+      <div class="grid-2" style="margin-top:15px; margin-bottom:15px">
+        <div style="background:#fdf2f8;border-radius:8px;padding:10px;border:1px solid #f8bbd0"><div style="font-size:11px;font-weight:bold;color:var(--knn);margin-bottom:6px" id="knn-title-h">Casa vs Simili</div><div id="knn-list-h"></div><div style="margin-top:6px;font-size:10px;color:#555" id="knn-res-h">Rendimento: -- Pts/Match</div></div>
+        <div style="background:#fdf2f8;border-radius:8px;padding:10px;border:1px solid #f8bbd0"><div style="font-size:11px;font-weight:bold;color:var(--knn);margin-bottom:6px" id="knn-title-a">Trasf vs Simili</div><div id="knn-list-a"></div><div style="margin-top:6px;font-size:10px;color:#555" id="knn-res-a">Rendimento: -- Pts/Match</div></div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card" style="border-top: 4px solid #1565c0;">
+        <div class="section-title" style="color:#1565c0">⛓️ Asymmetric Markov Chain</div>
+        <table class="table-ui">
+          <tr><th>Stato Finale</th><th style="color:#555">GENERALE</th><th style="color:var(--blue)">SOLO RUOLO</th></tr>
+          <tr><td>Vittoria netta Casa (+2)</td><td id="mk-h2-ov">--%</td><td id="mk-h2-ro" class="td-highlight">--%</td></tr>
+          <tr><td>Vittoria misurata Casa (+1)</td><td id="mk-h1-ov">--%</td><td id="mk-h1-ro" class="td-highlight">--%</td></tr>
+          <tr><td>Pareggio (0)</td><td id="mk-x-ov">--%</td><td id="mk-x-ro" class="td-highlight">--%</td></tr>
+          <tr><td>Vittoria misurata Trasf (-1)</td><td id="mk-a1-ov">--%</td><td id="mk-a1-ro" class="td-highlight">--%</td></tr>
+          <tr><td>Vittoria netta Trasf (-2)</td><td id="mk-a2-ov">--%</td><td id="mk-a2-ro" class="td-highlight">--%</td></tr>
+        </table>
+      </div>
+
+      <div class="card" style="border-top: 4px solid #3f51b5;">
+        <div class="section-title" style="color:#3f51b5">♟️ ELO Rating e Trend Penalty</div>
+        <table class="table-ui" style="margin-top:20px">
+          <tr><th>Squadra</th><th style="color:#555">ELO ATTUALE</th><th style="color:var(--orange)">TREND (Ult 5 vs Prec 10)</th></tr>
+          <tr><td style="color:var(--blue); font-weight:bold" id="elo-name-h">Casa</td><td id="elo-h-ov" style="font-size:16px; font-weight:bold">--</td><td id="elo-h-tr" style="font-size:14px; font-weight:bold">--</td></tr>
+          <tr><td style="color:var(--red); font-weight:bold" id="elo-name-a">Trasferta</td><td id="elo-a-ov" style="font-size:16px; font-weight:bold">--</td><td id="elo-a-tr" style="font-size:14px; font-weight:bold">--</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" style="border-top: 4px solid var(--text);">
+      <div class="section-title" style="color:var(--text)">🤖 MEGA-PROMPT per Claude AI</div>
+      <button class="btn btn-dark" style="margin-bottom:10px" onclick="copiaPrompt()">📋 Copia Mega-Prompt</button>
+      <textarea id="ai-prompt" readonly></textarea>
+    </div>
+    
+    <div class="card" style="border-top:4px solid #455a64">
+      <div class="section-title" style="color:#455a64">🧪 Copertura Dati API (diagnostica)</div>
+      <p style="font-size:10px;color:#555;margin-bottom:10px">Percentuale di partite in cui l'API ha effettivamente restituito ogni metrica. <b>0%</b> significa che il provider non la espone: il valore altrove e' N/D, non zero. Una copertura <b>intermedia su un conteggio</b> e' normale, perche' le chiavi assenti vengono lette come zero. Una copertura intermedia su un <b>rapporto</b> indica invece partite senza dati avanzati, escluse dalle medie.</p>
+      <table class="table-ui" id="table-coverage"></table>
+    </div>
+
+    <div class="card">
+      <div class="section-title">📂 Macchina del Tempo: Partite Analizzate (Taglio Esatto)</div>
+      <div class="grid-2">
+        <div class="log-box"><table class="table-ui" id="table-log-home"></table></div>
+        <div class="log-box"><table class="table-ui" id="table-log-away"></table></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   SCANNER v9.6
+
+   NOVITA' v9.6 — gestione dei valori mancanti, distinta per tipo di metrica.
+   La v9.4 forzava tutto a 0, la v9.5 lasciava tutto null: entrambe sbagliate,
+   perche' i due casi non sono lo stesso problema.
+     - CONTEGGI (Big Chances, cross, filtranti, tocchi in area, recuperi):
+       molte API omettono la chiave quando il valore e' zero. Se la risposta
+       e' arrivata ma la chiave manca, il valore ora e' 0.
+     - RAPPORTI, PERCENTUALI, DISTANZE, xG (possesso, PPDA, field tilt,
+       baricentro, xG): uno 0 e' fisicamente impossibile. Se manca, il dato
+       non c'e' e la partita viene esclusa da quella media, non contata come
+       prestazione nulla.
+     - Se l'endpoint /advanced fallisce, nulla viene zero-fillato: quella
+       partita semplicemente non porta metriche avanzate.
+     - Nuova tabella "Copertura Dati API": mostra in quante partite ogni
+       metrica e' stata davvero restituita, cosi' si distingue a colpo d'occhio
+       una metrica assente (0%) da una con zeri legittimi.
+     - N/D mostrato solo a copertura zero: uno zero reale resta zero.
+
+   modifiche gia' introdotte nella v9.5 rispetto alla v9.4
+
+   BUG CORRETTI
+   1. Elo calcolato a ritroso nel tempo: il trend usciva col segno invertito
+      e penalizzava i lambda delle squadre in crescita. Ora Elo di lega,
+      cronologico, a somma zero, con vantaggio campo esplicito.
+   2. Array delle metriche avanzate (ppda, field tilt, ecc.) compattati
+      saltando i null: gli indici non corrispondevano piu' ai match ne' alle
+      date. Ora si inserisce sempre un valore, anche null.
+   3. out.n era la lunghezza della lista richiesta, non dei match con dati:
+      i cicli leggevano undefined in coda.
+   4. Dati mancanti forzati a 0 (corner, big chances, xG): abbassavano le medie.
+      Ora restano null e vengono esclusi.
+   5. avg_3/5/10 saltavano ai match piu' vecchi per riempire i buchi.
+   6. Colonna "GENERALE" dei mercati ad alta varianza: mostrava gli stessi
+      numeri della colonna "RUOLO" (calcAdv(false) non veniva mai chiamata).
+   7. Elementi mai popolati (box tattico, nomi squadre) e id inesistenti
+      (Over 3.5 gialli non veniva mai mostrato).
+   8. Nel mega-prompt le probabilita' ensemble erano accostate alle quote
+      del solo Dixon-Coles.
+
+   ANALISI CASA/TRASFERTA
+   9. Vantaggio campo contato due volte nel modello "ruolo" (dati di sola
+      casa + moltiplicatore 1.10). Ora ogni statistica e' normalizzata sul
+      baseline della propria sede e i moltiplicatori 1.10/0.95 sono
+      sostituiti dalle medie gol reali della lega.
+   10. Il campione di ruolo era un sottoinsieme degli ultimi N complessivi
+       (con 15 restavano ~7 gare). Ora i due insiemi sono indipendenti.
+   11. Il profilo tattico dell'avversario per il KNN era quello generale,
+       non quello del suo ruolo.
+   12. Shrinkage empirico-bayesiano: con pochi match di ruolo le stime
+       tornano verso la media di lega invece di fidarsi di 3 partite.
+
+   RIGORE STATISTICO
+   13. Lambda moltiplicativi (attacco x difesa x baseline) invece della media
+       aritmetica fra attacco proprio e difesa avversaria.
+   14. Componente rigori reintegrata: gli NPxG li escludono, i gol no.
+   15. Una sola matrice Dixon-Coles governa 1X2, GG, Over, multigol,
+       risultati esatti e handicap. Prima l'1X2 era Poisson puro senza rho e
+       i risultati esatti usavano lambda diversi.
+   16. rho tarato sulle frequenze reali di 0-0/1-0/0-1/1-1 della lega.
+   17. Pitagorica sostituita dai punti attesi simulati dagli xG, con errore
+       standard: uno scarto si giudica solo se supera il rumore.
+   18. KNN: kernel gaussiano con decay temporale al posto di k=4 fisso,
+       distanza normalizzata sulle dimensioni disponibili, peso
+       nell'ensemble proporzionale ai vicini realmente efficaci.
+   19. Markov con rate dipendenti dal punteggio e fatica normalizzata
+       (prima replicava quasi esattamente il Poisson).
+   20. Sovradispersione di corner, tiri e cartellini stimata dai dati.
+   21. Confidence score modulato dalla numerosita' campionaria.
+   22. Deviazione standard campionaria (n-1).
+   23. Nuovo: confronto con le quote del book, valore atteso e Kelly 1/4.
+   ========================================================================= */
+/* =========================================================================
+   ⚠️  COMPATIBILITÀ COMPARATORE LITE — NON MODIFICARE QUESTA RIGA
+   Il Comparatore Lite carica questo file e ha bisogno di trovare la cache
+   dichiarata ESATTAMENTE così: `let globalLeagueMatchesCache = [];`
+   (la trasforma in una cache condivisa via window per far vedere i dati al
+   motore). Se rinomini questa variabile, cambi `let` o la sposti, il
+   Comparatore Lite smette di popolare le partite e "non fa più nulla".
+   Vale anche per i NOMI delle funzioni-motore più sotto (aggregaTeam,
+   buildGlobalElo, calcDCMatrix, probsFromMatrix, markovFlow, extractSafeStat,
+   apiCall, computeLeagueParams, estimateRho, calculateRho): il Lite le chiama
+   per nome, quindi non rinominarle. Puoi cambiarne liberamente il CONTENUTO.
+   ========================================================================= */
+let LEAGUES_CATALOG = [];
+let globalLeagueMatchesCache = [];
+
+async function loadLegheJson() {
+    try {
+        const cSel = document.getElementById('sel-country');
+        cSel.innerHTML = '<option value="">Caricamento...</option>';
+        const res = await fetch('leghe.json');
+        if (res.ok) {
+            const json = await res.json();
+            LEAGUES_CATALOG = json.data?.leagues || json.leagues || [];
+            cSel.innerHTML = '<option value="">-- Seleziona --</option>';
+            const countries = [...new Set(LEAGUES_CATALOG.map(l => l.country_code))].sort();
+            countries.forEach(c => cSel.add(new Option(c, c)));
+        } else { throw new Error(); }
+    } catch (e) {
+        LEAGUES_CATALOG = [
+          {"id":"l_1Isor4","name":"Bundesliga","country_code":"GER","seasons":["2022/2023","2023/2024","2024/2025","2025/2026"]},
+          {"id":"l_4DWyTT","name":"Championship","country_code":"ENG","seasons":["2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},
+          {"id":"l_0ErfuF","name":"LaLiga","country_code":"ESP","seasons":["2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},
+          {"id":"l_3FJFUl","name":"Ligue 1","country_code":"FRA","seasons":["2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},
+          {"id":"l_4WFCIZ","name":"Premier League","country_code":"ENG","seasons":["2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},
+          {"id":"l_0ALvwF","name":"Serie A","country_code":"ITA","seasons":["2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},
+          {"id":"l_0jy5yE","name":"Serie B","country_code":"ITA","seasons":["2025/2026","2026/2027"]}
+        ];
+        const cSel = document.getElementById('sel-country');
+        if(cSel) {
+            cSel.innerHTML = '<option value="">-- Seleziona --</option>';
+            const countries = [...new Set(LEAGUES_CATALOG.map(l => l.country_code))].sort();
+            countries.forEach(c => cSel.add(new Option(c, c)));
+        }
+    }
+}
+loadLegheJson(); // ⚠️ COMPARATORE LITE: chiamata auto-eseguita all'avvio. Il Lite la disattiva
+                 // automaticamente quando carica il motore (gestisce lui le leghe). Puoi lasciarla:
+                 // nel Lite viene neutralizzata da sola, nello Scanner normale serve. Non rinominarla.
+
+document.addEventListener('DOMContentLoaded', () => {
+    const dField = document.getElementById('target-date');
+    if (dField && !dField.value) {
+        const today = new Date();
+        dField.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    }
+});
+
+function updateLeagues() {
+  const cCode = document.getElementById('sel-country').value;
+  const lSel = document.getElementById('sel-league');
+  lSel.innerHTML = '<option value="">-- Lega --</option>';
+  const leagues = LEAGUES_CATALOG.filter(l => l.country_code === cCode).sort((a,b)=>a.name.localeCompare(b.name));
+  leagues.forEach(l => lSel.add(new Option(l.name, l.id)));
+}
+
+function updateSeasons() {
+  const lId = document.getElementById('sel-league').value;
+  const sSel = document.getElementById('sel-season');
+  sSel.innerHTML = '<option value="">-- Stagione --</option>';
+  const league = LEAGUES_CATALOG.find(l => l.id === lId);
+  if(league) league.seasons.slice().reverse().forEach(s => sSel.add(new Option(s, s)));
+}
+
+const safeTxt = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+const safeHtml = (id, val) => { const el = document.getElementById(id); if (el) el.innerHTML = val; };
+const pct = v => isNaN(v) ? '--%' : (v*100).toFixed(1)+'%';
+const f1 = v => (isNaN(v) || v === null) ? '--' : (v||0).toFixed(1);
+const f2 = v => (isNaN(v) || v === null) ? '--' : (v||0).toFixed(2);
+function artIl(name){if(!name)return 'la squadra';const n=name.trim();const fem=['Roma','Juve','Juventus','Lazio','Fiorentina','Atalanta','Sampdoria','Cremonese','Salernitana','Sampdoria'];if(fem.some(f=>n.startsWith(f)))return 'la '+n;if('aeiouhAEIOUH'.includes(n[0]))return "l'"+n;return 'il '+n;}
+function artDel(name){if(!name)return 'della squadra';const n=name.trim();const fem=['Roma','Juve','Juventus','Lazio','Fiorentina','Atalanta','Sampdoria','Cremonese','Salernitana'];if(fem.some(f=>n.startsWith(f)))return 'della '+n;if('aeiouhAEIOUH'.includes(n[0]))return "dell'"+n;return 'del '+n;}
+function Cap(s){return s ? s.charAt(0).toUpperCase()+s.slice(1) : s;}
+
+
+function getMostFrequentWithPct(arr) {
+  if(!arr || !Array.isArray(arr)) return 'N/D';
+  const valid = arr.filter(v => v !== null && v !== undefined && v !== 'N/D' && v !== '');
+  if(!valid.length) return 'N/D';
+  const counts = {}; let maxCount=0; let maxVal=valid[0];
+  for(let v of valid) {
+    counts[v] = (counts[v]||0)+1;
+    if(counts[v]>maxCount){maxCount=counts[v]; maxVal=v;}
+  }
+  return `${maxVal} (${Math.round((maxCount/valid.length)*100)}%)`;
+}
+function getTopScorers(scorersArray) {
+  if(!scorersArray || !scorersArray.length) return "<span style='color:#888'>Nessun marcatore in archivio</span>";
+  const counts = {}; scorersArray.forEach(s => { counts[s] = (counts[s]||0)+1; });
+  const sorted = Object.keys(counts).sort((a,b) => counts[b] - counts[a]);
+  return sorted.slice(0, 3).map(s => `${s} (${counts[s]} gol)`).join(', ');
+}
+function getTopScorersPlain(scorersArray) {
+  if(!scorersArray || !scorersArray.length) return "Nessuno";
+  const counts = {}; scorersArray.forEach(s => { counts[s] = (counts[s]||0)+1; });
+  const sorted = Object.keys(counts).sort((a,b) => counts[b] - counts[a]);
+  return sorted.slice(0, 3).map(s => `${s} (${counts[s]})`).join(', ');
+}
+
+function _mean(arr) { if(!arr || !Array.isArray(arr)) return 0; const valid = arr.filter(v => v != null && !isNaN(v)); if (!valid.length) return 0; return valid.reduce((s,v) => s+v, 0) / valid.length; }
+// deviazione standard CAMPIONARIA (n-1): con 10-15 match la versione /n sottostima la dispersione
+function _stddev(arr) { if(!arr || !Array.isArray(arr)) return 0; const valid = arr.filter(v => v != null && !isNaN(v)); if (valid.length < 2) return 0; const m = _mean(valid); return Math.sqrt(valid.reduce((s,v) => s+(v-m)*(v-m), 0) / (valid.length - 1)); }
+function _nValid(arr) { return (arr||[]).filter(v => v != null && !isNaN(v)).length; }
+function _timeDecayDates(vals, dates, targetTimeMs, halfLifeDays = 106) {
+  if(!vals || !Array.isArray(vals)) return 0;
+  const xi = Math.LN2 / halfLifeDays; let wSum = 0; let wTot = 0;
+  for (let i = 0; i < vals.length; i++) {
+    if(vals[i] == null || isNaN(vals[i]) || !dates[i]) continue;
+    let daysAgo = (targetTimeMs - new Date(dates[i]).getTime()) / (1000 * 3600 * 24); if(daysAgo < 0) daysAgo = 0;
+    const w = Math.exp(-xi * daysAgo); wSum += vals[i] * w; wTot += w;
+  }
+  return wTot > 0 ? wSum / wTot : 0;
+}
+// avg_N = media degli ULTIMI N MATCH (i valori mancanti si saltano, NON si pescano match piu' vecchi per riempire)
+function calcFeatures(vals, dates, targetTimeMs) {
+  if(!vals || !Array.isArray(vals)) return { avg_3: 0, avg_5: 0, avg_10: 0, avg_15: 0, avg_tot: 0, decay: 0, std: 0, nValid: 0 };
+  return { avg_3: _mean(vals.slice(0, 3)), avg_5: _mean(vals.slice(0, 5)), avg_10: _mean(vals.slice(0, 10)), avg_15: _mean(vals.slice(0, 15)), avg_tot: _mean(vals), decay: _timeDecayDates(vals, dates, targetTimeMs), std: _stddev(vals), nValid: _nValid(vals) };
+}
+
+function _logGamma(x) { if (x < 12) { let z = x; let result = 0; while (z < 12) { result -= Math.log(z); z++; } return result + (z-0.5)*Math.log(z) - z + 0.5*Math.log(2*Math.PI) + (1/12 - (1/(z*z))/360)/z; } return (x-0.5)*Math.log(x) - x + 0.5*Math.log(2*Math.PI) + (1/12 - (1/(x*x))/360)/x; }
+function negBinPMF(x, mu, k) { if (isNaN(mu) || mu <= 0) return x === 0 ? 1 : 0; if (isNaN(k) || k <= 0 || !isFinite(k)) return poisson(x, mu); return Math.exp(_logGamma(x + k) - _logGamma(x + 1) - _logGamma(k) + k * Math.log(k / (k + mu)) + x * Math.log(mu / (k + mu))); }
+function negBinCDF(n, mu, k) { if (isNaN(mu) || mu <= 0) return 1; let s = 0; for (let i = 0; i <= n; i++) s += negBinPMF(i, mu, k); return Math.min(s, 1); }
+// stima della sovradispersione col metodo dei momenti: k = mu^2 / (var - mu). Infinity => Poisson
+function negBinK(vals) {
+  const v = (vals||[]).filter(x => x != null && !isNaN(x));
+  if (v.length < 6) return Infinity;
+  const m = _mean(v); const s2 = Math.pow(_stddev(v), 2);
+  if (m <= 0 || s2 <= m * 1.05) return Infinity;
+  return Math.max(2, (m * m) / (s2 - m));
+}
+function poisson(k, lam) { if (isNaN(lam) || lam <= 0) return k === 0 ? 1 : 0; let p = Math.exp(-lam); for (let i = 0; i < k; i++) p *= lam / (i + 1); return p; }
+function skellamPMF(k, l1, l2) { if (isNaN(l1) || isNaN(l2) || l1 <= 0 || l2 <= 0) return 0; let p = 0; const jMin = Math.max(0, -k); for (let j = jMin; j <= 15; j++) p += poisson(k + j, l1) * poisson(j, l2); return p; }
+
+function calculateRho(lamH, lamA) { let tot = lamH + lamA; if (tot < 2.0) return -0.20; if (tot > 3.5) return -0.05; return -0.20 + (tot - 2.0) * (0.15 / 1.5); }
+function calcDCMatrix(lH, lA, rhoIn) {
+  const rho = (rhoIn === undefined || rhoIn === null || isNaN(rhoIn)) ? calculateRho(lH, lA) : rhoIn;
+  const mat = []; let tot = 0;
+  const dcTau = (x, y, lh, la) => { if (x===0 && y===0) return Math.max(0, 1 - lh*la*rho); if (x===0 && y===1) return Math.max(0, 1 + lh*rho); if (x===1 && y===0) return Math.max(0, 1 + la*rho); if (x===1 && y===1) return Math.max(0, 1 - rho); return 1; };
+  for (let i = 0; i <= 10; i++) { mat[i] = []; for (let j = 0; j <= 10; j++) { const p = poisson(i, lH) * poisson(j, lA) * dcTau(i, j, lH, lA); mat[i][j] = p; tot += p; } }
+  if(tot > 0) { for (let i=0; i<=10; i++) for (let j=0; j<=10; j++) mat[i][j] /= tot; }
+  return mat;
+}
+// TUTTI i mercati 1X2/GG/Over discendono dalla STESSA matrice: niente piu' 1X2 in Poisson puro e risultati esatti in Dixon-Coles
+function probsFromMatrix(mat, ouLine = 2.5) {
+  let p1=0, pX=0, p2=0, pGG=0, pOv=0;
+  for (let i=0; i<mat.length; i++) for (let j=0; j<mat[i].length; j++) {
+    const p = mat[i][j] || 0;
+    if (i>j) p1+=p; else if (i===j) pX+=p; else p2+=p;
+    if (i>0 && j>0) pGG+=p;
+    if (i+j > ouLine) pOv+=p;
+  }
+  return { p1, pX, p2, pGG, pOv };
+}
+function multigoal(mat, lo, hi, mode='tot') { let p = 0; for (let i=0; i<=10; i++) { for (let j=0; j<=10; j++) { if(mat[i] && mat[i][j] !== undefined) { let val = mode==='tot' ? (i+j) : (mode==='h' ? i : j); if (val >= lo && val <= hi) p += mat[i][j]; } } } return p; }
+// handicap asiatico calcolato sulla matrice DC (coerente con l'1X2); le linee a quarti si spezzano in due mezze puntate
+function asianHandicapMat(mat, handicap) {
+  const isQuarter = Math.abs((handicap * 2) % 1) > 1e-9;
+  const lines = isQuarter ? [handicap - 0.25, handicap + 0.25] : [handicap];
+  let win = 0, push = 0, lose = 0;
+  for (const L of lines) for (let i=0; i<=10; i++) for (let j=0; j<=10; j++) {
+    const p = (mat[i][j] || 0) / lines.length; const r = i - j + L;
+    if (r > 0) win += p; else if (Math.abs(r) < 1e-9) push += p; else lose += p;
+  }
+  return { pHome: win, pRefund: push, pAway: lose };
+}
+// Markov a passo 1': i rate dipendono dal PUNTEGGIO CORRENTE (chi e' sotto spinge, chi e' avanti si abbassa).
+// La fatica finale e' normalizzata cosi' che il totale gol atteso resti uguale ai lambda in ingresso.
+function markovFlow(lH, lA) {
+  if (isNaN(lH) || isNaN(lA) || lH <= 0 || lA <= 0) return { p1: 0, pX: 0, p2: 0, dist: new Array(11).fill(0) };
+  const FAT_FROM = 75, FAT = 1.30;
+  const norm = (FAT_FROM + (90 - FAT_FROM) * FAT) / 90;
+  const rH0 = lH / 90 / norm, rA0 = lA / 90 / norm;
+  let dist = new Array(11).fill(0); dist[5] = 1.0;
+  for (let t = 0; t < 90; t++) {
+    const f = (t >= FAT_FROM) ? FAT : 1.0;
+    const nd = new Array(11).fill(0);
+    for (let s = -5; s <= 5; s++) {
+      const p = dist[s + 5]; if (p <= 0) continue;
+      let mH = 1, mA = 1;
+      if (s > 0) { mH = 0.94; mA = 1.12; } else if (s < 0) { mH = 1.12; mA = 0.94; }
+      const crH = rH0 * f * mH, crA = rA0 * f * mA;
+      const cp0 = Math.max(0, 1 - crH - crA);
+      nd[s + 5] += p * cp0; nd[Math.min(10, s + 6)] += p * crH; nd[Math.max(0, s + 4)] += p * crA;
+    }
+    dist = nd;
+  }
+  let p1=0, pX=0, p2=0; for (let s = -5; s <= 5; s++) { const p = dist[s + 5]; if (s > 0) p1 += p; else if (s === 0) pX += p; else p2 += p; }
+  return { p1, pX, p2, dist };
+}
+// ELO DI LEGA: aggiornamento cronologico corretto, somma zero, vantaggio campo esplicito.
+// Tutte le squadre finiscono sulla stessa scala, quindi i rating sono confrontabili tra loro.
+function buildGlobalElo(targetTimeMs) {
+  const HFA_ELO = 65, K = 20;
+  const table = {}, series = {}; const seen = new Set();
+  const ms = globalLeagueMatchesCache
+    .filter(m => m.status === 'finished' && m.time_utc && m.home_team && m.away_team && new Date(m.time_utc).getTime() < targetTimeMs)
+    .sort((a, b) => new Date(a.time_utc) - new Date(b.time_utc));
+  for (const m of ms) {
+    if (seen.has(m.id)) continue; seen.add(m.id);
+    const h = m.home_team.id, a = m.away_team.id; if (!h || !a) continue;
+    if (table[h] === undefined) { table[h] = 1500; series[h] = []; }
+    if (table[a] === undefined) { table[a] = 1500; series[a] = []; }
+    const gh = m.score_home ?? 0, ga = m.score_away ?? 0;
+    const act = gh > ga ? 1 : (gh < ga ? 0 : 0.5);
+    const diff = Math.abs(gh - ga);
+    const mov = diff <= 1 ? 1.0 : (diff === 2 ? 1.5 : (11 + diff) / 8);
+    const exp = 1 / (1 + Math.pow(10, (table[a] - (table[h] + HFA_ELO)) / 400));
+    const delta = K * mov * (act - exp);
+    table[h] += delta; table[a] -= delta;
+    series[h].unshift(Math.round(table[h])); series[a].unshift(Math.round(table[a]));
+  }
+  return { table, series };
+}
+// medie gol reali della lega: sostituiscono i moltiplicatori arbitrari 1.10 / 0.95
+function computeLeagueParams(leagueId, targetTimeMs) {
+  const seen = new Set(); let gh = 0, ga = 0, n = 0;
+  for (const m of globalLeagueMatchesCache) {
+    if (m.league_id !== leagueId || m.status !== 'finished' || !m.time_utc) continue;
+    if (new Date(m.time_utc).getTime() >= targetTimeMs) continue;
+    if (seen.has(m.id)) continue; seen.add(m.id);
+    gh += (m.score_home ?? 0); ga += (m.score_away ?? 0); n++;
+  }
+  if (n < 30) return { avgH: 1.50, avgA: 1.20, n };
+  return { avgH: gh / n, avgA: ga / n, n };
+}
+// rho tarato sulla lega: si cerca il valore che riproduce le frequenze osservate di 0-0, 1-0, 0-1, 1-1
+function estimateRho(leagueId, targetTimeMs, LG) {
+  const seen = new Set(); const obs = {'0-0':0,'1-0':0,'0-1':0,'1-1':0}; let n = 0;
+  for (const m of globalLeagueMatchesCache) {
+    if (m.league_id !== leagueId || m.status !== 'finished' || !m.time_utc) continue;
+    if (new Date(m.time_utc).getTime() >= targetTimeMs) continue;
+    if (seen.has(m.id)) continue; seen.add(m.id);
+    const k = `${m.score_home ?? 0}-${m.score_away ?? 0}`; if (obs[k] !== undefined) obs[k]++; n++;
+  }
+  if (n < 100) return -0.11;
+  let best = -0.11, bestErr = Infinity;
+  for (let rho = -0.25; rho <= 0.1001; rho += 0.005) {
+    const mat = calcDCMatrix(LG.avgH, LG.avgA, rho);
+    let err = 0;
+    [['0-0',0,0],['1-0',1,0],['0-1',0,1],['1-1',1,1]].forEach(([k,i,j]) => { const d = mat[i][j] - obs[k]/n; err += d*d; });
+    if (err < bestErr) { bestErr = err; best = rho; }
+  }
+  return best;
+}
+// Punti attesi dagli xG match per match, con banda d'errore: sostituisce la Pitagorica
+// (l'esponente 1.7 su una win% 1/0.5/0 non e' dimensionalmente corretto nel calcio, dove i pareggi pesano molto)
+function expectedPoints(xgFor, xgAg, gf, ga) {
+  let expPts = 0, actPts = 0, varPts = 0, n = 0;
+  for (let i = 0; i < (xgFor||[]).length; i++) {
+    const lf = xgFor[i], la = xgAg[i];
+    if (lf == null || la == null || isNaN(lf) || isNaN(la) || gf[i] == null) continue;
+    let p1 = 0, pX = 0;
+    const LF = Math.max(0.05, lf), LA = Math.max(0.05, la);
+    for (let a = 0; a <= 9; a++) for (let b = 0; b <= 9; b++) { const p = poisson(a, LF) * poisson(b, LA); if (a > b) p1 += p; else if (a === b) pX += p; }
+    const ex = 3*p1 + pX, ex2 = 9*p1 + pX;
+    expPts += ex; varPts += Math.max(0, ex2 - ex*ex);
+    actPts += (gf[i] > ga[i]) ? 3 : (gf[i] === ga[i] ? 1 : 0);
+    n++;
+  }
+  if (!n) return { n: 0, msg: 'N/D', ppgAct: 0, ppgExp: 0, diff: 0, z: 0 };
+  const sd = Math.sqrt(varPts); const diff = actPts - expPts; const z = sd > 0 ? diff / sd : 0;
+  let msg = 'In linea con gli xG';
+  if (z > 2) msg = '⚠️ Overperformance significativa'; else if (z > 1) msg = 'Lieve overperformance';
+  else if (z < -2) msg = '⚠️ Underperformance significativa'; else if (z < -1) msg = 'Lieve underperformance';
+  return { n, expPts, actPts, sd, z, diff, msg, ppgAct: actPts/n, ppgExp: expPts/n };
+}
+
+const PITCH_BASE = 'https://pitchapi-proxy.salvatorepampalone-sp.workers.dev';
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function logConsole(msg) { const c = document.getElementById('console-loader'); if(c) { c.style.display = 'block'; c.innerHTML += msg + '<br>'; c.scrollTop = c.scrollHeight; } }
+async function apiCall(endpoint, silent = false) {
+  // ⚠️ COMPARATORE LITE: legge la API key dall'elemento con id="api-key". Il Lite ha lo stesso id,
+  // quindi funziona in entrambi. Non cambiare quell'id qui o nell'HTML senza aggiornare anche l'altro.
+  const key = document.getElementById('api-key').value.trim();
+  try { const res = await fetch(PITCH_BASE + endpoint, { headers: { 'X-API-KEY': key } }); if(!res.ok) { if(!silent) logConsole(`⚠️ Errore API ${res.status} per ${endpoint}.`); return null; } return await res.json();
+  } catch(e) { return null; }
+}
+
+async function caricaSquadreLega() {
+  try {
+    const cCode = document.getElementById('sel-country').value; const lId = document.getElementById('sel-league').value; const season = document.getElementById('sel-season').value;
+    if(!cCode || !lId || !season) return alert("Seleziona Paese, Lega e Stagione prima di caricare il database.");
+    document.getElementById('console-loader').innerHTML = ''; logConsole(`⏳ Costruzione Database Storico per la Lega...`); document.getElementById("btn-carica").disabled = true;
+
+    let s1, s2, s3;
+    if (season.includes('/')) { const p = season.split('/'); s1 = season; s2 = `${parseInt(p[0])-1}/${parseInt(p[1])-1}`; s3 = `${parseInt(p[0])-2}/${parseInt(p[1])-2}`; } 
+    else { s1 = season; s2 = `${parseInt(season)-1}`; s3 = `${parseInt(season)-2}`; }
+    
+    const leaguesOfCountry = LEAGUES_CATALOG.filter(l => l.country_code === cCode).map(l => l.id);
+    const EUROPEAN_LEAGUES = ['l_0bfbkO', 'l_38d9HA', 'l_2WZ2tt'];
+    let leaguesToFetch = [...new Set([...leaguesOfCountry, ...EUROPEAN_LEAGUES])];
+
+    let allMatches = [];
+    for(let lid of leaguesToFetch) {
+        for(let s of [s1, s2, s3]) {
+            let json = await apiCall(`/leagues/${lid}/matches?season=${encodeURIComponent(s)}`, true);
+            if (!json || (!json.data && !json.matches)) json = await apiCall(`/leagues/${lid}/matches?season=${encodeURIComponent(s.split('/')[0])}`, true);
+            if(json) { const m = json.data?.matches || json.matches || []; m.forEach(match => match.league_id = lid); allMatches = allMatches.concat(m); }
+        }
+    }
+    if(allMatches.length === 0) { document.getElementById("btn-carica").disabled = false; return alert("Nessun match trovato."); }
+    globalLeagueMatchesCache = allMatches;
+
+    const baseMatches = allMatches.filter(m => m.league_id === lId); const teamsMap = new Map();
+    baseMatches.forEach(m => { if(m.home_team?.id) teamsMap.set(m.home_team.id, m.home_team.name); if(m.away_team?.id) teamsMap.set(m.away_team.id, m.away_team.name); });
+    const teams = Array.from(teamsMap.entries()).map(([id, name]) => ({id, name})).sort((a,b) => a.name.localeCompare(b.name));
+    const selH = document.getElementById('sel-home'); const selA = document.getElementById('sel-away');
+    selH.innerHTML = '<option value="">-- Seleziona Casa --</option>'; selA.innerHTML = '<option value="">-- Seleziona Trasferta --</option>';
+    teams.forEach(t => { selH.add(new Option(t.name, t.id)); selA.add(new Option(t.name, t.id)); });
+
+    logConsole(`✅ Roster Pronto: Trovate ${teams.length} squadre.`); document.getElementById('matchup-builder').style.display = 'block'; document.getElementById("btn-carica").disabled = false;
+  } catch(e) { alert("Errore caricamento database: " + e.message); document.getElementById("btn-carica").disabled = false; }
+}
+
+// Ritorna null (non 0) quando il dato manca: uno 0 finto falsa medie, deviazioni standard e distanze KNN.
+function extractSafeStat(data, keys, isHome) {
+  // FIX BUG .includes(): usa match ESATTO su key o title (case-insensitive).
+  // Prima: title.toLowerCase().includes(k) causava che 'shots' matchasse 'shots on target'.
+  if(!Array.isArray(keys)) keys = [keys];
+  if(!data || !data.periods) return null;
+  const all = data.periods.find(p => p.period === 'All'); if(!all || !all.groups) return null;
+  for(let k of keys) {                       // le chiavi si scorrono in ordine di PREFERENZA, non i gruppi
+    const kLow = k.toLowerCase();
+    for(let g of all.groups) {
+      const item = (g.items||[]).find(i => i.key === k || (i.title && i.title.toLowerCase() === kLow));
+      if(item) {
+        const v = isHome ? item.home : item.away;
+        if(v === undefined || v === null) return null;
+        const num = parseFloat(String(v).replace(',', '.').split(' ')[0]);
+        return isNaN(num) ? null : num;
+      }
+    }
+  }
+  return null;
+}
+// una sola chiamata API per match, condivisa fra le due squadre (gli scontri diretti non si scaricano due volte)
+let RAW_CACHE = {};
+async function fetchMatchRaw(id) {
+  if (RAW_CACHE[id]) return RAW_CACHE[id];
+  const res = await Promise.all([ apiCall(`/matches/${id}/stats`, true), apiCall(`/matches/${id}/lineups`, true), apiCall(`/matches/${id}/advanced`, true), apiCall(`/matches/${id}/events`, true) ]);
+  RAW_CACHE[id] = res; await sleep(180);
+  return res;
+}
+
+async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) {
+  logConsole(`Filtro lo storico per ${teamName}...`);
+  logConsole("    -> Limite richiesto: " + limit + " partite complessive");
+  const targetTimeMs = new Date(matchTimeStr).getTime(); const minTimeMs = targetTimeMs - (500 * 24 * 60 * 60 * 1000); 
+
+  let past = globalLeagueMatchesCache.filter(m => {
+    if(m.status !== 'finished') return false; if(m.home_team.id !== teamId && m.away_team.id !== teamId) return false;
+    if(!m.time_utc) return false; const t = new Date(m.time_utc).getTime(); return t < targetTimeMs && t > minTimeMs; 
+  });
+  const uniqueIdsSet = new Set(); past = past.filter(m => { if(!uniqueIdsSet.has(m.id)) { uniqueIdsSet.add(m.id); return true; } return false; });
+  past.sort((a,b) => new Date(b.time_utc) - new Date(a.time_utc));
+  
+  // Rispetta ESATTAMENTE il limite selezionato dall'utente.
+  // overallMatches = ultime N partite. roleMatches = quelle FRA queste che sono nel ruolo.
+  // Cosi' se scegli 30, il totale unique e' 30 (mai di piu').
+  // Il ruolo puo' essere meno di 30 perche' e' un subset (partite in casa/trasferta tra le 30).
+  let overallMatches = past.slice(0, limit);
+  let roleMatches = overallMatches.filter(m => (m.home_team.id === teamId) === isHomeTeamUI);
+  const roleLimit = roleMatches.length;   // il ruolo e' quello che c'e' dentro le "limit" scelte
+  logConsole("    -> Effettive: " + overallMatches.length + " complessive, di cui " + roleMatches.length + " in " + (isHomeTeamUI ? "casa" : "trasferta"));
+  const fetchSet = []; const fseen = new Set();
+  [...overallMatches, ...roleMatches].forEach(m => { if(!fseen.has(m.id)) { fseen.add(m.id); fetchSet.push(m); } });
+  let matchDetails = {};
+
+  for(let i=0; i<fetchSet.length; i++) {
+    const m = fetchSet[i]; const isH = m.home_team.id === teamId;
+    logConsole(`[${teamName}] Fetch Dati (Adv & Eventi): ${i+1}/${fetchSet.length}...`);
+    const [statsRes, lineupsRes, advRes, eventsRes] = await fetchMatchRaw(m.id);
+    
+    const d = statsRes ? (statsRes.data || statsRes) : null;
+    const gf = isH ? (m.score_home||0) : (m.score_away||0); const ga = isH ? (m.score_away||0) : (m.score_home||0);
+    const avv = isH ? m.away_team.name : m.home_team.name; const dateStrUtc = m.time_utc; const dateShort = m.time_utc ? m.time_utc.substring(5,10) : '-';
+    
+    let modulo = 'N/D', oppModulo = 'N/D';
+    if (lineupsRes && lineupsRes.data) { modulo = lineupsRes.data[isH ? 'home' : 'away']?.formation || 'N/D'; oppModulo = lineupsRes.data[isH ? 'away' : 'home']?.formation || 'N/D'; }
+
+    let ppda=null, field_tilt=null, direct_speed=null, pass_acc=null, ht=null, seq_time=null, pps=null, build_att=null, dir_att=null, avg_x=null, f3_entries=null, box_entries=null, tch_box=null, centr=null;
+    let avg_def_x=null, cp_regains=null, rec_time=null, npxg=null, xg_op=null, xg_sp=null, xgot=null, bc=null, bcm=null, xg_shot=null;
+    let cross=null, drib=null, thru=null, aer=null, misc=null, disp=null;
+    let opp_ppda=null, opp_field_tilt=null, opp_direct_speed=null, opp_seq_time=null, opp_avg_x=null, opp_avg_def_x=null, opp_cp_regains=null, opp_rec_time=null;
+
+    let advHasMe = false;
+    if (advRes && advRes.data && advRes.data.teams) {
+        const myAdv = advRes.data.teams.find(t => t.team.id === teamId); const oppAdv = advRes.data.teams.find(t => t.team.id !== teamId);
+        advHasMe = !!myAdv;
+        if (myAdv) { 
+          ppda = myAdv.defending?.ppda; field_tilt = myAdv.territory?.field_tilt; direct_speed = myAdv.tempo?.direct_speed; pass_acc = myAdv.passing?.pass_accuracy; 
+          ht = myAdv.defending?.high_turnovers; seq_time = myAdv.tempo?.sequence_time; pps = myAdv.passing?.passes_per_sequence || myAdv.tempo?.passes_per_sequence;
+          build_att = myAdv.creation?.buildup_attacks || myAdv.attacking?.buildup_attacks; dir_att = myAdv.creation?.direct_attacks || myAdv.attacking?.direct_attacks;
+          centr = myAdv.passing?.centralization || myAdv.network?.centralization; avg_x = myAdv.territory?.avg_action_x || myAdv.positioning?.avg_action_x;
+          f3_entries = myAdv.territory?.final_third_entries || myAdv.attacking?.final_third_entries; box_entries = myAdv.territory?.box_entries || myAdv.attacking?.box_entries;
+          tch_box = myAdv.attacking?.touches_in_opp_box ?? myAdv.attacking?.touches_opp_box ?? myAdv.territory?.touches_in_opp_box ?? myAdv.territory?.touches_opp_box ?? null;
+          avg_def_x = myAdv.defending?.avg_defensive_action_x ?? myAdv.positioning?.avg_defensive_action_x ?? null;
+          cp_regains = myAdv.defending?.counterpress_regains_5s ?? myAdv.pressing?.counterpress_regains_5s ?? null; rec_time = myAdv.defending?.ball_recovery_time ?? myAdv.tempo?.ball_recovery_time ?? null;
+          npxg = myAdv.creation?.npxg ?? myAdv.attacking?.npxg ?? null; xg_op = myAdv.creation?.expected_goals_open_play ?? myAdv.attacking?.expected_goals_open_play ?? null;
+          xg_sp = myAdv.creation?.expected_goals_set_play ?? myAdv.attacking?.expected_goals_set_play ?? null; xgot = myAdv.creation?.expected_goals_on_target ?? myAdv.attacking?.expected_goals_on_target ?? null;
+          bc = myAdv.creation?.big_chances ?? myAdv.attacking?.big_chances ?? null; bcm = myAdv.creation?.big_chances_missed ?? myAdv.attacking?.big_chances_missed ?? null;
+          xg_shot = myAdv.creation?.xg_per_shot ?? myAdv.attacking?.xg_per_shot ?? null;
+          cross = myAdv.passing?.crosses ?? myAdv.attacking?.crosses ?? null;
+          // PitchAPI: drib/misc/disp sono in carrying (documentazione ufficiale)
+          drib = myAdv.carrying?.take_ons_won ?? myAdv.attacking?.take_ons_won ?? myAdv.possession?.take_ons_won ?? null;
+          thru = myAdv.passing?.through_balls ?? myAdv.creation?.through_balls ?? null; aer = myAdv.defending?.aerials_won ?? myAdv.duels?.aerials_won ?? null;
+          misc = myAdv.carrying?.miscontrols ?? myAdv.possession?.miscontrols ?? myAdv.attacking?.miscontrols ?? null;
+          disp = myAdv.carrying?.dispossessed ?? myAdv.possession?.dispossessed ?? myAdv.attacking?.dispossessed ?? null;
+        }
+        if (oppAdv) { 
+          opp_ppda = oppAdv.defending?.ppda; opp_field_tilt = oppAdv.territory?.field_tilt; opp_direct_speed = oppAdv.tempo?.direct_speed; 
+          opp_seq_time = oppAdv.tempo?.sequence_time; opp_avg_x = oppAdv.territory?.avg_action_x || oppAdv.positioning?.avg_action_x;
+          opp_avg_def_x = oppAdv.defending?.avg_defensive_action_x ?? oppAdv.positioning?.avg_defensive_action_x ?? null;
+          opp_cp_regains = oppAdv.defending?.counterpress_regains_5s ?? oppAdv.pressing?.counterpress_regains_5s ?? null;
+          opp_rec_time = oppAdv.defending?.ball_recovery_time ?? oppAdv.tempo?.ball_recovery_time ?? null;
+        }
+    }
+
+    let base_xg = extractSafeStat(d, 'expected_goals', isH);
+    if (tch_box === null && d) tch_box = extractSafeStat(d, ['touches_in_opp_box', 'touches_opp_box', 'touchesinoppbox'], isH);
+    if (npxg === null && d) { let fall = extractSafeStat(d, ['npxg', 'non_penalty_xg', 'expected_goals_non_penalty'], isH); npxg = fall !== null ? fall : base_xg; }
+    if (xgot === null && d) xgot = extractSafeStat(d, ['expected_goals_on_target', 'xgot', 'xg_on_target'], isH);
+    
+    // BLINDATURA ESTRAZIONI V9.4
+    if (d) {
+        const allP = d.periods?.find(p => p.period === 'All');
+        if (allP) {
+            let foundTotalShots = 0;
+            allP.groups.forEach(g => g.items.forEach(i => {
+                const k = (i.key || '').toLowerCase(); const t = (i.title || '').toLowerCase();
+                // Assicuriamoci di non pescare "big_chances_missed" mentre cerchiamo "big_chances"
+                if ((k === 'bigchances' || k === 'big_chances' || t === 'big chances' || t === 'big chances created') && bc === null) {
+                    bc = parseFloat(String(isH ? i.home : i.away).split(' ')[0]) || 0;
+                }
+                if ((k === 'bigchancesmissed' || k === 'big_chances_missed' || t === 'big chances missed') && bcm === null) {
+                    bcm = parseFloat(String(isH ? i.home : i.away).split(' ')[0]) || 0;
+                }
+                if ((k === 'totalshots' || k === 'shots' || t === 'total shots' || t === 'tiri totali' || t === 'tiri') && t !== 'shots on target' && t !== 'shots off target') {
+                    foundTotalShots = parseFloat(String(isH ? i.home : i.away).split(' ')[0]) || 0;
+                }
+                // PitchAPI: chiave ufficiale 'expected_goals_set_play' in group 'Expected goals (xG)'
+                if ((k === 'expected_goals_set_play' || k === 'expected_goals_set_piece' || k.includes('set_play') || k.includes('set_piece') || t.includes('set play') || t.includes('set piece')) && xg_sp === null) {
+                    xg_sp = parseFloat(String(isH ? i.home : i.away).split(' ')[0]) || 0;
+                }
+            }));
+            if ((xg_shot === null || xg_shot === 0) && foundTotalShots > 0 && base_xg > 0) xg_shot = base_xg / foundTotalShots;
+        }
+    }
+    // ===================== POLITICA DEI VALORI MANCANTI (v9.6) =====================
+    // Molte API sportive OMETTONO la chiave quando il valore e' zero: se una squadra non crea
+    // Big Chances, "big_chances" non compare affatto. Per i CONTEGGI, quindi, chiave assente = 0.
+    // Ma questo vale solo se la risposta e' effettivamente arrivata, e solo per i conteggi:
+    // per rapporti, percentuali, distanze e xG uno 0 e' fisicamente impossibile (nessuna squadra
+    // ha 0% di possesso o un baricentro a 0 metri), quindi assente = dato non disponibile.
+    // Confondere i due casi e' il modo piu' rapido per avere lambda falsati.
+    const statsOk = !!(d && d.periods && d.periods.some(p => p.period === 'All'));
+    // non basta che la risposta esista: serve che contenga proprio QUESTA squadra,
+    // altrimenti si zero-fillerebbero conteggi su un payload che non la riguarda
+    const advOk   = advHasMe;
+    const anyOk   = statsOk || advOk;
+    const isNil = v => (v === null || v === undefined || (typeof v === 'number' && isNaN(v)));
+    const zeroIf = (v, ok) => isNil(v) ? (ok ? 0 : null) : v;   // CONTEGGIO: assente ma risposta ok => 0
+    const keepNull = v => isNil(v) ? null : v;                  // RAPPORTO/DISTANZA/xG: assente => sconosciuto
+
+    // Si fotografa quali chiavi erano REALMENTE presenti prima dello zero-fill:
+    // senza questo, la diagnostica di copertura mostrerebbe sempre 100% sui conteggi.
+    const _rawSnap = { bc, bcm, xg_sp, xgot, cross, drib, thru, aer, misc, disp, f3_entries, tch_box, cp_regains };
+    const rawPresent = {}; Object.keys(_rawSnap).forEach(k => rawPresent[k] = !isNil(_rawSnap[k]));
+
+    // CONTEGGI: possono valere davvero zero
+    bc = zeroIf(bc, anyOk); bcm = zeroIf(bcm, anyOk); xg_sp = zeroIf(xg_sp, anyOk);
+    xgot = zeroIf(xgot, anyOk);                       // 0 tiri in porta => 0 xGOT: e' un valore legittimo
+    cross = zeroIf(cross, anyOk); drib = zeroIf(drib, anyOk); thru = zeroIf(thru, anyOk); aer = zeroIf(aer, anyOk);
+    misc = zeroIf(misc, anyOk); disp = zeroIf(disp, anyOk);
+    f3_entries = zeroIf(f3_entries, advOk); tch_box = zeroIf(tch_box, anyOk); cp_regains = zeroIf(cp_regains, advOk);
+    opp_cp_regains = zeroIf(opp_cp_regains, advOk);
+
+    // RAPPORTI / PERCENTUALI / DISTANZE / xG: zero impossibile, quindi restano null
+    ppda = keepNull(ppda); field_tilt = keepNull(field_tilt); direct_speed = keepNull(direct_speed);
+    seq_time = keepNull(seq_time); avg_x = keepNull(avg_x); avg_def_x = keepNull(avg_def_x);
+    rec_time = keepNull(rec_time); npxg = keepNull(npxg); xg_shot = keepNull(xg_shot);
+    opp_ppda = keepNull(opp_ppda); opp_field_tilt = keepNull(opp_field_tilt); opp_direct_speed = keepNull(opp_direct_speed);
+    opp_seq_time = keepNull(opp_seq_time); opp_avg_x = keepNull(opp_avg_x); opp_avg_def_x = keepNull(opp_avg_def_x);
+    opp_rec_time = keepNull(opp_rec_time);
+    
+    // Fallback finale per xg_sp/xg_op via advanced se non trovati in /stats
+    if (xg_sp === null && advRes?.data?.teams) {
+      const myA = advRes.data.teams.find(t => t.team.id === teamId);
+      if (myA) {
+        xg_sp = myA.shooting?.xg_set_play ?? myA.creation?.xg_set_play ?? null;
+      }
+    }
+    if (cross === null && d) cross = extractSafeStat(d, ['crosses', 'cross'], isH);
+    if (drib === null && d) drib = extractSafeStat(d, ['take_ons_won', 'successful_dribbles', 'dribbling'], isH);
+    if (thru === null && d) thru = extractSafeStat(d, ['through_balls', 'filtranti'], isH);
+    if (aer === null && d) aer = extractSafeStat(d, ['aerials_won', 'aerial_duels_won', 'duelli aerei'], isH);
+    if (misc === null && d) misc = extractSafeStat(d, ['miscontrols', 'bad_controls', 'errori'], isH);
+    if (disp === null && d) disp = extractSafeStat(d, ['dispossessed', 'perse'], isH);
+
+    let red_cards = 0; let goal_timings_scored = []; let goal_timings_conceded = []; let scorers = [];
+    if(eventsRes) {
+        const evs = eventsRes.data?.events || eventsRes.events || eventsRes.data || [];
+        evs.forEach(ev => {
+            if(ev.event_type && ev.event_type.toLowerCase() === 'goal') {
+                if (ev.team_id === teamId) { if (!ev.is_own_goal) { goal_timings_scored.push(ev.minute); if(ev.player && ev.player.name) scorers.push(ev.player.name); } else goal_timings_conceded.push(ev.minute); } 
+                else { if (!ev.is_own_goal) goal_timings_conceded.push(ev.minute); else goal_timings_scored.push(ev.minute); }
+            }
+            if(ev.event_type && ev.event_type.toLowerCase() === 'redcard' && ev.team_id === teamId) red_cards++;
+        });
+    }
+
+    matchDetails[m.id] = {
+      gf, ga, avv, dateStrUtc, dateShort, modulo, oppModulo, isH,
+      // xG e possesso: mai zero-fillati. Uno 0 qui non e' "non ha creato nulla", e' "il provider non copre la metrica".
+      xg: keepNull(base_xg), xga: keepNull(extractSafeStat(d, 'expected_goals', !isH)),
+      npxga: keepNull(extractSafeStat(d, ['npxg', 'non_penalty_xg', 'expected_goals_non_penalty'], !isH)),
+      poss: keepNull(extractSafeStat(d, ['BallPossesion', 'ball_possession', 'ballpossession', 'possession', 'ballPossession'], isH)),
+      // conteggi: zero legittimo quando la risposta e' arrivata ma la chiave manca
+      sot: zeroIf(extractSafeStat(d, 'ShotsOnTarget', isH), statsOk), sot_ag: zeroIf(extractSafeStat(d, 'ShotsOnTarget', !isH), statsOk),
+      cor: zeroIf(extractSafeStat(d, 'corners', isH), statsOk), cor_ag: zeroIf(extractSafeStat(d, 'corners', !isH), statsOk),
+      yel: zeroIf(extractSafeStat(d, ['yellow_cards', 'yellowcards', 'gialli'], isH), statsOk), yel_ag: zeroIf(extractSafeStat(d, ['yellow_cards', 'yellowcards', 'gialli'], !isH), statsOk),
+      fouls: zeroIf(extractSafeStat(d, ['fouls', 'falli'], isH), statsOk), fouls_ag: zeroIf(extractSafeStat(d, ['fouls', 'falli'], !isH), statsOk),
+      ppda, field_tilt, direct_speed, seq_time, avg_x, f3_entries, tch_box, avg_def_x, cp_regains, rec_time, npxg, xg_sp, xgot, bc, bcm, xg_shot, cross, drib, thru, aer, misc, disp,
+      opp_ppda, opp_field_tilt, opp_direct_speed, opp_seq_time, opp_avg_x, opp_avg_def_x, opp_cp_regains, opp_rec_time,
+      red_cards, goal_timings_scored, goal_timings_conceded, scorers, rawPresent
+    };
+  }
+
+  function buildStats(matchList) {
+    let out = { n: matchList.length, vals: { gf:[], ga:[], xg:[], xga:[], npxg:[], npxga:[], sot:[], sot_ag:[], cor:[], cor_ag:[], yel:[], yel_ag:[], fouls:[], fouls_ag:[], poss:[], moduli:[], 
+      ppda:[], field_tilt:[], direct_speed:[], seq_time:[], avg_x:[], f3_entries:[], tch_box:[], avg_def_x:[], cp_regains:[], rec_time:[], xg_sp:[], xgot:[], bc:[], bcm:[], xg_shot:[], cross:[], drib:[], thru:[], aer:[], misc:[], disp:[],
+      opp_ppda:[], opp_field_tilt:[], opp_direct_speed:[], opp_seq_time:[], opp_avg_x:[], opp_avg_def_x:[], opp_cp_regains:[], opp_rec_time:[], red_cards:[], dates:[] },
+      matchInfo: [], streak: [], historyForElo: [], all_timings_scored: [], all_timings_conceded: [], all_scorers: [], win_pts: 0 };
+
+    for(let i=0; i<matchList.length; i++) {
+      let det = matchDetails[matchList[i].id]; if(!det) continue; 
+      let res = 'P'; let pts = 1; if (det.gf > det.ga) { res = 'V'; pts = 3; } else if (det.gf < det.ga) { res = 'S'; pts = 0; }
+      out.win_pts += (pts === 3 ? 1 : (pts === 1 ? 0.5 : 0)); if (out.streak.length < 5) out.streak.push(res); out.historyForElo.unshift({ g: det.gf, ga: det.ga }); 
+      
+      out.vals.gf.push(det.gf); out.vals.ga.push(det.ga); out.vals.xg.push(det.xg); out.vals.xga.push(det.xga);
+      let safe_npxg = (det.npxg != null && det.npxg > 0) ? det.npxg : det.xg; let safe_npxga = (det.npxga != null && det.npxga > 0) ? det.npxga : det.xga;
+      out.vals.npxg.push(safe_npxg); out.vals.npxga.push(safe_npxga); out.vals.sot.push(det.sot); out.vals.sot_ag.push(det.sot_ag); out.vals.cor.push(det.cor); out.vals.cor_ag.push(det.cor_ag);
+      out.vals.yel.push(det.yel); out.vals.yel_ag.push(det.yel_ag); out.vals.fouls.push(det.fouls); out.vals.fouls_ag.push(det.fouls_ag); out.vals.poss.push(det.poss); out.vals.moduli.push(det.modulo);
+      out.vals.red_cards.push(det.red_cards); out.vals.dates.push(det.dateStrUtc);
+      
+      // I metrici opzionali si inseriscono SEMPRE, anche come null: nella v9.4 venivano inseriti solo se
+      // presenti, quindi vals.ppda[3] non era il PPDA del quarto match e il decay lo accoppiava alla data sbagliata.
+      const OPT = ['ppda','field_tilt','direct_speed','seq_time','avg_x','f3_entries','tch_box','avg_def_x','cp_regains','rec_time','xg_sp','xgot','bc','bcm','xg_shot','cross','drib','thru','aer','misc','disp','opp_ppda','opp_field_tilt','opp_direct_speed','opp_seq_time','opp_avg_x','opp_avg_def_x','opp_cp_regains','opp_rec_time'];
+      OPT.forEach(kk => { const v = det[kk]; out.vals[kk].push((v === undefined || v === null || isNaN(v)) ? null : v); });
+
+      out.all_timings_scored = out.all_timings_scored.concat(det.goal_timings_scored); out.all_timings_conceded = out.all_timings_conceded.concat(det.goal_timings_conceded); out.all_scorers = out.all_scorers.concat(det.scorers);
+      out.matchInfo.push({ date: det.dateShort, oppName: det.avv, isHome: det.isH, gf: det.gf, ga: det.ga, oppModulo: det.oppModulo });
+    }
+
+    out.features = {
+      gf: calcFeatures(out.vals.gf, out.vals.dates, targetTimeMs), ga: calcFeatures(out.vals.ga, out.vals.dates, targetTimeMs),
+      xg: calcFeatures(out.vals.xg, out.vals.dates, targetTimeMs), xga: calcFeatures(out.vals.xga, out.vals.dates, targetTimeMs),
+      npxg: calcFeatures(out.vals.npxg, out.vals.dates, targetTimeMs), npxga: calcFeatures(out.vals.npxga, out.vals.dates, targetTimeMs),
+      sot: calcFeatures(out.vals.sot, out.vals.dates, targetTimeMs), sot_ag: calcFeatures(out.vals.sot_ag, out.vals.dates, targetTimeMs),
+      cor: calcFeatures(out.vals.cor, out.vals.dates, targetTimeMs), cor_ag: calcFeatures(out.vals.cor_ag, out.vals.dates, targetTimeMs),
+      yel: calcFeatures(out.vals.yel, out.vals.dates, targetTimeMs), yel_ag: calcFeatures(out.vals.yel_ag, out.vals.dates, targetTimeMs),
+      fouls: calcFeatures(out.vals.fouls, out.vals.dates, targetTimeMs), fouls_ag: calcFeatures(out.vals.fouls_ag, out.vals.dates, targetTimeMs),
+      poss: calcFeatures(out.vals.poss, out.vals.dates, targetTimeMs), modulo_main: getMostFrequentWithPct(out.vals.moduli),
+      ppda: calcFeatures(out.vals.ppda, out.vals.dates, targetTimeMs), field_tilt: calcFeatures(out.vals.field_tilt, out.vals.dates, targetTimeMs),
+      direct_speed: calcFeatures(out.vals.direct_speed, out.vals.dates, targetTimeMs), red_cards: calcFeatures(out.vals.red_cards, out.vals.dates, targetTimeMs)
+    };
+    out.n = out.vals.gf.length;   // numero REALE di match con dati (prima era la lunghezza della lista richiesta)
+    // Copertura: in quante partite l'API ha davvero restituito la metrica.
+    // 0% = il provider non la fornisce affatto: va mostrata come N/D, non come zero.
+    out.coverage = {}; Object.keys(out.vals).forEach(k => { const a = out.vals[k]; if(Array.isArray(a)) out.coverage[k] = out.n ? _nValid(a) / out.n : 0; });
+    // per i conteggi si usa la presenza reale della chiave, non il valore dopo lo zero-fill
+    const rawCount = {};
+    for(let i=0; i<matchList.length; i++) { const det = matchDetails[matchList[i].id]; if(!det || !det.rawPresent) continue; Object.keys(det.rawPresent).forEach(k => { rawCount[k] = (rawCount[k]||0) + (det.rawPresent[k] ? 1 : 0); }); }
+    out.rawCoverage = {}; Object.keys(rawCount).forEach(k => { out.rawCoverage[k] = out.n ? rawCount[k] / out.n : 0; out.coverage[k] = out.rawCoverage[k]; });
+    out.win_rate = out.n > 0 ? (out.win_pts / out.n) : 0;
+    out.efficienza = out.features.xg.avg_tot > 0 ? (out.features.gf.avg_tot / out.features.xg.avg_tot) : 1;
+    return out;
+  }
+
+  const outOverall = buildStats(overallMatches); const outRole = buildStats(roleMatches);
+  let logHtml = `<tr><th colspan="7" style="background:${isHomeTeamUI?'#e3f2fd':'#ffebee'};color:#333;font-size:12px">${teamName} (Gen: ${outOverall.n} match | Ruolo: ${outRole.n} match)</th></tr><tr><th>Data</th><th>Match</th><th>Esito</th><th>Gol</th><th>NPxG</th><th>Modulo Avv.</th></tr>`;
+  overallMatches.forEach(m => {
+    let det = matchDetails[m.id]; if(!det) return;
+    const esito = det.gf > det.ga ? '<span class="badge bg-v">V</span>' : (det.gf < det.ga ? '<span class="badge bg-s">S</span>' : '<span class="badge bg-p">P</span>');
+    let safeN = (det.npxg != null ? det.npxg : det.xg);
+    logHtml += `<tr><td>${det.dateShort}</td><td>${det.isH ? 'vs' : '@'} ${det.avv.substring(0,12)}</td><td>${esito}</td><td><b>${det.gf}-${det.ga}</b></td><td style="color:#555">${safeN != null ? safeN.toFixed(1) : '-'}</td><td>${det.oppModulo}</td></tr>`;
+  });
+  return { overall: outOverall, role: outRole, logHtml, teamName, isHomeTeamUI };
+}
+
+// ====== KNN TATTICO ======
+// Correzioni rispetto alla v9.4:
+// 1) il profilo dell'avversario si costruisce sul SUO ruolo (casa/trasferta), non sul generale
+// 2) le dimensioni realmente usate sono 11 (non 14) e sono pesate
+// 3) niente k fisso a 4: kernel gaussiano su tutti i match, con decay temporale e numerosita' efficace
+// 4) i valori mancanti vengono ESCLUSI dalla distanza, non sostituiti da un default che falsa il confronto
+function _shrunkMean(roleArr, overallArr, fallback, k = 5) {
+  const nr = _nValid(roleArr); const mr = _mean(roleArr), mo = _mean(overallArr);
+  if (!nr && !mo) return fallback;
+  if (!nr) return mo || fallback;
+  if (!mo) return mr;
+  return (nr * mr + k * mo) / (nr + k);
+}
+const KNN_DIMS = [
+  // === CORE OFFENSIVO/DIFENSIVO (peso alto) ===
+  { own: 'npxga',            opp: 'npxg',          w: 1.5, def: 1.2 },     // difesa mia vs attacco avv
+  { own: 'npxg',             opp: 'npxga',         w: 1.5, def: 1.2 },     // attacco mio vs difesa avv
+  { own: 'opp_field_tilt',   opp: 'field_tilt',    w: 1.2, def: 50.0 },    // territorialità avversaria
+  { own: 'opp_avg_def_x',    opp: 'avg_def_x',     w: 1.2, def: 40.0 },    // altezza linea difensiva avv
+
+  // === MEDIO (contesto tattico) ===
+  { own: 'poss',             opp: 'poss',          w: 1.0, def: 50.0, invert: true },  // possesso complementare
+  { own: 'opp_ppda',         opp: 'ppda',          w: 1.0, def: 12.0 },    // pressing avversario
+
+  // === NUOVE (grazie ai fix su chiavi PitchAPI ora disponibili) ===
+  { own: 'tch_box',          opp: 'tch_box',       w: 1.1, def: 20.0 },    // penetrazione area (nostra vs affrontate)
+  { own: 'f3_entries',       opp: 'f3_entries',    w: 0.9, def: 40.0 },    // ingressi trequarti
+  { own: 'cp_regains',       opp: 'cp_regains',    w: 0.7, def: 8.0 },     // riconquiste alte
+  
+  // === POSIZIONALE ===
+  { own: 'opp_seq_time',     opp: 'seq_time',      w: 0.6, def: 10.0 },    // durata sequenze avversarie
+  { own: 'opp_avg_x',        opp: 'avg_x',         w: 0.8, def: 45.0 }     // baricentro avversario
+  // RIMOSSE dalla v9.6:
+  // - sot_ag/sot (ridondante con npxga/npxg)
+  // - opp_direct_speed (correla con opp_seq_time)
+];
+function getSimilarMatches(teamDataRole, oppTeam, targetTimeMs) {
+  const empty = { topMatches: [], avg_xg: 0, avg_xga: 0, pts_per_game: 0, nEff: 0, targetInfo: {} };
+  if (!teamDataRole || !teamDataRole.n || !oppTeam) return empty;
+
+  const target = {};
+  KNN_DIMS.forEach(d => {
+    const ro = oppTeam.role && oppTeam.role.vals ? oppTeam.role.vals[d.opp] : null;
+    const ov = oppTeam.overall && oppTeam.overall.vals ? oppTeam.overall.vals[d.opp] : null;
+    target[d.opp] = _shrunkMean(ro, ov, d.def);
+  });
+
+  const sd = {};
+  KNN_DIMS.forEach(d => {
+    let arr = teamDataRole.vals[d.own] || [];
+    if (d.invert) arr = arr.map(v => (v == null || isNaN(v)) ? null : 100 - v);
+    sd[d.own] = Math.max(1e-3, _stddev(arr));
+  });
+
+  const rows = [];
+  for (let i = 0; i < teamDataRole.n; i++) {
+    let wSum = 0, dSum = 0; const snap = {};
+    KNN_DIMS.forEach(d => {
+      let v = teamDataRole.vals[d.own] ? teamDataRole.vals[d.own][i] : null;
+      if (v == null || isNaN(v)) return;
+      if (d.invert) v = 100 - v;
+      snap[d.opp] = v;
+      const z = (v - target[d.opp]) / sd[d.own];
+      dSum += d.w * z * z; wSum += d.w;
+    });
+    if (wSum <= 0) continue;
+    rows.push({ index: i, dist: Math.sqrt(dSum / wSum), dimsW: wSum, snap, info: teamDataRole.matchInfo[i] });
+  }
+  if (!rows.length) return empty;
+
+  const sortedD = rows.map(r => r.dist).slice().sort((a, b) => a - b);
+  const h = Math.max(0.35, sortedD[Math.floor(sortedD.length / 2)]);
+  const dates = teamDataRole.vals.dates || []; const xiDay = Math.LN2 / 106;
+
+  let sw = 0, sw2 = 0, sXg = 0, sXga = 0, sPts = 0;
+  rows.forEach(r => {
+    const xg = teamDataRole.vals.npxg[r.index], xga = teamDataRole.vals.npxga[r.index];
+    if (xg == null || xga == null || isNaN(xg) || isNaN(xga)) { r.w = 0; return; }
+    let w = Math.exp(-0.5 * Math.pow(r.dist / h, 2));
+    const dt = dates[r.index] ? (targetTimeMs - new Date(dates[r.index]).getTime()) / 86400000 : 0;
+    if (dt > 0) w *= Math.exp(-xiDay * dt);
+    const gf = teamDataRole.vals.gf[r.index], ga = teamDataRole.vals.ga[r.index];
+    r.w = w; sw += w; sw2 += w * w; sXg += w * xg; sXga += w * xga;
+    sPts += w * (gf > ga ? 3 : (gf === ga ? 1 : 0));
+  });
+  if (sw <= 0) return empty;
+
+  rows.sort((a, b) => a.dist - b.dist);
+  const topMatches = rows.slice(0, 4).map(r => ({
+    index: r.index, dist: r.dist, info: r.info, weight: r.w || 0,
+    oppPoss: r.snap.poss ?? 50, oppXG: r.snap.npxg ?? 0, oppXGA: r.snap.npxga ?? 0,
+    oppSoT: r.snap.sot ?? 0, oppPPDA: r.snap.ppda ?? 0, oppTilt: r.snap.field_tilt ?? 0,
+    oppDS: r.snap.direct_speed ?? 0, oppAvgX: r.snap.avg_x ?? 0, oppDefX: r.snap.avg_def_x ?? 0
+  }));
+  return { topMatches, targetInfo: target, avg_xg: sXg / sw, avg_xga: sXga / sw, pts_per_game: sPts / sw, nEff: (sw * sw) / sw2, bandwidth: h };
+}
+
+function getStatsVsFormation(teamData, targetForm, isRole) {
+  if(!targetForm || targetForm === 'N/D') return null; const team = isRole ? teamData.role : teamData.overall; if (!team || !team.n) return null;
+  let pts=0, gf=0, ga=0, xg=0, xga=0, count=0; const cleanForm = targetForm.split(' ')[0];
+  for(let i=0; i<team.n; i++) {
+    const info = team.matchInfo[i]; if(!info) continue;
+    if(info.oppModulo && info.oppModulo.includes(cleanForm)) { count++; gf += team.vals.gf[i]||0; ga += team.vals.ga[i]||0; xg += team.vals.xg[i]||0; xga += team.vals.xga[i]||0; if(team.vals.gf[i] > team.vals.ga[i]) pts+=3; else if(team.vals.gf[i] === team.vals.ga[i]) pts+=1; }
+  }
+  if(count===0) return null; return { count, pts: pts/count, gf: gf/count, ga: ga/count, xg: xg/count, xga: xga/count };
+}
+
+function bucketTimings(timings) {
+  let b = { '1-15':0, '16-30':0, '31-45':0, '46-60':0, '61-75':0, '76-90+':0 };
+  timings.forEach(m => { if(m<=15) b['1-15']++; else if(m<=30) b['16-30']++; else if(m<=45) b['31-45']++; else if(m<=60) b['46-60']++; else if(m<=75) b['61-75']++; else b['76-90+']++; });
+  return b;
+}
+
+// ==========================================
+// ESECUZIONE MAIN E RENDER
+// ==========================================
+async function avviaScanner() {
+  try {
+    const selH = document.getElementById('sel-home'); const selA = document.getElementById('sel-away');
+    if(!selH.value || !selA.value) return alert("Seleziona sia la squadra in casa che quella in trasferta dai menu a tendina.");
+    if(selH.value === selA.value) return alert("Non puoi far sfidare la squadra contro se stessa!");
+
+    const hId = selH.value; const hName = selH.options[selH.selectedIndex].text; const aId = selA.value; const aName = selA.options[selA.selectedIndex].text;
+    const limit = parseInt(document.getElementById('history-limit').value) || 15; const dateInput = document.getElementById('target-date').value; const matchTime = dateInput + "T23:59:00Z"; 
+
+    document.getElementById('console-loader').innerHTML = ''; document.getElementById('console-loader').style.display = 'block'; document.getElementById('btn-avvia').disabled = true; document.getElementById('btn-avvia').innerHTML = "⏳ Simulazione in corso (Attendi)...";
+
+    const dH = await aggregaTeam(matchTime, hId, hName, limit, true); const dA = await aggregaTeam(matchTime, aId, aName, limit, false);
+    document.getElementById('console-loader').style.display = 'none'; document.getElementById('btn-avvia').disabled = false; document.getElementById('btn-avvia').innerHTML = "🚀 ESTRAI STORICO E SIMULA";
+    if(dH.overall.n === 0 || dA.overall.n === 0) return alert("Storico insufficiente per una delle due squadre prima della data target.");
+
+    // ============ ELO DI LEGA (ordine cronologico corretto, scala comune) ============
+    const lId = document.getElementById('sel-league').value;   // serve per i parametri di lega
+    const targetMs = new Date(matchTime).getTime();
+    const ELO = buildGlobalElo(targetMs);
+    const eloSeriesH = ELO.series[hId] || []; const eloSeriesA = ELO.series[aId] || [];
+    const eloH_ov = Math.round(ELO.table[hId] ?? 1500); const eloA_ov = Math.round(ELO.table[aId] ?? 1500);
+    const calcTrend = (series) => { if(series.length < 10) return 0; return _mean(series.slice(0,5)) - _mean(series.slice(5,15)); };
+    const trendH = calcTrend(eloSeriesH); const trendA = calcTrend(eloSeriesA);
+    // il time-decay sugli xG cattura gia' gran parte della forma: qui resta solo una correzione residua max +/-8%
+    const penH = Math.max(-0.08, Math.min(0.08, trendH / 1200)); const penA = Math.max(-0.08, Math.min(0.08, trendA / 1200));
+
+    // ============ PARAMETRI DI LEGA: vantaggio campo e rho stimati dai dati ============
+    const LG = computeLeagueParams(lId, targetMs); const RHO = estimateRho(lId, targetMs, LG);
+    logConsole(`Lega: media gol casa ${LG.avgH.toFixed(2)} / trasferta ${LG.avgA.toFixed(2)} su ${LG.n} match | rho=${RHO.toFixed(3)}`);
+    // gli NPxG escludono i rigori ma i gol no: si recupera la componente rigori come (xG - NPxG)
+    const pxH = Math.max(0, _mean(dH.overall.vals.xg) - _mean(dH.overall.vals.npxg));
+    const pxA = Math.max(0, _mean(dA.overall.vals.xg) - _mean(dA.overall.vals.npxg));
+
+    // ============ LAMBDA MOLTIPLICATIVI (struttura Dixon-Coles) ============
+    // v9.4 faceva la MEDIA fra attacco proprio e difesa avversaria: comprime tutto verso il centro e
+    // ignora la forza relativa. Qui: lambda = baseline_sede * forza_attacco * debolezza_difesa.
+    const shrink = (x, n, k = 4) => (n > 0 && isFinite(x) && x > 0) ? (n * x + k) / (n + k) : 1;
+    const dec = (team, scope, feat) => { const f = team[scope].features[feat]; return (f && f.decay > 0) ? f.decay : null; };
+    const nHr = dH.role.n, nAr = dA.role.n, nHo = dH.overall.n, nAo = dA.overall.n;
+    const mu = (LG.avgH + LG.avgA) / 2;
+
+    // modello GENERALE: forze su media lega, il vantaggio campo arriva da LG.avgH / LG.avgA
+    const attH_o = shrink((dec(dH,'overall','npxg') ?? mu) / mu, nHo), defA_o = shrink((dec(dA,'overall','npxga') ?? mu) / mu, nAo);
+    const attA_o = shrink((dec(dA,'overall','npxg') ?? mu) / mu, nAo), defH_o = shrink((dec(dH,'overall','npxga') ?? mu) / mu, nHo);
+    let lamH_over = LG.avgH * attH_o * defA_o * (1 + penH) + pxH;
+    let lamA_over = LG.avgA * attA_o * defH_o * (1 + penA) + pxA;
+
+    // modello RUOLO: ogni statistica normalizzata sul baseline della PROPRIA sede.
+    // Chi gioca in casa si rapporta a LG.avgH, chi in trasferta a LG.avgA: cosi' il vantaggio campo
+    // conta UNA volta sola invece di essere contato due volte come nella v9.4 (dati casa + moltiplicatore 1.10).
+    const attH_r = shrink((dec(dH,'role','npxg') ?? LG.avgH) / LG.avgH, nHr), defA_r = shrink((dec(dA,'role','npxga') ?? LG.avgH) / LG.avgH, nAr);
+    const attA_r = shrink((dec(dA,'role','npxg') ?? LG.avgA) / LG.avgA, nAr), defH_r = shrink((dec(dH,'role','npxga') ?? LG.avgA) / LG.avgA, nHr);
+    let lamH_role = LG.avgH * attH_r * defA_r * (1 + penH) + pxH;
+    let lamA_role = LG.avgA * attA_r * defH_r * (1 + penA) + pxA;
+    // con pochi match di ruolo si torna verso la media di lega invece di fidarsi di 3 partite
+    // k ridotto da 4 a 3 ora che roleLimit=20 permette sample piu' grandi.
+    // Con 15 match di ruolo: 15/(15+3) = 83% peso ai dati vs 79% con k=4.
+    // Piu' fedele quando i dati di ruolo sono abbondanti.
+    const wSH = nHr / (nHr + 3), wSA = nAr / (nAr + 3);
+    lamH_role = wSH * lamH_role + (1 - wSH) * LG.avgH; lamA_role = wSA * lamA_role + (1 - wSA) * LG.avgA;
+    if(!isFinite(lamH_over) || lamH_over < 0.15) lamH_over = LG.avgH; if(!isFinite(lamA_over) || lamA_over < 0.15) lamA_over = LG.avgA;
+    if(!isFinite(lamH_role) || lamH_role < 0.15) lamH_role = lamH_over; if(!isFinite(lamA_role) || lamA_role < 0.15) lamA_role = lamA_over;
+
+    // ============ UNA SOLA MATRICE GOVERNA TUTTI I MERCATI ============
+    // Nella v9.4 l'1X2 usava Skellam/Poisson puro (senza rho) mentre i risultati esatti usavano Dixon-Coles
+    // con lambda diversi (mix 40/60): i due blocchi non erano coerenti fra loro.
+    const dcOver = calcDCMatrix(lamH_over, lamA_over, RHO); const dcRole = calcDCMatrix(lamH_role, lamA_role, RHO);
+    const probsOver = probsFromMatrix(dcOver); const probsRole = probsFromMatrix(dcRole);
+    const dcMat = dcRole; const lamH_mix = lamH_role, lamA_mix = lamA_role;
+
+    let exactScores = []; for(let i=0; i<=6; i++) { for(let j=0; j<=6; j++) { exactScores.push({ h: i, a: j, p: dcMat[i][j] || 0 }); } }
+    exactScores.sort((a,b) => b.p - a.p); let topScoresHtml = "";
+    for(let i=0; i<6; i++) { const s = exactScores[i]; topScoresHtml += `<div class="card-small" style="padding:8px; background:#fff; border:1px solid #ddd; color:#333"><div style="font-size:20px; font-weight:900">${s.h} - ${s.a}</div><div style="font-size:12px; color:var(--blue); font-weight:bold">${pct(s.p)}</div></div>`; }
+    const mgTot = { '0-1': multigoal(dcMat,0,1,'tot'), '1-2': multigoal(dcMat,1,2,'tot'), '1-3': multigoal(dcMat,1,3,'tot'), '2-3': multigoal(dcMat,2,3,'tot'), '2-4': multigoal(dcMat,2,4,'tot'), '3-5': multigoal(dcMat,3,5,'tot') };
+    const mgH = { '0-1': multigoal(dcMat,0,1,'h'), '1-2': multigoal(dcMat,1,2,'h'), '1-3': multigoal(dcMat,1,3,'h'), '2-3': multigoal(dcMat,2,3,'h') };
+    const mgA = { '0-1': multigoal(dcMat,0,1,'a'), '1-2': multigoal(dcMat,1,2,'a'), '1-3': multigoal(dcMat,1,3,'a'), '2-3': multigoal(dcMat,2,3,'a') };
+    const ahData = [-1.5, -1.0, -0.75, -0.5, +0.5, +1.0, +1.5].map(h => ({ h, ...asianHandicapMat(dcMat, h) }));
+
+    const calcAdv = (useRole) => {
+      const pick = (team) => (useRole && team.role.n >= 3) ? team.role : team.overall;
+      const getF = (team, feat) => { const o = pick(team).features[feat]; return (o && o.decay > 0) ? o.decay : 0; };
+      const getA = (team, feat) => pick(team).vals[feat] || [];
+      const cH = getF(dH,'cor'), cA = getF(dA,'cor'), cAgH = getF(dH,'cor_ag'), cAgA = getF(dA,'cor_ag'); const lCor = Math.sqrt(cH*cAgA) + Math.sqrt(cA*cAgH);
+      const sH = getF(dH,'sot'), sA = getF(dA,'sot'), sAgH = getF(dH,'sot_ag'), sAgA = getF(dA,'sot_ag'); const lSot = Math.sqrt(sH*sAgA) + Math.sqrt(sA*sAgH);
+      const yH = getF(dH,'yel'), yA = getF(dA,'yel'), yAgH = getF(dH,'yel_ag'), yAgA = getF(dA,'yel_ag'); const lYel = Math.sqrt(yH*yAgA) + Math.sqrt(yA*yAgH);
+      const rH = getF(dH,'red_cards'), rA = getF(dA,'red_cards');
+      // dispersione STIMATA dai totali di match osservati invece del k=30 fisso della v9.4
+      const tot = (team, a, b) => getA(team,a).map((v,i) => ((v==null?null:v) == null || getA(team,b)[i] == null) ? null : v + getA(team,b)[i]);
+      const kCor = negBinK(tot(dH,'cor','cor_ag').concat(tot(dA,'cor','cor_ag')));
+      const kSot = negBinK(tot(dH,'sot','sot_ag').concat(tot(dA,'sot','sot_ag')));
+      const kYel = negBinK(tot(dH,'yel','yel_ag').concat(tot(dA,'yel','yel_ag')));
+      const pOv9c = 1 - negBinCDF(9, lCor, kCor); const pOv8s = 1 - negBinCDF(8, lSot, kSot); const pOv3y = 1 - negBinCDF(3, lYel, kYel);
+      const pRed = 1 - poisson(0, rH + rA);
+      return { lCor, cH, cA, lSot, sH, sA, lYel, yH, yA, pOv9c, pOv8s, pOv3y, pRed, kCor, kSot, kYel };
+    };
+    const advRole = calcAdv(true); const advOver = calcAdv(false);
+
+    const safeDecay = (team, feat) => team.role.features[feat] ? team.role.features[feat].decay : (team.overall.features[feat] ? team.overall.features[feat].decay : 0);
+    const safeStd = (team, feat) => team.role.features[feat] ? team.role.features[feat].std : (team.overall.features[feat] ? team.overall.features[feat].std : 0);
+    const zScore = (att, def, sAtt, sDef) => { const den = Math.sqrt(sAtt*sAtt + sDef*sDef); return den > 0 ? (att - def) / den : 0; };
+    const zXgH_over = zScore(dH.overall.features.npxg?.decay||0, dA.overall.features.npxga?.decay||0, dH.overall.features.npxg?.std||0, dA.overall.features.npxga?.std||0);
+    const zXgA_over = zScore(dA.overall.features.npxg?.decay||0, dH.overall.features.npxga?.decay||0, dA.overall.features.npxg?.std||0, dH.overall.features.npxga?.std||0);
+    const zXgH_role = zScore(safeDecay(dH,'npxg'), safeDecay(dA,'npxga'), safeStd(dH,'npxg'), safeStd(dA,'npxga'));
+    const zXgA_role = zScore(safeDecay(dA,'npxg'), safeDecay(dH,'npxga'), safeStd(dA,'npxg'), safeStd(dH,'npxga'));
+
+    const getSafeAvg = (team, feat) => team.overall.features[feat] ? team.overall.features[feat].avg_tot : 0;
+    
+    const npxgH_ro = safeDecay(dH, 'npxg'); const npxgA_ro = safeDecay(dA, 'npxg');
+    const xgotH = _mean(dH.overall.vals.xgot) || 0; const xgotA = _mean(dA.overall.vals.xgot) || 0;
+    const xgShotH = _mean(dH.overall.vals.xg_shot) || 0; const xgShotA = _mean(dA.overall.vals.xg_shot) || 0;
+    const xgSpH = _mean(dH.overall.vals.xg_sp) || 0; const xgSpA = _mean(dA.overall.vals.xg_sp) || 0;
+    // Palle inattive: usa xg_sp da advRes se disponibile, altrimenti usa corner_xg / xg totali
+    // dai dati stats (xg_sp ≈ xG da angoli + punizioni). Fallback piu' robusto.
+    const _xgSpFallback = (team) => {
+      const cov = (team.overall.coverage || {});
+      if (cov['xg_sp'] > 0) return _mean(team.overall.vals.xg_sp) || 0;
+      // fallback: dai dati di stats abbiamo xg da corner e punizioni aggregati
+      // non disponibili direttamente, usiamo 0 esplicito (non N/D)
+      return null;
+    };
+    const xgSpH_final = _xgSpFallback(dH);
+    const xgSpA_final = _xgSpFallback(dA);
+    const setPctH = (xgSpH_final != null && npxgH_ro > 0.05) ? (xgSpH_final / npxgH_ro) * 100 : null;
+    const setPctA = (xgSpA_final != null && npxgA_ro > 0.05) ? (xgSpA_final / npxgA_ro) * 100 : null;
+    const bcH = _mean(dH.overall.vals.bc) || 0; const bcA = _mean(dA.overall.vals.bc) || 0;
+    const bcmH = _mean(dH.overall.vals.bcm) || 0; const bcmA = _mean(dA.overall.vals.bcm) || 0;
+
+    const crossH = _mean(dH.overall.vals.cross) || 0; const dribH = _mean(dH.overall.vals.drib) || 0; const thruH = _mean(dH.overall.vals.thru) || 0; const aerH = _mean(dH.overall.vals.aer) || 0;
+    const crossA = _mean(dA.overall.vals.cross) || 0; const dribA = _mean(dA.overall.vals.drib) || 0; const thruA = _mean(dA.overall.vals.thru) || 0; const aerA = _mean(dA.overall.vals.aer) || 0;
+    const misc_H = _mean(dH.overall.vals.misc) || 0; const disp_H = _mean(dH.overall.vals.disp) || 0;
+    const misc_A = _mean(dA.overall.vals.misc) || 0; const disp_A = _mean(dA.overall.vals.disp) || 0;
+    const clumsyH = misc_H + disp_H; const clumsyA = misc_A + disp_A;
+
+    const tiltH = getSafeAvg(dH, 'field_tilt'); const tiltA = getSafeAvg(dA, 'field_tilt');
+    const possH = getSafeAvg(dH, 'poss'); const possA = getSafeAvg(dA, 'poss');
+    const ppdaH = getSafeAvg(dH, 'ppda'); const ppdaA = getSafeAvg(dA, 'ppda');
+    // TDI normalizzato: ciascun fattore e' scalato sulla propria deviazione standard di lega
+    // per rendere i contributi comparabili. Valori di riferimento empirici europei:
+    // tilt media ~50, sd~8 | ppda media ~12, sd~3 | poss media ~50, sd~7
+    const _zTilt = (v) => (v - 50) / 8;
+    const _zPpda = (v) => -(v - 12) / 3;   // PPDA basso = pressing intenso = vantaggio → inversione segno
+    const _zPoss = (v) => (v - 50) / 7;
+    const tdiH = (_zTilt(tiltH) * 1.2) + (_zPpda(ppdaH) * 1.0) + (_zPoss(possH) * 0.5);
+    const tdiA = (_zTilt(tiltA) * 1.2) + (_zPpda(ppdaA) * 1.0) + (_zPoss(possA) * 0.5);
+    const tdiDelta = tdiH - tdiA;
+    // Usa NPxG (senza rigori): coerente con i lambda di previsione DC/KNN che usano npxg
+    const pytH = expectedPoints(dH.overall.vals.npxg, dH.overall.vals.npxga, dH.overall.vals.gf, dH.overall.vals.ga);
+    const pytA = expectedPoints(dA.overall.vals.npxg, dA.overall.vals.npxga, dA.overall.vals.gf, dA.overall.vals.ga);
+
+    const avgX_H = _mean(dH.overall.vals.avg_x) || 0; const avgX_A = _mean(dA.overall.vals.avg_x) || 0;
+    const f3H = _mean(dH.overall.vals.f3_entries); const f3A = _mean(dA.overall.vals.f3_entries);
+    const tbH = _mean(dH.overall.vals.tch_box) || 0; const tbA = _mean(dA.overall.vals.tch_box) || 0;
+    const penRateH = f3H > 0 ? (tbH / f3H) * 100 : 0; const penRateA = f3A > 0 ? (tbA / f3A) * 100 : 0;  // niente divisione per un "1" fittizio
+
+    const defX_H = _mean(dH.overall.vals.avg_def_x) || 0; const defX_A = _mean(dA.overall.vals.avg_def_x) || 0;
+    const cp_H = _mean(dH.overall.vals.cp_regains) || 0; const cp_A = _mean(dA.overall.vals.cp_regains) || 0;
+    const recH = _mean(dH.overall.vals.rec_time) || 0; const recA = _mean(dA.overall.vals.rec_time) || 0;
+    const lenH = (avgX_H > 0 && defX_H > 0) ? (avgX_H - defX_H) : 0; const lenA = (avgX_A > 0 && defX_A > 0) ? (avgX_A - defX_A) : 0;
+    // Choke Index: recuperi palla nelle 5s / tempo medio di recupero
+    // Il fattore 1.5 bilancia scale diverse (cp_regains ~10-20, rec_time ~15-30).
+    // Protezione aggiuntiva: se meno di 3 match hanno entrambe le metriche, valore null.
+    const _nBothValid = (a1, a2) => a1.filter((v,i) => v != null && a2[i] != null).length;
+    const nChokeH = _nBothValid(dH.overall.vals.cp_regains, dH.overall.vals.rec_time);
+    const nChokeA = _nBothValid(dA.overall.vals.cp_regains, dA.overall.vals.rec_time);
+    const chokeH = (recH > 0 && nChokeH >= 3) ? (cp_H * 1.5) / recH : 0;
+    const chokeA = (recA > 0 && nChokeA >= 3) ? (cp_A * 1.5) / recA : 0;
+
+    const bHs = bucketTimings(dH.overall.all_timings_scored); const bHc = bucketTimings(dH.overall.all_timings_conceded);
+    const bAs = bucketTimings(dA.overall.all_timings_scored); const bAc = bucketTimings(dA.overall.all_timings_conceded);
+
+    // profilo temporale empirico dei gol invece del tasso costante (nel calcio si segna di piu' a fine gara)
+    const _bk = ['1-15','16-30','31-45','46-60','61-75','76-90+'];
+    const _bTot = _bk.map(k => (bHs[k]+bHc[k]+bAs[k]+bAc[k])); const _bSum = _bTot.reduce((a,b)=>a+b,0);
+    const shape = _bSum > 30 ? _bTot.map(v => v/_bSum) : [1/6,1/6,1/6,1/6,1/6,1/6];
+    const lamTot = lamH_role + lamA_role;
+    const shareTo = (n) => shape.slice(0,n).reduce((a,b)=>a+b,0);
+    const probGoal30 = 1 - Math.exp(-lamTot * shareTo(2)); const probGoalHT = 1 - Math.exp(-lamTot * shareTo(3));
+
+    const formH_disp = dH.overall.features.modulo_main || 'N/D'; const formA_disp = dA.overall.features.modulo_main || 'N/D';
+    const statsVsFormH_over = getStatsVsFormation(dH, formA_disp, false); const statsVsFormA_over = getStatsVsFormation(dA, formH_disp, false); 
+    const statsVsFormH_role = getStatsVsFormation(dH, formA_disp, true); const statsVsFormA_role = getStatsVsFormation(dA, formH_disp, true); 
+
+    const knn_H = getSimilarMatches(dH.role, dA, targetMs); const knn_A = getSimilarMatches(dA.role, dH, targetMs);
+    // knn_H.avg_xg = quanto la squadra crea contro avversari simili all'attuale
+    // knn_A.avg_xga = quanto l'avversario concede contro squadre simili alla nostra
+    // Combinazione moltiplicativa (coerente con parametrizzazione DC): 
+    //   λ = LG.baseline × (attacco_normalizzato) × (difesa_normalizzata)
+    // Prima si mediava aritmeticamente: OK vicino alla media di lega, distorto agli estremi.
+    const _knnCombine = (att, def, baseAtt, baseDef) => {
+      if (baseAtt <= 0 || baseDef <= 0) return null;
+      const attNorm = att / baseAtt;   // 1.0 = media lega
+      const defNorm = def / baseDef;
+      return baseAtt * attNorm * defNorm;
+    };
+    let knn_lamH_raw = (knn_H.avg_xg > 0 || knn_A.avg_xga > 0) 
+      ? _knnCombine(knn_H.avg_xg, knn_A.avg_xga, LG.avgH, LG.avgA) 
+      : null;
+    let knn_lamA_raw = (knn_A.avg_xg > 0 || knn_H.avg_xga > 0) 
+      ? _knnCombine(knn_A.avg_xg, knn_H.avg_xga, LG.avgA, LG.avgH) 
+      : null;
+    let knn_lamH = (knn_lamH_raw != null) ? knn_lamH_raw + pxH : lamH_role;
+    let knn_lamA = (knn_lamA_raw != null) ? knn_lamA_raw + pxA : lamA_role;
+    if(!isFinite(knn_lamH) || knn_lamH < 0.15) knn_lamH = lamH_role;
+    if(!isFinite(knn_lamA) || knn_lamA < 0.15) knn_lamA = lamA_role;
+    const probsKnn = probsFromMatrix(calcDCMatrix(knn_lamH, knn_lamA, RHO));
+    const mk_ov = markovFlow(lamH_over, lamA_over); const mk_ro = markovFlow(lamH_role, lamA_role);
+
+    // Pesi DINAMICI: il KNN vale 45% solo se ha davvero dei vicini simili; altrimenti il peso torna al Dixon-Coles.
+    const nEffMin = Math.min(knn_H.nEff, knn_A.nEff);
+    const knnRel = nEffMin > 0 ? nEffMin / (nEffMin + 3) : 0;
+    const wKnn = 0.45 * knnRel, wMk = 0.10; const wDc = 1 - wKnn - wMk;
+    let m1_raw = (probsRole.p1 * wDc) + (probsKnn.p1 * wKnn) + (mk_ro.p1 * wMk);
+    let mX_raw = (probsRole.pX * wDc) + (probsKnn.pX * wKnn) + (mk_ro.pX * wMk);
+    let m2_raw = (probsRole.p2 * wDc) + (probsKnn.p2 * wKnn) + (mk_ro.p2 * wMk);
+    const m_tot = m1_raw + mX_raw + m2_raw; const m1 = m_tot > 0 ? m1_raw / m_tot : 0.33; const mX = m_tot > 0 ? mX_raw / m_tot : 0.33; const m2 = m_tot > 0 ? m2_raw / m_tot : 0.33;
+
+    // Confidence = accordo tra modelli (distanza in variazione totale) MODULATO dalla numerosita' campionaria.
+    // Due modelli che concordano su 4 partite non sono affidabili quanto due modelli che concordano su 15.
+    const nMinRole = Math.min(dH.role.n, dA.role.n);
+    // sampleFactor con sqrt: penalizza sample < 8 ma raggiunge 100% a n=20
+    // (prima formula n/(n+5) tappava il confidence al 70% anche con n=12 e modelli perfettamente d'accordo)
+    // sampleFactor calibrato: 12 partite di ruolo (max con roleLimit=12) → 89%
+    // 15 partite → 100%. Motivazione: 12 partite di ruolo sono quasi tutta 
+    // la stagione (19 max), non "poco". La formula sqrt(n/20) tappava al 77%
+    // anche con modelli perfettamente d'accordo.
+    const sampleFactor = Math.min(1, Math.sqrt(nMinRole / 15));
+    // Se il KNN non ha dati tracking (wKnn < 0.05), confronta DC vs Markov
+    // (molto piu' stabili → confidence realistica anche senza tracking data)
+    let tvDist;
+    if (wKnn < 0.05) {
+      tvDist = (Math.abs(probsRole.p1 - mk_ro.p1) + Math.abs(probsRole.pX - mk_ro.pX) + Math.abs(probsRole.p2 - mk_ro.p2)) / 2;
+    } else {
+      tvDist = (Math.abs(probsRole.p1 - probsKnn.p1) + Math.abs(probsRole.pX - probsKnn.pX) + Math.abs(probsRole.p2 - probsKnn.p2)) / 2;
+    }
+    const confidence = Math.round(Math.max(0, Math.min(100, 100 * (1 - tvDist) * sampleFactor)));
+
+    let hiddenValueMsg = ""; let hiddenValueMsgClean = ""; 
+    if (chokeH > 1.2 && clumsyA > 15) {
+        hiddenValueMsg = `🩸 <strong>BLOOD SCENT ALERT:</strong> Il Gegenpressing ${artDel(hName)} scontrerà la goffaggine in disimpegno dell'${aName} (${f1(clumsyA)} perse). Goleada in transizione possibile.`;
+        hiddenValueMsgClean = `BLOOD SCENT ALERT: Gegenpressing ${hName} vs Goffaggine ${aName}. Rischio imbarcata.`;
+    } else if (chokeA > 1.2 && clumsyH > 15) {
+        hiddenValueMsg = `🩸 <strong>BLOOD SCENT ALERT:</strong> Il Gegenpressing ${artDel(aName)} scontrerà la goffaggine in disimpegno del ${hName} (${f1(clumsyH)} perse). Colpaccio esterno in transizione probabile.`;
+        hiddenValueMsgClean = `BLOOD SCENT ALERT: Gegenpressing ${aName} vs Goffaggine ${hName}. Rischio imbarcata.`;
+    } else if (pytH.diff < -0.05 && tdiDelta > 10 && bcmH > 1.5 && trendH > -10) {
+        hiddenValueMsg = `🚨 <strong>SMART MONEY:</strong> ${Cap(artIl(hName))} domina, sbaglia un'enormità di gol fatti (${f1(bcmH)} Big Chances sprecate a partita) e ha Pitagora negativo. Esplosione offensiva certa per regressione.`;
+        hiddenValueMsgClean = `SMART MONEY DETECTED sul ${hName} (Dominio tattico, Underperformance e troppe Big Chances sprecate).`;
+    } else {
+        hiddenValueMsg = `✅ Nessun segnale estremo. Flusso, qualità dei tiri e Gegenpressing sono bilanciati.`;
+        hiddenValueMsgClean = `Nessun segnale di Hidden Value.`;
+    }
+
+    document.getElementById('setup-card').style.display = 'none'; document.getElementById('dashboard-area').style.display = 'block';
+    safeTxt('ui-title', `${hName} - ${aName}`); safeTxt('ui-subtitle', `Motore V9.4: Analisi Integrale su ${dH.overall.n} match (Simulazione al ${dateInput})`);
+
+    // mostra N/D solo quando la metrica non e' MAI stata restituita: uno zero reale resta zero
+    const covOf = (team, key) => ((team.overall.coverage||{})[key]||0);
+    const nd = (team, key, txt) => covOf(team, key) > 0 ? txt : 'N/D';
+    const renderStreak = (arr) => arr.map(s => { let bg = s==='V' ? 'var(--green)' : (s==='S' ? 'var(--red)' : '#f57c00'); return `<span style="display:inline-block;width:18px;height:18px;line-height:18px;text-align:center;border-radius:50%;background:${bg};color:white;font-size:10px;font-weight:bold;margin:0 2px">${s}</span>`; }).join('');
+    safeHtml('ui-streak', `<div style="display:flex; align-items:center; gap:5px"><span style="font-size:11px;font-weight:bold;color:var(--blue)">${hName}</span> ${renderStreak(dH.overall.streak.slice().reverse())}</div><div style="font-size:12px;color:#ccc">vs</div><div style="display:flex; align-items:center; gap:5px">${renderStreak(dA.overall.streak.slice().reverse())} <span style="font-size:11px;font-weight:bold;color:var(--red)">${aName}</span></div>`);
+
+    safeTxt('master-1', pct(m1)); safeTxt('master-x', pct(mX)); safeTxt('master-2', pct(m2));
+    // 1X2 per modello
+    safeTxt('mdl-dc-1', pct(probsRole.p1)); safeTxt('mdl-dc-x', pct(probsRole.pX)); safeTxt('mdl-dc-2', pct(probsRole.p2));
+    safeTxt('mdl-knn-1', pct(probsKnn.p1)); safeTxt('mdl-knn-x', pct(probsKnn.pX)); safeTxt('mdl-knn-2', pct(probsKnn.p2));
+    safeTxt('mdl-mk-1', pct(mk_ro.p1)); safeTxt('mdl-mk-x', pct(mk_ro.pX)); safeTxt('mdl-mk-2', pct(mk_ro.p2));
+    safeTxt('mdl-ens-1', pct(m1)); safeTxt('mdl-ens-x', pct(mX)); safeTxt('mdl-ens-2', pct(m2));
+    
+    // === CONFIDENCE PER MERCATO SPECIFICO ===
+    // Formula: 100 * (1 - max_spread) * sampleFactor
+    // dove max_spread = max_pairwise_disagreement tra i modelli su quel mercato.
+    // Uso max invece di media per essere piu' conservativo: se un modello divergesse 
+    // di 15% mentre gli altri concordano, va segnalato.
+    const _confMarket = (probs, sf) => {
+      // probs = array di P per lo stesso mercato dai vari modelli
+      const valid = probs.filter(p => isFinite(p) && p >= 0);
+      if (valid.length < 2) return null;
+      let maxSpread = 0;
+      for (let i = 0; i < valid.length; i++) {
+        for (let j = i+1; j < valid.length; j++) {
+          const s = Math.abs(valid[i] - valid[j]);
+          if (s > maxSpread) maxSpread = s;
+        }
+      }
+      return Math.max(0, Math.min(100, Math.round(100 * (1 - maxSpread) * sf)));
+    };
+    const _badgeConf = (v) => {
+      if (v == null) return '<span style="color:#999">--</span>';
+      const col = v >= 85 ? 'var(--green)' : (v >= 70 ? 'var(--orange)' : 'var(--red)');
+      return '<span style="color:' + col + '">' + v + '</span>';
+    };
+    
+    // Confidence per ESITO 1X2 (usa i 3 modelli DC/KNN/Markov)
+    safeHtml('conf-p1', _badgeConf(_confMarket([probsRole.p1, probsKnn.p1, mk_ro.p1], sampleFactor)));
+    safeHtml('conf-px', _badgeConf(_confMarket([probsRole.pX, probsKnn.pX, mk_ro.pX], sampleFactor)));
+    safeHtml('conf-p2', _badgeConf(_confMarket([probsRole.p2, probsKnn.p2, mk_ro.p2], sampleFactor)));
+    
+    // Valori DC/KNN per doppie chance e mercati gol
+    const dcP1X = probsRole.p1 + probsRole.pX, dcPX2 = probsRole.pX + probsRole.p2, dcP12 = probsRole.p1 + probsRole.p2;
+    const knnP1X = probsKnn.p1 + probsKnn.pX, knnPX2 = probsKnn.pX + probsKnn.p2, knnP12 = probsKnn.p1 + probsKnn.p2;
+    const dcGG = probsRole.pGG, dcNG = 1 - probsRole.pGG, dcOv = probsRole.pOv, dcUn = 1 - probsRole.pOv;
+    const knnGG = probsKnn.pGG, knnNG = 1 - probsKnn.pGG, knnOv = probsKnn.pOv, knnUn = 1 - probsKnn.pOv;
+    
+    safeTxt('mdl-dc-1x', pct(dcP1X)); safeTxt('mdl-dc-x2', pct(dcPX2)); safeTxt('mdl-dc-12', pct(dcP12));
+    safeTxt('mdl-dc-gg', pct(dcGG)); safeTxt('mdl-dc-ng', pct(dcNG));
+    safeTxt('mdl-dc-ov', pct(dcOv)); safeTxt('mdl-dc-un', pct(dcUn));
+    safeTxt('mdl-knn-1x', pct(knnP1X)); safeTxt('mdl-knn-x2', pct(knnPX2)); safeTxt('mdl-knn-12', pct(knnP12));
+    safeTxt('mdl-knn-gg', pct(knnGG)); safeTxt('mdl-knn-ng', pct(knnNG));
+    safeTxt('mdl-knn-ov', pct(knnOv)); safeTxt('mdl-knn-un', pct(knnUn));
+    
+    // Confidence per doppie chance (DC vs KNN)
+    safeHtml('conf-1x', _badgeConf(_confMarket([dcP1X, knnP1X], sampleFactor)));
+    safeHtml('conf-x2', _badgeConf(_confMarket([dcPX2, knnPX2], sampleFactor)));
+    safeHtml('conf-12', _badgeConf(_confMarket([dcP12, knnP12], sampleFactor)));
+    // Confidence per mercati gol (DC vs KNN)
+    safeHtml('conf-gg', _badgeConf(_confMarket([dcGG, knnGG], sampleFactor)));
+    safeHtml('conf-ng', _badgeConf(_confMarket([dcNG, knnNG], sampleFactor)));
+    safeHtml('conf-ov', _badgeConf(_confMarket([dcOv, knnOv], sampleFactor)));
+    safeHtml('conf-un', _badgeConf(_confMarket([dcUn, knnUn], sampleFactor)));
+    const odd1 = probsRole.p1 > 0 ? (1/probsRole.p1).toFixed(2) : "N/A"; const oddX = probsRole.pX > 0 ? (1/probsRole.pX).toFixed(2) : "N/A"; const odd2 = probsRole.p2 > 0 ? (1/probsRole.p2).toFixed(2) : "N/A";
+    const oddM1 = m1 > 0 ? (1/m1).toFixed(2) : "N/A"; const oddMX = mX > 0 ? (1/mX).toFixed(2) : "N/A"; const oddM2 = m2 > 0 ? (1/m2).toFixed(2) : "N/A";
+    safeTxt('m-odd-1', oddM1); safeTxt('m-odd-x', oddMX); safeTxt('m-odd-2', oddM2);
+    window.__MASTER = { p1: m1, pX: mX, p2: m2 }; calcValue();
+    safeTxt('master-conf', confidence + "/100");
+    document.getElementById('conf-bar').style.width = confidence + "%";
+    if(confidence < 50) document.getElementById('conf-bar').style.background = "var(--red)"; else if(confidence > 80) document.getElementById('conf-bar').style.background = "var(--green)";
+    safeHtml('hidden-value-msg', hiddenValueMsg);
+
+
+    
+    let strSniperH = covOf(dH,'xgot') > 0 ? f2(xgotH) : (covOf(dH,'xg_shot') > 0 ? `${f2(xgShotH)} (xG/Tiro)` : "N/D");
+    let strSniperA = covOf(dA,'xgot') > 0 ? f2(xgotA) : (covOf(dA,'xg_shot') > 0 ? `${f2(xgShotA)} (xG/Tiro)` : "N/D");
+    safeTxt('l-xgot-h', f2(npxgH_ro) + " vs " + strSniperH); safeTxt('l-xgot-a', f2(npxgA_ro) + " vs " + strSniperA);
+    safeTxt('l-set-h', setPctH != null ? f1(setPctH) + "%" : 'N/D'); safeTxt('l-set-a', setPctA != null ? f1(setPctA) + "%" : 'N/D');
+    safeTxt('l-bc-h', nd(dH,'bc', f1(bcH) + " / " + f1(bcmH))); safeTxt('l-bc-a', nd(dA,'bc', f1(bcA) + " / " + f1(bcmA)));
+    
+    let lethNarrative = "";
+    if(xgotH > npxgH_ro + 0.3) lethNarrative += `🔪 <strong>Cecchini:</strong> ${Cap(artIl(hName))} aggiunge valore ai tiri (xGOT > NPxG). Calciano angolato e sprecano poco.<br>`;
+    else if(npxgH_ro > xgotH + 0.3 && xgotH > 0) lethNarrative += `🧱 <strong>Tiri Sporchi:</strong> ${Cap(artIl(hName))} depotenzia i propri xG calciando male o centralmente (xGOT < NPxG).<br>`;
+    if(bcmH > 1.8) lethNarrative += `🗑️ <strong>Spreco Seriale:</strong> ${Cap(artIl(hName))} butta via letteralmente ${f1(bcmH)} gol fatti a partita (Big Chances sprecate).<br>`;
+    if(setPctH > 35) lethNarrative += `🚩 <strong>Palla Inattiva Dipendenti:</strong> ${Cap(artIl(hName))} produce il ${f1(setPctH)}% dei propri pericoli da calci piazzati.<br>`;
+    if(lethNarrative === "") lethNarrative = "Nessun picco estremo di letalità rilevato. Tiri e conversioni in media con i campionati top.";
+    safeHtml('lethality-dialogue', lethNarrative);
+
+    safeTxt('np-defx-h', nd(dH,'avg_def_x', f1(defX_H) + "m")); safeTxt('np-len-h', lenH > 0 ? f1(lenH) + "m" : "N/D"); safeTxt('np-cp-h', nd(dH,'cp_regains', f1(cp_H))); safeTxt('np-choke-h', chokeH > 0 ? f2(chokeH) : "N/D");
+    safeTxt('np-defx-a', nd(dA,'avg_def_x', f1(defX_A) + "m")); safeTxt('np-len-a', lenA > 0 ? f1(lenA) + "m" : "N/D"); safeTxt('np-cp-a', nd(dA,'cp_regains', f1(cp_A))); safeTxt('np-choke-a', chokeA > 0 ? f2(chokeA) : "N/D");
+
+    let defNarrative = "";
+    if (lenH > 0 && lenH < 20) defNarrative += `🧱 <strong>Blocco Cortissimo:</strong> ${Cap(artIl(hName))} difende in un fazzoletto di ${f1(lenH)} metri. Estremamente compatto.<br>`;
+    else if (lenH > 32) defNarrative += `⚠️ <strong>Squadra Sfilacciata:</strong> ${Cap(artIl(hName))} si allunga troppo (${f1(lenH)} metri). Lascia molto spazio tra le linee.<br>`;
+    if (chokeH > 1.5 && recA > 20) defNarrative += `🌪️ <strong>Soffocamento:</strong> Il Gegenpressing ${artDel(hName)} (Choke Index ${f2(chokeH)}) distruggerà il giro palla lento dell'${aName}.<br>`;
+    if (defNarrative === "") defNarrative = "Squadre con metriche di compattezza standard e Gegenpressing nella norma.";
+    safeHtml('defensive-dialogue', defNarrative);
+
+    safeTxt('tr-x-h', nd(dH,'avg_x', f1(avgX_H) + "m")); safeTxt('tr-x-a', nd(dA,'avg_x', f1(avgX_A) + "m")); 
+    let styleStr = "Equilibrato"; if(avgX_H > 52 && avgX_A < 42) styleStr = "Dominio vs Muro"; else if(avgX_H > 50 && avgX_A > 50) styleStr = "Box-to-Box"; safeTxt('tr-style', styleStr);
+    safeTxt('tr-f3-h', nd(dH,'f3_entries', String(Math.round(f3H)))); safeTxt('tr-box-h', nd(dH,'tch_box', String(Math.round(tbH)))); safeTxt('tr-pen-h', (covOf(dH,'f3_entries') > 0 && covOf(dH,'tch_box') > 0) ? f1(penRateH) + "%" : "N/D");
+    safeTxt('tr-f3-a', nd(dA,'f3_entries', String(Math.round(f3A)))); safeTxt('tr-box-a', nd(dA,'tch_box', String(Math.round(tbA)))); safeTxt('tr-pen-a', (covOf(dA,'f3_entries') > 0 && covOf(dA,'tch_box') > 0) ? f1(penRateA) + "%" : "N/D");
+    let tactNarrative = "";
+    if(penRateH > 0 || penRateA > 0) tactNarrative += `Indice di penetrazione: ${hName} ${f1(penRateH)}% vs ${aName} ${f1(penRateA)}%. ` + (penRateH > penRateA + 5 ? `${Cap(artIl(hName))} converte molto meglio il possesso avanzato in tocchi in area.` : (penRateA > penRateH + 5 ? `L'${aName} e' piu' incisivo nell'ultimo passaggio.` : `Rifinitura di efficacia simile.`)) + `<br>`;
+    if(avgX_H > 0 && avgX_A > 0) tactNarrative += `Baricentri a ${f1(avgX_H)}m e ${f1(avgX_A)}m: ` + (avgX_H - avgX_A > 6 ? `campo sbilanciato nella meta' ${artDel(aName)}.` : (avgX_A - avgX_H > 6 ? `sara' il ${hName} a difendere piu' basso.` : `sfida territorialmente equilibrata.`)) + `<br>`;
+    if(crossH + crossA > 0) tactNarrative += `Vie d'attacco (cross/dribbling/filtranti) — ${hName}: ${f1(crossH)}/${f1(dribH)}/${f1(thruH)} · ${aName}: ${f1(crossA)}/${f1(dribA)}/${f1(thruA)}.`;
+    if(tactNarrative === "") tactNarrative = "Dati di tracking non disponibili per questo confronto.";
+    safeHtml('tactical-dialogue', tactNarrative);
+
+    safeTxt('pyt-name-h', hName); safeTxt('pyt-name-a', aName);
+    const pytCell = (o) => o.n ? `${o.msg} (${o.diff>0?'+':''}${o.diff.toFixed(1)} pt su ${o.n}, z=${f2(o.z)})` : 'Dati insufficienti';
+    safeTxt('pyt-act-h', pytH.n ? f2(pytH.ppgAct) : '--'); safeTxt('pyt-exp-h', pytH.n ? f2(pytH.ppgExp) : '--'); safeTxt('pyt-diag-h', pytCell(pytH));
+    safeTxt('pyt-act-a', pytA.n ? f2(pytA.ppgAct) : '--'); safeTxt('pyt-exp-a', pytA.n ? f2(pytA.ppgExp) : '--'); safeTxt('pyt-diag-a', pytCell(pytA));
+    safeHtml('ts-h', getTopScorers(dH.overall.all_scorers)); safeHtml('ts-a', getTopScorers(dA.overall.all_scorers));
+
+    safeTxt('p1-over', pct(probsOver.p1)); safeTxt('p1-role', pct(probsRole.p1)); safeTxt('px-over', pct(probsOver.pX)); safeTxt('px-role', pct(probsRole.pX));
+    safeTxt('p2-over', pct(probsOver.p2)); safeTxt('p2-role', pct(probsRole.p2)); safeTxt('p1x-over', pct(probsOver.p1+probsOver.pX)); safeTxt('p1x-role', pct(probsRole.p1+probsRole.pX));
+    safeTxt('px2-over', pct(probsOver.p2+probsOver.pX)); safeTxt('px2-role', pct(probsRole.p2+probsRole.pX)); safeTxt('p12-over', pct(probsOver.p1+probsOver.p2)); safeTxt('p12-role', pct(probsRole.p1+probsRole.p2));
+    safeTxt('gg-over', pct(probsOver.pGG)); safeTxt('gg-role', pct(probsRole.pGG)); safeTxt('ov-over', pct(probsOver.pOv)); safeTxt('ov-role', pct(probsRole.pOv));
+    document.getElementById('odd-1').textContent = odd1; document.getElementById('odd-x').textContent = oddX; document.getElementById('odd-2').textContent = odd2;
+
+    safeHtml('exact-scores', topScoresHtml);
+    let ahHtml = `<tr><th>Handicap (su ${hName})</th><th>1 (Casa Copre)</th><th>Rimborso</th><th>2 (Trasf Copre)</th></tr>`;
+    ahData.forEach(d => { let lbl = d.h > 0 ? `+${d.h}` : d.h; ahHtml += `<tr><td style="font-weight:bold">${lbl}</td><td style="color:var(--blue)">${pct(d.pHome)}</td><td>${d.pRefund>0 ? pct(d.pRefund) : '-'}</td><td style="color:var(--red)">${pct(d.pAway)}</td></tr>`; });
+    safeHtml('table-ah', ahHtml);
+    const renderMg = (obj) => Object.keys(obj).map(k => `<div style="background:#f0f8ff; border:1px solid #cce5ff; border-radius:6px; padding:6px 8px; display:flex; justify-content:space-between; align-items:center;"><span style="font-weight:bold; font-size:11px">${k} Gol</span><span style="font-weight:900; color:var(--blue); font-size:13px">${pct(obj[k])}</span></div>`).join('');
+    safeHtml('mg-tot', renderMg(mgTot)); safeHtml('mg-h', renderMg(mgH)); safeHtml('mg-a', renderMg(mgA));
+
+    safeTxt('cor-tot-over', f1(advOver.lCor)); safeTxt('cor-tot-role', f1(advRole.lCor)); safeTxt('pov9-cor-over', pct(advOver.pOv9c)); safeTxt('pov9-cor-role', pct(advRole.pOv9c));
+    safeTxt('sot-tot-over', f1(advOver.lSot)); safeTxt('sot-tot-role', f1(advRole.lSot)); safeTxt('pov8-sot-over', pct(advOver.pOv8s)); safeTxt('pov8-sot-role', pct(advRole.pOv8s));
+    safeTxt('fls-tot-over', f1((dH.overall.features.fouls?.avg_tot||0) + (dA.overall.features.fouls?.avg_tot||0))); safeTxt('fls-tot-role', f1((dH.role.features.fouls?.avg_tot||0) + (dA.role.features.fouls?.avg_tot||0)));
+    safeTxt('yel-tot-over', f1(advOver.lYel)); safeTxt('yel-tot-role', f1(advRole.lYel)); safeTxt('pov3-yel-over', pct(advOver.pOv3y)); safeTxt('pov3-yel-role', pct(advRole.pOv3y));
+    safeTxt('red-tot-over', pct(advOver.pRed)); safeTxt('red-tot-role', pct(advRole.pRed));
+
+    const badgeZ = (z) => { const az = Math.abs(z); if (az < 0.5) return '→ Eq.'; return z > 0 ? `Dom. Att` : `Dom. Dif`; };
+    safeTxt('z-xg-h-ov', f2(zXgH_over)); safeTxt('z-xg-h-ro', f2(zXgH_role)); safeTxt('z-xg-a-ov', f2(zXgA_over)); safeTxt('z-xg-a-ro', f2(zXgA_role));
+    safeTxt('z-b-h-ov', badgeZ(zXgH_over)); safeTxt('z-b-h-ro', badgeZ(zXgH_role)); safeTxt('z-b-a-ov', badgeZ(zXgA_over)); safeTxt('z-b-a-ro', badgeZ(zXgA_role));
+
+    const effRatio = (g, x) => (x > 0 ? g / x : 1);
+    const effH_ov = effRatio(dH.overall.features.gf?.avg_tot||0, dH.overall.features.xg?.avg_tot||0); const effA_ov = effRatio(dA.overall.features.gf?.avg_tot||0, dA.overall.features.xg?.avg_tot||0);
+    const effH_ro = dH.role.n ? effRatio(dH.role.features.gf?.avg_tot||0, dH.role.features.xg?.avg_tot||0) : effH_ov; const effA_ro = dA.role.n ? effRatio(dA.role.features.gf?.avg_tot||0, dA.role.features.xg?.avg_tot||0) : effA_ov;
+    safeTxt('lbl-eff-h1', hName + ' (Gen)'); safeTxt('lbl-eff-h2', hName + ' (Casa)'); safeTxt('lbl-eff-a1', aName + ' (Gen)'); safeTxt('lbl-eff-a2', aName + ' (Trasf)');
+    safeTxt('e-gf-ho', f2(dH.overall.features.gf?.avg_tot)); safeTxt('e-xg-ho', f2(dH.overall.features.xg?.avg_tot)); safeTxt('e-ef-ho', f2(effH_ov));
+    safeTxt('e-gf-hr', f2(dH.role.features.gf?.avg_tot)); safeTxt('e-xg-hr', f2(dH.role.features.xg?.avg_tot)); safeTxt('e-ef-hr', f2(effH_ro));
+    safeTxt('e-gf-ao', f2(dA.overall.features.gf?.avg_tot)); safeTxt('e-xg-ao', f2(dA.overall.features.xg?.avg_tot)); safeTxt('e-ef-ao', f2(effA_ov));
+    safeTxt('e-gf-ar', f2(dA.role.features.gf?.avg_tot)); safeTxt('e-xg-ar', f2(dA.role.features.xg?.avg_tot)); safeTxt('e-ef-ar', f2(effA_ro));
+
+    const renderProgRow = (label, feat) => `<tr><td style="font-weight:bold; color:#555">${label}</td><td>${f2(feat?.avg_3)}</td><td>${f2(feat?.avg_5)}</td><td>${f2(feat?.avg_10)}</td><td>${f2(feat?.avg_15)}</td><td class="td-highlight">${f2(feat?.avg_tot)}</td></tr>`;
+    const tHead = `<tr><th>Metrica</th><th>Ult 3</th><th>Ult 5</th><th>Ult 10</th><th>Ult 15</th><th style="color:var(--blue)">Generale</th></tr>`;
+    safeHtml('table-prog-h', tHead + renderProgRow('NPxG Fatti', dH.overall.features.npxg) + renderProgRow('NPxG Subiti', dH.overall.features.npxga) + renderProgRow('Field Tilt %', dH.overall.features.field_tilt) + renderProgRow('PPDA', dH.overall.features.ppda));
+    safeHtml('table-prog-a', tHead + renderProgRow('NPxG Fatti', dA.overall.features.npxg) + renderProgRow('NPxG Subiti', dA.overall.features.npxga) + renderProgRow('Field Tilt %', dA.overall.features.field_tilt) + renderProgRow('PPDA', dA.overall.features.ppda));
+    safeTxt('prog-h-name', hName + ' (generale)'); safeTxt('prog-a-name', aName + ' (generale)');
+
+    let timingHtml = ''; const maxT = Math.max(...Object.values(bHs), ...Object.values(bHc), ...Object.values(bAs), ...Object.values(bAc), 1);
+    Object.keys(bHs).forEach(k => {
+      let wHs = Math.max((bHs[k]/maxT)*100, 3); let wHc = Math.max((bHc[k]/maxT)*100, 3); let wAs = Math.max((bAs[k]/maxT)*100, 3); let wAc = Math.max((bAc[k]/maxT)*100, 3);
+      timingHtml += `<tr><td style="font-weight:bold;color:#555">${k}</td><td style="border-left:1px solid #eee"><div class="bucket-bar bg-hf" style="width:${wHs}%">${bHs[k]}</div></td><td><div class="bucket-bar bg-hc" style="width:${wHc}%">${bHc[k]}</div></td><td style="border-left:1px solid #eee"><div class="bucket-bar bg-af" style="width:${wAs}%">${bAs[k]}</div></td><td><div class="bucket-bar bg-ac" style="width:${wAc}%">${bAc[k]}</div></td></tr>`;
+    });
+    safeHtml('timing-body', timingHtml); safeTxt('surv-30', pct(probGoal30)); safeTxt('surv-45', pct(probGoalHT));
+
+    safeHtml('row-form-ho', `<td>${hName} (Gen)</td><td>${formH_disp}</td><td>${formA_disp.split(' ')[0]}</td><td>Gen</td><td>${statsVsFormH_over ? statsVsFormH_over.count : 0}</td><td style="font-weight:bold">${statsVsFormH_over ? f2(statsVsFormH_over.pts) : 'N/D'}</td>`);
+    safeHtml('row-form-hr', `<td>${hName} (Casa)</td><td>${formH_disp}</td><td>${formA_disp.split(' ')[0]}</td><td style="color:var(--blue)">Solo Casa</td><td>${statsVsFormH_role ? statsVsFormH_role.count : 0}</td><td style="font-weight:bold;color:var(--blue)">${statsVsFormH_role ? f2(statsVsFormH_role.pts) : 'N/D'}</td>`);
+    safeHtml('row-form-ao', `<td>${aName} (Gen)</td><td>${formA_disp}</td><td>${formH_disp.split(' ')[0]}</td><td>Gen</td><td>${statsVsFormA_over ? statsVsFormA_over.count : 0}</td><td style="font-weight:bold">${statsVsFormA_over ? f2(statsVsFormA_over.pts) : 'N/D'}</td>`);
+    safeHtml('row-form-ar', `<td>${aName} (Trasf)</td><td>${formA_disp}</td><td>${formH_disp.split(' ')[0]}</td><td style="color:var(--red)">Solo Trasf</td><td>${statsVsFormA_role ? statsVsFormA_role.count : 0}</td><td style="font-weight:bold;color:var(--red)">${statsVsFormA_role ? f2(statsVsFormA_role.pts) : 'N/D'}</td>`);
+
+    safeTxt('knn-title-h', `🏠 ${hName} in casa vs simili a ${aName}`); safeHtml('knn-res-h', `Rendimento Storico: <strong>${f2(knn_H.pts_per_game)} Pts/Match</strong>`);
+    let klistH = '';
+    knn_H.topMatches.forEach(m => {
+      let esito = m.info.gf > m.info.ga ? 'V' : (m.info.gf < m.info.ga ? 'S' : 'P'); let col = esito === 'V' ? 'var(--green)' : (esito === 'S' ? 'var(--red)' : '#f57c00');
+      klistH += `<div style="border-bottom:1px solid #eee;padding:6px 0;font-size:11px;"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>${m.info.date} vs <strong>${m.info.oppName}</strong></span><span style="color:${col};font-weight:bold">${m.info.gf}-${m.info.ga}</span></div><div style="font-size:9.5px;color:#666;line-height:1.4">Poss: <b>${m.oppPoss.toFixed(0)}%</b> | NPxG: <b>${f2(m.oppXG)}</b> | Alt.Dif.: <b>${f1(m.oppDefX)}m</b><br>PPDA: <b>${f1(m.oppPPDA)}</b> | Tilt: <b>${f1(m.oppTilt)}%</b></div></div>`;
+    });
+    safeHtml('knn-list-h', klistH);
+
+    safeTxt('knn-title-a', `✈️ ${aName} in trasferta vs simili a ${hName}`); safeHtml('knn-res-a', `Rendimento Storico: <strong>${f2(knn_A.pts_per_game)} Pts/Match</strong>`);
+    let klistA = '';
+    knn_A.topMatches.forEach(m => {
+      let esito = m.info.gf > m.info.ga ? 'V' : (m.info.gf < m.info.ga ? 'S' : 'P'); let col = esito === 'V' ? 'var(--green)' : (esito === 'S' ? 'var(--red)' : '#f57c00');
+      klistA += `<div style="border-bottom:1px solid #eee;padding:6px 0;font-size:11px;"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>${m.info.date} vs <strong>${m.info.oppName}</strong></span><span style="color:${col};font-weight:bold">${m.info.gf}-${m.info.ga}</span></div><div style="font-size:9.5px;color:#666;line-height:1.4">Poss: <b>${m.oppPoss.toFixed(0)}%</b> | NPxG: <b>${f2(m.oppXG)}</b> | Alt.Dif.: <b>${f1(m.oppDefX)}m</b><br>PPDA: <b>${f1(m.oppPPDA)}</b> | Tilt: <b>${f1(m.oppTilt)}%</b></div></div>`;
+    });
+    safeHtml('knn-list-a', klistA);
+
+    safeTxt('mk-h2-ov', pct(mk_ov.dist[7]+mk_ov.dist[8]+mk_ov.dist[9]+mk_ov.dist[10])); safeTxt('mk-h2-ro', pct(mk_ro.dist[7]+mk_ro.dist[8]+mk_ro.dist[9]+mk_ro.dist[10]));
+    safeTxt('mk-h1-ov', pct(mk_ov.dist[6])); safeTxt('mk-h1-ro', pct(mk_ro.dist[6])); safeTxt('mk-x-ov', pct(mk_ov.dist[5])); safeTxt('mk-x-ro', pct(mk_ro.dist[5]));
+    safeTxt('mk-a1-ov', pct(mk_ov.dist[4])); safeTxt('mk-a1-ro', pct(mk_ro.dist[4])); safeTxt('mk-a2-ov', pct(mk_ov.dist[3]+mk_ov.dist[2]+mk_ov.dist[1]+mk_ov.dist[0])); safeTxt('mk-a2-ro', pct(mk_ro.dist[3]+mk_ro.dist[2]+mk_ro.dist[1]+mk_ro.dist[0]));
+    safeTxt('elo-name-h', hName); safeTxt('elo-name-a', aName); safeTxt('elo-h-ov', eloH_ov); safeTxt('elo-h-tr', (trendH > 0 ? "+" : "") + Math.round(trendH)); if(trendH < -20) document.getElementById('elo-h-tr').style.color = "var(--red)";
+    safeTxt('elo-a-ov', eloA_ov); safeTxt('elo-a-tr', (trendA > 0 ? "+" : "") + Math.round(trendA)); if(trendA < -20) document.getElementById('elo-a-tr').style.color = "var(--red)";
+    safeHtml('table-log-home', dH.logHtml); safeHtml('table-log-away', dA.logHtml);
+
+    // ============ DIAGNOSTICA COPERTURA API ============
+    // Serve a distinguere i due regimi: se una metrica e' coperta al 60-90% le chiavi assenti erano
+    // degli zeri; se e' coperta allo 0% il provider non la espone e nessuna imputazione la recupera.
+    const COV_LIST = [['npxg','NPxG','rapporto'],['xg','xG','rapporto'],['poss','Possesso','rapporto'],['xgot','xGOT','conteggio'],['bc','Big Chances','conteggio'],['bcm','Big Chances sprecate','conteggio'],['xg_sp','xG palle inattive','conteggio'],['ppda','PPDA','rapporto'],['field_tilt','Field Tilt','rapporto'],['avg_x','Baricentro offensivo','rapporto'],['avg_def_x','Altezza difensiva','rapporto'],['rec_time','Tempo di recupero','rapporto'],['cp_regains','Recuperi &lt;5s','conteggio'],['tch_box','Tocchi in area','conteggio'],['f3_entries','Ingressi trequarti','conteggio'],['cross','Cross','conteggio'],['drib','Dribbling riusciti','conteggio'],['thru','Filtranti','conteggio'],['misc','Controlli sbagliati','conteggio'],['disp','Palle perse','conteggio']];
+    let covHtml = `<tr><th>Metrica</th><th>Tipo</th><th>${hName}</th><th>${aName}</th></tr>`;
+    COV_LIST.forEach(([k, label, type]) => {
+      const ch = Math.round(((dH.overall.coverage||{})[k]||0)*100), ca = Math.round(((dA.overall.coverage||{})[k]||0)*100);
+      const col = v => v === 0 ? 'color:var(--red);font-weight:bold' : (v < 60 ? 'color:var(--orange)' : 'color:var(--green)');
+      covHtml += `<tr><td>${label}</td><td style="font-size:10px;color:#888">${type}</td><td style="${col(ch)}">${ch}%</td><td style="${col(ca)}">${ca}%</td></tr>`;
+    });
+    safeHtml('table-coverage', covHtml);
+
+    let p = `SEI UN DATA SCIENTIST ESPERTO DI CALCIO. Partita: ${hName} vs ${aName} (Simulazione al ${dateInput}).
+
+1. THE MASTER ENSEMBLE E QUOTE REALI (Modello NPxG)
+- Probabilità (Dixon-Coles + KNN 11D pesato dinamico + Markov 10%): 1 (${pct(m1)}) | X (${pct(mX)}) | 2 (${pct(m2)})
+- Fair Odds Ensemble: 1 @${oddM1} | X @${oddMX} | 2 @${oddM2}   (Dixon-Coles puro: 1 @${odd1} | X @${oddX} | 2 @${odd2})
+- Affidabilita' campionaria: ${dH.role.n} match casa per ${hName}, ${dA.role.n} match trasferta per ${aName}. Vicini KNN efficaci: ${f1(knn_H.nEff)} / ${f1(knn_A.nEff)}
+- Confidence Score: ${confidence}/100
+- Hidden Value / Blood Scent: ${hiddenValueMsgClean}
+
+2. SCOMPOSIZIONE MODELLI
+- Dixon-Coles Puro (Ruolo NPxG): 1 (${pct(probsRole.p1)}) | X (${pct(probsRole.pX)}) | 2 (${pct(probsRole.p2)})
+- KNN 11D Puro (Tattica): 1 (${pct(probsKnn.p1)}) | X (${pct(probsKnn.pX)}) | 2 (${pct(probsKnn.p2)})
+
+3. QUALITA' E CINISMO (The Sniper Box)
+- NPxG vs xGOT (Indice Cecchino): ${hName} ${f2(npxgH_ro)} vs ${xgotH > 0 ? f2(xgotH) : (xgShotH > 0 ? f2(xgShotH) + " (xG/Tiro)" : "N/D")} | ${aName} ${f2(npxgA_ro)} vs ${xgotA > 0 ? f2(xgotA) : (xgShotA > 0 ? f2(xgShotA) + " (xG/Tiro)" : "N/D")}
+- Big Chances (Create/Sprecate): ${hName} ${f1(bcH)}/${f1(bcmH)} | ${aName} ${f1(bcA)}/${f1(bcmA)}
+- Dipendenza da Palla Inattiva: ${hName} ${setPctH > 0 ? f1(setPctH) : "0"}% | ${aName} ${setPctA > 0 ? f1(setPctA) : "0"}%
+- Efficienza Goal vs xG: ${hName} ${f2(effH_ro)} | ${aName} ${f2(effA_ro)}
+
+4. EXPECTATION PITAGORICA E ELO
+- ELO Trend: ${hName} ${Math.round(trendH)} | ${aName} ${Math.round(trendA)}
+- ${hName}: Pts/Match Reali ${f2(pytH.ppgAct)} | Pts/Match Attesi ${f2(pytH.ppgExp)}. Diagnosi: ${pytH.msg}
+- ${aName}: Pts/Match Reali ${f2(pytA.ppgAct)} | Pts/Match Attesi ${f2(pytA.ppgExp)}. Diagnosi: ${pytA.msg}
+
+5. MATRICE DIFENSIVA E GEGENPRESSING
+- Altezza Linea Difensiva: ${hName} ${defX_H > 0 ? f1(defX_H) + "m" : "N/D"} | ${aName} ${defX_A > 0 ? f1(defX_A) + "m" : "N/D"}
+- Lunghezza Squadra: ${hName} ${lenH > 0 ? f1(lenH) + "m" : "N/D"} | ${aName} ${lenA > 0 ? f1(lenA) + "m" : "N/D"}
+- Choke Index (Gegenpressing): ${hName} ${chokeH > 0 ? f2(chokeH) : "N/D"} | ${aName} ${chokeA > 0 ? f2(chokeA) : "N/D"}
+- Goffaggine in disimpegno (Palle perse): ${hName} ${f1(clumsyH)} | ${aName} ${f1(clumsyA)}
+
+6. MATRICE DI STILE E FUNNEL OFFENSIVO
+- Baricentro Offensivo Medio: ${hName} ${avgX_H > 0 ? f1(avgX_H) + "m" : "N/D"} | ${aName} ${avgX_A > 0 ? f1(avgX_A) + "m" : "N/D"}
+- Indice Penetrazione (Tocchi Area / Ingressi Trequarti): ${hName} ${f3H > 0 ? f1(penRateH) : "0"}% | ${aName} ${f3A > 0 ? f1(penRateA) : "0"}%
+- Stile d'Attacco (Cross/Dribbling/Filtranti a partita): ${hName} (${f1(crossH)} / ${f1(dribH)} / ${f1(thruH)}) | ${aName} (${f1(crossA)} / ${f1(dribA)} / ${f1(thruA)})
+- Duelli Aerei vinti: ${hName} ${f1(aerH)} | ${aName} ${f1(aerA)}
+- Moduli Base: ${hName} usa ${formH_disp} (${statsVsFormH_role ? f2(statsVsFormH_role.pts) : 'N/D'} pts vs simili). ${aName} usa ${formA_disp} (${statsVsFormA_role ? f2(statsVsFormA_role.pts) : 'N/D'} pts vs simili).
+
+7. KNN MATCH STORICI (11 Dimensioni Tattiche, kernel pesato)
+- ${hName} in casa vs simili a ${aName} (Rendimento: ${f2(knn_H.pts_per_game)} Pts/Match):
+  ${knn_H.topMatches.slice(0,2).map(m => `* vs ${m.info.oppName}: Finita ${m.info.gf}-${m.info.ga} (Poss: ${m.oppPoss.toFixed(0)}%, NPxG: ${f2(m.oppXG)}, Tilt: ${f1(m.oppTilt)}%, DifX: ${f1(m.oppDefX)}m)`).join('\n  ')}
+- ${aName} in trasferta vs simili a ${hName} (Rendimento: ${f2(knn_A.pts_per_game)} Pts/Match):
+  ${knn_A.topMatches.slice(0,2).map(m => `* vs ${m.info.oppName}: Finita ${m.info.gf}-${m.info.ga} (Poss: ${m.oppPoss.toFixed(0)}%, NPxG: ${f2(m.oppXG)}, Tilt: ${f1(m.oppTilt)}%, DifX: ${f1(m.oppDefX)}m)`).join('\n  ')}
+
+8. TIMING E ALTA VARIANZA
+- Goal Fatti / Subiti ${hName}: 1-15' (${bHs['1-15']}F/${bHc['1-15']}S), 76-90' (${bHs['76-90+']}F/${bHc['76-90+']}S)
+- Goal Fatti / Subiti ${aName}: 1-15' (${bAs['1-15']}F/${bAc['1-15']}S), 76-90' (${bAs['76-90+']}F/${bAc['76-90+']}S)
+- P(Goal < 30'): ${pct(probGoal30)} | Corner Attesi: ${f1(advRole.lCor)} | Gialli Attesi: ${f1(advRole.lYel)}
+
+ISTRUZIONI:
+Produci le seguenti sezioni in quest\'ordine:
+
+## LETTURA DEI CALCOLI
+Sintetizza in 4-5 righe lo scontro tattico incrociando Matrice Difensiva (Gegenpressing, altezza linea, compattezza), Cinismo (xGOT vs NPxG, Big Chances sprecate) e Funnel Offensivo (baricentri, penetrazione). Se Blood Scent o Smart Money e\' attivo, spiega il meccanismo tattico.
+
+## VALUTAZIONE MERCATI (sii diretto, usa i numeri sotto)
+
+Mercati base:
+- 1 (${hName} vince): Ensemble ${pct(m1)} | Ruolo DC ${pct(probsRole.p1)} → [ALTO/MEDIO/BASSO] Motivo in 1 frase.
+- X (Pareggio): Ensemble ${pct(mX)} | Ruolo DC ${pct(probsRole.pX)} → [ALTO/MEDIO/BASSO] Motivo in 1 frase.
+- 2 (${aName} vince): Ensemble ${pct(m2)} | Ruolo DC ${pct(probsRole.p2)} → [ALTO/MEDIO/BASSO] Motivo in 1 frase.
+
+Doppie chance:
+- 1X: ${pct(probsRole.p1 + probsRole.pX)} → [ALTO/MEDIO/BASSO] Motivo in 1 frase.
+- X2: ${pct(probsRole.pX + probsRole.p2)} → [ALTO/MEDIO/BASSO] Motivo in 1 frase.
+- 12: ${pct(probsRole.p1 + probsRole.p2)} → [ALTO/MEDIO/BASSO] Motivo in 1 frase.
+
+Gol/Over-Under:
+- Goal (GG): ${pct(probsRole.pGG)} → [ALTO/MEDIO/BASSO] Cita NPxG, efficienza tiri e difese.
+- NoGoal (NG): ${pct(1 - probsRole.pGG)} → [ALTO/MEDIO/BASSO] Motivo in 1 frase.
+- Over 2.5: ${pct(probsRole.pOv)} → [ALTO/MEDIO/BASSO] Cita ritmo, timing gol per fascia e NPxG totali.
+- Under 2.5: ${pct(1 - probsRole.pOv)} → [ALTO/MEDIO/BASSO] Motivo in 1 frase.`;
+    
+    document.getElementById('ai-prompt').value = p;
+
+  } catch(e) {
+    console.error(e);
+    alert("ERRORE DURANTE L'ANALISI: " + e.message);
+    document.getElementById('console-loader').style.display = 'none';
+    document.getElementById('btn-avvia').disabled = false;
+  }
+}
+
+// Il modello da solo non dice se una scommessa conviene: serve il confronto con la quota offerta.
+function calcValue() {
+  const out = document.getElementById('value-out'); if(!out) return;
+  if(!window.__MASTER) { return; }
+  const P = window.__MASTER;
+  const gv = id => parseFloat((document.getElementById(id)||{}).value);
+  const bank = gv('bk-bank') || 100;
+  const legs = [ {k:'1', p:P.p1, o:gv('bk-1')}, {k:'X', p:P.pX, o:gv('bk-x')}, {k:'2', p:P.p2, o:gv('bk-2')} ];
+  const valid = legs.filter(l => l.o > 1 && isFinite(l.o));
+  if(!valid.length) { out.innerHTML = "<span style='color:#888'>Inserisci le quote del bookmaker: senza confronto col mercato una probabilita' non e' una scommessa.</span>"; return; }
+  const over = (valid.length === 3) ? valid.reduce((s,l) => s + 1/l.o, 0) : 0;
+  let html = `<table class="table-ui" style="margin-bottom:6px"><tr><th>Esito</th><th>P modello</th><th>P book netta</th><th>Quota</th><th>Valore Atteso</th><th>Stake (Kelly 1/4)</th></tr>`;
+  valid.forEach(l => {
+    const pb = over > 0 ? (1/l.o)/over : (1/l.o);
+    const ev = l.p * l.o - 1;
+    const b = l.o - 1; const kf = Math.max(0, (b*l.p - (1-l.p))/b) * 0.25;
+    const col = ev > 0.03 ? 'var(--green)' : (ev < 0 ? 'var(--red)' : '#555');
+    html += `<tr><td style="font-weight:bold">${l.k}</td><td>${pct(l.p)}</td><td>${pct(pb)}</td><td>${l.o.toFixed(2)}</td><td style="color:${col};font-weight:bold">${(ev*100).toFixed(1)}%</td><td>${kf > 0 ? (kf*100).toFixed(1)+'% ('+(kf*bank).toFixed(2)+')' : '-'}</td></tr>`;
+  });
+  html += `</table>`;
+  if(over > 0) html += `<div style="font-size:10px;color:#888">Margine del book: ${((over-1)*100).toFixed(1)}%. La colonna "P book netta" e' la probabilita' implicita depurata dal margine: se e' vicina alla tua, il valore apparente e' solo rumore.</div>`;
+  html += `<div style="font-size:10px;color:#888;margin-top:4px">Kelly frazionato a 1/4: il modello non e' calibrato su backtest, quindi il Kelly pieno sovrastima lo stake.</div>`;
+  out.innerHTML = html;
+}
+
+async function copiaPrompt() {
+  const el = document.getElementById('ai-prompt'); if(!el) return;
+  try { await navigator.clipboard.writeText(el.value); alert("Mega-Prompt copiato."); }
+  catch(e) { el.select(); document.execCommand('copy'); alert("Mega-Prompt copiato."); }
+}
+</script>
+</body>
+</html>

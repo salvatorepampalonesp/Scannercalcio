@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Comparatore V9.7 — Drag & Drop Auto</title>
+<style>
+:root { --bg:#f2f2f7; --card:#fff; --text:#1c1c1e; --sub:#8e8e93; --blue:#007aff; --red:#c62828; --green:#2d7d32; --orange:#f57c00; --purple:#6a1b9a; --dark:#111; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text);padding:1rem;font-size:13px;min-height:100vh}
+.wrap{max-width:1300px;margin:0 auto;padding-bottom:3rem}
+h1{font-size:22px;font-weight:800;margin-bottom:1rem;display:flex;align-items:center;gap:10px}
+h1 span{font-size:12px;background:var(--dark);color:white;padding:3px 8px;border-radius:6px}
+.card{background:var(--card);border-radius:12px;padding:1.2rem;margin-bottom:15px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.section-title{font-size:14px;font-weight:800;text-transform:uppercase;margin-bottom:12px;border-bottom:2px solid #edf2f7;padding-bottom:6px;color:var(--blue)}
+input,select{width:100%;font-size:13px;border:1px solid #d1d1d6;border-radius:8px;padding:8px 12px;background:#fff;margin-top:4px}
+.btn{border:none;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;color:#fff;display:inline-block;text-align:center;width:100%}
+.btn:hover{opacity:.9}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-dark{background:var(--dark)} .btn-green{background:var(--green);font-size:14px;padding:12px} .btn-blue{background:var(--blue);width:auto}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:end}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;align-items:end}
+.table-ui{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px}
+.table-ui th{background:#fafafa;padding:8px;border-bottom:2px solid #ddd;color:#555;font-weight:bold;text-align:center}
+.table-ui td{padding:7px 8px;border-bottom:1px solid #eee;text-align:center;color:#333}
+.table-ui td:first-child{text-align:left;font-weight:bold;color:#111;background:#fafafa}
+#dropzone {
+  border: 3px dashed #007aff; border-radius: 12px; padding: 40px; text-align: center;
+  background: #f0f8ff; margin-bottom: 20px; cursor: pointer; transition: all .2s;
+}
+#dropzone:hover, #dropzone.dragover { background: #d6ebff; border-color: #0056b3; transform: scale(1.01); }
+#dropzone.loaded { background: #e8f5e9; border-color: var(--green); border-style: solid; }
+#dropzone h2 { font-size: 20px; color: #007aff; margin-bottom: 10px; }
+#dropzone.loaded h2 { color: var(--green); }
+#dropzone p { color: #666; font-size: 13px; }
+#dropzone code { background: #fff; padding: 2px 6px; border-radius: 3px; font-size: 11px; color: #c7254e; }
+#console{font-family:monospace;background:#111;color:#0f0;padding:10px;border-radius:8px;max-height:250px;overflow-y:auto;font-size:11px;margin-top:10px;display:none;line-height:1.4}
+#banner-export{display:none;background:var(--green);color:white;padding:10px 15px;border-radius:8px;font-weight:bold;margin-bottom:15px;text-align:center}
+.hidden{display:none}
+.note{font-size:10px;color:#888;line-height:1.5;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Comparatore V9.7 <span>Drag & Drop Auto</span></h1>
+
+  <!-- STEP 1: DRAG & DROP -->
+  <div id="dropzone">
+    <h2>📥 Trascina qui il tuo Scanner V9.7 (.html)</h2>
+    <p>Il file verrà elaborato automaticamente in memoria.</p>
+    <p style="margin-top:8px;font-size:11px;color:#888">
+      ✨ <b>Nessuna modifica manuale al V9.7</b>: il motore vero viene iniettato e le sue formule
+      catturate con un hook. Le probabilità NON vengono ricalcolate qui: sono quelle esatte del V9.7.
+    </p>
+    <input type="file" id="file-input" accept=".html" style="display:none">
+  </div>
+
+  <div id="console"></div>
+
+  <div id="setup-area" class="hidden">
+    <div id="banner-export">
+      ✅ Hai salvato <span id="export-count" style="font-size:16px;background:#fff;color:var(--green);padding:2px 8px;border-radius:4px;margin:0 4px">0</span> partite. Pronte per il download!
+    </div>
+
+    <div class="card">
+      <div class="section-title">🔍 Setup & Ricerca Partita</div>
+      <div class="grid-2" style="margin-bottom:15px">
+        <div>
+          <label style="font-size:10px;font-weight:bold;color:#555">API Key</label>
+          <input id="cmp-api-key" type="password" placeholder="pk_live_...">
+        </div>
+        <div>
+          <label style="font-size:10px;font-weight:bold;color:#555">Data</label>
+          <input type="date" id="cmp-target-date">
+        </div>
+      </div>
+      <div class="grid-3" style="align-items:end;margin-bottom:15px">
+        <div>
+          <label style="font-size:10px;font-weight:bold;color:#555">Paese</label>
+          <select id="cmp-country" onchange="cmpUpdateLeagues()"><option value="">-- --</option></select>
+        </div>
+        <div>
+          <label style="font-size:10px;font-weight:bold;color:#555">Lega</label>
+          <select id="cmp-league" onchange="cmpUpdateSeasons()"><option value="">-- --</option></select>
+        </div>
+        <div>
+          <label style="font-size:10px;font-weight:bold;color:#555">Stagione</label>
+          <select id="cmp-season"><option value="">-- --</option></select>
+        </div>
+      </div>
+      <button class="btn btn-dark" id="cmp-btn-carica" onclick="cmpCaricaDatabase()">📥 Trova Partite del Giorno</button>
+
+      <div id="cmp-match-builder" class="hidden" style="margin-top:20px;border-top:2px solid #edf2f7;padding-top:15px">
+        <div class="section-title" style="color:var(--green)">⚡ Scegli Partita</div>
+        <div class="grid-3">
+          <div style="grid-column:span 2">
+            <label style="font-size:10px;font-weight:bold;color:#555">Partite Concluse</label>
+            <select id="cmp-partita" style="font-weight:bold"></select>
+          </div>
+          <div>
+            <label style="font-size:10px;font-weight:bold;color:#555">Limite Storico</label>
+            <input type="number" id="cmp-history-limit" value="15" min="5" max="100">
+          </div>
+        </div>
+        <button class="btn btn-green" style="margin-top:15px" onclick="cmpEsegui()">🚀 Esegui V9.7 + Confronto</button>
+      </div>
+    </div>
+
+    <div id="cmp-results" class="hidden">
+      <div class="card" style="border-top:4px solid var(--green);background:#f1f8e9">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+          <div>
+            <div style="font-size:12px;font-weight:bold;color:#2e7d32">📊 Previsione V9.7 vs Realtà</div>
+            <div id="cmp-header-info" style="font-size:11px;color:#555;margin-top:2px">--</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-green" style="width:auto;padding:10px 20px" onclick="cmpSalva()">💾 Salva Match</button>
+            <button class="btn btn-blue" onclick="cmpExportCSV()">📥 Scarica Excel</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="border-top:4px solid var(--purple)">
+        <div class="section-title" style="color:var(--purple)">🏆 1X2 per Modello</div>
+        <table class="table-ui">
+          <thead><tr><th>Modello</th><th>1</th><th>X</th><th>2</th><th>Scelta</th><th>Reale</th><th>Risultato</th></tr></thead>
+          <tbody id="cmp-1x2-body"></tbody>
+        </table>
+      </div>
+
+      <div class="card" style="border-top:4px solid var(--dark)">
+        <div class="section-title">📊 Mercati Ensemble</div>
+        <table class="table-ui">
+          <thead><tr><th>Mercato</th><th>Ensemble</th><th>DC</th><th>KNN</th><th>Conf.</th><th>Reale</th><th>Risultato</th></tr></thead>
+          <tbody id="cmp-markets-body"></tbody>
+        </table>
+        <div class="note">Legenda: <b style="color:var(--green)">✅</b>/<b style="color:var(--red)">❌</b> per esiti con prob ≥55% (vera scommessa). Sotto il 45% un esito non "previsto" che non si verifica è coerenza del modello, non un errore. Il KNN mostra "--" solo se mancano i dati di tracking per costruire i vicini.</div>
+      </div>
+
+      <!-- NUOVA CARD: studio Over/Under multi-linea + GG (focus richiesto) -->
+      <div class="card" style="border-top:4px solid var(--orange)">
+        <div class="section-title" style="color:var(--orange)">⚽ Gol: Over/Under multi-linea &amp; GG/NG</div>
+        <table class="table-ui">
+          <thead><tr><th>Mercato</th><th>Prob DC</th><th>Reale partita</th><th>Esito</th></tr></thead>
+          <tbody id="cmp-goals-body"></tbody>
+        </table>
+        <div class="note">Tutte le linee Over/Under ricostruite dalla matrice Dixon-Coles del motore. Gol totali reali della partita a confronto con ogni soglia.</div>
+      </div>
+
+      <!-- NUOVA CARD: mercati statistici (corner/tiri/cartellini via binomiale negativa) -->
+      <div class="card" style="border-top:4px solid var(--purple)">
+        <div class="section-title" style="color:var(--purple)">📈 Mercati Statistici (binomiale negativa) &amp; Handicap</div>
+        <table class="table-ui">
+          <thead><tr><th>Mercato</th><th>Atteso/Prob</th><th>Reale</th><th>Esito</th></tr></thead>
+          <tbody id="cmp-stats-mkt-body"></tbody>
+        </table>
+        <div class="note">Corner/Tiri/Cartellini: valore atteso e prob. Over dal modello binomiale negativa del motore. Handicap asiatico dalla matrice DC.</div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card" style="border-top:4px solid var(--blue)">
+          <div class="section-title" style="color:var(--blue)">🏠 <span id="cmp-hdr-home">Casa</span></div>
+          <table class="table-ui">
+            <thead><tr><th>Metrica</th><th>Previsto</th><th>Reale</th><th>Scarto</th></tr></thead>
+            <tbody id="cmp-home-body"></tbody>
+          </table>
+        </div>
+        <div class="card" style="border-top:4px solid var(--red)">
+          <div class="section-title" style="color:var(--red)">✈️ <span id="cmp-hdr-away">Trasferta</span></div>
+          <table class="table-ui">
+            <thead><tr><th>Metrica</th><th>Previsto</th><th>Reale</th><th>Scarto</th></tr></thead>
+            <tbody id="cmp-away-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Sandbox invisibile: qui il V9.7 popola i suoi elementi.
+     IMPORTANTE: gli id devono combaciare ESATTAMENTE con quelli che avviaScanner legge:
+     sel-home, sel-away, history-limit, target-date, sel-league, sel-country, sel-season, api-key. -->
+<div id="v97-sandbox" style="display:none">
+  <select id="sel-home"></select>
+  <select id="sel-away"></select>
+  <select id="sel-country"></select>
+  <select id="sel-league"></select>
+  <select id="sel-season"></select>
+  <input id="api-key" type="text">
+  <input id="target-date" type="date">
+  <input id="history-limit" type="number">
+  <div id="dashboard-area"></div>
+  <div id="matchup-builder"></div>
+  <div id="setup-card"></div>
+  <div id="console-loader"></div>
+  <div id="ai-prompt"></div>
+  <div id="conf-bar"></div>
+  <div id="elo-h-tr"></div>
+  <div id="elo-a-tr"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// PATCH TOLLERANTE getElementById — assorbe accessi a elementi mancanti del V9.7
+// ═══════════════════════════════════════════════════════════════════════════
+(function(){
+  const _orig = document.getElementById.bind(document);
+  const ghost = new Proxy({}, {
+    get: function(t, k) {
+      if (k === 'style') return new Proxy({}, { get: () => '', set: () => true });
+      if (k === 'classList') return { add:()=>{}, remove:()=>{}, contains:()=>false, toggle:()=>{} };
+      if (k === 'children' || k === 'options') return [];
+      if (k === 'add' || k === 'appendChild' || k === 'removeChild' ||
+          k === 'addEventListener' || k === 'removeEventListener' ||
+          k === 'setAttribute' || k === 'removeAttribute' ||
+          k === 'focus' || k === 'blur' || k === 'click' ||
+          k === 'scrollIntoView' || k === 'insertBefore' || k === 'remove') return () => {};
+      if (k === 'innerHTML' || k === 'textContent' || k === 'value' || k === 'checked') return '';
+      if (k === 'length') return 0;
+      if (k === 'parentElement' || k === 'parentNode') return null;
+      if (k === 'querySelector' || k === 'querySelectorAll') return () => ghost;
+      return undefined;
+    },
+    set: function() { return true; }
+  });
+  document.getElementById = function(id) { return _orig(id) || ghost; };
+})();
+
+// ═══════════════════════════════════════════════════════════════════════════
+// COMPARATORE — Drag & drop del V9.7 con iniezione automatica
+// ═══════════════════════════════════════════════════════════════════════════
+
+let cmpMatchesOfTheDay = [];
+let cmpSavedMatches = [];
+let cmpLeagues = [];
+let cmpCurrentResult = null;
+let engineReady = false;
+let cmpCurrentLeagueId = '';   // lega selezionata, per taggare i match e settare sel-league
+
+const cmpLog = m => {
+  const c = document.getElementById('console');
+  c.style.display='block';
+  c.innerHTML += m + '<br>';
+  c.scrollTop = c.scrollHeight;
+};
+const _pct = v => (v==null || isNaN(v)) ? '--' : (v*100).toFixed(1)+'%';
+const _num = v => (v==null || isNaN(v)) ? '--' : Number(v).toFixed(2);
+const _mean = arr => { if(!Array.isArray(arr)) return null; const v = arr.filter(x=>x!=null&&!isNaN(x)); return v.length? v.reduce((s,x)=>s+x,0)/v.length : null; };
+
+// Deriva TUTTI i mercati gol da una matrice Dixon-Coles: Over/Under per ogni linea, GG/NG,
+// e le fasce multigol. Serve per lo studio approfondito Over/Under (più linee, non solo 2.5).
+function marketsFromMatrix(mat) {
+  if (!mat || !mat.length) return null;
+  const out = { ou: {}, gg: 0, ng: 0 };
+  const lines = [0.5, 1.5, 2.5, 3.5, 4.5];
+  lines.forEach(L => out.ou[L] = { over: 0, under: 0 });
+  let pGG = 0;
+  for (let i = 0; i < mat.length; i++) {
+    for (let j = 0; j < mat[i].length; j++) {
+      const p = mat[i][j] || 0;
+      const tot = i + j;
+      lines.forEach(L => { if (tot > L) out.ou[L].over += p; else out.ou[L].under += p; });
+      if (i > 0 && j > 0) pGG += p;
+    }
+  }
+  out.gg = pGG; out.ng = 1 - pGG;
+  return out;
+}
+
+// ─── DRAG & DROP ─────────────────────────────────────────────────────────
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('file-input');
+
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault(); dropzone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) loadEngineFromFile(file);
+});
+fileInput.addEventListener('change', e => { if (e.target.files[0]) loadEngineFromFile(e.target.files[0]); });
+
+async function loadEngineFromFile(file) {
+  if (!file.name.endsWith('.html')) return alert("Il file deve essere .html");
+
+  cmpLog(`📂 Caricamento file: ${file.name}`);
+  const text = await file.text();
+  cmpLog(`   → ${(text.length/1024).toFixed(1)} KB letti`);
+
+  // ─── STEP 1: Estraggo tutto il codice JavaScript degli <script> ─────
+  const scriptRegex = /<script[^>]*>([\s\S]*?)<\/script>/gi;
+  let match, rawJs = '';
+  while ((match = scriptRegex.exec(text)) !== null) {
+    if (match[0].includes('src=')) continue;
+    if (!match[1].trim()) continue;
+    rawJs += '\n' + match[1];
+  }
+
+  if (!rawJs.trim()) return alert("❌ Nessun codice JS trovato nel file.");
+  cmpLog(`   → ${(rawJs.length/1024).toFixed(1)} KB di JS estratti`);
+
+  let processedJs = rawJs;
+
+  // ─── STEP 2a: Disattivo la chiamata auto-eseguita loadLegheJson() del motore ──
+  // (qui gestiamo noi le leghe; quella chiamata fa un fetch che può fallire e interrompere l'eval).
+  processedJs = processedJs.replace(/^\s*loadLegheJson\(\)\s*;?\s*$/m,
+    '/* loadLegheJson() del motore disattivata dal comparatore */');
+
+  // ─── STEP 2b: CACHE CONDIVISA (fix bug bloccante) ─────────────────────────
+  // Il motore dichiara `let globalLeagueMatchesCache = []` e le sue funzioni leggono QUEL binding.
+  // Con eval, quel `let` resta nello scope dell'eval e non è raggiungibile da window: se il
+  // comparatore scrive su window.globalLeagueMatchesCache, il motore continua a vedere la cache
+  // VUOTA → "Storico insufficiente" → l'hook non parte mai. Rimpiazzo la dichiarazione con un
+  // riferimento condiviso a window.__ENGINE_CACHE, così comparatore e motore usano lo STESSO array.
+  const cacheRe = /(^|\n)\s*(?:let|var|const)\s+globalLeagueMatchesCache\s*=\s*\[\]\s*;?/;
+  if (cacheRe.test(processedJs)) {
+    processedJs = processedJs.replace(cacheRe,
+      '$1 if(!window.__ENGINE_CACHE) window.__ENGINE_CACHE = []; ' +
+      'Object.defineProperty(window, "globalLeagueMatchesCache", {' +
+      'configurable:true, get(){return window.__ENGINE_CACHE;}, set(v){window.__ENGINE_CACHE = v;}});');
+    cmpLog(`🔧 Cache condivisa agganciata (window.__ENGINE_CACHE)`);
+  } else {
+    cmpLog(`   ⚠️ Dichiarazione cache non trovata: il motore potrebbe avere struttura diversa.`);
+  }
+
+  // ─── STEP 2c: INIETTO L'HOOK per _V97_probs se manca ──────────────────────
+  if (!processedJs.includes('_V97_probs')) {
+    cmpLog(`🔧 Iniezione hook window._V97_probs...`);
+
+    // FIX TDZ: l'hook viene iniettato DOPO la riga di confidence (non dopo m1/mX/m2), così
+    // sampleFactor e confidence sono già inizializzati. Iniettarlo prima causava una
+    // ReferenceError (temporal dead zone su const) che, catturata dal try, impediva l'assegnazione.
+    const hookCode = `
+    /* ─── HOOK COMPARATORE ESTESO (iniettato al volo) ─── */
+    try {
+      globalThis._V97_probs = {
+        probsRole:   (typeof probsRole   !== 'undefined') ? probsRole   : null,
+        probsKnn:    (typeof probsKnn    !== 'undefined') ? probsKnn    : null,
+        mk_ro:       (typeof mk_ro       !== 'undefined') ? mk_ro       : null,
+        m1: (typeof m1!=='undefined')?m1:null, mX: (typeof mX!=='undefined')?mX:null, m2: (typeof m2!=='undefined')?m2:null,
+        confidence:  (typeof confidence  !== 'undefined') ? confidence  : null,
+        sampleFactor:(typeof sampleFactor!== 'undefined') ? sampleFactor: null,
+        wKnn:        (typeof wKnn        !== 'undefined') ? wKnn        : null,
+        dH: (typeof dH!=='undefined')?dH:null,
+        dA: (typeof dA!=='undefined')?dA:null,
+        /* MERCATI AVANZATI per validazione estesa */
+        dcMat:    (typeof dcMat!=='undefined') ? dcMat : null,      /* matrice DC: per ricostruire OU multi-linea, GG, multigol */
+        lamH:     (typeof lamH_mix!=='undefined') ? lamH_mix : ((typeof lamH_role!=='undefined')?lamH_role:null),
+        lamA:     (typeof lamA_mix!=='undefined') ? lamA_mix : ((typeof lamA_role!=='undefined')?lamA_role:null),
+        advRole:  (typeof advRole!=='undefined') ? advRole : null,  /* corner/tiri/cartellini attesi + prob Over (negBin) */
+        advOver:  (typeof advOver!=='undefined') ? advOver : null,
+        ahData:   (typeof ahData!=='undefined') ? ahData : null,    /* handicap asiatico */
+        mgTot:    (typeof mgTot!=='undefined') ? mgTot : null       /* multigol totali */
+      };
+    } catch(e) { console.error('Hook _V97_probs failed:', e); }
+    /* ─── FINE HOOK ─── */
+    `;
+
+    // Ancora l'hook SUBITO DOPO la definizione di `confidence` (ultima variabile che ci serve).
+    // Pattern primario: la riga `const confidence = Math.round(... sampleFactor);`
+    const afterConfidence = /(const\s+confidence\s*=\s*Math\.round\([^;]*;)/;
+    if (afterConfidence.test(processedJs)) {
+      processedJs = processedJs.replace(afterConfidence, '$1\n' + hookCode);
+      cmpLog(`   ✅ Hook iniettato dopo il calcolo di confidence`);
+    } else {
+      // Fallback: dopo l'ensemble m1/mX/m2. In questo caso confidence/sampleFactor potrebbero
+      // non esistere ancora: l'hook li mette a null ma cattura comunque le probabilità.
+      const afterEnsemble = /(const\s+m_tot\s*=\s*m1_raw\s*\+\s*mX_raw\s*\+\s*m2_raw[^;]*;\s*const\s+m1\s*=[^;]*;\s*const\s+mX\s*=[^;]*;\s*const\s+m2\s*=[^;]*;)/;
+      if (afterEnsemble.test(processedJs)) {
+        processedJs = processedJs.replace(afterEnsemble, '$1\n' + hookCode);
+        cmpLog(`   ✅ Hook iniettato dopo l'ensemble (fallback; confidence potrebbe risultare null)`);
+      } else {
+        cmpLog(`   ❌ Punto di iniezione hook non trovato. Struttura V9.7 inattesa.`);
+      }
+    }
+  } else {
+    cmpLog(`   ℹ️ Hook _V97_probs già presente nel V9.7`);
+  }
+
+  // ─── STEP 3: ESPOSIZIONE FUNZIONI — in CODA, dentro new Function ───────────
+  // NB: NON uso (0,eval) con blocco di esposizione in testa. Motivo: in eval indiretto i browser
+  // moderni NON "leakano" le function declaration allo scope globale come fa Node, quindi
+  // `typeof apiCall` in testa risultava undefined nel browser → "Funzioni mancanti".
+  // new Function crea invece un UNICO scope-funzione prevedibile: eseguo il motore e, IN CODA,
+  // copio su window ogni funzione (a quel punto tutte già dichiarate). this=window per l'aggancio.
+  const exposeNames = ['apiCall','avviaScanner','aggregaTeam','extractSafeStat','buildGlobalElo',
+    'calcDCMatrix','markovFlow','probsFromMatrix','estimateRho','calculateRho','getSimilarMatches',
+    'computeLeagueParams','multigoal','asianHandicapMat','negBinCDF','negBinK','poisson',
+    'expectedPoints','probsFromMatrix','loadLegheJson'];
+  let exposer = '\n;(function(){\n';
+  exposeNames.forEach(n => {
+    exposer += `  try { if (typeof ${n} !== 'undefined') window[${JSON.stringify(n)}] = ${n}; } catch(e){}\n`;
+  });
+  exposer += '})();\n';
+
+  // ─── STEP 4: ESEGUO IL JS PROCESSATO (motore + esposizione in coda) ─────────
+  cmpLog(`⚙️ Iniezione motore in memoria...`);
+  try {
+    const runner = new Function(processedJs + exposer);
+    runner.call(window);
+  } catch (e) {
+    cmpLog(`⚠️ Warning durante iniezione: ${e.message}`);
+    // Non blocco: alcune funzioni potrebbero essere state esposte prima dell'errore.
+  }
+
+  // ─── STEP 5: Verifica funzioni esposte ──────────────────────────────
+  const required = ['apiCall', 'avviaScanner', 'aggregaTeam', 'extractSafeStat',
+                    'buildGlobalElo', 'calcDCMatrix', 'markovFlow', 'probsFromMatrix'];
+  const missing = required.filter(fn => typeof globalThis[fn] !== 'function');
+
+  if (missing.length > 0) {
+    cmpLog(`❌ Funzioni mancanti: ${missing.join(', ')}`);
+    return alert(`Motore V9.7 non riconosciuto. Funzioni mancanti:\n${missing.join(', ')}\n\nVerifica di aver droppato il file V9.7 corretto.`);
+  }
+
+  cmpLog(`✅ Tutte le ${required.length} funzioni chiave esposte.`);
+  cmpLog(`   → getSimilarMatches: ${typeof globalThis.getSimilarMatches}`);
+  cmpLog(`   → computeLeagueParams: ${typeof globalThis.computeLeagueParams}`);
+
+  engineReady = true;
+  dropzone.classList.add('loaded');
+  dropzone.innerHTML = `<h2>✅ Motore V9.7 caricato</h2>
+    <p>File: <code>${file.name}</code> · Motore attivo per tutta la sessione</p>
+    <p style="margin-top:8px;font-size:11px;color:#666">Clicca qui per ricaricarlo dopo un aggiornamento del V9.7.</p>`;
+  document.getElementById('setup-area').classList.remove('hidden');
+
+  // Init
+  await cmpLoadLeghe();
+  const t = new Date(); t.setDate(t.getDate() - 1);
+  document.getElementById('cmp-target-date').value = t.toISOString().split('T')[0];
+  const savedKey = localStorage.getItem('pitchapi_key');
+  if (savedKey) document.getElementById('cmp-api-key').value = savedKey;
+
+  cmpLog(`🎯 Pronto. Seleziona lega e data.`);
+}
+
+// ─── LEGHE ───────────────────────────────────────────────────────────────
+async function cmpLoadLeghe() {
+  const cSel = document.getElementById('cmp-country');
+  cSel.innerHTML = '<option value="">-- --</option>';
+  try {
+    const res = await fetch('leghe.json');
+    if (res.ok) {
+      const json = await res.json();
+      cmpLeagues = json.data?.leagues || json.leagues || [];
+    } else throw new Error();
+  } catch {
+    cmpLeagues = [
+      {"id":"l_1Isor4","name":"Bundesliga","country_code":"GER","seasons":["2023/2024","2024/2025","2025/2026"]},
+      {"id":"l_0ErfuF","name":"LaLiga","country_code":"ESP","seasons":["2023/2024","2024/2025","2025/2026","2026/2027"]},
+      {"id":"l_3FJFUl","name":"Ligue 1","country_code":"FRA","seasons":["2023/2024","2024/2025","2025/2026","2026/2027"]},
+      {"id":"l_4WFCIZ","name":"Premier League","country_code":"ENG","seasons":["2023/2024","2024/2025","2025/2026","2026/2027"]},
+      {"id":"l_0ALvwF","name":"Serie A","country_code":"ITA","seasons":["2023/2024","2024/2025","2025/2026","2026/2027"]},
+      {"id":"l_0jy5yE","name":"Serie B","country_code":"ITA","seasons":["2025/2026","2026/2027"]}
+    ];
+  }
+  const countries = [...new Set(cmpLeagues.map(l => l.country_code))].sort();
+  countries.forEach(c => cSel.add(new Option(c, c)));
+}
+
+function cmpUpdateLeagues() {
+  const c = document.getElementById('cmp-country').value;
+  const lSel = document.getElementById('cmp-league');
+  lSel.innerHTML = '<option value="">-- --</option>';
+  cmpLeagues.filter(l => l.country_code === c).sort((a,b) => a.name.localeCompare(b.name))
+    .forEach(l => lSel.add(new Option(l.name, l.id)));
+}
+
+function cmpUpdateSeasons() {
+  const l = document.getElementById('cmp-league').value;
+  const sSel = document.getElementById('cmp-season');
+  sSel.innerHTML = '<option value="">-- --</option>';
+  const lg = cmpLeagues.find(lg => lg.id === l);
+  if (lg) lg.seasons.slice().reverse().forEach(s => sSel.add(new Option(s, s)));
+}
+
+// ─── CARICA DATABASE ─────────────────────────────────────────────────────
+async function cmpCaricaDatabase() {
+  if (!engineReady) return alert("Prima trascina il file V9.7");
+  try {
+    const cCode = document.getElementById('cmp-country').value;
+    const lId = document.getElementById('cmp-league').value;
+    const season = document.getElementById('cmp-season').value;
+    const targetDate = document.getElementById('cmp-target-date').value;
+    if (!cCode || !lId || !season || !targetDate) return alert("Seleziona tutti i campi");
+
+    cmpCurrentLeagueId = lId;
+
+    const key = document.getElementById('cmp-api-key').value.trim();
+    if (key) {
+      localStorage.setItem('pitchapi_key', key);
+      // Passo la key anche all'input della sandbox: apiCall del motore legge id="api-key".
+      const v97Key = document.getElementById('api-key');
+      if (v97Key) v97Key.value = key;
+    }
+    // Setto anche gli altri campi che il motore legge internamente.
+    const setV = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+    setV('sel-league', lId);       // ⚠️ serve a computeLeagueParams/estimateRho
+    setV('sel-country', cCode);
+    setV('sel-season', season);
+    setV('target-date', targetDate);
+
+    cmpLog(`⏳ Costruzione database (3 stagioni)...`);
+    document.getElementById('cmp-btn-carica').disabled = true;
+
+    let s1, s2, s3;
+    if (season.includes('/')) {
+      const p = season.split('/');
+      s1 = season;
+      s2 = `${parseInt(p[0])-1}/${parseInt(p[1])-1}`;
+      s3 = `${parseInt(p[0])-2}/${parseInt(p[1])-2}`;
+    } else {
+      s1 = season;
+      s2 = `${parseInt(season)-1}`;
+      s3 = `${parseInt(season)-2}`;
+    }
+
+    let allMatches = [];
+    for (const s of [s1, s2, s3]) {
+      let json = await globalThis.apiCall(`/leagues/${lId}/matches?season=${encodeURIComponent(s)}`, true);
+      if (!json || (!json.data && !json.matches)) {
+        json = await globalThis.apiCall(`/leagues/${lId}/matches?season=${encodeURIComponent(s.split('/')[0])}`, true);
+      }
+      if (json) {
+        const m = json.data?.matches || json.matches || [];
+        // ⚠️ FIX: taggo ogni match con league_id, come fa il vero caricaSquadreLega del motore.
+        // Senza questo, computeLeagueParams/estimateRho non trovano i match della lega e usano i default.
+        m.forEach(mm => mm.league_id = lId);
+        allMatches = allMatches.concat(m);
+        cmpLog(`  → Stagione ${s}: ${m.length} partite`);
+      }
+    }
+
+    if (!allMatches.length) {
+      document.getElementById('cmp-btn-carica').disabled = false;
+      return alert("Nessun match trovato. Verifica API key.");
+    }
+
+    // Scrivo la cache CONDIVISA: grazie al binding get/set iniettato, il motore la vede.
+    window.__ENGINE_CACHE = allMatches;
+    globalThis.globalLeagueMatchesCache = allMatches;
+
+    cmpMatchesOfTheDay = allMatches.filter(m =>
+      m.status === 'finished' && m.time_utc && m.time_utc.startsWith(targetDate)
+    );
+
+    const selP = document.getElementById('cmp-partita');
+    selP.innerHTML = '';
+    if (cmpMatchesOfTheDay.length === 0) {
+      selP.innerHTML = '<option>-- Nessuna partita conclusa in questa data --</option>';
+      cmpLog(`⚠️ Nessuna partita per ${targetDate}`);
+    } else {
+      selP.add(new Option('-- Seleziona --', ''));
+      cmpMatchesOfTheDay.forEach(m => {
+        const label = `${m.home_team.name} vs ${m.away_team.name} (${m.score_home}-${m.score_away})`;
+        selP.add(new Option(label, m.id));
+      });
+      cmpLog(`✅ ${cmpMatchesOfTheDay.length} partite per ${targetDate}`);
+    }
+
+    document.getElementById('cmp-match-builder').classList.remove('hidden');
+    document.getElementById('cmp-btn-carica').disabled = false;
+  } catch (e) {
+    alert("Errore: " + e.message);
+    console.error(e);
+    document.getElementById('cmp-btn-carica').disabled = false;
+  }
+}
+
+// ─── ESEGUI V9.7 ─────────────────────────────────────────────────────────
+async function cmpEsegui() {
+  const mId = document.getElementById('cmp-partita').value;
+  if (!mId) return alert("Seleziona una partita");
+  const match = cmpMatchesOfTheDay.find(m => m.id === mId);
+  const limit = parseInt(document.getElementById('cmp-history-limit').value) || 15;
+
+  try {
+    cmpLog(`⚙️ Motore V9.7: ${match.home_team.name} vs ${match.away_team.name}...`);
+
+    // Popolo la UI nascosta del V9.7 con gli id ESATTI che avviaScanner legge.
+    const setSel = (id, valId, valName) => {
+      const el = document.getElementById(id);
+      if (el && el.add) { el.innerHTML = ''; el.add(new Option(valName, valId)); el.value = valId; }
+    };
+    setSel('sel-home', match.home_team.id, match.home_team.name);
+    setSel('sel-away', match.away_team.id, match.away_team.name);
+    // ⚠️ FIX: il motore legge id="history-limit", non "limit-input".
+    const lim = document.getElementById('history-limit'); if (lim) lim.value = limit;
+    // Assicuro sel-league impostato (serve ai parametri di lega dentro avviaScanner).
+    const lg = document.getElementById('sel-league'); if (lg && !lg.value) lg.value = cmpCurrentLeagueId;
+    // Data del match target (il motore costruisce matchTime da target-date).
+    const td = document.getElementById('target-date');
+    if (td && match.time_utc) td.value = match.time_utc.split('T')[0];
+
+    globalThis._V97_probs = null;
+
+    // CHIAMATA AL V9.7 VERO — le probabilità arrivano dal suo hook, non ricalcolate qui.
+    await globalThis.avviaScanner();
+
+    if (!globalThis._V97_probs) {
+      throw new Error("Il V9.7 non ha esposto _V97_probs. Controlla il log: potrebbe essere mancato l'hook o lo storico era insufficiente.");
+    }
+
+    const R = globalThis._V97_probs;
+    cmpLog(`   → Ensemble: 1=${(R.m1*100).toFixed(1)}% X=${(R.mX*100).toFixed(1)}% 2=${(R.m2*100).toFixed(1)}%`);
+    if (R.probsKnn) cmpLog(`   → KNN attivo (wKnn=${R.wKnn!=null?R.wKnn.toFixed(2):'?'})`);
+    else cmpLog(`   → KNN non disponibile per questa partita (dati tracking insufficienti)`);
+
+    cmpLog("📥 Fetch dati reali...");
+    const [sRes, aRes] = await Promise.all([
+      globalThis.apiCall(`/matches/${mId}/stats`, true),
+      globalThis.apiCall(`/matches/${mId}/advanced`, true)
+    ]);
+    const sD = sRes?.data || sRes;
+    const aD = aRes?.data?.teams || [];
+
+    const actH = cmpExtractReal(sD, aD, match.home_team.id, true);
+    const actA = cmpExtractReal(sD, aD, match.away_team.id, false);
+    actH.gf = match.score_home; actH.ga = match.score_away;
+    actA.gf = match.score_away; actA.ga = match.score_home;
+
+    cmpRender(match, R, actH, actA);
+    cmpLog("✅ Confronto pronto.");
+
+  } catch (e) {
+    cmpLog(`❌ Errore: ${e.message}`);
+    console.error(e);
+    alert("Errore: " + e.message);
+  }
+}
+
+// ─── ESTRAI STATS REALI ──────────────────────────────────────────────────
+// Chiavi ALLINEATE a quelle esatte del motore (aggregaTeam). Dopo il fix di extractSafeStat
+// (match esatto, niente più .includes) le chiavi devono combaciare col titolo/key reale dell'API.
+function cmpExtractReal(sData, advData, teamId, isH) {
+  const out = {};
+  const ext = (keys) => typeof globalThis.extractSafeStat === 'function'
+    ? globalThis.extractSafeStat(sData, keys, isH) : null;
+
+  out.xg  = ext(['expected_goals', 'xg']);
+  out.npxg = ext(['npxg', 'non_penalty_xg', 'expected_goals_non_penalty']);
+  if (out.npxg == null) out.npxg = out.xg;
+  out.xgot = ext(['expected_goals_on_target', 'xgot', 'xg_on_target']);
+  out.xg_sp = ext(['expected_goals_set_play', 'expected_goals_set_piece']);
+  // 'ShotsOnTarget' e 'BallPossesion' sono le chiavi reali del motore (con i loro refusi).
+  out.shots = ext(['total_shots', 'totalshots', 'shots', 'tiri totali', 'total shots']);
+  out.sot  = ext(['ShotsOnTarget', 'shots_on_target', 'shotsontarget', 'shots on target', 'sot']);
+  out.cor  = ext(['corners', 'corner_kicks']);
+  out.fouls = ext(['fouls', 'falli']);
+  out.yel  = ext(['yellow_cards', 'yellowcards', 'gialli']);
+  out.red  = ext(['red_cards']);
+  out.bc   = ext(['big_chances', 'bigchances', 'big chances', 'big_chance_created']);
+  out.bcm  = ext(['big_chances_missed', 'bigchancesmissed', 'big chances missed']);
+  out.poss = ext(['BallPossesion', 'ball_possession', 'ballpossession', 'possession', 'ballPossession']);
+
+  const myA = (advData || []).find(x => x?.team?.id === teamId);
+  if (myA) {
+    out.ppda = myA.defending?.ppda;
+    out.tilt = myA.territory?.field_tilt;
+    out.f3 = myA.territory?.final_third_entries;
+    out.box = myA.attacking?.touches_in_opp_box ?? myA.attacking?.touches_opp_box ?? myA.territory?.touches_in_opp_box ?? myA.territory?.touches_opp_box;
+    out.defX = myA.defending?.avg_defensive_action_x;
+    out.drib = myA.carrying?.take_ons_won ?? myA.attacking?.take_ons_won ?? myA.possession?.take_ons_won;
+    out.misc = myA.carrying?.miscontrols ?? myA.possession?.miscontrols ?? myA.attacking?.miscontrols;
+    out.disp = myA.carrying?.dispossessed ?? myA.possession?.dispossessed ?? myA.attacking?.dispossessed;
+    out.dirSpd = myA.tempo?.direct_speed;
+    out.recTime = myA.defending?.ball_recovery_time;
+    out.cp5s = myA.defending?.counterpress_regains_5s;
+    if (out.npxg == null) out.npxg = myA.shooting?.npxg;
+    if (out.xgot == null) out.xgot = myA.shooting?.xgot;
+  }
+
+  // FALLBACK identico al motore: se i path advanced non danno il dato, provo extractSafeStat
+  // sui dati stats. Il motore lo fa per lo storico (colonna Previsto), quindi lo replico qui
+  // per la partita target (colonna Reale), così le due colonne restano confrontabili.
+  if (out.box == null)  out.box  = ext(['touches_in_opp_box', 'touches_opp_box', 'touchesinoppbox']);
+  if (out.drib == null) out.drib = ext(['take_ons_won', 'successful_dribbles', 'dribbling']);
+  if (out.misc == null) out.misc = ext(['miscontrols', 'bad_controls', 'errori']);
+  if (out.disp == null) out.disp = ext(['dispossessed', 'perse']);
+  if (out.f3 == null)   out.f3   = ext(['final_third_entries', 'ingressi trequarti']);
+
+  // TIRI TOTALI / SoT / BIG CHANCES: stessa logica robusta del motore (ciclo con esclusione
+  // esplicita di "shots on target/off target"), per non prendere valori sbagliati via match generico.
+  if (sData && sData.periods) {
+    const allP = sData.periods.find(p => p.period === 'All');
+    if (allP && allP.groups) {
+      allP.groups.forEach(g => (g.items || []).forEach(i => {
+        const k = (i.key || '').toLowerCase();
+        const t = (i.title || '').toLowerCase();
+        const val = parseFloat(String(isH ? i.home : i.away).replace(',', '.').split(' ')[0]);
+        if (isNaN(val)) return;
+        if ((k === 'totalshots' || k === 'shots' || t === 'total shots' || t === 'tiri totali' || t === 'tiri') && t !== 'shots on target' && t !== 'shots off target' && out.shots == null) out.shots = val;
+        if ((k === 'shotsontarget' || t === 'shots on target') && out.sot == null) out.sot = val;
+        if ((k === 'bigchances' || k === 'big_chances' || t === 'big chances' || t === 'big chances created') && out.bc == null) out.bc = val;
+        if ((k === 'bigchancesmissed' || k === 'big_chances_missed' || t === 'big chances missed') && out.bcm == null) out.bcm = val;
+      }));
+    }
+  }
+  return out;
+}
+
+// ─── ESTRAI STATS PREVISTE (dal dH/dA del motore) ─────────────────────────
+// Legge sia features (calcolate solo per ~20 metriche base) SIA vals grezzi (tutte le altre:
+// xgot, xg_sp, bc, bcm, box, f3, defX, recTime, cp5s, drib, misc, disp, shots...).
+function cmpExtractPrev(t) {
+  const map = { 'tilt':'field_tilt', 'f3':'f3_entries', 'box':'tch_box',
+                'defX':'avg_def_x', 'dirSpd':'direct_speed',
+                'recTime':'rec_time', 'cp5s':'cp_regains' };
+  const _dec = (k) => {
+    const key = map[k] || k;
+    // 1) features (decay o media) se disponibili
+    const f = t?.role?.features?.[key] || t?.overall?.features?.[key];
+    if (f) {
+      if (f.decay > 0) return f.decay;
+      if (f.avg_tot > 0) return f.avg_tot;
+    }
+    // 2) media degli array grezzi vals (ruolo, poi overall) — per le stat avanzate senza features
+    const rAvg = _mean(t?.role?.vals?.[key]);
+    if (rAvg != null) return rAvg;
+    return _mean(t?.overall?.vals?.[key]);
+  };
+  return Object.fromEntries(
+    ['gf','npxg','xg','xgot','xg_sp','shots','sot','cor','fouls','yel','red','bc','bcm','poss','ppda','tilt','f3','box','defX','drib','misc','disp','dirSpd','recTime','cp5s']
+    .map(k => [k, _dec(k)]));
+}
+
+// ─── RENDER ──────────────────────────────────────────────────────────────
+function cmpRender(match, R, actH, actA) {
+  document.getElementById('cmp-results').classList.remove('hidden');
+  document.getElementById('cmp-header-info').textContent = `${match.home_team.name} ${actH.gf}-${actA.gf} ${match.away_team.name} · ${match.time_utc.split('T')[0]}`;
+  document.getElementById('cmp-hdr-home').textContent = match.home_team.name;
+  document.getElementById('cmp-hdr-away').textContent = match.away_team.name;
+
+  const outcome = actH.gf > actA.gf ? '1' : (actH.gf === actA.gf ? 'X' : '2');
+  const gg = (actH.gf > 0 && actA.gf > 0) ? 'Goal' : 'NoGoal';
+  const goalTot = actH.gf + actA.gf;
+  const ov = goalTot > 2.5 ? 'Over 2.5' : 'Under 2.5';
+
+  const _win = b => `<span style="color:${b?'var(--green)':'var(--red)'};font-weight:bold">${b?'✅':'❌'}</span>`;
+  // Verdetto consapevole della probabilità: ≥55% WIN/LOSS ha senso; ≤45% un esito non previsto
+  // che non accade è coerenza (✅), se accade è sorpresa (⚠️); in mezzo è incerto (➖).
+  const _verdict = (p, happened) => {
+    if (p == null || isNaN(p)) return '<span style="color:#999">--</span>';
+    if (p >= 0.55) return happened ? '<span style="color:var(--green);font-weight:bold">✅</span>' : '<span style="color:var(--red);font-weight:bold">❌</span>';
+    if (p <= 0.45) return happened ? '<span style="color:var(--orange);font-weight:bold">⚠️ sorpresa</span>' : '<span style="color:var(--green);font-weight:bold">✅ coerente</span>';
+    return '<span style="color:#8e8e93;font-weight:bold">➖</span>';
+  };
+  const _badge = v => {
+    if (v == null || isNaN(v)) return '--';
+    const col = v>=80?'#2e7d32':v>=60?'#f57c00':'#c62828';
+    return `<span style="background:${col};color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold">${v}</span>`;
+  };
+
+  // Confidence per esito: usa DC+KNN+Markov con lo stesso sampleFactor del motore.
+  const sf = R.sampleFactor != null ? R.sampleFactor : 1;
+  const _conf = (arr) => {
+    const v = arr.filter(p => p != null && isFinite(p));
+    if (v.length < 2) return null;
+    let sp = 0;
+    for (let i=0; i<v.length; i++) for (let j=i+1; j<v.length; j++) sp = Math.max(sp, Math.abs(v[i]-v[j]));
+    return Math.max(0, Math.min(100, Math.round(100 * (1-sp) * sf)));
+  };
+  const c1 = _conf([R.probsRole?.p1, R.probsKnn?.p1, R.mk_ro?.p1]);
+  const cX = _conf([R.probsRole?.pX, R.probsKnn?.pX, R.mk_ro?.pX]);
+  const c2 = _conf([R.probsRole?.p2, R.probsKnn?.p2, R.mk_ro?.p2]);
+
+  const rowMdl = (name, p1, pX, p2) => {
+    if (p1 == null) return `<tr><td>${name}</td><td colspan="6" style="color:#999;font-size:11px">non disponibile (dati tracking insufficienti)</td></tr>`;
+    const mx = Math.max(p1, pX, p2);
+    const sc = mx === p1 ? '1' : (mx === pX ? 'X' : '2');
+    return `<tr><td>${name}</td><td>${_pct(p1)}</td><td>${_pct(pX)}</td><td>${_pct(p2)}</td><td style="font-weight:bold">${sc}</td><td>${outcome}</td><td>${_win(sc === outcome)}</td></tr>`;
+  };
+  document.getElementById('cmp-1x2-body').innerHTML =
+    rowMdl('Dixon-Coles (Ruolo)', R.probsRole?.p1, R.probsRole?.pX, R.probsRole?.p2) +
+    rowMdl('KNN Storico (11 dim)', R.probsKnn?.p1, R.probsKnn?.pX, R.probsKnn?.p2) +
+    rowMdl('Markov Score-Flow', R.mk_ro?.p1, R.mk_ro?.pX, R.mk_ro?.p2) +
+    `<tr style="background:#f0f8ff;font-weight:bold">${rowMdl('ENSEMBLE V9.7', R.m1, R.mX, R.m2).slice(4)}`;
+
+  const rowMkt = (lbl, ens, dc, knn, conf, realeTxt, happened) =>
+    `<tr><td>${lbl}</td><td style="font-weight:bold">${_pct(ens)}</td><td>${_pct(dc)}</td><td>${_pct(knn)}</td><td>${_badge(conf)}</td><td>${realeTxt}</td><td>${_verdict(ens, happened)}</td></tr>`;
+
+  const dc = R.probsRole || {};
+  const K = R.probsKnn || null;
+  document.getElementById('cmp-markets-body').innerHTML =
+    rowMkt('1 (Casa)',      R.m1,        dc.p1,  K?K.p1:null,  c1, outcome, outcome==='1') +
+    rowMkt('X (Pareggio)',  R.mX,        dc.pX,  K?K.pX:null,  cX, outcome, outcome==='X') +
+    rowMkt('2 (Trasferta)', R.m2,        dc.p2,  K?K.p2:null,  c2, outcome, outcome==='2') +
+    rowMkt('1X',            R.m1+R.mX,   (dc.p1||0)+(dc.pX||0), K?K.p1+K.pX:null, null, outcome, outcome!=='2') +
+    rowMkt('X2',            R.mX+R.m2,   (dc.pX||0)+(dc.p2||0), K?K.pX+K.p2:null, null, outcome, outcome!=='1') +
+    rowMkt('12',            R.m1+R.m2,   (dc.p1||0)+(dc.p2||0), K?K.p1+K.p2:null, null, outcome, outcome!=='X') +
+    rowMkt('Goal (GG)',     dc.pGG,      dc.pGG, K?K.pGG:null,       null, gg, gg==='Goal') +
+    rowMkt('NoGoal',        1-(dc.pGG||0), 1-(dc.pGG||0), K?1-K.pGG:null, null, gg, gg==='NoGoal') +
+    rowMkt('Over 2.5',      dc.pOv,      dc.pOv, K?K.pOv:null,       null, `${goalTot} gol`, ov==='Over 2.5') +
+    rowMkt('Under 2.5',     1-(dc.pOv||0), 1-(dc.pOv||0), K?1-K.pOv:null, null, `${goalTot} gol`, ov==='Under 2.5');
+
+  // ─── STUDIO GOL: Over/Under multi-linea + GG dalla matrice DC ───
+  const gm = marketsFromMatrix(R.dcMat);
+  let goalsHtml = '';
+  if (gm) {
+    [0.5, 1.5, 2.5, 3.5, 4.5].forEach(L => {
+      const pOver = gm.ou[L].over;
+      const realOver = goalTot > L;
+      // verdetto: WIN/LOSS solo se prob >=55% sul lato dominante
+      const side = pOver >= 0.5 ? 'Over' : 'Under';
+      const pSide = pOver >= 0.5 ? pOver : (1-pOver);
+      const sideHit = pOver >= 0.5 ? realOver : !realOver;
+      goalsHtml += `<tr><td>Over/Under ${L}</td><td>Over ${_pct(pOver)} · Under ${_pct(1-pOver)}</td><td>${goalTot} gol → ${realOver?'Over':'Under'} ${L}</td><td>${_verdict(pSide, sideHit)} <span style="font-size:9px;color:#999">(${side})</span></td></tr>`;
+    });
+    goalsHtml += `<tr style="background:#fff8e1"><td><b>GG / NoGoal</b></td><td>GG ${_pct(gm.gg)} · NG ${_pct(gm.ng)}</td><td>${actH.gf>0&&actA.gf>0?'Goal':'NoGoal'}</td><td>${_verdict(Math.max(gm.gg,gm.ng), (gm.gg>=gm.ng)===(actH.gf>0&&actA.gf>0))}</td></tr>`;
+  } else {
+    goalsHtml = '<tr><td colspan="4" style="color:#999">Matrice DC non catturata</td></tr>';
+  }
+  document.getElementById('cmp-goals-body').innerHTML = goalsHtml;
+
+  // ─── MERCATI STATISTICI: corner/tiri/cartellini (negBin) + handicap ───
+  // Totali reali della partita = somma casa + trasferta
+  const realCor = (actH.cor != null && actA.cor != null) ? actH.cor + actA.cor : null;
+  const realSot = (actH.sot != null && actA.sot != null) ? actH.sot + actA.sot : null;
+  const realYel = (actH.yel != null && actA.yel != null) ? actH.yel + actA.yel : null;
+  const adv = R.advRole || R.advOver;
+  let statsHtml = '';
+  if (adv) {
+    const rowAdv = (lbl, atteso, prob, probLbl, real, hit) =>
+      `<tr><td>${lbl}</td><td>${atteso!=null?'~'+atteso.toFixed(1):''}${prob!=null?' · '+probLbl+' '+_pct(prob):''}</td><td>${real!=null?real:'--'}</td><td>${(prob!=null&&real!=null)?_verdict(prob, hit):'<span style="color:#999">--</span>'}</td></tr>`;
+    statsHtml += rowAdv('Corner totali', adv.lCor, adv.pOv9c, 'Over 9.5', realCor, realCor!=null?realCor>9:null);
+    statsHtml += rowAdv('Tiri in porta tot', adv.lSot, adv.pOv8s, 'Over 8.5', realSot, realSot!=null?realSot>8:null);
+    statsHtml += rowAdv('Cartellini gialli tot', adv.lYel, adv.pOv3y, 'Over 3.5', realYel, realYel!=null?realYel>3:null);
+  } else {
+    statsHtml += '<tr><td colspan="4" style="color:#999">Mercati statistici non catturati</td></tr>';
+  }
+  // Handicap asiatico principale (-0.5 = vittoria secca casa)
+  if (R.ahData && R.ahData.length) {
+    const ah05 = R.ahData.find(h => Math.abs(h.h + 0.5) < 0.01);
+    if (ah05) {
+      const realCover = actH.gf - actA.gf - 0.5 > 0;
+      statsHtml += `<tr style="background:#f3e5f5"><td>Handicap Casa -0.5</td><td>Casa copre ${_pct(ah05.pHome)}</td><td>${actH.gf}-${actA.gf} → ${realCover?'coperto':'no'}</td><td>${_verdict(ah05.pHome, realCover)}</td></tr>`;
+    }
+  }
+  document.getElementById('cmp-stats-mkt-body').innerHTML = statsHtml;
+
+  const stats = [
+    ['Gol','gf'],['NPxG','npxg'],['xG','xg'],['xGOT','xgot'],['xG Palle Inattive','xg_sp'],
+    ['Tiri Totali','shots'],['SoT','sot'],['Corner','cor'],['Falli','fouls'],
+    ['Gialli','yel'],['Rossi','red'],['Big Chances','bc'],['Big Ch. Sprecate','bcm'],
+    ['Possesso %','poss'],['PPDA','ppda'],['Field Tilt %','tilt'],['Ingressi Trequarti','f3'],
+    ['Tocchi Area','box'],['Altezza Difensiva','defX'],['Dribbling','drib'],
+    ['Controlli Sbagliati','misc'],['Palle Perse','disp'],['Direct Speed','dirSpd'],
+    ['Tempo Recupero','recTime'],['Counterpress 5s','cp5s']
+  ];
+  const prevH = cmpExtractPrev(R.dH);
+  const prevA = cmpExtractPrev(R.dA);
+  const rowStat = (lbl, prev, real) => {
+    const pO = prev != null && !isNaN(prev);
+    const rO = real != null && !isNaN(real);
+    const scarto = (pO && rO) ? (real - prev) : null;
+    const scartoTxt = scarto != null ? (scarto>=0?'+':'')+scarto.toFixed(2) : '--';
+    const col = scarto == null ? '#999' : (Math.abs(scarto) < Math.abs(prev)*0.2 || Math.abs(scarto) < 0.5 ? 'var(--green)' : 'var(--red)');
+    return `<tr><td>${lbl}</td><td>${pO?prev.toFixed(2):'--'}</td><td>${rO?real.toFixed(2):'--'}</td><td style="color:${col};font-weight:bold">${scartoTxt}</td></tr>`;
+  };
+  document.getElementById('cmp-home-body').innerHTML = stats.map(([l,k]) => rowStat(l, prevH[k], actH[k])).join('');
+  document.getElementById('cmp-away-body').innerHTML = stats.map(([l,k]) => rowStat(l, prevA[k], actA[k])).join('');
+
+  cmpCurrentResult = {
+    tgt: { hName: match.home_team.name, aName: match.away_team.name, sH: actH.gf, sA: actA.gf, time: match.time_utc },
+    R, actH, actA, outcome, gg, ov, goalTot,
+    prevH, prevA,
+    conf: { c1, cX, c2 },
+    // Nuovi dati per studio esteso
+    goalsMarket: gm,
+    realTotals: { cor: (actH.cor!=null&&actA.cor!=null)?actH.cor+actA.cor:null,
+                  sot: (actH.sot!=null&&actA.sot!=null)?actH.sot+actA.sot:null,
+                  yel: (actH.yel!=null&&actA.yel!=null)?actH.yel+actA.yel:null }
+  };
+}
+
+// ─── SALVA + EXPORT ─────────────────────────────────────────────────────
+function cmpSalva() {
+  if (!cmpCurrentResult) return alert("Prima esegui il confronto");
+  cmpSavedMatches.push(cmpCurrentResult);
+  document.getElementById('banner-export').style.display = 'block';
+  document.getElementById('export-count').textContent = cmpSavedMatches.length;
+  cmpLog(`💾 Salvato (totale: ${cmpSavedMatches.length})`);
+}
+
+function cmpExportCSV() {
+  if (!cmpSavedMatches.length) return alert("Nessun match salvato");
+  const M = cmpSavedMatches;
+  const rows = [];
+
+  const dateRow = ['DATA'];
+  M.forEach(m => dateRow.push(m.tgt.time.split('T')[0].split('-').reverse().join('/'), '', '', ''));
+  rows.push(dateRow.join(';'));
+
+  const matchRow = ['MATCH'];
+  M.forEach(m => matchRow.push(`${m.tgt.hName} vs ${m.tgt.aName}`, '', '', ''));
+  rows.push(matchRow.join(';'));
+
+  const scoreRow = ['SCORE'];
+  M.forEach(m => scoreRow.push(`${m.tgt.sH}-${m.tgt.sA}`, '', 'Esito:', m.outcome));
+  rows.push(scoreRow.join(';'));
+
+  rows.push(['METRICA'].concat(...M.map(() => ['Previsto', 'Confidence', 'Reale', 'Esito/Scarto'])).join(';'));
+
+  const fmt = v => v==null||isNaN(v) ? 'N/D' : (v*100).toFixed(1).replace('.',',')+'%';
+  const num = v => v==null||isNaN(v) ? 'N/D' : v.toFixed(2).replace('.',',');
+  // Verdetto CSV coerente con la vista: WIN/LOSS solo per prob>=55%, altrimenti COERENTE/SORPRESA/INCERTO.
+  const verd = (p, happened) => {
+    if (p == null || isNaN(p)) return '';
+    if (p >= 0.55) return happened ? 'WIN' : 'LOSS';
+    if (p <= 0.45) return happened ? 'SORPRESA' : 'COERENTE';
+    return happened ? 'INCERTO(sì)' : 'INCERTO(no)';
+  };
+
+  rows.push('');
+  rows.push('--- MERCATI 1X2 (Ensemble V9.7) ---' + ';;;;'.repeat(M.length));
+  const mkts = [
+    ['1', m => [fmt(m.R.m1), m.conf.c1||'-', m.outcome, verd(m.R.m1, m.outcome==='1')]],
+    ['X', m => [fmt(m.R.mX), m.conf.cX||'-', m.outcome, verd(m.R.mX, m.outcome==='X')]],
+    ['2', m => [fmt(m.R.m2), m.conf.c2||'-', m.outcome, verd(m.R.m2, m.outcome==='2')]],
+    ['1X', m => [fmt(m.R.m1+m.R.mX), '-', m.outcome, verd(m.R.m1+m.R.mX, m.outcome!=='2')]],
+    ['X2', m => [fmt(m.R.mX+m.R.m2), '-', m.outcome, verd(m.R.mX+m.R.m2, m.outcome!=='1')]],
+    ['12', m => [fmt(m.R.m1+m.R.m2), '-', m.outcome, verd(m.R.m1+m.R.m2, m.outcome!=='X')]],
+    ['Goal', m => [fmt(m.R.probsRole?.pGG), '-', m.gg, verd(m.R.probsRole?.pGG, m.gg==='Goal')]],
+    ['NoGoal', m => [fmt(1-(m.R.probsRole?.pGG||0)), '-', m.gg, verd(1-(m.R.probsRole?.pGG||0), m.gg==='NoGoal')]],
+    ['Over 2.5', m => [fmt(m.R.probsRole?.pOv), '-', `${m.goalTot} gol`, verd(m.R.probsRole?.pOv, m.ov==='Over 2.5')]],
+    ['Under 2.5', m => [fmt(1-(m.R.probsRole?.pOv||0)), '-', `${m.goalTot} gol`, verd(1-(m.R.probsRole?.pOv||0), m.ov==='Under 2.5')]]
+  ];
+  mkts.forEach(([lbl, fn]) => {
+    const r = [lbl];
+    M.forEach(m => r.push(...fn(m)));
+    rows.push(r.join(';'));
+  });
+
+  // ─── SEZIONE STUDIO GOL: Over/Under multi-linea + GG (focus richiesto) ───
+  rows.push('');
+  rows.push('--- OVER/UNDER MULTI-LINEA (prob DC vs reale) ---' + ';;;;'.repeat(M.length));
+  [0.5, 1.5, 2.5, 3.5, 4.5].forEach(L => {
+    const r = [`Over ${L}`];
+    M.forEach(m => {
+      const gmm = m.goalsMarket;
+      const pOver = gmm ? gmm.ou[L].over : null;
+      const realOver = m.goalTot > L;
+      r.push(fmt(pOver), '-', `${m.goalTot} gol`, pOver!=null ? (verd(pOver, realOver)) : '');
+    });
+    rows.push(r.join(';'));
+  });
+  // Riga GG dedicata (già presente nei mercati 1X2 ma qui con prob dalla matrice, coerente)
+  const ggRow = ['GG (da matrice)'];
+  M.forEach(m => {
+    const gmm = m.goalsMarket;
+    const pgg = gmm ? gmm.gg : null;
+    const ggHappened = (m.tgt.sH>0 && m.tgt.sA>0);
+    ggRow.push(fmt(pgg), '-', m.gg, pgg!=null ? verd(pgg, ggHappened) : '');
+  });
+  rows.push(ggRow.join(';'));
+
+  // ─── SEZIONE MERCATI STATISTICI (negBin): corner/tiri/cartellini ───
+  rows.push('');
+  rows.push('--- MERCATI STATISTICI (atteso + prob Over, binomiale negativa) ---' + ';;;;'.repeat(M.length));
+  const statMkts = [
+    ['Corner tot (atteso)', m => { const a = m.R.advRole||m.R.advOver; return [a?_num(a.lCor):'N/D', '-', m.realTotals.cor!=null?m.realTotals.cor:'N/D', '']; }],
+    ['Corner Over 9.5', m => { const a = m.R.advRole||m.R.advOver; return [a?fmt(a.pOv9c):'N/D', '-', m.realTotals.cor!=null?(m.realTotals.cor>9?'Over':'Under'):'N/D', (a&&m.realTotals.cor!=null)?verd(a.pOv9c, m.realTotals.cor>9):'']; }],
+    ['Tiri porta tot (atteso)', m => { const a = m.R.advRole||m.R.advOver; return [a?_num(a.lSot):'N/D', '-', m.realTotals.sot!=null?m.realTotals.sot:'N/D', '']; }],
+    ['Tiri porta Over 8.5', m => { const a = m.R.advRole||m.R.advOver; return [a?fmt(a.pOv8s):'N/D', '-', m.realTotals.sot!=null?(m.realTotals.sot>8?'Over':'Under'):'N/D', (a&&m.realTotals.sot!=null)?verd(a.pOv8s, m.realTotals.sot>8):'']; }],
+    ['Gialli tot (atteso)', m => { const a = m.R.advRole||m.R.advOver; return [a?_num(a.lYel):'N/D', '-', m.realTotals.yel!=null?m.realTotals.yel:'N/D', '']; }],
+    ['Gialli Over 3.5', m => { const a = m.R.advRole||m.R.advOver; return [a?fmt(a.pOv3y):'N/D', '-', m.realTotals.yel!=null?(m.realTotals.yel>3?'Over':'Under'):'N/D', (a&&m.realTotals.yel!=null)?verd(a.pOv3y, m.realTotals.yel>3):'']; }]
+  ];
+  statMkts.forEach(([lbl, fn]) => {
+    const r = [lbl];
+    M.forEach(m => r.push(...fn(m)));
+    rows.push(r.join(';'));
+  });
+
+  rows.push('');
+  rows.push('--- 1X2 PER MODELLO (DC / KNN / Markov) ---' + ';;;;'.repeat(M.length));
+  const mdl = [
+    ['DC 1', m=>[fmt(m.R.probsRole?.p1),'','','']], ['DC X', m=>[fmt(m.R.probsRole?.pX),'','','']], ['DC 2', m=>[fmt(m.R.probsRole?.p2),'','','']],
+    ['KNN 1', m=>[fmt(m.R.probsKnn?.p1),'','','']], ['KNN X', m=>[fmt(m.R.probsKnn?.pX),'','','']], ['KNN 2', m=>[fmt(m.R.probsKnn?.p2),'','','']],
+    ['Markov 1', m=>[fmt(m.R.mk_ro?.p1),'','','']], ['Markov X', m=>[fmt(m.R.mk_ro?.pX),'','','']], ['Markov 2', m=>[fmt(m.R.mk_ro?.p2),'','','']],
+    ['Confidence Globale', m=>[m.R.confidence!=null?m.R.confidence:'-','','','']]
+  ];
+  mdl.forEach(([lbl, fn]) => { const r=[lbl]; M.forEach(m=>r.push(...fn(m))); rows.push(r.join(';')); });
+
+  const statList = [
+    ['Gol','gf'],['NPxG','npxg'],['xG','xg'],['xGOT','xgot'],['xG Palle Inattive','xg_sp'],
+    ['Tiri Totali','shots'],['SoT','sot'],['Corner','cor'],['Falli','fouls'],
+    ['Gialli','yel'],['Rossi','red'],['Big Chances','bc'],['Big Ch. Sprecate','bcm'],
+    ['Possesso %','poss'],['PPDA','ppda'],['Field Tilt %','tilt'],['Ingressi Trequarti','f3'],
+    ['Tocchi Area','box'],['Altezza Difensiva','defX'],['Dribbling','drib'],
+    ['Controlli Sbagliati','misc'],['Palle Perse','disp'],['Direct Speed','dirSpd'],
+    ['Tempo Recupero','recTime'],['Counterpress 5s','cp5s']
+  ];
+
+  rows.push('');
+  rows.push('--- SQUADRA CASA ---' + ';;;;'.repeat(M.length));
+  rows.push(['Nome Casa'].concat(...M.map(m => [m.tgt.hName, '', '', ''])).join(';'));
+  statList.forEach(([lbl, k]) => {
+    const r = [lbl];
+    M.forEach(m => {
+      const p = m.prevH[k], rl = m.actH[k];
+      const sc = (p != null && rl != null && !isNaN(p) && !isNaN(rl)) ? (rl-p).toFixed(2).replace('.',',') : '';
+      r.push(num(p), '', num(rl), sc);
+    });
+    rows.push(r.join(';'));
+  });
+
+  rows.push('');
+  rows.push('--- SQUADRA TRASFERTA ---' + ';;;;'.repeat(M.length));
+  rows.push(['Nome Trasferta'].concat(...M.map(m => [m.tgt.aName, '', '', ''])).join(';'));
+  statList.forEach(([lbl, k]) => {
+    const r = [lbl];
+    M.forEach(m => {
+      const p = m.prevA[k], rl = m.actA[k];
+      const sc = (p != null && rl != null && !isNaN(p) && !isNaN(rl)) ? (rl-p).toFixed(2).replace('.',',') : '';
+      r.push(num(p), '', num(rl), sc);
+    });
+    rows.push(r.join(';'));
+  });
+
+  const csv = '\uFEFF' + rows.join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Backtest_V97_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
