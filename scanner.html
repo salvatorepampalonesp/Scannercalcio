@@ -1198,6 +1198,21 @@ function _shrunkMean(roleArr, overallArr, fallback, k = 5) {
   if (!mo) return mr;
   return (nr * mr + k * mo) / (nr + k);
 }
+// FIX v2.2: costanti per la penalita' di copertura dimensioni (vedi getSimilarMatches)
+// ── PARAMETRI DI SHRINKAGE (esposti per taratura A/B) ─────────────────────────
+// SHRINK_K governa quanto il motore crede alle forze relative (attacco/difesa)
+// stimate sui match storici:   peso_dati = n / (n + SHRINK_K)
+//   k=4  -> con 15 match crede al 79%   (valore storico del V9.7)
+//   k=10 -> 60%
+//   k=28 -> 35%   (valore suggerito dai test walk-forward sui backtest)
+// SHRINK_LAM_K governa il secondo shrinkage, quello del lambda verso la media
+// di lega:   peso = n / (n + SHRINK_LAM_K).  Storico: 3.
+// Sono su window cosi' il comparatore puo' impostarli PRIMA di iniettare il
+// motore, per generare batch con tarature diverse e confrontarli.
+window.SHRINK_K     = (typeof window.SHRINK_K     === 'number') ? window.SHRINK_K     : 4;
+window.SHRINK_LAM_K = (typeof window.SHRINK_LAM_K === 'number') ? window.SHRINK_LAM_K : 3;
+
+const KNN_MIN_COVERAGE = 0.6;   // sotto il 60% del peso MEDIO DISPONIBILE nel dataset la partita esce
 const KNN_DIMS = [
   // === CORE OFFENSIVO/DIFENSIVO (peso alto) ===
   { own: 'npxga',            opp: 'npxg',          w: 1.5, def: 1.2 },     // difesa mia vs attacco avv
@@ -1250,9 +1265,25 @@ function getSimilarMatches(teamDataRole, oppTeam, targetTimeMs) {
       const z = (v - target[d.opp]) / sd[d.own];
       dSum += d.w * z * z; wSum += d.w;
     });
-    if (wSum <= 0) continue;
+    // FIX v2.2 - COPERTURA DIMENSIONI.
+    // La distanza e' sqrt(dSum / wSum): normalizzata sul peso PRESENTE. Una partita
+    // priva dei dati /advanced (PPDA, field tilt, avg_def_x, f3, cp_regains, seq_time,
+    // avg_x = 6.4 degli 11.5 punti di peso totale) veniva confrontata su sole 4
+    // dimensioni senza alcuna penalita': meno informazione = meno occasioni di
+    // risultare diversa, quindi vinceva la gara di somiglianza per default.
+    // La copertura e' RELATIVA al meglio disponibile in questo dataset, non assoluta:
+    // PitchAPI espone gli advanced solo per le top leghe europee dal 2025 in poi, e
+    // una soglia assoluta avrebbe scartato ogni partita di MLS, Super Lig e delle
+    // stagioni precedenti, azzerando il KNN proprio dove serve.
     rows.push({ index: i, dist: Math.sqrt(dSum / wSum), dimsW: wSum, snap, info: teamDataRole.matchInfo[i] });
   }
+  // normalizzo la copertura sul massimo osservato: se nessuna partita ha gli advanced
+  // tutte valgono 1 e il comportamento resta quello di prima; se invece la maggioranza
+  // li ha, chi ne e' privo viene penalizzato e sotto il 60% esce.
+  const wBest = Math.max(...rows.map(r => r.dimsW));
+  for (const r of rows) r.coverage = wBest > 0 ? r.dimsW / wBest : 1;
+  const kept = rows.filter(r => r.coverage >= KNN_MIN_COVERAGE);
+  if (kept.length >= 4) { rows.length = 0; rows.push(...kept); }
   if (!rows.length) return empty;
 
   const sortedD = rows.map(r => r.dist).slice().sort((a, b) => a - b);
@@ -1267,6 +1298,7 @@ function getSimilarMatches(teamDataRole, oppTeam, targetTimeMs) {
     const dt = dates[r.index] ? (targetTimeMs - new Date(dates[r.index]).getTime()) / 86400000 : 0;
     if (dt > 0) w *= Math.exp(-xiDay * dt);
     const gf = teamDataRole.vals.gf[r.index], ga = teamDataRole.vals.ga[r.index];
+    w *= r.coverage;   // FIX v2.2: chi ha meno dimensioni note pesa meno
     r.w = w; sw += w; sw2 += w * w; sXg += w * xg; sXga += w * xga;
     sPts += w * (gf > ga ? 3 : (gf === ga ? 1 : 0));
   });
@@ -1337,7 +1369,7 @@ async function avviaScanner() {
     // ============ LAMBDA MOLTIPLICATIVI (struttura Dixon-Coles) ============
     // v9.4 faceva la MEDIA fra attacco proprio e difesa avversaria: comprime tutto verso il centro e
     // ignora la forza relativa. Qui: lambda = baseline_sede * forza_attacco * debolezza_difesa.
-    const shrink = (x, n, k = 4) => (n > 0 && isFinite(x) && x > 0) ? (n * x + k) / (n + k) : 1;
+    const shrink = (x, n, k = window.SHRINK_K) => (n > 0 && isFinite(x) && x > 0) ? (n * x + k) / (n + k) : 1;
     const dec = (team, scope, feat) => { const f = team[scope].features[feat]; return (f && f.decay > 0) ? f.decay : null; };
     const nHr = dH.role.n, nAr = dA.role.n, nHo = dH.overall.n, nAo = dA.overall.n;
     const mu = (LG.avgH + LG.avgA) / 2;
@@ -1359,7 +1391,8 @@ async function avviaScanner() {
     // k ridotto da 4 a 3 ora che roleLimit=20 permette sample piu' grandi.
     // Con 15 match di ruolo: 15/(15+3) = 83% peso ai dati vs 79% con k=4.
     // Piu' fedele quando i dati di ruolo sono abbondanti.
-    const wSH = nHr / (nHr + 3), wSA = nAr / (nAr + 3);
+    const _lk = window.SHRINK_LAM_K;
+    const wSH = nHr / (nHr + _lk), wSA = nAr / (nAr + _lk);
     lamH_role = wSH * lamH_role + (1 - wSH) * LG.avgH; lamA_role = wSA * lamA_role + (1 - wSA) * LG.avgA;
     if(!isFinite(lamH_over) || lamH_over < 0.15) lamH_over = LG.avgH; if(!isFinite(lamA_over) || lamA_over < 0.15) lamA_over = LG.avgA;
     if(!isFinite(lamH_role) || lamH_role < 0.15) lamH_role = lamH_over; if(!isFinite(lamA_role) || lamA_role < 0.15) lamA_role = lamA_over;

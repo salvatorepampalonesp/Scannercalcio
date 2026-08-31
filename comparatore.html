@@ -118,6 +118,14 @@ input,select{width:100%;font-size:13px;border:1px solid #d1d1d6;border-radius:8p
             <select id="cmp-partita" style="font-weight:bold"></select>
           </div>
           <div>
+            <label style="font-size:10px;font-weight:bold;color:#555">Shrink K <span style="color:#999;font-weight:normal">(forze)</span></label>
+            <input type="number" id="cmp-shrink-k" value="4" min="1" max="60" step="1">
+          </div>
+          <div>
+            <label style="font-size:10px;font-weight:bold;color:#555">Shrink λ</label>
+            <input type="number" id="cmp-shrink-lam" value="3" min="1" max="40" step="1">
+          </div>
+          <div>
             <label style="font-size:10px;font-weight:bold;color:#555">Limite Storico</label>
             <input type="number" id="cmp-history-limit" value="15" min="5" max="100">
           </div>
@@ -639,6 +647,12 @@ async function cmpRunMatch(match, limit, render) {
   setSel('sel-away', match.away_team.id, match.away_team.name);
   const lim = document.getElementById('history-limit'); if (lim) lim.value = limit;
   const lg = document.getElementById('sel-league'); if (lg && !lg.value) lg.value = cmpCurrentLeagueId;
+  // taratura shrinkage: letta dai campi e applicata al motore prima di ogni run
+  const _sk  = parseFloat(document.getElementById('cmp-shrink-k')?.value);
+  const _slk = parseFloat(document.getElementById('cmp-shrink-lam')?.value);
+  window.SHRINK_K     = isFinite(_sk)  && _sk  > 0 ? _sk  : 4;
+  window.SHRINK_LAM_K = isFinite(_slk) && _slk > 0 ? _slk : 3;
+
   const td = document.getElementById('target-date');
   if (td && match.time_utc) {
     // ⚠️ FIX CRITICO (v5.1): imposto il giorno PRECEDENTE alla partita target.
@@ -1252,6 +1266,7 @@ function cmpBuildResult(match, R, actH, actA) {
       H: R._predExtraH || null,
       A: R._predExtraA || null
     },
+    tuning: { shrinkK: window.SHRINK_K, shrinkLamK: window.SHRINK_LAM_K },
     // ELO (v5) — per validare il fix HFA dinamico + K adattivo + regressione stagionale
     eloData: {
       H: R.eloH != null ? Math.round(R.eloH) : null,
@@ -1417,6 +1432,11 @@ function cmpExportCSV() {
     ['Passaggi progressivi','prog_passes'],['Passaggi in area','passes_box'],
     ['Conduzioni in area','carries_box'],['Conduzioni progressive','prog_carries']
   ];
+  // ─── TARATURA usata per generare il batch (serve per confrontare A/B) ───
+  rows.push('');
+  const tk = M[0]?.tuning || {};
+  rows.push(`--- TARATURA: SHRINK_K=${tk.shrinkK ?? '?'} SHRINK_LAM_K=${tk.shrinkLamK ?? '?'} ---` + ';;;;'.repeat(M.length));
+
   // ─── SEZIONE ELO (v5) — 4 righe totali ───
   rows.push('');
   rows.push('--- ELO (v5 con HFA dinamico + regressione + K adattivo) ---' + ';;;;'.repeat(M.length));
