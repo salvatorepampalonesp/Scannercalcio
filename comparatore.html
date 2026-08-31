@@ -341,7 +341,7 @@ select{cursor:pointer}
   <select id="sel-home"></select><select id="sel-away"></select>
   <select id="sel-country"></select><select id="sel-league"></select><select id="sel-season"></select>
   <input id="api-key" type="text"><input id="target-date" type="date"><input id="history-limit" type="number">
-  <input id="cmp-shrink-k" type="number" value="3"><input id="cmp-shrink-lam" type="number" value="0.45">
+  
   <div id="dashboard-area"></div><div id="matchup-builder"></div><div id="setup-card"></div>
   <div id="console-loader"></div><div id="ai-prompt"></div><div id="conf-bar"></div>
   <div id="elo-h-tr"></div><div id="elo-a-tr"></div>
@@ -386,6 +386,13 @@ let cmpSavedMatches = [];
 let cmpLeagues = [];
 let cmpCurrentResult = null;
 let engineReady = false;
+// Valori di shrinkage confrontati automaticamente a ogni partita del batch.
+// Il primo e' quello mostrato a schermo; tutti finiscono nel CSV.
+//   4  = taratura storica del motore (crede al 79% alle forze su 15 match)
+//   12 = via di mezzo (peso 0.56)
+//   28 = peso 0.35, l'ottimo emerso dai test walk-forward sulle metriche
+const CMP_K_LIST = [4, 12, 28];
+
 let cmpCurrentLeagueId = '';   // lega selezionata, per taggare i match e settare sel-league
 
 const cmpLog = m => {
@@ -761,11 +768,9 @@ async function cmpRunMatch(match, limit, render) {
   setSel('sel-away', match.away_team.id, match.away_team.name);
   const lim = document.getElementById('history-limit'); if (lim) lim.value = limit;
   const lg = document.getElementById('sel-league'); if (lg && !lg.value) lg.value = cmpCurrentLeagueId;
-  // taratura shrinkage: letta dai campi e applicata al motore prima di ogni run
-  const _sk  = parseFloat(document.getElementById('cmp-shrink-k')?.value);
-  const _slk = parseFloat(document.getElementById('cmp-shrink-lam')?.value);
-  window.SHRINK_K     = isFinite(_sk)  && _sk  > 0 ? _sk  : 4;
-  window.SHRINK_LAM_K = isFinite(_slk) && _slk > 0 ? _slk : 3;
+  // taratura shrinkage: nessun campo da compilare, il batch prova da solo
+  // tutti i valori di CMP_K_LIST sulla stessa partita (vedi ciclo piu' sotto).
+  window.SHRINK_LAM_K = 3;
 
   const td = document.getElementById('target-date');
   if (td && match.time_utc) {
@@ -780,10 +785,29 @@ async function cmpRunMatch(match, limit, render) {
     td.value = match.time_utc.split('T')[0];
   }
 
-  globalThis._V97_probs = null;
-  await globalThis.avviaScanner();
-  if (!globalThis._V97_probs) throw new Error("Il V9.7 non ha esposto _V97_probs (hook mancante o storico insufficiente).");
-  const R = globalThis._V97_probs;
+  // ═════════════════════════════════════════════════════════════════════
+  // A/B AUTOMATICO SULLO SHRINKAGE
+  // La stessa partita viene calcolata con ogni valore di CMP_K_LIST. Il primo
+  // giro paga i fetch, i successivi girano sulla cache API del motore e sono
+  // rapidi. Cosi' un solo batch produce il confronto completo fra tarature,
+  // sulle stesse identiche partite e nello stesso ordine: niente da impostare
+  // a mano, niente batch da rifare, nessun rischio di confrontare periodi diversi.
+  // CMP_K_LIST[0] e' la taratura "titolare": alimenta il render e i mercati.
+  // ═════════════════════════════════════════════════════════════════════
+  const kRuns = {};
+  let R = null;
+  for (const kVal of CMP_K_LIST) {
+    window.SHRINK_K = kVal;
+    globalThis._V97_probs = null;
+    await globalThis.avviaScanner();
+    if (!globalThis._V97_probs) throw new Error("Il V9.7 non ha esposto _V97_probs (hook mancante o storico insufficiente).");
+    const S = globalThis._V97_probs;
+    kRuns[kVal] = { m1: S.m1, mX: S.mX, m2: S.m2, confidence: S.confidence,
+                    dc1: S.probsRole?.p1, dcX: S.probsRole?.pX, dc2: S.probsRole?.p2,
+                    pOv: S.probsRole?.pOv, pGG: S.probsRole?.pGG };
+    if (R === null) R = S;          // la prima taratura resta quella mostrata
+  }
+  R._kRuns = kRuns;
 
   const [sRes, aRes] = await Promise.all([
     globalThis.apiCall(`/matches/${mId}/stats`, true),
@@ -872,7 +896,7 @@ async function cmpEsegui() {
 // nell'intervallo [dataInizio, dataFine] e le elabora tutte, accumulandole per l'export.
 async function cmpEseguiIntervallo() {
   if (!engineReady) return alert("Prima trascina il file V9.7");
-  if (!cmpAllMatches.length) return alert('Prima premi "Trova Partite del Giorno" per caricare lo storico della lega.');
+  if (!cmpAllMatches.length) return alert('Ogni partita viene calcolata con SHRINK_K = 4, 12 e 28: il CSV contiene tutte e tre le tarature a confronto, quindi un solo batch basta. Prima premi "Trova Partite del Giorno" per caricare lo storico della lega.');
   // "Da" dal campo dedicato; se vuoto ripiega sulla "Data" in cima (retrocompatibile).
   const startDate = document.getElementById('cmp-range-start').value || document.getElementById('cmp-target-date').value;
   const endDate = document.getElementById('cmp-range-end').value;
@@ -1380,7 +1404,8 @@ function cmpBuildResult(match, R, actH, actA) {
       H: R._predExtraH || null,
       A: R._predExtraA || null
     },
-    tuning: { shrinkK: window.SHRINK_K, shrinkLamK: window.SHRINK_LAM_K },
+    tuning: { shrinkK: CMP_K_LIST[0], shrinkLamK: window.SHRINK_LAM_K, kList: CMP_K_LIST.slice() },
+    kRuns: R._kRuns || null,
     // ELO (v5) — per validare il fix HFA dinamico + K adattivo + regressione stagionale
     eloData: {
       H: R.eloH != null ? Math.round(R.eloH) : null,
@@ -1550,7 +1575,29 @@ function cmpExportCSV() {
   // ─── TARATURA usata per generare il batch (serve per confrontare A/B) ───
   rows.push('');
   const tk = M[0]?.tuning || {};
-  rows.push(`--- TARATURA: SHRINK_K=${tk.shrinkK ?? '?'} SHRINK_LAM_K=${tk.shrinkLamK ?? '?'} ---` + ';;;;'.repeat(M.length));
+  rows.push(`--- TARATURA: SHRINK_K testati = ${(tk.kList||[tk.shrinkK]).join(', ')} · SHRINK_LAM_K=${tk.shrinkLamK ?? '?'} ---` + ';;;;'.repeat(M.length));
+
+  // ─── A/B SHRINKAGE: stessa partita, una riga per ogni valore di k ───
+  // Serve a scegliere la taratura confrontando Brier, accuratezza e numero di
+  // pick giocabili sulle stesse identiche partite.
+  const kl = tk.kList || [];
+  if (kl.length > 1) {
+    rows.push('');
+    rows.push('--- A/B SHRINKAGE (stessa partita, tarature a confronto) ---' + ';;;;'.repeat(M.length));
+    for (const kv of kl) {
+      for (const [sfx, key] of [['1','m1'],['X','mX'],['2','m2']]) {
+        const r = [`k=${kv} · ${sfx}`];
+        M.forEach(m => r.push(fmt(m.kRuns?.[kv]?.[key]), '', '', ''));
+        rows.push(r.join(';'));
+      }
+      const rc = [`k=${kv} · Confidence`];
+      M.forEach(m => { const v = m.kRuns?.[kv]?.confidence; rc.push(v != null ? v : '-', '', '', ''); });
+      rows.push(rc.join(';'));
+      const ro = [`k=${kv} · Over 2.5`];
+      M.forEach(m => ro.push(fmt(m.kRuns?.[kv]?.pOv), '', '', ''));
+      rows.push(ro.join(';'));
+    }
+  }
 
   // ─── SEZIONE ELO (v5) — 4 righe totali ───
   rows.push('');
