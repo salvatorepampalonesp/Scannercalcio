@@ -647,9 +647,9 @@ async function cmpRunMatch(match, limit, render) {
     // e la partita target (giocata in orario diurno) sarebbe INCLUSA negli storici,
     // contaminando le predizioni con il risultato che vogliamo prevedere.
     // Usando il giorno prima, target-date "23:59" precede il time_utc della partita.
-    const d = new Date(match.time_utc);
-    d.setUTCDate(d.getUTCDate() - 1);
-    td.value = d.toISOString().split('T')[0];
+    // v2.1: il motore ora taglia a T00:00 del giorno scelto, quindi il giorno
+    // della partita e' gia' corretto (la partita target resta esclusa).
+    td.value = match.time_utc.split('T')[0];
   }
 
   globalThis._V97_probs = null;

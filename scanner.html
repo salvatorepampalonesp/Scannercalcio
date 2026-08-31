@@ -1308,7 +1308,7 @@ async function avviaScanner() {
     if(selH.value === selA.value) return alert("Non puoi far sfidare la squadra contro se stessa!");
 
     const hId = selH.value; const hName = selH.options[selH.selectedIndex].text; const aId = selA.value; const aName = selA.options[selA.selectedIndex].text;
-    const limit = parseInt(document.getElementById('history-limit').value) || 15; const dateInput = document.getElementById('target-date').value; const matchTime = dateInput + "T23:59:00Z"; 
+    const limit = parseInt(document.getElementById('history-limit').value) || 15; const dateInput = document.getElementById('target-date').value; const matchTime = dateInput + "T00:00:00Z";  /* FIX v2.1: taglio a MEZZANOTTE del giorno scelto, non a fine giornata. Con T23:59 la partita target (giocata nel pomeriggio) rientrava negli storici e nei vicini KNN: il modello vedeva il risultato che doveva prevedere. Con T00:00 basta inserire il giorno della partita e il taglio e' corretto. */ 
 
     document.getElementById('console-loader').innerHTML = ''; document.getElementById('console-loader').style.display = 'block'; document.getElementById('btn-avvia').disabled = true; document.getElementById('btn-avvia').innerHTML = "⏳ Simulazione in corso (Attendi)...";
 
