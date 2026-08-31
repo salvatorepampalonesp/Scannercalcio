@@ -973,45 +973,6 @@ function toggleAdvanced() {
   }
 }
 
-// Function to load scanner from repository
-async function loadScannerFromRepository() {
-  const btn = document.getElementById('btn-load-repo');
-  const originalText = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = '<span>&#8634;</span> Caricamento...';
-  
-  cmpLog('&#128229; Tentativo di caricamento scanner dal repository...');
-  
-  try {
-    // Try to fetch scanner.html from the same origin
-    const response = await fetch('scanner.html');
-    if (!response.ok) {
-      throw new Error('File non trovato');
-    }
-    
-    const text = await response.text();
-    cmpLog(`&#10004; File scanner.html caricato (${(text.length/1024).toFixed(1)} KB)`);
-    
-    // Create a blob and trigger the file load
-    const blob = new Blob([text], { type: 'text/html' });
-    const file = new File([blob], 'scanner.html', { type: 'text/html' });
-    
-    // Trigger the file processing
-    await loadEngineFromFile(file);
-    
-  } catch (error) {
-    cmpLog(`&#10007; Errore: ${error.message}`);
-    cmpLog('&#9888; Impossibile caricare dal repository. Usa il Drag & Drop manuale.');
-    alert('Impossibile caricare lo scanner dal repository. Usa il Drag & Drop manuale.');
-    btn.disabled = false;
-    btn.innerHTML = originalText;
-    return;
-  }
-  
-  btn.disabled = false;
-  btn.innerHTML = originalText;
-}
-
 // Auto-advance to step 2 when engine is loaded
 let step2Shown = false;
 function checkAndAdvance() {
@@ -1019,22 +980,17 @@ function checkAndAdvance() {
     step2Shown = true;
     showStep(2);
     // Update the first nav item as completed
-    document.querySelector('.step-nav-item[data-step="1"]').className = 'step-nav-item completed';
-  }
+    const firstNav = document.querySelector('.step-nav-item');
+    if (firstNav) {
+      firstNav.className = 'step-nav-item completed';
+    }
+    // Show setup area
+    document.getElementById('setup-area').classList.remove('hidden');
+    
+}
 }
 
-// Override setInterval to also check for engine ready
-const originalSetInterval = window.setInterval;
-window.setInterval = function(fn, delay) {
-  const intervalId = originalSetInterval(fn, delay);
-  const checkFn = function() {
-    checkAndAdvance();
-  };
-  originalSetInterval(checkFn, 500);
-  return intervalId;
-};
-
-// Also check periodically
+// Check periodically
 setInterval(checkAndAdvance, 500);
 
 let engineReady = false;
@@ -1238,6 +1194,15 @@ async function loadEngineFromFile(file) {
     <p>File: <code>${file.name}</code> · Motore attivo per tutta la sessione</p>
     <p style="margin-top:8px;font-size:11px;color:#666">Clicca qui per ricaricarlo dopo un aggiornamento del V9.7.</p>`;
   document.getElementById('setup-area').classList.remove('hidden');
+  
+  // Auto-advance to step 2
+  if (typeof showStep === 'function') {
+    showStep(2);
+    const firstNav = document.querySelector('.step-nav-item');
+    if (firstNav) {
+      firstNav.className = 'step-nav-item completed';
+    }
+  }
 
   // Init
   await cmpLoadLeghe();
