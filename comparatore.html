@@ -18,12 +18,7 @@
   --dark: #212529;
   --border: #dee2e6;
   --hover: #f8f9fa;
-  
-  --card-featured-blue: #e3f2fd;
-  --card-featured-green: #d4edda;
-  --card-featured-orange: #fff3cd;
-  --card-featured-purple: #f8f9fa;
-  --card-featured-dark: #f8f9fa;
+  --warning: #ffc107;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -76,6 +71,115 @@ body {
   margin-top: 0.5rem;
 }
 
+/* Main Container */
+.main-container {
+  display: flex;
+  gap: 1.5rem;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 280px;
+  position: sticky;
+  top: 2rem;
+  height: fit-content;
+}
+
+.sidebar-card {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  border: 1px solid var(--border);
+}
+
+.sidebar-title {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-section {
+  margin-bottom: 1rem;
+}
+
+.sidebar-section:last-child {
+  margin-bottom: 0;
+}
+
+/* Step Navigation */
+.step-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.step-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 2px solid transparent;
+}
+
+.step-nav-item:hover {
+  background: var(--hover);
+}
+
+.step-nav-item.active {
+  background: var(--blue);
+  color: white;
+  border-color: var(--blue);
+}
+
+.step-nav-item.completed {
+  background: var(--green);
+  color: white;
+  border-color: var(--green);
+}
+
+.step-nav-item.pending {
+  color: var(--sub);
+}
+
+.step-nav-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.1);
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.step-nav-item.completed .step-nav-number {
+  background: white;
+  color: var(--green);
+}
+
+.step-nav-item.active .step-nav-number {
+  background: white;
+  color: var(--blue);
+}
+
+/* Content Area */
+.content-area {
+  flex-grow: 1;
+}
+
 /* Cards */
 .card {
   background: var(--card);
@@ -86,34 +190,15 @@ body {
   border: 1px solid var(--border);
 }
 
-.card-featured-blue { border-top: 5px solid var(--blue); background: var(--card-featured-blue); }
-.card-featured-green { border-top: 5px solid var(--green); background: var(--card-featured-green); }
-.card-featured-orange { border-top: 5px solid var(--orange); background: var(--card-featured-orange); }
-.card-featured-purple { border-top: 5px solid var(--purple); background: var(--card-featured-purple); }
-.card-featured-dark { border-top: 5px solid var(--dark); background: var(--card-featured-dark); }
-.card-featured-red { border-top: 5px solid var(--red); background: #fff5f5; }
-
-/* Section Titles */
-.section-title {
-  font-size: 15px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text);
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 2px solid var(--border);
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.card-featured {
+  border-top: 4px solid;
 }
 
-.section-title-blue { color: var(--blue); border-bottom-color: var(--blue); }
-.section-title-green { color: var(--green); border-bottom-color: var(--green); }
-.section-title-orange { color: var(--orange); border-bottom-color: var(--orange); }
-.section-title-purple { color: var(--purple); border-bottom-color: var(--purple); }
-.section-title-red { color: var(--red); border-bottom-color: var(--red); }
-.section-title-dark { color: var(--dark); border-bottom-color: var(--dark); }
+.card-featured-blue { border-color: var(--blue); background: #e3f2fd; }
+.card-featured-green { border-color: var(--green); background: #d4edda; }
+.card-featured-orange { border-color: var(--orange); background: #fff3cd; }
+.card-featured-purple { border-color: var(--purple); background: #f8f9fa; }
+.card-featured-dark { border-color: var(--dark); background: #f8f9fa; }
 
 /* Form Elements */
 input[type="text"],
@@ -136,19 +221,6 @@ input:focus, select:focus {
   box-shadow: 0 0 0 3px rgba(0,102,204,0.1);
 }
 
-textarea {
-  width: 100%;
-  min-height: 350px;
-  font-size: 11px;
-  font-family: 'SF Mono', Consolas, monospace;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px;
-  background: #f8f9fa;
-  resize: vertical;
-  line-height: 1.6;
-}
-
 /* Buttons */
 .btn {
   border: none;
@@ -161,7 +233,6 @@ textarea {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  width: 100%;
   transition: all 0.2s;
 }
 
@@ -169,18 +240,130 @@ textarea {
 .btn:active { transform: translateY(0); }
 .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-.btn-blue { background: var(--blue); color: #fff; }
-.btn-green { background: var(--green); color: #fff; font-size: 14px; padding: 14px; }
-.btn-purple { background: var(--purple); color: #fff; }
+.btn-primary { background: var(--blue); color: #fff; }
+.btn-green { background: var(--green); color: #fff; }
 .btn-dark { background: var(--dark); color: #fff; }
-.btn-red { background: var(--red); color: #fff; }
 .btn-orange { background: var(--orange); color: #fff; }
-.btn-auto { background: var(--blue); color: #fff; width: auto; }
+.btn-secondary { background: #6c757d; color: #fff; }
+.btn-warning { background: var(--warning); color: #212529; }
 
-/* Grid Layouts */
-.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
-.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; }
+.btn-full { width: 100%; }
+.btn-group { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+.btn-group .btn { width: auto; min-width: 140px; }
+
+/* Dropzone */
+#dropzone {
+  border: 3px dashed var(--blue);
+  border-radius: 12px;
+  padding: 2.5rem;
+  text-align: center;
+  background: linear-gradient(135deg, #e3f2fd 0%, #f3f7ff 100%);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+#dropzone:hover, #dropzone.dragover {
+  background: linear-gradient(135deg, #d6ebff 0%, #e3f2fd 100%);
+  border-color: var(--blue);
+  transform: scale(1.02);
+  box-shadow: 0 4px 20px rgba(0,102,204,0.2);
+}
+
+#dropzone.loaded {
+  background: linear-gradient(135deg, #d4edda 0%, #e8f5e9 100%);
+  border-color: var(--green);
+  border-style: solid;
+}
+
+#dropzone h2 {
+  font-size: 24px;
+  color: var(--blue);
+  margin-bottom: 0.75rem;
+}
+
+#dropzone.loaded h2 {
+  color: var(--green);
+}
+
+#dropzone p {
+  color: var(--sub);
+  font-size: 14px;
+  margin-bottom: 0.5rem;
+}
+
+/* Console */
+#console {
+  font-family: monospace;
+  background: #1e1e1e;
+  color: #00ff00;
+  padding: 1rem;
+  border-radius: 8px;
+  max-height: 250px;
+  overflow-y: auto;
+  font-size: 11px;
+  margin-top: 1rem;
+  display: none;
+  line-height: 1.4;
+}
+
+/* Hidden */
+.hidden { display: none; }
+
+/* Alert */
+.alert {
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 12px;
+  line-height: 1.5;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.alert-info { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+.alert-success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+.alert-warning { background: #fff3cd; border: 1px solid #ffeeba; color: #856404; }
+
+/* Form Row */
+.form-row {
+  margin-bottom: 1rem;
+}
+
+.form-row .label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--sub);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 0.5rem;
+}
+
+.form-row .hint {
+  font-size: 9px;
+  color: #adb5bd;
+  margin-top: 0.25rem;
+}
+
+/* Divider */
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 1.5rem 0;
+}
+
+/* Progress */
+.progress-box {
+  display: none;
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #fff3e0;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #e65100;
+  border: 1px solid var(--warning);
+}
 
 /* Tables */
 .table-ui {
@@ -221,110 +404,26 @@ textarea {
   background: var(--hover);
 }
 
-/* Dropzone */
-#dropzone {
-  border: 3px dashed var(--blue);
-  border-radius: 12px;
-  padding: 2.5rem;
-  text-align: center;
-  background: linear-gradient(135deg, #e3f2fd 0%, #f3f7ff 100%);
-  margin-bottom: 1.5rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
+/* Section Title */
+.section-title {
+  font-size: 15px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text);
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-#dropzone:hover, #dropzone.dragover {
-  background: linear-gradient(135deg, #d6ebff 0%, #e3f2fd 100%);
-  border-color: var(--blue);
-  transform: scale(1.02);
-  box-shadow: 0 4px 20px rgba(0,102,204,0.2);
-}
-
-#dropzone.loaded {
-  background: linear-gradient(135deg, #d4edda 0%, #e8f5e9 100%);
-  border-color: var(--green);
-  border-style: solid;
-}
-
-#dropzone h2 {
-  font-size: 24px;
-  color: var(--blue);
-  margin-bottom: 0.75rem;
-}
-
-#dropzone.loaded h2 {
-  color: var(--green);
-}
-
-#dropzone p {
-  color: var(--sub);
-  font-size: 14px;
-  margin-bottom: 0.5rem;
-}
-
-#dropzone code {
-  background: #fff;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 11px;
-  color: var(--red);
-  font-family: monospace;
-}
-
-/* Console */
-#console {
-  font-family: monospace;
-  background: #1e1e1e;
-  color: #00ff00;
-  padding: 1rem;
-  border-radius: 8px;
-  max-height: 250px;
-  overflow-y: auto;
-  font-size: 11px;
-  margin-top: 1rem;
-  display: none;
-  line-height: 1.4;
-}
-
-/* Banner Export */
-#banner-export {
-  display: none;
-  background: linear-gradient(135deg, var(--green) 0%, #20c997 100%);
-  color: white;
-  padding: 1rem 1.5rem;
-  border-radius: 8px;
-  font-weight: bold;
-  margin-bottom: 1.5rem;
-  text-align: center;
-  box-shadow: 0 4px 12px rgba(40,167,69,0.3);
-}
-
-/* Hidden */
-.hidden { display: none; }
-
-/* Note */
-.note {
-  font-size: 10px;
-  color: var(--sub);
-  line-height: 1.5;
-  margin-top: 0.75rem;
-  padding: 0.75rem;
-  background: #f8f9fa;
-  border-radius: 6px;
-  border-left: 3px solid var(--blue);
-}
-
-/* Progress */
-.progress-box {
-  display: none;
-  margin-top: 0.75rem;
-  padding: 0.75rem 1rem;
-  background: #fff3e0;
-  border-radius: 8px;
-  font-size: 12px;
-  color: #e65100;
-  border: 1px solid #ffc107;
-}
+.section-title-blue { color: var(--blue); border-bottom-color: var(--blue); }
+.section-title-green { color: var(--green); border-bottom-color: var(--green); }
+.section-title-orange { color: var(--orange); border-bottom-color: var(--orange); }
+.section-title-purple { color: var(--purple); border-bottom-color: var(--purple); }
+.section-title-dark { color: var(--dark); border-bottom-color: var(--dark); }
 
 /* Result Header */
 .result-header {
@@ -358,334 +457,459 @@ textarea {
   padding: 10px 20px;
 }
 
-/* Badge */
-.badge {
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 9px;
-  font-weight: bold;
-  color: white;
+@media (max-width: 900px) {
+  .main-container {
+    flex-direction: column;
+  }
+  .sidebar {
+    width: 100%;
+    position: static;
+  }
+  .step-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .step-nav-item {
+    flex-grow: 1;
+    justify-content: center;
+  }
 }
-
-.bg-v { background: var(--green); }
-.bg-p { background: var(--orange); }
-.bg-s { background: var(--red); }
-
-/* Status indicators */
-.status-check { color: var(--green); font-weight: bold; }
-.status-cross { color: var(--red); font-weight: bold; }
 </style>
 </head>
 <body>
 
 <div class="wrap">
-  
-  <!-- HEADER -->
   <div class="header">
     <h1>Comparatore V9.7</h1>
     <span class="version">Drag & Drop Auto</span>
     <div class="subtitle">Confronta previsioni Scanner V9.7 con risultati reali</div>
   </div>
 
-  
-  <!-- STEP 1: DRAG & DROP -->
-  <div id="dropzone">
-    <h2>&#128229; Trascina qui il tuo Scanner V9.7 (.html)</h2>
-    <p>Il file verr&agrave; elaborato automaticamente in memoria.</p>
-    <p style="margin-top: 0.5rem; font-size: 12px; color: var(--sub);">
-      &#10040; <b>Nessuna modifica manuale al V9.7</b>: il motore vero viene iniettato e le sue formule
-      catturate con un hook. Le probabilit&agrave; NON vengono ricalcolate qui: sono quelle esatte del V9.7.
-    </p>
-    <input type="file" id="file-input" accept=".html" style="display:none">
-  </div>
-
-  <div id="console"></div>
-
-
-  <!-- SETUP AREA -->
-  <div id="setup-area" class="hidden">
-    <div id="banner-export">
-      &#10003; Hai salvato <span id="export-count" style="font-size: 16px; background: #fff; color: var(--green); padding: 2px 8px; border-radius: 4px; margin: 0 4px;">0</span> partite. Pronte per il download!
-    </div>
-
-    <div class="card card-featured-dark">
-      <div class="section-title section-title-dark">
-        <span>&#128269;</span> Setup & Ricerca Partita
-      </div>
-      
-      <div class="grid-2" style="margin-bottom: 1rem;">
-        <div>
-          <label style="font-size: 10px; font-weight: bold; color: var(--sub); display: block; margin-bottom: 0.25rem;">API Key</label>
-          <input id="cmp-api-key" type="password" placeholder="pk_live_...">
-        </div>
-        <div>
-          <label style="font-size: 10px; font-weight: bold; color: var(--sub); display: block; margin-bottom: 0.25rem;">Data (o inizio intervallo)</label>
-          <input type="date" id="cmp-target-date">
+  <div class="main-container">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-card">
+        <div class="sidebar-title">Menu</div>
+        <div class="step-nav">
+          <div class="step-nav-item active" data-step="1" onclick="showStep(1)">
+            <span class="step-nav-number">1</span>
+            <span>Carica Motore</span>
+          </div>
+          <div class="step-nav-item pending" data-step="2" onclick="showStep(2)">
+            <span class="step-nav-number">2</span>
+            <span>Configura</span>
+          </div>
+          <div class="step-nav-item pending" data-step="3" onclick="showStep(3)">
+            <span class="step-nav-number">3</span>
+            <span>Trova Partite</span>
+          </div>
+          <div class="step-nav-item pending" data-step="4" onclick="showStep(4)">
+            <span class="step-nav-number">4</span>
+            <span>Analizza</span>
+          </div>
+          <div class="step-nav-item pending" data-step="5" onclick="showStep(5)">
+            <span class="step-nav-number">5</span>
+            <span>Risultati</span>
+          </div>
         </div>
       </div>
       
-      <div class="grid-3" style="align-items: end; margin-bottom: 1.5rem;">
-        <div>
-          <label style="font-size: 10px; font-weight: bold; color: var(--sub); display: block; margin-bottom: 0.25rem;">Paese</label>
-          <select id="cmp-country" onchange="cmpUpdateLeagues()">
-            <option value="">-- --</option>
-          </select>
+      <div class="sidebar-card hidden" id="saved-status">
+        <div class="sidebar-title">Partite Salvate</div>
+        <div style="text-align: center; padding: 1rem;">
+          <span style="font-size: 24px; font-weight: bold; color: var(--green);" id="export-count">0</span>
+          <div style="font-size: 11px; color: var(--sub); margin-top: 0.5rem;">Pronte per export</div>
         </div>
-        <div>
-          <label style="font-size: 10px; font-weight: bold; color: var(--sub); display: block; margin-bottom: 0.25rem;">Lega</label>
-          <select id="cmp-league" onchange="cmpUpdateSeasons()">
-            <option value="">-- --</option>
-          </select>
-        </div>
-        <div>
-          <label style="font-size: 10px; font-weight: bold; color: var(--sub); display: block; margin-bottom: 0.25rem;">Stagione</label>
-          <select id="cmp-season">
-            <option value="">-- --</option>
-          </select>
-        </div>
-      </div>
-      
-      <button class="btn btn-dark" id="cmp-btn-carica" onclick="cmpCaricaDatabase()">
-        <span>&#128229;</span> Trova Partite del Giorno
-      </button>
-
-      <!-- ELABORAZIONE INTERVALLO -->
-      <div style="margin-top: 1.5rem; border-top: 1px dashed var(--border); padding-top: 1.5rem;">
-        <div class="section-title" style="color: var(--orange); font-size: 13px; margin-bottom: 1rem;">
-          <span>&#128197;</span> Oppure elabora un intervallo di date (es. un mese intero)
-        </div>
-        <div class="grid-3" style="align-items: end; margin-bottom: 1rem;">
-          <div>
-            <label style="font-size: 10px; font-weight: bold; color: var(--sub); display: block; margin-bottom: 0.25rem;">Da (data inizio)</label>
-            <input type="date" id="cmp-range-start">
-          </div>
-          <div>
-            <label style="font-size: 10px; font-weight: bold; color: var(--sub); display: block; margin-bottom: 0.25rem;">A (data fine)</label>
-            <input type="date" id="cmp-range-end">
-          </div>
-          <div>
-            <button class="btn btn-dark" id="cmp-btn-range" onclick="cmpEseguiIntervallo()">
-              <span>&#128640;</span> Elabora intervallo
-            </button>
-          </div>
-        </div>
-        <div class="note">
-          Prima premi "Trova Partite del Giorno" una volta (costruisce lo storico della lega). 
-          Poi imposta <b>Da</b> e <b>A</b> qui sotto ed elabora. Le prime partite sono lente, 
-          poi accelerano perch&eacute; lo storico &egrave; gi&agrave; in cache. Un mese pu&ograve; richiedere diversi minuti.
-        </div>
-        <div id="cmp-range-progress" class="progress-box"></div>
-      </div>
-
-      <div id="cmp-match-builder" class="hidden" style="margin-top: 1.5rem; border-top: 2px solid var(--border); padding-top: 1.5rem;">
-        <div class="section-title section-title-green">
-          <span>&#9700;</span> Scegli Partita
-        </div>
-        <div class="grid-3">
-          <div style="grid-column: span 2;">
-            <label style="font-size: 10px; font-weight: bold; color: var(--sub); display: block; margin-bottom: 0.25rem;">Partite Concluse</label>
-            <select id="cmp-partita" style="font-weight: bold;"></select>
-          </div>
-          <div>
-            <label style="font-size: 10px; font-weight: bold; color: var(--sub); display: block; margin-bottom: 0.25rem;">Shrink K <span style="color: var(--sub); font-weight: normal;">(forze)</span></label>
-            <input type="number" id="cmp-shrink-k" value="4" min="1" max="60" step="1">
-          </div>
-          <div>
-            <label style="font-size: 10px; font-weight: bold; color: var(--sub); display: block; margin-bottom: 0.25rem;">Shrink &#955;</label>
-            <input type="number" id="cmp-shrink-lam" value="3" min="1" max="40" step="1">
-          </div>
-          <div>
-            <label style="font-size: 10px; font-weight: bold; color: var(--sub); display: block; margin-bottom: 0.25rem;">Limite Storico</label>
-            <input type="number" id="cmp-history-limit" value="15" min="5" max="100">
-          </div>
-        </div>
-        <button class="btn btn-green" style="margin-top: 1rem;" onclick="cmpEsegui()">
-          <span>&#128640;</span> Esegui V9.7 + Confronto (partita singola)
+        <button class="btn btn-green btn-full" onclick="cmpExportCSV()">
+          <span>&#128196;</span> Scarica Excel
         </button>
-        <button class="btn btn-dark" style="margin-top: 0.5rem;" id="cmp-btn-tutte" onclick="cmpEseguiTutte()">
-          <span>&#128190;</span> Esegui TUTTE le partite del giorno e salvale
-        </button>
-        <div id="cmp-progress" class="progress-box"></div>
       </div>
     </div>
 
-
-    <!-- RESULTS AREA -->
-    <div id="cmp-results" class="hidden">
+    <!-- CONTENT AREA -->
+    <div class="content-area">
       
-      <!-- PREVISIONE VS REALTA -->
-      <div class="card card-featured-green">
-        <div class="result-header">
-          <div>
-            <div class="result-title">&#128197; Previsione V9.7 vs Realt&agrave;</div>
-            <div id="cmp-header-info" class="result-info">--</div>
-          </div>
-          <div class="result-actions">
-            <button class="btn btn-green" onclick="cmpSalva()">
-              <span>&#128190;</span> Salva Match
-            </button>
-            <button class="btn btn-blue" onclick="cmpExportCSV()">
-              <span>&#128196;</span> Scarica Excel
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- 1X2 PER MODELLO -->
-      <div class="card card-featured-purple">
-        <div class="section-title section-title-purple">
-          <span>&#127942;</span> 1X2 per Modello
-        </div>
-        <table class="table-ui">
-          <thead>
-            <tr>
-              <th>Modello</th>
-              <th>1</th>
-              <th>X</th>
-              <th>2</th>
-              <th>Scelta</th>
-              <th>Reale</th>
-              <th>Risultato</th>
-            </tr>
-          </thead>
-          <tbody id="cmp-1x2-body"></tbody>
-        </table>
-      </div>
-
-      <!-- MERCATI ENSEMBLE -->
-      <div class="card card-featured-dark">
-        <div class="section-title section-title-dark">
-          <span>&#128196;</span> Mercati Ensemble
-        </div>
-        <table class="table-ui">
-          <thead>
-            <tr>
-              <th>Mercato</th>
-              <th>Ensemble</th>
-              <th>DC</th>
-              <th>KNN</th>
-              <th>Conf.</th>
-              <th>Reale</th>
-              <th>Risultato</th>
-            </tr>
-          </thead>
-          <tbody id="cmp-markets-body"></tbody>
-        </table>
-        <div class="note">
-          Legenda: <b style="color: var(--green);">&#10003;</b>/<b style="color: var(--red);">&#10007;</b> 
-          per esiti con prob &#8805;55% (vera scommessa). Sotto il 45% un esito non "previsto" 
-          che non si verifica &egrave; coerenza del modello, non un errore. 
-          Il KNN mostra "--" solo se mancano i dati di tracking per costruire i vicini.
-        </div>
-      </div>
-
-      <!-- GOL: OVER/UNDER -->
-      <div class="card card-featured-orange">
-        <div class="section-title section-title-orange">
-          <span>&#9733;</span> Gol: Over/Under multi-linea & GG/NG
-        </div>
-        <table class="table-ui">
-          <thead>
-            <tr>
-              <th>Mercato</th>
-              <th>Prob DC</th>
-              <th>Reale partita</th>
-              <th>Esito</th>
-            </tr>
-          </thead>
-          <tbody id="cmp-goals-body"></tbody>
-        </table>
-        <div class="note">
-          Tutte le linee Over/Under ricostruite dalla matrice Dixon-Coles del motore. 
-          Gol totali reali della partita a confronto con ogni soglia.
-        </div>
-      </div>
-
-      <!-- MERCATI STATISTICI -->
-      <div class="card card-featured-purple">
-        <div class="section-title section-title-purple">
-          <span>&#128194;</span> Mercati Statistici (binomiale negativa) & Handicap
-        </div>
-        <table class="table-ui">
-          <thead>
-            <tr>
-              <th>Mercato</th>
-              <th>Atteso/Prob</th>
-              <th>Reale</th>
-              <th>Esito</th>
-            </tr>
-          </thead>
-          <tbody id="cmp-stats-mkt-body"></tbody>
-        </table>
-        <div class="note">
-          Corner/Tiri/Cartellini: valore atteso e prob. Over dal modello binomiale negativa del motore. 
-          Handicap asiatico dalla matrice DC.
-        </div>
-      </div>
-
-      <!-- METRICHE AVANZATE -->
-      <div class="card" style="border-top: 4px solid #00838f;">
-        <div class="section-title" style="color: #00838f;">
-          <span>&#129336;</span> Metriche Avanzate VAEP/xT/GCA (valori reali)
-        </div>
-        <table class="table-ui">
-          <thead>
-            <tr>
-              <th>Metrica</th>
-              <th>&#127940; Casa</th>
-              <th>&#127941; Trasferta</th>
-              <th>Differenziale</th>
-            </tr>
-          </thead>
-          <tbody id="cmp-newmetrics-body"></tbody>
-        </table>
-        <div class="note">
-          Il motore NON prevede ancora queste metriche: qui vedi solo i valori REALI della partita. 
-          Servono a validare se discriminano l'esito meglio delle dimensioni tattiche deboli del KNN 
-          (Field Tilt, PPDA), prima di eventualmente riscrivere il KNN.
-        </div>
-      </div>
-
-      <!-- CASA & TRASFERTA -->
-      <div class="grid-2">
-        <div class="card" style="border-top: 4px solid var(--blue);">
+      <!-- STEP 1: CARICA MOTORE -->
+      <div id="step-1" class="step">
+        <div class="card">
           <div class="section-title section-title-blue">
-            <span>&#127940;</span> <span id="cmp-hdr-home">Casa</span>
+            <span>&#128269;</span> Step 1: Carica il Motore Scanner V9.7
           </div>
-          <table class="table-ui">
-            <thead>
-              <tr>
-                <th>Metrica</th>
-                <th>Previsto</th>
-                <th>Reale</th>
-                <th>Scarto</th>
-              </tr>
-            </thead>
-            <tbody id="cmp-home-body"></tbody>
-          </table>
+          <p style="margin-bottom: 1.5rem; color: var(--sub);">
+            Scegli come caricare il motore di analisi. Puoi trascinare il file manualmente o caricarlo automaticamente dal repository.
+          </p>
+          
+          <div style="margin-bottom: 1.5rem;"></div>
+          
+          <!-- OPTION A: Drag & Drop -->
+          <div id="dropzone">
+            <h2>&#128229; Trascina qui il tuo Scanner V9.7 (.html)</h2>
+            <p>Il file verr&agrave; elaborato automaticamente in memoria.</p>
+            <p style="margin-top: 0.5rem; font-size: 12px; color: var(--sub);">
+              &#10040; <b>Nessuna modifica manuale</b>: il motore viene iniettato e le formule catturate con un hook.
+            </p>
+            <input type="file" id="file-input" accept=".html" style="display:none">
+          </div>
+          
+          <div style="margin: 1.5rem 0;"></div>
+          
+          <!-- OPTION B: Load from Repository -->
+          <div style="text-align: center;">
+            <div style="display: inline-flex; align-items: center; gap: 1rem; background: #f8f9fa; padding: 1rem 1.5rem; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 1rem;">
+              <span style="font-size: 12px; color: var(--sub);">&#128194; Oppure</span>
+              <button class="btn btn-primary" onclick="loadScannerFromRepository()" id="btn-load-repo">
+                <span>&#128229;</span> Carica dal Repository
+              </button>
+            </div>
+            <div style="font-size: 11px; color: var(--sub);">
+              Carica automaticamente lo scanner dal repository GitHub
+            </div>
+          </div>
         </div>
-        <div class="card" style="border-top: 4px solid var(--red);">
-          <div class="section-title section-title-red">
-            <span>&#127941;</span> <span id="cmp-hdr-away">Trasferta</span>
+        
+        <div id="console"></div>
+      </div>
+
+      <!-- STEP 2: CONFIGURA -->
+      <div id="step-2" class="step hidden">
+        <div class="card">
+          <div class="section-title section-title-dark">
+            <span>&#128269;</span> Step 2: Configura la Ricerca
           </div>
-          <table class="table-ui">
-            <thead>
-              <tr>
-                <th>Metrica</th>
-                <th>Previsto</th>
-                <th>Reale</th>
-                <th>Scarto</th>
-              </tr>
-            </thead>
-            <tbody id="cmp-away-body"></tbody>
-          </table>
+          <p style="margin-bottom: 1.5rem; color: var(--sub);">
+            Seleziona paese, lega, stagione e data per trovare le partite da analizzare.
+          </p>
+          
+          <div class="grid-2" style="margin-bottom: 1rem;">
+            <div class="form-row">
+              <label class="label">API Key PitchAPI</label>
+              <input id="cmp-api-key" type="password" placeholder="pk_live_...">
+              <div class="hint">La chiave verr&agrave; salvata automaticamente</div>
+            </div>
+            <div class="form-row">
+              <label class="label">Data Target</label>
+              <input type="date" id="cmp-target-date">
+              <div class="hint">Data di riferimento per la ricerca</div>
+            </div>
+          </div>
+          
+          <div class="grid-3" style="margin-bottom: 1.5rem;">
+            <div class="form-row">
+              <label class="label">Paese</label>
+              <select id="cmp-country" onchange="cmpUpdateLeagues()">
+                <option value="">-- Seleziona --</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label class="label">Lega</label>
+              <select id="cmp-league" onchange="cmpUpdateSeasons()">
+                <option value="">-- Seleziona --</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label class="label">Stagione</label>
+              <select id="cmp-season">
+                <option value="">-- Seleziona --</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="btn-group">
+            <button class="btn btn-secondary" onclick="showStep(1)">
+              <span>&#8592;</span> Indietro
+            </button>
+            <button class="btn btn-primary" id="cmp-btn-carica" onclick="cmpCaricaDatabase()">
+              <span>&#128229;</span> Trova Partite del Giorno
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 3: TROVA PARTITE -->
+      <div id="step-3" class="step hidden">
+        <div class="card">
+          <div class="section-title section-title-green">
+            <span>&#127942;</span> Step 3: Seleziona Partita
+          </div>
+          
+          <div id="matches-found" class="hidden">
+            <div class="alert alert-success" style="margin-bottom: 1.5rem;">
+              <span>&#10003;</span>
+              <div>
+                Trovate <span id="matches-found-count" style="font-weight: bold;">0</span> partite per la data selezionata.
+              </div>
+            </div>
+            
+            <div class="form-row" style="margin-bottom: 1.5rem;">
+              <label class="label">Seleziona Partita</label>
+              <select id="cmp-partita" style="font-weight: bold;"></select>
+            </div>
+            
+            <!-- Advanced Settings (collapsible) -->
+            <div style="margin-bottom: 1.5rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; cursor: pointer;" onclick="toggleAdvanced()">
+                <span style="font-size: 12px; font-weight: 600; color: var(--text);">&#9881; Impostazioni Avanzate</span>
+                <span id="advanced-icon" style="font-size: 14px;">&#9660;</span>
+              </div>
+              <div id="advanced-settings" style="display: none;">
+                <div class="grid-3" style="margin-bottom: 1rem;">
+                  <div class="form-row">
+                    <label class="label">Shrink K <span style="font-size: 9px; color: var(--sub);">(forze KNN)</span></label>
+                    <input type="number" id="cmp-shrink-k" value="4" min="1" max="60" step="1">
+                  </div>
+                  <div class="form-row">
+                    <label class="label">Shrink &#955; <span style="font-size: 9px; color: var(--sub);">(lambda)</span></label>
+                    <input type="number" id="cmp-shrink-lam" value="3" min="1" max="40" step="1">
+                  </div>
+                  <div class="form-row">
+                    <label class="label">Limite Storico <span style="font-size: 9px; color: var(--sub);">(match)</span></label>
+                    <input type="number" id="cmp-history-limit" value="15" min="5" max="100">
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="btn-group" style="margin-bottom: 1.5rem;">
+              <button class="btn btn-green" onclick="cmpEsegui()" id="cmp-btn-single">
+                <span>&#128640;</span> Analizza Partita Singola
+              </button>
+              <button class="btn btn-dark" onclick="cmpEseguiTutte()" id="cmp-btn-tutte">
+                <span>&#128190;</span> Analizza TUTTE
+              </button>
+            </div>
+          </div>
+          
+          <!-- Range Analysis -->
+          <div class="divider"></div>
+          
+          <div class="section-title" style="font-size: 13px; margin-bottom: 1rem;">
+            <span>&#128197;</span> Oppure Analizza un Intervallo di Date
+          </div>
+          
+          <div class="alert alert-warning" style="margin-bottom: 1rem;">
+            <span>&#9888;</span>
+            <span>Prima premi "Trova Partite del Giorno" per costruire lo storico della lega.</span>
+          </div>
+          
+          <div class="grid-3" style="margin-bottom: 1rem;">
+            <div class="form-row">
+              <label class="label">Data Inizio</label>
+              <input type="date" id="cmp-range-start">
+            </div>
+            <div class="form-row">
+              <label class="label">Data Fine</label>
+              <input type="date" id="cmp-range-end">
+            </div>
+            <div class="form-row">
+              <label class="label">&nbsp;</label>
+              <button class="btn btn-orange btn-full" id="cmp-btn-range" onclick="cmpEseguiIntervallo()">
+                <span>&#128640;</span> Elabora Intervallo
+              </button>
+            </div>
+          </div>
+          
+          <div id="cmp-range-progress" class="progress-box"></div>
+          <div id="cmp-progress" class="progress-box"></div>
+          
+          <div class="btn-group">
+            <button class="btn btn-secondary" onclick="showStep(2)">
+              <span>&#8592;</span> Indietro
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 4: ANALYSIS OPTIONS -->
+      <div id="step-4" class="step hidden">
+        <div class="card">
+          <div class="section-title section-title-purple">
+            <span>&#128196;</span> Step 4: Opzioni di Analisi
+          </div>
+          <p style="margin-bottom: 1.5rem; color: var(--sub);">
+            Scegli cosa analizzare. I risultati verranno mostrati nel passo successivo.
+          </p>
+          
+          <div class="btn-group">
+            <button class="btn btn-secondary" onclick="showStep(3)">
+              <span>&#8592;</span> Indietro
+            </button>
+            <button class="btn btn-primary" onclick="showStep(5)">
+              <span>&#8594;</span> Vai ai Risultati
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 5: RISULTATI -->
+      <div id="step-5" class="step hidden">
+        <div id="cmp-results">
+          <div id="banner-export" class="alert alert-success hidden">
+            &#10003; Hai salvato <span id="export-count" style="font-size: 16px; background: #fff; color: var(--green); padding: 2px 8px; border-radius: 4px; margin: 0 4px;">0</span> partite. Pronte per il download!
+          </div>
+          
+          <!-- PREVISIONE VS REALTA -->
+          <div class="card card-featured-green">
+            <div class="result-header">
+              <div>
+                <div class="result-title">&#128197; Previsione V9.7 vs Realt&agrave;</div>
+                <div id="cmp-header-info" class="result-info">--</div>
+              </div>
+              <div class="result-actions">
+                <button class="btn btn-green" onclick="cmpSalva()">
+                  <span>&#128190;</span> Salva Match
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 1X2 PER MODELLO -->
+          <div class="card card-featured-purple">
+            <div class="section-title section-title-purple">
+              <span>&#127942;</span> 1X2 per Modello
+            </div>
+            <table class="table-ui">
+              <thead>
+                <tr>
+                  <th>Modello</th>
+                  <th>1</th>
+                  <th>X</th>
+                  <th>2</th>
+                  <th>Scelta</th>
+                  <th>Reale</th>
+                  <th>Risultato</th>
+                </tr>
+              </thead>
+              <tbody id="cmp-1x2-body"></tbody>
+            </table>
+          </div>
+
+          <!-- MERCATI ENSEMBLE -->
+          <div class="card card-featured-dark">
+            <div class="section-title section-title-dark">
+              <span>&#128196;</span> Mercati Ensemble
+            </div>
+            <table class="table-ui">
+              <thead>
+                <tr>
+                  <th>Mercato</th>
+                  <th>Ensemble</th>
+                  <th>DC</th>
+                  <th>KNN</th>
+                  <th>Conf.</th>
+                  <th>Reale</th>
+                  <th>Risultato</th>
+                </tr>
+              </thead>
+              <tbody id="cmp-markets-body"></tbody>
+            </table>
+            <div class="note" style="margin-top: 0.75rem; font-size: 10px; color: var(--sub);">
+              Legenda: <b style="color: var(--green);">&#10003;</b>/<b style="color: var(--red);">&#10007;</b> 
+              per esiti con prob &#8805;55%. Sotto il 45% un esito non "previsto" che non si verifica &egrave; coerenza del modello.
+            </div>
+          </div>
+
+          <!-- GOL: OVER/UNDER -->
+          <div class="card card-featured-orange">
+            <div class="section-title section-title-orange">
+              <span>&#9733;</span> Gol: Over/Under multi-linea & GG/NG
+            </div>
+            <table class="table-ui">
+              <thead>
+                <tr>
+                  <th>Mercato</th>
+                  <th>Prob DC</th>
+                  <th>Reale partita</th>
+                  <th>Esito</th>
+                </tr>
+              </thead>
+              <tbody id="cmp-goals-body"></tbody>
+            </table>
+          </div>
+
+          <!-- MERCATI STATISTICI -->
+          <div class="card card-featured-purple">
+            <div class="section-title section-title-purple">
+              <span>&#128194;</span> Mercati Statistici & Handicap
+            </div>
+            <table class="table-ui">
+              <thead>
+                <tr>
+                  <th>Mercato</th>
+                  <th>Atteso/Prob</th>
+                  <th>Reale</th>
+                  <th>Esito</th>
+                </tr>
+              </thead>
+              <tbody id="cmp-stats-mkt-body"></tbody>
+            </table>
+          </div>
+
+          <!-- METRICHE AVANZATE -->
+          <div class="card" style="border-top: 4px solid #00838f;">
+            <div class="section-title" style="color: #00838f;">
+              <span>&#129336;</span> Metriche Avanzate VAEP/xT/GCA
+            </div>
+            <table class="table-ui">
+              <thead>
+                <tr>
+                  <th>Metrica</th>
+                  <th>&#127940; Casa</th>
+                  <th>&#127941; Trasferta</th>
+                  <th>Differenziale</th>
+                </tr>
+              </thead>
+              <tbody id="cmp-newmetrics-body"></tbody>
+            </table>
+          </div>
+
+          <!-- CASA & TRASFERTA -->
+          <div class="grid-2">
+            <div class="card" style="border-top: 4px solid var(--blue);">
+              <div class="section-title section-title-blue">
+                <span>&#127940;</span> <span id="cmp-hdr-home">Casa</span>
+              </div>
+              <table class="table-ui">
+                <thead>
+                  <tr>
+                    <th>Metrica</th>
+                    <th>Previsto</th>
+                    <th>Reale</th>
+                    <th>Scarto</th>
+                  </tr>
+                </thead>
+                <tbody id="cmp-home-body"></tbody>
+              </table>
+            </div>
+            <div class="card" style="border-top: 4px solid var(--red);">
+              <div class="section-title section-title-red">
+                <span>&#127941;</span> <span id="cmp-hdr-away">Trasferta</span>
+              </div>
+              <table class="table-ui">
+                <thead>
+                  <tr>
+                    <th>Metrica</th>
+                    <th>Previsto</th>
+                    <th>Reale</th>
+                    <th>Scarto</th>
+                  </tr>
+                </thead>
+                <tbody id="cmp-away-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="showStep(4)">
+            <span>&#8592;</span> Indietro
+          </button>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Sandbox invisibile: qui il V9.7 popola i suoi elementi. -->
+<!-- Sandbox invisibile -->
 <div id="v97-sandbox" style="display:none">
   <select id="sel-home"></select>
   <select id="sel-away"></select>
@@ -706,42 +930,113 @@ textarea {
 </div>
 
 <script>
-<script>
-// ═══════════════════════════════════════════════════════════════════════════
-// PATCH TOLLERANTE getElementById — assorbe accessi a elementi mancanti del V9.7
-// ═══════════════════════════════════════════════════════════════════════════
-(function(){
-  const _orig = document.getElementById.bind(document);
-  const ghost = new Proxy({}, {
-    get: function(t, k) {
-      if (k === 'style') return new Proxy({}, { get: () => '', set: () => true });
-      if (k === 'classList') return { add:()=>{}, remove:()=>{}, contains:()=>false, toggle:()=>{} };
-      if (k === 'children' || k === 'options') return [];
-      if (k === 'add' || k === 'appendChild' || k === 'removeChild' ||
-          k === 'addEventListener' || k === 'removeEventListener' ||
-          k === 'setAttribute' || k === 'removeAttribute' ||
-          k === 'focus' || k === 'blur' || k === 'click' ||
-          k === 'scrollIntoView' || k === 'insertBefore' || k === 'remove') return () => {};
-      if (k === 'innerHTML' || k === 'textContent' || k === 'value' || k === 'checked') return '';
-      if (k === 'length') return 0;
-      if (k === 'parentElement' || k === 'parentNode') return null;
-      if (k === 'querySelector' || k === 'querySelectorAll') return () => ghost;
-      return undefined;
-    },
-    set: function() { return true; }
+// Step Navigation
+function showStep(step) {
+  // Hide all steps
+  for (let i = 1; i <= 5; i++) {
+    document.getElementById(`step-${i}`).classList.add('hidden');
+  }
+  
+  // Show selected step
+  document.getElementById(`step-${step}`).classList.remove('hidden');
+  
+  // Update nav
+  const navItems = document.querySelectorAll('.step-nav-item');
+  navItems.forEach((item, index) => {
+    const currentStep = index + 1;
+    if (currentStep < step) {
+      item.className = 'step-nav-item completed';
+    } else if (currentStep === step) {
+      item.className = 'step-nav-item active';
+    } else {
+      item.className = 'step-nav-item pending';
+    }
   });
-  document.getElementById = function(id) { return _orig(id) || ghost; };
-})();
+  
+  // Show saved status if we have saved matches
+  if (step === 5 && cmpSavedMatches.length > 0) {
+    document.getElementById('saved-status').classList.remove('hidden');
+    document.getElementById('export-count').textContent = cmpSavedMatches.length;
+  }
+}
 
-// ═══════════════════════════════════════════════════════════════════════════
-// COMPARATORE — Drag & drop del V9.7 con iniezione automatica
-// ═══════════════════════════════════════════════════════════════════════════
+// Toggle Advanced Settings
+function toggleAdvanced() {
+  const settings = document.getElementById('advanced-settings');
+  const icon = document.getElementById('advanced-icon');
+  if (settings.style.display === 'none') {
+    settings.style.display = 'block';
+    icon.innerHTML = '&#9650;';
+  } else {
+    settings.style.display = 'none';
+    icon.innerHTML = '&#9660;';
+  }
+}
 
-let cmpMatchesOfTheDay = [];
-let cmpAllMatches = []; // tutte le partite delle 3 stagioni caricate (per il filtro intervallo/mese)
-let cmpSavedMatches = [];
-let cmpLeagues = [];
-let cmpCurrentResult = null;
+// Function to load scanner from repository
+async function loadScannerFromRepository() {
+  const btn = document.getElementById('btn-load-repo');
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span>&#8634;</span> Caricamento...';
+  
+  cmpLog('&#128229; Tentativo di caricamento scanner dal repository...');
+  
+  try {
+    // Try to fetch scanner.html from the same origin
+    const response = await fetch('scanner.html');
+    if (!response.ok) {
+      throw new Error('File non trovato');
+    }
+    
+    const text = await response.text();
+    cmpLog(`&#10004; File scanner.html caricato (${(text.length/1024).toFixed(1)} KB)`);
+    
+    // Create a blob and trigger the file load
+    const blob = new Blob([text], { type: 'text/html' });
+    const file = new File([blob], 'scanner.html', { type: 'text/html' });
+    
+    // Trigger the file processing
+    await loadEngineFromFile(file);
+    
+  } catch (error) {
+    cmpLog(`&#10007; Errore: ${error.message}`);
+    cmpLog('&#9888; Impossibile caricare dal repository. Usa il Drag & Drop manuale.');
+    alert('Impossibile caricare lo scanner dal repository. Usa il Drag & Drop manuale.');
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+    return;
+  }
+  
+  btn.disabled = false;
+  btn.innerHTML = originalText;
+}
+
+// Auto-advance to step 2 when engine is loaded
+let step2Shown = false;
+function checkAndAdvance() {
+  if (engineReady && !step2Shown) {
+    step2Shown = true;
+    showStep(2);
+    // Update the first nav item as completed
+    document.querySelector('.step-nav-item[data-step="1"]').className = 'step-nav-item completed';
+  }
+}
+
+// Override setInterval to also check for engine ready
+const originalSetInterval = window.setInterval;
+window.setInterval = function(fn, delay) {
+  const intervalId = originalSetInterval(fn, delay);
+  const checkFn = function() {
+    checkAndAdvance();
+  };
+  originalSetInterval(checkFn, 500);
+  return intervalId;
+};
+
+// Also check periodically
+setInterval(checkAndAdvance, 500);
+
 let engineReady = false;
 let cmpCurrentLeagueId = '';   // lega selezionata, per taggare i match e settare sel-league
 
