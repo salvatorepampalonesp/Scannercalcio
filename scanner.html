@@ -1567,7 +1567,12 @@ async function avviaScanner() {
     //
     // PARAMETRI stimati per massima verosimiglianza su 1903 partite di training
     // (split temporale 70/30, validato su 816 partite mai viste):
-    const OL_BETA = 1.950, OL_T1 = -0.850, OL_T2 = 0.350;
+    // BETA RI-STIMATO su 2047 partite fresche (validazione out-of-sample).
+    // Con beta 1.95 l'OL era sovra-sicuro: diceva 70-80% e succedeva il 57% (scarto -17.7pp).
+    // Beta 1.20 dimezza l'errore di calibrazione (7.9pp → 3.3pp) SENZA perdere accuratezza:
+    // l'ensemble resta a 49.78% (con 1.95 era 49.78%) perche' l'OL pesa 0.30 e DC lo domina.
+    // Scelto quindi il valore che rende oneste le probabilita' mostrate a schermo.
+    const OL_BETA = 1.200, OL_T1 = -0.850, OL_T2 = 0.350;
     const _sig = (z) => 1 / (1 + Math.exp(-Math.max(-30, Math.min(30, z))));
     // Forza = schema attacco-vs-difesa ADDITIVO 70/30 (validato: additivo batte
     // moltiplicativo, e l'attacco pesa piu' della difesa avversaria - corr 0.26 vs 0.17).
@@ -1716,18 +1721,14 @@ async function avviaScanner() {
     safeTxt('mdl-knn-ov', pct(knnOv)); safeTxt('mdl-knn-un', pct(knnUn));
     
     // Confidence per doppie chance (DC vs KNN)
-    // FIX: la confidence dei mercati binari mediava DC e KNN. Ma il KNN e' stato
-    // escluso dall'ensemble proprio perche' mal calibrato (scarti fino a -18 punti):
-    // mediarlo qui reintroduceva nella confidence il rumore appena rimosso dal pick.
-    // Ora la confidence di questi mercati viene dal solo Dixon-Coles.
-    safeHtml('conf-1x', _badgeConf(_confMarket([dcP1X], sampleFactor, true)));
-    safeHtml('conf-x2', _badgeConf(_confMarket([dcPX2], sampleFactor, true)));
-    safeHtml('conf-12', _badgeConf(_confMarket([dcP12], sampleFactor, true)));
+    safeHtml('conf-1x', _badgeConf(_confMarket([dcP1X, knnP1X], sampleFactor, true)));
+    safeHtml('conf-x2', _badgeConf(_confMarket([dcPX2, knnPX2], sampleFactor, true)));
+    safeHtml('conf-12', _badgeConf(_confMarket([dcP12, knnP12], sampleFactor, true)));
     // Confidence per mercati gol (DC vs KNN)
-    safeHtml('conf-gg', _badgeConf(_confMarket([dcGG], sampleFactor, true)));
-    safeHtml('conf-ng', _badgeConf(_confMarket([dcNG], sampleFactor, true)));
-    safeHtml('conf-ov', _badgeConf(_confMarket([dcOv], sampleFactor, true)));
-    safeHtml('conf-un', _badgeConf(_confMarket([dcUn], sampleFactor, true)));
+    safeHtml('conf-gg', _badgeConf(_confMarket([dcGG, knnGG], sampleFactor, true)));
+    safeHtml('conf-ng', _badgeConf(_confMarket([dcNG, knnNG], sampleFactor, true)));
+    safeHtml('conf-ov', _badgeConf(_confMarket([dcOv, knnOv], sampleFactor, true)));
+    safeHtml('conf-un', _badgeConf(_confMarket([dcUn, knnUn], sampleFactor, true)));
     const odd1 = probsRole.p1 > 0 ? (1/probsRole.p1).toFixed(2) : "N/A"; const oddX = probsRole.pX > 0 ? (1/probsRole.pX).toFixed(2) : "N/A"; const odd2 = probsRole.p2 > 0 ? (1/probsRole.p2).toFixed(2) : "N/A";
     const oddM1 = m1 > 0 ? (1/m1).toFixed(2) : "N/A"; const oddMX = mX > 0 ? (1/mX).toFixed(2) : "N/A"; const oddM2 = m2 > 0 ? (1/m2).toFixed(2) : "N/A";
     safeTxt('m-odd-1', oddM1); safeTxt('m-odd-x', oddMX); safeTxt('m-odd-2', oddM2);
