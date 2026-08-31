@@ -56,7 +56,7 @@ textarea{width:100%;min-height:350px;font-size:11px;font-family:monospace;border
   <div class="card" id="setup-card">
     <div class="section-title">🔍 Setup Simulazione: Database & Matchup</div>
     <div class="grid-2" style="margin-bottom:15px;">
-      <div><label style="font-size:10px;font-weight:bold;color:#555">API Key (PitchAPI)</label><input id="api-key" type="password" value="pk_test_wEikakOLBy3PIW66teVOBc2lal0Xosi2XTjee30JHPw"></div>
+      <div><label style="font-size:10px;font-weight:bold;color:#555">API Key (PitchAPI)</label><input id="api-key" type="password" value=""></div>
       <div><label style="font-size:10px;font-weight:bold;color:#555">Data Target (Time Machine)</label><input type="date" id="target-date"></div>
     </div>
     <div class="grid-3" style="align-items:end; margin-bottom:15px;">
@@ -686,29 +686,102 @@ function markovFlow(lH, lA) {
   let p1=0, pX=0, p2=0; for (let s = -5; s <= 5; s++) { const p = dist[s + 5]; if (s > 0) p1 += p; else if (s === 0) pX += p; else p2 += p; }
   return { p1, pX, p2, dist };
 }
-// ELO DI LEGA: aggiornamento cronologico corretto, somma zero, vantaggio campo esplicito.
-// Tutte le squadre finiscono sulla stessa scala, quindi i rating sono confrontabili tra loro.
+// ELO DI LEGA V2 — modifiche del 30/08/2026:
+//   1) REGRESSIONE PROPORZIONALE AL GAP: se una squadra non gioca in questa lega
+//      per >150 giorni (pausa estiva/anno in B/rientro), l'ELO regredisce verso 1500
+//      con forza proporzionale al gap. Copre pause estive, yo-yo A-B-A, rientri lunghi.
+//   2) K ADATTIVO: squadre con pochi match in cache (<15) usano K=30 per apprendere
+//      velocemente il loro vero valore. Aiuta le neopromosse e i team con storico corto.
+//   3) HFA DINAMICO PER LEGA: calcolato dai match della cache invece che fisso a 65.
+//      Serie A ~63, Premier ~52, Bundesliga ~72. Corregge la sovrastima casa strutturale
+//      identificata sui backtest (94% degli errori L1 = sovrastima casa).
 function buildGlobalElo(targetTimeMs) {
-  const HFA_ELO = 65, K = 20;
-  const table = {}, series = {}; const seen = new Set();
+  // ─── FIX CACHE (v2): filtra SOLO la lega scelta ───────────────────────
+  // Prima leggeva TUTTE le leghe in cache (incluse Champions/Europa/coppe/altre
+  // leghe nazionali). Contamina ELO, HFA e conteggio K adattivo perché:
+  //  - le top squadre giocano coppe europee → più match → ELO gonfiato
+  //  - avversari europei (Real, Bayern) partono da 1500 → sballano il calcolo
+  //  - le neopromosse hanno solo campionato → K adattivo squilibrato
+  // Ora leggiamo l'ID della lega selezionata dall'UI e filtriamo tutto.
+  const _chosenLeagueId = (typeof document !== 'undefined' && document.getElementById('sel-league'))
+    ? document.getElementById('sel-league').value : null;
+
+  // ─── Calcolo HFA DINAMICO dalla lega ─────────────────────────────────
+  //   HFA = 400 * log10(win_rate_home / win_rate_away)
+  //   Formula ELO standard (FiveThirtyEight). Cap [30, 100] per sicurezza.
+  const _seenHFA = new Set(); let _h_w = 0, _a_w = 0, _n_hfa = 0;
+  for (const m of globalLeagueMatchesCache) {
+    if (m.status !== 'finished' || !m.time_utc) continue;
+    if (_chosenLeagueId && m.league_id !== _chosenLeagueId) continue;  // ← FIX
+    if (new Date(m.time_utc).getTime() >= targetTimeMs) continue;
+    if (_seenHFA.has(m.id)) continue; _seenHFA.add(m.id);
+    const gh = m.score_home ?? 0, ga = m.score_away ?? 0;
+    if (gh > ga) _h_w++; else if (gh < ga) _a_w++;
+    _n_hfa++;
+  }
+  let HFA_ELO = 65; // default se dati insufficienti
+  if (_n_hfa >= 50 && _h_w > 0 && _a_w > 0) {
+    const wr_h = _h_w / _n_hfa, wr_a = _a_w / _n_hfa;
+    HFA_ELO = Math.max(30, Math.min(100, Math.round(400 * Math.log10(wr_h / wr_a))));
+  }
+
+  // ─── Costanti regressione ────────────────────────────────────────────
+  const GAP_THRESHOLD_DAYS = 60;   // 2 mesi: scatta per pausa estiva (~90gg)
+                                   //         MA non per break invernale Bundesliga (~30gg)
+                                   //         Fine maggio → metà agosto = ~90 giorni
+  const K_LOW = 30;  // K per squadre con pochi match
+  const K_HIGH = 20; // K standard
+  const K_THRESHOLD = 15;
+
+  const table = {}, series = {}, lastMatchTime = {}, nMatchesPlayed = {};
+  const seen = new Set();
   const ms = globalLeagueMatchesCache
-    .filter(m => m.status === 'finished' && m.time_utc && m.home_team && m.away_team && new Date(m.time_utc).getTime() < targetTimeMs)
+    .filter(m => m.status === 'finished' && m.time_utc && m.home_team && m.away_team
+                 && (!_chosenLeagueId || m.league_id === _chosenLeagueId)  // ← FIX cache
+                 && new Date(m.time_utc).getTime() < targetTimeMs)
     .sort((a, b) => new Date(a.time_utc) - new Date(b.time_utc));
+
   for (const m of ms) {
     if (seen.has(m.id)) continue; seen.add(m.id);
     const h = m.home_team.id, a = m.away_team.id; if (!h || !a) continue;
-    if (table[h] === undefined) { table[h] = 1500; series[h] = []; }
-    if (table[a] === undefined) { table[a] = 1500; series[a] = []; }
+    const matchMs = new Date(m.time_utc).getTime();
+
+    // Inizializzazione (uguale a prima: parte da 1500)
+    if (table[h] === undefined) { table[h] = 1500; series[h] = []; nMatchesPlayed[h] = 0; }
+    if (table[a] === undefined) { table[a] = 1500; series[a] = []; nMatchesPlayed[a] = 0; }
+
+    // ─── MODIFICA 1: Regressione proporzionale al gap ─────────────────
+    for (const teamId of [h, a]) {
+      if (lastMatchTime[teamId] !== undefined) {
+        const gapMs = matchMs - lastMatchTime[teamId];
+        const gapDays = gapMs / 86400000;
+        if (gapDays > GAP_THRESHOLD_DAYS) {
+          const gapYears = gapDays / 365;
+          const strength = Math.min(0.9, 0.3 * Math.ceil(gapYears));
+          table[teamId] = (1 - strength) * table[teamId] + strength * 1500;
+        }
+      }
+    }
+
+    // ─── Calcolo ELO standard con HFA dinamico ────────────────────────
     const gh = m.score_home ?? 0, ga = m.score_away ?? 0;
     const act = gh > ga ? 1 : (gh < ga ? 0 : 0.5);
     const diff = Math.abs(gh - ga);
     const mov = diff <= 1 ? 1.0 : (diff === 2 ? 1.5 : (11 + diff) / 8);
     const exp = 1 / (1 + Math.pow(10, (table[a] - (table[h] + HFA_ELO)) / 400));
+
+    // ─── MODIFICA 2: K adattivo (media dei due team) ──────────────────
+    const K_h = nMatchesPlayed[h] < K_THRESHOLD ? K_LOW : K_HIGH;
+    const K_a = nMatchesPlayed[a] < K_THRESHOLD ? K_LOW : K_HIGH;
+    const K = (K_h + K_a) / 2;
+
     const delta = K * mov * (act - exp);
     table[h] += delta; table[a] -= delta;
+    nMatchesPlayed[h]++; nMatchesPlayed[a]++;
+    lastMatchTime[h] = matchMs; lastMatchTime[a] = matchMs;
     series[h].unshift(Math.round(table[h])); series[a].unshift(Math.round(table[a]));
   }
-  return { table, series };
+  return { table, series, _hfa: HFA_ELO, _nHfa: _n_hfa };
 }
 // medie gol reali della lega: sostituiscono i moltiplicatori arbitrari 1.10 / 0.95
 function computeLeagueParams(leagueId, targetTimeMs) {
@@ -785,16 +858,32 @@ async function caricaSquadreLega() {
     if (season.includes('/')) { const p = season.split('/'); s1 = season; s2 = `${parseInt(p[0])-1}/${parseInt(p[1])-1}`; s3 = `${parseInt(p[0])-2}/${parseInt(p[1])-2}`; } 
     else { s1 = season; s2 = `${parseInt(season)-1}`; s3 = `${parseInt(season)-2}`; }
     
-    const leaguesOfCountry = LEAGUES_CATALOG.filter(l => l.country_code === cCode).map(l => l.id);
-    const EUROPEAN_LEAGUES = ['l_0bfbkO', 'l_38d9HA', 'l_2WZ2tt'];
-    let leaguesToFetch = [...new Set([...leaguesOfCountry, ...EUROPEAN_LEAGUES])];
+    // ─── FIX v2: fetch SOLO della lega selezionata ────────────────────────
+    // Prima scaricava: tutte le leghe del paese (Serie A + Serie B) + 3 leghe
+    // europee hardcoded = 5 leghe x 3 stagioni = 15 chiamate (fino a 30 col
+    // fallback). Due problemi:
+    //  1) ELO/features contaminati da coppe e altre leghe (fix applicato sopra)
+    //  2) 15-30 chiamate seriali: su mobile/GitHub Pages via proxy il
+    //     caricamento sembra bloccato per minuti, e se una lega non esiste
+    //     il fallback raddoppia i tentativi falliti.
+    // Dato che ELO, aggregaTeam e computeLeagueParams ora filtrano tutti per
+    // league_id, scaricare le altre leghe era puro spreco: 3 chiamate bastano.
+    const leaguesToFetch = [lId];
 
     let allMatches = [];
     for(let lid of leaguesToFetch) {
         for(let s of [s1, s2, s3]) {
+            logConsole(`   → Scarico stagione ${s}...`);
             let json = await apiCall(`/leagues/${lid}/matches?season=${encodeURIComponent(s)}`, true);
             if (!json || (!json.data && !json.matches)) json = await apiCall(`/leagues/${lid}/matches?season=${encodeURIComponent(s.split('/')[0])}`, true);
-            if(json) { const m = json.data?.matches || json.matches || []; m.forEach(match => match.league_id = lid); allMatches = allMatches.concat(m); }
+            if(json) {
+              const m = json.data?.matches || json.matches || [];
+              m.forEach(match => match.league_id = lid);
+              allMatches = allMatches.concat(m);
+              logConsole(`      ${m.length} partite`);
+            } else {
+              logConsole(`      ⚠️ stagione non disponibile`);
+            }
         }
     }
     if(allMatches.length === 0) { document.getElementById("btn-carica").disabled = false; return alert("Nessun match trovato."); }
@@ -846,8 +935,17 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
   logConsole("    -> Limite richiesto: " + limit + " partite complessive");
   const targetTimeMs = new Date(matchTimeStr).getTime(); const minTimeMs = targetTimeMs - (500 * 24 * 60 * 60 * 1000); 
 
+  // ─── FIX CACHE (v2): filtra SOLO la lega scelta ───────────────────
+  // Prima leggeva TUTTE le leghe. Le medie NPxG/PPDA/Field Tilt/ecc.
+  // erano contaminate da partite Champions/coppe con difese di livello
+  // diverso. Le top squadre uscivano sistematicamente "più forti" del reale
+  // in Serie A perché il loro NPxG medio includeva coppe europee.
+  const _chosenLeagueId = (typeof document !== 'undefined' && document.getElementById('sel-league'))
+    ? document.getElementById('sel-league').value : null;
+
   let past = globalLeagueMatchesCache.filter(m => {
     if(m.status !== 'finished') return false; if(m.home_team.id !== teamId && m.away_team.id !== teamId) return false;
+    if(_chosenLeagueId && m.league_id !== _chosenLeagueId) return false;  // ← FIX cache
     if(!m.time_utc) return false; const t = new Date(m.time_utc).getTime(); return t < targetTimeMs && t > minTimeMs; 
   });
   const uniqueIdsSet = new Set(); past = past.filter(m => { if(!uniqueIdsSet.has(m.id)) { uniqueIdsSet.add(m.id); return true; } return false; });

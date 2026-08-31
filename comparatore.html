@@ -70,7 +70,7 @@ input,select{width:100%;font-size:13px;border:1px solid #d1d1d6;border-radius:8p
           <input id="cmp-api-key" type="password" placeholder="pk_live_...">
         </div>
         <div>
-          <label style="font-size:10px;font-weight:bold;color:#555">Data</label>
+          <label style="font-size:10px;font-weight:bold;color:#555">Data (o inizio intervallo)</label>
           <input type="date" id="cmp-target-date">
         </div>
       </div>
@@ -90,6 +90,26 @@ input,select{width:100%;font-size:13px;border:1px solid #d1d1d6;border-radius:8p
       </div>
       <button class="btn btn-dark" id="cmp-btn-carica" onclick="cmpCaricaDatabase()">📥 Trova Partite del Giorno</button>
 
+      <!-- ELABORAZIONE INTERVALLO (mese intero) -->
+      <div style="margin-top:15px;border-top:1px dashed #ddd;padding-top:15px">
+        <div class="section-title" style="color:var(--orange);font-size:12px">📆 Oppure elabora un intervallo di date (es. un mese intero)</div>
+        <div class="grid-3" style="align-items:end">
+          <div>
+            <label style="font-size:10px;font-weight:bold;color:#555">Da (data inizio)</label>
+            <input type="date" id="cmp-range-start">
+          </div>
+          <div>
+            <label style="font-size:10px;font-weight:bold;color:#555">A (data fine)</label>
+            <input type="date" id="cmp-range-end">
+          </div>
+          <div>
+            <button class="btn btn-dark" id="cmp-btn-range" onclick="cmpEseguiIntervallo()">🗓️ Elabora intervallo</button>
+          </div>
+        </div>
+        <div class="note">Prima premi "Trova Partite del Giorno" una volta (costruisce lo storico della lega). Poi imposta <b>Da</b> e <b>A</b> qui sotto ed elabora. Le prime partite sono lente, poi accelerano perché lo storico è già in cache. Un mese può richiedere diversi minuti.</div>
+        <div id="cmp-range-progress" style="display:none;margin-top:10px;padding:10px;background:#fff3e0;border-radius:8px;font-size:12px;color:#e65100"></div>
+      </div>
+
       <div id="cmp-match-builder" class="hidden" style="margin-top:20px;border-top:2px solid #edf2f7;padding-top:15px">
         <div class="section-title" style="color:var(--green)">⚡ Scegli Partita</div>
         <div class="grid-3">
@@ -102,7 +122,9 @@ input,select{width:100%;font-size:13px;border:1px solid #d1d1d6;border-radius:8p
             <input type="number" id="cmp-history-limit" value="15" min="5" max="100">
           </div>
         </div>
-        <button class="btn btn-green" style="margin-top:15px" onclick="cmpEsegui()">🚀 Esegui V9.7 + Confronto</button>
+        <button class="btn btn-green" style="margin-top:15px" onclick="cmpEsegui()">🚀 Esegui V9.7 + Confronto (partita singola)</button>
+        <button class="btn btn-dark" style="margin-top:8px" id="cmp-btn-tutte" onclick="cmpEseguiTutte()">📦 Esegui TUTTE le partite del giorno e salvale</button>
+        <div id="cmp-progress" style="display:none;margin-top:10px;padding:10px;background:#fff3e0;border-radius:8px;font-size:12px;color:#e65100"></div>
       </div>
     </div>
 
@@ -155,6 +177,16 @@ input,select{width:100%;font-size:13px;border:1px solid #d1d1d6;border-radius:8p
           <tbody id="cmp-stats-mkt-body"></tbody>
         </table>
         <div class="note">Corner/Tiri/Cartellini: valore atteso e prob. Over dal modello binomiale negativa del motore. Handicap asiatico dalla matrice DC.</div>
+      </div>
+
+      <!-- NUOVA CARD: metriche VAEP/xT/GCA (Opzione 1 — solo reale, per validazione) -->
+      <div class="card" style="border-top:4px solid #00838f">
+        <div class="section-title" style="color:#00838f">🧬 Metriche Avanzate VAEP/xT/GCA (valori reali)</div>
+        <table class="table-ui">
+          <thead><tr><th>Metrica</th><th>🏠 Casa</th><th>✈️ Trasferta</th><th>Differenziale</th></tr></thead>
+          <tbody id="cmp-newmetrics-body"></tbody>
+        </table>
+        <div class="note">Il motore NON prevede ancora queste metriche: qui vedi solo i valori REALI della partita. Servono a validare se discriminano l'esito meglio delle dimensioni tattiche deboli del KNN (Field Tilt, PPDA), prima di eventualmente riscrivere il KNN.</div>
       </div>
 
       <div class="grid-2">
@@ -231,6 +263,7 @@ input,select{width:100%;font-size:13px;border:1px solid #d1d1d6;border-radius:8p
 // ═══════════════════════════════════════════════════════════════════════════
 
 let cmpMatchesOfTheDay = [];
+let cmpAllMatches = []; // tutte le partite delle 3 stagioni caricate (per il filtro intervallo/mese)
 let cmpSavedMatches = [];
 let cmpLeagues = [];
 let cmpCurrentResult = null;
@@ -351,7 +384,17 @@ async function loadEngineFromFile(file) {
         advRole:  (typeof advRole!=='undefined') ? advRole : null,  /* corner/tiri/cartellini attesi + prob Over (negBin) */
         advOver:  (typeof advOver!=='undefined') ? advOver : null,
         ahData:   (typeof ahData!=='undefined') ? ahData : null,    /* handicap asiatico */
-        mgTot:    (typeof mgTot!=='undefined') ? mgTot : null       /* multigol totali */
+        mgTot:    (typeof mgTot!=='undefined') ? mgTot : null,      /* multigol totali */
+        /* ELO — necessario per validare il fix HFA dinamico */
+        eloH:    (typeof ELO!=='undefined' && ELO && ELO.table && typeof hId!=='undefined') ? ELO.table[hId] : null,
+        eloA:    (typeof ELO!=='undefined' && ELO && ELO.table && typeof aId!=='undefined') ? ELO.table[aId] : null,
+        eloHFA:  (typeof ELO!=='undefined' && ELO && ELO._hfa) ? ELO._hfa : null,
+        eloNHFA: (typeof ELO!=='undefined' && ELO && ELO._nHfa) ? ELO._nHfa : null,
+        /* ID squadre + timestamp — servono al Comparatore per ricalcolare storico e aggregare metriche extra */
+        _homeId:       (typeof hId!=='undefined') ? hId : null,
+        _awayId:       (typeof aId!=='undefined') ? aId : null,
+        _targetTimeMs: (typeof targetMs!=='undefined') ? targetMs : null,
+        _limit:        (typeof limit!=='undefined') ? limit : 15
       };
     } catch(e) { console.error('Hook _V97_probs failed:', e); }
     /* ─── FINE HOOK ─── */
@@ -540,6 +583,7 @@ async function cmpCaricaDatabase() {
     // Scrivo la cache CONDIVISA: grazie al binding get/set iniettato, il motore la vede.
     window.__ENGINE_CACHE = allMatches;
     globalThis.globalLeagueMatchesCache = allMatches;
+    cmpAllMatches = allMatches; // tengo tutte le partite delle 3 stagioni per il filtro intervallo
 
     cmpMatchesOfTheDay = allMatches.filter(m =>
       m.status === 'finished' && m.time_utc && m.time_utc.startsWith(targetDate)
@@ -559,6 +603,18 @@ async function cmpCaricaDatabase() {
       cmpLog(`✅ ${cmpMatchesOfTheDay.length} partite per ${targetDate}`);
     }
 
+    // Mostro il range di date REALMENTE disponibile nella stagione caricata, e pre-riempio Da/A
+    // con l'intera stagione: così è chiaro quale intervallo si può elaborare (evita l'errore
+    // "date fuori stagione" tipico se si mette una data di un'altra annata).
+    const finiteMatches = allMatches.filter(m => m.status === 'finished' && m.time_utc).map(m => m.time_utc.split('T')[0]).sort();
+    if (finiteMatches.length) {
+      const dMin = finiteMatches[0], dMax = finiteMatches[finiteMatches.length-1];
+      cmpLog(`📆 Partite concluse disponibili in questa stagione: dal ${dMin} al ${dMax} (${finiteMatches.length} totali)`);
+      const rs = document.getElementById('cmp-range-start'); const re = document.getElementById('cmp-range-end');
+      if (rs && !rs.value) rs.value = dMin;
+      if (re && !re.value) re.value = dMax;
+    }
+
     document.getElementById('cmp-match-builder').classList.remove('hidden');
     document.getElementById('cmp-btn-carica').disabled = false;
   } catch (e) {
@@ -569,6 +625,97 @@ async function cmpCaricaDatabase() {
 }
 
 // ─── ESEGUI V9.7 ─────────────────────────────────────────────────────────
+// Esegue il motore + confronto per UNA partita data. Se render=true aggiorna la UI (uso singolo);
+// se render=false lavora in silenzio e restituisce il risultato (uso batch multi-partita).
+// Restituisce l'oggetto risultato (come cmpCurrentResult) oppure null se fallisce.
+async function cmpRunMatch(match, limit, render) {
+  const mId = match.id;
+  // Popolo la UI nascosta del V9.7 con gli id ESATTI che avviaScanner legge.
+  const setSel = (id, valId, valName) => {
+    const el = document.getElementById(id);
+    if (el && el.add) { el.innerHTML = ''; el.add(new Option(valName, valId)); el.value = valId; }
+  };
+  setSel('sel-home', match.home_team.id, match.home_team.name);
+  setSel('sel-away', match.away_team.id, match.away_team.name);
+  const lim = document.getElementById('history-limit'); if (lim) lim.value = limit;
+  const lg = document.getElementById('sel-league'); if (lg && !lg.value) lg.value = cmpCurrentLeagueId;
+  const td = document.getElementById('target-date');
+  if (td && match.time_utc) {
+    // ⚠️ FIX CRITICO (v5.1): imposto il giorno PRECEDENTE alla partita target.
+    // Il V9.7 costruisce matchTime = "giorno T23:59:00Z" e filtra t < matchTime.
+    // Se mettessimo target-date = giorno della partita, targetMs sarebbe le 23:59
+    // e la partita target (giocata in orario diurno) sarebbe INCLUSA negli storici,
+    // contaminando le predizioni con il risultato che vogliamo prevedere.
+    // Usando il giorno prima, target-date "23:59" precede il time_utc della partita.
+    const d = new Date(match.time_utc);
+    d.setUTCDate(d.getUTCDate() - 1);
+    td.value = d.toISOString().split('T')[0];
+  }
+
+  globalThis._V97_probs = null;
+  await globalThis.avviaScanner();
+  if (!globalThis._V97_probs) throw new Error("Il V9.7 non ha esposto _V97_probs (hook mancante o storico insufficiente).");
+  const R = globalThis._V97_probs;
+
+  const [sRes, aRes] = await Promise.all([
+    globalThis.apiCall(`/matches/${mId}/stats`, true),
+    globalThis.apiCall(`/matches/${mId}/advanced`, true)
+  ]);
+  const sD = sRes?.data || sRes;
+  const aD = aRes?.data?.teams || [];
+
+  const actH = cmpExtractReal(sD, aD, match.home_team.id, true);
+  const actA = cmpExtractReal(sD, aD, match.away_team.id, false);
+  actH.gf = match.score_home; actH.ga = match.score_away;
+  actA.gf = match.score_away; actA.ga = match.score_home;
+
+  // ─── PREDIZIONE metriche extra dalle storico match (v5) ───
+  // Il motore V9.7 non aggrega VAEP/xT/GCA/xAG/prog_passes perché non li usa.
+  // Qui li calcoliamo con lo stesso time decay per validarli come predittori.
+  // Nota: queste chiamate sono costose (fino a 15 fetch /advanced per squadra)
+  // ma sono solo per il match target scelto, non per lo storico intero.
+  let predExtraH = null, predExtraA = null;
+  if (R._homeId && R._awayId && R._targetTimeMs) {
+    // Costruisco lo storico direttamente dal cache globale del motore
+    const cache = globalThis.globalLeagueMatchesCache || [];
+    const targetMs = R._targetTimeMs;
+    const minMs = targetMs - (500 * 86400000); // 500 giorni come il motore
+    const buildPast = (teamId) => {
+      const seen = new Set();
+      return cache
+        .filter(m => m.status === 'finished' && m.time_utc && m.home_team && m.away_team
+                     && (m.home_team.id === teamId || m.away_team.id === teamId))
+        .filter(m => {
+          const t = new Date(m.time_utc).getTime();
+          return t < targetMs && t > minMs && !seen.has(m.id) && seen.add(m.id);
+        })
+        .sort((a, b) => new Date(b.time_utc) - new Date(a.time_utc))
+        .slice(0, R._limit || 15)
+        .map(m => ({ id: m.id, time: m.time_utc }));
+    };
+    const pastH = buildPast(R._homeId);
+    const pastA = buildPast(R._awayId);
+    cmpLog(`   → Aggregazione metriche extra (VAEP/xT/GCA/xAG) da ${pastH.length}+${pastA.length} match storici...`);
+    try {
+      [predExtraH, predExtraA] = await Promise.all([
+        cmpAggregateExtraMetrics(pastH, targetMs, R._homeId),
+        cmpAggregateExtraMetrics(pastA, targetMs, R._awayId)
+      ]);
+      cmpLog(`   → Estratti da ${predExtraH?._nSampled||0}/${predExtraA?._nSampled||0} match storici`);
+    } catch(e) {
+      cmpLog(`   ⚠️ Errore aggregazione extra: ${e.message}`);
+    }
+  } else {
+    cmpLog(`   ⚠️ Hook non ha esposto homeId/awayId/targetMs — metriche extra non calcolate`);
+  }
+  // Aggancio a R così arriva a Render e BuildResult
+  R._predExtraH = predExtraH;
+  R._predExtraA = predExtraA;
+
+  if (render) { cmpRender(match, R, actH, actA); return cmpCurrentResult; }
+  return cmpBuildResult(match, R, actH, actA); // batch: costruisce senza toccare il DOM
+}
+
 async function cmpEsegui() {
   const mId = document.getElementById('cmp-partita').value;
   if (!mId) return alert("Seleziona una partita");
@@ -577,57 +724,217 @@ async function cmpEsegui() {
 
   try {
     cmpLog(`⚙️ Motore V9.7: ${match.home_team.name} vs ${match.away_team.name}...`);
-
-    // Popolo la UI nascosta del V9.7 con gli id ESATTI che avviaScanner legge.
-    const setSel = (id, valId, valName) => {
-      const el = document.getElementById(id);
-      if (el && el.add) { el.innerHTML = ''; el.add(new Option(valName, valId)); el.value = valId; }
-    };
-    setSel('sel-home', match.home_team.id, match.home_team.name);
-    setSel('sel-away', match.away_team.id, match.away_team.name);
-    // ⚠️ FIX: il motore legge id="history-limit", non "limit-input".
-    const lim = document.getElementById('history-limit'); if (lim) lim.value = limit;
-    // Assicuro sel-league impostato (serve ai parametri di lega dentro avviaScanner).
-    const lg = document.getElementById('sel-league'); if (lg && !lg.value) lg.value = cmpCurrentLeagueId;
-    // Data del match target (il motore costruisce matchTime da target-date).
-    const td = document.getElementById('target-date');
-    if (td && match.time_utc) td.value = match.time_utc.split('T')[0];
-
-    globalThis._V97_probs = null;
-
-    // CHIAMATA AL V9.7 VERO — le probabilità arrivano dal suo hook, non ricalcolate qui.
-    await globalThis.avviaScanner();
-
-    if (!globalThis._V97_probs) {
-      throw new Error("Il V9.7 non ha esposto _V97_probs. Controlla il log: potrebbe essere mancato l'hook o lo storico era insufficiente.");
-    }
-
+    await cmpRunMatch(match, limit, true);
     const R = globalThis._V97_probs;
     cmpLog(`   → Ensemble: 1=${(R.m1*100).toFixed(1)}% X=${(R.mX*100).toFixed(1)}% 2=${(R.m2*100).toFixed(1)}%`);
     if (R.probsKnn) cmpLog(`   → KNN attivo (wKnn=${R.wKnn!=null?R.wKnn.toFixed(2):'?'})`);
-    else cmpLog(`   → KNN non disponibile per questa partita (dati tracking insufficienti)`);
-
-    cmpLog("📥 Fetch dati reali...");
-    const [sRes, aRes] = await Promise.all([
-      globalThis.apiCall(`/matches/${mId}/stats`, true),
-      globalThis.apiCall(`/matches/${mId}/advanced`, true)
-    ]);
-    const sD = sRes?.data || sRes;
-    const aD = aRes?.data?.teams || [];
-
-    const actH = cmpExtractReal(sD, aD, match.home_team.id, true);
-    const actA = cmpExtractReal(sD, aD, match.away_team.id, false);
-    actH.gf = match.score_home; actH.ga = match.score_away;
-    actA.gf = match.score_away; actA.ga = match.score_home;
-
-    cmpRender(match, R, actH, actA);
     cmpLog("✅ Confronto pronto.");
-
   } catch (e) {
     cmpLog(`❌ Errore: ${e.message}`);
     console.error(e);
     alert("Errore: " + e.message);
   }
+}
+
+// ─── ESEGUI TUTTE LE PARTITE DEL GIORNO E SALVALE ────────────────────────
+// Cicla su tutte le partite concluse caricate, esegue il motore per ognuna, e le accumula
+// per l'export. Può richiedere qualche minuto (una chiamata motore + 2 fetch per partita).
+// ─── ELABORA UN INTERVALLO DI DATE (es. mese intero) ─────────────────────
+// Riutilizza cmpAllMatches (già in cache dalle 3 stagioni): filtra le partite concluse
+// nell'intervallo [dataInizio, dataFine] e le elabora tutte, accumulandole per l'export.
+async function cmpEseguiIntervallo() {
+  if (!engineReady) return alert("Prima trascina il file V9.7");
+  if (!cmpAllMatches.length) return alert('Prima premi "Trova Partite del Giorno" per caricare lo storico della lega.');
+  // "Da" dal campo dedicato; se vuoto ripiega sulla "Data" in cima (retrocompatibile).
+  const startDate = document.getElementById('cmp-range-start').value || document.getElementById('cmp-target-date').value;
+  const endDate = document.getElementById('cmp-range-end').value;
+  if (!startDate) return alert('Imposta la data di inizio nel campo "Da (data inizio)".');
+  if (!endDate) return alert('Imposta la data di fine nel campo "A (data fine)".');
+  if (endDate < startDate) return alert(`La data fine (${endDate}) è precedente alla data inizio (${startDate}). Controlla i due campi "Da" e "A".`);
+
+  const limit = parseInt(document.getElementById('cmp-history-limit').value) || 15;
+  // Filtro le partite concluse nell'intervallo (confronto su YYYY-MM-DD, che è ordinabile come stringa)
+  const inRange = cmpAllMatches.filter(m => {
+    if (m.status !== 'finished' || m.score_home == null || !m.time_utc) return false;
+    const d = m.time_utc.split('T')[0];
+    return d >= startDate && d <= endDate;
+  }).sort((a,b) => a.time_utc.localeCompare(b.time_utc));
+
+  if (!inRange.length) {
+    const avail = cmpAllMatches.filter(m => m.status==='finished' && m.time_utc).map(m=>m.time_utc.split('T')[0]).sort();
+    const hint = avail.length ? `\n\nIn questa stagione ci sono partite dal ${avail[0]} al ${avail[avail.length-1]}. L'intervallo deve cadere in questo periodo.` : '';
+    return alert(`Nessuna partita conclusa tra ${startDate} e ${endDate} in questa lega/stagione.${hint}`);
+  }
+
+  if (!confirm(`Trovate ${inRange.length} partite concluse tra ${startDate} e ${endDate}.\nL'elaborazione può richiedere diversi minuti (le prime partite sono lente, poi accelerano).\nProcedo?`)) return;
+
+  const btn = document.getElementById('cmp-btn-range');
+  const prog = document.getElementById('cmp-range-progress');
+  btn.disabled = true;
+  prog.style.display = 'block';
+  let ok = 0, fail = 0;
+  const failed = [];
+  const t0 = Date.now();
+
+  for (let i = 0; i < inRange.length; i++) {
+    const m = inRange[i];
+    const elapsed = ((Date.now()-t0)/1000).toFixed(0);
+    const eta = i>0 ? Math.round((Date.now()-t0)/i*(inRange.length-i)/1000) : '?';
+    prog.innerHTML = `⏳ ${i+1}/${inRange.length} (${m.time_utc.split('T')[0]}): <b>${m.home_team.name} vs ${m.away_team.name}</b><br>✅ ${ok} salvate${fail?`, ❌ ${fail} saltate`:''} · trascorsi ${elapsed}s · stima rimanente ~${eta}s`;
+    try {
+      const res = await cmpRunMatch(m, limit, false);
+      if (res) { cmpSavedMatches.push(JSON.parse(JSON.stringify(res))); ok++; }
+      else { fail++; failed.push(`${m.home_team.name}-${m.away_team.name}`); }
+    } catch (e) {
+      fail++; failed.push(`${m.home_team.name}-${m.away_team.name}`);
+      cmpLog(`  ❌ ${m.home_team.name} vs ${m.away_team.name}: ${e.message}`);
+    }
+    await new Promise(r => setTimeout(r, 150));
+  }
+
+  const mins = ((Date.now()-t0)/60000).toFixed(1);
+  prog.innerHTML = `✅ Intervallo completato in ${mins} min! ${ok} partite salvate${fail?`, ${fail} saltate`:''}. Totale in memoria: ${cmpSavedMatches.length}. Premi "Scarica Excel".`;
+  document.getElementById('banner-export').style.display = 'block';
+  document.getElementById('export-count').textContent = cmpSavedMatches.length;
+  document.getElementById('cmp-results').classList.remove('hidden');
+  document.getElementById('cmp-header-info').textContent = `Intervallo ${startDate} → ${endDate}: ${ok} partite pronte per l'export`;
+  cmpLog(`✅ Intervallo ${startDate}→${endDate}: ${ok} ok, ${fail} saltate in ${mins} min. Totale: ${cmpSavedMatches.length}`);
+  if (failed.length) cmpLog(`   Saltate: ${failed.join('; ')}`);
+  btn.disabled = false;
+}
+
+async function cmpEseguiTutte() {  if (!cmpMatchesOfTheDay.length) return alert("Prima carica le partite del giorno");
+  const limit = parseInt(document.getElementById('cmp-history-limit').value) || 15;
+  const btn = document.getElementById('cmp-btn-tutte');
+  const prog = document.getElementById('cmp-progress');
+  const finite = cmpMatchesOfTheDay.filter(m => m.status === 'finished' && m.score_home != null);
+  if (!finite.length) return alert("Nessuna partita conclusa da elaborare");
+
+  if (!confirm(`Sto per elaborare ${finite.length} partite concluse. Può richiedere qualche minuto. Procedo?`)) return;
+
+  btn.disabled = true;
+  let ok = 0, fail = 0;
+  const failed = [];
+  prog.style.display = 'block';
+
+  for (let i = 0; i < finite.length; i++) {
+    const m = finite[i];
+    prog.innerHTML = `⏳ Elaborazione ${i+1}/${finite.length}: <b>${m.home_team.name} vs ${m.away_team.name}</b> — ✅ ${ok} salvate${fail?`, ❌ ${fail} saltate`:''}`;
+    try {
+      const res = await cmpRunMatch(m, limit, false);
+      if (res) {
+        // Clono il risultato (cmpCurrentResult viene sovrascritto ad ogni giro)
+        cmpSavedMatches.push(JSON.parse(JSON.stringify(res)));
+        ok++;
+      } else { fail++; failed.push(`${m.home_team.name}-${m.away_team.name}`); }
+    } catch (e) {
+      fail++; failed.push(`${m.home_team.name}-${m.away_team.name} (${e.message.slice(0,40)})`);
+      cmpLog(`  ❌ ${m.home_team.name} vs ${m.away_team.name}: ${e.message}`);
+    }
+    // piccola pausa per non saturare l'API (fair-use burst guard)
+    await new Promise(r => setTimeout(r, 150));
+  }
+
+  prog.innerHTML = `✅ Fatto! ${ok} partite salvate${fail?`, ${fail} saltate`:''}. Totale in memoria: ${cmpSavedMatches.length}. Premi "Scarica Excel".`;
+  document.getElementById('banner-export').style.display = 'block';
+  document.getElementById('export-count').textContent = cmpSavedMatches.length;
+  // FIX: mostro il pannello risultati così compare il pulsante "Scarica Excel" (prima restava
+  // nascosto nel batch, perché veniva svelato solo da cmpRender del singolo).
+  document.getElementById('cmp-results').classList.remove('hidden');
+  document.getElementById('cmp-header-info').textContent = `Batch di ${ok} partite pronto per l'export`;
+  cmpLog(`✅ Batch completato: ${ok} ok, ${fail} saltate. Totale salvate: ${cmpSavedMatches.length}`);
+  if (failed.length) cmpLog(`   Saltate: ${failed.join('; ')}`);
+  btn.disabled = false;
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PREDIZIONE metriche extra (VAEP, xT, GCA, xAG, prog_passes) — v5
+// Il motore V9.7 non aggrega queste metriche perché non le usa nei lambda.
+// Le calcoliamo qui dallo storico dei match, con lo STESSO time decay del motore.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const CMP_HALF_LIFE_DAYS = 106; // stesso valore del motore V9.7
+const CMP_LN2 = Math.log(2);
+
+function cmpTimeDecayWeighted(vals, times, targetMs) {
+  // Replica di _timeDecayDates del motore V9.7
+  if (!vals || !vals.length) return null;
+  const xi = CMP_LN2 / CMP_HALF_LIFE_DAYS;
+  let sumW = 0, sumWV = 0, nValid = 0;
+  for (let i = 0; i < vals.length; i++) {
+    const v = vals[i];
+    if (v == null || isNaN(v)) continue;
+    const daysAgo = Math.max(0, (targetMs - times[i]) / 86400000);
+    const w = Math.exp(-xi * daysAgo);
+    sumW += w; sumWV += w * v; nValid++;
+  }
+  if (!nValid) return null;
+  return sumWV / sumW;
+}
+
+// Aggregatore per una squadra: fetcha /advanced per ogni match storico
+// ed estrae le nuove metriche, poi restituisce medie decayed.
+async function cmpAggregateExtraMetrics(pastMatches, targetMs, teamId) {
+  if (!pastMatches || !pastMatches.length) return null;
+
+  // Per efficienza: prendo solo gli ultimi 15 match (come limite tipico del motore)
+  const sample = pastMatches.slice(0, 15);
+
+  const vals = {
+    vaep_off: [], vaep_def: [], xt: [], pv_off: [],
+    gca: [], xag: [], sca: [],
+    prog_passes: [], passes_box: [], carries_box: [], prog_carries: []
+  };
+  const times = [];
+
+  for (const m of sample) {
+    try {
+      const advRes = await globalThis.apiCall(`/matches/${m.id}/advanced`, true);
+      const advData = advRes?.data?.teams || [];
+      const my = advData.find(x => x?.team?.id === teamId);
+      if (!my) continue;
+
+      const t = new Date(m.time).getTime();
+      times.push(t);
+      const pv = my.possession_value || {};
+      const cr = my.creation || {};
+      const pa = my.passing || {};
+      const ca = my.carrying || {};
+
+      vals.vaep_off.push(pv.vaep_offensive ?? null);
+      vals.vaep_def.push(pv.vaep_defensive ?? null);
+      vals.xt.push(pv.xt_total ?? null);
+      vals.pv_off.push(pv.pv_offensive ?? null);
+      vals.gca.push(cr.gca ?? null);
+      vals.xag.push(cr.xag ?? null);
+      vals.sca.push(cr.sca ?? null);
+      vals.prog_passes.push(pa.progressive_passes ?? null);
+      vals.passes_box.push(pa.passes_into_box ?? null);
+      vals.carries_box.push(ca.carries_into_box ?? null);
+      vals.prog_carries.push(ca.progressive_carries ?? null);
+    } catch (e) {
+      // silent: se un match non ha advanced, skip
+    }
+  }
+
+  // Se non abbiamo raccolto abbastanza, restituisci null
+  if (!times.length) return null;
+
+  return {
+    vaep_off: cmpTimeDecayWeighted(vals.vaep_off, times, targetMs),
+    vaep_def: cmpTimeDecayWeighted(vals.vaep_def, times, targetMs),
+    xt:       cmpTimeDecayWeighted(vals.xt, times, targetMs),
+    pv_off:   cmpTimeDecayWeighted(vals.pv_off, times, targetMs),
+    gca:      cmpTimeDecayWeighted(vals.gca, times, targetMs),
+    xag:      cmpTimeDecayWeighted(vals.xag, times, targetMs),
+    sca:      cmpTimeDecayWeighted(vals.sca, times, targetMs),
+    prog_passes: cmpTimeDecayWeighted(vals.prog_passes, times, targetMs),
+    passes_box:  cmpTimeDecayWeighted(vals.passes_box, times, targetMs),
+    carries_box: cmpTimeDecayWeighted(vals.carries_box, times, targetMs),
+    prog_carries: cmpTimeDecayWeighted(vals.prog_carries, times, targetMs),
+    _nSampled: times.length
+  };
 }
 
 // ─── ESTRAI STATS REALI ──────────────────────────────────────────────────
@@ -669,6 +976,27 @@ function cmpExtractReal(sData, advData, teamId, isH) {
     out.cp5s = myA.defending?.counterpress_regains_5s;
     if (out.npxg == null) out.npxg = myA.shooting?.npxg;
     if (out.xgot == null) out.xgot = myA.shooting?.xgot;
+
+    // ─── NUOVE METRICHE (Opzione 1: cattura reale per validazione predittiva) ───
+    // possession_value: valori piccoli (xt ~1.2, vaep ~0.3 per squadra). Path esatti dalla doc PitchAPI.
+    const pv = myA.possession_value || {};
+    out.vaep     = pv.vaep_total;
+    out.vaep_off = pv.vaep_offensive;
+    out.vaep_def = pv.vaep_defensive;
+    out.xt       = pv.xt_total;
+    out.pv_off   = pv.pv_offensive;
+    // creation: azioni che creano gol/occasioni
+    const cr = myA.creation || {};
+    out.gca      = cr.gca;
+    out.xag      = cr.xag;
+    out.sca      = cr.sca;
+    // progressione (passing/carrying): quanto una squadra porta la palla in zona pericolosa
+    const pa = myA.passing || {};
+    out.prog_passes   = pa.progressive_passes;
+    out.passes_box    = pa.passes_into_box;
+    const ca = myA.carrying || {};
+    out.carries_box   = ca.carries_into_box;
+    out.prog_carries  = ca.progressive_carries;
   }
 
   // FALLBACK identico al motore: se i path advanced non danno il dato, provo extractSafeStat
@@ -839,6 +1167,23 @@ function cmpRender(match, R, actH, actA) {
   }
   document.getElementById('cmp-stats-mkt-body').innerHTML = statsHtml;
 
+  // ─── CARD METRICHE VAEP/xT/GCA (solo reale) ───
+  const nmList = [
+    ['VAEP totale','vaep'],['VAEP offensivo','vaep_off'],['VAEP difensivo','vaep_def'],
+    ['xT totale','xt'],['PV offensivo','pv_off'],['GCA','gca'],['xAG','xag'],['SCA','sca'],
+    ['Passaggi progressivi','prog_passes'],['Passaggi in area','passes_box'],
+    ['Conduzioni in area','carries_box'],['Conduzioni progressive','prog_carries']
+  ];
+  const _nm = v => (v==null||isNaN(v)) ? '--' : (Math.abs(v)<10 ? Number(v).toFixed(3) : Number(v).toFixed(0));
+  const nmHtml = nmList.map(([lbl,k]) => {
+    const h = actH[k], a = actA[k];
+    const diff = (h!=null && a!=null && !isNaN(h) && !isNaN(a)) ? h-a : null;
+    const diffTxt = diff!=null ? (diff>=0?'+':'')+_nm(diff) : '--';
+    const col = diff==null ? '#999' : (diff>0 ? 'var(--blue)' : 'var(--red)');
+    return `<tr><td>${lbl}</td><td>${_nm(h)}</td><td>${_nm(a)}</td><td style="color:${col};font-weight:bold">${diffTxt}</td></tr>`;
+  }).join('');
+  document.getElementById('cmp-newmetrics-body').innerHTML = nmHtml;
+
   const stats = [
     ['Gol','gf'],['NPxG','npxg'],['xG','xg'],['xGOT','xgot'],['xG Palle Inattive','xg_sp'],
     ['Tiri Totali','shots'],['SoT','sot'],['Corner','cor'],['Falli','fouls'],
@@ -861,16 +1206,60 @@ function cmpRender(match, R, actH, actA) {
   document.getElementById('cmp-home-body').innerHTML = stats.map(([l,k]) => rowStat(l, prevH[k], actH[k])).join('');
   document.getElementById('cmp-away-body').innerHTML = stats.map(([l,k]) => rowStat(l, prevA[k], actA[k])).join('');
 
-  cmpCurrentResult = {
+  cmpCurrentResult = cmpBuildResult(match, R, actH, actA);
+}
+
+// Costruisce l'oggetto risultato SENZA toccare il DOM (usato sia dal render sia dal batch).
+function cmpBuildResult(match, R, actH, actA) {
+  const outcome = actH.gf > actA.gf ? '1' : (actH.gf === actA.gf ? 'X' : '2');
+  const gg = (actH.gf > 0 && actA.gf > 0) ? 'Goal' : 'NoGoal';
+  const goalTot = actH.gf + actA.gf;
+  const ov = goalTot > 2.5 ? 'Over 2.5' : 'Under 2.5';
+  const gm = marketsFromMatrix(R.dcMat);
+  const prevH = cmpExtractPrev(R.dH);
+  const prevA = cmpExtractPrev(R.dA);
+  const sf = R.sampleFactor != null ? R.sampleFactor : 1;
+  const _conf = (arr) => {
+    const v = arr.filter(p => p != null && isFinite(p));
+    if (v.length < 2) return null;
+    let sp = 0;
+    for (let i=0; i<v.length; i++) for (let j=i+1; j<v.length; j++) sp = Math.max(sp, Math.abs(v[i]-v[j]));
+    return Math.max(0, Math.min(100, Math.round(100 * (1-sp) * sf)));
+  };
+  return {
     tgt: { hName: match.home_team.name, aName: match.away_team.name, sH: actH.gf, sA: actA.gf, time: match.time_utc },
-    R, actH, actA, outcome, gg, ov, goalTot,
-    prevH, prevA,
-    conf: { c1, cX, c2 },
-    // Nuovi dati per studio esteso
+    R, actH, actA, outcome, gg, ov, goalTot, prevH, prevA,
+    conf: {
+      c1: _conf([R.probsRole?.p1, R.probsKnn?.p1, R.mk_ro?.p1]),
+      cX: _conf([R.probsRole?.pX, R.probsKnn?.pX, R.mk_ro?.pX]),
+      c2: _conf([R.probsRole?.p2, R.probsKnn?.p2, R.mk_ro?.p2])
+    },
     goalsMarket: gm,
     realTotals: { cor: (actH.cor!=null&&actA.cor!=null)?actH.cor+actA.cor:null,
                   sot: (actH.sot!=null&&actA.sot!=null)?actH.sot+actA.sot:null,
-                  yel: (actH.yel!=null&&actA.yel!=null)?actH.yel+actA.yel:null }
+                  yel: (actH.yel!=null&&actA.yel!=null)?actH.yel+actA.yel:null },
+    // Nuove metriche REALI (Opzione 1) — casa e trasferta, per validazione predittiva
+    newMetrics: {
+      H: { vaep:actH.vaep, vaep_off:actH.vaep_off, vaep_def:actH.vaep_def, xt:actH.xt, pv_off:actH.pv_off,
+           gca:actH.gca, xag:actH.xag, sca:actH.sca, prog_passes:actH.prog_passes, passes_box:actH.passes_box,
+           carries_box:actH.carries_box, prog_carries:actH.prog_carries },
+      A: { vaep:actA.vaep, vaep_off:actA.vaep_off, vaep_def:actA.vaep_def, xt:actA.xt, pv_off:actA.pv_off,
+           gca:actA.gca, xag:actA.xag, sca:actA.sca, prog_passes:actA.prog_passes, passes_box:actA.passes_box,
+           carries_box:actA.carries_box, prog_carries:actA.prog_carries }
+    },
+    // Nuove metriche PREDETTE (v5) — aggregate dai match storici col time decay del motore
+    newMetricsPred: {
+      H: R._predExtraH || null,
+      A: R._predExtraA || null
+    },
+    // ELO (v5) — per validare il fix HFA dinamico + K adattivo + regressione stagionale
+    eloData: {
+      H: R.eloH != null ? Math.round(R.eloH) : null,
+      A: R.eloA != null ? Math.round(R.eloA) : null,
+      diff: (R.eloH != null && R.eloA != null) ? Math.round(R.eloH - R.eloA) : null,
+      hfa: R.eloHFA != null ? Math.round(R.eloHFA) : null,
+      nHfa: R.eloNHFA || null
+    }
   };
 }
 
@@ -1014,6 +1403,62 @@ function cmpExportCSV() {
       const p = m.prevA[k], rl = m.actA[k];
       const sc = (p != null && rl != null && !isNaN(p) && !isNaN(rl)) ? (rl-p).toFixed(2).replace('.',',') : '';
       r.push(num(p), '', num(rl), sc);
+    });
+    rows.push(r.join(';'));
+  });
+
+  // ─── NUOVE METRICHE REALI (Opzione 1: VAEP/xT/GCA/progressione) ───
+  // Solo valori REALI (il motore non le prevede ancora). Servono all'analisi predittiva:
+  // discriminano l'esito meglio delle metriche tattiche deboli del KNN?
+  const newMetricList = [
+    ['VAEP totale','vaep'],['VAEP offensivo','vaep_off'],['VAEP difensivo','vaep_def'],
+    ['xT totale','xt'],['PV offensivo','pv_off'],
+    ['GCA (goal-creating)','gca'],['xAG (expected assists)','xag'],['SCA (shot-creating)','sca'],
+    ['Passaggi progressivi','prog_passes'],['Passaggi in area','passes_box'],
+    ['Conduzioni in area','carries_box'],['Conduzioni progressive','prog_carries']
+  ];
+  // ─── SEZIONE ELO (v5) — 4 righe totali ───
+  rows.push('');
+  rows.push('--- ELO (v5 con HFA dinamico + regressione + K adattivo) ---' + ';;;;'.repeat(M.length));
+  const fmtInt = v => v==null?'N/D':String(Math.round(v));
+  const eloH_r = ['ELO Casa']; const eloA_r = ['ELO Trasferta']; const eloD_r = ['ELO Diff (H-A)']; const eloHFA_r = ['HFA Lega'];
+  M.forEach(m => {
+    const e = m.eloData || {};
+    eloH_r.push(fmtInt(e.H), '', '', '');
+    eloA_r.push(fmtInt(e.A), '', '', '');
+    eloD_r.push(e.diff!=null ? (e.diff>0?'+':'')+e.diff : 'N/D', '', '', '');
+    eloHFA_r.push(fmtInt(e.hfa), '', '', '');
+  });
+  rows.push(eloH_r.join(';')); rows.push(eloA_r.join(';'));
+  rows.push(eloD_r.join(';')); rows.push(eloHFA_r.join(';'));
+
+  // ─── SEZIONE NUOVE METRICHE — Previsto + Reale + Scarto ───
+  const fmtN = v => v==null||isNaN(v) ? 'N/D' : Number(v).toFixed(3).replace('.',',');
+  const scartoN = (prev, real) => {
+    if (prev==null || real==null || isNaN(prev) || isNaN(real)) return '';
+    return (real-prev>=0?'+':'') + (real-prev).toFixed(3).replace('.',',');
+  };
+  rows.push('');
+  rows.push('--- NUOVE METRICHE (VAEP/xT/GCA) — CASA (Prev + Reale + Scarto) ---' + ';;;;'.repeat(M.length));
+  rows.push(['Nome Casa'].concat(...M.map(m => [m.tgt.hName, '', '', ''])).join(';'));
+  newMetricList.forEach(([lbl, k]) => {
+    const r = [lbl];
+    M.forEach(m => {
+      const prev = m.newMetricsPred?.H?.[k];
+      const real = m.newMetrics?.H?.[k];
+      r.push(fmtN(prev), '', fmtN(real), scartoN(prev, real));
+    });
+    rows.push(r.join(';'));
+  });
+  rows.push('');
+  rows.push('--- NUOVE METRICHE (VAEP/xT/GCA) — TRASFERTA (Prev + Reale + Scarto) ---' + ';;;;'.repeat(M.length));
+  rows.push(['Nome Trasferta'].concat(...M.map(m => [m.tgt.aName, '', '', ''])).join(';'));
+  newMetricList.forEach(([lbl, k]) => {
+    const r = [lbl];
+    M.forEach(m => {
+      const prev = m.newMetricsPred?.A?.[k];
+      const real = m.newMetrics?.A?.[k];
+      r.push(fmtN(prev), '', fmtN(real), scartoN(prev, real));
     });
     rows.push(r.join(';'));
   });
