@@ -3,913 +3,223 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Comparatore V9.7 - Drag & Drop Auto</title>
+<title>Comparatore V9.7 — Drag & Drop Auto</title>
 <style>
-:root {
-  --bg: #f0f2f5;
-  --card: #ffffff;
-  --text: #1c1c1e;
-  --sub: #6c757d;
-  --blue: #0066cc;
-  --red: #dc3545;
-  --green: #28a745;
-  --orange: #fd7e14;
-  --purple: #6f42c1;
-  --dark: #212529;
-  --border: #dee2e6;
-  --hover: #f8f9fa;
-  --warning: #ffc107;
-}
-
-* { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.wrap {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 2rem 1rem 3rem;
-}
-
-/* Header */
-.header {
-  text-align: center;
-  margin-bottom: 2rem;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, var(--dark) 0%, #343a40 100%);
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-  color: white;
-}
-
-.header h1 {
-  font-size: 28px;
-  font-weight: 800;
-  margin-bottom: 0.5rem;
-  letter-spacing: -0.5px;
-}
-
-.header .version {
-  font-size: 12px;
-  font-weight: 600;
-  background: rgba(255,255,255,0.2);
-  padding: 4px 12px;
-  border-radius: 20px;
-  display: inline-block;
-}
-
-.header .subtitle {
-  font-size: 14px;
-  opacity: 0.9;
-  margin-top: 0.5rem;
-}
-
-/* Main Container */
-.main-container {
-  display: flex;
-  gap: 1.5rem;
-}
-
-/* Sidebar */
-.sidebar {
-  width: 280px;
-  position: sticky;
-  top: 2rem;
-  height: fit-content;
-}
-
-.sidebar-card {
-  background: var(--card);
-  border-radius: 12px;
-  padding: 1.25rem;
-  margin-bottom: 1rem;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-  border: 1px solid var(--border);
-}
-
-.sidebar-title {
-  font-size: 12px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text);
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--border);
-}
-
-.sidebar-section {
-  margin-bottom: 1rem;
-}
-
-.sidebar-section:last-child {
-  margin-bottom: 0;
-}
-
-/* Step Navigation */
-.step-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.step-nav-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: 2px solid transparent;
-}
-
-.step-nav-item:hover {
-  background: var(--hover);
-}
-
-.step-nav-item.active {
-  background: var(--blue);
-  color: white;
-  border-color: var(--blue);
-}
-
-.step-nav-item.completed {
-  background: var(--green);
-  color: white;
-  border-color: var(--green);
-}
-
-.step-nav-item.pending {
-  color: var(--sub);
-}
-
-.step-nav-number {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: rgba(0,0,0,0.1);
-  font-size: 11px;
-  font-weight: bold;
-}
-
-.step-nav-item.completed .step-nav-number {
-  background: white;
-  color: var(--green);
-}
-
-.step-nav-item.active .step-nav-number {
-  background: white;
-  color: var(--blue);
-}
-
-/* Content Area */
-.content-area {
-  flex-grow: 1;
-}
-
-/* Cards */
-.card {
-  background: var(--card);
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-  border: 1px solid var(--border);
-}
-
-.card-featured {
-  border-top: 4px solid;
-}
-
-.card-featured-blue { border-color: var(--blue); background: #e3f2fd; }
-.card-featured-green { border-color: var(--green); background: #d4edda; }
-.card-featured-orange { border-color: var(--orange); background: #fff3cd; }
-.card-featured-purple { border-color: var(--purple); background: #f8f9fa; }
-.card-featured-dark { border-color: var(--dark); background: #f8f9fa; }
-
-/* Form Elements */
-input[type="text"],
-input[type="password"],
-input[type="date"],
-select,
-input[type="number"] {
-  width: 100%;
-  font-size: 13px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px 12px;
-  background: #fff;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-input:focus, select:focus {
-  outline: none;
-  border-color: var(--blue);
-  box-shadow: 0 0 0 3px rgba(0,102,204,0.1);
-}
-
-/* Buttons */
-.btn {
-  border: none;
-  border-radius: 8px;
-  padding: 12px 20px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: all 0.2s;
-}
-
-.btn:hover { opacity: 0.9; transform: translateY(-1px); }
-.btn:active { transform: translateY(0); }
-.btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-.btn-primary { background: var(--blue); color: #fff; }
-.btn-green { background: var(--green); color: #fff; }
-.btn-dark { background: var(--dark); color: #fff; }
-.btn-orange { background: var(--orange); color: #fff; }
-.btn-secondary { background: #6c757d; color: #fff; }
-.btn-warning { background: var(--warning); color: #212529; }
-
-.btn-full { width: 100%; }
-.btn-group { display: flex; gap: 0.75rem; flex-wrap: wrap; }
-.btn-group .btn { width: auto; min-width: 140px; }
-
-/* Dropzone */
+:root { --bg:#f2f2f7; --card:#fff; --text:#1c1c1e; --sub:#8e8e93; --blue:#007aff; --red:#c62828; --green:#2d7d32; --orange:#f57c00; --purple:#6a1b9a; --dark:#111; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text);padding:1rem;font-size:13px;min-height:100vh}
+.wrap{max-width:1300px;margin:0 auto;padding-bottom:3rem}
+h1{font-size:22px;font-weight:800;margin-bottom:1rem;display:flex;align-items:center;gap:10px}
+h1 span{font-size:12px;background:var(--dark);color:white;padding:3px 8px;border-radius:6px}
+.card{background:var(--card);border-radius:12px;padding:1.2rem;margin-bottom:15px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.section-title{font-size:14px;font-weight:800;text-transform:uppercase;margin-bottom:12px;border-bottom:2px solid #edf2f7;padding-bottom:6px;color:var(--blue)}
+input,select{width:100%;font-size:13px;border:1px solid #d1d1d6;border-radius:8px;padding:8px 12px;background:#fff;margin-top:4px}
+.btn{border:none;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;color:#fff;display:inline-block;text-align:center;width:100%}
+.btn:hover{opacity:.9}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-dark{background:var(--dark)} .btn-green{background:var(--green);font-size:14px;padding:12px} .btn-blue{background:var(--blue);width:auto}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:end}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;align-items:end}
+.table-ui{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px}
+.table-ui th{background:#fafafa;padding:8px;border-bottom:2px solid #ddd;color:#555;font-weight:bold;text-align:center}
+.table-ui td{padding:7px 8px;border-bottom:1px solid #eee;text-align:center;color:#333}
+.table-ui td:first-child{text-align:left;font-weight:bold;color:#111;background:#fafafa}
 #dropzone {
-  border: 3px dashed var(--blue);
-  border-radius: 12px;
-  padding: 2.5rem;
-  text-align: center;
-  background: linear-gradient(135deg, #e3f2fd 0%, #f3f7ff 100%);
-  cursor: pointer;
-  transition: all 0.3s ease;
+  border: 3px dashed #007aff; border-radius: 12px; padding: 40px; text-align: center;
+  background: #f0f8ff; margin-bottom: 20px; cursor: pointer; transition: all .2s;
 }
-
-#dropzone:hover, #dropzone.dragover {
-  background: linear-gradient(135deg, #d6ebff 0%, #e3f2fd 100%);
-  border-color: var(--blue);
-  transform: scale(1.02);
-  box-shadow: 0 4px 20px rgba(0,102,204,0.2);
-}
-
-#dropzone.loaded {
-  background: linear-gradient(135deg, #d4edda 0%, #e8f5e9 100%);
-  border-color: var(--green);
-  border-style: solid;
-}
-
-#dropzone h2 {
-  font-size: 24px;
-  color: var(--blue);
-  margin-bottom: 0.75rem;
-}
-
-#dropzone.loaded h2 {
-  color: var(--green);
-}
-
-#dropzone p {
-  color: var(--sub);
-  font-size: 14px;
-  margin-bottom: 0.5rem;
-}
-
-/* Console */
-#console {
-  font-family: monospace;
-  background: #1e1e1e;
-  color: #00ff00;
-  padding: 1rem;
-  border-radius: 8px;
-  max-height: 250px;
-  overflow-y: auto;
-  font-size: 11px;
-  margin-top: 1rem;
-  display: none;
-  line-height: 1.4;
-}
-
-/* Hidden */
-.hidden { display: none; }
-
-/* Alert */
-.alert {
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-  font-size: 12px;
-  line-height: 1.5;
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-}
-
-.alert-info { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
-.alert-success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
-.alert-warning { background: #fff3cd; border: 1px solid #ffeeba; color: #856404; }
-
-/* Form Row */
-.form-row {
-  margin-bottom: 1rem;
-}
-
-.form-row .label {
-  display: block;
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--sub);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  margin-bottom: 0.5rem;
-}
-
-.form-row .hint {
-  font-size: 9px;
-  color: #adb5bd;
-  margin-top: 0.25rem;
-}
-
-/* Divider */
-.divider {
-  height: 1px;
-  background: var(--border);
-  margin: 1.5rem 0;
-}
-
-/* Progress */
-.progress-box {
-  display: none;
-  margin-top: 0.75rem;
-  padding: 0.75rem 1rem;
-  background: #fff3e0;
-  border-radius: 8px;
-  font-size: 12px;
-  color: #e65100;
-  border: 1px solid var(--warning);
-}
-
-/* Tables */
-.table-ui {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-  margin: 0.5rem 0;
-}
-
-.table-ui th {
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--sub);
-  padding: 10px 8px;
-  text-align: center;
-  border-bottom: 2px solid var(--border);
-  background: #f8f9fa;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.table-ui th:first-child { text-align: left; }
-
-.table-ui td {
-  padding: 10px 8px;
-  border-bottom: 1px solid var(--border);
-  color: var(--text);
-  text-align: center;
-}
-
-.table-ui td:first-child {
-  text-align: left;
-  font-weight: 600;
-  color: var(--dark);
-}
-
-.table-ui tr:hover td {
-  background: var(--hover);
-}
-
-/* Section Title */
-.section-title {
-  font-size: 15px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text);
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 2px solid var(--border);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.section-title-blue { color: var(--blue); border-bottom-color: var(--blue); }
-.section-title-green { color: var(--green); border-bottom-color: var(--green); }
-.section-title-orange { color: var(--orange); border-bottom-color: var(--orange); }
-.section-title-purple { color: var(--purple); border-bottom-color: var(--purple); }
-.section-title-dark { color: var(--dark); border-bottom-color: var(--dark); }
-
-/* Result Header */
-.result-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
-}
-
-.result-title {
-  font-size: 14px;
-  font-weight: bold;
-  color: var(--green);
-}
-
-.result-info {
-  font-size: 11px;
-  color: var(--sub);
-  margin-top: 0.25rem;
-}
-
-.result-actions {
-  display: flex;
-  gap: 0.75rem;
-}
-
-.result-actions .btn {
-  width: auto;
-  padding: 10px 20px;
-}
-
-@media (max-width: 900px) {
-  .main-container {
-    flex-direction: column;
-  }
-  .sidebar {
-    width: 100%;
-    position: static;
-  }
-  .step-nav {
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
-  .step-nav-item {
-    flex-grow: 1;
-    justify-content: center;
-  }
-}
+#dropzone:hover, #dropzone.dragover { background: #d6ebff; border-color: #0056b3; transform: scale(1.01); }
+#dropzone.loaded { background: #e8f5e9; border-color: var(--green); border-style: solid; }
+#dropzone h2 { font-size: 20px; color: #007aff; margin-bottom: 10px; }
+#dropzone.loaded h2 { color: var(--green); }
+#dropzone p { color: #666; font-size: 13px; }
+#dropzone code { background: #fff; padding: 2px 6px; border-radius: 3px; font-size: 11px; color: #c7254e; }
+#console{font-family:monospace;background:#111;color:#0f0;padding:10px;border-radius:8px;max-height:250px;overflow-y:auto;font-size:11px;margin-top:10px;display:none;line-height:1.4}
+#banner-export{display:none;background:var(--green);color:white;padding:10px 15px;border-radius:8px;font-weight:bold;margin-bottom:15px;text-align:center}
+.hidden{display:none}
+.note{font-size:10px;color:#888;line-height:1.5;margin-top:8px}
 </style>
 </head>
 <body>
-
 <div class="wrap">
-  <div class="header">
-    <h1>Comparatore V9.7</h1>
-    <span class="version">Drag & Drop Auto</span>
-    <div class="subtitle">Confronta previsioni Scanner V9.7 con risultati reali</div>
+  <h1>Comparatore V9.7 <span>Drag & Drop Auto</span></h1>
+
+  <!-- STEP 1: DRAG & DROP -->
+  <div id="dropzone">
+    <h2>📥 Trascina qui il tuo Scanner V9.7 (.html)</h2>
+    <p>Il file verrà elaborato automaticamente in memoria.</p>
+    <p style="margin-top:8px;font-size:11px;color:#888">
+      ✨ <b>Nessuna modifica manuale al V9.7</b>: il motore vero viene iniettato e le sue formule
+      catturate con un hook. Le probabilità NON vengono ricalcolate qui: sono quelle esatte del V9.7.
+    </p>
+    <input type="file" id="file-input" accept=".html" style="display:none">
   </div>
 
-  <div class="main-container">
-    <!-- SIDEBAR -->
-    <div class="sidebar">
-      <div class="sidebar-card">
-        <div class="sidebar-title">Menu</div>
-        <div class="step-nav">
-          <div class="step-nav-item active" data-step="1" onclick="showStep(1)">
-            <span class="step-nav-number">1</span>
-            <span>Carica Motore</span>
-          </div>
-          <div class="step-nav-item pending" data-step="2" onclick="showStep(2)">
-            <span class="step-nav-number">2</span>
-            <span>Configura</span>
-          </div>
-          <div class="step-nav-item pending" data-step="3" onclick="showStep(3)">
-            <span class="step-nav-number">3</span>
-            <span>Trova Partite</span>
-          </div>
-          <div class="step-nav-item pending" data-step="4" onclick="showStep(4)">
-            <span class="step-nav-number">4</span>
-            <span>Analizza</span>
-          </div>
-          <div class="step-nav-item pending" data-step="5" onclick="showStep(5)">
-            <span class="step-nav-number">5</span>
-            <span>Risultati</span>
-          </div>
+  <div id="console"></div>
+
+  <div id="setup-area" class="hidden">
+    <div id="banner-export">
+      ✅ Hai salvato <span id="export-count" style="font-size:16px;background:#fff;color:var(--green);padding:2px 8px;border-radius:4px;margin:0 4px">0</span> partite. Pronte per il download!
+    </div>
+
+    <div class="card">
+      <div class="section-title">🔍 Setup & Ricerca Partita</div>
+      <div class="grid-2" style="margin-bottom:15px">
+        <div>
+          <label style="font-size:10px;font-weight:bold;color:#555">API Key</label>
+          <input id="cmp-api-key" type="password" placeholder="pk_live_...">
+        </div>
+        <div>
+          <label style="font-size:10px;font-weight:bold;color:#555">Data (o inizio intervallo)</label>
+          <input type="date" id="cmp-target-date">
         </div>
       </div>
-      
-      <div class="sidebar-card hidden" id="saved-status">
-        <div class="sidebar-title">Partite Salvate</div>
-        <div style="text-align: center; padding: 1rem;">
-          <span style="font-size: 24px; font-weight: bold; color: var(--green);" id="export-count">0</span>
-          <div style="font-size: 11px; color: var(--sub); margin-top: 0.5rem;">Pronte per export</div>
+      <div class="grid-3" style="align-items:end;margin-bottom:15px">
+        <div>
+          <label style="font-size:10px;font-weight:bold;color:#555">Paese</label>
+          <select id="cmp-country" onchange="cmpUpdateLeagues()"><option value="">-- --</option></select>
         </div>
-        <button class="btn btn-green btn-full" onclick="cmpExportCSV()">
-          <span>&#128196;</span> Scarica Excel
-        </button>
+        <div>
+          <label style="font-size:10px;font-weight:bold;color:#555">Lega</label>
+          <select id="cmp-league" onchange="cmpUpdateSeasons()"><option value="">-- --</option></select>
+        </div>
+        <div>
+          <label style="font-size:10px;font-weight:bold;color:#555">Stagione</label>
+          <select id="cmp-season"><option value="">-- --</option></select>
+        </div>
+      </div>
+      <button class="btn btn-dark" id="cmp-btn-carica" onclick="cmpCaricaDatabase()">📥 Trova Partite del Giorno</button>
+
+      <!-- ELABORAZIONE INTERVALLO (mese intero) -->
+      <div style="margin-top:15px;border-top:1px dashed #ddd;padding-top:15px">
+        <div class="section-title" style="color:var(--orange);font-size:12px">📆 Oppure elabora un intervallo di date (es. un mese intero)</div>
+        <div class="grid-3" style="align-items:end">
+          <div>
+            <label style="font-size:10px;font-weight:bold;color:#555">Da (data inizio)</label>
+            <input type="date" id="cmp-range-start">
+          </div>
+          <div>
+            <label style="font-size:10px;font-weight:bold;color:#555">A (data fine)</label>
+            <input type="date" id="cmp-range-end">
+          </div>
+          <div>
+            <button class="btn btn-dark" id="cmp-btn-range" onclick="cmpEseguiIntervallo()">🗓️ Elabora intervallo</button>
+          </div>
+        </div>
+        <div class="note">Prima premi "Trova Partite del Giorno" una volta (costruisce lo storico della lega). Poi imposta <b>Da</b> e <b>A</b> qui sotto ed elabora. Le prime partite sono lente, poi accelerano perché lo storico è già in cache. Un mese può richiedere diversi minuti.</div>
+        <div id="cmp-range-progress" style="display:none;margin-top:10px;padding:10px;background:#fff3e0;border-radius:8px;font-size:12px;color:#e65100"></div>
+      </div>
+
+      <div id="cmp-match-builder" class="hidden" style="margin-top:20px;border-top:2px solid #edf2f7;padding-top:15px">
+        <div class="section-title" style="color:var(--green)">⚡ Scegli Partita</div>
+        <div class="grid-3">
+          <div style="grid-column:span 2">
+            <label style="font-size:10px;font-weight:bold;color:#555">Partite Concluse</label>
+            <select id="cmp-partita" style="font-weight:bold"></select>
+          </div>
+          <div>
+            <label style="font-size:10px;font-weight:bold;color:#555">Shrink K <span style="color:#999;font-weight:normal">(forze)</span></label>
+            <input type="number" id="cmp-shrink-k" value="4" min="1" max="60" step="1">
+          </div>
+          <div>
+            <label style="font-size:10px;font-weight:bold;color:#555">Shrink λ</label>
+            <input type="number" id="cmp-shrink-lam" value="3" min="1" max="40" step="1">
+          </div>
+          <div>
+            <label style="font-size:10px;font-weight:bold;color:#555">Limite Storico</label>
+            <input type="number" id="cmp-history-limit" value="15" min="5" max="100">
+          </div>
+        </div>
+        <button class="btn btn-green" style="margin-top:15px" onclick="cmpEsegui()">🚀 Esegui V9.7 + Confronto (partita singola)</button>
+        <button class="btn btn-dark" style="margin-top:8px" id="cmp-btn-tutte" onclick="cmpEseguiTutte()">📦 Esegui TUTTE le partite del giorno e salvale</button>
+        <div id="cmp-progress" style="display:none;margin-top:10px;padding:10px;background:#fff3e0;border-radius:8px;font-size:12px;color:#e65100"></div>
       </div>
     </div>
 
-    <!-- CONTENT AREA -->
-    <div class="content-area">
-      
-      <!-- STEP 1: CARICA MOTORE -->
-      <div id="step-1" class="step">
-        <div class="card">
-          <div class="section-title section-title-blue">
-            <span>&#128269;</span> Step 1: Carica il Motore Scanner V9.7
+    <div id="cmp-results" class="hidden">
+      <div class="card" style="border-top:4px solid var(--green);background:#f1f8e9">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+          <div>
+            <div style="font-size:12px;font-weight:bold;color:#2e7d32">📊 Previsione V9.7 vs Realtà</div>
+            <div id="cmp-header-info" style="font-size:11px;color:#555;margin-top:2px">--</div>
           </div>
-          <p style="margin-bottom: 1.5rem; color: var(--sub);">
-            Scegli come caricare il motore di analisi. Puoi trascinare il file manualmente o caricarlo automaticamente dal repository.
-          </p>
-          
-          <div style="margin-bottom: 1.5rem;"></div>
-          
-          <!-- OPTION A: Drag & Drop -->
-          <div id="dropzone">
-            <h2>&#128229; Trascina qui il tuo Scanner V9.7 (.html)</h2>
-            <p>Il file verr&agrave; elaborato automaticamente in memoria.</p>
-            <p style="margin-top: 0.5rem; font-size: 12px; color: var(--sub);">
-              &#10040; <b>Nessuna modifica manuale</b>: il motore viene iniettato e le formule catturate con un hook.
-            </p>
-            <input type="file" id="file-input" accept=".html" style="display:none">
-          </div>
-          
-          <div style="margin: 1.5rem 0;"></div>
-          
-          <!-- OPTION B: Load from Repository -->
-          <div style="text-align: center;">
-            <div style="display: inline-flex; align-items: center; gap: 1rem; background: #f8f9fa; padding: 1rem 1.5rem; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 1rem;">
-              <span style="font-size: 12px; color: var(--sub);">&#128194; Oppure</span>
-              <button class="btn btn-primary" onclick="loadScannerFromRepository()" id="btn-load-repo">
-                <span>&#128229;</span> Carica dal Repository
-              </button>
-            </div>
-            <div style="font-size: 11px; color: var(--sub);">
-              Carica automaticamente lo scanner dal repository GitHub
-            </div>
-          </div>
-        </div>
-        
-        <div id="console"></div>
-      </div>
-
-      <!-- STEP 2: CONFIGURA -->
-      <div id="step-2" class="step hidden">
-        <div class="card">
-          <div class="section-title section-title-dark">
-            <span>&#128269;</span> Step 2: Configura la Ricerca
-          </div>
-          <p style="margin-bottom: 1.5rem; color: var(--sub);">
-            Seleziona paese, lega, stagione e data per trovare le partite da analizzare.
-          </p>
-          
-          <div class="grid-2" style="margin-bottom: 1rem;">
-            <div class="form-row">
-              <label class="label">API Key PitchAPI</label>
-              <input id="cmp-api-key" type="password" placeholder="pk_live_...">
-              <div class="hint">La chiave verr&agrave; salvata automaticamente</div>
-            </div>
-            <div class="form-row">
-              <label class="label">Data Target</label>
-              <input type="date" id="cmp-target-date">
-              <div class="hint">Data di riferimento per la ricerca</div>
-            </div>
-          </div>
-          
-          <div class="grid-3" style="margin-bottom: 1.5rem;">
-            <div class="form-row">
-              <label class="label">Paese</label>
-              <select id="cmp-country" onchange="cmpUpdateLeagues()">
-                <option value="">-- Seleziona --</option>
-              </select>
-            </div>
-            <div class="form-row">
-              <label class="label">Lega</label>
-              <select id="cmp-league" onchange="cmpUpdateSeasons()">
-                <option value="">-- Seleziona --</option>
-              </select>
-            </div>
-            <div class="form-row">
-              <label class="label">Stagione</label>
-              <select id="cmp-season">
-                <option value="">-- Seleziona --</option>
-              </select>
-            </div>
-          </div>
-          
-          <div class="btn-group">
-            <button class="btn btn-secondary" onclick="showStep(1)">
-              <span>&#8592;</span> Indietro
-            </button>
-            <button class="btn btn-primary" id="cmp-btn-carica" onclick="cmpCaricaDatabase()">
-              <span>&#128229;</span> Trova Partite del Giorno
-            </button>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-green" style="width:auto;padding:10px 20px" onclick="cmpSalva()">💾 Salva Match</button>
+            <button class="btn btn-blue" onclick="cmpExportCSV()">📥 Scarica Excel</button>
           </div>
         </div>
       </div>
 
-      <!-- STEP 3: TROVA PARTITE -->
-      <div id="step-3" class="step hidden">
-        <div class="card">
-          <div class="section-title section-title-green">
-            <span>&#127942;</span> Step 3: Seleziona Partita
-          </div>
-          
-          <div id="matches-found" class="hidden">
-            <div class="alert alert-success" style="margin-bottom: 1.5rem;">
-              <span>&#10003;</span>
-              <div>
-                Trovate <span id="matches-found-count" style="font-weight: bold;">0</span> partite per la data selezionata.
-              </div>
-            </div>
-            
-            <div class="form-row" style="margin-bottom: 1.5rem;">
-              <label class="label">Seleziona Partita</label>
-              <select id="cmp-partita" style="font-weight: bold;"></select>
-            </div>
-            
-            <!-- Advanced Settings (collapsible) -->
-            <div style="margin-bottom: 1.5rem;">
-              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; cursor: pointer;" onclick="toggleAdvanced()">
-                <span style="font-size: 12px; font-weight: 600; color: var(--text);">&#9881; Impostazioni Avanzate</span>
-                <span id="advanced-icon" style="font-size: 14px;">&#9660;</span>
-              </div>
-              <div id="advanced-settings" style="display: none;">
-                <div class="grid-3" style="margin-bottom: 1rem;">
-                  <div class="form-row">
-                    <label class="label">Shrink K <span style="font-size: 9px; color: var(--sub);">(forze KNN)</span></label>
-                    <input type="number" id="cmp-shrink-k" value="4" min="1" max="60" step="1">
-                  </div>
-                  <div class="form-row">
-                    <label class="label">Shrink &#955; <span style="font-size: 9px; color: var(--sub);">(lambda)</span></label>
-                    <input type="number" id="cmp-shrink-lam" value="3" min="1" max="40" step="1">
-                  </div>
-                  <div class="form-row">
-                    <label class="label">Limite Storico <span style="font-size: 9px; color: var(--sub);">(match)</span></label>
-                    <input type="number" id="cmp-history-limit" value="15" min="5" max="100">
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div class="btn-group" style="margin-bottom: 1.5rem;">
-              <button class="btn btn-green" onclick="cmpEsegui()" id="cmp-btn-single">
-                <span>&#128640;</span> Analizza Partita Singola
-              </button>
-              <button class="btn btn-dark" onclick="cmpEseguiTutte()" id="cmp-btn-tutte">
-                <span>&#128190;</span> Analizza TUTTE
-              </button>
-            </div>
-          </div>
-          
-          <!-- Range Analysis -->
-          <div class="divider"></div>
-          
-          <div class="section-title" style="font-size: 13px; margin-bottom: 1rem;">
-            <span>&#128197;</span> Oppure Analizza un Intervallo di Date
-          </div>
-          
-          <div class="alert alert-warning" style="margin-bottom: 1rem;">
-            <span>&#9888;</span>
-            <span>Prima premi "Trova Partite del Giorno" per costruire lo storico della lega.</span>
-          </div>
-          
-          <div class="grid-3" style="margin-bottom: 1rem;">
-            <div class="form-row">
-              <label class="label">Data Inizio</label>
-              <input type="date" id="cmp-range-start">
-            </div>
-            <div class="form-row">
-              <label class="label">Data Fine</label>
-              <input type="date" id="cmp-range-end">
-            </div>
-            <div class="form-row">
-              <label class="label">&nbsp;</label>
-              <button class="btn btn-orange btn-full" id="cmp-btn-range" onclick="cmpEseguiIntervallo()">
-                <span>&#128640;</span> Elabora Intervallo
-              </button>
-            </div>
-          </div>
-          
-          <div id="cmp-range-progress" class="progress-box"></div>
-          <div id="cmp-progress" class="progress-box"></div>
-          
-          <div class="btn-group">
-            <button class="btn btn-secondary" onclick="showStep(2)">
-              <span>&#8592;</span> Indietro
-            </button>
-          </div>
-        </div>
+      <div class="card" style="border-top:4px solid var(--purple)">
+        <div class="section-title" style="color:var(--purple)">🏆 1X2 per Modello</div>
+        <table class="table-ui">
+          <thead><tr><th>Modello</th><th>1</th><th>X</th><th>2</th><th>Scelta</th><th>Reale</th><th>Risultato</th></tr></thead>
+          <tbody id="cmp-1x2-body"></tbody>
+        </table>
       </div>
 
-      <!-- STEP 4: ANALYSIS OPTIONS -->
-      <div id="step-4" class="step hidden">
-        <div class="card">
-          <div class="section-title section-title-purple">
-            <span>&#128196;</span> Step 4: Opzioni di Analisi
-          </div>
-          <p style="margin-bottom: 1.5rem; color: var(--sub);">
-            Scegli cosa analizzare. I risultati verranno mostrati nel passo successivo.
-          </p>
-          
-          <div class="btn-group">
-            <button class="btn btn-secondary" onclick="showStep(3)">
-              <span>&#8592;</span> Indietro
-            </button>
-            <button class="btn btn-primary" onclick="showStep(5)">
-              <span>&#8594;</span> Vai ai Risultati
-            </button>
-          </div>
-        </div>
+      <div class="card" style="border-top:4px solid var(--dark)">
+        <div class="section-title">📊 Mercati Ensemble</div>
+        <table class="table-ui">
+          <thead><tr><th>Mercato</th><th>Ensemble</th><th>DC</th><th>KNN</th><th>Conf.</th><th>Reale</th><th>Risultato</th></tr></thead>
+          <tbody id="cmp-markets-body"></tbody>
+        </table>
+        <div class="note">Legenda: <b style="color:var(--green)">✅</b>/<b style="color:var(--red)">❌</b> per esiti con prob ≥55% (vera scommessa). Sotto il 45% un esito non "previsto" che non si verifica è coerenza del modello, non un errore. Il KNN mostra "--" solo se mancano i dati di tracking per costruire i vicini.</div>
       </div>
 
-      <!-- STEP 5: RISULTATI -->
-      <div id="step-5" class="step hidden">
-        <div id="cmp-results">
-          <div id="banner-export" class="alert alert-success hidden">
-            &#10003; Hai salvato <span id="export-count" style="font-size: 16px; background: #fff; color: var(--green); padding: 2px 8px; border-radius: 4px; margin: 0 4px;">0</span> partite. Pronte per il download!
-          </div>
-          
-          <!-- PREVISIONE VS REALTA -->
-          <div class="card card-featured-green">
-            <div class="result-header">
-              <div>
-                <div class="result-title">&#128197; Previsione V9.7 vs Realt&agrave;</div>
-                <div id="cmp-header-info" class="result-info">--</div>
-              </div>
-              <div class="result-actions">
-                <button class="btn btn-green" onclick="cmpSalva()">
-                  <span>&#128190;</span> Salva Match
-                </button>
-              </div>
-            </div>
-          </div>
+      <!-- NUOVA CARD: studio Over/Under multi-linea + GG (focus richiesto) -->
+      <div class="card" style="border-top:4px solid var(--orange)">
+        <div class="section-title" style="color:var(--orange)">⚽ Gol: Over/Under multi-linea &amp; GG/NG</div>
+        <table class="table-ui">
+          <thead><tr><th>Mercato</th><th>Prob DC</th><th>Reale partita</th><th>Esito</th></tr></thead>
+          <tbody id="cmp-goals-body"></tbody>
+        </table>
+        <div class="note">Tutte le linee Over/Under ricostruite dalla matrice Dixon-Coles del motore. Gol totali reali della partita a confronto con ogni soglia.</div>
+      </div>
 
-          <!-- 1X2 PER MODELLO -->
-          <div class="card card-featured-purple">
-            <div class="section-title section-title-purple">
-              <span>&#127942;</span> 1X2 per Modello
-            </div>
-            <table class="table-ui">
-              <thead>
-                <tr>
-                  <th>Modello</th>
-                  <th>1</th>
-                  <th>X</th>
-                  <th>2</th>
-                  <th>Scelta</th>
-                  <th>Reale</th>
-                  <th>Risultato</th>
-                </tr>
-              </thead>
-              <tbody id="cmp-1x2-body"></tbody>
-            </table>
-          </div>
+      <!-- NUOVA CARD: mercati statistici (corner/tiri/cartellini via binomiale negativa) -->
+      <div class="card" style="border-top:4px solid var(--purple)">
+        <div class="section-title" style="color:var(--purple)">📈 Mercati Statistici (binomiale negativa) &amp; Handicap</div>
+        <table class="table-ui">
+          <thead><tr><th>Mercato</th><th>Atteso/Prob</th><th>Reale</th><th>Esito</th></tr></thead>
+          <tbody id="cmp-stats-mkt-body"></tbody>
+        </table>
+        <div class="note">Corner/Tiri/Cartellini: valore atteso e prob. Over dal modello binomiale negativa del motore. Handicap asiatico dalla matrice DC.</div>
+      </div>
 
-          <!-- MERCATI ENSEMBLE -->
-          <div class="card card-featured-dark">
-            <div class="section-title section-title-dark">
-              <span>&#128196;</span> Mercati Ensemble
-            </div>
-            <table class="table-ui">
-              <thead>
-                <tr>
-                  <th>Mercato</th>
-                  <th>Ensemble</th>
-                  <th>DC</th>
-                  <th>KNN</th>
-                  <th>Conf.</th>
-                  <th>Reale</th>
-                  <th>Risultato</th>
-                </tr>
-              </thead>
-              <tbody id="cmp-markets-body"></tbody>
-            </table>
-            <div class="note" style="margin-top: 0.75rem; font-size: 10px; color: var(--sub);">
-              Legenda: <b style="color: var(--green);">&#10003;</b>/<b style="color: var(--red);">&#10007;</b> 
-              per esiti con prob &#8805;55%. Sotto il 45% un esito non "previsto" che non si verifica &egrave; coerenza del modello.
-            </div>
-          </div>
+      <!-- NUOVA CARD: metriche VAEP/xT/GCA (Opzione 1 — solo reale, per validazione) -->
+      <div class="card" style="border-top:4px solid #00838f">
+        <div class="section-title" style="color:#00838f">🧬 Metriche Avanzate VAEP/xT/GCA (valori reali)</div>
+        <table class="table-ui">
+          <thead><tr><th>Metrica</th><th>🏠 Casa</th><th>✈️ Trasferta</th><th>Differenziale</th></tr></thead>
+          <tbody id="cmp-newmetrics-body"></tbody>
+        </table>
+        <div class="note">Il motore NON prevede ancora queste metriche: qui vedi solo i valori REALI della partita. Servono a validare se discriminano l'esito meglio delle dimensioni tattiche deboli del KNN (Field Tilt, PPDA), prima di eventualmente riscrivere il KNN.</div>
+      </div>
 
-          <!-- GOL: OVER/UNDER -->
-          <div class="card card-featured-orange">
-            <div class="section-title section-title-orange">
-              <span>&#9733;</span> Gol: Over/Under multi-linea & GG/NG
-            </div>
-            <table class="table-ui">
-              <thead>
-                <tr>
-                  <th>Mercato</th>
-                  <th>Prob DC</th>
-                  <th>Reale partita</th>
-                  <th>Esito</th>
-                </tr>
-              </thead>
-              <tbody id="cmp-goals-body"></tbody>
-            </table>
-          </div>
-
-          <!-- MERCATI STATISTICI -->
-          <div class="card card-featured-purple">
-            <div class="section-title section-title-purple">
-              <span>&#128194;</span> Mercati Statistici & Handicap
-            </div>
-            <table class="table-ui">
-              <thead>
-                <tr>
-                  <th>Mercato</th>
-                  <th>Atteso/Prob</th>
-                  <th>Reale</th>
-                  <th>Esito</th>
-                </tr>
-              </thead>
-              <tbody id="cmp-stats-mkt-body"></tbody>
-            </table>
-          </div>
-
-          <!-- METRICHE AVANZATE -->
-          <div class="card" style="border-top: 4px solid #00838f;">
-            <div class="section-title" style="color: #00838f;">
-              <span>&#129336;</span> Metriche Avanzate VAEP/xT/GCA
-            </div>
-            <table class="table-ui">
-              <thead>
-                <tr>
-                  <th>Metrica</th>
-                  <th>&#127940; Casa</th>
-                  <th>&#127941; Trasferta</th>
-                  <th>Differenziale</th>
-                </tr>
-              </thead>
-              <tbody id="cmp-newmetrics-body"></tbody>
-            </table>
-          </div>
-
-          <!-- CASA & TRASFERTA -->
-          <div class="grid-2">
-            <div class="card" style="border-top: 4px solid var(--blue);">
-              <div class="section-title section-title-blue">
-                <span>&#127940;</span> <span id="cmp-hdr-home">Casa</span>
-              </div>
-              <table class="table-ui">
-                <thead>
-                  <tr>
-                    <th>Metrica</th>
-                    <th>Previsto</th>
-                    <th>Reale</th>
-                    <th>Scarto</th>
-                  </tr>
-                </thead>
-                <tbody id="cmp-home-body"></tbody>
-              </table>
-            </div>
-            <div class="card" style="border-top: 4px solid var(--red);">
-              <div class="section-title section-title-red">
-                <span>&#127941;</span> <span id="cmp-hdr-away">Trasferta</span>
-              </div>
-              <table class="table-ui">
-                <thead>
-                  <tr>
-                    <th>Metrica</th>
-                    <th>Previsto</th>
-                    <th>Reale</th>
-                    <th>Scarto</th>
-                  </tr>
-                </thead>
-                <tbody id="cmp-away-body"></tbody>
-              </table>
-            </div>
-          </div>
+      <div class="grid-2">
+        <div class="card" style="border-top:4px solid var(--blue)">
+          <div class="section-title" style="color:var(--blue)">🏠 <span id="cmp-hdr-home">Casa</span></div>
+          <table class="table-ui">
+            <thead><tr><th>Metrica</th><th>Previsto</th><th>Reale</th><th>Scarto</th></tr></thead>
+            <tbody id="cmp-home-body"></tbody>
+          </table>
         </div>
-        
-        <div class="btn-group">
-          <button class="btn btn-secondary" onclick="showStep(4)">
-            <span>&#8592;</span> Indietro
-          </button>
+        <div class="card" style="border-top:4px solid var(--red)">
+          <div class="section-title" style="color:var(--red)">✈️ <span id="cmp-hdr-away">Trasferta</span></div>
+          <table class="table-ui">
+            <thead><tr><th>Metrica</th><th>Previsto</th><th>Reale</th><th>Scarto</th></tr></thead>
+            <tbody id="cmp-away-body"></tbody>
+          </table>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Sandbox invisibile -->
+<!-- Sandbox invisibile: qui il V9.7 popola i suoi elementi.
+     IMPORTANTE: gli id devono combaciare ESATTAMENTE con quelli che avviaScanner legge:
+     sel-home, sel-away, history-limit, target-date, sel-league, sel-country, sel-season, api-key. -->
 <div id="v97-sandbox" style="display:none">
   <select id="sel-home"></select>
   <select id="sel-away"></select>
@@ -930,69 +240,41 @@ input:focus, select:focus {
 </div>
 
 <script>
-// Step Navigation
-function showStep(step) {
-  // Hide all steps
-  for (let i = 1; i <= 5; i++) {
-    document.getElementById(`step-${i}`).classList.add('hidden');
-  }
-  
-  // Show selected step
-  document.getElementById(`step-${step}`).classList.remove('hidden');
-  
-  // Update nav
-  const navItems = document.querySelectorAll('.step-nav-item');
-  navItems.forEach((item, index) => {
-    const currentStep = index + 1;
-    if (currentStep < step) {
-      item.className = 'step-nav-item completed';
-    } else if (currentStep === step) {
-      item.className = 'step-nav-item active';
-    } else {
-      item.className = 'step-nav-item pending';
-    }
+// ═══════════════════════════════════════════════════════════════════════════
+// PATCH TOLLERANTE getElementById — assorbe accessi a elementi mancanti del V9.7
+// ═══════════════════════════════════════════════════════════════════════════
+(function(){
+  const _orig = document.getElementById.bind(document);
+  const ghost = new Proxy({}, {
+    get: function(t, k) {
+      if (k === 'style') return new Proxy({}, { get: () => '', set: () => true });
+      if (k === 'classList') return { add:()=>{}, remove:()=>{}, contains:()=>false, toggle:()=>{} };
+      if (k === 'children' || k === 'options') return [];
+      if (k === 'add' || k === 'appendChild' || k === 'removeChild' ||
+          k === 'addEventListener' || k === 'removeEventListener' ||
+          k === 'setAttribute' || k === 'removeAttribute' ||
+          k === 'focus' || k === 'blur' || k === 'click' ||
+          k === 'scrollIntoView' || k === 'insertBefore' || k === 'remove') return () => {};
+      if (k === 'innerHTML' || k === 'textContent' || k === 'value' || k === 'checked') return '';
+      if (k === 'length') return 0;
+      if (k === 'parentElement' || k === 'parentNode') return null;
+      if (k === 'querySelector' || k === 'querySelectorAll') return () => ghost;
+      return undefined;
+    },
+    set: function() { return true; }
   });
-  
-  // Show saved status if we have saved matches
-  if (step === 5 && cmpSavedMatches.length > 0) {
-    document.getElementById('saved-status').classList.remove('hidden');
-    document.getElementById('export-count').textContent = cmpSavedMatches.length;
-  }
-}
+  document.getElementById = function(id) { return _orig(id) || ghost; };
+})();
 
-// Toggle Advanced Settings
-function toggleAdvanced() {
-  const settings = document.getElementById('advanced-settings');
-  const icon = document.getElementById('advanced-icon');
-  if (settings.style.display === 'none') {
-    settings.style.display = 'block';
-    icon.innerHTML = '&#9650;';
-  } else {
-    settings.style.display = 'none';
-    icon.innerHTML = '&#9660;';
-  }
-}
+// ═══════════════════════════════════════════════════════════════════════════
+// COMPARATORE — Drag & drop del V9.7 con iniezione automatica
+// ═══════════════════════════════════════════════════════════════════════════
 
-// Auto-advance to step 2 when engine is loaded
-let step2Shown = false;
-function checkAndAdvance() {
-  if (engineReady && !step2Shown) {
-    step2Shown = true;
-    showStep(2);
-    // Update the first nav item as completed
-    const firstNav = document.querySelector('.step-nav-item');
-    if (firstNav) {
-      firstNav.className = 'step-nav-item completed';
-    }
-    // Show setup area
-    document.getElementById('setup-area').classList.remove('hidden');
-    
-}
-}
-
-// Check periodically
-setInterval(checkAndAdvance, 500);
-
+let cmpMatchesOfTheDay = [];
+let cmpAllMatches = []; // tutte le partite delle 3 stagioni caricate (per il filtro intervallo/mese)
+let cmpSavedMatches = [];
+let cmpLeagues = [];
+let cmpCurrentResult = null;
 let engineReady = false;
 let cmpCurrentLeagueId = '';   // lega selezionata, per taggare i match e settare sel-league
 
@@ -1194,15 +476,6 @@ async function loadEngineFromFile(file) {
     <p>File: <code>${file.name}</code> · Motore attivo per tutta la sessione</p>
     <p style="margin-top:8px;font-size:11px;color:#666">Clicca qui per ricaricarlo dopo un aggiornamento del V9.7.</p>`;
   document.getElementById('setup-area').classList.remove('hidden');
-  
-  // Auto-advance to step 2
-  if (typeof showStep === 'function') {
-    showStep(2);
-    const firstNav = document.querySelector('.step-nav-item');
-    if (firstNav) {
-      firstNav.className = 'step-nav-item completed';
-    }
-  }
 
   // Init
   await cmpLoadLeghe();
