@@ -378,6 +378,7 @@ async function loadEngineFromFile(file) {
       globalThis._V97_probs = {
         probsRole:   (typeof probsRole   !== 'undefined') ? probsRole   : null,
         probsKnn:    (typeof probsKnn    !== 'undefined') ? probsKnn    : null,
+        probsOL:     (typeof probsOL     !== 'undefined') ? probsOL     : null,
         mk_ro:       (typeof mk_ro       !== 'undefined') ? mk_ro       : null,
         m1: (typeof m1!=='undefined')?m1:null, mX: (typeof mX!=='undefined')?mX:null, m2: (typeof m2!=='undefined')?m2:null,
         confidence:  (typeof confidence  !== 'undefined') ? confidence  : null,
@@ -1090,22 +1091,21 @@ function cmpRender(match, R, actH, actA) {
   };
   const _badge = v => {
     if (v == null || isNaN(v)) return '--';
-    const col = v>=80?'#2e7d32':v>=60?'#f57c00':'#c62828';
+    // Soglie sul nuovo significato (probabilità reale): ≥60 buona, 50-59 incerta, <50 sotto coin-flip
+    const col = v>=60?'#2e7d32':v>=50?'#f57c00':'#c62828';
     return `<span style="background:${col};color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold">${v}</span>`;
   };
 
-  // Confidence per esito: usa DC+KNN+Markov con lo stesso sampleFactor del motore.
-  const sf = R.sampleFactor != null ? R.sampleFactor : 1;
-  const _conf = (arr) => {
-    const v = arr.filter(p => p != null && isFinite(p));
-    if (v.length < 2) return null;
-    let sp = 0;
-    for (let i=0; i<v.length; i++) for (let j=i+1; j<v.length; j++) sp = Math.max(sp, Math.abs(v[i]-v[j]));
-    return Math.max(0, Math.min(100, Math.round(100 * (1-sp) * sf)));
-  };
-  const c1 = _conf([R.probsRole?.p1, R.probsKnn?.p1, R.mk_ro?.p1]);
-  const cX = _conf([R.probsRole?.pX, R.probsKnn?.pX, R.mk_ro?.pX]);
-  const c2 = _conf([R.probsRole?.p2, R.probsKnn?.p2, R.mk_ro?.p2]);
+  // CONFIDENCE CALIBRATA — allineata alla nuova formula del motore.
+  // Prima misurava l'accordo tra modelli: sui 6824 backtest quella misura aveva
+  // correlazione -0.007 con l'azzeccare, cioè nessun potere informativo.
+  // Ora la confidence di un esito è la sua probabilità calibrata sull'hit reale:
+  // regressione empirica hit ≈ 6.26 + 0.880 × prob. "Confidence 64" = ~64% di indovinare.
+  const _conf = (p) => (p == null || !isFinite(p)) ? null
+    : Math.round(Math.max(0, Math.min(100, 6.26 + 0.880 * (p * 100))));
+  const c1 = _conf(R.m1);
+  const cX = _conf(R.mX);
+  const c2 = _conf(R.m2);
 
   const rowMdl = (name, p1, pX, p2) => {
     if (p1 == null) return `<tr><td>${name}</td><td colspan="6" style="color:#999;font-size:11px">non disponibile (dati tracking insufficienti)</td></tr>`;
@@ -1116,6 +1116,7 @@ function cmpRender(match, R, actH, actA) {
   document.getElementById('cmp-1x2-body').innerHTML =
     rowMdl('Dixon-Coles (Ruolo)', R.probsRole?.p1, R.probsRole?.pX, R.probsRole?.p2) +
     rowMdl('KNN Storico (11 dim)', R.probsKnn?.p1, R.probsKnn?.pX, R.probsKnn?.p2) +
+    rowMdl('Ordered Logit', R.probsOL?.p1, R.probsOL?.pX, R.probsOL?.p2) +
     rowMdl('Markov Score-Flow', R.mk_ro?.p1, R.mk_ro?.pX, R.mk_ro?.p2) +
     `<tr style="background:#f0f8ff;font-weight:bold">${rowMdl('ENSEMBLE V9.7', R.m1, R.mX, R.m2).slice(4)}`;
 
@@ -1381,6 +1382,7 @@ function cmpExportCSV() {
   const mdl = [
     ['DC 1', m=>[fmt(m.R.probsRole?.p1),'','','']], ['DC X', m=>[fmt(m.R.probsRole?.pX),'','','']], ['DC 2', m=>[fmt(m.R.probsRole?.p2),'','','']],
     ['KNN 1', m=>[fmt(m.R.probsKnn?.p1),'','','']], ['KNN X', m=>[fmt(m.R.probsKnn?.pX),'','','']], ['KNN 2', m=>[fmt(m.R.probsKnn?.p2),'','','']],
+    ['OL 1', m=>[fmt(m.R.probsOL?.p1),'','','']], ['OL X', m=>[fmt(m.R.probsOL?.pX),'','','']], ['OL 2', m=>[fmt(m.R.probsOL?.p2),'','','']],
     ['Markov 1', m=>[fmt(m.R.mk_ro?.p1),'','','']], ['Markov X', m=>[fmt(m.R.mk_ro?.pX),'','','']], ['Markov 2', m=>[fmt(m.R.mk_ro?.p2),'','','']],
     ['Confidence Globale', m=>[m.R.confidence!=null?m.R.confidence:'-','','','']]
   ];

@@ -109,14 +109,23 @@ textarea{width:100%;min-height:350px;font-size:11px;font-family:monospace;border
       
       <div class="grid-2">
         <div style="background:#fff; border-radius:8px; padding:12px; border:1px solid #ddd;">
-          <div style="font-size:11px;font-weight:bold;color:#555;margin-bottom:8px">Confidence Score (Armonia Modelli)</div>
+          <div style="font-size:11px;font-weight:bold;color:#555;margin-bottom:8px">Confidence Score (Probabilità Calibrata)</div>
           <div style="display:flex; align-items:center; gap:10px;">
             <div style="font-size:22px; font-weight:900; color:var(--purple);" id="master-conf">--/100</div>
             <div style="flex-grow:1; background:#eee; height:12px; border-radius:6px; overflow:hidden;">
                <div id="conf-bar" style="height:100%; background:var(--purple); width:0%; transition: width 0.5s;"></div>
             </div>
           </div>
-          <div style="font-size:9px; color:#888; margin-top:5px">Misura la convergenza tra Dixon-Coles, KNN Storico e Markov.</div>
+          <div style="font-size:9px; color:#888; margin-top:5px">
+            <b>Si legge come probabilità di indovinare.</b> Confidence 64 = ~64% di azzeccare.
+            Calibrata su 6824 partite reali (Europa+MLS+Turchia).
+          </div>
+          <div style="font-size:9px; color:#666; margin-top:6px; background:#f7f7f9; border-radius:6px; padding:6px 8px; line-height:1.5">
+            <b>Come usarla:</b> <span style="color:var(--green)">≥60 = fascia buona</span> (64,7% hit reale, capita nel 12% delle partite) ·
+            <span style="color:var(--orange)">50-59 = incerta</span> ·
+            <span style="color:var(--red)">&lt;50 = sotto il coin-flip</span>.<br>
+            Oltre 70 succede solo nel 2,2% dei casi (1 partita su 45) e non migliora l'hit rispetto a 65: alzare troppo l'asticella toglie occasioni senza aggiungere precisione.
+          </div>
         </div>
         <div style="background:#fff; border-radius:8px; padding:12px; border:1px solid #ddd;">
           <div style="font-size:11px;font-weight:bold;color:#555;margin-bottom:5px">Alert: Smart Money & Blood Scent</div>
@@ -195,6 +204,7 @@ textarea{width:100%;min-height:350px;font-size:11px;font-family:monospace;border
                   <tr><th>Modello</th><th>1</th><th>X</th><th>2</th></tr>
                   <tr><td>Dixon-Coles (Ruolo)</td><td id="mdl-dc-1">--</td><td id="mdl-dc-x">--</td><td id="mdl-dc-2">--</td></tr>
                   <tr><td>KNN Storico</td><td id="mdl-knn-1">--</td><td id="mdl-knn-x">--</td><td id="mdl-knn-2">--</td></tr>
+                  <tr style="background:#f0f8ff"><td><b>Ordered Logit</b></td><td id="mdl-ol-1">--</td><td id="mdl-ol-x">--</td><td id="mdl-ol-2">--</td></tr>
                   <tr><td>Markov (Score-flow)</td><td id="mdl-mk-1">--</td><td id="mdl-mk-x">--</td><td id="mdl-mk-2">--</td></tr>
                   <tr style="background:#f0f8ff;font-weight:bold"><td>Ensemble</td><td id="mdl-ens-1" style="color:var(--purple)">--</td><td id="mdl-ens-x" style="color:var(--purple)">--</td><td id="mdl-ens-2" style="color:var(--purple)">--</td></tr>
                   <tr style="background:#fef4e5"><td style="font-size:9px;color:#888">Confidence per esito</td>
@@ -1539,19 +1549,75 @@ async function avviaScanner() {
     if(!isFinite(knn_lamH) || knn_lamH < 0.15) knn_lamH = lamH_role;
     if(!isFinite(knn_lamA) || knn_lamA < 0.15) knn_lamA = lamA_role;
     const probsKnn = probsFromMatrix(calcDCMatrix(knn_lamH, knn_lamA, RHO));
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // ORDERED LOGIT — sostituisce il KNN nell'ensemble
+    // ═══════════════════════════════════════════════════════════════════════
+    // PERCHE': sui backtest (2639 partite, stesse partite per entrambi) il KNN faceva
+    // 46.3% e l'Ordered Logit 50.2%. Ma soprattutto il KNN era MAL CALIBRATO: quando
+    // diceva "70%" succedeva il 63%, quando diceva "50-60%" succedeva il 42% (scarti
+    // fino a -18 punti). Causa: media di pochi vicini → stime estreme e instabili
+    // (dava prob >70% in 1007 partite su 6824, DC solo in 55).
+    // L'Ordered Logit ha scarti di calibrazione entro ±3.6 punti su tutte le fasce.
+    //
+    // COS'E': modella l'esito come variabile ORDINALE (2 < X < 1) su una scala latente
+    // y* = beta × (forza_casa - forza_trasferta). Due soglie t1,t2 tagliano la scala nei
+    // tre esiti. E' il modello standard in letteratura per outcome ordinati, e produce
+    // probabilita' calibrate per costruzione (a differenza di una media di vicini).
+    //
+    // PARAMETRI stimati per massima verosimiglianza su 1903 partite di training
+    // (split temporale 70/30, validato su 816 partite mai viste):
+    const OL_BETA = 1.950, OL_T1 = -0.850, OL_T2 = 0.350;
+    const _sig = (z) => 1 / (1 + Math.exp(-Math.max(-30, Math.min(30, z))));
+    // Forza = schema attacco-vs-difesa ADDITIVO 70/30 (validato: additivo batte
+    // moltiplicativo, e l'attacco pesa piu' della difesa avversaria - corr 0.26 vs 0.17).
+    const _olStrength = (att, oppDef) => 0.7 * att + 0.3 * oppDef;
+    const olH = _olStrength(npxgH_ro, safeDecay(dA, 'npxga'));
+    const olA = _olStrength(npxgA_ro, safeDecay(dH, 'npxga'));
+    const _olY = OL_BETA * (olH - olA);
+    let ol_p2 = _sig(OL_T1 - _olY);
+    let ol_pX = _sig(OL_T2 - _olY) - ol_p2;
+    let ol_p1 = 1 - _sig(OL_T2 - _olY);
+    const _olTot = ol_p1 + ol_pX + ol_p2;
+    const probsOL = (_olTot > 0 && isFinite(_olTot))
+      ? { p1: ol_p1/_olTot, pX: ol_pX/_olTot, p2: ol_p2/_olTot }
+      : { p1: probsRole.p1, pX: probsRole.pX, p2: probsRole.p2 };  // fallback su DC
     const mk_ov = markovFlow(lamH_over, lamA_over); const mk_ro = markovFlow(lamH_role, lamA_role);
 
-    // Pesi DINAMICI: il KNN vale 45% solo se ha davvero dei vicini simili; altrimenti il peso torna al Dixon-Coles.
+    // Pesi DINAMICI del KNN: calcolati ancora perche' knnRel/wKnn sono usati altrove
+    // (narrativi, confidence fallback), ma il KNN NON entra piu' nell'ensemble.
     const nEffMin = Math.min(knn_H.nEff, knn_A.nEff);
     const knnRel = nEffMin > 0 ? nEffMin / (nEffMin + 3) : 0;
-    const wKnn = 0.45 * knnRel, wMk = 0.10; const wDc = 1 - wKnn - wMk;
-    let m1_raw = (probsRole.p1 * wDc) + (probsKnn.p1 * wKnn) + (mk_ro.p1 * wMk);
-    let mX_raw = (probsRole.pX * wDc) + (probsKnn.pX * wKnn) + (mk_ro.pX * wMk);
-    let m2_raw = (probsRole.p2 * wDc) + (probsKnn.p2 * wKnn) + (mk_ro.p2 * wMk);
+    const wKnn = 0.45 * knnRel;
+    // ENSEMBLE: l'Ordered Logit prende il posto del KNN come terzo modello.
+    // Il peso NON dipende piu' da knnRel (numero di vicini tattici): l'OL non usa vicini,
+    // stima la forza dallo storico completo, quindi e' affidabile sempre. Peso fisso 0.30:
+    // sotto il vecchio 0.45 di picco del KNN perche' l'OL usa gli stessi ingredienti di DC
+    // (xG attacco/difesa) ed e' quindi parzialmente ridondante — un peso alto duplicherebbe DC.
+    const wOL = 0.30, wMk = 0.10; const wDc = 1 - wOL - wMk;
+    // knnRel resta calcolato: il KNN e' ancora mostrato a schermo come riferimento tattico,
+    // ma non entra piu' nel calcolo dell'ensemble.
+    let m1_raw = (probsRole.p1 * wDc) + (probsOL.p1 * wOL) + (mk_ro.p1 * wMk);
+    let mX_raw = (probsRole.pX * wDc) + (probsOL.pX * wOL) + (mk_ro.pX * wMk);
+    let m2_raw = (probsRole.p2 * wDc) + (probsOL.p2 * wOL) + (mk_ro.p2 * wMk);
     const m_tot = m1_raw + mX_raw + m2_raw; const m1 = m_tot > 0 ? m1_raw / m_tot : 0.33; const mX = m_tot > 0 ? mX_raw / m_tot : 0.33; const m2 = m_tot > 0 ? m2_raw / m_tot : 0.33;
 
-    // Confidence = accordo tra modelli (distanza in variazione totale) MODULATO dalla numerosita' campionaria.
-    // Due modelli che concordano su 4 partite non sono affidabili quanto due modelli che concordano su 15.
+    // ═══════════════════════════════════════════════════════════════════════
+    // CONFIDENCE CALIBRATA — riscritta su base empirica (6824 partite: Europa+MLS+Turchia)
+    // ═══════════════════════════════════════════════════════════════════════
+    // PROBLEMA della vecchia formula: misurava l'ACCORDO tra i modelli (1-tvDist).
+    // Verificato sui backtest: correlazione accordo↔azzeccare = -0.007, cioè ZERO.
+    // Due modelli che concordano non azzeccano piu' spesso di due che discordano.
+    // Il numero era alto (spesso 90+) ma non significava nulla.
+    //
+    // NUOVA formula: la confidence e' la PROBABILITA' DEL PICK, calibrata sull'hit reale.
+    // Regressione empirica su 6824 partite: hit_reale ≈ 6.26 + 0.880 × prob_pick (1X2)
+    //                                        hit_reale ≈ -5.06 + 1.091 × prob (mercati binari)
+    // Ora "confidence 64" significa davvero "64% di probabilita' di indovinare".
+    // Riscontro sui dati: pick ≥60% → 64.7% hit reale (821 partite), ≥65% → 69.5% (387).
+    const _calibConf1X2 = (p) => Math.max(0, Math.min(100, 6.26 + 0.880 * (p * 100)));
+    const _calibConfBin = (p) => Math.max(0, Math.min(100, -5.06 + 1.091 * (p * 100)));
+
     const nMinRole = Math.min(dH.role.n, dA.role.n);
     // sampleFactor con sqrt: penalizza sample < 8 ma raggiunge 100% a n=20
     // (prima formula n/(n+5) tappava il confidence al 70% anche con n=12 e modelli perfettamente d'accordo)
@@ -1568,7 +1634,11 @@ async function avviaScanner() {
     } else {
       tvDist = (Math.abs(probsRole.p1 - probsKnn.p1) + Math.abs(probsRole.pX - probsKnn.pX) + Math.abs(probsRole.p2 - probsKnn.p2)) / 2;
     }
-    const confidence = Math.round(Math.max(0, Math.min(100, 100 * (1 - tvDist) * sampleFactor)));
+    // tvDist e sampleFactor restano calcolati (usati altrove per i narrativi), ma NON
+    // determinano piu' la confidence: sui backtest non correlavano con l'accuratezza.
+    // La confidence e' ora la probabilita' del pick dell'ensemble, calibrata sull'hit reale.
+    const _pickProb = Math.max(m1, mX, m2);
+    const confidence = Math.round(_calibConf1X2(_pickProb));
 
     let hiddenValueMsg = ""; let hiddenValueMsgClean = ""; 
     if (chokeH > 1.2 && clumsyA > 15) {
@@ -1598,6 +1668,7 @@ async function avviaScanner() {
     // 1X2 per modello
     safeTxt('mdl-dc-1', pct(probsRole.p1)); safeTxt('mdl-dc-x', pct(probsRole.pX)); safeTxt('mdl-dc-2', pct(probsRole.p2));
     safeTxt('mdl-knn-1', pct(probsKnn.p1)); safeTxt('mdl-knn-x', pct(probsKnn.pX)); safeTxt('mdl-knn-2', pct(probsKnn.p2));
+    safeTxt('mdl-ol-1', pct(probsOL.p1)); safeTxt('mdl-ol-x', pct(probsOL.pX)); safeTxt('mdl-ol-2', pct(probsOL.p2));
     safeTxt('mdl-mk-1', pct(mk_ro.p1)); safeTxt('mdl-mk-x', pct(mk_ro.pX)); safeTxt('mdl-mk-2', pct(mk_ro.p2));
     safeTxt('mdl-ens-1', pct(m1)); safeTxt('mdl-ens-x', pct(mX)); safeTxt('mdl-ens-2', pct(m2));
     
@@ -1606,29 +1677,30 @@ async function avviaScanner() {
     // dove max_spread = max_pairwise_disagreement tra i modelli su quel mercato.
     // Uso max invece di media per essere piu' conservativo: se un modello divergesse 
     // di 15% mentre gli altri concordano, va segnalato.
-    const _confMarket = (probs, sf) => {
-      // probs = array di P per lo stesso mercato dai vari modelli
+    // CONFIDENCE PER MERCATO — stessa riscrittura: non piu' accordo tra modelli (correlazione 0),
+    // ma la probabilita' del mercato calibrata sull'hit reale osservato nei backtest.
+    // isBin=true per i mercati a due esiti (doppie chance, GG/NG, Over/Under), che hanno
+    // una calibrazione diversa dall'1X2 a tre esiti.
+    const _confMarket = (probs, sf, isBin) => {
       const valid = probs.filter(p => isFinite(p) && p >= 0);
-      if (valid.length < 2) return null;
-      let maxSpread = 0;
-      for (let i = 0; i < valid.length; i++) {
-        for (let j = i+1; j < valid.length; j++) {
-          const s = Math.abs(valid[i] - valid[j]);
-          if (s > maxSpread) maxSpread = s;
-        }
-      }
-      return Math.max(0, Math.min(100, Math.round(100 * (1 - maxSpread) * sf)));
+      if (!valid.length) return null;
+      const pMean = valid.reduce((s, x) => s + x, 0) / valid.length;
+      return Math.round(isBin ? _calibConfBin(pMean) : _calibConf1X2(pMean));
     };
+    // Soglie ricalibrate sul NUOVO significato (= probabilita' reale di indovinare).
+    // Sui backtest: ≥60 → 64.7% hit (12% delle partite) | 50-60 → 53-57% | <50 → sotto il 50%.
+    // NB: il massimo osservato su 6824 partite e' ~84, quindi le vecchie soglie (85/70)
+    // avrebbero colorato di rosso quasi tutto.
     const _badgeConf = (v) => {
       if (v == null) return '<span style="color:#999">--</span>';
-      const col = v >= 85 ? 'var(--green)' : (v >= 70 ? 'var(--orange)' : 'var(--red)');
+      const col = v >= 60 ? 'var(--green)' : (v >= 50 ? 'var(--orange)' : 'var(--red)');
       return '<span style="color:' + col + '">' + v + '</span>';
     };
     
     // Confidence per ESITO 1X2 (usa i 3 modelli DC/KNN/Markov)
-    safeHtml('conf-p1', _badgeConf(_confMarket([probsRole.p1, probsKnn.p1, mk_ro.p1], sampleFactor)));
-    safeHtml('conf-px', _badgeConf(_confMarket([probsRole.pX, probsKnn.pX, mk_ro.pX], sampleFactor)));
-    safeHtml('conf-p2', _badgeConf(_confMarket([probsRole.p2, probsKnn.p2, mk_ro.p2], sampleFactor)));
+    safeHtml('conf-p1', _badgeConf(_confMarket([m1], sampleFactor)));
+    safeHtml('conf-px', _badgeConf(_confMarket([mX], sampleFactor)));
+    safeHtml('conf-p2', _badgeConf(_confMarket([m2], sampleFactor)));
     
     // Valori DC/KNN per doppie chance e mercati gol
     const dcP1X = probsRole.p1 + probsRole.pX, dcPX2 = probsRole.pX + probsRole.p2, dcP12 = probsRole.p1 + probsRole.p2;
@@ -1644,21 +1716,29 @@ async function avviaScanner() {
     safeTxt('mdl-knn-ov', pct(knnOv)); safeTxt('mdl-knn-un', pct(knnUn));
     
     // Confidence per doppie chance (DC vs KNN)
-    safeHtml('conf-1x', _badgeConf(_confMarket([dcP1X, knnP1X], sampleFactor)));
-    safeHtml('conf-x2', _badgeConf(_confMarket([dcPX2, knnPX2], sampleFactor)));
-    safeHtml('conf-12', _badgeConf(_confMarket([dcP12, knnP12], sampleFactor)));
+    // FIX: la confidence dei mercati binari mediava DC e KNN. Ma il KNN e' stato
+    // escluso dall'ensemble proprio perche' mal calibrato (scarti fino a -18 punti):
+    // mediarlo qui reintroduceva nella confidence il rumore appena rimosso dal pick.
+    // Ora la confidence di questi mercati viene dal solo Dixon-Coles.
+    safeHtml('conf-1x', _badgeConf(_confMarket([dcP1X], sampleFactor, true)));
+    safeHtml('conf-x2', _badgeConf(_confMarket([dcPX2], sampleFactor, true)));
+    safeHtml('conf-12', _badgeConf(_confMarket([dcP12], sampleFactor, true)));
     // Confidence per mercati gol (DC vs KNN)
-    safeHtml('conf-gg', _badgeConf(_confMarket([dcGG, knnGG], sampleFactor)));
-    safeHtml('conf-ng', _badgeConf(_confMarket([dcNG, knnNG], sampleFactor)));
-    safeHtml('conf-ov', _badgeConf(_confMarket([dcOv, knnOv], sampleFactor)));
-    safeHtml('conf-un', _badgeConf(_confMarket([dcUn, knnUn], sampleFactor)));
+    safeHtml('conf-gg', _badgeConf(_confMarket([dcGG], sampleFactor, true)));
+    safeHtml('conf-ng', _badgeConf(_confMarket([dcNG], sampleFactor, true)));
+    safeHtml('conf-ov', _badgeConf(_confMarket([dcOv], sampleFactor, true)));
+    safeHtml('conf-un', _badgeConf(_confMarket([dcUn], sampleFactor, true)));
     const odd1 = probsRole.p1 > 0 ? (1/probsRole.p1).toFixed(2) : "N/A"; const oddX = probsRole.pX > 0 ? (1/probsRole.pX).toFixed(2) : "N/A"; const odd2 = probsRole.p2 > 0 ? (1/probsRole.p2).toFixed(2) : "N/A";
     const oddM1 = m1 > 0 ? (1/m1).toFixed(2) : "N/A"; const oddMX = mX > 0 ? (1/mX).toFixed(2) : "N/A"; const oddM2 = m2 > 0 ? (1/m2).toFixed(2) : "N/A";
     safeTxt('m-odd-1', oddM1); safeTxt('m-odd-x', oddMX); safeTxt('m-odd-2', oddM2);
     window.__MASTER = { p1: m1, pX: mX, p2: m2 }; calcValue();
     safeTxt('master-conf', confidence + "/100");
     document.getElementById('conf-bar').style.width = confidence + "%";
-    if(confidence < 50) document.getElementById('conf-bar').style.background = "var(--red)"; else if(confidence > 80) document.getElementById('conf-bar').style.background = "var(--green)";
+    // Soglie sul nuovo significato: <50 = sotto il coin-flip, ≥60 = fascia buona (64.7% hit sui backtest)
+    { const _cb = document.getElementById('conf-bar');
+      if (confidence < 50) _cb.style.background = "var(--red)";
+      else if (confidence >= 60) _cb.style.background = "var(--green)";
+      else _cb.style.background = "var(--orange)"; }
     safeHtml('hidden-value-msg', hiddenValueMsg);
 
 
