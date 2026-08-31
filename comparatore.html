@@ -3,211 +3,330 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Comparatore V9.7 — Drag & Drop Auto</title>
+<title>Comparatore V9.7</title>
 <style>
-:root { --bg:#f2f2f7; --card:#fff; --text:#1c1c1e; --sub:#8e8e93; --blue:#007aff; --red:#c62828; --green:#2d7d32; --orange:#f57c00; --purple:#6a1b9a; --dark:#111; }
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text);padding:1rem;font-size:13px;min-height:100vh}
-.wrap{max-width:1300px;margin:0 auto;padding-bottom:3rem}
-h1{font-size:22px;font-weight:800;margin-bottom:1rem;display:flex;align-items:center;gap:10px}
-h1 span{font-size:12px;background:var(--dark);color:white;padding:3px 8px;border-radius:6px}
-.card{background:var(--card);border-radius:12px;padding:1.2rem;margin-bottom:15px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
-.section-title{font-size:14px;font-weight:800;text-transform:uppercase;margin-bottom:12px;border-bottom:2px solid #edf2f7;padding-bottom:6px;color:var(--blue)}
-input,select{width:100%;font-size:13px;border:1px solid #d1d1d6;border-radius:8px;padding:8px 12px;background:#fff;margin-top:4px}
-.btn{border:none;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;color:#fff;display:inline-block;text-align:center;width:100%}
-.btn:hover{opacity:.9}
-.btn:disabled{opacity:.4;cursor:not-allowed}
-.btn-dark{background:var(--dark)} .btn-green{background:var(--green);font-size:14px;padding:12px} .btn-blue{background:var(--blue);width:auto}
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:end}
-.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;align-items:end}
-.table-ui{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px}
-.table-ui th{background:#fafafa;padding:8px;border-bottom:2px solid #ddd;color:#555;font-weight:bold;text-align:center}
-.table-ui td{padding:7px 8px;border-bottom:1px solid #eee;text-align:center;color:#333}
-.table-ui td:first-child{text-align:left;font-weight:bold;color:#111;background:#fafafa}
-#dropzone {
-  border: 3px dashed #007aff; border-radius: 12px; padding: 40px; text-align: center;
-  background: #f0f8ff; margin-bottom: 20px; cursor: pointer; transition: all .2s;
+:root{
+  --bg:#0f1116; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
+  --txt:#e8eaed; --dim:#9aa3b2; --accent:#4f8cff; --accent2:#00c2a8;
+  --ok:#22c55e; --warn:#f59e0b; --err:#ef4444; --purple:#a78bfa;
+  --radius:14px;
+  /* alias usati dalla logica per colorare esiti e scarti nelle tabelle */
+  --green:#22c55e; --red:#f87171; --orange:#fbbf24; --blue:#60a5fa; --purple:#a78bfa;
 }
-#dropzone:hover, #dropzone.dragover { background: #d6ebff; border-color: #0056b3; transform: scale(1.01); }
-#dropzone.loaded { background: #e8f5e9; border-color: var(--green); border-style: solid; }
-#dropzone h2 { font-size: 20px; color: #007aff; margin-bottom: 10px; }
-#dropzone.loaded h2 { color: var(--green); }
-#dropzone p { color: #666; font-size: 13px; }
-#dropzone code { background: #fff; padding: 2px 6px; border-radius: 3px; font-size: 11px; color: #c7254e; }
-#console{font-family:monospace;background:#111;color:#0f0;padding:10px;border-radius:8px;max-height:250px;overflow-y:auto;font-size:11px;margin-top:10px;display:none;line-height:1.4}
-#banner-export{display:none;background:var(--green);color:white;padding:10px 15px;border-radius:8px;font-weight:bold;margin-bottom:15px;text-align:center}
-.hidden{display:none}
-.note{font-size:10px;color:#888;line-height:1.5;margin-top:8px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,system-ui,sans-serif;
+  background:var(--bg); color:var(--txt); font-size:14px; line-height:1.5;
+  padding:24px 16px 64px;
+}
+.wrap{max-width:1240px;margin:0 auto}
+
+/* ---------- header ---------- */
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.brand h1{font-size:20px;font-weight:700;letter-spacing:-.02em}
+.badge{font-size:11px;font-weight:600;padding:4px 10px;border-radius:99px;background:var(--panel2);color:var(--dim);border:1px solid var(--line)}
+.badge.live{background:rgba(34,197,94,.12);color:var(--ok);border-color:rgba(34,197,94,.3)}
+
+/* ---------- steps ---------- */
+.steps{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+.step{
+  flex:1;min-width:180px;display:flex;align-items:center;gap:10px;
+  padding:12px 14px;border-radius:var(--radius);background:var(--panel);
+  border:1px solid var(--line);transition:.2s;
+}
+.step.active{border-color:var(--accent);background:linear-gradient(180deg,rgba(79,140,255,.10),transparent)}
+.step.done{border-color:rgba(34,197,94,.35)}
+.step-n{
+  width:26px;height:26px;border-radius:50%;display:grid;place-items:center;
+  font-size:12px;font-weight:700;background:var(--panel2);color:var(--dim);flex-shrink:0
+}
+.step.active .step-n{background:var(--accent);color:#fff}
+.step.done .step-n{background:var(--ok);color:#0f1116}
+.step-t{font-size:12px;font-weight:600}
+.step-s{font-size:11px;color:var(--dim)}
+
+/* ---------- cards ---------- */
+.card{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:20px;margin-bottom:16px;
+}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.card-t{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
+.card-sub{font-size:12px;color:var(--dim);margin-top:-8px;margin-bottom:16px}
+
+/* ---------- form ---------- */
+.row{display:grid;gap:12px;margin-bottom:14px}
+.row.c2{grid-template-columns:repeat(2,1fr)}
+.row.c3{grid-template-columns:repeat(3,1fr)}
+.row.c4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:820px){.row.c2,.row.c3,.row.c4{grid-template-columns:1fr}}
+label{display:block;font-size:11px;font-weight:600;color:var(--dim);margin-bottom:6px}
+input,select{
+  width:100%;padding:10px 12px;border-radius:10px;font-size:13px;
+  background:var(--panel2);border:1px solid var(--line);color:var(--txt);
+  transition:.15s;font-family:inherit;
+}
+input:focus,select:focus{outline:none;border-color:var(--accent);background:#232833}
+input[type=date]{color-scheme:dark}
+select{cursor:pointer}
+
+/* ---------- buttons ---------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:11px 18px;border-radius:10px;border:1px solid transparent;
+  font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s;
+  background:var(--panel2);color:var(--txt);border-color:var(--line);
+}
+.btn:hover:not(:disabled){background:#262b36;transform:translateY(-1px)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-primary{background:var(--accent);color:#fff;border-color:transparent}
+.btn-primary:hover:not(:disabled){background:#3d7bef}
+.btn-go{background:linear-gradient(135deg,var(--accent2),#00a892);color:#04211d;border-color:transparent;font-weight:700}
+.btn-go:hover:not(:disabled){filter:brightness(1.08)}
+.btn-full{width:100%}
+.btn-sm{padding:8px 14px;font-size:12px}
+
+/* ---------- dropzone ---------- */
+#dropzone{
+  border:2px dashed var(--line);border-radius:var(--radius);padding:32px 20px;
+  text-align:center;cursor:pointer;transition:.2s;background:var(--panel);
+}
+#dropzone:hover,#dropzone.dragover{border-color:var(--accent);background:rgba(79,140,255,.06)}
+#dropzone.loaded{border-style:solid;border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.05);padding:18px 20px}
+#dropzone h2{font-size:15px;font-weight:700;margin-bottom:6px}
+#dropzone p{font-size:12px;color:var(--dim)}
+#dropzone code{background:var(--panel2);padding:2px 7px;border-radius:5px;font-size:11px;color:var(--accent2)}
+
+/* ---------- segmented control ---------- */
+.seg{display:flex;gap:4px;padding:4px;background:var(--panel2);border-radius:12px;border:1px solid var(--line);margin-bottom:16px;flex-wrap:wrap}
+.seg button{
+  flex:1;min-width:120px;padding:10px 12px;border:none;border-radius:9px;cursor:pointer;
+  background:transparent;color:var(--dim);font-size:12px;font-weight:600;font-family:inherit;transition:.15s;
+}
+.seg button:hover{color:var(--txt)}
+.seg button.on{background:var(--accent);color:#fff}
+.seg-hint{font-size:11px;color:var(--dim);margin-bottom:14px;padding-left:2px}
+
+/* ---------- tables ---------- */
+.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.tbl th{
+  text-align:center;padding:9px 10px;font-size:11px;font-weight:600;color:var(--dim);
+  border-bottom:1px solid var(--line);white-space:nowrap;
+}
+.tbl td{padding:9px 10px;text-align:center;border-bottom:1px solid rgba(42,47,58,.5)}
+.tbl td:first-child,.tbl th:first-child{text-align:left;font-weight:600}
+.tbl tr:hover td{background:rgba(255,255,255,.02)}
+.tbl tr:last-child td{border-bottom:none}
+
+/* ---------- console ---------- */
+#console{
+  font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;line-height:1.7;
+  background:#0a0c10;border:1px solid var(--line);border-radius:12px;padding:14px;
+  max-height:220px;overflow-y:auto;display:none;color:#7dd3a0;
+}
+#console::-webkit-scrollbar{width:8px}
+#console::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+
+/* ---------- progress ---------- */
+.prog{display:none;margin-top:14px;padding:14px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);font-size:12.5px}
+.prog b{color:var(--accent2)}
+.pbar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:10px}
+.pbar>div{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0%;transition:width .3s}
+
+/* ---------- misc ---------- */
+.hidden{display:none!important}
+.note{font-size:11px;color:var(--dim);line-height:1.6;margin-top:10px;padding:10px 12px;background:rgba(255,255,255,.02);border-radius:9px;border-left:2px solid var(--line)}
+.banner{
+  display:none;padding:13px 16px;border-radius:12px;margin-bottom:16px;font-size:13px;font-weight:600;
+  background:rgba(34,197,94,.10);border:1px solid rgba(34,197,94,.28);color:#86efac;
+  align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+}
+.count{font-size:16px;font-weight:800;background:var(--ok);color:#0f1116;padding:2px 10px;border-radius:7px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:900px){.grid2{grid-template-columns:1fr}}
+.res-head{
+  display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  padding:16px 20px;border-radius:var(--radius);margin-bottom:16px;
+  background:linear-gradient(135deg,rgba(79,140,255,.12),rgba(0,194,168,.08));
+  border:1px solid var(--line);
+}
+.res-title{font-size:12px;color:var(--dim);font-weight:600}
+.res-match{font-size:16px;font-weight:700;margin-top:2px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Comparatore V9.7 <span>Drag & Drop Auto</span></h1>
 
-  <!-- STEP 1: DRAG & DROP -->
+  <div class="topbar">
+    <div class="brand">
+      <h1>Comparatore V9.7</h1>
+      <span class="badge" id="engine-badge">motore non caricato</span>
+    </div>
+    <span class="badge">previsioni vs realtà</span>
+  </div>
+
+  <!-- indicatore di flusso -->
+  <div class="steps">
+    <div class="step active" id="st1">
+      <div class="step-n">1</div>
+      <div><div class="step-t">Motore</div><div class="step-s">carica lo Scanner V9.7</div></div>
+    </div>
+    <div class="step" id="st2">
+      <div class="step-n">2</div>
+      <div><div class="step-t">Campionato</div><div class="step-s">lega, stagione, API</div></div>
+    </div>
+    <div class="step" id="st3">
+      <div class="step-n">3</div>
+      <div><div class="step-t">Analisi</div><div class="step-s">scegli cosa elaborare</div></div>
+    </div>
+  </div>
+
+  <!-- STEP 1 -->
   <div id="dropzone">
-    <h2>📥 Trascina qui il tuo Scanner V9.7 (.html)</h2>
-    <p>Il file verrà elaborato automaticamente in memoria.</p>
-    <p style="margin-top:8px;font-size:11px;color:#888">
-      ✨ <b>Nessuna modifica manuale al V9.7</b>: il motore vero viene iniettato e le sue formule
-      catturate con un hook. Le probabilità NON vengono ricalcolate qui: sono quelle esatte del V9.7.
-    </p>
+    <h2>Trascina qui lo Scanner V9.7</h2>
+    <p>oppure clicca per selezionarlo — il motore viene iniettato in memoria, nessuna modifica al file</p>
     <input type="file" id="file-input" accept=".html" style="display:none">
   </div>
 
   <div id="console"></div>
 
   <div id="setup-area" class="hidden">
-    <div id="banner-export">
-      ✅ Hai salvato <span id="export-count" style="font-size:16px;background:#fff;color:var(--green);padding:2px 8px;border-radius:4px;margin:0 4px">0</span> partite. Pronte per il download!
+
+    <div class="banner" id="banner-export">
+      <span>Partite salvate e pronte per l'export</span>
+      <span class="count" id="export-count">0</span>
     </div>
 
+    <!-- STEP 2 -->
     <div class="card">
-      <div class="section-title">🔍 Setup & Ricerca Partita</div>
-      <div class="grid-2" style="margin-bottom:15px">
-        <div>
-          <label style="font-size:10px;font-weight:bold;color:#555">API Key</label>
-          <input id="cmp-api-key" type="password" placeholder="pk_live_...">
-        </div>
-        <div>
-          <label style="font-size:10px;font-weight:bold;color:#555">Data (o inizio intervallo)</label>
-          <input type="date" id="cmp-target-date">
-        </div>
+      <div class="card-h"><div class="card-t">Campionato e credenziali</div></div>
+      <div class="row c2">
+        <div><label>API Key</label><input id="cmp-api-key" type="password" placeholder="pk_live_..."></div>
+        <div><label>Stagione</label><select id="cmp-season"><option value="">—</option></select></div>
       </div>
-      <div class="grid-3" style="align-items:end;margin-bottom:15px">
-        <div>
-          <label style="font-size:10px;font-weight:bold;color:#555">Paese</label>
-          <select id="cmp-country" onchange="cmpUpdateLeagues()"><option value="">-- --</option></select>
-        </div>
-        <div>
-          <label style="font-size:10px;font-weight:bold;color:#555">Lega</label>
-          <select id="cmp-league" onchange="cmpUpdateSeasons()"><option value="">-- --</option></select>
-        </div>
-        <div>
-          <label style="font-size:10px;font-weight:bold;color:#555">Stagione</label>
-          <select id="cmp-season"><option value="">-- --</option></select>
-        </div>
+      <div class="row c2">
+        <div><label>Paese</label><select id="cmp-country" onchange="cmpUpdateLeagues()"><option value="">—</option></select></div>
+        <div><label>Lega</label><select id="cmp-league" onchange="cmpUpdateSeasons()"><option value="">—</option></select></div>
       </div>
-      <button class="btn btn-dark" id="cmp-btn-carica" onclick="cmpCaricaDatabase()">📥 Trova Partite del Giorno</button>
-
-      <!-- ELABORAZIONE INTERVALLO (mese intero) -->
-      <div style="margin-top:15px;border-top:1px dashed #ddd;padding-top:15px">
-        <div class="section-title" style="color:var(--orange);font-size:12px">📆 Oppure elabora un intervallo di date (es. un mese intero)</div>
-        <div class="grid-3" style="align-items:end">
-          <div>
-            <label style="font-size:10px;font-weight:bold;color:#555">Da (data inizio)</label>
-            <input type="date" id="cmp-range-start">
-          </div>
-          <div>
-            <label style="font-size:10px;font-weight:bold;color:#555">A (data fine)</label>
-            <input type="date" id="cmp-range-end">
-          </div>
-          <div>
-            <button class="btn btn-dark" id="cmp-btn-range" onclick="cmpEseguiIntervallo()">🗓️ Elabora intervallo</button>
-          </div>
-        </div>
-        <div class="note">Prima premi "Trova Partite del Giorno" una volta (costruisce lo storico della lega). Poi imposta <b>Da</b> e <b>A</b> qui sotto ed elabora. Le prime partite sono lente, poi accelerano perché lo storico è già in cache. Un mese può richiedere diversi minuti.</div>
-        <div id="cmp-range-progress" style="display:none;margin-top:10px;padding:10px;background:#fff3e0;border-radius:8px;font-size:12px;color:#e65100"></div>
-      </div>
-
-      <div id="cmp-match-builder" class="hidden" style="margin-top:20px;border-top:2px solid #edf2f7;padding-top:15px">
-        <div class="section-title" style="color:var(--green)">⚡ Scegli Partita</div>
-        <div class="grid-3">
-          <div style="grid-column:span 2">
-            <label style="font-size:10px;font-weight:bold;color:#555">Partite Concluse</label>
-            <select id="cmp-partita" style="font-weight:bold"></select>
-          </div>
-          <div>
-            <label style="font-size:10px;font-weight:bold;color:#555">Shrink K <span style="color:#999;font-weight:normal">(forze)</span></label>
-            <input type="number" id="cmp-shrink-k" value="4" min="1" max="60" step="1">
-          </div>
-          <div>
-            <label style="font-size:10px;font-weight:bold;color:#555">Shrink λ</label>
-            <input type="number" id="cmp-shrink-lam" value="3" min="1" max="40" step="1">
-          </div>
-          <div>
-            <label style="font-size:10px;font-weight:bold;color:#555">Limite Storico</label>
-            <input type="number" id="cmp-history-limit" value="15" min="5" max="100">
-          </div>
-        </div>
-        <button class="btn btn-green" style="margin-top:15px" onclick="cmpEsegui()">🚀 Esegui V9.7 + Confronto (partita singola)</button>
-        <button class="btn btn-dark" style="margin-top:8px" id="cmp-btn-tutte" onclick="cmpEseguiTutte()">📦 Esegui TUTTE le partite del giorno e salvale</button>
-        <div id="cmp-progress" style="display:none;margin-top:10px;padding:10px;background:#fff3e0;border-radius:8px;font-size:12px;color:#e65100"></div>
-      </div>
+      <button class="btn btn-primary btn-full" id="cmp-btn-carica" onclick="cmpCaricaDatabase()">Carica storico campionato</button>
+      <div class="note">Scarica 3 stagioni di partite: è il passo lento, si fa una volta sola. Dopo, ogni analisi su questo campionato è rapida.</div>
     </div>
 
-    <div id="cmp-results" class="hidden">
-      <div class="card" style="border-top:4px solid var(--green);background:#f1f8e9">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-          <div>
-            <div style="font-size:12px;font-weight:bold;color:#2e7d32">📊 Previsione V9.7 vs Realtà</div>
-            <div id="cmp-header-info" style="font-size:11px;color:#555;margin-top:2px">--</div>
-          </div>
-          <div style="display:flex;gap:8px">
-            <button class="btn btn-green" style="width:auto;padding:10px 20px" onclick="cmpSalva()">💾 Salva Match</button>
-            <button class="btn btn-blue" onclick="cmpExportCSV()">📥 Scarica Excel</button>
-          </div>
+    <!-- STEP 3 -->
+    <div class="card hidden" id="cmp-match-builder">
+      <div class="card-h"><div class="card-t">Cosa vuoi analizzare</div></div>
+
+      <div class="seg">
+        <button id="mode-one"   class="on" onclick="cmpSetMode('one')">Una partita</button>
+        <button id="mode-day"   onclick="cmpSetMode('day')">Un giorno intero</button>
+        <button id="mode-range" onclick="cmpSetMode('range')">Un periodo</button>
+      </div>
+      <div class="seg-hint" id="mode-hint">Analizza una singola partita e vedi il confronto completo a schermo.</div>
+
+      <!-- pannello: una partita -->
+      <div id="pane-one">
+        <div class="row c2">
+          <div><label>Data</label><input type="date" id="cmp-target-date" onchange="cmpRefreshMatches()"></div>
+          <div><label>Partita</label><select id="cmp-partita"></select></div>
         </div>
       </div>
 
-      <div class="card" style="border-top:4px solid var(--purple)">
-        <div class="section-title" style="color:var(--purple)">🏆 1X2 per Modello</div>
-        <table class="table-ui">
-          <thead><tr><th>Modello</th><th>1</th><th>X</th><th>2</th><th>Scelta</th><th>Reale</th><th>Risultato</th></tr></thead>
+      <!-- pannello: un giorno -->
+      <div id="pane-day" class="hidden">
+        <div class="row c2">
+          <div><label>Data</label><input type="date" id="cmp-day-date" onchange="cmpRefreshMatches()"></div>
+          <div style="display:flex;align-items:flex-end"><div class="note" style="margin:0;width:100%" id="day-count">—</div></div>
+        </div>
+      </div>
+
+      <!-- pannello: periodo -->
+      <div id="pane-range" class="hidden">
+        <div class="row c2">
+          <div><label>Dal</label><input type="date" id="cmp-range-start"></div>
+          <div><label>Al</label><input type="date" id="cmp-range-end"></div>
+        </div>
+      </div>
+
+      <div class="row c2">
+        <div><label>Storico per squadra (partite)</label><input type="number" id="cmp-history-limit" value="15" min="5" max="100"></div>
+        <div style="display:flex;align-items:flex-end">
+          <button class="btn btn-go btn-full" id="cmp-btn-run" onclick="cmpRun()">Avvia analisi</button>
+        </div>
+      </div>
+
+      <div class="prog" id="cmp-progress"></div>
+      <div class="prog" id="cmp-range-progress"></div>
+    </div>
+
+    <!-- RISULTATI -->
+    <div id="cmp-results" class="hidden">
+      <div class="res-head">
+        <div>
+          <div class="res-title">Previsione V9.7 vs realtà</div>
+          <div class="res-match" id="cmp-header-info">—</div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-sm" onclick="cmpSalva()">Salva partita</button>
+          <button class="btn btn-primary btn-sm" onclick="cmpExportCSV()">Scarica Excel</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-t">Modelli 1X2</div>
+        <div class="card-sub">Ogni modello con la sua previsione, e cosa è successo davvero</div>
+        <table class="tbl">
+          <thead><tr><th>Modello</th><th>1</th><th>X</th><th>2</th><th>Scelta</th><th>Reale</th><th>Esito</th></tr></thead>
           <tbody id="cmp-1x2-body"></tbody>
         </table>
       </div>
 
-      <div class="card" style="border-top:4px solid var(--dark)">
-        <div class="section-title">📊 Mercati Ensemble</div>
-        <table class="table-ui">
-          <thead><tr><th>Mercato</th><th>Ensemble</th><th>DC</th><th>KNN</th><th>Conf.</th><th>Reale</th><th>Risultato</th></tr></thead>
+      <div class="card">
+        <div class="card-t">Mercati</div>
+        <div class="card-sub">Confidence = probabilità reale di indovinare (≥60 buona, &lt;50 sotto il coin-flip)</div>
+        <table class="tbl">
+          <thead><tr><th>Mercato</th><th>Ensemble</th><th>DC</th><th>KNN</th><th>Conf.</th><th>Reale</th><th>Esito</th></tr></thead>
           <tbody id="cmp-markets-body"></tbody>
         </table>
-        <div class="note">Legenda: <b style="color:var(--green)">✅</b>/<b style="color:var(--red)">❌</b> per esiti con prob ≥55% (vera scommessa). Sotto il 45% un esito non "previsto" che non si verifica è coerenza del modello, non un errore. Il KNN mostra "--" solo se mancano i dati di tracking per costruire i vicini.</div>
       </div>
 
-      <!-- NUOVA CARD: studio Over/Under multi-linea + GG (focus richiesto) -->
-      <div class="card" style="border-top:4px solid var(--orange)">
-        <div class="section-title" style="color:var(--orange)">⚽ Gol: Over/Under multi-linea &amp; GG/NG</div>
-        <table class="table-ui">
-          <thead><tr><th>Mercato</th><th>Prob DC</th><th>Reale partita</th><th>Esito</th></tr></thead>
+      <div class="card">
+        <div class="card-t">Gol: Over/Under e GG</div>
+        <table class="tbl">
+          <thead><tr><th>Mercato</th><th>Probabilità</th><th>Reale</th><th>Esito</th></tr></thead>
           <tbody id="cmp-goals-body"></tbody>
         </table>
-        <div class="note">Tutte le linee Over/Under ricostruite dalla matrice Dixon-Coles del motore. Gol totali reali della partita a confronto con ogni soglia.</div>
       </div>
 
-      <!-- NUOVA CARD: mercati statistici (corner/tiri/cartellini via binomiale negativa) -->
-      <div class="card" style="border-top:4px solid var(--purple)">
-        <div class="section-title" style="color:var(--purple)">📈 Mercati Statistici (binomiale negativa) &amp; Handicap</div>
-        <table class="table-ui">
-          <thead><tr><th>Mercato</th><th>Atteso/Prob</th><th>Reale</th><th>Esito</th></tr></thead>
+      <div class="card">
+        <div class="card-t">Mercati statistici e handicap</div>
+        <table class="tbl">
+          <thead><tr><th>Mercato</th><th>Atteso</th><th>Reale</th><th>Esito</th></tr></thead>
           <tbody id="cmp-stats-mkt-body"></tbody>
         </table>
-        <div class="note">Corner/Tiri/Cartellini: valore atteso e prob. Over dal modello binomiale negativa del motore. Handicap asiatico dalla matrice DC.</div>
       </div>
 
-      <!-- NUOVA CARD: metriche VAEP/xT/GCA (Opzione 1 — solo reale, per validazione) -->
-      <div class="card" style="border-top:4px solid #00838f">
-        <div class="section-title" style="color:#00838f">🧬 Metriche Avanzate VAEP/xT/GCA (valori reali)</div>
-        <table class="table-ui">
-          <thead><tr><th>Metrica</th><th>🏠 Casa</th><th>✈️ Trasferta</th><th>Differenziale</th></tr></thead>
+      <div class="card">
+        <div class="card-t">Metriche avanzate</div>
+        <div class="card-sub">Valori reali della partita</div>
+        <table class="tbl">
+          <thead><tr><th>Metrica</th><th>Casa</th><th>Trasferta</th><th>Differenza</th></tr></thead>
           <tbody id="cmp-newmetrics-body"></tbody>
         </table>
-        <div class="note">Il motore NON prevede ancora queste metriche: qui vedi solo i valori REALI della partita. Servono a validare se discriminano l'esito meglio delle dimensioni tattiche deboli del KNN (Field Tilt, PPDA), prima di eventualmente riscrivere il KNN.</div>
       </div>
 
-      <div class="grid-2">
-        <div class="card" style="border-top:4px solid var(--blue)">
-          <div class="section-title" style="color:var(--blue)">🏠 <span id="cmp-hdr-home">Casa</span></div>
-          <table class="table-ui">
+      <div class="grid2">
+        <div class="card">
+          <div class="card-t"><span id="cmp-hdr-home">Casa</span></div>
+          <table class="tbl">
             <thead><tr><th>Metrica</th><th>Previsto</th><th>Reale</th><th>Scarto</th></tr></thead>
             <tbody id="cmp-home-body"></tbody>
           </table>
         </div>
-        <div class="card" style="border-top:4px solid var(--red)">
-          <div class="section-title" style="color:var(--red)">✈️ <span id="cmp-hdr-away">Trasferta</span></div>
-          <table class="table-ui">
+        <div class="card">
+          <div class="card-t"><span id="cmp-hdr-away">Trasferta</span></div>
+          <table class="tbl">
             <thead><tr><th>Metrica</th><th>Previsto</th><th>Reale</th><th>Scarto</th></tr></thead>
             <tbody id="cmp-away-body"></tbody>
           </table>
@@ -217,29 +336,20 @@ input,select{width:100%;font-size:13px;border:1px solid #d1d1d6;border-radius:8p
   </div>
 </div>
 
-<!-- Sandbox invisibile: qui il V9.7 popola i suoi elementi.
-     IMPORTANTE: gli id devono combaciare ESATTAMENTE con quelli che avviaScanner legge:
-     sel-home, sel-away, history-limit, target-date, sel-league, sel-country, sel-season, api-key. -->
+<!-- sandbox nascosta: il motore V9.7 legge questi elementi -->
 <div id="v97-sandbox" style="display:none">
-  <select id="sel-home"></select>
-  <select id="sel-away"></select>
-  <select id="sel-country"></select>
-  <select id="sel-league"></select>
-  <select id="sel-season"></select>
-  <input id="api-key" type="text">
-  <input id="target-date" type="date">
-  <input id="history-limit" type="number">
-  <div id="dashboard-area"></div>
-  <div id="matchup-builder"></div>
-  <div id="setup-card"></div>
-  <div id="console-loader"></div>
-  <div id="ai-prompt"></div>
-  <div id="conf-bar"></div>
-  <div id="elo-h-tr"></div>
-  <div id="elo-a-tr"></div>
+  <select id="sel-home"></select><select id="sel-away"></select>
+  <select id="sel-country"></select><select id="sel-league"></select><select id="sel-season"></select>
+  <input id="api-key" type="text"><input id="target-date" type="date"><input id="history-limit" type="number">
+  <input id="cmp-shrink-k" type="number" value="3"><input id="cmp-shrink-lam" type="number" value="0.45">
+  <div id="dashboard-area"></div><div id="matchup-builder"></div><div id="setup-card"></div>
+  <div id="console-loader"></div><div id="ai-prompt"></div><div id="conf-bar"></div>
+  <div id="elo-h-tr"></div><div id="elo-a-tr"></div>
+  <button id="cmp-btn-tutte"></button><button id="cmp-btn-range"></button>
 </div>
 
 <script>
+
 // ═══════════════════════════════════════════════════════════════════════════
 // PATCH TOLLERANTE getElementById — assorbe accessi a elementi mancanti del V9.7
 // ═══════════════════════════════════════════════════════════════════════════
@@ -377,8 +487,8 @@ async function loadEngineFromFile(file) {
     try {
       globalThis._V97_probs = {
         probsRole:   (typeof probsRole   !== 'undefined') ? probsRole   : null,
+        probsOL:  (typeof probsOL!=='undefined') ? probsOL : null,   /* ordered logit */
         probsKnn:    (typeof probsKnn    !== 'undefined') ? probsKnn    : null,
-        probsOL:     (typeof probsOL     !== 'undefined') ? probsOL     : null,
         mk_ro:       (typeof mk_ro       !== 'undefined') ? mk_ro       : null,
         m1: (typeof m1!=='undefined')?m1:null, mX: (typeof mX!=='undefined')?mX:null, m2: (typeof m2!=='undefined')?m2:null,
         confidence:  (typeof confidence  !== 'undefined') ? confidence  : null,
@@ -472,9 +582,11 @@ async function loadEngineFromFile(file) {
 
   engineReady = true;
   dropzone.classList.add('loaded');
-  dropzone.innerHTML = `<h2>✅ Motore V9.7 caricato</h2>
-    <p>File: <code>${file.name}</code> · Motore attivo per tutta la sessione</p>
-    <p style="margin-top:8px;font-size:11px;color:#666">Clicca qui per ricaricarlo dopo un aggiornamento del V9.7.</p>`;
+  dropzone.innerHTML = `<h2>Motore attivo</h2>
+    <p><code>${file.name}</code> — clicca per sostituirlo dopo un aggiornamento</p>`;
+  const eb=document.getElementById('engine-badge');
+  if(eb){ eb.textContent='motore attivo'; eb.className='badge live'; }
+  cmpStep(2);
   document.getElementById('setup-area').classList.remove('hidden');
 
   // Init
@@ -625,6 +737,7 @@ async function cmpCaricaDatabase() {
     }
 
     document.getElementById('cmp-match-builder').classList.remove('hidden');
+    cmpStep(3); cmpRefreshMatches();
     document.getElementById('cmp-btn-carica').disabled = false;
   } catch (e) {
     alert("Errore: " + e.message);
@@ -1091,21 +1204,22 @@ function cmpRender(match, R, actH, actA) {
   };
   const _badge = v => {
     if (v == null || isNaN(v)) return '--';
-    // Soglie sul nuovo significato (probabilità reale): ≥60 buona, 50-59 incerta, <50 sotto coin-flip
-    const col = v>=60?'#2e7d32':v>=50?'#f57c00':'#c62828';
+    const col = v>=80?'#2e7d32':v>=60?'#f57c00':'#c62828';
     return `<span style="background:${col};color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold">${v}</span>`;
   };
 
-  // CONFIDENCE CALIBRATA — allineata alla nuova formula del motore.
-  // Prima misurava l'accordo tra modelli: sui 6824 backtest quella misura aveva
-  // correlazione -0.007 con l'azzeccare, cioè nessun potere informativo.
-  // Ora la confidence di un esito è la sua probabilità calibrata sull'hit reale:
-  // regressione empirica hit ≈ 6.26 + 0.880 × prob. "Confidence 64" = ~64% di indovinare.
-  const _conf = (p) => (p == null || !isFinite(p)) ? null
-    : Math.round(Math.max(0, Math.min(100, 6.26 + 0.880 * (p * 100))));
-  const c1 = _conf(R.m1);
-  const cX = _conf(R.mX);
-  const c2 = _conf(R.m2);
+  // Confidence per esito: usa DC+KNN+Markov con lo stesso sampleFactor del motore.
+  const sf = R.sampleFactor != null ? R.sampleFactor : 1;
+  const _conf = (arr) => {
+    const v = arr.filter(p => p != null && isFinite(p));
+    if (v.length < 2) return null;
+    let sp = 0;
+    for (let i=0; i<v.length; i++) for (let j=i+1; j<v.length; j++) sp = Math.max(sp, Math.abs(v[i]-v[j]));
+    return Math.max(0, Math.min(100, Math.round(100 * (1-sp) * sf)));
+  };
+  const c1 = _conf([R.probsRole?.p1, R.probsKnn?.p1, R.mk_ro?.p1]);
+  const cX = _conf([R.probsRole?.pX, R.probsKnn?.pX, R.mk_ro?.pX]);
+  const c2 = _conf([R.probsRole?.p2, R.probsKnn?.p2, R.mk_ro?.p2]);
 
   const rowMdl = (name, p1, pX, p2) => {
     if (p1 == null) return `<tr><td>${name}</td><td colspan="6" style="color:#999;font-size:11px">non disponibile (dati tracking insufficienti)</td></tr>`;
@@ -1116,7 +1230,6 @@ function cmpRender(match, R, actH, actA) {
   document.getElementById('cmp-1x2-body').innerHTML =
     rowMdl('Dixon-Coles (Ruolo)', R.probsRole?.p1, R.probsRole?.pX, R.probsRole?.p2) +
     rowMdl('KNN Storico (11 dim)', R.probsKnn?.p1, R.probsKnn?.pX, R.probsKnn?.p2) +
-    rowMdl('Ordered Logit', R.probsOL?.p1, R.probsOL?.pX, R.probsOL?.p2) +
     rowMdl('Markov Score-Flow', R.mk_ro?.p1, R.mk_ro?.pX, R.mk_ro?.p2) +
     `<tr style="background:#f0f8ff;font-weight:bold">${rowMdl('ENSEMBLE V9.7', R.m1, R.mX, R.m2).slice(4)}`;
 
@@ -1378,7 +1491,7 @@ function cmpExportCSV() {
   });
 
   rows.push('');
-  rows.push('--- 1X2 PER MODELLO (DC / KNN / Markov) ---' + ';;;;'.repeat(M.length));
+  rows.push('--- 1X2 PER MODELLO (DC / KNN / OL / Markov) ---' + ';;;;'.repeat(M.length));
   const mdl = [
     ['DC 1', m=>[fmt(m.R.probsRole?.p1),'','','']], ['DC X', m=>[fmt(m.R.probsRole?.pX),'','','']], ['DC 2', m=>[fmt(m.R.probsRole?.p2),'','','']],
     ['KNN 1', m=>[fmt(m.R.probsKnn?.p1),'','','']], ['KNN X', m=>[fmt(m.R.probsKnn?.pX),'','','']], ['KNN 2', m=>[fmt(m.R.probsKnn?.p2),'','','']],
@@ -1494,6 +1607,73 @@ function cmpExportCSV() {
   a.click();
   URL.revokeObjectURL(url);
 }
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STRATO UI — gestione modalità e flusso lineare
+// Un solo pulsante "Avvia analisi" smista alle tre funzioni di elaborazione
+// già esistenti, invece dei tre pulsanti sparsi della vecchia interfaccia.
+// ═══════════════════════════════════════════════════════════════════════════
+let cmpMode = 'one';
+const CMP_HINTS = {
+  one:   'Analizza una singola partita e vedi il confronto completo a schermo.',
+  day:   'Elabora tutte le partite concluse di un giorno e le accumula per l\'export.',
+  range: 'Elabora un intero periodo (es. un mese). Le prime partite sono lente, poi accelera.'
+};
+function cmpSetMode(m){
+  cmpMode = m;
+  ['one','day','range'].forEach(k=>{
+    document.getElementById('mode-'+k).classList.toggle('on', k===m);
+    document.getElementById('pane-'+k).classList.toggle('hidden', k!==m);
+  });
+  document.getElementById('mode-hint').textContent = CMP_HINTS[m];
+  cmpRefreshMatches();
+}
+
+// Tiene allineate le due date (singola partita / giorno) e aggiorna la lista partite.
+function cmpRefreshMatches(){
+  const dOne = document.getElementById('cmp-target-date');
+  const dDay = document.getElementById('cmp-day-date');
+  if (cmpMode==='day' && dDay && dDay.value && dOne) dOne.value = dDay.value;
+  if (cmpMode==='one' && dOne && dOne.value && dDay) dDay.value = dOne.value;
+  if (typeof cmpAllMatches==='undefined' || !cmpAllMatches.length) return;
+  const target = dOne ? dOne.value : '';
+  if (!target) return;
+  cmpMatchesOfTheDay = cmpAllMatches.filter(m =>
+    m.status==='finished' && m.time_utc && m.time_utc.startsWith(target));
+  const sel = document.getElementById('cmp-partita');
+  if (sel){
+    sel.innerHTML='';
+    if(!cmpMatchesOfTheDay.length){ sel.innerHTML='<option>nessuna partita conclusa in questa data</option>'; }
+    else{
+      sel.add(new Option('— seleziona —',''));
+      cmpMatchesOfTheDay.forEach(m=>sel.add(new Option(
+        `${m.home_team.name} – ${m.away_team.name}  (${m.score_home}-${m.score_away})`, m.id)));
+    }
+  }
+  const dc = document.getElementById('day-count');
+  if (dc) dc.textContent = cmpMatchesOfTheDay.length
+    ? `${cmpMatchesOfTheDay.length} partite concluse in questa data`
+    : 'nessuna partita conclusa in questa data';
+}
+
+// Pulsante unico: smista in base alla modalità scelta.
+function cmpRun(){
+  if (cmpMode==='one')   return cmpEsegui();
+  if (cmpMode==='day')   return cmpEseguiTutte();
+  if (cmpMode==='range') return cmpEseguiIntervallo();
+}
+
+// Avanzamento visivo degli step
+function cmpStep(n){
+  for(let i=1;i<=3;i++){
+    const el=document.getElementById('st'+i);
+    if(!el) continue;
+    el.classList.toggle('active', i===n);
+    el.classList.toggle('done', i<n);
+  }
+}
+
 </script>
 </body>
 </html>

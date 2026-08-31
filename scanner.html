@@ -108,25 +108,7 @@ textarea{width:100%;min-height:350px;font-size:11px;font-family:monospace;border
       </div>
       
       <div class="grid-2">
-        <div style="background:#fff; border-radius:8px; padding:12px; border:1px solid #ddd;">
-          <div style="font-size:11px;font-weight:bold;color:#555;margin-bottom:8px">Confidence Score (Probabilità Calibrata)</div>
-          <div style="display:flex; align-items:center; gap:10px;">
-            <div style="font-size:22px; font-weight:900; color:var(--purple);" id="master-conf">--/100</div>
-            <div style="flex-grow:1; background:#eee; height:12px; border-radius:6px; overflow:hidden;">
-               <div id="conf-bar" style="height:100%; background:var(--purple); width:0%; transition: width 0.5s;"></div>
-            </div>
-          </div>
-          <div style="font-size:9px; color:#888; margin-top:5px">
-            <b>Si legge come probabilità di indovinare.</b> Confidence 64 = ~64% di azzeccare.
-            Calibrata su 6824 partite reali (Europa+MLS+Turchia).
-          </div>
-          <div style="font-size:9px; color:#666; margin-top:6px; background:#f7f7f9; border-radius:6px; padding:6px 8px; line-height:1.5">
-            <b>Come usarla:</b> <span style="color:var(--green)">≥60 = fascia buona</span> (64,7% hit reale, capita nel 12% delle partite) ·
-            <span style="color:var(--orange)">50-59 = incerta</span> ·
-            <span style="color:var(--red)">&lt;50 = sotto il coin-flip</span>.<br>
-            Oltre 70 succede solo nel 2,2% dei casi (1 partita su 45) e non migliora l'hit rispetto a 65: alzare troppo l'asticella toglie occasioni senza aggiungere precisione.
-          </div>
-        </div>
+        
         <div style="background:#fff; border-radius:8px; padding:12px; border:1px solid #ddd;">
           <div style="font-size:11px;font-weight:bold;color:#555;margin-bottom:5px">Alert: Smart Money & Blood Scent</div>
           <div id="hidden-value-msg" style="font-size:12px; line-height:1.4; color:#333;">--</div>
@@ -144,7 +126,26 @@ textarea{width:100%;min-height:350px;font-size:11px;font-family:monospace;border
       </div>
     </div>
 
-    <div class="card" style="border-top: 4px solid var(--orange); background:#fffaf5">
+  <div class="card" id="card-verdetti" style="border-top:4px solid #0f766e">
+    <div class="section-title" style="color:#0f766e">&#127919; Tabellone Scommesse &mdash; cosa &egrave; giocabile</div>
+    <div style="font-size:11px;color:#666;margin-bottom:10px">
+      Le soglie vengono dai backtest su oltre 5.000 partite reali, non da una stima del modello su s&eacute; stesso.
+      Per ogni mercato trovi la probabilit&agrave; calcolata, il verdetto e il tasso di successo osservato in quella fascia.
+      <b>NON GIOCARE</b> significa che l&igrave; il modello si &egrave; dimostrato mal calibrato: la sua probabilit&agrave; non va creduta.
+    </div>
+    <table class="table-ui">
+      <thead><tr>
+        <th style="text-align:left">Mercato</th><th>Prob.</th><th>Verdetto</th>
+        <th>Hit storico</th><th style="text-align:left">Perch&eacute;</th>
+      </tr></thead>
+      <tbody id="verdetti-body"></tbody>
+    </table>
+  </div>
+
+
+    
+  <div style="margin:28px 0 12px;padding-bottom:6px;border-bottom:2px solid #1d4ed8"><span style="font-size:11px;font-weight:800;letter-spacing:.09em;color:#1d4ed8">PERCH&Eacute; &mdash; LE STATISTICHE CHE PRODUCONO QUEI NUMERI</span></div>
+<div class="card" style="border-top: 4px solid var(--orange); background:#fffaf5">
       <div class="section-title" style="color:var(--orange)">🎯 Qualità del Tiro, Cinismo & Palle Inattive</div>
       <p style="font-size:10px;color:#555;margin-bottom:10px">Misura la letalità (xG per Tiro / xGOT) vs i gol attesi (NPxG) e le grandi occasioni da rete.</p>
       <table class="table-ui" style="background:transparent; margin-bottom:10px">
@@ -187,6 +188,27 @@ textarea{width:100%;min-height:350px;font-size:11px;font-family:monospace;border
     <div class="grid-2">
         <div class="card" style="border-top: 4px solid var(--blue);">
           <div class="section-title" style="color:var(--blue)">💰 1X2 Probabilità e Modelli (Base NPxG)</div>
+      <div style="font-size:11px;color:#666;margin:4px 0 10px">La confidence sta qui e non in cima di proposito: va letta <b>dopo</b> le statistiche che la producono. &Egrave; una probabilit&agrave; di indovinare, non un voto di stile.</div>
+      <div style="background:#fff; border-radius:8px; padding:12px; border:1px solid #ddd;">
+          <div style="font-size:11px;font-weight:bold;color:#555;margin-bottom:8px">Confidence Score (Probabilità Calibrata)</div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="font-size:22px; font-weight:900; color:var(--purple);" id="master-conf">--/100</div>
+            <div style="flex-grow:1; background:#eee; height:12px; border-radius:6px; overflow:hidden;">
+               <div id="conf-bar" style="height:100%; background:var(--purple); width:0%; transition: width 0.5s;"></div>
+            </div>
+          </div>
+          <div style="font-size:9px; color:#888; margin-top:5px">
+            <b>Si legge come probabilità di indovinare.</b> Confidence 64 = ~64% di azzeccare.
+            Calibrata su 6824 partite reali (Europa+MLS+Turchia).
+          </div>
+          <div style="font-size:9px; color:#666; margin-top:6px; background:#f7f7f9; border-radius:6px; padding:6px 8px; line-height:1.5">
+            <b>Come usarla:</b> <span style="color:var(--green)">≥60 = fascia buona</span> (64,7% hit reale, capita nel 12% delle partite) ·
+            <span style="color:var(--orange)">50-59 = incerta</span> ·
+            <span style="color:var(--red)">&lt;50 = sotto il coin-flip</span>.<br>
+            Oltre 70 succede solo nel 2,2% dei casi (1 partita su 45) e non migliora l'hit rispetto a 65: alzare troppo l'asticella toglie occasioni senza aggiungere precisione.
+          </div>
+        </div>
+
               <table class="table-ui" style="margin-bottom:0">
                 <tr><th>Mercato</th><th style="color:#555">GENERALE</th><th style="color:var(--blue)">SOLO RUOLO</th></tr>
                 <tr><td>1</td><td id="p1-over">--%</td><td id="p1-role" class="td-highlight">--%</td></tr>
@@ -251,7 +273,9 @@ textarea{width:100%;min-height:350px;font-size:11px;font-family:monospace;border
               </div>
         </div>
 
-        <div class="card" style="border-top: 4px solid #fbc02d; background:#fffde7">
+        
+  <div style="margin:28px 0 12px;padding-bottom:6px;border-bottom:2px solid #6b7280"><span style="font-size:11px;font-weight:800;letter-spacing:.09em;color:#6b7280">APPROFONDIMENTO &mdash; DETTAGLIO E DIAGNOSTICA</span></div>
+<div class="card" style="border-top: 4px solid #fbc02d; background:#fffde7">
             <div class="section-title" style="color:#fbc02d">⚖️ Punti Attesi dagli xG (con test di significativita')</div>
             <p style="font-size:10px;color:#555;margin-bottom:10px">Punti reali vs punti attesi simulando ogni partita dagli xG. Lo scarto viene giudicato solo se supera l'errore standard: sotto quella soglia e' rumore, non fortuna.</p>
             <table class="table-ui" style="background:transparent">
@@ -1343,6 +1367,56 @@ function bucketTimings(timings) {
 // ==========================================
 // ESECUZIONE MAIN E RENDER
 // ==========================================
+
+// ===========================================================================
+// TABELLONE SCOMMESSE
+// Traduce le probabilita' in un verdetto operativo. Soglie e tassi di successo
+// vengono dai backtest (Serie A 1134 match + archivio 4001 match ripuliti dal
+// leakage di data), non da una stima del modello su se stesso:
+//   1  >=65% -> 83% hit, SOTTOSTIMATO (gap +14)   |  1 >=55% -> 64%, calibrato
+//   2  >=60% -> 66%   |  X2 >=65% -> 74% sottostimato  |  12 -> 73-74% stabile
+//   X        -> mai scelto sopra il 55% su 1134 partite: nessun campione
+//   Over 2.5 -> sottostimato di 3.6pp ma hit 56%: marginale
+//   Under / NoGoal / Goal -> gap -9 e -12, nessun potere discriminante
+// ===========================================================================
+function renderVerdetti(mk) {
+  const R = [
+    ['1 (Casa)',      mk.p1,  [[0.65,'FORTE','83%',"quando e' convinto ha ragione piu' di quanto dichiari"],
+                               [0.55,'GIOCABILE','64%',"calibrato: il mercato piu' affidabile del sistema"]], null],
+    ['X (Pareggio)',  mk.pX,  [], "non e' mai stato scelto sopra il 55% in 1134 partite: nessun campione"],
+    ['2 (Trasferta)', mk.p2,  [[0.60,'GIOCABILE','66%','calibrato ma raro']], null],
+    ['1X',            mk.p1X, [[0.65,'GIOCABILE','75%',"solido; sotto il 65% e' leggermente sovrastimato"]], null],
+    ['X2',            mk.pX2, [[0.65,'FORTE','74%',"sottostimato su tutti i batch: e' valore vero"],
+                               [0.60,'GIOCABILE','72%','sottostimato di circa 3 punti']], null],
+    ['12',            mk.p12, [[0.70,'GIOCABILE','74%',"il piu' stabile: stesso hit a ogni soglia"]], null],
+    ['Over 2.5',      mk.pOv, [[0.55,'MARGINALE','56%',"probabilita' sottostimata di 3.6pp ma discrimina poco"]], null],
+    ['Under 2.5',     mk.pUn, [], 'gap -9pp: sopra il 65% il tasso reale scende al 54%'],
+    ['Goal (GG)',     mk.pGG, [], "la probabilita' non porta segnale: test di calibrazione fallito"],
+    ['NoGoal',        mk.pNG, [], 'gap -12pp: sopra il 60% il tasso reale scende al 47%']
+  ];
+  const col = v => v === 'FORTE' ? '#0f766e' : v === 'GIOCABILE' ? '#2d7d32'
+                 : v === 'MARGINALE' ? '#f57c00' : '#c62828';
+  let html = '';
+  for (const [nome, p, regole, blocco] of R) {
+    if (p == null || isNaN(p)) continue;
+    let verdetto = '--', hit = '--', perche = '';
+    if (blocco) { verdetto = 'NON GIOCARE'; perche = blocco; }
+    else {
+      for (const [soglia, v, h, w] of regole) if (p >= soglia) { verdetto = v; hit = h; perche = w; break; }
+      if (verdetto === '--') perche = 'sotto la soglia minima validata sui backtest';
+    }
+    const ok = verdetto === 'FORTE' || verdetto === 'GIOCABILE';
+    html += '<tr' + (ok ? ' style="background:#f0fdf4"' : '') + '>'
+          + '<td style="text-align:left;font-weight:bold">' + nome + '</td>'
+          + '<td style="font-weight:bold">' + (p * 100).toFixed(1) + '%</td>'
+          + '<td><span style="background:' + col(verdetto) + ';color:#fff;padding:2px 8px;'
+          + 'border-radius:4px;font-size:10px;font-weight:bold;white-space:nowrap">' + verdetto + '</span></td>'
+          + '<td>' + hit + '</td>'
+          + '<td style="text-align:left;font-size:11px;color:#555">' + perche + '</td></tr>';
+  }
+  safeHtml('verdetti-body', html);
+}
+
 async function avviaScanner() {
   try {
     const selH = document.getElementById('sel-home'); const selA = document.getElementById('sel-away');
@@ -1567,12 +1641,7 @@ async function avviaScanner() {
     //
     // PARAMETRI stimati per massima verosimiglianza su 1903 partite di training
     // (split temporale 70/30, validato su 816 partite mai viste):
-    // BETA RI-STIMATO su 2047 partite fresche (validazione out-of-sample).
-    // Con beta 1.95 l'OL era sovra-sicuro: diceva 70-80% e succedeva il 57% (scarto -17.7pp).
-    // Beta 1.20 dimezza l'errore di calibrazione (7.9pp → 3.3pp) SENZA perdere accuratezza:
-    // l'ensemble resta a 49.78% (con 1.95 era 49.78%) perche' l'OL pesa 0.30 e DC lo domina.
-    // Scelto quindi il valore che rende oneste le probabilita' mostrate a schermo.
-    const OL_BETA = 1.200, OL_T1 = -0.850, OL_T2 = 0.350;
+    const OL_BETA = 1.950, OL_T1 = -0.850, OL_T2 = 0.350;
     const _sig = (z) => 1 / (1 + Math.exp(-Math.max(-30, Math.min(30, z))));
     // Forza = schema attacco-vs-difesa ADDITIVO 70/30 (validato: additivo batte
     // moltiplicativo, e l'attacco pesa piu' della difesa avversaria - corr 0.26 vs 0.17).
@@ -1721,14 +1790,17 @@ async function avviaScanner() {
     safeTxt('mdl-knn-ov', pct(knnOv)); safeTxt('mdl-knn-un', pct(knnUn));
     
     // Confidence per doppie chance (DC vs KNN)
-    safeHtml('conf-1x', _badgeConf(_confMarket([dcP1X, knnP1X], sampleFactor, true)));
-    safeHtml('conf-x2', _badgeConf(_confMarket([dcPX2, knnPX2], sampleFactor, true)));
-    safeHtml('conf-12', _badgeConf(_confMarket([dcP12, knnP12], sampleFactor, true)));
+    safeHtml('conf-1x', _badgeConf(_confMarket([dcP1X], sampleFactor, true)));
+    safeHtml('conf-x2', _badgeConf(_confMarket([dcPX2], sampleFactor, true)));
+    safeHtml('conf-12', _badgeConf(_confMarket([dcP12], sampleFactor, true)));
     // Confidence per mercati gol (DC vs KNN)
-    safeHtml('conf-gg', _badgeConf(_confMarket([dcGG, knnGG], sampleFactor, true)));
-    safeHtml('conf-ng', _badgeConf(_confMarket([dcNG, knnNG], sampleFactor, true)));
-    safeHtml('conf-ov', _badgeConf(_confMarket([dcOv, knnOv], sampleFactor, true)));
-    safeHtml('conf-un', _badgeConf(_confMarket([dcUn, knnUn], sampleFactor, true)));
+    safeHtml('conf-gg', _badgeConf(_confMarket([dcGG], sampleFactor, true)));
+    safeHtml('conf-ng', _badgeConf(_confMarket([dcNG], sampleFactor, true)));
+    safeHtml('conf-ov', _badgeConf(_confMarket([dcOv], sampleFactor, true)));
+    safeHtml('conf-un', _badgeConf(_confMarket([dcUn], sampleFactor, true)));
+
+    renderVerdetti({ p1:m1, pX:mX, p2:m2, p1X:m1+mX, pX2:mX+m2, p12:m1+m2,
+                     pOv:dcOv, pUn:dcUn, pGG:dcGG, pNG:dcNG });
     const odd1 = probsRole.p1 > 0 ? (1/probsRole.p1).toFixed(2) : "N/A"; const oddX = probsRole.pX > 0 ? (1/probsRole.pX).toFixed(2) : "N/A"; const odd2 = probsRole.p2 > 0 ? (1/probsRole.p2).toFixed(2) : "N/A";
     const oddM1 = m1 > 0 ? (1/m1).toFixed(2) : "N/A"; const oddMX = mX > 0 ? (1/mX).toFixed(2) : "N/A"; const oddM2 = m2 > 0 ? (1/m2).toFixed(2) : "N/A";
     safeTxt('m-odd-1', oddM1); safeTxt('m-odd-x', oddMX); safeTxt('m-odd-2', oddM2);
