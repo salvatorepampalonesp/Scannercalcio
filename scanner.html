@@ -3,420 +3,1174 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Scanner V9.7 - Confidence x Mercato</title>
+<title>Scanner V9.7 - Confidence x Mercato + Limit Fix</title>
 <style>
-:root { --bg: #f2f2f7; --card: #ffffff; --text: #1c1c1e; --sub: #8e8e93; --blue: #007aff; --red: #c62828; --green: #2d7d32; --orange: #f57c00; --purple: #6a1b9a; --knn: #d81b60; --tact: #00897b; --dark: #111;}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:13px}
-.wrap{max-width:1050px;margin:0 auto;padding:1.5rem 1rem 4rem}
-h1{font-size:22px;font-weight:800;letter-spacing:-.03em;margin-bottom:1.5rem; display:flex; align-items:center; gap:10px;}
-h1 span{font-size:13px;font-weight:600;background:var(--dark);color:white;padding:3px 8px;border-radius:6px;}
-.card{background:var(--card);border-radius:12px;padding:1.2rem;margin-bottom:15px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
-.section-title{font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--text);margin-bottom:12px; border-bottom:2px solid #edf2f7; padding-bottom:6px; display:flex; align-items:center; gap:8px;}
-input[type=text],input[type=password],input[type=date],select,input[type=number]{width:100%;font-size:13px;border:1px solid #d1d1d6;border-radius:8px;padding:8px 12px;background:#fff;}
-input:focus,select:focus{outline:none;border-color:var(--blue);}
-textarea{width:100%;min-height:350px;font-size:11px;font-family:monospace;border:1px solid #d1d1d6;border-radius:8px;padding:12px;background:#f9f9fb;resize:vertical;line-height:1.5}
-.btn{border:none;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px; width:100%;}
-.btn:hover{opacity:0.9;}
-.btn-blue{background:var(--blue);color:#fff}
-.btn-green{background:var(--green);color:#fff;font-size:14px;padding:12px}
-.btn-purple{background:var(--purple);color:#fff}
-.btn-dark{background:var(--dark);color:#fff}
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.grid-3{display:grid;grid-template-columns:repeat(3, 1fr);gap:12px}
-.grid-4{display:grid;grid-template-columns:repeat(4, 1fr);gap:8px}
-.table-ui{width:100%;border-collapse:collapse;font-size:12px; margin-bottom:10px;}
-.table-ui th{font-size:10px;font-weight:600;color:#8e8e93;padding:8px;text-align:center;border-bottom:2px solid #ddd;background:#fafafa}
-.table-ui th:first-child{text-align:left}
-.table-ui td{padding:8px;border-bottom:1px solid #f2f2f7;color:#3c3c43;text-align:center;}
-.table-ui td:first-child{text-align:left;color:#1c1c1e;font-weight:600}
-.table-ui tr:hover td{background:#fcfcfc}
-.td-highlight {background:#f0f8ff; font-weight:bold; color:var(--blue);}
-.td-highlight-red {background:#ffebee; font-weight:bold; color:var(--red);}
-.bucket-bar { height: 16px; border-radius: 4px; font-size:10px; font-weight:bold; color:white; text-align:right; padding-right:6px; line-height:16px; min-width: 15px;}
+:root {
+  --bg: #f0f2f5;
+  --card: #ffffff;
+  --text: #1c1c1e;
+  --sub: #6c757d;
+  --blue: #0066cc;
+  --red: #dc3545;
+  --green: #28a745;
+  --orange: #fd7e14;
+  --purple: #6f42c1;
+  --knn: #e83e8c;
+  --tact: #17a2b8;
+  --dark: #212529;
+  --border: #dee2e6;
+  --hover: #f8f9fa;
+  
+  --card-featured-blue: #e3f2fd;
+  --card-featured-green: #d4edda;
+  --card-featured-orange: #fff3cd;
+  --card-featured-purple: #f8f9fa;
+  --card-featured-dark: #f8f9fa;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem 3rem;
+}
+
+/* Header */
+.header {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, var(--dark) 0%, #343a40 100%);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  color: white;
+}
+
+.header h1 {
+  font-size: 28px;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.5px;
+}
+
+.header .version {
+  font-size: 12px;
+  font-weight: 600;
+  background: rgba(255,255,255,0.2);
+  padding: 4px 12px;
+  border-radius: 20px;
+  display: inline-block;
+}
+
+.header .subtitle {
+  font-size: 14px;
+  opacity: 0.9;
+  margin-top: 0.5rem;
+}
+
+/* Cards */
+.card {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  border: 1px solid var(--border);
+}
+
+.card-featured-blue { border-top: 5px solid var(--blue); background: var(--card-featured-blue); }
+.card-featured-green { border-top: 5px solid var(--green); background: var(--card-featured-green); }
+.card-featured-orange { border-top: 5px solid var(--orange); background: var(--card-featured-orange); }
+.card-featured-purple { border-top: 5px solid var(--purple); background: var(--card-featured-purple); }
+.card-featured-dark { border-top: 5px solid var(--dark); background: var(--card-featured-dark); }
+.card-featured-red { border-top: 5px solid var(--red); background: #fff5f5; }
+.card-featured-pink { border-top: 5px solid #e91e63; background: #fff0f5; }
+.card-featured-teal { border-top: 5px solid var(--tact); background: #f0f8ff; }
+.card-featured-yellow { border-top: 5px solid var(--orange); background: #fffef7; }
+.card-featured-indigo { border-top: 5px solid #6610f2; background: #f8f9ff; }
+
+/* Section Titles */
+.section-title {
+  font-size: 15px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text);
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-title-blue { color: var(--blue); border-bottom-color: var(--blue); }
+.section-title-green { color: var(--green); border-bottom-color: var(--green); }
+.section-title-orange { color: var(--orange); border-bottom-color: var(--orange); }
+.section-title-purple { color: var(--purple); border-bottom-color: var(--purple); }
+.section-title-red { color: var(--red); border-bottom-color: var(--red); }
+.section-title-dark { color: var(--dark); border-bottom-color: var(--dark); }
+
+/* Form Elements */
+input[type="text"],
+input[type="password"],
+input[type="date"],
+select,
+input[type="number"] {
+  width: 100%;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(0,102,204,0.1);
+}
+
+textarea {
+  width: 100%;
+  min-height: 350px;
+  font-size: 11px;
+  font-family: 'SF Mono', Consolas, monospace;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  background: #f8f9fa;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+/* Buttons */
+.btn {
+  border: none;
+  border-radius: 8px;
+  padding: 12px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  transition: all 0.2s;
+}
+
+.btn:hover { opacity: 0.9; transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-blue { background: var(--blue); color: #fff; }
+.btn-green { background: var(--green); color: #fff; font-size: 14px; padding: 14px; }
+.btn-purple { background: var(--purple); color: #fff; }
+.btn-dark { background: var(--dark); color: #fff; }
+.btn-red { background: var(--red); color: #fff; }
+.btn-orange { background: var(--orange); color: #fff; }
+
+/* Grid Layouts */
+.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; }
+
+/* Tables */
+.table-ui {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin: 0.5rem 0;
+}
+
+.table-ui th {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--sub);
+  padding: 10px 8px;
+  text-align: center;
+  border-bottom: 2px solid var(--border);
+  background: #f8f9fa;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.table-ui th:first-child { text-align: left; }
+
+.table-ui td {
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  text-align: center;
+}
+
+.table-ui td:first-child {
+  text-align: left;
+  font-weight: 600;
+  color: var(--dark);
+}
+
+.table-ui tr:hover td {
+  background: var(--hover);
+}
+
+.td-highlight { background: #e3f2fd; font-weight: bold; color: var(--blue); }
+.td-highlight-red { background: #ffebee; font-weight: bold; color: var(--red); }
+
+/* Status Cards */
+.status-card {
+  text-align: center;
+  background: #fff;
+  padding: 1.25rem;
+  border-radius: 10px;
+  border: 2px solid var(--border);
+  transition: all 0.2s;
+}
+
+.status-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
+}
+
+.status-card .label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--sub);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+
+.status-card .value {
+  font-size: 28px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.status-card .subtext {
+  font-size: 11px;
+  color: var(--sub);
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--border);
+}
+
+/* Progress Bar */
+.progress-container {
+  flex-grow: 1;
+  background: #e9ecef;
+  height: 12px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: var(--purple);
+  width: 0%;
+  transition: width 0.5s ease;
+}
+
+/* Info Boxes */
+.info-box {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  margin: 0.5rem 0;
+}
+
+.info-box .title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--sub);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+}
+
+/* Odds Box */
+.odds-box {
+  background: #fff;
+  border: 2px solid var(--blue);
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.odds-val {
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--blue);
+  margin-top: 0.5rem;
+}
+
+/* TDI Box */
+.tdi-box {
+  padding: 1rem;
+  border-radius: 8px;
+  background: #f8f9fa;
+  border: 1px solid var(--border);
+  text-align: center;
+}
+
+.tdi-box .label {
+  font-size: 10px;
+  color: var(--sub);
+  margin-bottom: 0.25rem;
+}
+
+.tdi-box .value {
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--text);
+}
+
+/* Bucket Bar */
+.bucket-bar {
+  height: 16px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: bold;
+  color: white;
+  text-align: right;
+  padding-right: 6px;
+  line-height: 16px;
+  min-width: 15px;
+}
+
 .bg-hf { background: var(--blue); }
-.bg-hc { background: #90caf9; color: #1c1c1e; }
+.bg-hc { background: #90caf9; color: var(--text); }
 .bg-af { background: var(--red); }
-.bg-ac { background: #ef9a9a; color: #1c1c1e; }
-.log-box{max-height:250px;overflow-y:auto;border:1px solid #eee;border-radius:8px;}
-.badge{padding:2px 6px;border-radius:4px;font-size:9px;font-weight:bold;color:white;}
-.bg-v{background:var(--green)} .bg-p{background:#f57c00} .bg-s{background:var(--red)}
-.card-small {background:var(--blue); color:white; padding:4px 6px; border-radius:6px; text-align:center;}
-#console-loader{background:#1e1e1e;color:#00ff00;font-family:monospace;padding:12px;border-radius:8px;font-size:11px;height:120px;overflow-y:auto;margin-top:15px;display:none; line-height:1.4}
-.odds-box {background:#fff; border:2px solid var(--blue); border-radius:8px; padding:10px; text-align:center;}
-.odds-val {font-size:18px; font-weight:900; color:var(--blue); margin-top:4px;}
-.tdi-box {padding:10px; border-radius:8px; background:#f9f9f9; color:#111; font-weight:bold; border:1px solid #eee; text-align:center;}
+.bg-ac { background: #ef9a9a; color: var(--text); }
+
+/* Log Box */
+.log-box {
+  max-height: 250px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+/* Badge */
+.badge {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: bold;
+  color: white;
+}
+
+.bg-v { background: var(--green); }
+.bg-p { background: var(--orange); }
+.bg-s { background: var(--red); }
+
+.card-small {
+  background: var(--blue);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 6px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Console Loader */
+#console-loader {
+  background: #1e1e1e;
+  color: #00ff00;
+  font-family: monospace;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  height: 120px;
+  overflow-y: auto;
+  margin-top: 1rem;
+  display: none;
+  line-height: 1.4;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .wrap { padding: 1rem; }
+  .grid-2 { grid-template-columns: 1fr; }
+  .grid-3 { grid-template-columns: 1fr; }
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .header h1 { font-size: 22px; }
+  .status-card .value { font-size: 24px; }
+}
+
+/* Hidden */
+.hidden { display: none; }
+
+/* Note */
+.note {
+  font-size: 10px;
+  color: var(--sub);
+  line-height: 1.5;
+  margin-top: 0.5rem;
+}
+
+/* Streak */
+.streak {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.streak-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.streak-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--sub);
+  text-transform: uppercase;
+}
+
+.streak-value {
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.streak-blue { color: var(--blue); }
+.streak-red { color: var(--red); }
+.streak-green { color: var(--green); }
 </style>
 </head>
 <body>
 
 <div class="wrap">
-  <h1>Scanner V9.7 <span>Confidence x Mercato + Limit Fix</span></h1>
+  
+  <!-- HEADER -->
+  <div class="header">
+    <h1>Scanner V9.7</h1>
+    <span class="version">Confidence x Mercato + Limit Fix</span>
+    <div class="subtitle">Analisi avanzata basata su NPxG, qualit&agrave; del tiro e tracking data</div>
+  </div>
 
-  <div class="card" id="setup-card">
-    <div class="section-title">🔍 Setup Simulazione: Database & Matchup</div>
-    <div class="grid-2" style="margin-bottom:15px;">
-      <div><label style="font-size:10px;font-weight:bold;color:#555">API Key (PitchAPI)</label><input id="api-key" type="password" value=""></div>
-      <div><label style="font-size:10px;font-weight:bold;color:#555">Data Target (Time Machine)</label><input type="date" id="target-date"></div>
+  
+  <!-- SETUP SECTION -->
+  <div class="card card-featured-dark" id="setup-card">
+    <div class="section-title section-title-dark">
+      <span>&#128269;</span> Setup Simulazione: Database & Matchup
     </div>
-    <div class="grid-3" style="align-items:end; margin-bottom:15px;">
-      <div><label style="font-size:10px;font-weight:bold;color:#555">1. Paese</label><select id="sel-country" onchange="updateLeagues()"><option value="">-- In caricamento... --</option></select></div>
-      <div><label style="font-size:10px;font-weight:bold;color:#555">2. Lega Roster</label><select id="sel-league" onchange="updateSeasons()"><option value="">-- Seleziona --</option></select></div>
-      <div><label style="font-size:10px;font-weight:bold;color:#555">3. Stagione Base</label><select id="sel-season"><option value="">-- Seleziona --</option></select></div>
+    
+    <div class="grid-2" style="margin-bottom: 1rem;">
+      <div>
+        <label style="font-size: 10px; font-weight: bold; color: var(--sub); display: block; margin-bottom: 0.25rem;">API Key (PitchAPI)</label>
+        <input id="api-key" type="password" value="">
+      </div>
+      <div>
+        <label style="font-size: 10px; font-weight: bold; color: var(--sub); display: block; margin-bottom: 0.25rem;">Data Target (Time Machine)</label>
+        <input type="date" id="target-date">
+      </div>
     </div>
-    <button class="btn btn-dark" id="btn-carica" onclick="caricaSquadreLega()">📥 1. Carica Database (Auto-include Leghe Minori)</button>
+    
+    <div class="grid-3" style="align-items: end; margin-bottom: 1.5rem;">
+      <div>
+        <label style="font-size: 10px; font-weight: bold; color: var(--sub); display: block; margin-bottom: 0.25rem;">1. Paese</label>
+        <select id="sel-country" onchange="updateLeagues()">
+          <option value="">-- In caricamento... --</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size: 10px; font-weight: bold; color: var(--sub); display: block; margin-bottom: 0.25rem;">2. Lega Roster</label>
+        <select id="sel-league" onchange="updateSeasons()">
+          <option value="">-- Seleziona --</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size: 10px; font-weight: bold; color: var(--sub); display: block; margin-bottom: 0.25rem;">3. Stagione Base</label>
+        <select id="sel-season">
+          <option value="">-- Seleziona --</option>
+        </select>
+      </div>
+    </div>
+    
+    <button class="btn btn-dark" id="btn-carica" onclick="caricaSquadreLega()">
+      <span>&#128229;</span> 1. Carica Database (Auto-include Leghe Minori)
+    </button>
     <div id="console-loader"></div>
 
-    <div id="matchup-builder" style="display:none; margin-top:25px; border-top:2px solid #edf2f7; padding-top:15px;">
-      <div class="section-title" style="color:var(--green)">⚡ Costruisci il Matchup</div>
-      <div class="grid-3" style="align-items:end">
-        <div><label style="font-size:10px;font-weight:bold;color:#555">Squadra Casa</label><select id="sel-home" style="font-weight:bold;color:var(--blue)"></select></div>
-        <div><label style="font-size:10px;font-weight:bold;color:#555">Squadra Trasferta</label><select id="sel-away" style="font-weight:bold;color:var(--red)"></select></div>
-        <div><label style="font-size:10px;font-weight:bold;color:#555">Limite Match (Taglio Esatto)</label><input type="number" id="history-limit" value="15" min="5" max="100" style="font-weight:bold;"></div>
+    <div id="matchup-builder" style="display:none; margin-top: 1.5rem; border-top: 2px solid var(--border); padding-top: 1.5rem;">
+      <div class="section-title section-title-green" style="margin-bottom: 1rem;">
+        <span>&#9700;</span> Costruisci il Matchup
       </div>
-      <button class="btn btn-green" id="btn-avvia" style="margin-top:15px; width:100%; padding:12px; font-size:15px" onclick="avviaScanner()">🚀 2. ESTRAI DATI E SIMULA MODELLI</button>
+      <div class="grid-3" style="align-items: end;">
+        <div>
+          <label style="font-size: 10px; font-weight: bold; color: var(--sub); display: block; margin-bottom: 0.25rem;">Squadra Casa</label>
+          <select id="sel-home" style="font-weight: bold; color: var(--blue);"></select>
+        </div>
+        <div>
+          <label style="font-size: 10px; font-weight: bold; color: var(--sub); display: block; margin-bottom: 0.25rem;">Squadra Trasferta</label>
+          <select id="sel-away" style="font-weight: bold; color: var(--red);"></select>
+        </div>
+        <div>
+          <label style="font-size: 10px; font-weight: bold; color: var(--sub); display: block; margin-bottom: 0.25rem;">Limite Match (Taglio Esatto)</label>
+          <input type="number" id="history-limit" value="15" min="5" max="100" style="font-weight: bold;">
+        </div>
+      </div>
+      <button class="btn btn-green" id="btn-avvia" style="margin-top: 1rem;" onclick="avviaScanner()">
+        <span>&#128640;</span> 2. ESTRAI DATI E SIMULA MODELLI
+      </button>
     </div>
   </div>
 
+
+  <!-- DASHBOARD AREA -->
   <div id="dashboard-area" style="display:none">
-    <div style="text-align:center; margin-bottom:20px; padding:15px; background:var(--card); border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.06)">
-      <h2 id="ui-title" style="font-size:26px;color:var(--text); letter-spacing:-0.5px">Home vs Away</h2>
-      <div id="ui-streak" style="margin:10px 0; display:flex; justify-content:center; gap:20px; align-items:center;"></div>
-      <p id="ui-subtitle" style="font-size:12px;color:var(--sub)">Motore: V9.6 - Analisi Integrale su NPxG, Qualita' e Tracking Data</p>
+    
+    <!-- TITLE SECTION -->
+    <div style="text-align: center; margin-bottom: 1.5rem; padding: 1.5rem; background: var(--card); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid var(--border);">
+      <h2 id="ui-title" style="font-size: 28px; color: var(--text); letter-spacing: -0.5px; margin-bottom: 0.5rem;">Home vs Away</h2>
+      <div id="ui-streak" class="streak"></div>
+      <p id="ui-subtitle" style="font-size: 12px; color: var(--sub); margin-top: 0.75rem;">Motore: V9.6 - Analisi Integrale su NPxG, Qualit&agrave; e Tracking Data</p>
     </div>
 
-    <div class="card" style="border-top: 5px solid #000; background:#fefefe; box-shadow:0 8px 16px rgba(0,0,0,.08)">
-      <div class="section-title" style="color:#000; font-size:16px">👑 MASTER ENSEMBLE: La Sentenza Algoritmica</div>
-      <p style="font-size:11px;color:#555;margin-bottom:15px">Sintesi pesata dei motori (Dixon-Coles su NPxG, KNN tattico con peso dinamico, Markov 10%) e calcolo delle True Odds. Tutti i mercati derivano dalla stessa matrice Dixon-Coles.</p>
+
+    <!-- MASTER ENSEMBLE -->
+    <div class="card card-featured-dark">
+      <div class="section-title section-title-dark">
+        <span>&#128196;</span> Master Ensemble: La Sentenza Algoritmica
+      </div>
+      <p style="font-size: 11px; color: var(--sub); margin-bottom: 1rem; line-height: 1.5;">
+        Sintesi pesata dei motori (Dixon-Coles su NPxG, KNN tattico con peso dinamico, Markov 10%) e calcolo delle True Odds. 
+        Tutti i mercati derivano dalla stessa matrice Dixon-Coles.
+      </p>
       
-      <div class="grid-3" style="margin-bottom:15px">
-        <div style="text-align:center; background:#fff; padding:15px; border-radius:8px; border:2px solid var(--blue)">
-          <div style="font-size:12px;color:#888;font-weight:bold;text-transform:uppercase">1 (Casa)</div>
-          <div style="font-size:26px;font-weight:900;color:var(--blue)" id="master-1">--%</div>
-          <div style="font-size:11px;color:#888;margin-top:5px; padding-top:5px; border-top:1px dashed #eee">Quota Reale: <span id="m-odd-1" style="font-weight:bold;color:#333;font-size:14px">--</span></div>
+      <div class="grid-3" style="margin-bottom: 1.5rem;">
+        <div class="status-card" style="border-color: var(--blue);">
+          <div class="label">1 (Casa)</div>
+          <div class="value" id="master-1" style="color: var(--blue);">--%</div>
+          <div class="subtext">Quota Reale: <span id="m-odd-1" style="font-weight:bold; color: var(--text); font-size: 14px;">--</span></div>
         </div>
-        <div style="text-align:center; background:#fff; padding:15px; border-radius:8px; border:2px solid #555">
-          <div style="font-size:12px;color:#888;font-weight:bold;text-transform:uppercase">X (Pareggio)</div>
-          <div style="font-size:26px;font-weight:900;color:#555" id="master-x">--%</div>
-          <div style="font-size:11px;color:#888;margin-top:5px; padding-top:5px; border-top:1px dashed #eee">Quota Reale: <span id="m-odd-x" style="font-weight:bold;color:#333;font-size:14px">--</span></div>
+        <div class="status-card" style="border-color: #666;">
+          <div class="label">X (Pareggio)</div>
+          <div class="value" id="master-x" style="color: #666;">--%</div>
+          <div class="subtext">Quota Reale: <span id="m-odd-x" style="font-weight:bold; color: var(--text); font-size: 14px;">--</span></div>
         </div>
-        <div style="text-align:center; background:#fff; padding:15px; border-radius:8px; border:2px solid var(--red)">
-          <div style="font-size:12px;color:#888;font-weight:bold;text-transform:uppercase">2 (Trasf)</div>
-          <div style="font-size:26px;font-weight:900;color:var(--red)" id="master-2">--%</div>
-          <div style="font-size:11px;color:#888;margin-top:5px; padding-top:5px; border-top:1px dashed #eee">Quota Reale: <span id="m-odd-2" style="font-weight:bold;color:#333;font-size:14px">--</span></div>
+        <div class="status-card" style="border-color: var(--red);">
+          <div class="label">2 (Trasf)</div>
+          <div class="value" id="master-2" style="color: var(--red);">--%</div>
+          <div class="subtext">Quota Reale: <span id="m-odd-2" style="font-weight:bold; color: var(--text); font-size: 14px;">--</span></div>
         </div>
       </div>
       
-      <div class="grid-2">
-        <div style="background:#fff; border-radius:8px; padding:12px; border:1px solid #ddd;">
-          <div style="font-size:11px;font-weight:bold;color:#555;margin-bottom:8px">Confidence Score (Probabilità Calibrata)</div>
-          <div style="display:flex; align-items:center; gap:10px;">
-            <div style="font-size:22px; font-weight:900; color:var(--purple);" id="master-conf">--/100</div>
-            <div style="flex-grow:1; background:#eee; height:12px; border-radius:6px; overflow:hidden;">
-               <div id="conf-bar" style="height:100%; background:var(--purple); width:0%; transition: width 0.5s;"></div>
+      <div class="grid-2" style="margin-bottom: 1rem;">
+        <div class="info-box">
+          <div class="title">Confidence Score (Probabilit&agrave; Calibrata)</div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div class="value" id="master-conf" style="font-size: 24px; color: var(--purple);">--/100</div>
+            <div class="progress-container">
+              <div id="conf-bar" class="progress-bar"></div>
             </div>
           </div>
-          <div style="font-size:9px; color:#888; margin-top:5px">
-            <b>Si legge come probabilità di indovinare.</b> Confidence 64 = ~64% di azzeccare.
+          <div style="font-size: 9px; color: var(--sub); margin-top: 0.5rem;">
+            <b>Si legge come probabilit&agrave; di indovinare.</b> Confidence 64 = ~64% di azzeccare.
             Calibrata su 6824 partite reali (Europa+MLS+Turchia).
           </div>
-          <div style="font-size:9px; color:#666; margin-top:6px; background:#f7f7f9; border-radius:6px; padding:6px 8px; line-height:1.5">
-            <b>Come usarla:</b> <span style="color:var(--green)">≥60 = fascia buona</span> (64,7% hit reale, capita nel 12% delle partite) ·
-            <span style="color:var(--orange)">50-59 = incerta</span> ·
-            <span style="color:var(--red)">&lt;50 = sotto il coin-flip</span>.<br>
-            Oltre 70 succede solo nel 2,2% dei casi (1 partita su 45) e non migliora l'hit rispetto a 65: alzare troppo l'asticella toglie occasioni senza aggiungere precisione.
+          <div style="font-size: 9px; color: var(--sub); margin-top: 0.5rem; background: #f8f9fa; border-radius: 6px; padding: 0.5rem;">
+            <b>Come usarla:</b> 
+            <span style="color: var(--green)">&#8805;60 = fascia buona</span> (64,7% hit reale, capita nel 12% delle partite) 
+            &#8226; <span style="color: var(--orange)">50-59 = incerta</span> 
+            &#8226; <span style="color: var(--red)">&lt;50 = sotto il coin-flip</span>.<br>
+            Oltre 70 succede solo nel 2,2% dei casi (1 partita su 45).
           </div>
         </div>
-        <div style="background:#fff; border-radius:8px; padding:12px; border:1px solid #ddd;">
-          <div style="font-size:11px;font-weight:bold;color:#555;margin-bottom:5px">Alert: Smart Money & Blood Scent</div>
-          <div id="hidden-value-msg" style="font-size:12px; line-height:1.4; color:#333;">--</div>
+        <div class="info-box">
+          <div class="title">Alert: Smart Money & Blood Scent</div>
+          <div id="hidden-value-msg" style="font-size: 12px; line-height: 1.4; color: var(--text);">--</div>
         </div>
       </div>
-      <div style="margin-top:15px; background:#fff; border:1px solid #ddd; border-radius:8px; padding:12px">
-        <div style="font-size:11px;font-weight:bold;color:#555;margin-bottom:8px">💶 Confronto col Book: Valore Atteso e Stake</div>
-        <div class="grid-4" style="align-items:end">
-          <div><label style="font-size:10px;color:#555">Quota book 1</label><input type="number" step="0.01" id="bk-1" oninput="calcValue()" placeholder="es. 2.10"></div>
-          <div><label style="font-size:10px;color:#555">Quota book X</label><input type="number" step="0.01" id="bk-x" oninput="calcValue()" placeholder="es. 3.40"></div>
-          <div><label style="font-size:10px;color:#555">Quota book 2</label><input type="number" step="0.01" id="bk-2" oninput="calcValue()" placeholder="es. 3.60"></div>
-          <div><label style="font-size:10px;color:#555">Bankroll</label><input type="number" step="1" id="bk-bank" value="100" oninput="calcValue()"></div>
+      
+      <div style="background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 1rem;">
+        <div style="font-size: 11px; font-weight: bold; color: var(--sub); margin-bottom: 0.75rem;">
+          &#128197; Confronto col Book: Valore Atteso e Stake
         </div>
-        <div id="value-out" style="margin-top:10px; font-size:11px; color:#333"><span style="color:#888">Inserisci le quote del bookmaker: senza confronto col mercato una probabilita' non e' una scommessa.</span></div>
+        <div class="grid-4" style="align-items: end;">
+          <div>
+            <label style="font-size: 10px; color: var(--sub); display: block; margin-bottom: 0.25rem;">Quota book 1</label>
+            <input type="number" step="0.01" id="bk-1" oninput="calcValue()" placeholder="es. 2.10">
+          </div>
+          <div>
+            <label style="font-size: 10px; color: var(--sub); display: block; margin-bottom: 0.25rem;">Quota book X</label>
+            <input type="number" step="0.01" id="bk-x" oninput="calcValue()" placeholder="es. 3.40">
+          </div>
+          <div>
+            <label style="font-size: 10px; color: var(--sub); display: block; margin-bottom: 0.25rem;">Quota book 2</label>
+            <input type="number" step="0.01" id="bk-2" oninput="calcValue()" placeholder="es. 3.60">
+          </div>
+          <div>
+            <label style="font-size: 10px; color: var(--sub); display: block; margin-bottom: 0.25rem;">Bankroll</label>
+            <input type="number" step="1" id="bk-bank" value="100" oninput="calcValue()">
+          </div>
+        </div>
+        <div id="value-out" style="margin-top: 0.75rem; font-size: 11px; color: var(--text);">
+          <span style="color: var(--sub)">Inserisci le quote del bookmaker: senza confronto col mercato una probabilit&agrave; non &egrave; una scommessa.</span>
+        </div>
       </div>
     </div>
 
-    <div class="card" style="border-top: 4px solid var(--orange); background:#fffaf5">
-      <div class="section-title" style="color:var(--orange)">🎯 Qualità del Tiro, Cinismo & Palle Inattive</div>
-      <p style="font-size:10px;color:#555;margin-bottom:10px">Misura la letalità (xG per Tiro / xGOT) vs i gol attesi (NPxG) e le grandi occasioni da rete.</p>
-      <table class="table-ui" style="background:transparent; margin-bottom:10px">
-          <tr><th>Squadra</th><th>NPxG vs Qualità Tiro</th><th>Dipendenza P.Inattiva</th><th>Big Chances (C / S)</th></tr>
-          <tr><td style="color:var(--blue); font-weight:bold">Casa</td><td id="l-xgot-h" style="font-weight:bold">--</td><td id="l-set-h">--%</td><td id="l-bc-h">-- / --</td></tr>
-          <tr><td style="color:var(--red); font-weight:bold">Trasf</td><td id="l-xgot-a" style="font-weight:bold">--</td><td id="l-set-a">--%</td><td id="l-bc-a">-- / --</td></tr>
+
+    <!-- QUALITA DEL TIRO -->
+    <div class="card card-featured-orange">
+      <div class="section-title section-title-orange">
+        <span>&#127942;</span> Qualit&agrave; del Tiro, Cinismo & Palle Inattive
+      </div>
+      <p style="font-size: 10px; color: var(--sub); margin-bottom: 1rem;">Misura la letalit&agrave; (xG per Tiro / xGOT) vs i gol attesi (NPxG) e le grandi occasioni da rete.</p>
+      
+      <table class="table-ui">
+        <thead>
+          <tr>
+            <th style="text-align: left;">Squadra</th>
+            <th>NPxG vs Qualit&agrave; Tiro</th>
+            <th>Dipendenza P.Inattiva</th>
+            <th>Big Chances (C / S)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="color: var(--blue); font-weight: bold;">Casa</td>
+            <td id="l-xgot-h" style="font-weight: bold;">--</td>
+            <td id="l-set-h">--%</td>
+            <td id="l-bc-h">-- / --</td>
+          </tr>
+          <tr>
+            <td style="color: var(--red); font-weight: bold;">Trasf</td>
+            <td id="l-xgot-a" style="font-weight: bold;">--</td>
+            <td id="l-set-a">--%</td>
+            <td id="l-bc-a">-- / --</td>
+          </tr>
+        </tbody>
       </table>
-      <div id="lethality-dialogue" style="font-size:11px; line-height:1.5; color:#1c1c1e; padding:8px; background:#fff; border-radius:6px; border:1px solid #ffe0b2"></div>
+      <div id="lethality-dialogue" style="font-size: 11px; line-height: 1.5; color: var(--text); padding: 0.75rem; background: #fff; border-radius: 6px; border: 1px solid #ffe0b2; margin-top: 0.75rem;"></div>
     </div>
 
+
+    <!-- DIFESA & ATTACCO -->
     <div class="grid-2">
-      <div class="card" style="border-top: 4px solid #d32f2f; background:#fffafa">
-        <div class="section-title" style="color:#d32f2f">🛡️ Fase di Non-Possesso & Gegenpressing</div>
-        <p style="font-size:10px;color:#555;margin-bottom:10px">Misura la compattezza e l'aggressività difensiva.</p>
-        <table class="table-ui" style="background:transparent">
-            <tr><th>Squadra</th><th>Altezza Dif.</th><th>Lunghezza Sq.</th><th>Recuperi &lt;5s</th><th>Choke Index</th></tr>
-            <tr><td style="color:var(--blue); font-weight:bold">Casa</td><td id="np-defx-h">--</td><td id="np-len-h">--</td><td id="np-cp-h">--</td><td id="np-choke-h" style="font-weight:bold; color:var(--blue)">--</td></tr>
-            <tr><td style="color:var(--red); font-weight:bold">Trasf</td><td id="np-defx-a">--</td><td id="np-len-a">--</td><td id="np-cp-a">--</td><td id="np-choke-a" style="font-weight:bold; color:var(--red)">--</td></tr>
+      <div class="card" style="border-top: 4px solid var(--red); background: #fffafa;">
+        <div class="section-title" style="color: var(--red);">
+          <span>&#128737;</span> Fase di Non-Possesso & Gegenpressing
+        </div>
+        <p style="font-size: 10px; color: var(--sub); margin-bottom: 1rem;">Misura la compattezza e l'aggressivit&agrave; difensiva.</p>
+        
+        <table class="table-ui">
+          <thead>
+            <tr>
+              <th style="text-align: left;">Squadra</th>
+              <th>Altezza Dif.</th>
+              <th>Lunghezza Sq.</th>
+              <th>Recuperi &lt;5s</th>
+              <th>Choke Index</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="color: var(--blue); font-weight: bold;">Casa</td>
+              <td id="np-defx-h">--</td>
+              <td id="np-len-h">--</td>
+              <td id="np-cp-h">--</td>
+              <td id="np-choke-h" style="font-weight: bold; color: var(--blue);">--</td>
+            </tr>
+            <tr>
+              <td style="color: var(--red); font-weight: bold;">Trasf</td>
+              <td id="np-defx-a">--</td>
+              <td id="np-len-a">--</td>
+              <td id="np-cp-a">--</td>
+              <td id="np-choke-a" style="font-weight: bold; color: var(--red);">--</td>
+            </tr>
+          </tbody>
         </table>
-        <div id="defensive-dialogue" style="font-size:11px; line-height:1.5; color:#1c1c1e; padding:8px; background:#fff; border-radius:6px; border:1px solid #ffcdd2; margin-top:10px"></div>
+        <div id="defensive-dialogue" style="font-size: 11px; line-height: 1.5; color: var(--text); padding: 0.75rem; background: #fff; border-radius: 6px; border: 1px solid #ffcdd2; margin-top: 0.75rem;"></div>
       </div>
 
-      <div class="card" style="border-top: 4px solid #009688; background:#f4fbf8">
-        <div class="section-title" style="color:#009688">🧭 Funnel Offensivo (Flusso e Penetrazione)</div>
-        <p style="font-size:10px;color:#555;margin-bottom:10px">Misura quanto è sterile il possesso e la capacità di entrare in area.</p>
-        <div class="grid-3" style="margin-bottom:10px">
-            <div class="tdi-box"><div style="font-size:10px; color:#666">Baricentro Casa</div><div id="tr-x-h" style="font-size:18px; color:var(--blue)">--m</div></div>
-            <div class="tdi-box"><div style="font-size:10px; color:#666">Stile Offensivo</div><div id="tr-style" style="font-size:12px; margin-top:5px; color:#111">--</div></div>
-            <div class="tdi-box"><div style="font-size:10px; color:#666">Baricentro Trasf</div><div id="tr-x-a" style="font-size:18px; color:var(--red)">--m</div></div>
+      <div class="card" style="border-top: 4px solid var(--tact); background: #f4fbf8;">
+        <div class="section-title" style="color: var(--tact);">
+          <span>&#129329;</span> Funnel Offensivo (Flusso e Penetrazione)
         </div>
-        <table class="table-ui" style="background:transparent; margin-bottom:10px">
-            <tr><th>Squadra</th><th>Ingressi Trequarti</th><th>Tocchi in Area</th><th>Indice Penetrazione</th></tr>
-            <tr><td style="color:var(--blue); font-weight:bold">Casa</td><td id="tr-f3-h">--</td><td id="tr-box-h">--</td><td id="tr-pen-h" style="font-weight:bold; color:var(--blue)">--%</td></tr>
-            <tr><td style="color:var(--red); font-weight:bold">Trasf</td><td id="tr-f3-a">--</td><td id="tr-box-a">--</td><td id="tr-pen-a" style="font-weight:bold; color:var(--red)">--%</td></tr>
+        <p style="font-size: 10px; color: var(--sub); margin-bottom: 1rem;">Misura quanto &egrave; sterile il possesso e la capacit&agrave; di entrare in area.</p>
+        
+        <div class="grid-3" style="margin-bottom: 1rem;">
+          <div class="tdi-box">
+            <div class="label">Baricentro Casa</div>
+            <div class="value" id="tr-x-h" style="color: var(--blue);">--m</div>
+          </div>
+          <div class="tdi-box">
+            <div class="label">Stile Offensivo</div>
+            <div class="value" id="tr-style" style="font-size: 14px; margin-top: 0.25rem; color: var(--text);">--</div>
+          </div>
+          <div class="tdi-box">
+            <div class="label">Baricentro Trasf</div>
+            <div class="value" id="tr-x-a" style="color: var(--red);">--m</div>
+          </div>
+        </div>
+        
+        <table class="table-ui">
+          <thead>
+            <tr>
+              <th style="text-align: left;">Squadra</th>
+              <th>Ingressi Trequarti</th>
+              <th>Tocchi in Area</th>
+              <th>Indice Penetrazione</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="color: var(--blue); font-weight: bold;">Casa</td>
+              <td id="tr-f3-h">--</td>
+              <td id="tr-box-h">--</td>
+              <td id="tr-pen-h" style="font-weight: bold; color: var(--blue);">--%</td>
+            </tr>
+            <tr>
+              <td style="color: var(--red); font-weight: bold;">Trasf</td>
+              <td id="tr-f3-a">--</td>
+              <td id="tr-box-a">--</td>
+              <td id="tr-pen-a" style="font-weight: bold; color: var(--red);">--%</td>
+            </tr>
+          </tbody>
         </table>
-        <div id="tactical-dialogue" style="font-size:11px; line-height:1.5; color:#1c1c1e; padding:8px; background:#fff; border-radius:6px; border:1px solid #e0f2f1"></div>
+        <div id="tactical-dialogue" style="font-size: 11px; line-height: 1.5; color: var(--text); padding: 0.75rem; background: #fff; border-radius: 6px; border: 1px solid #e0f2f1; margin-top: 0.75rem;"></div>
       </div>
     </div>
 
-    <div class="grid-2">
-        <div class="card" style="border-top: 4px solid var(--blue);">
-          <div class="section-title" style="color:var(--blue)">💰 1X2 Probabilità e Modelli (Base NPxG)</div>
-              <table class="table-ui" style="margin-bottom:0">
-                <tr><th>Mercato</th><th style="color:#555">GENERALE</th><th style="color:var(--blue)">SOLO RUOLO</th></tr>
-                <tr><td>1</td><td id="p1-over">--%</td><td id="p1-role" class="td-highlight">--%</td></tr>
-                <tr><td>X</td><td id="px-over">--%</td><td id="px-role" class="td-highlight">--%</td></tr>
-                <tr><td>2</td><td id="p2-over">--%</td><td id="p2-role" class="td-highlight">--%</td></tr>
-                <tr style="background:#f9f9f9"><td>1X</td><td id="p1x-over">--%</td><td id="p1x-role" class="td-highlight">--%</td></tr>
-                <tr style="background:#f9f9f9"><td>X2</td><td id="px2-over">--%</td><td id="px2-role" class="td-highlight">--%</td></tr>
-                <tr style="background:#f9f9f9"><td>12</td><td id="p12-over">--%</td><td id="p12-role" class="td-highlight">--%</td></tr>
-                <tr><td>Goal (GG)</td><td id="gg-over" style="color:var(--green)">--%</td><td id="gg-role" style="color:var(--green); font-weight:bold">--%</td></tr>
-                <tr><td>Over 2.5</td><td id="ov-over" style="color:var(--orange)">--%</td><td id="ov-role" style="color:var(--orange); font-weight:bold">--%</td></tr>
-              </table>
-              <div style="background:#fff; border:1px solid #ddd; border-radius:8px; padding:10px; margin-top:15px">
-                <div style="font-size:11px;font-weight:bold;color:#555;margin-bottom:6px">🎯 1X2 per Modello (con confidence specifico)</div>
-                <table class="table-ui" style="margin-bottom:0; font-size:11px">
-                  <tr><th>Modello</th><th>1</th><th>X</th><th>2</th></tr>
-                  <tr><td>Dixon-Coles (Ruolo)</td><td id="mdl-dc-1">--</td><td id="mdl-dc-x">--</td><td id="mdl-dc-2">--</td></tr>
-                  <tr><td>KNN Storico</td><td id="mdl-knn-1">--</td><td id="mdl-knn-x">--</td><td id="mdl-knn-2">--</td></tr>
-                  <tr style="background:#f0f8ff"><td><b>Ordered Logit</b></td><td id="mdl-ol-1">--</td><td id="mdl-ol-x">--</td><td id="mdl-ol-2">--</td></tr>
-                  <tr><td>Markov (Score-flow)</td><td id="mdl-mk-1">--</td><td id="mdl-mk-x">--</td><td id="mdl-mk-2">--</td></tr>
-                  <tr style="background:#f0f8ff;font-weight:bold"><td>Ensemble</td><td id="mdl-ens-1" style="color:var(--purple)">--</td><td id="mdl-ens-x" style="color:var(--purple)">--</td><td id="mdl-ens-2" style="color:var(--purple)">--</td></tr>
-                  <tr style="background:#fef4e5"><td style="font-size:9px;color:#888">Confidence per esito</td>
-                    <td id="conf-p1" style="font-weight:bold;font-size:11px">--</td>
-                    <td id="conf-px" style="font-weight:bold;font-size:11px">--</td>
-                    <td id="conf-p2" style="font-weight:bold;font-size:11px">--</td>
-                  </tr>
-                </table>
-                <div style="font-size:9px; color:#888; margin-top:4px">Confidence per esito: quanto i 3 modelli concordano su QUELL'esito specifico.</div>
-              </div>
-              <div style="background:#fff; border:1px solid #ddd; border-radius:8px; padding:10px; margin-top:12px">
-                <div style="font-size:11px;font-weight:bold;color:#555;margin-bottom:6px">🎯 Doppie Chance & Gol (con confidence)</div>
-                <table class="table-ui" style="margin-bottom:0; font-size:11px">
-                  <tr><th>Modello</th><th>1X</th><th>X2</th><th>12</th><th>Goal</th><th>NoGoal</th><th>Ov 2.5</th><th>Un 2.5</th></tr>
-                  <tr><td>DC (Ruolo)</td>
-                    <td id="mdl-dc-1x">--</td><td id="mdl-dc-x2">--</td><td id="mdl-dc-12">--</td>
-                    <td id="mdl-dc-gg">--</td><td id="mdl-dc-ng">--</td>
-                    <td id="mdl-dc-ov">--</td><td id="mdl-dc-un">--</td>
-                  </tr>
-                  <tr><td>KNN</td>
-                    <td id="mdl-knn-1x">--</td><td id="mdl-knn-x2">--</td><td id="mdl-knn-12">--</td>
-                    <td id="mdl-knn-gg">--</td><td id="mdl-knn-ng">--</td>
-                    <td id="mdl-knn-ov">--</td><td id="mdl-knn-un">--</td>
-                  </tr>
-                  <tr style="background:#fef4e5"><td style="font-size:9px;color:#888">Confidence</td>
-                    <td id="conf-1x" style="font-weight:bold;font-size:11px">--</td>
-                    <td id="conf-x2" style="font-weight:bold;font-size:11px">--</td>
-                    <td id="conf-12" style="font-weight:bold;font-size:11px">--</td>
-                    <td id="conf-gg" style="font-weight:bold;font-size:11px">--</td>
-                    <td id="conf-ng" style="font-weight:bold;font-size:11px">--</td>
-                    <td id="conf-ov" style="font-weight:bold;font-size:11px">--</td>
-                    <td id="conf-un" style="font-weight:bold;font-size:11px">--</td>
-                  </tr>
-                </table>
-                <div style="font-size:9px; color:#888; margin-top:4px">Ciascun mercato ha il suo confidence — le doppie chance possono essere piu' robuste degli esiti singoli, i mercati gol dipendono dalla varianza totale.</div>
-              </div>
-              <div style="background:#f0f8ff; border-radius:8px; padding:15px; display:flex; flex-direction:column; justify-content:center; margin-top:15px">
-                  <div style="font-size:12px; font-weight:bold; text-align:center; color:var(--blue); margin-bottom:15px">QUOTE REALI (FAIR ODDS) SUL RUOLO</div>
-                  <div class="grid-3">
-                      <div class="odds-box"><div style="font-size:10px; color:#555">Quota 1</div><div class="odds-val" id="odd-1">--</div></div>
-                      <div class="odds-box"><div style="font-size:10px; color:#555">Quota X</div><div class="odds-val" id="odd-x" style="color:#555">--</div></div>
-                      <div class="odds-box"><div style="font-size:10px; color:#555">Quota 2</div><div class="odds-val" id="odd-2" style="color:var(--red)">--</div></div>
-                  </div>
-              </div>
-        </div>
 
-        <div class="card" style="border-top: 4px solid #fbc02d; background:#fffde7">
-            <div class="section-title" style="color:#fbc02d">⚖️ Punti Attesi dagli xG (con test di significativita')</div>
-            <p style="font-size:10px;color:#555;margin-bottom:10px">Punti reali vs punti attesi simulando ogni partita dagli xG. Lo scarto viene giudicato solo se supera l'errore standard: sotto quella soglia e' rumore, non fortuna.</p>
-            <table class="table-ui" style="background:transparent">
-                <tr><th>Squadra</th><th>Punti/Match Reali</th><th>Punti/Match Attesi</th><th>Diagnosi</th></tr>
-                <tr><td style="color:var(--blue); font-weight:bold" id="pyt-name-h">Casa</td><td id="pyt-act-h">--%</td><td id="pyt-exp-h">--%</td><td id="pyt-diag-h">--</td></tr>
-                <tr><td style="color:var(--red); font-weight:bold" id="pyt-name-a">Trasf</td><td id="pyt-act-a">--%</td><td id="pyt-exp-a">--%</td><td id="pyt-diag-a">--</td></tr>
-            </table>
-            <div class="section-title" style="color:#fbc02d; margin-top:20px">🔥 Top Scorers</div>
-            <div style="font-size:11px; line-height:1.4; color:#1c1c1e;">
-              <strong>Casa:</strong> <span id="ts-h"></span><br><br>
-              <strong>Trasf:</strong> <span id="ts-a"></span>
-            </div>
+    <!-- PROBABILITA -->
+    <div class="grid-2">
+      <div class="card card-featured-blue">
+        <div class="section-title section-title-blue">
+          <span>&#128198;</span> 1X2 Probabilit&agrave; e Modelli (Base NPxG)
         </div>
+        
+        <table class="table-ui">
+          <thead>
+            <tr>
+              <th>Mercato</th>
+              <th style="color: var(--sub);">GENERALE</th>
+              <th style="color: var(--blue);">SOLO RUOLO</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>1</td><td id="p1-over">--%</td><td id="p1-role" class="td-highlight">--%</td></tr>
+            <tr><td>X</td><td id="px-over">--%</td><td id="px-role" class="td-highlight">--%</td></tr>
+            <tr><td>2</td><td id="p2-over">--%</td><td id="p2-role" class="td-highlight">--%</td></tr>
+            <tr style="background: #f8f9fa;"><td>1X</td><td id="p1x-over">--%</td><td id="p1x-role" class="td-highlight">--%</td></tr>
+            <tr style="background: #f8f9fa;"><td>X2</td><td id="px2-over">--%</td><td id="px2-role" class="td-highlight">--%</td></tr>
+            <tr style="background: #f8f9fa;"><td>12</td><td id="p12-over">--%</td><td id="p12-role" class="td-highlight">--%</td></tr>
+            <tr><td>Goal (GG)</td><td id="gg-over" style="color: var(--green);">--%</td><td id="gg-role" style="color: var(--green); font-weight: bold;">--%</td></tr>
+            <tr><td>Over 2.5</td><td id="ov-over" style="color: var(--orange);">--%</td><td id="ov-role" style="color: var(--orange); font-weight: bold;">--%</td></tr>
+          </tbody>
+        </table>
+        
+        <div style="background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin-top: 1rem;">
+          <div style="font-size: 11px; font-weight: bold; color: var(--sub); margin-bottom: 0.5rem;">
+            &#127942; 1X2 per Modello (con confidence specifico)
+          </div>
+          <table class="table-ui" style="font-size: 11px;">
+            <thead>
+              <tr><th>Modello</th><th>1</th><th>X</th><th>2</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Dixon-Coles (Ruolo)</td><td id="mdl-dc-1">--</td><td id="mdl-dc-x">--</td><td id="mdl-dc-2">--</td></tr>
+              <tr><td>KNN Storico</td><td id="mdl-knn-1">--</td><td id="mdl-knn-x">--</td><td id="mdl-knn-2">--</td></tr>
+              <tr style="background: #f0f8ff;"><td><b>Ordered Logit</b></td><td id="mdl-ol-1">--</td><td id="mdl-ol-x">--</td><td id="mdl-ol-2">--</td></tr>
+              <tr><td>Markov (Score-flow)</td><td id="mdl-mk-1">--</td><td id="mdl-mk-x">--</td><td id="mdl-mk-2">--</td></tr>
+              <tr style="background: #f0f8ff; font-weight: bold;"><td>Ensemble</td><td id="mdl-ens-1" style="color: var(--purple);">--</td><td id="mdl-ens-x" style="color: var(--purple);">--</td><td id="mdl-ens-2" style="color: var(--purple);">--</td></tr>
+              <tr style="background: #fef4e5;"><td style="font-size: 9px; color: var(--sub);">Confidence per esito</td>
+                <td id="conf-p1" style="font-weight: bold; font-size: 11px;">--</td>
+                <td id="conf-px" style="font-weight: bold; font-size: 11px;">--</td>
+                <td id="conf-p2" style="font-weight: bold; font-size: 11px;">--</td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="font-size: 9px; color: var(--sub); margin-top: 0.25rem;">Confidence per esito: quanto i 3 modelli concordano su QUELL'esito specifico.</div>
+        </div>
+        
+        <div style="background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin-top: 0.75rem;">
+          <div style="font-size: 11px; font-weight: bold; color: var(--sub); margin-bottom: 0.5rem;">
+            &#127942; Doppie Chance & Gol (con confidence)
+          </div>
+          <table class="table-ui" style="font-size: 11px;">
+            <thead>
+              <tr><th>Modello</th><th>1X</th><th>X2</th><th>12</th><th>Goal</th><th>NoGoal</th><th>Ov 2.5</th><th>Un 2.5</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>DC (Ruolo)</td>
+                <td id="mdl-dc-1x">--</td><td id="mdl-dc-x2">--</td><td id="mdl-dc-12">--</td>
+                <td id="mdl-dc-gg">--</td><td id="mdl-dc-ng">--</td>
+                <td id="mdl-dc-ov">--</td><td id="mdl-dc-un">--</td>
+              </tr>
+              <tr><td>KNN</td>
+                <td id="mdl-knn-1x">--</td><td id="mdl-knn-x2">--</td><td id="mdl-knn-12">--</td>
+                <td id="mdl-knn-gg">--</td><td id="mdl-knn-ng">--</td>
+                <td id="mdl-knn-ov">--</td><td id="mdl-knn-un">--</td>
+              </tr>
+              <tr style="background: #fef4e5;"><td style="font-size: 9px; color: var(--sub);">Confidence</td>
+                <td id="conf-1x" style="font-weight: bold; font-size: 11px;">--</td>
+                <td id="conf-x2" style="font-weight: bold; font-size: 11px;">--</td>
+                <td id="conf-12" style="font-weight: bold; font-size: 11px;">--</td>
+                <td id="conf-gg" style="font-weight: bold; font-size: 11px;">--</td>
+                <td id="conf-ng" style="font-weight: bold; font-size: 11px;">--</td>
+                <td id="conf-ov" style="font-weight: bold; font-size: 11px;">--</td>
+                <td id="conf-un" style="font-weight: bold; font-size: 11px;">--</td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="font-size: 9px; color: var(--sub); margin-top: 0.25rem;">Ciascun mercato ha il suo confidence - le doppie chance possono essere pi&ugrave; robuste degli esiti singoli, i mercati gol dipendono dalla varianza totale.</div>
+        </div>
+        
+        <div style="background: #f0f8ff; border-radius: 8px; padding: 1rem; margin-top: 1rem; text-align: center;">
+          <div style="font-size: 12px; font-weight: bold; color: var(--blue); margin-bottom: 1rem;">QUOTE REALI (FAIR ODDS) SUL RUOLO</div>
+          <div class="grid-3">
+            <div class="odds-box"><div style="font-size: 10px; color: var(--sub);">Quota 1</div><div class="odds-val" id="odd-1">--</div></div>
+            <div class="odds-box"><div style="font-size: 10px; color: var(--sub);">Quota X</div><div class="odds-val" id="odd-x" style="color: #666;">--</div></div>
+            <div class="odds-box"><div style="font-size: 10px; color: var(--sub);">Quota 2</div><div class="odds-val" id="odd-2" style="color: var(--red);">--</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="border-top: 4px solid #fbc02d; background: #fffde7;">
+        <div class="section-title" style="color: #fbc02d;">
+          <span>&#9881;</span> Punti Attesi dagli xG (con test di significativit&agrave;)
+        </div>
+        <p style="font-size: 10px; color: var(--sub); margin-bottom: 1rem;">Punti reali vs punti attesi simulando ogni partita dagli xG. Lo scarto viene giudicato solo se supera l'errore standard: sotto quella soglia &egrave; rumore, non fortuna.</p>
+        
+        <table class="table-ui">
+          <thead>
+            <tr>
+              <th style="text-align: left;">Squadra</th>
+              <th>Punti/Match Reali</th>
+              <th>Punti/Match Attesi</th>
+              <th>Diagnosi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="color: var(--blue); font-weight: bold;" id="pyt-name-h">Casa</td>
+              <td id="pyt-act-h">--%</td>
+              <td id="pyt-exp-h">--%</td>
+              <td id="pyt-diag-h">--</td>
+            </tr>
+            <tr>
+              <td style="color: var(--red); font-weight: bold;" id="pyt-name-a">Trasf</td>
+              <td id="pyt-act-a">--%</td>
+              <td id="pyt-exp-a">--%</td>
+              <td id="pyt-diag-a">--</td>
+            </tr>
+          </tbody>
+        </table>
+        
+        <div class="section-title" style="color: #fbc02d; margin-top: 1.5rem;">
+          <span>&#128194;</span> Top Scorers
+        </div>
+        <div style="font-size: 11px; line-height: 1.4; color: var(--text);">
+          <strong>Casa:</strong> <span id="ts-h"></span><br><br>
+          <strong>Trasf:</strong> <span id="ts-a"></span>
+        </div>
+      </div>
     </div>
 
-    <div class="card" style="border-top: 4px solid var(--purple);">
-      <div class="section-title" style="color:var(--purple)">📈 Progressione Storica: Trend Analitico</div>
-      <div style="margin-bottom:5px; font-weight:bold; color:var(--blue); font-size:12px" id="prog-h-name">Casa</div>
+
+    <!-- PROGRESSIONE STORICA -->
+    <div class="card card-featured-purple">
+      <div class="section-title section-title-purple">
+        <span>&#128194;</span> Progressione Storica: Trend Analitico
+      </div>
+      <div style="margin-bottom: 0.5rem; font-weight: bold; color: var(--blue); font-size: 13px;" id="prog-h-name">Casa</div>
       <table class="table-ui" id="table-prog-h"></table>
-      <div style="margin-bottom:5px; margin-top:15px; font-weight:bold; color:var(--red); font-size:12px" id="prog-a-name">Trasferta</div>
+      <div style="margin-bottom: 0.5rem; margin-top: 1rem; font-weight: bold; color: var(--red); font-size: 13px;" id="prog-a-name">Trasferta</div>
       <table class="table-ui" id="table-prog-a"></table>
     </div>
 
+
+    <!-- DISTRIBUZIONE GOL & SOPRAVVIVENZA -->
     <div class="grid-2">
-        <div class="card" style="border-top: 4px solid #e91e63;">
-          <div class="section-title" style="color:#e91e63">⏱️ Distribuzione Gol (Fatti e Subiti)</div>
-          <table class="table-ui" style="margin-bottom:0; text-align:left;">
+      <div class="card" style="border-top: 4px solid #e91e63; background: #fff0f5;">
+        <div class="section-title" style="color: #e91e63;">
+          <span>&#8987;</span> Distribuzione Gol (Fatti e Subiti)
+        </div>
+        <table class="table-ui" style="text-align: left;">
+          <thead>
             <tr>
               <th>Fascia</th>
-              <th colspan="2" style="color:var(--blue); border-left:1px solid #eee; text-align:center">Casa</th>
-              <th colspan="2" style="color:var(--red); border-left:1px solid #eee; text-align:center">Trasferta</th>
+              <th colspan="2" style="color: var(--blue); border-left: 1px solid var(--border); text-align: center;">Casa</th>
+              <th colspan="2" style="color: var(--red); border-left: 1px solid var(--border); text-align: center;">Trasferta</th>
             </tr>
             <tr>
-              <th style="border-bottom:2px solid #ddd">Minuti</th>
-              <th style="border-bottom:2px solid #ddd; border-left:1px solid #eee">Fatti</th>
-              <th style="border-bottom:2px solid #ddd">Subiti</th>
-              <th style="border-bottom:2px solid #ddd; border-left:1px solid #eee">Fatti</th>
-              <th style="border-bottom:2px solid #ddd">Subiti</th>
+              <th style="border-bottom: 2px solid var(--border);">Minuti</th>
+              <th style="border-bottom: 2px solid var(--border); border-left: 1px solid var(--border);">Fatti</th>
+              <th style="border-bottom: 2px solid var(--border);">Subiti</th>
+              <th style="border-bottom: 2px solid var(--border); border-left: 1px solid var(--border);">Fatti</th>
+              <th style="border-bottom: 2px solid var(--border);">Subiti</th>
             </tr>
-            <tbody id="timing-body"></tbody>
-          </table>
+          </thead>
+          <tbody id="timing-body"></tbody>
+        </table>
+      </div>
+
+      <div class="card" style="border-top: 4px solid #9c27b0; background: #f3e5f5;">
+        <div class="section-title" style="color: #9c27b0;">
+          <span>&#8983;</span> Analisi di Sopravvivenza (Goal Timing)
         </div>
-        <div class="card" style="border-top: 4px solid #9c27b0; background:#f3e5f5">
-          <div class="section-title" style="color:#9c27b0">⏳ Analisi di Sopravvivenza (Goal Timing)</div>
-          <p style="font-size:10px; color:#555; margin-bottom:15px">Modello Esponenziale calcolato sull'intensità di gioco.</p>
-          <div style="background:#fff; border-radius:8px; padding:12px; margin-bottom:10px; border:1px solid #e1bee7">
-              <div style="font-size:11px; font-weight:bold; color:#555">Probabilità 1° Gol prima del 30:00'</div>
-              <div style="font-size:22px; font-weight:900; color:#9c27b0" id="surv-30">--%</div>
-          </div>
-          <div style="background:#fff; border-radius:8px; padding:12px; border:1px solid #e1bee7">
-              <div style="font-size:11px; font-weight:bold; color:#555">Probabilità Over 0.5 Primo Tempo (45:00')</div>
-              <div style="font-size:22px; font-weight:900; color:#9c27b0" id="surv-45">--%</div>
-          </div>
+        <p style="font-size: 10px; color: var(--sub); margin-bottom: 1rem;">Modello Esponenziale calcolato sull'intensit&agrave; di gioco.</p>
+        
+        <div style="background: #fff; border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem; border: 1px solid #e1bee7;">
+          <div style="font-size: 11px; font-weight: bold; color: var(--sub); margin-bottom: 0.5rem;">Probabilit&agrave; 1&deg; Gol prima del 30:00'</div>
+          <div style="font-size: 24px; font-weight: 900; color: #9c27b0;" id="surv-30">--%</div>
         </div>
+        <div style="background: #fff; border-radius: 8px; padding: 1rem; border: 1px solid #e1bee7;">
+          <div style="font-size: 11px; font-weight: bold; color: var(--sub); margin-bottom: 0.5rem;">Probabilit&agrave; Over 0.5 Primo Tempo (45:00')</div>
+          <div style="font-size: 24px; font-weight: 900; color: #9c27b0;" id="surv-45">--%</div>
+        </div>
+      </div>
     </div>
 
+
+    <!-- DIXON-COLES & SKELLAM -->
     <div class="card" style="border-top: 4px solid #607d8b;">
-      <div class="section-title" style="color:#607d8b">🎯 Modello Dixon-Coles (NPxG) & Skellam Distribution</div>
-      <div class="grid-2">
-          <div>
-            <div style="font-size:11px; font-weight:bold; margin-bottom:5px; color:#555">Top 6 Risultati Esatti</div>
-            <div class="grid-3" id="exact-scores" style="margin-bottom:15px"></div>
-          </div>
-          <div>
-              <div style="font-size:11px; font-weight:bold; margin-bottom:5px; color:#555">Asian Handicap (da matrice Dixon-Coles)</div>
-              <table class="table-ui" id="table-ah" style="margin-bottom:0"></table>
-          </div>
+      <div class="section-title" style="color: #607d8b;">
+        <span>&#127942;</span> Modello Dixon-Coles (NPxG) & Skellam Distribution
       </div>
-      <div class="grid-3" style="margin-top:10px; border-top:1px dashed #ccc; padding-top:15px">
-        <div><div style="font-size:11px; font-weight:bold; margin-bottom:5px; color:#555">Multigol Match</div><div id="mg-tot" style="display:flex; flex-direction:column; gap:4px"></div></div>
-        <div><div style="font-size:11px; font-weight:bold; margin-bottom:5px; color:var(--blue)">Multigol Casa</div><div id="mg-h" style="display:flex; flex-direction:column; gap:4px"></div></div>
-        <div><div style="font-size:11px; font-weight:bold; margin-bottom:5px; color:var(--red)">Multigol Trasf.</div><div id="mg-a" style="display:flex; flex-direction:column; gap:4px"></div></div>
+      <div class="grid-2">
+        <div>
+          <div style="font-size: 11px; font-weight: bold; margin-bottom: 0.5rem; color: var(--sub);">Top 6 Risultati Esatti</div>
+          <div class="grid-3" id="exact-scores" style="margin-bottom: 1rem;"></div>
+        </div>
+        <div>
+          <div style="font-size: 11px; font-weight: bold; margin-bottom: 0.5rem; color: var(--sub);">Asian Handicap (da matrice Dixon-Coles)</div>
+          <table class="table-ui" id="table-ah"></table>
+        </div>
+      </div>
+      <div class="grid-3" style="margin-top: 1rem; border-top: 1px dashed var(--border); padding-top: 1rem;">
+        <div>
+          <div style="font-size: 11px; font-weight: bold; margin-bottom: 0.5rem; color: var(--sub);">Multigol Match</div>
+          <div id="mg-tot" style="display: flex; flex-direction: column; gap: 4px;"></div>
+        </div>
+        <div>
+          <div style="font-size: 11px; font-weight: bold; margin-bottom: 0.5rem; color: var(--blue);">Multigol Casa</div>
+          <div id="mg-h" style="display: flex; flex-direction: column; gap: 4px;"></div>
+        </div>
+        <div>
+          <div style="font-size: 11px; font-weight: bold; margin-bottom: 0.5rem; color: var(--red);">Multigol Trasf.</div>
+          <div id="mg-a" style="display: flex; flex-direction: column; gap: 4px;"></div>
+        </div>
       </div>
     </div>
 
+
+    <!-- ALTA VARIANZA & EFFICIENZA -->
     <div class="grid-2">
       <div class="card" style="border-top: 4px solid var(--orange);">
-        <div class="section-title" style="color:var(--orange)">📐 Alta Varianza e Disciplina</div>
+        <div class="section-title" style="color: var(--orange);">
+          <span>&#128196;</span> Alta Varianza e Disciplina
+        </div>
         <table class="table-ui">
-          <tr><th>Mercato</th><th style="color:#555">GENERALE</th><th style="color:var(--orange)">SOLO RUOLO</th></tr>
-          <tr><td>Corner Attesi (Tot)</td><td id="cor-tot-over">--</td><td id="cor-tot-role" class="td-highlight">--</td></tr>
-          <tr><td>Prob Over 9.5 Corner</td><td id="pov9-cor-over">--%</td><td id="pov9-cor-role" style="font-weight:bold; color:var(--blue)">--%</td></tr>
-          <tr style="background:#f9f9f9"><td>SoT Attesi (Tot)</td><td id="sot-tot-over">--</td><td id="sot-tot-role" class="td-highlight">--</td></tr>
-          <tr style="background:#f9f9f9"><td>Prob Over 8.5 SoT</td><td id="pov8-sot-over">--%</td><td id="pov8-sot-role" style="font-weight:bold; color:var(--purple)">--%</td></tr>
-          <tr><td>Falli Attesi (Tot)</td><td id="fls-tot-over">--</td><td id="fls-tot-role" class="td-highlight">--</td></tr>
-          <tr><td>Gialli Attesi (Tot)</td><td id="yel-tot-over">--</td><td id="yel-tot-role" class="td-highlight">--</td></tr>
-          <tr><td>Prob Over 3.5 Gialli</td><td id="pov3-yel-over">--%</td><td id="pov3-yel-role" style="font-weight:bold; color:var(--orange)">--%</td></tr>
-          <tr><td>Prob. Cart. Rosso</td><td id="red-tot-over" style="color:var(--red); font-weight:bold">--%</td><td id="red-tot-role" style="color:var(--red); font-weight:bold" class="td-highlight">--%</td></tr>
+          <thead>
+            <tr>
+              <th>Mercato</th>
+              <th style="color: var(--sub);">GENERALE</th>
+              <th style="color: var(--orange);">SOLO RUOLO</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Corner Attesi (Tot)</td><td id="cor-tot-over">--</td><td id="cor-tot-role" class="td-highlight">--</td></tr>
+            <tr><td>Prob Over 9.5 Corner</td><td id="pov9-cor-over">--%</td><td id="pov9-cor-role" style="font-weight: bold; color: var(--blue);">--%</td></tr>
+            <tr style="background: #f8f9fa;"><td>SoT Attesi (Tot)</td><td id="sot-tot-over">--</td><td id="sot-tot-role" class="td-highlight">--</td></tr>
+            <tr style="background: #f8f9fa;"><td>Prob Over 8.5 SoT</td><td id="pov8-sot-over">--%</td><td id="pov8-sot-role" style="font-weight: bold; color: var(--purple);">--%</td></tr>
+            <tr><td>Falli Attesi (Tot)</td><td id="fls-tot-over">--</td><td id="fls-tot-role" class="td-highlight">--</td></tr>
+            <tr><td>Gialli Attesi (Tot)</td><td id="yel-tot-over">--</td><td id="yel-tot-role" class="td-highlight">--</td></tr>
+            <tr><td>Prob Over 3.5 Gialli</td><td id="pov3-yel-over">--%</td><td id="pov3-yel-role" style="font-weight: bold; color: var(--orange);">--%</td></tr>
+            <tr><td>Prob. Cart. Rosso</td><td id="red-tot-over" style="color: var(--red); font-weight: bold;">--%</td><td id="red-tot-role" style="color: var(--red); font-weight: bold;" class="td-highlight">--%</td></tr>
+          </tbody>
         </table>
       </div>
 
       <div class="card" style="border-top: 4px solid #5a5a8a;">
-        <div class="section-title" style="color:#5a5a8a">🔬 Analisi Incrociata: Z-Score ed Efficienza</div>
+        <div class="section-title" style="color: #5a5a8a;">
+          <span>&#128194;</span> Analisi Incrociata: Z-Score ed Efficienza
+        </div>
         <table class="table-ui">
-          <tr><th>Parametro (Z-Score)</th><th style="color:#555">GENERALE</th><th style="color:var(--blue)">SOLO RUOLO</th></tr>
-          <tr><td>NPxG Attesi Casa</td><td id="z-xg-h-ov">--</td><td id="z-xg-h-ro" class="td-highlight">--</td></tr>
-          <tr><td>Z-Score Casa</td><td id="z-b-h-ov">--</td><td id="z-b-h-ro" class="td-highlight">--</td></tr>
-          <tr style="background:#f9f9f9"><td>NPxG Attesi Trasf</td><td id="z-xg-a-ov">--</td><td id="z-xg-a-ro" class="td-highlight-red">--</td></tr>
-          <tr style="background:#f9f9f9"><td>Z-Score Trasf</td><td id="z-b-a-ov">--</td><td id="z-b-a-ro" class="td-highlight-red">--</td></tr>
+          <thead>
+            <tr>
+              <th>Parametro (Z-Score)</th>
+              <th style="color: var(--sub);">GENERALE</th>
+              <th style="color: var(--blue);">SOLO RUOLO</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>NPxG Attesi Casa</td><td id="z-xg-h-ov">--</td><td id="z-xg-h-ro" class="td-highlight">--</td></tr>
+            <tr><td>Z-Score Casa</td><td id="z-b-h-ov">--</td><td id="z-b-h-ro" class="td-highlight">--</td></tr>
+            <tr style="background: #f8f9fa;"><td>NPxG Attesi Trasf</td><td id="z-xg-a-ov">--</td><td id="z-xg-a-ro" class="td-highlight-red">--</td></tr>
+            <tr style="background: #f8f9fa;"><td>Z-Score Trasf</td><td id="z-b-a-ov">--</td><td id="z-b-a-ro" class="td-highlight-red">--</td></tr>
+          </tbody>
         </table>
         
-        <div class="section-title" style="color:#7b1fa2; margin-top:15px">⚡ Efficienza Goal vs NPxG</div>
+        <div class="section-title" style="color: #7b1fa2; margin-top: 1rem;">
+          <span>&#9700;</span> Efficienza Goal vs NPxG
+        </div>
         <table class="table-ui">
-          <tr><th>Contesto</th><th>Goal Fatti</th><th>xG Prodotti</th><th>Efficienza</th></tr>
-          <tr><td style="color:var(--blue); font-weight:bold" id="lbl-eff-h1">Casa (Gen)</td><td id="e-gf-ho">--</td><td id="e-xg-ho">--</td><td id="e-ef-ho">--</td></tr>
-          <tr style="background:#f0f8ff"><td style="color:var(--blue); font-weight:bold" id="lbl-eff-h2">Casa (Ruolo)</td><td id="e-gf-hr">--</td><td id="e-xg-hr">--</td><td id="e-ef-hr">--</td></tr>
-          <tr><td style="color:var(--red); font-weight:bold" id="lbl-eff-a1">Trasf (Gen)</td><td id="e-gf-ao">--</td><td id="e-xg-ao">--</td><td id="e-ef-ao">--</td></tr>
-          <tr style="background:#ffebee"><td style="color:var(--red); font-weight:bold" id="lbl-eff-a2">Trasf (Ruolo)</td><td id="e-gf-ar">--</td><td id="e-xg-ar">--</td><td id="e-ef-ar">--</td></tr>
+          <thead>
+            <tr>
+              <th>Contesto</th>
+              <th>Goal Fatti</th>
+              <th>xG Prodotti</th>
+              <th>Efficienza</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td style="color: var(--blue); font-weight: bold;" id="lbl-eff-h1">Casa (Gen)</td><td id="e-gf-ho">--</td><td id="e-xg-ho">--</td><td id="e-ef-ho">--</td></tr>
+            <tr style="background: #f0f8ff;"><td style="color: var(--blue); font-weight: bold;" id="lbl-eff-h2">Casa (Ruolo)</td><td id="e-gf-hr">--</td><td id="e-xg-hr">--</td><td id="e-ef-hr">--</td></tr>
+            <tr><td style="color: var(--red); font-weight: bold;" id="lbl-eff-a1">Trasf (Gen)</td><td id="e-gf-ao">--</td><td id="e-xg-ao">--</td><td id="e-ef-ao">--</td></tr>
+            <tr style="background: #ffebee;"><td style="color: var(--red); font-weight: bold;" id="lbl-eff-a2">Trasf (Ruolo)</td><td id="e-gf-ar">--</td><td id="e-xg-ar">--</td><td id="e-ef-ar">--</td></tr>
+          </tbody>
         </table>
       </div>
     </div>
 
+
+    <!-- KNN -->
     <div class="card" style="border-top: 4px solid var(--knn);">
-      <div class="section-title" style="color:var(--knn)">🔍 K-Nearest Neighbors (11 dimensioni tattiche, kernel pesato) &amp; Formazioni</div>
+      <div class="section-title" style="color: var(--knn);">
+        <span>&#128269;</span> K-Nearest Neighbors (11 dimensioni tattiche, kernel pesato) & Formazioni
+      </div>
       <table class="table-ui">
-        <tr><th>Squadra</th><th>Modulo Usato</th><th>Contro Modulo Avv.</th><th>Contesto</th><th>Match vs Avv.</th><th>Punti/Match</th></tr>
-        <tr id="row-form-ho"><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
-        <tr id="row-form-hr" style="background:#f0f8ff"><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
-        <tr id="row-form-ao"><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
-        <tr id="row-form-ar" style="background:#ffebee"><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
+        <thead>
+          <tr>
+            <th>Squadra</th>
+            <th>Modulo Usato</th>
+            <th>Contro Modulo Avv.</th>
+            <th>Contesto</th>
+            <th>Match vs Avv.</th>
+            <th>Punti/Match</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr id="row-form-ho"><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
+          <tr id="row-form-hr" style="background: #f0f8ff;"><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
+          <tr id="row-form-ao"><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
+          <tr id="row-form-ar" style="background: #ffebee;"><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
+        </tbody>
       </table>
       
-      <div class="grid-2" style="margin-top:15px; margin-bottom:15px">
-        <div style="background:#fdf2f8;border-radius:8px;padding:10px;border:1px solid #f8bbd0"><div style="font-size:11px;font-weight:bold;color:var(--knn);margin-bottom:6px" id="knn-title-h">Casa vs Simili</div><div id="knn-list-h"></div><div style="margin-top:6px;font-size:10px;color:#555" id="knn-res-h">Rendimento: -- Pts/Match</div></div>
-        <div style="background:#fdf2f8;border-radius:8px;padding:10px;border:1px solid #f8bbd0"><div style="font-size:11px;font-weight:bold;color:var(--knn);margin-bottom:6px" id="knn-title-a">Trasf vs Simili</div><div id="knn-list-a"></div><div style="margin-top:6px;font-size:10px;color:#555" id="knn-res-a">Rendimento: -- Pts/Match</div></div>
+      <div class="grid-2" style="margin-top: 1rem; margin-bottom: 1rem;">
+        <div style="background: #fdf2f8; border-radius: 8px; padding: 1rem; border: 1px solid #f8bbd0;">
+          <div style="font-size: 11px; font-weight: bold; color: var(--knn); margin-bottom: 0.5rem;" id="knn-title-h">Casa vs Simili</div>
+          <div id="knn-list-h"></div>
+          <div style="margin-top: 0.5rem; font-size: 10px; color: var(--sub);" id="knn-res-h">Rendimento: -- Pts/Match</div>
+        </div>
+        <div style="background: #fdf2f8; border-radius: 8px; padding: 1rem; border: 1px solid #f8bbd0;">
+          <div style="font-size: 11px; font-weight: bold; color: var(--knn); margin-bottom: 0.5rem;" id="knn-title-a">Trasf vs Simili</div>
+          <div id="knn-list-a"></div>
+          <div style="margin-top: 0.5rem; font-size: 10px; color: var(--sub);" id="knn-res-a">Rendimento: -- Pts/Match</div>
+        </div>
       </div>
     </div>
 
+
+    <!-- MARKOV & ELO -->
     <div class="grid-2">
       <div class="card" style="border-top: 4px solid #1565c0;">
-        <div class="section-title" style="color:#1565c0">⛓️ Asymmetric Markov Chain</div>
+        <div class="section-title" style="color: #1565c0;">
+          <span>&#9883;</span> Asymmetric Markov Chain
+        </div>
         <table class="table-ui">
-          <tr><th>Stato Finale</th><th style="color:#555">GENERALE</th><th style="color:var(--blue)">SOLO RUOLO</th></tr>
-          <tr><td>Vittoria netta Casa (+2)</td><td id="mk-h2-ov">--%</td><td id="mk-h2-ro" class="td-highlight">--%</td></tr>
-          <tr><td>Vittoria misurata Casa (+1)</td><td id="mk-h1-ov">--%</td><td id="mk-h1-ro" class="td-highlight">--%</td></tr>
-          <tr><td>Pareggio (0)</td><td id="mk-x-ov">--%</td><td id="mk-x-ro" class="td-highlight">--%</td></tr>
-          <tr><td>Vittoria misurata Trasf (-1)</td><td id="mk-a1-ov">--%</td><td id="mk-a1-ro" class="td-highlight">--%</td></tr>
-          <tr><td>Vittoria netta Trasf (-2)</td><td id="mk-a2-ov">--%</td><td id="mk-a2-ro" class="td-highlight">--%</td></tr>
+          <thead>
+            <tr>
+              <th>Stato Finale</th>
+              <th style="color: var(--sub);">GENERALE</th>
+              <th style="color: var(--blue);">SOLO RUOLO</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Vittoria netta Casa (+2)</td><td id="mk-h2-ov">--%</td><td id="mk-h2-ro" class="td-highlight">--%</td></tr>
+            <tr><td>Vittoria misurata Casa (+1)</td><td id="mk-h1-ov">--%</td><td id="mk-h1-ro" class="td-highlight">--%</td></tr>
+            <tr><td>Pareggio (0)</td><td id="mk-x-ov">--%</td><td id="mk-x-ro" class="td-highlight">--%</td></tr>
+            <tr><td>Vittoria misurata Trasf (-1)</td><td id="mk-a1-ov">--%</td><td id="mk-a1-ro" class="td-highlight">--%</td></tr>
+            <tr><td>Vittoria netta Trasf (-2)</td><td id="mk-a2-ov">--%</td><td id="mk-a2-ro" class="td-highlight">--%</td></tr>
+          </tbody>
         </table>
       </div>
 
       <div class="card" style="border-top: 4px solid #3f51b5;">
-        <div class="section-title" style="color:#3f51b5">♟️ ELO Rating e Trend Penalty</div>
-        <table class="table-ui" style="margin-top:20px">
-          <tr><th>Squadra</th><th style="color:#555">ELO ATTUALE</th><th style="color:var(--orange)">TREND (Ult 5 vs Prec 10)</th></tr>
-          <tr><td style="color:var(--blue); font-weight:bold" id="elo-name-h">Casa</td><td id="elo-h-ov" style="font-size:16px; font-weight:bold">--</td><td id="elo-h-tr" style="font-size:14px; font-weight:bold">--</td></tr>
-          <tr><td style="color:var(--red); font-weight:bold" id="elo-name-a">Trasferta</td><td id="elo-a-ov" style="font-size:16px; font-weight:bold">--</td><td id="elo-a-tr" style="font-size:14px; font-weight:bold">--</td></tr>
+        <div class="section-title" style="color: #3f51b5;">
+          <span>&#9731;</span> ELO Rating e Trend Penalty
+        </div>
+        <table class="table-ui" style="margin-top: 1rem;">
+          <thead>
+            <tr>
+              <th>Squadra</th>
+              <th style="color: var(--sub);">ELO ATTUALE</th>
+              <th style="color: var(--orange);">TREND (Ult 5 vs Prec 10)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="color: var(--blue); font-weight: bold;" id="elo-name-h">Casa</td>
+              <td id="elo-h-ov" style="font-size: 16px; font-weight: bold;">--</td>
+              <td id="elo-h-tr" style="font-size: 14px; font-weight: bold;">--</td>
+            </tr>
+            <tr>
+              <td style="color: var(--red); font-weight: bold;" id="elo-name-a">Trasferta</td>
+              <td id="elo-a-ov" style="font-size: 16px; font-weight: bold;">--</td>
+              <td id="elo-a-tr" style="font-size: 14px; font-weight: bold;">--</td>
+            </tr>
+          </tbody>
         </table>
       </div>
     </div>
 
+
+    <!-- MEGA PROMPT -->
     <div class="card" style="border-top: 4px solid var(--text);">
-      <div class="section-title" style="color:var(--text)">🤖 MEGA-PROMPT per Claude AI</div>
-      <button class="btn btn-dark" style="margin-bottom:10px" onclick="copiaPrompt()">📋 Copia Mega-Prompt</button>
+      <div class="section-title" style="color: var(--text);">
+        <span>&#129302;</span> MEGA-PROMPT per Claude AI
+      </div>
+      <button class="btn btn-dark" style="margin-bottom: 1rem;" onclick="copiaPrompt()">
+        <span>&#128190;</span> Copia Mega-Prompt
+      </button>
       <textarea id="ai-prompt" readonly></textarea>
     </div>
-    
-    <div class="card" style="border-top:4px solid #455a64">
-      <div class="section-title" style="color:#455a64">🧪 Copertura Dati API (diagnostica)</div>
-      <p style="font-size:10px;color:#555;margin-bottom:10px">Percentuale di partite in cui l'API ha effettivamente restituito ogni metrica. <b>0%</b> significa che il provider non la espone: il valore altrove e' N/D, non zero. Una copertura <b>intermedia su un conteggio</b> e' normale, perche' le chiavi assenti vengono lette come zero. Una copertura intermedia su un <b>rapporto</b> indica invece partite senza dati avanzati, escluse dalle medie.</p>
+
+    <!-- COPERTURA DATI API -->
+    <div class="card" style="border-top: 4px solid #455a64;">
+      <div class="section-title" style="color: #455a64;">
+        <span>&#129328;</span> Copertura Dati API (diagnostica)
+      </div>
+      <p style="font-size: 10px; color: var(--sub); margin-bottom: 1rem; line-height: 1.5;">
+        Percentuale di partite in cui l'API ha effettivamente restituito ogni metrica. 
+        <b>0%</b> significa che il provider non la espone: il valore altrove &egrave; N/D, non zero. 
+        Una copertura <b>intermedia su un conteggio</b> &egrave; normale, perch&eacute; le chiavi assenti vengono lette come zero. 
+        Una copertura intermedia su un <b>rapporto</b> indica invece partite senza dati avanzati, escluse dalle medie.
+      </p>
       <table class="table-ui" id="table-coverage"></table>
     </div>
 
+    <!-- MACCHINA DEL TEMPO -->
     <div class="card">
-      <div class="section-title">📂 Macchina del Tempo: Partite Analizzate (Taglio Esatto)</div>
+      <div class="section-title">
+        <span>&#128196;</span> Macchina del Tempo: Partite Analizzate (Taglio Esatto)
+      </div>
       <div class="grid-2">
         <div class="log-box"><table class="table-ui" id="table-log-home"></table></div>
         <div class="log-box"><table class="table-ui" id="table-log-away"></table></div>
@@ -425,6 +1179,7 @@ textarea{width:100%;min-height:350px;font-size:11px;font-family:monospace;border
   </div>
 </div>
 
+<script>
 <script>
 /* =========================================================================
    SCANNER v9.6
