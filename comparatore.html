@@ -656,7 +656,11 @@ async function cmpCaricaDatabase() {
     const lId = document.getElementById('cmp-league').value;
     const season = document.getElementById('cmp-season').value;
     const targetDate = document.getElementById('cmp-target-date').value;
-    if (!cCode || !lId || !season || !targetDate) return alert("Seleziona tutti i campi");
+    if (!cCode || !lId || !season || !targetDate) {
+      const manca = [!cCode && 'Paese', !lId && 'Lega', !season && 'Stagione',
+                     !targetDate && 'Data'].filter(Boolean).join(', ');
+      return alert('Mancano questi campi: ' + manca);
+    }
 
     cmpCurrentLeagueId = lId;
 
@@ -1089,7 +1093,14 @@ async function cmpAggregateExtraMetrics(pastMatches, targetMs, teamId) {
         prod[k].push(get(me) ?? null);
         conc[k].push(opp ? (get(opp) ?? null) : null);
       }
-    } catch (e) { /* partita senza dati advanced: saltata */ }
+    } catch (e) {
+      // Una partita senza dati advanced e' normale (PitchAPI li espone solo dalle
+      // top leghe europee, dal 2025). Un errore di rete invece no: distinguo,
+      // altrimenti un problema di connessione passa per assenza di dati.
+      if (!/404|ANALYTICS_UNAVAILABLE|not found/i.test(String(e && e.message))) {
+        cmpLog(`   ⚠️ errore su /advanced di ${m.id}: ${e && e.message}`);
+      }
+    }
   }
   if (!times.length) return null;
 
@@ -1776,6 +1787,12 @@ function cmpSetMode(m){
 function cmpRefreshMatches(){
   const dOne = document.getElementById('cmp-target-date');
   const dDay = document.getElementById('cmp-day-date');
+  // La sincronizzazione deve avvenire SEMPRE, anche prima del caricamento:
+  // cmpCaricaDatabase legge cmp-target-date, ma in modalita' "un giorno" o
+  // "periodo" l'utente compila un campo diverso. Se uscissimo prima di aver
+  // allineato le date, il caricamento partirebbe con la data vuota.
+  if (dDay && dDay.value && dOne && !dOne.value) dOne.value = dDay.value;
+  if (dOne && dOne.value && dDay && !dDay.value) dDay.value = dOne.value;
   if (cmpMode==='day' && dDay && dDay.value && dOne) dOne.value = dDay.value;
   if (cmpMode==='one' && dOne && dOne.value && dDay) dDay.value = dOne.value;
   if (typeof cmpAllMatches==='undefined' || !cmpAllMatches.length) return;
@@ -1786,7 +1803,25 @@ function cmpRefreshMatches(){
   const sel = document.getElementById('cmp-partita');
   if (sel){
     sel.innerHTML='';
-    if(!cmpMatchesOfTheDay.length){ sel.innerHTML='<option>nessuna partita conclusa in questa data</option>'; }
+    if(!cmpMatchesOfTheDay.length){
+      // Distinguo i tre motivi per cui la lista puo' essere vuota, altrimenti
+      // "nessuna partita" sembra un errore del programma invece che una data
+      // in cui non si gioca o fuori dalle stagioni caricate.
+      const done = cmpAllMatches.filter(m => m.status==='finished' && m.time_utc)
+                                .map(m => m.time_utc.slice(0,10)).sort();
+      let msg = 'nessuna partita conclusa in questa data';
+      if (done.length) {
+        if (target < done[0] || target > done[done.length-1])
+          msg = `data fuori dallo storico caricato (${done[0]} → ${done[done.length-1]})`;
+        else {
+          const vicine = [...new Set(done)].filter(d => Math.abs(new Date(d) - new Date(target)) <= 4*86400000);
+          msg = vicine.length ? `nessuna partita il ${target} — si gioca il ${vicine.join(', ')}`
+                              : `nessuna partita il ${target} (turno di sosta?)`;
+        }
+      }
+      sel.innerHTML = `<option>${msg}</option>`;
+      cmpLog(`⚠️ ${msg}`);
+    }
     else{
       sel.add(new Option('— seleziona —',''));
       cmpMatchesOfTheDay.forEach(m=>sel.add(new Option(
