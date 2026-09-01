@@ -1083,7 +1083,17 @@ async function cmpAggregateExtraMetrics(pastMatches, targetMs, teamId) {
 
   for (const m of sample) {
     try {
-      const advRes = await globalThis.apiCall(`/matches/${m.id}/advanced`, true);
+      // Il motore ha gia' scaricato questo match dentro RAW_CACHE (4 endpoint in un
+      // colpo solo). Riusiamo quello: prima qui partiva una /advanced per ogni match
+      // storico di ogni squadra, ~30 chiamate per partita analizzata, tutte inutili.
+      let advRes = null;
+      const cached = globalThis.__RAW_CACHE && globalThis.__RAW_CACHE[m.id];
+      if (cached && cached[2]) advRes = cached[2];
+      else if (typeof globalThis.__fetchMatchRaw === 'function') {
+        const r = await globalThis.__fetchMatchRaw(m.id); advRes = r && r[2];
+      } else {
+        advRes = await globalThis.apiCall(`/matches/${m.id}/advanced`, true);
+      }
       const teams = advRes?.data?.teams || [];
       const me  = teams.find(x => x?.team?.id === teamId);
       const opp = teams.find(x => x?.team?.id !== teamId);
@@ -1425,7 +1435,7 @@ function cmpBuildResult(match, R, actH, actA) {
     return Math.max(0, Math.min(100, Math.round(100 * (1-sp) * sf)));
   };
   return {
-    tgt: { hName: match.home_team.name, aName: match.away_team.name, sH: actH.gf, sA: actA.gf, time: match.time_utc },
+    tgt: { id: match.id, hName: match.home_team.name, aName: match.away_team.name, sH: actH.gf, sA: actA.gf, time: match.time_utc },
     R, actH, actA, outcome, gg, ov, goalTot, prevH, prevA,
     conf: {
       c1: _conf([R.probsRole?.p1, R.probsKnn?.p1, R.mk_ro?.p1]),
@@ -1450,6 +1460,9 @@ function cmpBuildResult(match, R, actH, actA) {
       H: R._predExtraH || null,
       A: R._predExtraA || null
     },
+    matchId: match.id,
+    leagueId: cmpCurrentLeagueId,
+    season: (document.getElementById('cmp-season')?.value) || null,
     tuning: { shrinkK: CMP_K_LIST[0], shrinkLamK: window.SHRINK_LAM_K, kList: CMP_K_LIST.slice() },
     kRuns: R._kRuns || null,
     // ELO (v5) — per validare il fix HFA dinamico + K adattivo + regressione stagionale
@@ -1518,6 +1531,21 @@ function cmpExportCSV() {
   rows.push(hRow.join(';'));
   const aRow = ['SQUADRA TRASFERTA']; M.forEach(m => aRow.push(m.tgt.aName, '', '', ''));
   rows.push(aRow.join(';'));
+
+  // Identificatori: senza questi, agganciare una fonte esterna (quote, infortuni)
+  // costringe a incrociare le righe sui nomi delle squadre, dove "Inter",
+  // "Internazionale" e "Inter Milan" sono la stessa squadra per te e tre diverse
+  // per il computer. Con match_id l'aggancio e' esatto.
+  const idRow = ['MATCH ID'];
+  M.forEach(m => idRow.push(m.tgt.id || m.matchId || 'N/D', '', '', ''));
+  rows.push(idRow.join(';'));
+
+  const lgRow = ['LEGA'], seRow = ['STAGIONE'];
+  M.forEach(m => {
+    lgRow.push(m.leagueId || cmpCurrentLeagueId || 'N/D', '', '', '');
+    seRow.push(m.season || (document.getElementById('cmp-season')?.value) || 'N/D', '', '', '');
+  });
+  rows.push(lgRow.join(';')); rows.push(seRow.join(';'));
 
   const scoreRow = ['SCORE'];
   M.forEach(m => scoreRow.push(`${m.tgt.sH}-${m.tgt.sA}`, '', 'Esito:', m.outcome));

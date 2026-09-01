@@ -1060,12 +1060,18 @@ function extractSafeStat(data, keys, isHome) {
 }
 // una sola chiamata API per match, condivisa fra le due squadre (gli scontri diretti non si scaricano due volte)
 let RAW_CACHE = {};
+// Esposta su window: il comparatore calcola le metriche avanzate sugli stessi match
+// che il motore ha appena scaricato. Senza questo rifarebbe una chiamata /advanced
+// per ogni partita storica di ogni squadra — circa 30 richieste per partita analizzata,
+// tutte per dati gia' presenti qui dentro.
+window.__RAW_CACHE = RAW_CACHE;
 async function fetchMatchRaw(id) {
   if (RAW_CACHE[id]) return RAW_CACHE[id];
   const res = await Promise.all([ apiCall(`/matches/${id}/stats`, true), apiCall(`/matches/${id}/lineups`, true), apiCall(`/matches/${id}/advanced`, true), apiCall(`/matches/${id}/events`, true) ]);
-  RAW_CACHE[id] = res; await sleep(180);
+  RAW_CACHE[id] = res; window.__RAW_CACHE = RAW_CACHE; await sleep(180);
   return res;
 }
+window.__fetchMatchRaw = (typeof fetchMatchRaw !== 'undefined') ? fetchMatchRaw : null;
 
 async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) {
   logConsole(`Filtro lo storico per ${teamName}...`);
