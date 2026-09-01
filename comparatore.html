@@ -197,6 +197,8 @@ select{cursor:pointer}
     <div class="banner" id="banner-export">
       <span>Partite salvate e pronte per l'export</span>
       <span class="count" id="export-count">0</span>
+      <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="cmpExportCSV()">Scarica Excel</button>
+      <button class="btn btn-sm" onclick="cmpSvuota()">Svuota</button>
     </div>
 
     <!-- STEP 2 -->
@@ -949,7 +951,7 @@ async function cmpEseguiIntervallo() {
 
   const mins = ((Date.now()-t0)/60000).toFixed(1);
   prog.innerHTML = `✅ Intervallo completato in ${mins} min! ${ok} partite salvate${fail?`, ${fail} saltate`:''}. Totale in memoria: ${cmpSavedMatches.length}. Premi "Scarica Excel".`;
-  document.getElementById('banner-export').style.display = 'block';
+  document.getElementById('banner-export').style.display = 'flex';
   document.getElementById('export-count').textContent = cmpSavedMatches.length;
   document.getElementById('cmp-results').classList.remove('hidden');
   document.getElementById('cmp-header-info').textContent = `Intervallo ${startDate} → ${endDate}: ${ok} partite pronte per l'export`;
@@ -991,7 +993,7 @@ async function cmpEseguiTutte() {  if (!cmpMatchesOfTheDay.length) return alert(
   }
 
   prog.innerHTML = `✅ Fatto! ${ok} partite salvate${fail?`, ${fail} saltate`:''}. Totale in memoria: ${cmpSavedMatches.length}. Premi "Scarica Excel".`;
-  document.getElementById('banner-export').style.display = 'block';
+  document.getElementById('banner-export').style.display = 'flex';
   document.getElementById('export-count').textContent = cmpSavedMatches.length;
   // FIX: mostro il pannello risultati così compare il pulsante "Scarica Excel" (prima restava
   // nascosto nel batch, perché veniva svelato solo da cmpRender del singolo).
@@ -1454,9 +1456,19 @@ function cmpBuildResult(match, R, actH, actA) {
 function cmpSalva() {
   if (!cmpCurrentResult) return alert("Prima esegui il confronto");
   cmpSavedMatches.push(cmpCurrentResult);
-  document.getElementById('banner-export').style.display = 'block';
+  document.getElementById('banner-export').style.display = 'flex';
   document.getElementById('export-count').textContent = cmpSavedMatches.length;
   cmpLog(`💾 Salvato (totale: ${cmpSavedMatches.length})`);
+}
+
+// Azzera le partite salvate: utile per iniziare un batch nuovo senza ricaricare
+// la pagina, che costringerebbe a riscaricare tutto lo storico della lega.
+function cmpSvuota() {
+  if (!cmpSavedMatches.length) return;
+  if (!confirm(`Elimino le ${cmpSavedMatches.length} partite salvate? Lo storico della lega resta in cache.`)) return;
+  cmpSavedMatches.length = 0;
+  document.getElementById('export-count').textContent = '0';
+  cmpLog('Archivio svuotato: lo storico della lega resta caricato.');
 }
 
 function cmpExportCSV() {

@@ -2,67 +2,170 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Scanner V9.7 - Confidence x Mercato</title>
 <style>
-:root { --bg: #f2f2f7; --card: #ffffff; --text: #1c1c1e; --sub: #8e8e93; --blue: #007aff; --red: #c62828; --green: #2d7d32; --orange: #f57c00; --purple: #6a1b9a; --knn: #d81b60; --tact: #00897b; --dark: #111;}
+/* ═══════════════════════════════════════════════════════════════════════════
+   Design system condiviso con il comparatore: stessi colori, stessi raggi,
+   stessa tipografia. Le classi storiche dello scanner (card, section-title,
+   table-ui, grid-2/3/4, btn-dark, btn-green, odds-box...) sono rimappate qui
+   sotto, cosi' il markup esistente non va toccato.
+   In fondo il blocco mobile: lo scanner nasce desktop e ha ~300 stili inline
+   con misure fisse, quindi li' serve !important per neutralizzarli.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root{
+  --bg:#0f1116; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
+  --txt:#e8eaed; --dim:#9aa3b2; --accent:#4f8cff; --accent2:#00c2a8;
+  --ok:#22c55e; --warn:#f59e0b; --err:#ef4444;
+  --radius:14px;
+  /* alias storici usati dal codice per colorare esiti, scarti e badge */
+  --green:#22c55e; --red:#f87171; --orange:#fbbf24; --blue:#60a5fa;
+  --purple:#a78bfa; --dark:#e8eaed; --card:#171a21; --sub:#9aa3b2;
+}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:13px}
-.wrap{max-width:1050px;margin:0 auto;padding:1.5rem 1rem 4rem}
-h1{font-size:22px;font-weight:800;letter-spacing:-.03em;margin-bottom:1.5rem; display:flex; align-items:center; gap:10px;}
-h1 span{font-size:13px;font-weight:600;background:var(--dark);color:white;padding:3px 8px;border-radius:6px;}
-.card{background:var(--card);border-radius:12px;padding:1.2rem;margin-bottom:15px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
-.section-title{font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--text);margin-bottom:12px; border-bottom:2px solid #edf2f7; padding-bottom:6px; display:flex; align-items:center; gap:8px;}
-input[type=text],input[type=password],input[type=date],select,input[type=number]{width:100%;font-size:13px;border:1px solid #d1d1d6;border-radius:8px;padding:8px 12px;background:#fff;}
-input:focus,select:focus{outline:none;border-color:var(--blue);}
-textarea{width:100%;min-height:350px;font-size:11px;font-family:monospace;border:1px solid #d1d1d6;border-radius:8px;padding:12px;background:#f9f9fb;resize:vertical;line-height:1.5}
-.btn{border:none;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px; width:100%;}
-.btn:hover{opacity:0.9;}
-.btn-blue{background:var(--blue);color:#fff}
-.btn-green{background:var(--green);color:#fff;font-size:14px;padding:12px}
-.btn-purple{background:var(--purple);color:#fff}
-.btn-dark{background:var(--dark);color:#fff}
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.grid-3{display:grid;grid-template-columns:repeat(3, 1fr);gap:12px}
-.grid-4{display:grid;grid-template-columns:repeat(4, 1fr);gap:8px}
-.table-ui{width:100%;border-collapse:collapse;font-size:12px; margin-bottom:10px;}
-.table-ui th{font-size:10px;font-weight:600;color:#8e8e93;padding:8px;text-align:center;border-bottom:2px solid #ddd;background:#fafafa}
-.table-ui th:first-child{text-align:left}
-.table-ui td{padding:8px;border-bottom:1px solid #f2f2f7;color:#3c3c43;text-align:center;}
-.table-ui td:first-child{text-align:left;color:#1c1c1e;font-weight:600}
-.table-ui tr:hover td{background:#fcfcfc}
-.td-highlight {background:#f0f8ff; font-weight:bold; color:var(--blue);}
-.td-highlight-red {background:#ffebee; font-weight:bold; color:var(--red);}
-.bucket-bar { height: 16px; border-radius: 4px; font-size:10px; font-weight:bold; color:white; text-align:right; padding-right:6px; line-height:16px; min-width: 15px;}
-.bg-hf { background: var(--blue); }
-.bg-hc { background: #90caf9; color: #1c1c1e; }
-.bg-af { background: var(--red); }
-.bg-ac { background: #ef9a9a; color: #1c1c1e; }
-.log-box{max-height:250px;overflow-y:auto;border:1px solid #eee;border-radius:8px;}
-.badge{padding:2px 6px;border-radius:4px;font-size:9px;font-weight:bold;color:white;}
-.bg-v{background:var(--green)} .bg-p{background:#f57c00} .bg-s{background:var(--red)}
-.card-small {background:var(--blue); color:white; padding:4px 6px; border-radius:6px; text-align:center;}
-#console-loader{background:#1e1e1e;color:#00ff00;font-family:monospace;padding:12px;border-radius:8px;font-size:11px;height:120px;overflow-y:auto;margin-top:15px;display:none; line-height:1.4}
-.odds-box {background:#fff; border:2px solid var(--blue); border-radius:8px; padding:10px; text-align:center;}
-.odds-val {font-size:18px; font-weight:900; color:var(--blue); margin-top:4px;}
-.tdi-box {padding:10px; border-radius:8px; background:#f9f9f9; color:#111; font-weight:bold; border:1px solid #eee; text-align:center;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,system-ui,sans-serif;
+  background:var(--bg); color:var(--txt); font-size:14px; line-height:1.5;
+  padding:24px 16px 64px;
+}
+.wrap,.container{max-width:1240px;margin:0 auto}
+h1{font-size:20px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px}
+h2{font-size:16px;font-weight:700}
+a{color:var(--accent)}
+
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:22px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:11px;flex-wrap:wrap}
+
+/* ---------- card ---------- */
+.card,.card-small{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:20px;margin-bottom:16px;
+}
+.card-small{padding:14px}
+.section-title{
+  font-size:14px;font-weight:700;letter-spacing:0;text-transform:none;
+  color:var(--txt);margin-bottom:14px;padding-bottom:10px;
+  border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;
+}
+
+/* ---------- griglie ---------- */
+.grid-2,.grid-3,.grid-4{display:grid;gap:12px}
+.grid-2{grid-template-columns:repeat(2,1fr)}
+.grid-3{grid-template-columns:repeat(3,1fr)}
+.grid-4{grid-template-columns:repeat(4,1fr)}
+
+/* ---------- form ---------- */
+label{display:block;font-size:11px;font-weight:600;color:var(--dim);margin-bottom:6px}
+input,select,textarea{
+  width:100%;padding:10px 12px;border-radius:10px;font-size:13px;
+  background:var(--panel2);border:1px solid var(--line);color:var(--txt);
+  font-family:inherit;transition:.15s;
+}
+input:focus,select:focus{outline:none;border-color:var(--accent)}
+select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--dim) 50%),linear-gradient(135deg,var(--dim) 50%,transparent 50%);
+  background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:34px}
+
+/* ---------- bottoni ---------- */
+.btn{
+  border:1px solid var(--line);border-radius:10px;padding:11px 16px;
+  font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;
+  background:var(--panel2);color:var(--txt);transition:.15s;
+}
+.btn:hover{border-color:var(--accent);background:#242936}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-dark,.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn-dark:hover,.btn-primary:hover{filter:brightness(1.1);background:var(--accent)}
+.btn-green{background:var(--ok);border-color:var(--ok);color:#0f1116}
+.btn-green:hover{filter:brightness(1.1);background:var(--ok)}
+.btn-sm{padding:7px 12px;font-size:12px}
+.btn-full{width:100%}
+
+/* ---------- tabelle ---------- */
+.tbl-scroll{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.table-ui{width:100%;border-collapse:collapse;font-size:13px}
+.table-ui th{
+  background:var(--panel2);color:var(--dim);font-weight:600;font-size:11px;
+  text-transform:uppercase;letter-spacing:.04em;padding:10px 12px;
+  border-bottom:1px solid var(--line);text-align:center;white-space:nowrap;
+}
+.table-ui td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:center;color:var(--txt)}
+.table-ui tr:last-child td{border-bottom:none}
+.table-ui td:first-child,.table-ui th:first-child{text-align:left}
+.table-ui tbody tr:hover{background:rgba(255,255,255,.03)}
+
+/* ---------- elementi specifici ---------- */
+.badge{font-size:11px;font-weight:600;padding:3px 9px;border-radius:99px;
+  background:var(--panel2);color:var(--dim);border:1px solid var(--line);display:inline-block}
+.odds-box{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px;text-align:center}
+.odds-val{font-size:22px;font-weight:800;color:var(--txt)}
+.log-box{
+  background:#0b0d12;border:1px solid var(--line);border-radius:10px;padding:12px;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;
+  color:#7ee787;max-height:260px;overflow:auto;line-height:1.55;
+}
+.bucket-bar{background:var(--panel2);border-radius:6px;overflow:hidden}
+.hidden{display:none}
+.bg-v,.bg-hf{background:rgba(34,197,94,.14)}
+.bg-s,.bg-hc{background:rgba(239,68,68,.14)}
+.bg-p{background:rgba(245,158,11,.14)}
+.bg-af,.bg-ac{background:rgba(79,140,255,.12)}
+
+/* ═══════════════════ MOBILE ═══════════════════
+   Lo scanner ha centinaia di stili inline pensati per il desktop: misure fisse,
+   font da 9-10px, griglie a 3-4 colonne. Su schermo stretto vanno annullati,
+   e uno stile inline si batte solo con !important. */
+@media(max-width:820px){
+  .grid-3,.grid-4{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:600px){
+  body{padding:14px 10px 48px;font-size:14px}
+  .card,.card-small{padding:14px !important;margin-bottom:12px;border-radius:12px}
+  .grid-2,.grid-3,.grid-4{grid-template-columns:1fr !important;gap:10px !important}
+  h1{font-size:17px}
+  .section-title{font-size:13px !important}
+
+  /* tabelle: scorrono in orizzontale invece di schiacciare le colonne */
+  .table-ui{min-width:520px;font-size:12px !important}
+  .table-ui th,.table-ui td{padding:8px 9px !important}
+
+  /* nessun testo sotto gli 11px: sullo scanner ce n'era a 9px */
+  [style*="font-size:9px"],[style*="font-size: 9px"],
+  [style*="font-size:10px"],[style*="font-size: 10px"]{font-size:11px !important}
+  [style*="font-size:22px"],[style*="font-size: 22px"]{font-size:19px !important}
+  [style*="font-size:32px"],[style*="font-size: 32px"]{font-size:24px !important}
+
+  /* larghezze e padding fissi ereditati dal desktop */
+  [style*="width:"]{max-width:100% !important}
+  [style*="padding:15px"],[style*="padding: 15px"]{padding:12px !important}
+  [style*="padding:20px"],[style*="padding: 20px"]{padding:14px !important}
+
+  .odds-val{font-size:19px}
+  .btn{width:100%;padding:12px 14px}
+  .btn-sm{width:auto}
+}
 </style>
 </head>
 <body>
 
 <div class="wrap">
-  <h1>Scanner V9.7 <span>Confidence x Mercato + Limit Fix</span></h1>
+  <div class="topbar">
+    <div class="brand">
+      <h1>Scanner V9.7</h1>
+      <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
+    </div>
+    <span class="badge" id="hdr-state">pronto</span>
+  </div>
 
   <div class="card" id="setup-card">
     <div class="section-title">🔍 Setup Simulazione: Database & Matchup</div>
     <div class="grid-2" style="margin-bottom:15px;">
-      <div><label style="font-size:10px;font-weight:bold;color:#555">API Key (PitchAPI)</label><input id="api-key" type="password" value=""></div>
-      <div><label style="font-size:10px;font-weight:bold;color:#555">Data Target (Time Machine)</label><input type="date" id="target-date"></div>
+      <div><label>API Key (PitchAPI)</label><input id="api-key" type="password" value=""></div>
+      <div><label>Data Target (Time Machine)</label><input type="date" id="target-date"></div>
     </div>
     <div class="grid-3" style="align-items:end; margin-bottom:15px;">
-      <div><label style="font-size:10px;font-weight:bold;color:#555">1. Paese</label><select id="sel-country" onchange="updateLeagues()"><option value="">-- In caricamento... --</option></select></div>
-      <div><label style="font-size:10px;font-weight:bold;color:#555">2. Lega Roster</label><select id="sel-league" onchange="updateSeasons()"><option value="">-- Seleziona --</option></select></div>
-      <div><label style="font-size:10px;font-weight:bold;color:#555">3. Stagione Base</label><select id="sel-season"><option value="">-- Seleziona --</option></select></div>
+      <div><label>1. Paese</label><select id="sel-country" onchange="updateLeagues()"><option value="">-- In caricamento... --</option></select></div>
+      <div><label>2. Lega Roster</label><select id="sel-league" onchange="updateSeasons()"><option value="">-- Seleziona --</option></select></div>
+      <div><label>3. Stagione Base</label><select id="sel-season"><option value="">-- Seleziona --</option></select></div>
     </div>
     <button class="btn btn-dark" id="btn-carica" onclick="caricaSquadreLega()">📥 1. Carica Database (Auto-include Leghe Minori)</button>
     <div id="console-loader"></div>
@@ -70,138 +173,138 @@ textarea{width:100%;min-height:350px;font-size:11px;font-family:monospace;border
     <div id="matchup-builder" style="display:none; margin-top:25px; border-top:2px solid #edf2f7; padding-top:15px;">
       <div class="section-title" style="color:var(--green)">⚡ Costruisci il Matchup</div>
       <div class="grid-3" style="align-items:end">
-        <div><label style="font-size:10px;font-weight:bold;color:#555">Squadra Casa</label><select id="sel-home" style="font-weight:bold;color:var(--blue)"></select></div>
-        <div><label style="font-size:10px;font-weight:bold;color:#555">Squadra Trasferta</label><select id="sel-away" style="font-weight:bold;color:var(--red)"></select></div>
-        <div><label style="font-size:10px;font-weight:bold;color:#555">Limite Match (Taglio Esatto)</label><input type="number" id="history-limit" value="15" min="5" max="100" style="font-weight:bold;"></div>
+        <div><label>Squadra Casa</label><select id="sel-home" style="font-weight:bold;color:var(--blue)"></select></div>
+        <div><label>Squadra Trasferta</label><select id="sel-away" style="font-weight:bold;color:var(--red)"></select></div>
+        <div><label>Limite Match (Taglio Esatto)</label><input type="number" id="history-limit" value="15" min="5" max="100" style="font-weight:bold;"></div>
       </div>
       <button class="btn btn-green" id="btn-avvia" style="margin-top:15px; width:100%; padding:12px; font-size:15px" onclick="avviaScanner()">🚀 2. ESTRAI DATI E SIMULA MODELLI</button>
     </div>
   </div>
 
   <div id="dashboard-area" style="display:none">
-    <div style="text-align:center; margin-bottom:20px; padding:15px; background:var(--card); border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.06)">
+    <div style="text-align:center; margin-bottom:20px; padding:15px; background:var(--card); border-radius:12px; box-shadow:none">
       <h2 id="ui-title" style="font-size:26px;color:var(--text); letter-spacing:-0.5px">Home vs Away</h2>
       <div id="ui-streak" style="margin:10px 0; display:flex; justify-content:center; gap:20px; align-items:center;"></div>
       <p id="ui-subtitle" style="font-size:12px;color:var(--sub)">Motore: V9.6 - Analisi Integrale su NPxG, Qualita' e Tracking Data</p>
     </div>
 
-    <div class="card" style="border-top: 5px solid #000; background:#fefefe; box-shadow:0 8px 16px rgba(0,0,0,.08)">
-      <div class="section-title" style="color:#000; font-size:16px">👑 MASTER ENSEMBLE: La Sentenza Algoritmica</div>
-      <p style="font-size:11px;color:#555;margin-bottom:15px">Sintesi pesata dei motori (Dixon-Coles su NPxG, KNN tattico con peso dinamico, Markov 10%) e calcolo delle True Odds. Tutti i mercati derivano dalla stessa matrice Dixon-Coles.</p>
+    <div class="card" style="border-top:3px solid var(--accent); background:var(--panel); box-shadow:none">
+      <div class="section-title" style="color:var(--txt); font-size:16px">👑 MASTER ENSEMBLE: La Sentenza Algoritmica</div>
+      <p style="font-size:11px;color:var(--dim);margin-bottom:15px">Sintesi pesata dei motori (Dixon-Coles su NPxG, KNN tattico con peso dinamico, Markov 10%) e calcolo delle True Odds. Tutti i mercati derivano dalla stessa matrice Dixon-Coles.</p>
       
       <div class="grid-3" style="margin-bottom:15px">
-        <div style="text-align:center; background:#fff; padding:15px; border-radius:8px; border:2px solid var(--blue)">
-          <div style="font-size:12px;color:#888;font-weight:bold;text-transform:uppercase">1 (Casa)</div>
+        <div style="text-align:center; background:var(--panel2); padding:15px; border-radius:8px; border:2px solid var(--blue)">
+          <div style="font-size:12px;color:var(--dim);font-weight:bold;text-transform:uppercase">1 (Casa)</div>
           <div style="font-size:26px;font-weight:900;color:var(--blue)" id="master-1">--%</div>
-          <div style="font-size:11px;color:#888;margin-top:5px; padding-top:5px; border-top:1px dashed #eee">Quota Reale: <span id="m-odd-1" style="font-weight:bold;color:#333;font-size:14px">--</span></div>
+          <div style="font-size:11px;color:var(--dim);margin-top:5px; padding-top:5px; border-top:1px dashed #eee">Quota Reale: <span id="m-odd-1" style="font-weight:bold;color:var(--txt);font-size:14px">--</span></div>
         </div>
-        <div style="text-align:center; background:#fff; padding:15px; border-radius:8px; border:2px solid #555">
-          <div style="font-size:12px;color:#888;font-weight:bold;text-transform:uppercase">X (Pareggio)</div>
-          <div style="font-size:26px;font-weight:900;color:#555" id="master-x">--%</div>
-          <div style="font-size:11px;color:#888;margin-top:5px; padding-top:5px; border-top:1px dashed #eee">Quota Reale: <span id="m-odd-x" style="font-weight:bold;color:#333;font-size:14px">--</span></div>
+        <div style="text-align:center; background:var(--panel2); padding:15px; border-radius:8px; border:2px solid #555">
+          <div style="font-size:12px;color:var(--dim);font-weight:bold;text-transform:uppercase">X (Pareggio)</div>
+          <div style="font-size:26px;font-weight:900;color:var(--dim)" id="master-x">--%</div>
+          <div style="font-size:11px;color:var(--dim);margin-top:5px; padding-top:5px; border-top:1px dashed #eee">Quota Reale: <span id="m-odd-x" style="font-weight:bold;color:var(--txt);font-size:14px">--</span></div>
         </div>
-        <div style="text-align:center; background:#fff; padding:15px; border-radius:8px; border:2px solid var(--red)">
-          <div style="font-size:12px;color:#888;font-weight:bold;text-transform:uppercase">2 (Trasf)</div>
+        <div style="text-align:center; background:var(--panel2); padding:15px; border-radius:8px; border:2px solid var(--red)">
+          <div style="font-size:12px;color:var(--dim);font-weight:bold;text-transform:uppercase">2 (Trasf)</div>
           <div style="font-size:26px;font-weight:900;color:var(--red)" id="master-2">--%</div>
-          <div style="font-size:11px;color:#888;margin-top:5px; padding-top:5px; border-top:1px dashed #eee">Quota Reale: <span id="m-odd-2" style="font-weight:bold;color:#333;font-size:14px">--</span></div>
+          <div style="font-size:11px;color:var(--dim);margin-top:5px; padding-top:5px; border-top:1px dashed #eee">Quota Reale: <span id="m-odd-2" style="font-weight:bold;color:var(--txt);font-size:14px">--</span></div>
         </div>
       </div>
       
       <div class="grid-2">
         
-        <div style="background:#fff; border-radius:8px; padding:12px; border:1px solid #ddd;">
-          <div style="font-size:11px;font-weight:bold;color:#555;margin-bottom:5px">Alert: Smart Money & Blood Scent</div>
-          <div id="hidden-value-msg" style="font-size:12px; line-height:1.4; color:#333;">--</div>
+        <div style="background:var(--panel2); border-radius:8px; padding:12px; border:1px solid var(--line);">
+          <div style="font-size:11px;font-weight:bold;color:var(--dim);margin-bottom:5px">Alert: Smart Money & Blood Scent</div>
+          <div id="hidden-value-msg" style="font-size:12px; line-height:1.4; color:var(--txt);">--</div>
         </div>
       </div>
-      <div style="margin-top:15px; background:#fff; border:1px solid #ddd; border-radius:8px; padding:12px">
-        <div style="font-size:11px;font-weight:bold;color:#555;margin-bottom:8px">💶 Confronto col Book: Valore Atteso e Stake</div>
+      <div style="margin-top:15px; background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:12px">
+        <div style="font-size:11px;font-weight:bold;color:var(--dim);margin-bottom:8px">💶 Confronto col Book: Valore Atteso e Stake</div>
         <div class="grid-4" style="align-items:end">
-          <div><label style="font-size:10px;color:#555">Quota book 1</label><input type="number" step="0.01" id="bk-1" oninput="calcValue()" placeholder="es. 2.10"></div>
-          <div><label style="font-size:10px;color:#555">Quota book X</label><input type="number" step="0.01" id="bk-x" oninput="calcValue()" placeholder="es. 3.40"></div>
-          <div><label style="font-size:10px;color:#555">Quota book 2</label><input type="number" step="0.01" id="bk-2" oninput="calcValue()" placeholder="es. 3.60"></div>
-          <div><label style="font-size:10px;color:#555">Bankroll</label><input type="number" step="1" id="bk-bank" value="100" oninput="calcValue()"></div>
+          <div><label style="font-size:10px;color:var(--dim)">Quota book 1</label><input type="number" step="0.01" id="bk-1" oninput="calcValue()" placeholder="es. 2.10"></div>
+          <div><label style="font-size:10px;color:var(--dim)">Quota book X</label><input type="number" step="0.01" id="bk-x" oninput="calcValue()" placeholder="es. 3.40"></div>
+          <div><label style="font-size:10px;color:var(--dim)">Quota book 2</label><input type="number" step="0.01" id="bk-2" oninput="calcValue()" placeholder="es. 3.60"></div>
+          <div><label style="font-size:10px;color:var(--dim)">Bankroll</label><input type="number" step="1" id="bk-bank" value="100" oninput="calcValue()"></div>
         </div>
-        <div id="value-out" style="margin-top:10px; font-size:11px; color:#333"><span style="color:#888">Inserisci le quote del bookmaker: senza confronto col mercato una probabilita' non e' una scommessa.</span></div>
+        <div id="value-out" style="margin-top:10px; font-size:11px; color:var(--txt)"><span style="color:var(--dim)">Inserisci le quote del bookmaker: senza confronto col mercato una probabilita' non e' una scommessa.</span></div>
       </div>
     </div>
 
-  <div class="card" id="card-verdetti" style="border-top:4px solid #0f766e">
+  <div class="card" id="card-verdetti" style="border-top:3px solid var(--accent2)">
     <div class="section-title" style="color:#0f766e">&#127919; Tabellone Scommesse &mdash; cosa &egrave; giocabile</div>
-    <div style="font-size:11px;color:#666;margin-bottom:10px">
+    <div style="font-size:11px;color:var(--dim);margin-bottom:10px">
       Le soglie vengono dai backtest su oltre 5.000 partite reali, non da una stima del modello su s&eacute; stesso.
       Per ogni mercato trovi la probabilit&agrave; calcolata, il verdetto e il tasso di successo osservato in quella fascia.
       <b>NON GIOCARE</b> significa che l&igrave; il modello si &egrave; dimostrato mal calibrato: la sua probabilit&agrave; non va creduta.
     </div>
-    <table class="table-ui">
+    <div class="tbl-scroll"><table class="table-ui">
       <thead><tr>
         <th style="text-align:left">Mercato</th><th>Prob.</th><th>Verdetto</th>
         <th>Hit storico</th><th style="text-align:left">Perch&eacute;</th>
       </tr></thead>
       <tbody id="verdetti-body"></tbody>
-    </table>
+    </table></div>
   </div>
 
 
     
-  <div style="margin:28px 0 12px;padding-bottom:6px;border-bottom:2px solid #1d4ed8"><span style="font-size:11px;font-weight:800;letter-spacing:.09em;color:#1d4ed8">PERCH&Eacute; &mdash; LE STATISTICHE CHE PRODUCONO QUEI NUMERI</span></div>
-<div class="card" style="border-top: 4px solid var(--orange); background:#fffaf5">
+  <div style="margin:28px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--accent)"><span style="font-size:11px;font-weight:800;letter-spacing:.09em;color:var(--accent)">PERCH&Eacute; &mdash; LE STATISTICHE CHE PRODUCONO QUEI NUMERI</span></div>
+<div class="card" style="border-top: 4px solid var(--orange); background:var(--panel2)af5">
       <div class="section-title" style="color:var(--orange)">🎯 Qualità del Tiro, Cinismo & Palle Inattive</div>
-      <p style="font-size:10px;color:#555;margin-bottom:10px">Misura la letalità (xG per Tiro / xGOT) vs i gol attesi (NPxG) e le grandi occasioni da rete.</p>
+      <p style="font-size:10px;color:var(--dim);margin-bottom:10px">Misura la letalità (xG per Tiro / xGOT) vs i gol attesi (NPxG) e le grandi occasioni da rete.</p>
       <table class="table-ui" style="background:transparent; margin-bottom:10px">
           <tr><th>Squadra</th><th>NPxG vs Qualità Tiro</th><th>Dipendenza P.Inattiva</th><th>Big Chances (C / S)</th></tr>
           <tr><td style="color:var(--blue); font-weight:bold">Casa</td><td id="l-xgot-h" style="font-weight:bold">--</td><td id="l-set-h">--%</td><td id="l-bc-h">-- / --</td></tr>
           <tr><td style="color:var(--red); font-weight:bold">Trasf</td><td id="l-xgot-a" style="font-weight:bold">--</td><td id="l-set-a">--%</td><td id="l-bc-a">-- / --</td></tr>
       </table>
-      <div id="lethality-dialogue" style="font-size:11px; line-height:1.5; color:#1c1c1e; padding:8px; background:#fff; border-radius:6px; border:1px solid #ffe0b2"></div>
+      <div id="lethality-dialogue" style="font-size:11px; line-height:1.5; color:#1c1c1e; padding:8px; background:var(--panel2); border-radius:6px; border:1px solid #ffe0b2"></div>
     </div>
 
     <div class="grid-2">
-      <div class="card" style="border-top: 4px solid #d32f2f; background:#fffafa">
+      <div class="card" style="border-top: 4px solid #d32f2f; background:var(--panel2)afa">
         <div class="section-title" style="color:#d32f2f">🛡️ Fase di Non-Possesso & Gegenpressing</div>
-        <p style="font-size:10px;color:#555;margin-bottom:10px">Misura la compattezza e l'aggressività difensiva.</p>
+        <p style="font-size:10px;color:var(--dim);margin-bottom:10px">Misura la compattezza e l'aggressività difensiva.</p>
         <table class="table-ui" style="background:transparent">
             <tr><th>Squadra</th><th>Altezza Dif.</th><th>Lunghezza Sq.</th><th>Recuperi &lt;5s</th><th>Choke Index</th></tr>
             <tr><td style="color:var(--blue); font-weight:bold">Casa</td><td id="np-defx-h">--</td><td id="np-len-h">--</td><td id="np-cp-h">--</td><td id="np-choke-h" style="font-weight:bold; color:var(--blue)">--</td></tr>
             <tr><td style="color:var(--red); font-weight:bold">Trasf</td><td id="np-defx-a">--</td><td id="np-len-a">--</td><td id="np-cp-a">--</td><td id="np-choke-a" style="font-weight:bold; color:var(--red)">--</td></tr>
         </table>
-        <div id="defensive-dialogue" style="font-size:11px; line-height:1.5; color:#1c1c1e; padding:8px; background:#fff; border-radius:6px; border:1px solid #ffcdd2; margin-top:10px"></div>
+        <div id="defensive-dialogue" style="font-size:11px; line-height:1.5; color:#1c1c1e; padding:8px; background:var(--panel2); border-radius:6px; border:1px solid #ffcdd2; margin-top:10px"></div>
       </div>
 
-      <div class="card" style="border-top: 4px solid #009688; background:#f4fbf8">
+      <div class="card" style="border-top:3px solid var(--accent2); background:var(--panel)">
         <div class="section-title" style="color:#009688">🧭 Funnel Offensivo (Flusso e Penetrazione)</div>
-        <p style="font-size:10px;color:#555;margin-bottom:10px">Misura quanto è sterile il possesso e la capacità di entrare in area.</p>
+        <p style="font-size:10px;color:var(--dim);margin-bottom:10px">Misura quanto è sterile il possesso e la capacità di entrare in area.</p>
         <div class="grid-3" style="margin-bottom:10px">
-            <div class="tdi-box"><div style="font-size:10px; color:#666">Baricentro Casa</div><div id="tr-x-h" style="font-size:18px; color:var(--blue)">--m</div></div>
-            <div class="tdi-box"><div style="font-size:10px; color:#666">Stile Offensivo</div><div id="tr-style" style="font-size:12px; margin-top:5px; color:#111">--</div></div>
-            <div class="tdi-box"><div style="font-size:10px; color:#666">Baricentro Trasf</div><div id="tr-x-a" style="font-size:18px; color:var(--red)">--m</div></div>
+            <div class="tdi-box"><div style="font-size:10px; color:var(--dim)">Baricentro Casa</div><div id="tr-x-h" style="font-size:18px; color:var(--blue)">--m</div></div>
+            <div class="tdi-box"><div style="font-size:10px; color:var(--dim)">Stile Offensivo</div><div id="tr-style" style="font-size:12px; margin-top:5px; color:var(--txt)">--</div></div>
+            <div class="tdi-box"><div style="font-size:10px; color:var(--dim)">Baricentro Trasf</div><div id="tr-x-a" style="font-size:18px; color:var(--red)">--m</div></div>
         </div>
         <table class="table-ui" style="background:transparent; margin-bottom:10px">
             <tr><th>Squadra</th><th>Ingressi Trequarti</th><th>Tocchi in Area</th><th>Indice Penetrazione</th></tr>
             <tr><td style="color:var(--blue); font-weight:bold">Casa</td><td id="tr-f3-h">--</td><td id="tr-box-h">--</td><td id="tr-pen-h" style="font-weight:bold; color:var(--blue)">--%</td></tr>
             <tr><td style="color:var(--red); font-weight:bold">Trasf</td><td id="tr-f3-a">--</td><td id="tr-box-a">--</td><td id="tr-pen-a" style="font-weight:bold; color:var(--red)">--%</td></tr>
         </table>
-        <div id="tactical-dialogue" style="font-size:11px; line-height:1.5; color:#1c1c1e; padding:8px; background:#fff; border-radius:6px; border:1px solid #e0f2f1"></div>
+        <div id="tactical-dialogue" style="font-size:11px; line-height:1.5; color:#1c1c1e; padding:8px; background:var(--panel2); border-radius:6px; border:1px solid #e0f2f1"></div>
       </div>
     </div>
 
     <div class="grid-2">
         <div class="card" style="border-top: 4px solid var(--blue);">
           <div class="section-title" style="color:var(--blue)">💰 1X2 Probabilità e Modelli (Base NPxG)</div>
-      <div style="font-size:11px;color:#666;margin:4px 0 10px">La confidence sta qui e non in cima di proposito: va letta <b>dopo</b> le statistiche che la producono. &Egrave; una probabilit&agrave; di indovinare, non un voto di stile.</div>
-      <div style="background:#fff; border-radius:8px; padding:12px; border:1px solid #ddd;">
-          <div style="font-size:11px;font-weight:bold;color:#555;margin-bottom:8px">Confidence Score (Probabilità Calibrata)</div>
+      <div style="font-size:11px;color:var(--dim);margin:4px 0 10px">La confidence sta qui e non in cima di proposito: va letta <b>dopo</b> le statistiche che la producono. &Egrave; una probabilit&agrave; di indovinare, non un voto di stile.</div>
+      <div style="background:var(--panel2); border-radius:8px; padding:12px; border:1px solid var(--line);">
+          <div style="font-size:11px;font-weight:bold;color:var(--dim);margin-bottom:8px">Confidence Score (Probabilità Calibrata)</div>
           <div style="display:flex; align-items:center; gap:10px;">
             <div style="font-size:22px; font-weight:900; color:var(--purple);" id="master-conf">--/100</div>
-            <div style="flex-grow:1; background:#eee; height:12px; border-radius:6px; overflow:hidden;">
+            <div style="flex-grow:1; background:var(--panel2); height:12px; border-radius:6px; overflow:hidden;">
                <div id="conf-bar" style="height:100%; background:var(--purple); width:0%; transition: width 0.5s;"></div>
             </div>
           </div>
-          <div style="font-size:9px; color:#888; margin-top:5px">
+          <div style="font-size:9px; color:var(--dim); margin-top:5px">
             <b>Si legge come probabilità di indovinare.</b> Confidence 64 = ~64% di azzeccare.
             Calibrata su 6824 partite reali (Europa+MLS+Turchia).
           </div>
-          <div style="font-size:9px; color:#666; margin-top:6px; background:#f7f7f9; border-radius:6px; padding:6px 8px; line-height:1.5">
+          <div style="font-size:9px; color:var(--dim); margin-top:6px; background:var(--panel2); border-radius:6px; padding:6px 8px; line-height:1.5">
             <b>Come usarla:</b> <span style="color:var(--green)">≥60 = fascia buona</span> (64,7% hit reale, capita nel 12% delle partite) ·
             <span style="color:var(--orange)">50-59 = incerta</span> ·
             <span style="color:var(--red)">&lt;50 = sotto il coin-flip</span>.<br>
@@ -210,35 +313,35 @@ textarea{width:100%;min-height:350px;font-size:11px;font-family:monospace;border
         </div>
 
               <table class="table-ui" style="margin-bottom:0">
-                <tr><th>Mercato</th><th style="color:#555">GENERALE</th><th style="color:var(--blue)">SOLO RUOLO</th></tr>
+                <tr><th>Mercato</th><th style="color:var(--dim)">GENERALE</th><th style="color:var(--blue)">SOLO RUOLO</th></tr>
                 <tr><td>1</td><td id="p1-over">--%</td><td id="p1-role" class="td-highlight">--%</td></tr>
                 <tr><td>X</td><td id="px-over">--%</td><td id="px-role" class="td-highlight">--%</td></tr>
                 <tr><td>2</td><td id="p2-over">--%</td><td id="p2-role" class="td-highlight">--%</td></tr>
-                <tr style="background:#f9f9f9"><td>1X</td><td id="p1x-over">--%</td><td id="p1x-role" class="td-highlight">--%</td></tr>
-                <tr style="background:#f9f9f9"><td>X2</td><td id="px2-over">--%</td><td id="px2-role" class="td-highlight">--%</td></tr>
-                <tr style="background:#f9f9f9"><td>12</td><td id="p12-over">--%</td><td id="p12-role" class="td-highlight">--%</td></tr>
+                <tr style="background:rgba(255,255,255,.03)"><td>1X</td><td id="p1x-over">--%</td><td id="p1x-role" class="td-highlight">--%</td></tr>
+                <tr style="background:rgba(255,255,255,.03)"><td>X2</td><td id="px2-over">--%</td><td id="px2-role" class="td-highlight">--%</td></tr>
+                <tr style="background:rgba(255,255,255,.03)"><td>12</td><td id="p12-over">--%</td><td id="p12-role" class="td-highlight">--%</td></tr>
                 <tr><td>Goal (GG)</td><td id="gg-over" style="color:var(--green)">--%</td><td id="gg-role" style="color:var(--green); font-weight:bold">--%</td></tr>
                 <tr><td>Over 2.5</td><td id="ov-over" style="color:var(--orange)">--%</td><td id="ov-role" style="color:var(--orange); font-weight:bold">--%</td></tr>
               </table>
-              <div style="background:#fff; border:1px solid #ddd; border-radius:8px; padding:10px; margin-top:15px">
-                <div style="font-size:11px;font-weight:bold;color:#555;margin-bottom:6px">🎯 1X2 per Modello (con confidence specifico)</div>
+              <div style="background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:10px; margin-top:15px">
+                <div style="font-size:11px;font-weight:bold;color:var(--dim);margin-bottom:6px">🎯 1X2 per Modello (con confidence specifico)</div>
                 <table class="table-ui" style="margin-bottom:0; font-size:11px">
                   <tr><th>Modello</th><th>1</th><th>X</th><th>2</th></tr>
                   <tr><td>Dixon-Coles (Ruolo)</td><td id="mdl-dc-1">--</td><td id="mdl-dc-x">--</td><td id="mdl-dc-2">--</td></tr>
                   <tr><td>KNN Storico</td><td id="mdl-knn-1">--</td><td id="mdl-knn-x">--</td><td id="mdl-knn-2">--</td></tr>
-                  <tr style="background:#f0f8ff"><td><b>Ordered Logit</b></td><td id="mdl-ol-1">--</td><td id="mdl-ol-x">--</td><td id="mdl-ol-2">--</td></tr>
+                  <tr style="background:rgba(79,140,255,.10)"><td><b>Ordered Logit</b></td><td id="mdl-ol-1">--</td><td id="mdl-ol-x">--</td><td id="mdl-ol-2">--</td></tr>
                   <tr><td>Markov (Score-flow)</td><td id="mdl-mk-1">--</td><td id="mdl-mk-x">--</td><td id="mdl-mk-2">--</td></tr>
-                  <tr style="background:#f0f8ff;font-weight:bold"><td>Ensemble</td><td id="mdl-ens-1" style="color:var(--purple)">--</td><td id="mdl-ens-x" style="color:var(--purple)">--</td><td id="mdl-ens-2" style="color:var(--purple)">--</td></tr>
-                  <tr style="background:#fef4e5"><td style="font-size:9px;color:#888">Confidence per esito</td>
+                  <tr style="background:rgba(79,140,255,.10);font-weight:bold"><td>Ensemble</td><td id="mdl-ens-1" style="color:var(--purple)">--</td><td id="mdl-ens-x" style="color:var(--purple)">--</td><td id="mdl-ens-2" style="color:var(--purple)">--</td></tr>
+                  <tr style="background:rgba(245,158,11,.10)"><td style="font-size:9px;color:var(--dim)">Confidence per esito</td>
                     <td id="conf-p1" style="font-weight:bold;font-size:11px">--</td>
                     <td id="conf-px" style="font-weight:bold;font-size:11px">--</td>
                     <td id="conf-p2" style="font-weight:bold;font-size:11px">--</td>
                   </tr>
                 </table>
-                <div style="font-size:9px; color:#888; margin-top:4px">Confidence per esito: quanto i 3 modelli concordano su QUELL'esito specifico.</div>
+                <div style="font-size:9px; color:var(--dim); margin-top:4px">Confidence per esito: quanto i 3 modelli concordano su QUELL'esito specifico.</div>
               </div>
-              <div style="background:#fff; border:1px solid #ddd; border-radius:8px; padding:10px; margin-top:12px">
-                <div style="font-size:11px;font-weight:bold;color:#555;margin-bottom:6px">🎯 Doppie Chance & Gol (con confidence)</div>
+              <div style="background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:10px; margin-top:12px">
+                <div style="font-size:11px;font-weight:bold;color:var(--dim);margin-bottom:6px">🎯 Doppie Chance & Gol (con confidence)</div>
                 <table class="table-ui" style="margin-bottom:0; font-size:11px">
                   <tr><th>Modello</th><th>1X</th><th>X2</th><th>12</th><th>Goal</th><th>NoGoal</th><th>Ov 2.5</th><th>Un 2.5</th></tr>
                   <tr><td>DC (Ruolo)</td>
@@ -251,7 +354,7 @@ textarea{width:100%;min-height:350px;font-size:11px;font-family:monospace;border
                     <td id="mdl-knn-gg">--</td><td id="mdl-knn-ng">--</td>
                     <td id="mdl-knn-ov">--</td><td id="mdl-knn-un">--</td>
                   </tr>
-                  <tr style="background:#fef4e5"><td style="font-size:9px;color:#888">Confidence</td>
+                  <tr style="background:rgba(245,158,11,.10)"><td style="font-size:9px;color:var(--dim)">Confidence</td>
                     <td id="conf-1x" style="font-weight:bold;font-size:11px">--</td>
                     <td id="conf-x2" style="font-weight:bold;font-size:11px">--</td>
                     <td id="conf-12" style="font-weight:bold;font-size:11px">--</td>
@@ -261,23 +364,23 @@ textarea{width:100%;min-height:350px;font-size:11px;font-family:monospace;border
                     <td id="conf-un" style="font-weight:bold;font-size:11px">--</td>
                   </tr>
                 </table>
-                <div style="font-size:9px; color:#888; margin-top:4px">Ciascun mercato ha il suo confidence — le doppie chance possono essere piu' robuste degli esiti singoli, i mercati gol dipendono dalla varianza totale.</div>
+                <div style="font-size:9px; color:var(--dim); margin-top:4px">Ciascun mercato ha il suo confidence — le doppie chance possono essere piu' robuste degli esiti singoli, i mercati gol dipendono dalla varianza totale.</div>
               </div>
-              <div style="background:#f0f8ff; border-radius:8px; padding:15px; display:flex; flex-direction:column; justify-content:center; margin-top:15px">
+              <div style="background:rgba(79,140,255,.10); border-radius:8px; padding:15px; display:flex; flex-direction:column; justify-content:center; margin-top:15px">
                   <div style="font-size:12px; font-weight:bold; text-align:center; color:var(--blue); margin-bottom:15px">QUOTE REALI (FAIR ODDS) SUL RUOLO</div>
                   <div class="grid-3">
-                      <div class="odds-box"><div style="font-size:10px; color:#555">Quota 1</div><div class="odds-val" id="odd-1">--</div></div>
-                      <div class="odds-box"><div style="font-size:10px; color:#555">Quota X</div><div class="odds-val" id="odd-x" style="color:#555">--</div></div>
-                      <div class="odds-box"><div style="font-size:10px; color:#555">Quota 2</div><div class="odds-val" id="odd-2" style="color:var(--red)">--</div></div>
+                      <div class="odds-box"><div style="font-size:10px; color:var(--dim)">Quota 1</div><div class="odds-val" id="odd-1">--</div></div>
+                      <div class="odds-box"><div style="font-size:10px; color:var(--dim)">Quota X</div><div class="odds-val" id="odd-x" style="color:var(--dim)">--</div></div>
+                      <div class="odds-box"><div style="font-size:10px; color:var(--dim)">Quota 2</div><div class="odds-val" id="odd-2" style="color:var(--red)">--</div></div>
                   </div>
               </div>
         </div>
 
         
-  <div style="margin:28px 0 12px;padding-bottom:6px;border-bottom:2px solid #6b7280"><span style="font-size:11px;font-weight:800;letter-spacing:.09em;color:#6b7280">APPROFONDIMENTO &mdash; DETTAGLIO E DIAGNOSTICA</span></div>
-<div class="card" style="border-top: 4px solid #fbc02d; background:#fffde7">
+  <div style="margin:28px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--line)"><span style="font-size:11px;font-weight:800;letter-spacing:.09em;color:var(--dim)">APPROFONDIMENTO &mdash; DETTAGLIO E DIAGNOSTICA</span></div>
+<div class="card" style="border-top: 4px solid #fbc02d; background:var(--panel2)de7">
             <div class="section-title" style="color:#fbc02d">⚖️ Punti Attesi dagli xG (con test di significativita')</div>
-            <p style="font-size:10px;color:#555;margin-bottom:10px">Punti reali vs punti attesi simulando ogni partita dagli xG. Lo scarto viene giudicato solo se supera l'errore standard: sotto quella soglia e' rumore, non fortuna.</p>
+            <p style="font-size:10px;color:var(--dim);margin-bottom:10px">Punti reali vs punti attesi simulando ogni partita dagli xG. Lo scarto viene giudicato solo se supera l'errore standard: sotto quella soglia e' rumore, non fortuna.</p>
             <table class="table-ui" style="background:transparent">
                 <tr><th>Squadra</th><th>Punti/Match Reali</th><th>Punti/Match Attesi</th><th>Diagnosi</th></tr>
                 <tr><td style="color:var(--blue); font-weight:bold" id="pyt-name-h">Casa</td><td id="pyt-act-h">--%</td><td id="pyt-exp-h">--%</td><td id="pyt-diag-h">--</td></tr>
@@ -318,15 +421,15 @@ textarea{width:100%;min-height:350px;font-size:11px;font-family:monospace;border
             <tbody id="timing-body"></tbody>
           </table>
         </div>
-        <div class="card" style="border-top: 4px solid #9c27b0; background:#f3e5f5">
+        <div class="card" style="border-top:3px solid var(--purple); background:var(--panel)">
           <div class="section-title" style="color:#9c27b0">⏳ Analisi di Sopravvivenza (Goal Timing)</div>
-          <p style="font-size:10px; color:#555; margin-bottom:15px">Modello Esponenziale calcolato sull'intensità di gioco.</p>
-          <div style="background:#fff; border-radius:8px; padding:12px; margin-bottom:10px; border:1px solid #e1bee7">
-              <div style="font-size:11px; font-weight:bold; color:#555">Probabilità 1° Gol prima del 30:00'</div>
+          <p style="font-size:10px; color:var(--dim); margin-bottom:15px">Modello Esponenziale calcolato sull'intensità di gioco.</p>
+          <div style="background:var(--panel2); border-radius:8px; padding:12px; margin-bottom:10px; border:1px solid #e1bee7">
+              <div style="font-size:11px; font-weight:bold; color:var(--dim)">Probabilità 1° Gol prima del 30:00'</div>
               <div style="font-size:22px; font-weight:900; color:#9c27b0" id="surv-30">--%</div>
           </div>
-          <div style="background:#fff; border-radius:8px; padding:12px; border:1px solid #e1bee7">
-              <div style="font-size:11px; font-weight:bold; color:#555">Probabilità Over 0.5 Primo Tempo (45:00')</div>
+          <div style="background:var(--panel2); border-radius:8px; padding:12px; border:1px solid #e1bee7">
+              <div style="font-size:11px; font-weight:bold; color:var(--dim)">Probabilità Over 0.5 Primo Tempo (45:00')</div>
               <div style="font-size:22px; font-weight:900; color:#9c27b0" id="surv-45">--%</div>
           </div>
         </div>
@@ -336,16 +439,16 @@ textarea{width:100%;min-height:350px;font-size:11px;font-family:monospace;border
       <div class="section-title" style="color:#607d8b">🎯 Modello Dixon-Coles (NPxG) & Skellam Distribution</div>
       <div class="grid-2">
           <div>
-            <div style="font-size:11px; font-weight:bold; margin-bottom:5px; color:#555">Top 6 Risultati Esatti</div>
+            <div style="font-size:11px; font-weight:bold; margin-bottom:5px; color:var(--dim)">Top 6 Risultati Esatti</div>
             <div class="grid-3" id="exact-scores" style="margin-bottom:15px"></div>
           </div>
           <div>
-              <div style="font-size:11px; font-weight:bold; margin-bottom:5px; color:#555">Asian Handicap (da matrice Dixon-Coles)</div>
+              <div style="font-size:11px; font-weight:bold; margin-bottom:5px; color:var(--dim)">Asian Handicap (da matrice Dixon-Coles)</div>
               <table class="table-ui" id="table-ah" style="margin-bottom:0"></table>
           </div>
       </div>
       <div class="grid-3" style="margin-top:10px; border-top:1px dashed #ccc; padding-top:15px">
-        <div><div style="font-size:11px; font-weight:bold; margin-bottom:5px; color:#555">Multigol Match</div><div id="mg-tot" style="display:flex; flex-direction:column; gap:4px"></div></div>
+        <div><div style="font-size:11px; font-weight:bold; margin-bottom:5px; color:var(--dim)">Multigol Match</div><div id="mg-tot" style="display:flex; flex-direction:column; gap:4px"></div></div>
         <div><div style="font-size:11px; font-weight:bold; margin-bottom:5px; color:var(--blue)">Multigol Casa</div><div id="mg-h" style="display:flex; flex-direction:column; gap:4px"></div></div>
         <div><div style="font-size:11px; font-weight:bold; margin-bottom:5px; color:var(--red)">Multigol Trasf.</div><div id="mg-a" style="display:flex; flex-direction:column; gap:4px"></div></div>
       </div>
@@ -354,73 +457,73 @@ textarea{width:100%;min-height:350px;font-size:11px;font-family:monospace;border
     <div class="grid-2">
       <div class="card" style="border-top: 4px solid var(--orange);">
         <div class="section-title" style="color:var(--orange)">📐 Alta Varianza e Disciplina</div>
-        <table class="table-ui">
-          <tr><th>Mercato</th><th style="color:#555">GENERALE</th><th style="color:var(--orange)">SOLO RUOLO</th></tr>
+        <div class="tbl-scroll"><table class="table-ui">
+          <tr><th>Mercato</th><th style="color:var(--dim)">GENERALE</th><th style="color:var(--orange)">SOLO RUOLO</th></tr>
           <tr><td>Corner Attesi (Tot)</td><td id="cor-tot-over">--</td><td id="cor-tot-role" class="td-highlight">--</td></tr>
           <tr><td>Prob Over 9.5 Corner</td><td id="pov9-cor-over">--%</td><td id="pov9-cor-role" style="font-weight:bold; color:var(--blue)">--%</td></tr>
-          <tr style="background:#f9f9f9"><td>SoT Attesi (Tot)</td><td id="sot-tot-over">--</td><td id="sot-tot-role" class="td-highlight">--</td></tr>
-          <tr style="background:#f9f9f9"><td>Prob Over 8.5 SoT</td><td id="pov8-sot-over">--%</td><td id="pov8-sot-role" style="font-weight:bold; color:var(--purple)">--%</td></tr>
+          <tr style="background:rgba(255,255,255,.03)"><td>SoT Attesi (Tot)</td><td id="sot-tot-over">--</td><td id="sot-tot-role" class="td-highlight">--</td></tr>
+          <tr style="background:rgba(255,255,255,.03)"><td>Prob Over 8.5 SoT</td><td id="pov8-sot-over">--%</td><td id="pov8-sot-role" style="font-weight:bold; color:var(--purple)">--%</td></tr>
           <tr><td>Falli Attesi (Tot)</td><td id="fls-tot-over">--</td><td id="fls-tot-role" class="td-highlight">--</td></tr>
           <tr><td>Gialli Attesi (Tot)</td><td id="yel-tot-over">--</td><td id="yel-tot-role" class="td-highlight">--</td></tr>
           <tr><td>Prob Over 3.5 Gialli</td><td id="pov3-yel-over">--%</td><td id="pov3-yel-role" style="font-weight:bold; color:var(--orange)">--%</td></tr>
           <tr><td>Prob. Cart. Rosso</td><td id="red-tot-over" style="color:var(--red); font-weight:bold">--%</td><td id="red-tot-role" style="color:var(--red); font-weight:bold" class="td-highlight">--%</td></tr>
-        </table>
+        </table></div>
       </div>
 
       <div class="card" style="border-top: 4px solid #5a5a8a;">
         <div class="section-title" style="color:#5a5a8a">🔬 Analisi Incrociata: Z-Score ed Efficienza</div>
-        <table class="table-ui">
-          <tr><th>Parametro (Z-Score)</th><th style="color:#555">GENERALE</th><th style="color:var(--blue)">SOLO RUOLO</th></tr>
+        <div class="tbl-scroll"><table class="table-ui">
+          <tr><th>Parametro (Z-Score)</th><th style="color:var(--dim)">GENERALE</th><th style="color:var(--blue)">SOLO RUOLO</th></tr>
           <tr><td>NPxG Attesi Casa</td><td id="z-xg-h-ov">--</td><td id="z-xg-h-ro" class="td-highlight">--</td></tr>
           <tr><td>Z-Score Casa</td><td id="z-b-h-ov">--</td><td id="z-b-h-ro" class="td-highlight">--</td></tr>
-          <tr style="background:#f9f9f9"><td>NPxG Attesi Trasf</td><td id="z-xg-a-ov">--</td><td id="z-xg-a-ro" class="td-highlight-red">--</td></tr>
-          <tr style="background:#f9f9f9"><td>Z-Score Trasf</td><td id="z-b-a-ov">--</td><td id="z-b-a-ro" class="td-highlight-red">--</td></tr>
-        </table>
+          <tr style="background:rgba(255,255,255,.03)"><td>NPxG Attesi Trasf</td><td id="z-xg-a-ov">--</td><td id="z-xg-a-ro" class="td-highlight-red">--</td></tr>
+          <tr style="background:rgba(255,255,255,.03)"><td>Z-Score Trasf</td><td id="z-b-a-ov">--</td><td id="z-b-a-ro" class="td-highlight-red">--</td></tr>
+        </table></div>
         
         <div class="section-title" style="color:#7b1fa2; margin-top:15px">⚡ Efficienza Goal vs NPxG</div>
-        <table class="table-ui">
+        <div class="tbl-scroll"><table class="table-ui">
           <tr><th>Contesto</th><th>Goal Fatti</th><th>xG Prodotti</th><th>Efficienza</th></tr>
           <tr><td style="color:var(--blue); font-weight:bold" id="lbl-eff-h1">Casa (Gen)</td><td id="e-gf-ho">--</td><td id="e-xg-ho">--</td><td id="e-ef-ho">--</td></tr>
-          <tr style="background:#f0f8ff"><td style="color:var(--blue); font-weight:bold" id="lbl-eff-h2">Casa (Ruolo)</td><td id="e-gf-hr">--</td><td id="e-xg-hr">--</td><td id="e-ef-hr">--</td></tr>
+          <tr style="background:rgba(79,140,255,.10)"><td style="color:var(--blue); font-weight:bold" id="lbl-eff-h2">Casa (Ruolo)</td><td id="e-gf-hr">--</td><td id="e-xg-hr">--</td><td id="e-ef-hr">--</td></tr>
           <tr><td style="color:var(--red); font-weight:bold" id="lbl-eff-a1">Trasf (Gen)</td><td id="e-gf-ao">--</td><td id="e-xg-ao">--</td><td id="e-ef-ao">--</td></tr>
-          <tr style="background:#ffebee"><td style="color:var(--red); font-weight:bold" id="lbl-eff-a2">Trasf (Ruolo)</td><td id="e-gf-ar">--</td><td id="e-xg-ar">--</td><td id="e-ef-ar">--</td></tr>
-        </table>
+          <tr style="background:rgba(239,68,68,.10)"><td style="color:var(--red); font-weight:bold" id="lbl-eff-a2">Trasf (Ruolo)</td><td id="e-gf-ar">--</td><td id="e-xg-ar">--</td><td id="e-ef-ar">--</td></tr>
+        </table></div>
       </div>
     </div>
 
     <div class="card" style="border-top: 4px solid var(--knn);">
       <div class="section-title" style="color:var(--knn)">🔍 K-Nearest Neighbors (11 dimensioni tattiche, kernel pesato) &amp; Formazioni</div>
-      <table class="table-ui">
+      <div class="tbl-scroll"><table class="table-ui">
         <tr><th>Squadra</th><th>Modulo Usato</th><th>Contro Modulo Avv.</th><th>Contesto</th><th>Match vs Avv.</th><th>Punti/Match</th></tr>
         <tr id="row-form-ho"><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
-        <tr id="row-form-hr" style="background:#f0f8ff"><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
+        <tr id="row-form-hr" style="background:rgba(79,140,255,.10)"><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
         <tr id="row-form-ao"><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
-        <tr id="row-form-ar" style="background:#ffebee"><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
-      </table>
+        <tr id="row-form-ar" style="background:rgba(239,68,68,.10)"><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
+      </table></div>
       
       <div class="grid-2" style="margin-top:15px; margin-bottom:15px">
-        <div style="background:#fdf2f8;border-radius:8px;padding:10px;border:1px solid #f8bbd0"><div style="font-size:11px;font-weight:bold;color:var(--knn);margin-bottom:6px" id="knn-title-h">Casa vs Simili</div><div id="knn-list-h"></div><div style="margin-top:6px;font-size:10px;color:#555" id="knn-res-h">Rendimento: -- Pts/Match</div></div>
-        <div style="background:#fdf2f8;border-radius:8px;padding:10px;border:1px solid #f8bbd0"><div style="font-size:11px;font-weight:bold;color:var(--knn);margin-bottom:6px" id="knn-title-a">Trasf vs Simili</div><div id="knn-list-a"></div><div style="margin-top:6px;font-size:10px;color:#555" id="knn-res-a">Rendimento: -- Pts/Match</div></div>
+        <div style="background:rgba(167,139,250,.10);border-radius:8px;padding:10px;border:1px solid #f8bbd0"><div style="font-size:11px;font-weight:bold;color:var(--knn);margin-bottom:6px" id="knn-title-h">Casa vs Simili</div><div id="knn-list-h"></div><div style="margin-top:6px;font-size:10px;color:var(--dim)" id="knn-res-h">Rendimento: -- Pts/Match</div></div>
+        <div style="background:rgba(167,139,250,.10);border-radius:8px;padding:10px;border:1px solid #f8bbd0"><div style="font-size:11px;font-weight:bold;color:var(--knn);margin-bottom:6px" id="knn-title-a">Trasf vs Simili</div><div id="knn-list-a"></div><div style="margin-top:6px;font-size:10px;color:var(--dim)" id="knn-res-a">Rendimento: -- Pts/Match</div></div>
       </div>
     </div>
 
     <div class="grid-2">
       <div class="card" style="border-top: 4px solid #1565c0;">
         <div class="section-title" style="color:#1565c0">⛓️ Asymmetric Markov Chain</div>
-        <table class="table-ui">
-          <tr><th>Stato Finale</th><th style="color:#555">GENERALE</th><th style="color:var(--blue)">SOLO RUOLO</th></tr>
+        <div class="tbl-scroll"><table class="table-ui">
+          <tr><th>Stato Finale</th><th style="color:var(--dim)">GENERALE</th><th style="color:var(--blue)">SOLO RUOLO</th></tr>
           <tr><td>Vittoria netta Casa (+2)</td><td id="mk-h2-ov">--%</td><td id="mk-h2-ro" class="td-highlight">--%</td></tr>
           <tr><td>Vittoria misurata Casa (+1)</td><td id="mk-h1-ov">--%</td><td id="mk-h1-ro" class="td-highlight">--%</td></tr>
           <tr><td>Pareggio (0)</td><td id="mk-x-ov">--%</td><td id="mk-x-ro" class="td-highlight">--%</td></tr>
           <tr><td>Vittoria misurata Trasf (-1)</td><td id="mk-a1-ov">--%</td><td id="mk-a1-ro" class="td-highlight">--%</td></tr>
           <tr><td>Vittoria netta Trasf (-2)</td><td id="mk-a2-ov">--%</td><td id="mk-a2-ro" class="td-highlight">--%</td></tr>
-        </table>
+        </table></div>
       </div>
 
       <div class="card" style="border-top: 4px solid #3f51b5;">
         <div class="section-title" style="color:#3f51b5">♟️ ELO Rating e Trend Penalty</div>
         <table class="table-ui" style="margin-top:20px">
-          <tr><th>Squadra</th><th style="color:#555">ELO ATTUALE</th><th style="color:var(--orange)">TREND (Ult 5 vs Prec 10)</th></tr>
+          <tr><th>Squadra</th><th style="color:var(--dim)">ELO ATTUALE</th><th style="color:var(--orange)">TREND (Ult 5 vs Prec 10)</th></tr>
           <tr><td style="color:var(--blue); font-weight:bold" id="elo-name-h">Casa</td><td id="elo-h-ov" style="font-size:16px; font-weight:bold">--</td><td id="elo-h-tr" style="font-size:14px; font-weight:bold">--</td></tr>
           <tr><td style="color:var(--red); font-weight:bold" id="elo-name-a">Trasferta</td><td id="elo-a-ov" style="font-size:16px; font-weight:bold">--</td><td id="elo-a-tr" style="font-size:14px; font-weight:bold">--</td></tr>
         </table>
@@ -435,7 +538,7 @@ textarea{width:100%;min-height:350px;font-size:11px;font-family:monospace;border
     
     <div class="card" style="border-top:4px solid #455a64">
       <div class="section-title" style="color:#455a64">🧪 Copertura Dati API (diagnostica)</div>
-      <p style="font-size:10px;color:#555;margin-bottom:10px">Percentuale di partite in cui l'API ha effettivamente restituito ogni metrica. <b>0%</b> significa che il provider non la espone: il valore altrove e' N/D, non zero. Una copertura <b>intermedia su un conteggio</b> e' normale, perche' le chiavi assenti vengono lette come zero. Una copertura intermedia su un <b>rapporto</b> indica invece partite senza dati avanzati, escluse dalle medie.</p>
+      <p style="font-size:10px;color:var(--dim);margin-bottom:10px">Percentuale di partite in cui l'API ha effettivamente restituito ogni metrica. <b>0%</b> significa che il provider non la espone: il valore altrove e' N/D, non zero. Una copertura <b>intermedia su un conteggio</b> e' normale, perche' le chiavi assenti vengono lette come zero. Una copertura intermedia su un <b>rapporto</b> indica invece partite senza dati avanzati, escluse dalle medie.</p>
       <table class="table-ui" id="table-coverage"></table>
     </div>
 
@@ -618,7 +721,7 @@ function getMostFrequentWithPct(arr) {
   return `${maxVal} (${Math.round((maxCount/valid.length)*100)}%)`;
 }
 function getTopScorers(scorersArray) {
-  if(!scorersArray || !scorersArray.length) return "<span style='color:#888'>Nessun marcatore in archivio</span>";
+  if(!scorersArray || !scorersArray.length) return "<span style='color:var(--dim)'>Nessun marcatore in archivio</span>";
   const counts = {}; scorersArray.forEach(s => { counts[s] = (counts[s]||0)+1; });
   const sorted = Object.keys(counts).sort((a,b) => counts[b] - counts[a]);
   return sorted.slice(0, 3).map(s => `${s} (${counts[s]} gol)`).join(', ');
@@ -1209,12 +1312,12 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
   }
 
   const outOverall = buildStats(overallMatches); const outRole = buildStats(roleMatches);
-  let logHtml = `<tr><th colspan="7" style="background:${isHomeTeamUI?'#e3f2fd':'#ffebee'};color:#333;font-size:12px">${teamName} (Gen: ${outOverall.n} match | Ruolo: ${outRole.n} match)</th></tr><tr><th>Data</th><th>Match</th><th>Esito</th><th>Gol</th><th>NPxG</th><th>Modulo Avv.</th></tr>`;
+  let logHtml = `<tr><th colspan="7" style="background:${isHomeTeamUI?'#e3f2fd':'#ffebee'};color:var(--txt);font-size:12px">${teamName} (Gen: ${outOverall.n} match | Ruolo: ${outRole.n} match)</th></tr><tr><th>Data</th><th>Match</th><th>Esito</th><th>Gol</th><th>NPxG</th><th>Modulo Avv.</th></tr>`;
   overallMatches.forEach(m => {
     let det = matchDetails[m.id]; if(!det) return;
     const esito = det.gf > det.ga ? '<span class="badge bg-v">V</span>' : (det.gf < det.ga ? '<span class="badge bg-s">S</span>' : '<span class="badge bg-p">P</span>');
     let safeN = (det.npxg != null ? det.npxg : det.xg);
-    logHtml += `<tr><td>${det.dateShort}</td><td>${det.isH ? 'vs' : '@'} ${det.avv.substring(0,12)}</td><td>${esito}</td><td><b>${det.gf}-${det.ga}</b></td><td style="color:#555">${safeN != null ? safeN.toFixed(1) : '-'}</td><td>${det.oppModulo}</td></tr>`;
+    logHtml += `<tr><td>${det.dateShort}</td><td>${det.isH ? 'vs' : '@'} ${det.avv.substring(0,12)}</td><td>${esito}</td><td><b>${det.gf}-${det.ga}</b></td><td style="color:var(--dim)">${safeN != null ? safeN.toFixed(1) : '-'}</td><td>${det.oppModulo}</td></tr>`;
   });
   return { overall: outOverall, role: outRole, logHtml, teamName, isHomeTeamUI };
 }
@@ -1406,13 +1509,13 @@ function renderVerdetti(mk) {
       if (verdetto === '--') perche = 'sotto la soglia minima validata sui backtest';
     }
     const ok = verdetto === 'FORTE' || verdetto === 'GIOCABILE';
-    html += '<tr' + (ok ? ' style="background:#f0fdf4"' : '') + '>'
+    html += '<tr' + (ok ? ' style="background:rgba(34,197,94,.10)"' : '') + '>'
           + '<td style="text-align:left;font-weight:bold">' + nome + '</td>'
           + '<td style="font-weight:bold">' + (p * 100).toFixed(1) + '%</td>'
           + '<td><span style="background:' + col(verdetto) + ';color:#fff;padding:2px 8px;'
           + 'border-radius:4px;font-size:10px;font-weight:bold;white-space:nowrap">' + verdetto + '</span></td>'
           + '<td>' + hit + '</td>'
-          + '<td style="text-align:left;font-size:11px;color:#555">' + perche + '</td></tr>';
+          + '<td style="text-align:left;font-size:11px;color:var(--dim)">' + perche + '</td></tr>';
   }
   safeHtml('verdetti-body', html);
 }
@@ -1490,7 +1593,7 @@ async function avviaScanner() {
 
     let exactScores = []; for(let i=0; i<=6; i++) { for(let j=0; j<=6; j++) { exactScores.push({ h: i, a: j, p: dcMat[i][j] || 0 }); } }
     exactScores.sort((a,b) => b.p - a.p); let topScoresHtml = "";
-    for(let i=0; i<6; i++) { const s = exactScores[i]; topScoresHtml += `<div class="card-small" style="padding:8px; background:#fff; border:1px solid #ddd; color:#333"><div style="font-size:20px; font-weight:900">${s.h} - ${s.a}</div><div style="font-size:12px; color:var(--blue); font-weight:bold">${pct(s.p)}</div></div>`; }
+    for(let i=0; i<6; i++) { const s = exactScores[i]; topScoresHtml += `<div class="card-small" style="padding:8px; background:var(--panel2); border:1px solid var(--line); color:var(--txt)"><div style="font-size:20px; font-weight:900">${s.h} - ${s.a}</div><div style="font-size:12px; color:var(--blue); font-weight:bold">${pct(s.p)}</div></div>`; }
     const mgTot = { '0-1': multigoal(dcMat,0,1,'tot'), '1-2': multigoal(dcMat,1,2,'tot'), '1-3': multigoal(dcMat,1,3,'tot'), '2-3': multigoal(dcMat,2,3,'tot'), '2-4': multigoal(dcMat,2,4,'tot'), '3-5': multigoal(dcMat,3,5,'tot') };
     const mgH = { '0-1': multigoal(dcMat,0,1,'h'), '1-2': multigoal(dcMat,1,2,'h'), '1-3': multigoal(dcMat,1,3,'h'), '2-3': multigoal(dcMat,2,3,'h') };
     const mgA = { '0-1': multigoal(dcMat,0,1,'a'), '1-2': multigoal(dcMat,1,2,'a'), '1-3': multigoal(dcMat,1,3,'a'), '2-3': multigoal(dcMat,2,3,'a') };
@@ -1736,7 +1839,7 @@ async function avviaScanner() {
     const covOf = (team, key) => ((team.overall.coverage||{})[key]||0);
     const nd = (team, key, txt) => covOf(team, key) > 0 ? txt : 'N/D';
     const renderStreak = (arr) => arr.map(s => { let bg = s==='V' ? 'var(--green)' : (s==='S' ? 'var(--red)' : '#f57c00'); return `<span style="display:inline-block;width:18px;height:18px;line-height:18px;text-align:center;border-radius:50%;background:${bg};color:white;font-size:10px;font-weight:bold;margin:0 2px">${s}</span>`; }).join('');
-    safeHtml('ui-streak', `<div style="display:flex; align-items:center; gap:5px"><span style="font-size:11px;font-weight:bold;color:var(--blue)">${hName}</span> ${renderStreak(dH.overall.streak.slice().reverse())}</div><div style="font-size:12px;color:#ccc">vs</div><div style="display:flex; align-items:center; gap:5px">${renderStreak(dA.overall.streak.slice().reverse())} <span style="font-size:11px;font-weight:bold;color:var(--red)">${aName}</span></div>`);
+    safeHtml('ui-streak', `<div style="display:flex; align-items:center; gap:5px"><span style="font-size:11px;font-weight:bold;color:var(--blue)">${hName}</span> ${renderStreak(dH.overall.streak.slice().reverse())}</div><div style="font-size:12px;color:var(--dim)">vs</div><div style="display:flex; align-items:center; gap:5px">${renderStreak(dA.overall.streak.slice().reverse())} <span style="font-size:11px;font-weight:bold;color:var(--red)">${aName}</span></div>`);
 
     safeTxt('master-1', pct(m1)); safeTxt('master-x', pct(mX)); safeTxt('master-2', pct(m2));
     // 1X2 per modello
@@ -1766,7 +1869,7 @@ async function avviaScanner() {
     // NB: il massimo osservato su 6824 partite e' ~84, quindi le vecchie soglie (85/70)
     // avrebbero colorato di rosso quasi tutto.
     const _badgeConf = (v) => {
-      if (v == null) return '<span style="color:#999">--</span>';
+      if (v == null) return '<span style="color:var(--dim)">--</span>';
       const col = v >= 60 ? 'var(--green)' : (v >= 50 ? 'var(--orange)' : 'var(--red)');
       return '<span style="color:' + col + '">' + v + '</span>';
     };
@@ -1867,7 +1970,7 @@ async function avviaScanner() {
     let ahHtml = `<tr><th>Handicap (su ${hName})</th><th>1 (Casa Copre)</th><th>Rimborso</th><th>2 (Trasf Copre)</th></tr>`;
     ahData.forEach(d => { let lbl = d.h > 0 ? `+${d.h}` : d.h; ahHtml += `<tr><td style="font-weight:bold">${lbl}</td><td style="color:var(--blue)">${pct(d.pHome)}</td><td>${d.pRefund>0 ? pct(d.pRefund) : '-'}</td><td style="color:var(--red)">${pct(d.pAway)}</td></tr>`; });
     safeHtml('table-ah', ahHtml);
-    const renderMg = (obj) => Object.keys(obj).map(k => `<div style="background:#f0f8ff; border:1px solid #cce5ff; border-radius:6px; padding:6px 8px; display:flex; justify-content:space-between; align-items:center;"><span style="font-weight:bold; font-size:11px">${k} Gol</span><span style="font-weight:900; color:var(--blue); font-size:13px">${pct(obj[k])}</span></div>`).join('');
+    const renderMg = (obj) => Object.keys(obj).map(k => `<div style="background:rgba(79,140,255,.10); border:1px solid rgba(79,140,255,.30); border-radius:6px; padding:6px 8px; display:flex; justify-content:space-between; align-items:center;"><span style="font-weight:bold; font-size:11px">${k} Gol</span><span style="font-weight:900; color:var(--blue); font-size:13px">${pct(obj[k])}</span></div>`).join('');
     safeHtml('mg-tot', renderMg(mgTot)); safeHtml('mg-h', renderMg(mgH)); safeHtml('mg-a', renderMg(mgA));
 
     safeTxt('cor-tot-over', f1(advOver.lCor)); safeTxt('cor-tot-role', f1(advRole.lCor)); safeTxt('pov9-cor-over', pct(advOver.pOv9c)); safeTxt('pov9-cor-role', pct(advRole.pOv9c));
@@ -1889,7 +1992,7 @@ async function avviaScanner() {
     safeTxt('e-gf-ao', f2(dA.overall.features.gf?.avg_tot)); safeTxt('e-xg-ao', f2(dA.overall.features.xg?.avg_tot)); safeTxt('e-ef-ao', f2(effA_ov));
     safeTxt('e-gf-ar', f2(dA.role.features.gf?.avg_tot)); safeTxt('e-xg-ar', f2(dA.role.features.xg?.avg_tot)); safeTxt('e-ef-ar', f2(effA_ro));
 
-    const renderProgRow = (label, feat) => `<tr><td style="font-weight:bold; color:#555">${label}</td><td>${f2(feat?.avg_3)}</td><td>${f2(feat?.avg_5)}</td><td>${f2(feat?.avg_10)}</td><td>${f2(feat?.avg_15)}</td><td class="td-highlight">${f2(feat?.avg_tot)}</td></tr>`;
+    const renderProgRow = (label, feat) => `<tr><td style="font-weight:bold; color:var(--dim)">${label}</td><td>${f2(feat?.avg_3)}</td><td>${f2(feat?.avg_5)}</td><td>${f2(feat?.avg_10)}</td><td>${f2(feat?.avg_15)}</td><td class="td-highlight">${f2(feat?.avg_tot)}</td></tr>`;
     const tHead = `<tr><th>Metrica</th><th>Ult 3</th><th>Ult 5</th><th>Ult 10</th><th>Ult 15</th><th style="color:var(--blue)">Generale</th></tr>`;
     safeHtml('table-prog-h', tHead + renderProgRow('NPxG Fatti', dH.overall.features.npxg) + renderProgRow('NPxG Subiti', dH.overall.features.npxga) + renderProgRow('Field Tilt %', dH.overall.features.field_tilt) + renderProgRow('PPDA', dH.overall.features.ppda));
     safeHtml('table-prog-a', tHead + renderProgRow('NPxG Fatti', dA.overall.features.npxg) + renderProgRow('NPxG Subiti', dA.overall.features.npxga) + renderProgRow('Field Tilt %', dA.overall.features.field_tilt) + renderProgRow('PPDA', dA.overall.features.ppda));
@@ -1898,7 +2001,7 @@ async function avviaScanner() {
     let timingHtml = ''; const maxT = Math.max(...Object.values(bHs), ...Object.values(bHc), ...Object.values(bAs), ...Object.values(bAc), 1);
     Object.keys(bHs).forEach(k => {
       let wHs = Math.max((bHs[k]/maxT)*100, 3); let wHc = Math.max((bHc[k]/maxT)*100, 3); let wAs = Math.max((bAs[k]/maxT)*100, 3); let wAc = Math.max((bAc[k]/maxT)*100, 3);
-      timingHtml += `<tr><td style="font-weight:bold;color:#555">${k}</td><td style="border-left:1px solid #eee"><div class="bucket-bar bg-hf" style="width:${wHs}%">${bHs[k]}</div></td><td><div class="bucket-bar bg-hc" style="width:${wHc}%">${bHc[k]}</div></td><td style="border-left:1px solid #eee"><div class="bucket-bar bg-af" style="width:${wAs}%">${bAs[k]}</div></td><td><div class="bucket-bar bg-ac" style="width:${wAc}%">${bAc[k]}</div></td></tr>`;
+      timingHtml += `<tr><td style="font-weight:bold;color:var(--dim)">${k}</td><td style="border-left:1px solid #eee"><div class="bucket-bar bg-hf" style="width:${wHs}%">${bHs[k]}</div></td><td><div class="bucket-bar bg-hc" style="width:${wHc}%">${bHc[k]}</div></td><td style="border-left:1px solid #eee"><div class="bucket-bar bg-af" style="width:${wAs}%">${bAs[k]}</div></td><td><div class="bucket-bar bg-ac" style="width:${wAc}%">${bAc[k]}</div></td></tr>`;
     });
     safeHtml('timing-body', timingHtml); safeTxt('surv-30', pct(probGoal30)); safeTxt('surv-45', pct(probGoalHT));
 
@@ -1911,7 +2014,7 @@ async function avviaScanner() {
     let klistH = '';
     knn_H.topMatches.forEach(m => {
       let esito = m.info.gf > m.info.ga ? 'V' : (m.info.gf < m.info.ga ? 'S' : 'P'); let col = esito === 'V' ? 'var(--green)' : (esito === 'S' ? 'var(--red)' : '#f57c00');
-      klistH += `<div style="border-bottom:1px solid #eee;padding:6px 0;font-size:11px;"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>${m.info.date} vs <strong>${m.info.oppName}</strong></span><span style="color:${col};font-weight:bold">${m.info.gf}-${m.info.ga}</span></div><div style="font-size:9.5px;color:#666;line-height:1.4">Poss: <b>${m.oppPoss.toFixed(0)}%</b> | NPxG: <b>${f2(m.oppXG)}</b> | Alt.Dif.: <b>${f1(m.oppDefX)}m</b><br>PPDA: <b>${f1(m.oppPPDA)}</b> | Tilt: <b>${f1(m.oppTilt)}%</b></div></div>`;
+      klistH += `<div style="border-bottom:1px solid #eee;padding:6px 0;font-size:11px;"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>${m.info.date} vs <strong>${m.info.oppName}</strong></span><span style="color:${col};font-weight:bold">${m.info.gf}-${m.info.ga}</span></div><div style="font-size:9.5px;color:var(--dim);line-height:1.4">Poss: <b>${m.oppPoss.toFixed(0)}%</b> | NPxG: <b>${f2(m.oppXG)}</b> | Alt.Dif.: <b>${f1(m.oppDefX)}m</b><br>PPDA: <b>${f1(m.oppPPDA)}</b> | Tilt: <b>${f1(m.oppTilt)}%</b></div></div>`;
     });
     safeHtml('knn-list-h', klistH);
 
@@ -1919,7 +2022,7 @@ async function avviaScanner() {
     let klistA = '';
     knn_A.topMatches.forEach(m => {
       let esito = m.info.gf > m.info.ga ? 'V' : (m.info.gf < m.info.ga ? 'S' : 'P'); let col = esito === 'V' ? 'var(--green)' : (esito === 'S' ? 'var(--red)' : '#f57c00');
-      klistA += `<div style="border-bottom:1px solid #eee;padding:6px 0;font-size:11px;"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>${m.info.date} vs <strong>${m.info.oppName}</strong></span><span style="color:${col};font-weight:bold">${m.info.gf}-${m.info.ga}</span></div><div style="font-size:9.5px;color:#666;line-height:1.4">Poss: <b>${m.oppPoss.toFixed(0)}%</b> | NPxG: <b>${f2(m.oppXG)}</b> | Alt.Dif.: <b>${f1(m.oppDefX)}m</b><br>PPDA: <b>${f1(m.oppPPDA)}</b> | Tilt: <b>${f1(m.oppTilt)}%</b></div></div>`;
+      klistA += `<div style="border-bottom:1px solid #eee;padding:6px 0;font-size:11px;"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>${m.info.date} vs <strong>${m.info.oppName}</strong></span><span style="color:${col};font-weight:bold">${m.info.gf}-${m.info.ga}</span></div><div style="font-size:9.5px;color:var(--dim);line-height:1.4">Poss: <b>${m.oppPoss.toFixed(0)}%</b> | NPxG: <b>${f2(m.oppXG)}</b> | Alt.Dif.: <b>${f1(m.oppDefX)}m</b><br>PPDA: <b>${f1(m.oppPPDA)}</b> | Tilt: <b>${f1(m.oppTilt)}%</b></div></div>`;
     });
     safeHtml('knn-list-a', klistA);
 
@@ -1938,7 +2041,7 @@ async function avviaScanner() {
     COV_LIST.forEach(([k, label, type]) => {
       const ch = Math.round(((dH.overall.coverage||{})[k]||0)*100), ca = Math.round(((dA.overall.coverage||{})[k]||0)*100);
       const col = v => v === 0 ? 'color:var(--red);font-weight:bold' : (v < 60 ? 'color:var(--orange)' : 'color:var(--green)');
-      covHtml += `<tr><td>${label}</td><td style="font-size:10px;color:#888">${type}</td><td style="${col(ch)}">${ch}%</td><td style="${col(ca)}">${ca}%</td></tr>`;
+      covHtml += `<tr><td>${label}</td><td style="font-size:10px;color:var(--dim)">${type}</td><td style="${col(ch)}">${ch}%</td><td style="${col(ca)}">${ca}%</td></tr>`;
     });
     safeHtml('table-coverage', covHtml);
 
@@ -2033,7 +2136,7 @@ function calcValue() {
   const bank = gv('bk-bank') || 100;
   const legs = [ {k:'1', p:P.p1, o:gv('bk-1')}, {k:'X', p:P.pX, o:gv('bk-x')}, {k:'2', p:P.p2, o:gv('bk-2')} ];
   const valid = legs.filter(l => l.o > 1 && isFinite(l.o));
-  if(!valid.length) { out.innerHTML = "<span style='color:#888'>Inserisci le quote del bookmaker: senza confronto col mercato una probabilita' non e' una scommessa.</span>"; return; }
+  if(!valid.length) { out.innerHTML = "<span style='color:var(--dim)'>Inserisci le quote del bookmaker: senza confronto col mercato una probabilita' non e' una scommessa.</span>"; return; }
   const over = (valid.length === 3) ? valid.reduce((s,l) => s + 1/l.o, 0) : 0;
   let html = `<table class="table-ui" style="margin-bottom:6px"><tr><th>Esito</th><th>P modello</th><th>P book netta</th><th>Quota</th><th>Valore Atteso</th><th>Stake (Kelly 1/4)</th></tr>`;
   valid.forEach(l => {
@@ -2044,8 +2147,8 @@ function calcValue() {
     html += `<tr><td style="font-weight:bold">${l.k}</td><td>${pct(l.p)}</td><td>${pct(pb)}</td><td>${l.o.toFixed(2)}</td><td style="color:${col};font-weight:bold">${(ev*100).toFixed(1)}%</td><td>${kf > 0 ? (kf*100).toFixed(1)+'% ('+(kf*bank).toFixed(2)+')' : '-'}</td></tr>`;
   });
   html += `</table>`;
-  if(over > 0) html += `<div style="font-size:10px;color:#888">Margine del book: ${((over-1)*100).toFixed(1)}%. La colonna "P book netta" e' la probabilita' implicita depurata dal margine: se e' vicina alla tua, il valore apparente e' solo rumore.</div>`;
-  html += `<div style="font-size:10px;color:#888;margin-top:4px">Kelly frazionato a 1/4: il modello non e' calibrato su backtest, quindi il Kelly pieno sovrastima lo stake.</div>`;
+  if(over > 0) html += `<div style="font-size:10px;color:var(--dim)">Margine del book: ${((over-1)*100).toFixed(1)}%. La colonna "P book netta" e' la probabilita' implicita depurata dal margine: se e' vicina alla tua, il valore apparente e' solo rumore.</div>`;
+  html += `<div style="font-size:10px;color:var(--dim);margin-top:4px">Kelly frazionato a 1/4: il modello non e' calibrato su backtest, quindi il Kelly pieno sovrastima lo stake.</div>`;
   out.innerHTML = html;
 }
 
