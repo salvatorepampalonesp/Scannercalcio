@@ -1255,6 +1255,10 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
 
     matchDetails[m.id] = {
       gf, ga, avv, dateStrUtc, dateShort, modulo, oppModulo, isH,
+      // Concessi all'avversario: vanno portati QUI dentro perche' vengono letti nel ciclo
+      // di aggregazione piu' sotto, che gira su matchDetails e non vede le variabili
+      // locali di questo ciclo di fetch (era la causa di "poss_ag is not defined").
+      poss_ag, xgot_ag, tch_box_ag: tchbox_ag,
       // xG e possesso: mai zero-fillati. Uno 0 qui non e' "non ha creato nulla", e' "il provider non copre la metrica".
       xg: keepNull(base_xg), xga: keepNull(extractSafeStat(d, 'expected_goals', !isH)),
       npxga: keepNull(extractSafeStat(d, ['npxg', 'non_penalty_xg', 'expected_goals_non_penalty'], !isH)),
@@ -1284,7 +1288,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
       out.vals.gf.push(det.gf); out.vals.ga.push(det.ga); out.vals.xg.push(det.xg); out.vals.xga.push(det.xga);
       let safe_npxg = (det.npxg != null && det.npxg > 0) ? det.npxg : det.xg; let safe_npxga = (det.npxga != null && det.npxga > 0) ? det.npxga : det.xga;
       out.vals.npxg.push(safe_npxg); out.vals.npxga.push(safe_npxga); out.vals.sot.push(det.sot); out.vals.sot_ag.push(det.sot_ag); out.vals.cor.push(det.cor); out.vals.cor_ag.push(det.cor_ag);
-      out.vals.yel.push(det.yel); out.vals.yel_ag.push(det.yel_ag); out.vals.fouls.push(det.fouls); out.vals.fouls_ag.push(det.fouls_ag); out.vals.poss.push(det.poss); out.vals.poss_ag.push(poss_ag); out.vals.xgot_ag.push(xgot_ag); out.vals.tch_box_ag.push(tchbox_ag); out.vals.moduli.push(det.modulo);
+      out.vals.yel.push(det.yel); out.vals.yel_ag.push(det.yel_ag); out.vals.fouls.push(det.fouls); out.vals.fouls_ag.push(det.fouls_ag); out.vals.poss.push(det.poss); out.vals.poss_ag.push(det.poss_ag); out.vals.xgot_ag.push(det.xgot_ag); out.vals.tch_box_ag.push(det.tch_box_ag); out.vals.moduli.push(det.modulo);
       out.vals.red_cards.push(det.red_cards); out.vals.dates.push(det.dateStrUtc);
       
       // I metrici opzionali si inseriscono SEMPRE, anche come null: nella v9.4 venivano inseriti solo se
@@ -1656,6 +1660,78 @@ const STAT_PAIRS = {
   poss: 'poss_ag', xgot: 'xgot_ag', tch_box: 'tch_box_ag'
 };
 
+// ===========================================================================
+// BASELINE DI LEGA VERA (per predictStat)
+// Prima la "media di lega" era la media dei 4 valori del singolo incontro
+// (prodotto/concesso delle due squadre). Non e' una media di lega: se le due
+// squadre sono entrambe forti in attacco quel valore si gonfia, e siccome lo
+// smorzamento agisce sui rapporti valore/baseline, una baseline sbagliata
+// sposta la stima. Qui la media viene calcolata su TUTTE le partite della lega
+// gia' in RAW_CACHE, contando entrambe le squadre di ogni match.
+//
+// Niente look-ahead: si usano solo le partite precedenti al PRIMO GIORNO DEL
+// MESE della data target. Il taglio al mese, oltre a essere piu' prudente della
+// data esatta, rende il valore riutilizzabile per tutte le partite dello stesso
+// mese: si calcola una volta ogni ~10 partite invece che a ogni partita.
+//
+// ATTENZIONE: le chiavi qui sotto devono restare allineate a quelle usate in
+// aggregaTeam. Se lì si aggiunge un alias per una statistica, va aggiunto anche qui.
+// ===========================================================================
+const LGBASE_KEYS = {
+  xg:      'expected_goals',
+  npxg:    ['npxg', 'non_penalty_xg', 'expected_goals_non_penalty'],
+  xgot:    ['expected_goals_on_target', 'xgot', 'xg_on_target'],
+  sot:     'ShotsOnTarget',
+  cor:     'corners',
+  yel:     ['yellow_cards', 'yellowcards', 'gialli'],
+  fouls:   ['fouls', 'falli'],
+  poss:    ['BallPossesion', 'ball_possession', 'ballpossession', 'possession', 'ballPossession'],
+  tch_box: ['touches_in_opp_box', 'touches_opp_box', 'touchesinoppbox']
+};
+const LGBASE_MIN_CAMPIONE = 40;   // sotto questa soglia non ci si fida e si torna al vecchio metodo
+const _LGBASE_CACHE = {};
+
+function leagueStatBaseline(feat) {
+  try {
+    const lId = (typeof document !== 'undefined' && document.getElementById('sel-league'))
+      ? document.getElementById('sel-league').value : '';
+    const dEl = (typeof document !== 'undefined') ? document.getElementById('target-date') : null;
+    const dStr = dEl && dEl.value ? dEl.value : null;
+    if (!dStr) return null;
+    const mese = dStr.slice(0, 7);                       // YYYY-MM
+    const ck = lId + '|' + feat + '|' + mese;
+    if (_LGBASE_CACHE[ck] !== undefined) return _LGBASE_CACHE[ck];
+
+    const cutoff = new Date(mese + '-01T00:00:00Z').getTime();
+    const cache = (typeof globalLeagueMatchesCache !== 'undefined') ? globalLeagueMatchesCache : [];
+    let somma = 0, n = 0;
+
+    for (const m of cache) {
+      if (m.status !== 'finished' || !m.time_utc) continue;
+      if (lId && m.league_id !== lId) continue;
+      if (new Date(m.time_utc).getTime() >= cutoff) continue;
+
+      if (feat === 'gf') {                                // i gol stanno nel calendario
+        if (m.score_home == null || m.score_away == null) continue;
+        somma += m.score_home + m.score_away; n += 2;
+        continue;
+      }
+      const raw = RAW_CACHE[m.id];                        // solo cio' che e' gia' stato scaricato
+      if (!raw || !raw[0]) continue;
+      const d = raw[0].data || raw[0];
+      const keys = LGBASE_KEYS[feat];
+      if (!keys) return (_LGBASE_CACHE[ck] = null);
+      for (const isH of [true, false]) {
+        const v = extractSafeStat(d, keys, isH);
+        if (v != null && isFinite(v) && v > 0) { somma += v; n++; }
+      }
+    }
+    const out = (n >= LGBASE_MIN_CAMPIONE && somma > 0) ? (somma / n) : null;
+    _LGBASE_CACHE[ck] = out;
+    return out;
+  } catch (e) { return null; }
+}
+
 // Restituisce il valore atteso della metrica per la squadra "att" contro "dif".
 // Se manca il dato del concesso o la media di lega, torna alla media semplice:
 // meglio una stima grezza che un buco, e le leghe fuori dalle top europee
@@ -1672,10 +1748,17 @@ function predictStat(att, dif, feat, scope) {
   const conc = agFeat ? gv(dif, agFeat) : null;
   if (conc == null) return mine;                    // niente avversario: media semplice
   // media di lega approssimata dai quattro valori disponibili per questo match
-  const other = gv(dif, feat), mineAg = agFeat ? gv(att, agFeat) : null;
-  const pool = [mine, conc, other, mineAg].filter(v => v != null && isFinite(v) && v > 0);
-  if (pool.length < 3) return mine;
-  const lg = pool.reduce((s, v) => s + v, 0) / pool.length;
+  // Baseline: prima la media di lega vera (su tutte le partite gia' viste, solo
+  // precedenti al mese target). Se non c'e' abbastanza campione si ripiega sulla
+  // vecchia media dei 4 valori dell'incontro, cosi' il comportamento non regredisce
+  // mai rispetto a prima: al massimo resta identico.
+  let lg = leagueStatBaseline(feat);
+  if (!(lg > 0)) {
+    const other = gv(dif, feat), mineAg = agFeat ? gv(att, agFeat) : null;
+    const pool = [mine, conc, other, mineAg].filter(v => v != null && isFinite(v) && v > 0);
+    if (pool.length < 3) return mine;
+    lg = pool.reduce((s, v) => s + v, 0) / pool.length;
+  }
   if (!(lg > 0)) return mine;
   const sh = r => 1 + STAT_SHRINK * (r - 1);
   const out = lg * sh(mine / lg) * sh(conc / lg);
