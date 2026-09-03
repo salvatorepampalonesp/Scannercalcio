@@ -216,6 +216,55 @@ select{cursor:pointer}
       <div class="note">Scarica 3 stagioni di partite: è il passo lento, si fa una volta sola. Dopo, ogni analisi su questo campionato è rapida.</div>
     </div>
 
+    <!-- BATCH MULTI-STAGIONE: automatizza paese→lega→stagione→intervallo→scansione→export,
+         una volta per ciascuna stagione selezionata, senza dover ripetere i passi a mano. -->
+    <div class="card hidden" id="cmp-batch-card">
+      <div class="card-h"><div class="card-t">Batch multi-stagione (automatico)</div></div>
+      <div class="note">Elabora l'intera stagione (l'intervallo di date viene rilevato da solo) per ogni stagione selezionata qui sotto, ed esporta un file Excel per ciascuna, una dopo l'altra.</div>
+      <div style="margin:10px 0">
+        <label>Stagioni da elaborare</label>
+        <div id="cmp-batch-seasons" style="display:flex;flex-wrap:wrap"></div>
+        <div style="margin-top:6px">
+          <a href="javascript:void(0)" onclick="cmpBatchToggleAll(true)" style="font-size:12px">Seleziona tutte</a>
+          &nbsp;·&nbsp;
+          <a href="javascript:void(0)" onclick="cmpBatchToggleAll(false)" style="font-size:12px">Deseleziona tutte</a>
+        </div>
+      </div>
+      <div class="row c2">
+        <div><label>Storico per squadra (partite indietro)</label><input type="number" id="cmp-batch-limit" value="30" min="5" max="100"></div>
+        <div style="display:flex;align-items:flex-end">
+          <button class="btn btn-go btn-full" id="cmp-batch-btn" onclick="cmpAvviaBatchStagioni()">Avvia batch stagioni</button>
+        </div>
+      </div>
+      <div class="prog" id="cmp-batch-progress"></div>
+    </div>
+
+    <!-- SWEEP TOTALE: tutte le leghe × tutte le stagioni, fermabile e riprendibile -->
+    <div class="card" id="cmp-sweep-card">
+      <div class="card-h"><div class="card-t">Sweep totale — tutti i campionati</div></div>
+      <div class="note">Genera un Excel per ogni lega e ogni stagione disponibile, in sequenza e senza sorveglianza. Salva un checkpoint dopo ogni stagione: puoi fermarti (o spegnere) e riprendere da dove eri, perdendo solo la stagione in corso.</div>
+      <div class="row c2">
+        <div><label>Storico per squadra (partite indietro)</label><input type="number" id="cmp-sweep-limit" value="30" min="5" max="100"></div>
+        <div style="display:flex;align-items:flex-end;padding-bottom:8px">
+          <label style="font-weight:400;display:flex;align-items:center;gap:7px;margin:0">
+            <input type="checkbox" id="cmp-sweep-cups" style="width:auto"> includi coppe e nazionali (Champions, Europa, Mondiale)
+          </label>
+        </div>
+      </div>
+      <div class="row c2">
+        <button class="btn btn-go" id="cmp-sweep-start" onclick="cmpSweepStart(false)">Avvia sweep completo</button>
+        <button class="btn" id="cmp-sweep-stop" onclick="cmpSweepStop()" disabled>Ferma</button>
+      </div>
+      <div class="row c2" style="margin-top:8px">
+        <button class="btn btn-sm" id="cmp-sweep-resume" onclick="cmpSweepStart(true)">Riprendi da dove eri</button>
+        <button class="btn btn-sm" onclick="cmpSweepReset()">Azzera progresso</button>
+      </div>
+      <div class="row c2" style="margin-top:8px">
+        <button class="btn btn-sm" id="cmp-sweep-retry" onclick="cmpSweepRetryFailed()">Rimetti in coda le fallite</button>
+      </div>
+      <div class="prog" id="cmp-sweep-progress"></div>
+    </div>
+
     <!-- STEP 3 -->
     <div class="card hidden" id="cmp-match-builder">
       <div class="card-h"><div class="card-t">Cosa vuoi analizzare</div></div>
@@ -397,6 +446,11 @@ const CMP_K_LIST = [4, 12, 28];
 
 let cmpCurrentLeagueId = '';   // lega selezionata, per taggare i match e settare sel-league
 
+// Copia integrale di leghe.json (42 leghe), usata come fallback quando fetch('leghe.json')
+// fallisce — SEMPRE il caso se il file viene aperto con doppio click invece che via server
+// locale, perché i browser bloccano i fetch verso file:// per policy CORS.
+const CMP_LEAGUES_FALLBACK = [{"id":"l_3hvsne","name":"2. Bundesliga","country_code":"GER","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_4MPd7x","name":"A-League","country_code":"AUS","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_1XsMdH","name":"Allsvenskan","country_code":"SWE","seasons":["2021","2022","2023","2024","2025","2026"]},{"id":"l_3zsMpo","name":"Bundesliga","country_code":"AUT","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_1Isor4","name":"Bundesliga","country_code":"GER","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_1pQOHK","name":"Challenger Pro League","country_code":"BEL","seasons":["2025/2026","2026/2027"]},{"id":"l_0bfbkO","name":"Champions League","country_code":"INT-2","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_4DWyTT","name":"Championship","country_code":"ENG","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_2WZ2tt","name":"Conference League","country_code":"INT-2","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_214sqK","name":"Ekstraklasa","country_code":"POL","seasons":["2025/2026","2026/2027"]},{"id":"l_0uqFK8","name":"Eliteserien","country_code":"NOR","seasons":["2021","2022","2023","2024","2025","2026"]},{"id":"l_4H43wr","name":"Eredivisie","country_code":"NED","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_38d9HA","name":"Europa League","country_code":"INT-2","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_2L6d1F","name":"First Division A","country_code":"BEL","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_1qpFVw","name":"Indian Super League","country_code":"IND","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_2ApGa4","name":"J. League","country_code":"JPN","seasons":["2022","2023","2024","2025","2026"]},{"id":"l_2EKrnc","name":"K League 1","country_code":"KOR","seasons":["2022","2023","2024","2025","2026"]},{"id":"l_0ErfuF","name":"LaLiga","country_code":"ESP","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_3kyHLd","name":"LaLiga2","country_code":"ESP","seasons":["2025/2026","2026/2027"]},{"id":"l_0ahLw8","name":"League One","country_code":"ENG","seasons":["2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_1W6idJ","name":"League Two","country_code":"ENG","seasons":["2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_3v84VE","name":"Liga MX","country_code":"MEX","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_4QexZg","name":"Liga Portugal","country_code":"POR","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_45VZuL","name":"Liga Profesional","country_code":"ARG","seasons":["2023","2024","2025","2026"]},{"id":"l_3FJFUl","name":"Ligue 1","country_code":"FRA","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_0275VP","name":"Ligue 2","country_code":"FRA","seasons":["2025/2026","2026/2027"]},{"id":"l_0eg6C9","name":"MLS","country_code":"USA","seasons":["2021","2022","2023","2024","2025","2026"]},{"id":"l_2Mh0jT","name":"Premier League","country_code":"RUS","seasons":["2025/2026","2026/2027"]},{"id":"l_46aZMC","name":"Premier League","country_code":"EGY","seasons":["2025/2026","2026/2027"]},{"id":"l_4WFCIZ","name":"Premier League","country_code":"ENG","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_1Kknkl","name":"Premier Soccer League","country_code":"RSA","seasons":["2025/2026","2026/2027"]},{"id":"l_1LMdEO","name":"Premiership","country_code":"SCO","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_0Lpz1f","name":"Saudi Pro League","country_code":"KSA","seasons":["2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_0ALvwF","name":"Serie A","country_code":"ITA","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_1D8Xrl","name":"Serie A","country_code":"BRA","seasons":["2023","2024","2025","2026"]},{"id":"l_0jy5yE","name":"Serie B","country_code":"ITA","seasons":["2025/2026","2026/2027"]},{"id":"l_4d6Bwl","name":"Super League","country_code":"SUI","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_3xwVF2","name":"Super League 1","country_code":"GRE","seasons":["2024/2025","2025/2026","2026/2027"]},{"id":"l_0S1uaf","name":"Super Lig","country_code":"TUR","seasons":["2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_49Zmno","name":"Superligaen","country_code":"DEN","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_3hW1NO","name":"Thai League 1","country_code":"THA","seasons":["2025/2026"]},{"id":"l_1XLtP0","name":"World Cup","country_code":"INT","seasons":["2022","2026"]}];
+
 const cmpLog = m => {
   const c = document.getElementById('console');
   c.style.display='block';
@@ -443,9 +497,19 @@ fileInput.addEventListener('change', e => { if (e.target.files[0]) loadEngineFro
 
 async function loadEngineFromFile(file) {
   if (!file.name.endsWith('.html')) return alert("Il file deve essere .html");
-
-  cmpLog(`📂 Caricamento file: ${file.name}`);
   const text = await file.text();
+  // Memorizzo il motore: così, se la pagina viene ricaricata (o il PC riavviato) durante
+  // uno sweep lungo, alla riapertura il motore si riattiva da solo e si può premere
+  // "Riprendi" senza dover ri-trascinare lo scanner.
+  try {
+    localStorage.setItem('cmp_engine_html', text);
+    localStorage.setItem('cmp_engine_name', file.name);
+  } catch (e) { cmpLog(`   ⚠️ Motore non memorizzato per il riavvio: ${e.message}`); }
+  return loadEngineFromText(text, file.name);
+}
+
+async function loadEngineFromText(text, fileName) {
+  cmpLog(`📂 Caricamento motore: ${fileName}`);
   cmpLog(`   → ${(text.length/1024).toFixed(1)} KB letti`);
 
   // ─── STEP 1: Estraggo tutto il codice JavaScript degli <script> ─────
@@ -484,6 +548,40 @@ async function loadEngineFromFile(file) {
     cmpLog(`   ⚠️ Dichiarazione cache non trovata: il motore potrebbe avere struttura diversa.`);
   }
 
+  // ─── STEP 2b-bis: RAW_CACHE CONDIVISA ─────────────────────────────────────
+  // Il motore tiene in `let RAW_CACHE = {}` i 4 endpoint di ogni partita storica già
+  // scaricata. È la cache che rende veloce tutto il batch, ma in uno sweep di 24h su
+  // decine di leghe crescerebbe fino a saturare la memoria della scheda. Con lo stesso
+  // trucco usato sopra per globalLeagueMatchesCache la aggancio a window, così lo sweep
+  // può svuotarla al cambio di lega (dentro la stessa lega invece va tenuta: le stagioni
+  // consecutive condividono gran parte dello storico).
+  const rawRe = /(^|\n)\s*(?:let|var|const)\s+RAW_CACHE\s*=\s*\{\}\s*;?/;
+  if (rawRe.test(processedJs)) {
+    processedJs = processedJs.replace(rawRe,
+      '$1 if(!window.__RAW_CACHE) window.__RAW_CACHE = {}; ' +
+      'Object.defineProperty(window, "RAW_CACHE", {' +
+      'configurable:true, get(){return window.__RAW_CACHE;}, set(v){window.__RAW_CACHE = v;}});');
+    cmpLog(`🔧 RAW_CACHE condivisa agganciata (window.__RAW_CACHE)`);
+  }
+
+  // ─── STEP 2b-ter: NON MEMORIZZARE I BUCHI DI RETE ─────────────────────────
+  // `fetchMatchRaw` mette in cache il risultato ANCHE quando tutti e quattro gli endpoint
+  // sono falliti: su una connessione instabile (hotspot) un buco di pochi secondi veniva
+  // memorizzato come "questa partita non ha dati" e non veniva più ritentato per tutta la
+  // lega, impoverendo le previsioni in silenzio. Qui la cache accetta il risultato solo se
+  // almeno un endpoint ha risposto. Per non ritentare all'infinito le partite che davvero
+  // non hanno dati (capita nelle serie minori), dopo 3 tentativi a vuoto si arrende e
+  // memorizza comunque.
+  const rawSaveRe = /RAW_CACHE\[id\]\s*=\s*res;/;
+  if (rawSaveRe.test(processedJs)) {
+    processedJs = processedJs.replace(rawSaveRe,
+      'if (res && res.some(x => x !== null && x !== undefined)) { RAW_CACHE[id] = res; } ' +
+      'else { window.__RAW_FAILS = window.__RAW_FAILS || {}; ' +
+      'window.__RAW_FAILS[id] = (window.__RAW_FAILS[id] || 0) + 1; ' +
+      'if (window.__RAW_FAILS[id] >= 3) RAW_CACHE[id] = res; }');
+    cmpLog(`🔧 Cache resistente ai buchi di rete attivata`);
+  }
+
   // ─── STEP 2c: INIETTO L'HOOK per _V97_probs se manca ──────────────────────
   if (!processedJs.includes('_V97_probs')) {
     cmpLog(`🔧 Iniezione hook window._V97_probs...`);
@@ -497,6 +595,7 @@ async function loadEngineFromFile(file) {
       globalThis._V97_probs = {
         probsRole:   (typeof probsRole   !== 'undefined') ? probsRole   : null,
         probsOL:  (typeof probsOL!=='undefined') ? probsOL : null,   /* ordered logit */
+        predStats: (typeof window.__PRED_STATS !== 'undefined') ? window.__PRED_STATS : null,
         probsKnn:    (typeof probsKnn    !== 'undefined') ? probsKnn    : null,
         mk_ro:       (typeof mk_ro       !== 'undefined') ? mk_ro       : null,
         m1: (typeof m1!=='undefined')?m1:null, mX: (typeof mX!=='undefined')?mX:null, m2: (typeof m2!=='undefined')?m2:null,
@@ -558,7 +657,7 @@ async function loadEngineFromFile(file) {
   const exposeNames = ['apiCall','avviaScanner','aggregaTeam','extractSafeStat','buildGlobalElo',
     'calcDCMatrix','markovFlow','probsFromMatrix','estimateRho','calculateRho','getSimilarMatches',
     'computeLeagueParams','multigoal','asianHandicapMat','negBinCDF','negBinK','poisson',
-    'expectedPoints','probsFromMatrix','loadLegheJson'];
+    'expectedPoints','probsFromMatrix','loadLegheJson','fetchMatchRaw'];
   let exposer = '\n;(function(){\n';
   exposeNames.forEach(n => {
     exposer += `  try { if (typeof ${n} !== 'undefined') window[${JSON.stringify(n)}] = ${n}; } catch(e){}\n`;
@@ -592,7 +691,7 @@ async function loadEngineFromFile(file) {
   engineReady = true;
   dropzone.classList.add('loaded');
   dropzone.innerHTML = `<h2>Motore attivo</h2>
-    <p><code>${file.name}</code> — clicca per sostituirlo dopo un aggiornamento</p>`;
+    <p><code>${fileName}</code> — clicca per sostituirlo dopo un aggiornamento</p>`;
   const eb=document.getElementById('engine-badge');
   if(eb){ eb.textContent='motore attivo'; eb.className='badge live'; }
   cmpStep(2);
@@ -619,14 +718,13 @@ async function cmpLoadLeghe() {
       cmpLeagues = json.data?.leagues || json.leagues || [];
     } else throw new Error();
   } catch {
-    cmpLeagues = [
-      {"id":"l_1Isor4","name":"Bundesliga","country_code":"GER","seasons":["2023/2024","2024/2025","2025/2026"]},
-      {"id":"l_0ErfuF","name":"LaLiga","country_code":"ESP","seasons":["2023/2024","2024/2025","2025/2026","2026/2027"]},
-      {"id":"l_3FJFUl","name":"Ligue 1","country_code":"FRA","seasons":["2023/2024","2024/2025","2025/2026","2026/2027"]},
-      {"id":"l_4WFCIZ","name":"Premier League","country_code":"ENG","seasons":["2023/2024","2024/2025","2025/2026","2026/2027"]},
-      {"id":"l_0ALvwF","name":"Serie A","country_code":"ITA","seasons":["2023/2024","2024/2025","2025/2026","2026/2027"]},
-      {"id":"l_0jy5yE","name":"Serie B","country_code":"ITA","seasons":["2025/2026","2026/2027"]}
-    ];
+    // Fallback: quando il file viene aperto con doppio click (file://), i browser bloccano
+    // il fetch() di risorse locali per policy CORS, quindi leghe.json non si carica mai e si
+    // finiva qui con solo 6 leghe hardcoded (le "top 5 nazioni"). Ora il fallback è l'intero
+    // catalogo leghe.json (42 leghe) copiato qui dentro: funziona SEMPRE, anche via file://.
+    // Se in futuro PitchAPI aggiunge nuove leghe, aggiornare anche questo array (o servire la
+    // pagina via server locale così il fetch va a buon fine e la copia diventa superflua).
+    cmpLeagues = CMP_LEAGUES_FALLBACK;
   }
   const countries = [...new Set(cmpLeagues.map(l => l.country_code))].sort();
   countries.forEach(c => cSel.add(new Option(c, c)));
@@ -646,6 +744,353 @@ function cmpUpdateSeasons() {
   sSel.innerHTML = '<option value="">-- --</option>';
   const lg = cmpLeagues.find(lg => lg.id === l);
   if (lg) lg.seasons.slice().reverse().forEach(s => sSel.add(new Option(s, s)));
+  cmpRenderBatchSeasons();
+}
+
+// ─── BATCH MULTI-STAGIONE ──────────────────────────────────────────────────
+function cmpRenderBatchSeasons() {
+  const lId = document.getElementById('cmp-league').value;
+  const box = document.getElementById('cmp-batch-seasons');
+  const card = document.getElementById('cmp-batch-card');
+  box.innerHTML = '';
+  const lg = cmpLeagues.find(l => l.id === lId);
+  if (!lg) { card.classList.add('hidden'); return; }
+  card.classList.remove('hidden');
+  lg.seasons.slice().sort().forEach(s => {
+    const cbId = 'bs_' + s.replace(/\W/g, '_');
+    box.insertAdjacentHTML('beforeend',
+      `<label style="display:inline-flex;align-items:center;gap:6px;margin:4px 14px 4px 0;font-weight:400">
+         <input type="checkbox" value="${s}" id="${cbId}" checked> ${s}
+       </label>`);
+  });
+}
+
+function cmpBatchToggleAll(v) {
+  document.querySelectorAll('#cmp-batch-seasons input[type=checkbox]').forEach(c => c.checked = v);
+}
+
+let cmpBatchRunning = false;
+let cmpBatchExportFilename = null; // se impostato, cmpExportCSV lo usa al posto del nome data-based
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SWEEP TOTALE — un Excel per ogni lega e ogni stagione, con ripresa
+// Pensato per girare per ore incustodito: salva un checkpoint dopo OGNI stagione
+// completata, così si può fermare (o subire un riavvio) e riprendere da dove era
+// arrivato, perdendo al massimo la stagione in corso.
+// ═══════════════════════════════════════════════════════════════════════════
+const CMP_SWEEP_KEY = 'cmp_sweep_state_v1';
+let cmpSweepRunning = false;
+let cmpSweepStopRequested = false;
+
+function cmpSweepLoad() {
+  try { return JSON.parse(localStorage.getItem(CMP_SWEEP_KEY) || 'null'); } catch { return null; }
+}
+function cmpSweepSave(st) {
+  try { localStorage.setItem(CMP_SWEEP_KEY, JSON.stringify(st)); }
+  catch (e) { cmpLog(`⚠️ Checkpoint non salvato: ${e.message}`); }
+}
+
+// Ordino per lega e, dentro la lega, per stagione: le stagioni consecutive della stessa
+// lega condividono quasi tutto lo storico, quindi la RAW_CACHE resta calda e si evita
+// di riscaricare le stesse partite. La cache viene svuotata solo al cambio di lega.
+function cmpSweepBuildJobs(includeCups) {
+  const cups = new Set(['INT', 'INT-2']);
+  const jobs = [];
+  cmpLeagues.slice()
+    .filter(l => includeCups || !cups.has(l.country_code))
+    .sort((a, b) => (a.country_code + a.name).localeCompare(b.country_code + b.name))
+    .forEach(l => l.seasons.slice().sort().forEach(s => jobs.push({
+      cc: l.country_code, lgId: l.id, lgName: l.name, season: s, status: 'pending', matches: 0
+    })));
+  return jobs;
+}
+
+function cmpSweepRender(st, extra) {
+  const box = document.getElementById('cmp-sweep-progress');
+  if (!st) { box.innerHTML = extra || ''; return; }
+  const done = st.jobs.filter(j => j.status === 'done').length;
+  const empty = st.jobs.filter(j => j.status === 'empty').length;
+  const err = st.jobs.filter(j => j.status === 'error').length;
+  const left = st.jobs.filter(j => j.status === 'pending').length;
+  const tot = st.jobs.length;
+  const partite = st.jobs.reduce((s, j) => s + (j.matches || 0), 0);
+  box.style.display = 'block';
+  box.innerHTML = `<b>${done}</b>/${tot} stagioni completate · ${partite} partite elaborate`
+    + ` · ${left} da fare${empty ? ` · ${empty} vuote` : ''}${err ? ` · ${err} errori` : ''}`
+    + (extra ? `<br>${extra}` : '');
+
+  // Dettaglio delle fallite: senza, si sa solo QUANTE sono e non si può decidere se
+  // valga la pena ritentarle. "error" = nemmeno una partita elaborata, quindi per
+  // quella stagione non è stato scaricato alcun Excel.
+  const falliti = st.jobs.filter(j => j.status === 'error');
+  if (falliti.length) {
+    box.innerHTML += `<br><br><b>Stagioni fallite (nessun Excel prodotto):</b><br>`
+      + falliti.map(j => `· ${j.cc} ${j.lgName} ${j.season}`
+          + (j.error ? ` — <span style="opacity:.75">${j.error}</span>` : ' — nessuna partita elaborata')).join('<br>')
+      + `<br><span style="opacity:.75">Premi "Rimetti in coda le fallite" e poi "Riprendi": la ripresa normale le salta.</span>`;
+  }
+}
+
+// La ripresa elabora SOLO i job 'pending': quelli finiti in 'error' verrebbero saltati
+// per sempre. Questo li rimette in coda senza toccare le stagioni già completate
+// (che "Azzera progresso" invece butterebbe via tutte).
+function cmpSweepRetryFailed() {
+  if (cmpSweepRunning) return alert('Ferma prima lo sweep in corso.');
+  const st = cmpSweepLoad();
+  if (!st || !st.jobs) return alert('Nessuno sweep salvato.');
+  const falliti = st.jobs.filter(j => j.status === 'error');
+  if (!falliti.length) return alert('Nessuna stagione fallita: non c\'è nulla da rimettere in coda.');
+  falliti.forEach(j => { j.status = 'pending'; delete j.error; j.matches = 0; });
+  cmpSweepSave(st);
+  cmpSweepRender(st, `🔁 ${falliti.length} stagioni rimesse in coda. Premi "Riprendi da dove eri".`);
+  cmpLog(`🔁 Rimesse in coda ${falliti.length} stagioni fallite: ${falliti.map(j=>`${j.cc} ${j.lgName} ${j.season}`).join(', ')}`);
+}
+
+// Esegue UNA stagione: carica lo storico, elabora solo le partite di QUELLA stagione,
+// esporta l'Excel. Restituisce lo stato finale del job.
+async function cmpSweepRunSeason(job, limit, onTick) {
+  document.getElementById('cmp-country').value = job.cc;
+  cmpUpdateLeagues();
+  document.getElementById('cmp-league').value = job.lgId;
+  cmpUpdateSeasons();
+  document.getElementById('cmp-season').value = job.season;
+  document.getElementById('cmp-range-start').value = '';
+  document.getElementById('cmp-range-end').value = '';
+  document.getElementById('cmp-history-limit').value = limit;
+  document.getElementById('cmp-target-date').value = '2000-01-01'; // non usato qui, deve solo esserci
+  cmpSavedMatches.length = 0;
+
+  await cmpCaricaDatabase();
+
+  // SOLO le partite della stagione richiesta: le altre due stagioni servono da storico.
+  const target = cmpAllMatches.filter(m =>
+    m._season === job.season && m.status === 'finished' &&
+    m.score_home != null && m.time_utc
+  ).sort((a, b) => a.time_utc.localeCompare(b.time_utc));
+
+  if (!target.length) return { status: 'empty', matches: 0 };
+
+  let ok = 0, fail = 0;
+  const t0 = Date.now();
+  for (let i = 0; i < target.length; i++) {
+    if (cmpSweepStopRequested) return { status: 'stopped', matches: ok };
+    const m = target[i];
+    const eta = i > 0 ? Math.round((Date.now() - t0) / i * (target.length - i) / 1000) : null;
+    onTick(`${job.cc} ${job.lgName} ${job.season} — partita ${i + 1}/${target.length}`
+      + ` (${m.home_team.name} vs ${m.away_team.name})`
+      + (eta != null ? ` · ~${Math.floor(eta / 60)}m ${eta % 60}s alla fine della stagione` : ''));
+    try {
+      const res = await cmpRunMatch(m, limit, false);
+      if (res) { cmpSavedMatches.push(JSON.parse(JSON.stringify(res))); ok++; } else fail++;
+    } catch (e) {
+      fail++;
+      cmpLog(`  ❌ ${m.home_team.name}-${m.away_team.name}: ${e.message}`);
+    }
+  }
+
+  if (!ok) return { status: 'error', matches: 0 };
+
+  cmpBatchExportFilename = `Backtest_V97_${job.cc}_${job.lgName.replace(/[\s/]+/g, '_')}_${job.season.replace(/\//g, '-')}.csv`;
+  cmpExportCSV();
+  cmpBatchExportFilename = null;
+  return { status: 'done', matches: ok, failed: fail };
+}
+
+async function cmpSweepStart(resume) {
+  if (cmpSweepRunning) return;
+  if (!engineReady) return alert('Prima carica il motore (trascina lo scanner nella dropzone).');
+  const key = document.getElementById('cmp-api-key').value.trim();
+  if (!key) return alert('Inserisci la API key prima di avviare lo sweep.');
+
+  let st = cmpSweepLoad();
+  if (resume) {
+    if (!st || !st.jobs) return alert('Nessuno sweep da riprendere: usa "Avvia sweep completo".');
+  } else {
+    const jobs = cmpSweepBuildJobs(document.getElementById('cmp-sweep-cups').checked);
+    if (st && st.jobs && st.jobs.some(j => j.status === 'done')) {
+      const d = st.jobs.filter(j => j.status === 'done').length;
+      if (!confirm(`Esiste già uno sweep con ${d} stagioni completate.\n\nOK = ricomincio da ZERO (rifà tutto)\nAnnulla = esco (usa "Riprendi" per continuare)`)) return;
+    }
+    st = {
+      version: 1, startedAt: new Date().toISOString(),
+      limit: parseInt(document.getElementById('cmp-sweep-limit').value) || 30,
+      jobs
+    };
+    cmpSweepSave(st);
+  }
+
+  const pending = st.jobs.filter(j => j.status === 'pending');
+  if (!pending.length) { cmpSweepRender(st, '✅ Nulla da fare: tutte le stagioni sono già state elaborate.'); return; }
+
+  if (!resume && !confirm(`Sto per elaborare ${pending.length} stagioni, una alla volta, scaricando un Excel per ognuna.\n\n`
+    + `Puoi fermare in qualsiasi momento con "Ferma": le stagioni già completate restano salvate e alla ripresa si continua da lì.\n\nProcedo?`)) return;
+
+  cmpSweepRunning = true;
+  cmpSweepStopRequested = false;
+  document.getElementById('cmp-sweep-start').disabled = true;
+  document.getElementById('cmp-sweep-resume').disabled = true;
+  document.getElementById('cmp-sweep-stop').disabled = false;
+
+  // Popup del motore soppressi: un alert nativo bloccherebbe lo sweep per ore in attesa di un click.
+  const origAlert = window.alert, origConfirm = window.confirm;
+  window.alert = (m) => cmpLog(`   🔕 [popup soppresso] ${m}`);
+  window.confirm = () => true;
+
+  const tStart = Date.now();
+  let lastLeague = null;
+  try {
+    for (const job of st.jobs) {
+      if (job.status !== 'pending') { lastLeague = job.lgId; continue; }
+      if (cmpSweepStopRequested) break;
+
+      // Cambio lega: svuoto la RAW_CACHE, altrimenti dopo decine di leghe la scheda
+      // esaurisce la memoria. Dentro la stessa lega la tengo: è ciò che rende veloci
+      // le stagioni successive alla prima.
+      if (lastLeague && lastLeague !== job.lgId && window.__RAW_CACHE) {
+        const n = Object.keys(window.__RAW_CACHE).length;
+        window.__RAW_CACHE = {};
+        cmpLog(`🧹 Cache svuotata al cambio lega (${n} partite liberate)`);
+      }
+      lastLeague = job.lgId;
+
+      cmpLog(`\n🌍 === ${job.cc} · ${job.lgName} · ${job.season} ===`);
+      const t0 = Date.now();
+      let r;
+      try {
+        r = await cmpSweepRunSeason(job, st.limit, (msg) => cmpSweepRender(st, `⏳ ${msg}`));
+      } catch (e) {
+        r = { status: 'error', matches: 0, error: e.message };
+        cmpLog(`   ❌ Stagione fallita: ${e.message}`);
+      }
+
+      if (r.status === 'stopped') { cmpLog(`   ⏸️ Fermato durante ${job.season}: la stagione verrà rifatta alla ripresa.`); break; }
+
+      job.status = r.status;
+      job.matches = r.matches || 0;
+      job.sec = Math.round((Date.now() - t0) / 1000);
+      if (r.error) job.error = r.error;
+      cmpSweepSave(st);              // ← checkpoint dopo OGNI stagione completata
+      cmpSweepRender(st);
+      cmpLog(`   ${r.status === 'done' ? '✅' : '⚠️'} ${job.season}: ${r.status} (${job.matches} partite, ${job.sec}s)`);
+
+      await new Promise(res => setTimeout(res, 800)); // respiro fra i download automatici
+    }
+  } finally {
+    window.alert = origAlert;
+    window.confirm = origConfirm;
+    cmpSweepRunning = false;
+    document.getElementById('cmp-sweep-start').disabled = false;
+    document.getElementById('cmp-sweep-resume').disabled = false;
+    document.getElementById('cmp-sweep-stop').disabled = true;
+  }
+
+  const mins = ((Date.now() - tStart) / 60000).toFixed(1);
+  const left = st.jobs.filter(j => j.status === 'pending').length;
+  cmpSweepRender(st, cmpSweepStopRequested
+    ? `⏸️ Fermato dopo ${mins} min. ${left} stagioni ancora da fare: premi "Riprendi" quando vuoi.`
+    : (left ? `⏸️ Interrotto dopo ${mins} min, ${left} stagioni rimaste.` : `🏁 Sweep COMPLETO in ${mins} min.`));
+}
+
+function cmpSweepStop() {
+  if (!cmpSweepRunning) return;
+  cmpSweepStopRequested = true;
+  cmpSweepRender(cmpSweepLoad(), '⏸️ Stop richiesto: mi fermo alla fine della partita in corso...');
+  cmpLog('⏸️ Stop richiesto dall\'utente.');
+}
+
+function cmpSweepReset() {
+  if (cmpSweepRunning) return alert('Ferma prima lo sweep in corso.');
+  if (!confirm('Azzero il progresso dello sweep? I file Excel già scaricati restano dove sono, ma le stagioni verranno rifatte da capo.')) return;
+  localStorage.removeItem(CMP_SWEEP_KEY);
+  cmpSweepRender(null, 'Progresso azzerato.');
+}
+
+// Cicla su tutte le stagioni selezionate: per ognuna carica lo storico, rileva da solo
+// l'intervallo di date della stagione (già fatto da cmpCaricaDatabase), elabora tutte le
+// partite ed esporta un Excel dedicato, prima di passare alla stagione successiva.
+// Sopprime alert()/confirm() SOLO per la durata del batch: il motore V9.7 a volte apre un
+// alert bloccante ("Storico insufficiente...") che altrimenti fermerebbe tutto il batch
+// finché non lo si chiude a mano — qui lo logghiamo in console e si continua da soli.
+async function cmpAvviaBatchStagioni() {
+  if (cmpBatchRunning) return;
+  if (!engineReady) return alert("Prima trascina il file V9.7");
+  const cCode = document.getElementById('cmp-country').value;
+  const lId = document.getElementById('cmp-league').value;
+  if (!cCode || !lId) return alert('Seleziona Paese e Lega prima di avviare il batch.');
+  const key = document.getElementById('cmp-api-key').value.trim();
+  if (!key) return alert('Inserisci la API key prima di avviare il batch.');
+
+  const checked = [...document.querySelectorAll('#cmp-batch-seasons input[type=checkbox]:checked')]
+    .map(c => c.value).sort();
+  if (!checked.length) return alert('Seleziona almeno una stagione da elaborare.');
+
+  const leagueName = document.getElementById('cmp-league').selectedOptions[0]?.text || lId;
+  if (!confirm(`Avvio batch automatico su ${checked.length} stagioni di ${leagueName} (${cCode}).\nPer ognuna verrà scaricato un file Excel, senza altre conferme manuali.\nProcedere?`)) return;
+
+  cmpBatchRunning = true;
+  const btn = document.getElementById('cmp-batch-btn'); btn.disabled = true;
+  const prog = document.getElementById('cmp-batch-progress'); prog.style.display = 'block';
+
+  const batchLimit = parseInt(document.getElementById('cmp-batch-limit').value) || 30;
+  const limitField = document.getElementById('cmp-history-limit');
+  const prevLimit = limitField.value;
+  limitField.value = batchLimit;
+
+  const origAlert = window.alert, origConfirm = window.confirm;
+  window.alert = (msg) => cmpLog(`   🔕 [popup soppresso durante il batch] ${msg}`);
+  window.confirm = () => true;
+
+  let done = 0, skipped = 0;
+  try {
+    for (let i = 0; i < checked.length; i++) {
+      const season = checked[i];
+      prog.innerHTML = `⏳ Stagione ${season} (${i + 1}/${checked.length})...`;
+      cmpLog(`\n📅 === BATCH: stagione ${season} ===`);
+
+      document.getElementById('cmp-season').value = season;
+      document.getElementById('cmp-range-start').value = '';
+      document.getElementById('cmp-range-end').value = '';
+      cmpSavedMatches.length = 0;
+      document.getElementById('export-count').textContent = '0';
+
+      await cmpCaricaDatabase();
+
+      const rs = document.getElementById('cmp-range-start').value;
+      const re = document.getElementById('cmp-range-end').value;
+      if (!rs || !re) {
+        cmpLog(`   ⚠️ Nessuna partita trovata per la stagione ${season}: salto.`);
+        skipped++;
+        continue;
+      }
+
+      await cmpEseguiIntervallo();
+
+      if (!cmpSavedMatches.length) {
+        cmpLog(`   ⚠️ Nessuna partita elaborata con successo per ${season}: salto l'export.`);
+        skipped++;
+        continue;
+      }
+
+      cmpBatchExportFilename = `Backtest_V97_${cCode}_${leagueName.replace(/\s+/g, '_')}_${season.replace(/\//g, '-')}.csv`;
+      cmpExportCSV();
+      cmpBatchExportFilename = null;
+      done++;
+      cmpLog(`   ✅ Stagione ${season} esportata (${cmpSavedMatches.length} partite).`);
+
+      // Piccola pausa fra un download automatico e l'altro: alcuni browser mostrano un
+      // avviso "il sito sta scaricando più file" la prima volta (basta consentirlo una volta).
+      await new Promise(r => setTimeout(r, 800));
+    }
+  } finally {
+    window.alert = origAlert;
+    window.confirm = origConfirm;
+    limitField.value = prevLimit;
+    cmpBatchRunning = false;
+    btn.disabled = false;
+  }
+
+  prog.innerHTML = `✅ Batch completato: ${done} stagioni esportate${skipped ? `, ${skipped} saltate` : ''}.`;
+  cmpLog(`\n🏁 Batch multi-stagione completato: ${done}/${checked.length} stagioni esportate.`);
 }
 
 // ─── CARICA DATABASE ─────────────────────────────────────────────────────
@@ -703,7 +1148,11 @@ async function cmpCaricaDatabase() {
         const m = json.data?.matches || json.matches || [];
         // ⚠️ FIX: taggo ogni match con league_id, come fa il vero caricaSquadreLega del motore.
         // Senza questo, computeLeagueParams/estimateRho non trovano i match della lega e usano i default.
-        m.forEach(mm => mm.league_id = lId);
+        m.forEach(mm => { mm.league_id = lId; mm._season = s; });   // _season: serve allo sweep per
+        // elaborare SOLO la stagione scelta. Le 3 stagioni servono come STORICO (ELO, forma, KNN),
+        // ma le partite da prevedere sono quelle della stagione selezionata: senza questo tag
+        // l'intervallo auto-rilevato copre tutte e 3 le stagioni e ogni partita finisce in 3 file
+        // diversi (lavoro triplicato e duplicati nel dataset di addestramento).
         allMatches = allMatches.concat(m);
         cmpLog(`  → Stagione ${s}: ${m.length} partite`);
       }
@@ -815,10 +1264,20 @@ async function cmpRunMatch(match, limit, render) {
   }
   R._kRuns = kRuns;
 
-  const [sRes, aRes] = await Promise.all([
-    globalThis.apiCall(`/matches/${mId}/stats`, true),
-    globalThis.apiCall(`/matches/${mId}/advanced`, true)
-  ]);
+  // ⚡ Anche la partita target passa dalla RAW_CACHE: costa 4 endpoint invece di 2 adesso,
+  // ma questa stessa partita diventerà "storico" per le giornate successive, e allora sarà
+  // già in cache. Totale 4 chiamate invece di 2+4=6 su quasi ogni partita della stagione.
+  let sRes, aRes;
+  if (typeof globalThis.fetchMatchRaw === 'function') {
+    const raw = await globalThis.fetchMatchRaw(mId);
+    sRes = raw ? raw[0] : null;
+    aRes = raw ? raw[2] : null;
+  } else {
+    [sRes, aRes] = await Promise.all([
+      globalThis.apiCall(`/matches/${mId}/stats`, true),
+      globalThis.apiCall(`/matches/${mId}/advanced`, true)
+    ]);
+  }
   const sD = sRes?.data || sRes;
   const aD = aRes?.data?.teams || [];
 
@@ -957,9 +1416,8 @@ async function cmpEseguiIntervallo() {
   prog.innerHTML = `✅ Intervallo completato in ${mins} min! ${ok} partite salvate${fail?`, ${fail} saltate`:''}. Totale in memoria: ${cmpSavedMatches.length}. Premi "Scarica Excel".`;
   document.getElementById('banner-export').style.display = 'flex';
   document.getElementById('export-count').textContent = cmpSavedMatches.length;
-  document.getElementById('cmp-results').classList.remove('hidden');
-  document.getElementById('cmp-header-info').textContent = `Intervallo ${startDate} → ${endDate}: ${ok} partite pronte per l'export`;
-  cmpLog(`✅ Intervallo ${startDate}→${endDate}: ${ok} ok, ${fail} saltate in ${mins} min. Totale: ${cmpSavedMatches.length}`);
+  cmpModoBatch(`Intervallo ${startDate} → ${endDate}: ${ok} partite salvate${fail?`, ${fail} saltate`:''}.`);
+    cmpLog(`✅ Intervallo ${startDate}→${endDate}: ${ok} ok, ${fail} saltate in ${mins} min. Totale: ${cmpSavedMatches.length}`);
   if (failed.length) cmpLog(`   Saltate: ${failed.join('; ')}`);
   btn.disabled = false;
 }
@@ -1001,9 +1459,8 @@ async function cmpEseguiTutte() {  if (!cmpMatchesOfTheDay.length) return alert(
   document.getElementById('export-count').textContent = cmpSavedMatches.length;
   // FIX: mostro il pannello risultati così compare il pulsante "Scarica Excel" (prima restava
   // nascosto nel batch, perché veniva svelato solo da cmpRender del singolo).
-  document.getElementById('cmp-results').classList.remove('hidden');
-  document.getElementById('cmp-header-info').textContent = `Batch di ${ok} partite pronto per l'export`;
-  cmpLog(`✅ Batch completato: ${ok} ok, ${fail} saltate. Totale salvate: ${cmpSavedMatches.length}`);
+  cmpModoBatch(`${ok} partite del giorno elaborate e salvate.`);
+    cmpLog(`✅ Batch completato: ${ok} ok, ${fail} saltate. Totale salvate: ${cmpSavedMatches.length}`);
   if (failed.length) cmpLog(`   Saltate: ${failed.join('; ')}`);
   btn.disabled = false;
 }
@@ -1083,14 +1540,17 @@ async function cmpAggregateExtraMetrics(pastMatches, targetMs, teamId) {
 
   for (const m of sample) {
     try {
-      // Il motore ha gia' scaricato questo match dentro RAW_CACHE (4 endpoint in un
-      // colpo solo). Riusiamo quello: prima qui partiva una /advanced per ogni match
-      // storico di ogni squadra, ~30 chiamate per partita analizzata, tutte inutili.
-      let advRes = null;
-      const cached = globalThis.__RAW_CACHE && globalThis.__RAW_CACHE[m.id];
-      if (cached && cached[2]) advRes = cached[2];
-      else if (typeof globalThis.__fetchMatchRaw === 'function') {
-        const r = await globalThis.__fetchMatchRaw(m.id); advRes = r && r[2];
+      // ⚡ OTTIMIZZAZIONE: passo dalla RAW_CACHE del motore (fetchMatchRaw) invece di
+      // richiamare /advanced direttamente. Queste 15 partite per squadra sono un
+      // SOTTOINSIEME delle 30 che aggregaTeam ha già scaricato per la stessa squadra e
+      // la stessa data, quindi sono praticamente sempre già in cache: prima erano 30
+      // fetch RIDONDANTI per ogni partita analizzata (~1.7s buttati a partita, che su
+      // un batch di migliaia di partite diventano ore). Se il motore non espone
+      // fetchMatchRaw (versione diversa dello scanner) si ricade sul vecchio percorso.
+      let advRes;
+      if (typeof globalThis.fetchMatchRaw === 'function') {
+        const raw = await globalThis.fetchMatchRaw(m.id);
+        advRes = raw ? raw[2] : null;   // [stats, lineups, advanced, events]
       } else {
         advRes = await globalThis.apiCall(`/matches/${m.id}/advanced`, true);
       }
@@ -1262,7 +1722,43 @@ function cmpExtractPrev(t) {
 }
 
 // ─── RENDER ──────────────────────────────────────────────────────────────
+
+// Dopo un batch il pannello dei risultati veniva svelato solo per far comparire
+// il pulsante "Scarica Excel", ma sotto restavano tutte le tabelle della partita
+// singola, vuote o riferite all'ultima elaborata: sembrava un errore. Qui il
+// pannello resta visibile per il pulsante e le card di dettaglio vengono
+// nascoste, con un riepilogo al loro posto.
+function cmpModoBatch(testo) {
+  const box = document.getElementById('cmp-results');
+  if (!box) return;
+  box.classList.remove('hidden');
+  box.querySelectorAll('.card').forEach(el => { el.style.display = 'none'; });
+  let s = document.getElementById('cmp-batch-summary');
+  if (!s) {
+    s = document.createElement('div');
+    s.id = 'cmp-batch-summary';
+    s.className = 'card';
+    box.appendChild(s);
+  }
+  s.style.display = '';
+  s.innerHTML = '<div class="card-t">Batch completato</div>'
+    + '<div class="card-sub" style="margin-top:6px">' + testo + '</div>'
+    + '<div class="card-sub" style="margin-top:10px;color:var(--dim)">'
+    + 'Il dettaglio partita per partita e\' nel file Excel. Per rivedere una singola '
+    + 'partita a schermo, scegli "una partita" e rilancia.</div>';
+}
+
+// Ripristina le card quando si torna alla partita singola.
+function cmpModoSingolo() {
+  const box = document.getElementById('cmp-results');
+  if (!box) return;
+  box.querySelectorAll('.card').forEach(el => { el.style.display = ''; });
+  const s = document.getElementById('cmp-batch-summary');
+  if (s) s.style.display = 'none';
+}
+
 function cmpRender(match, R, actH, actA) {
+  cmpModoSingolo();
   document.getElementById('cmp-results').classList.remove('hidden');
   document.getElementById('cmp-header-info').textContent = `${match.home_team.name} ${actH.gf}-${actA.gf} ${match.away_team.name} · ${match.time_utc.split('T')[0]}`;
   document.getElementById('cmp-hdr-home').textContent = match.home_team.name;
@@ -1434,8 +1930,26 @@ function cmpBuildResult(match, R, actH, actA) {
     for (let i=0; i<v.length; i++) for (let j=i+1; j<v.length; j++) sp = Math.max(sp, Math.abs(v[i]-v[j]));
     return Math.max(0, Math.min(100, Math.round(100 * (1-sp) * sf)));
   };
+  // Identificativi della partita: servono per agganciare fonti esterne (quote, infortuni)
+  // senza dover incrociare sui NOMI delle squadre, che cambiano da fonte a fonte
+  // ("Inter" / "Internazionale" / "Inter Milan"). Il paese serve a distinguere leghe
+  // omonime: "Serie A" esiste per ITA e BRA, "Premier League" per ENG, RUS ed EGY.
+  const _lgSel = document.getElementById('cmp-league');
+  const _lgName = (_lgSel && _lgSel.selectedOptions && _lgSel.selectedOptions[0])
+    ? _lgSel.selectedOptions[0].text : '';
+  const ids = {
+    matchId:  match.id || '',
+    leagueId: match.league_id || cmpCurrentLeagueId || '',
+    league:   _lgName,
+    country:  document.getElementById('cmp-country').value || '',
+    season:   match._season || document.getElementById('cmp-season').value || '',
+    homeId:   match.home_team?.id || '',
+    awayId:   match.away_team?.id || ''
+  };
+
   return {
-    tgt: { id: match.id, hName: match.home_team.name, aName: match.away_team.name, sH: actH.gf, sA: actA.gf, time: match.time_utc },
+    ids,
+    tgt: { hName: match.home_team.name, aName: match.away_team.name, sH: actH.gf, sA: actA.gf, time: match.time_utc },
     R, actH, actA, outcome, gg, ov, goalTot, prevH, prevA,
     conf: {
       c1: _conf([R.probsRole?.p1, R.probsKnn?.p1, R.mk_ro?.p1]),
@@ -1460,9 +1974,12 @@ function cmpBuildResult(match, R, actH, actA) {
       H: R._predExtraH || null,
       A: R._predExtraA || null
     },
-    matchId: match.id,
-    leagueId: cmpCurrentLeagueId,
-    season: (document.getElementById('cmp-season')?.value) || null,
+    // Handicap asiatico e multigol: il motore li calcola dalla stessa matrice
+    // Dixon-Coles dell'1X2 ma tagliano la distribuzione in punti diversi.
+    // Finora venivano mostrati a schermo e mai esportati, quindi non sono mai
+    // stati messi alla prova su un backtest.
+    ah: (R.ahData || []).map(x => ({ h: x.h, home: x.pHome, push: x.pRefund, away: x.pAway })),
+    mg: R.mgTot || null,
     tuning: { shrinkK: CMP_K_LIST[0], shrinkLamK: window.SHRINK_LAM_K, kList: CMP_K_LIST.slice() },
     kRuns: R._kRuns || null,
     // ELO (v5) — per validare il fix HFA dinamico + K adattivo + regressione stagionale
@@ -1531,21 +2048,6 @@ function cmpExportCSV() {
   rows.push(hRow.join(';'));
   const aRow = ['SQUADRA TRASFERTA']; M.forEach(m => aRow.push(m.tgt.aName, '', '', ''));
   rows.push(aRow.join(';'));
-
-  // Identificatori: senza questi, agganciare una fonte esterna (quote, infortuni)
-  // costringe a incrociare le righe sui nomi delle squadre, dove "Inter",
-  // "Internazionale" e "Inter Milan" sono la stessa squadra per te e tre diverse
-  // per il computer. Con match_id l'aggancio e' esatto.
-  const idRow = ['MATCH ID'];
-  M.forEach(m => idRow.push(m.tgt.id || m.matchId || 'N/D', '', '', ''));
-  rows.push(idRow.join(';'));
-
-  const lgRow = ['LEGA'], seRow = ['STAGIONE'];
-  M.forEach(m => {
-    lgRow.push(m.leagueId || cmpCurrentLeagueId || 'N/D', '', '', '');
-    seRow.push(m.season || (document.getElementById('cmp-season')?.value) || 'N/D', '', '', '');
-  });
-  rows.push(lgRow.join(';')); rows.push(seRow.join(';'));
 
   const scoreRow = ['SCORE'];
   M.forEach(m => scoreRow.push(`${m.tgt.sH}-${m.tgt.sA}`, '', 'Esito:', m.outcome));
@@ -1779,12 +2281,64 @@ function cmpExportCSV() {
     rows.push(r.join(';'));
   });
 
+  // HANDICAP ASIATICO E MULTIGOL — mai testati prima.
+  // Il motore li calcola dalla stessa matrice Dixon-Coles dell'1X2, ma tagliano
+  // la distribuzione in punti diversi. Finora venivano mostrati a schermo e mai
+  // esportati, quindi non sono mai passati per un backtest.
+  // In coda come gli identificativi: nessuna riga esistente cambia posizione.
+  rows.push('');
+  rows.push('--- HANDICAP ASIATICO (prob casa copre + esito reale) ---' + ';;;;'.repeat(M.length));
+  for (const h of [-1.5, -1.0, -0.75, -0.5, 0.5, 1.0, 1.5]) {
+    const r = ['AH ' + (h > 0 ? '+' : '') + h];
+    M.forEach(m => {
+      const row = (m.ah || []).find(x => Math.abs(x.h - h) < 1e-9);
+      const diff = m.tgt.sH - m.tgt.sA + h;
+      const esito = Math.abs(diff) < 1e-9 ? 'rimborso' : (diff > 0 ? 'coperto' : 'no');
+      r.push(row && row.home != null ? fmt(row.home) : 'N/D', '', esito, '');
+    });
+    rows.push(r.join(';'));
+  }
+  rows.push('');
+  rows.push('--- MULTIGOL TOTALI (prob + esito reale) ---' + ';;;;'.repeat(M.length));
+  for (const k of ['0-1','1-2','1-3','2-3','2-4','3-5']) {
+    const lo = Number(k.split('-')[0]), hi = Number(k.split('-')[1]);
+    const r = ['MG ' + k];
+    M.forEach(m => {
+      const gt = m.tgt.sH + m.tgt.sA;
+      r.push(m.mg && m.mg[k] != null ? fmt(m.mg[k]) : 'N/D', '', (gt >= lo && gt <= hi) ? 'SI' : 'no', '');
+    });
+    rows.push(r.join(';'));
+  }
+
+  // \u2500\u2500\u2500 IDENTIFICATIVI (in FONDO al file di proposito) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  // Messi per ultimi per non spostare di una riga nulla di quello che c'era prima:
+  // uno script che legge il file per posizione continua a funzionare identico.
+  // Servono per unire questi dati con fonti esterne (quote di chiusura, infortuni)
+  // usando chiavi stabili invece dei nomi delle squadre, e per riconoscere i duplicati.
+  rows.push('');
+  rows.push('--- IDENTIFICATIVI PARTITA (per join con fonti esterne) ---' + ';;;;'.repeat(M.length));
+  const idRows = [
+    ['ID PARTITA', m => m.ids?.matchId],
+    ['ID LEGA',    m => m.ids?.leagueId],
+    ['LEGA',       m => m.ids?.league],
+    ['PAESE',      m => m.ids?.country],
+    ['STAGIONE',   m => m.ids?.season],
+    ['ID SQUADRA CASA',      m => m.ids?.homeId],
+    ['ID SQUADRA TRASFERTA', m => m.ids?.awayId],
+    ['DATA ISO (UTC)',       m => m.tgt?.time]
+  ];
+  idRows.forEach(([lbl, fn]) => {
+    const r = [lbl];
+    M.forEach(m => r.push(fn(m) || 'N/D', '', '', ''));
+    rows.push(r.join(';'));
+  });
+
   const csv = '\uFEFF' + rows.join('\r\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `Backtest_V97_${new Date().toISOString().split('T')[0]}.csv`;
+  a.download = cmpBatchExportFilename || `Backtest_V97_${new Date().toISOString().split('T')[0]}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -1863,6 +2417,24 @@ function cmpRefreshMatches(){
 }
 
 // Pulsante unico: smista in base alla modalità scelta.
+// All'apertura: se il motore era già stato caricato in una sessione precedente lo
+// riattivo da solo, e mostro lo stato dello sweep interrotto. Serve perché uno sweep
+// lungo può essere interrotto da un riavvio: alla riapertura basta premere "Riprendi".
+window.addEventListener('DOMContentLoaded', async () => {
+  const saved = localStorage.getItem('cmp_engine_html');
+  if (!saved) return;
+  try {
+    await loadEngineFromText(saved, localStorage.getItem('cmp_engine_name') || 'motore memorizzato');
+    cmpLog('♻️ Motore ripristinato dalla sessione precedente (ri-trascina lo scanner se l\'hai aggiornato).');
+    const st = cmpSweepLoad();
+    if (st && st.jobs) {
+      const left = st.jobs.filter(j => j.status === 'pending').length;
+      if (left) cmpSweepRender(st, `⏸️ Sweep interrotto: ${left} stagioni ancora da fare. Premi "Riprendi da dove eri".`);
+      else cmpSweepRender(st);
+    }
+  } catch (e) { cmpLog(`⚠️ Ripristino motore fallito: ${e.message}`); }
+});
+
 function cmpRun(){
   if (cmpMode==='one')   return cmpEsegui();
   if (cmpMode==='day')   return cmpEseguiTutte();
