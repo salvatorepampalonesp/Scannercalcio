@@ -1306,7 +1306,32 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
       cor: calcFeatures(out.vals.cor, out.vals.dates, targetTimeMs), cor_ag: calcFeatures(out.vals.cor_ag, out.vals.dates, targetTimeMs),
       yel: calcFeatures(out.vals.yel, out.vals.dates, targetTimeMs), yel_ag: calcFeatures(out.vals.yel_ag, out.vals.dates, targetTimeMs),
       fouls: calcFeatures(out.vals.fouls, out.vals.dates, targetTimeMs), fouls_ag: calcFeatures(out.vals.fouls_ag, out.vals.dates, targetTimeMs),
+      // Le serie "concesse" venivano raccolte ma mai trasformate in feature:
+      // STAT_PAIRS puntava a nomi inesistenti e predictStat trovava sempre null,
+      // ripiegando su una media di lega costruita su due valori invece di quattro.
+      ga:      calcFeatures(out.vals.ga,      out.vals.dates, targetTimeMs),
+      xga:     calcFeatures(out.vals.xga,     out.vals.dates, targetTimeMs),
+      npxga:   calcFeatures(out.vals.npxga,   out.vals.dates, targetTimeMs),
+      sot_ag:  calcFeatures(out.vals.sot_ag,  out.vals.dates, targetTimeMs),
+      cor_ag:  calcFeatures(out.vals.cor_ag,  out.vals.dates, targetTimeMs),
+      yel_ag:  calcFeatures(out.vals.yel_ag,  out.vals.dates, targetTimeMs),
+      fouls_ag:calcFeatures(out.vals.fouls_ag,out.vals.dates, targetTimeMs),
       poss_ag: calcFeatures(out.vals.poss_ag, out.vals.dates, targetTimeMs),
+      // baseline: media grezza su tutte le osservazioni raccolte, prodotte e concesse.
+      // Serve a predictStat come scala di riferimento. Stimarla dai soli quattro
+      // valori del confronto la rendeva dipendente dalle squadre in campo: due
+      // squadre forti alzavano la baseline e il loro vantaggio spariva.
+      _base: (function(){
+        const b={}; const pair={gf:'ga',xg:'xga',npxg:'npxga',sot:'sot_ag',cor:'cor_ag',
+                                yel:'yel_ag',fouls:'fouls_ag',poss:'poss_ag'};
+        for (const k in pair) {
+          const a=(out.vals[k]||[]).filter(v=>v!=null&&isFinite(v));
+          const c=(out.vals[pair[k]]||[]).filter(v=>v!=null&&isFinite(v));
+          const all=a.concat(c);
+          if (all.length>=6) b[k]=all.reduce((s,v)=>s+v,0)/all.length;
+        }
+        return b;
+      })(),
       xgot_ag: calcFeatures(out.vals.xgot_ag, out.vals.dates, targetTimeMs),
       tch_box_ag: calcFeatures(out.vals.tch_box_ag, out.vals.dates, targetTimeMs),
       poss: calcFeatures(out.vals.poss, out.vals.dates, targetTimeMs), modulo_main: getMostFrequentWithPct(out.vals.moduli),
@@ -1653,10 +1678,18 @@ const STAT_SHRINK = 0.35;
 
 // mappa: nome della feature "prodotta" -> nome della feature "concessa"
 const STAT_PAIRS = {
-  npxg: 'npxga', xg: 'xga', sot: 'sot_ag', cor: 'cor_ag',
-  yel: 'yel_ag', fouls: 'fouls_ag', gf: 'ga',
-  poss: 'poss_ag', xgot: 'xgot_ag', tch_box: 'tch_box_ag'
-};
+  // Solo le coppie dove ESISTONO entrambe le feature: quella prodotta e quella
+  // concessa. xgot e tch_box hanno il concesso ma non la produzione (il motore
+  // non li aggrega come serie), quindi restano fuori e usano la media semplice.
+  gf: 'ga',
+  xg: 'xga',
+  npxg: 'npxga',
+  sot: 'sot_ag',
+  cor: 'cor_ag',
+  yel: 'yel_ag',
+  fouls: 'fouls_ag',
+  poss: 'poss_ag',
+};;
 
 // Restituisce il valore atteso della metrica per la squadra "att" contro "dif".
 // Se manca il dato del concesso o la media di lega, torna alla media semplice:
@@ -1673,12 +1706,17 @@ function predictStat(att, dif, feat, scope) {
   const agFeat = STAT_PAIRS[feat];
   const conc = agFeat ? gv(dif, agFeat) : null;
   if (conc == null) return mine;                    // niente avversario: media semplice
-  // media di lega approssimata dai quattro valori disponibili per questo match
-  const other = gv(dif, feat), mineAg = agFeat ? gv(att, agFeat) : null;
-  const pool = [mine, conc, other, mineAg].filter(v => v != null && isFinite(v) && v > 0);
-  if (pool.length < 3) return mine;
+
+  // Baseline di lega: media di tutte le osservazioni raccolte per entrambe le
+  // squadre, prodotte e concesse. Con 30 partite sono una sessantina di valori,
+  // abbastanza stabili da non muoversi col singolo confronto.
+  const bA = (att[sc] && att[sc].features && att[sc].features._base) ? att[sc].features._base[feat] : null;
+  const bD = (dif[sc] && dif[sc].features && dif[sc].features._base) ? dif[sc].features._base[feat] : null;
+  const pool = [bA, bD].filter(v => v != null && isFinite(v) && v > 0);
+  if (!pool.length) return mine;
   const lg = pool.reduce((s, v) => s + v, 0) / pool.length;
   if (!(lg > 0)) return mine;
+
   const sh = r => 1 + STAT_SHRINK * (r - 1);
   const out = lg * sh(mine / lg) * sh(conc / lg);
   return (isFinite(out) && out >= 0) ? out : mine;
