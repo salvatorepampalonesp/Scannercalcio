@@ -720,6 +720,7 @@ async function loadEngineFromText(text, fileName) {
   // meglio dirlo subito che scoprirlo dopo un batch da mezz'ora.
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
   const _bComp = '0904-b2';
+  await new Promise(r => setTimeout(r, 0));   // attendo che il riquadro sia stato riscritto
   const _el = document.getElementById('engine-build');
   if (_el) {
     if (!_bScan) {
