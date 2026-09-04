@@ -2040,6 +2040,21 @@ async function avviaScanner() {
     // cosi' il CSV contiene le stesse stime che vedi a schermo invece di doverle
     // ricalcolare dalle feature grezze (che sono medie semplici).
     const _statKeys = ['gf','npxg','xg','xgot','sot','cor','yel','fouls','poss','tch_box','ppda','field_tilt'];
+    // Diagnostica: i valori intermedi del calcolo per NPxG e Possesso, esposti
+    // cosi' come sono. Se la stima esce schiacciata sul centro, qui si vede se
+    // il problema e' la baseline, il valore prodotto o quello concesso.
+    window.__PRED_DEBUG = (function(){
+      const g = (t,f) => { const x=t&&t.role&&t.role.features&&t.role.features[f];
+                           return (x&&x.decay>0)?+x.decay.toFixed(3):null; };
+      const b = (t,f) => { const x=t&&t.role&&t.role.features&&t.role.features._base;
+                           return (x&&x[f]!=null)?+x[f].toFixed(3):null; };
+      const o={};
+      for (const f of ['npxg','poss']) {
+        o[f] = { mineH:g(dH,f), concA:g(dA,STAT_PAIRS[f]), baseH:b(dH,f), baseA:b(dA,f),
+                 outH:(function(){const v=predictStat(dH,dA,f,'role');return v!=null?+v.toFixed(3):null;})() };
+      }
+      return o;
+    })();
     window.__PRED_STATS = { H: {}, A: {} };
     for (const k of _statKeys) {
       try {

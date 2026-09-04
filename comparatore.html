@@ -596,6 +596,7 @@ async function loadEngineFromText(text, fileName) {
         probsRole:   (typeof probsRole   !== 'undefined') ? probsRole   : null,
         probsOL:  (typeof probsOL!=='undefined') ? probsOL : null,   /* ordered logit */
         predStats: (typeof window.__PRED_STATS !== 'undefined') ? window.__PRED_STATS : null,
+        predDebug: (typeof window.__PRED_DEBUG !== 'undefined') ? window.__PRED_DEBUG : null,
         probsKnn:    (typeof probsKnn    !== 'undefined') ? probsKnn    : null,
         mk_ro:       (typeof mk_ro       !== 'undefined') ? mk_ro       : null,
         m1: (typeof m1!=='undefined')?m1:null, mX: (typeof mX!=='undefined')?mX:null, m2: (typeof m2!=='undefined')?m2:null,
@@ -657,7 +658,7 @@ async function loadEngineFromText(text, fileName) {
   const exposeNames = ['apiCall','avviaScanner','aggregaTeam','extractSafeStat','buildGlobalElo',
     'calcDCMatrix','markovFlow','probsFromMatrix','estimateRho','calculateRho','getSimilarMatches',
     'computeLeagueParams','multigoal','asianHandicapMat','negBinCDF','negBinK','poisson',
-    'expectedPoints','probsFromMatrix','loadLegheJson','fetchMatchRaw','predictStat','leagueStatBaseline'];
+    'expectedPoints','probsFromMatrix','loadLegheJson','fetchMatchRaw'];
   let exposer = '\n;(function(){\n';
   exposeNames.forEach(n => {
     exposer += `  try { if (typeof ${n} !== 'undefined') window[${JSON.stringify(n)}] = ${n}; } catch(e){}\n`;
@@ -1980,10 +1981,6 @@ function cmpBuildResult(match, R, actH, actA) {
     // stati messi alla prova su un backtest.
     ah: (R.ahData || []).map(x => ({ h: x.h, home: x.pHome, push: x.pRefund, away: x.pAway })),
     mg: R.mgTot || null,
-    // Statistiche previste col modello attacco x difesa del motore. Erano calcolate e
-    // mostrate a schermo ma non uscivano nel file: senza queste il CSV conteneva solo
-    // le medie decayed, e il modello moltiplicativo non era verificabile su backtest.
-    predStats: R.predStats || null,
     tuning: { shrinkK: CMP_K_LIST[0], shrinkLamK: window.SHRINK_LAM_K, kList: CMP_K_LIST.slice() },
     kRuns: R._kRuns || null,
     // ELO (v5) — per validare il fix HFA dinamico + K adattivo + regressione stagionale
@@ -2314,35 +2311,21 @@ function cmpExportCSV() {
     rows.push(r.join(';'));
   }
 
-  // \u2500\u2500\u2500 STATISTICHE PREVISTE COL MODELLO ATTACCO x DIFESA \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-  // Le sezioni "SQUADRA CASA/TRASFERTA" pi\u00f9 sopra riportano la media decayed della
-  // squadra: non tiene conto di CHI ha di fronte. Queste righe sono la stima del
-  // modello moltiplicativo (attacco della squadra x difesa avversaria x baseline di
-  // lega). Stesse metriche, stesso "Reale": cos\u00ec sul backtest si pu\u00f2 misurare quale
-  // dei due predice meglio, invece di doverlo dare per scontato.
-  // In coda come le altre aggiunte: nessuna riga preesistente cambia posizione.
-  const predList = [
-    ['Gol', 'gf', 'gf'], ['NPxG', 'npxg', 'npxg'], ['xG', 'xg', 'xg'], ['xGOT', 'xgot', 'xgot'],
-    ['SoT', 'sot', 'sot'], ['Corner', 'cor', 'cor'], ['Gialli', 'yel', 'yel'],
-    ['Falli', 'fouls', 'fouls'], ['Possesso %', 'poss', 'poss'],
-    ['Tocchi Area', 'tch_box', 'box'], ['PPDA', 'ppda', 'ppda'], ['Field Tilt %', 'field_tilt', 'tilt']
-  ];
-  for (const [lato, predKey, realKey] of [['CASA', 'H', 'actH'], ['TRASFERTA', 'A', 'actA']]) {
-    rows.push('');
-    rows.push(`--- STIMA ATTACCO x DIFESA \u2014 ${lato} (Prev + Reale + Scarto) ---` + ';;;;'.repeat(M.length));
-    predList.forEach(([lbl, pk, rk]) => {
-      const r = [lbl];
-      M.forEach(m => {
-        const prev = m.predStats && m.predStats[predKey] ? m.predStats[predKey][pk] : null;
-        const real = m[realKey] ? m[realKey][rk] : null;
-        const sc = (prev != null && real != null && !isNaN(prev) && !isNaN(real))
-          ? (real - prev >= 0 ? '+' : '') + (real - prev).toFixed(2).replace('.', ',') : '';
-        r.push(num(prev), '', num(real), sc);
-      });
-      rows.push(r.join(';'));
-    });
-  }
 
+  // Diagnostica del predittore: i valori intermedi cosi' come li calcola il motore.
+  // Se "stima" e' sempre vicina a "baseline" mentre "prodotto" varia molto, vuol
+  // dire che i rapporti si annullano e la stima collassa sul centro.
+  rows.push('');
+  rows.push('--- DIAGNOSTICA PREDITTORE (npxg e possesso) ---' + ';;;;'.repeat(M.length));
+  for (const f of ['npxg','poss']) {
+    for (const [lbl,k] of [['prodotto casa','mineH'],['concesso trasferta','concA'],
+                           ['baseline casa','baseH'],['baseline trasferta','baseA'],
+                           ['stima finale','outH']]) {
+      const r = [f + ' - ' + lbl];
+      M.forEach(m => { const d=m.predDebug&&m.predDebug[f]; r.push(d&&d[k]!=null?String(d[k]).replace('.',','):'N/D','','',''); });
+      rows.push(r.join(';'));
+    }
+  }
   // \u2500\u2500\u2500 IDENTIFICATIVI (in FONDO al file di proposito) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   // Messi per ultimi per non spostare di una riga nulla di quello che c'era prima:
   // uno script che legge il file per posizione continua a funzionare identico.
