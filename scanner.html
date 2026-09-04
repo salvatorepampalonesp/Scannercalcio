@@ -153,7 +153,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0904-b2</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0904-b4</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -245,6 +245,16 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       </tr></thead>
       <tbody id="verdetti-body"></tbody>
     </table></div>
+  <div class="card" id="card-pred-debug" style="border-top:3px solid #f59e0b">
+    <div class="section-title" style="color:#f59e0b">Diagnostica predittore</div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:10px">
+      I valori intermedi della stima attacco &times; difesa, letti dove vengono prodotti.
+      Se &quot;stima&quot; resta vicina alla baseline mentre &quot;prodotto&quot; varia molto,
+      i rapporti si annullano. Se compare <b>assente</b>, quel dato non arriva.
+    </div>
+    <div class="tbl-scroll" id="pred-debug-body"></div>
+  </div>
+
   </div>
 
 
@@ -1677,7 +1687,7 @@ function renderVerdetti(mk) {
 // ===========================================================================
 // Versione del motore, letta dal comparatore dopo l'iniezione: cosi' si vede
 // subito se il file trascinato e' quello aggiornato o una copia vecchia.
-window.__SCANNER_BUILD = '0904-b2';
+window.__SCANNER_BUILD = '0904-b4';
 
 const STAT_SHRINK = 0.35;
 
@@ -2060,6 +2070,33 @@ async function avviaScanner() {
       }
       return o;
     })();
+
+    // ── Diagnostica del predittore, mostrata a schermo ──────────────────────
+    // La catena motore -> hook -> comparatore -> CSV e' lunga e si rompe in
+    // silenzio. Questi sono i numeri che servono, letti dove vengono prodotti.
+    try {
+      const _dg = (t,f) => { const x=t&&t.role&&t.role.features&&t.role.features[f];
+                             return (x&&x.decay>0)?x.decay:null; };
+      const _db = (t,f) => { const b=t&&t.role&&t.role.features&&t.role.features._base;
+                             return (b&&b[f]!=null)?b[f]:null; };
+      const _fm = v => (v==null||isNaN(v)) ? '<span style="color:#ef4444">assente</span>' : (+v).toFixed(3);
+      let _h = '<table class="table-ui" style="font-size:12px"><thead><tr>'
+             + '<th style="text-align:left">metrica</th><th>prodotto</th><th>concesso avv.</th>'
+             + '<th>baseline casa</th><th>baseline trasf.</th><th>stima</th></tr></thead><tbody>';
+      for (const f of ['npxg','poss','sot','cor']) {
+        const ag = STAT_PAIRS[f];
+        _h += '<tr><td style="text-align:left">'+f+'</td>'
+            + '<td>'+_fm(_dg(dH,f))+'</td><td>'+_fm(ag?_dg(dA,ag):null)+'</td>'
+            + '<td>'+_fm(_db(dH,f))+'</td><td>'+_fm(_db(dA,f))+'</td>'
+            + '<td><b>'+_fm(predictStat(dH,dA,f,'role'))+'</b></td></tr>';
+      }
+      _h += '</tbody></table>';
+      safeHtml('pred-debug-body', _h);
+    } catch (e) {
+      safeHtml('pred-debug-body', '<div style="color:#ef4444">errore nel predittore: '
+        + (e && e.message ? e.message : e) + '</div>');
+    }
+
     window.__PRED_STATS = { H: {}, A: {} };
     for (const k of _statKeys) {
       try {
