@@ -162,7 +162,7 @@ select{cursor:pointer}
   <div class="topbar">
     <div class="brand">
       <h1>Comparatore V9.7</h1>
-      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 2026-09-04-diag</span>
+      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0904-b2</span>
       <span class="badge" id="engine-badge">motore non caricato</span>
     </div>
     <span class="badge">previsioni vs realtà</span>
@@ -189,6 +189,8 @@ select{cursor:pointer}
     <h2>Trascina qui lo Scanner V9.7</h2>
     <p>oppure clicca per selezionarlo — il motore viene iniettato in memoria, nessuna modifica al file</p>
     <input type="file" id="file-input" accept=".html" style="display:none">
+      <button class="btn btn-primary" style="margin-top:10px" onclick="event.stopPropagation(); loadEngineFromServer()">Carica il motore dal server</button>
+      <div style="font-size:11px;color:var(--dim);margin-top:6px">Su telefono usa questo: prende scanner.html da questa stessa cartella.</div>
   </div>
 
   <div id="console"></div>
@@ -496,6 +498,33 @@ dropzone.addEventListener('drop', e => {
 });
 fileInput.addEventListener('change', e => { if (e.target.files[0]) loadEngineFromFile(e.target.files[0]); });
 
+
+// Carica il motore direttamente da scanner.html sul server, senza trascinare nulla.
+// Su telefono il drag&drop non e' praticabile e passare dai Download e' scomodo:
+// cosi' il comparatore prende il file che sta accanto a lui, quindi le due versioni
+// sono per forza quelle dello stesso deploy. Il parametro con il timestamp aggira
+// la cache del browser, che ci ha gia' fatto lavorare su file vecchi senza saperlo.
+async function loadEngineFromServer() {
+  const url = 'scanner.html?v=' + Date.now();
+  cmpLog('Scarico il motore da ' + url.split('?')[0] + '...');
+  try {
+    const r = await fetch(url, { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const text = await r.text();
+    if (!/<script/i.test(text)) throw new Error('il file non sembra lo scanner');
+    try {
+      localStorage.setItem('cmp_engine_html', text);
+      localStorage.setItem('cmp_engine_name', 'scanner.html (server)');
+    } catch (e) { /* spazio esaurito: pazienza, il motore resta comunque attivo */ }
+    return loadEngineFromText(text, 'scanner.html (dal server)');
+  } catch (e) {
+    cmpLog('Non riesco a scaricare scanner.html: ' + e.message);
+    alert('Non trovo scanner.html accanto a questa pagina.\n\n'
+        + 'Se stai aprendo il comparatore da GitHub, controlla di aver caricato\n'
+        + 'anche lo scanner nella stessa cartella. In locale, trascina il file.');
+  }
+}
+
 async function loadEngineFromFile(file) {
   if (!file.name.endsWith('.html')) return alert("Il file deve essere .html");
   const text = await file.text();
@@ -690,11 +719,11 @@ async function loadEngineFromText(text, fileName) {
   // Versione del motore appena iniettato. Se non la dichiara e' una copia vecchia:
   // meglio dirlo subito che scoprirlo dopo un batch da mezz'ora.
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '2026-09-04-diag';
+  const _bComp = '0904-b2';
   const _el = document.getElementById('engine-build');
   if (_el) {
     if (!_bScan) {
-      _el.textContent = 'motore senza versione (file vecchio)';
+      _el.textContent = '\u26a0 MOTORE VECCHIO: manca la diagnostica';
       _el.style.color = '#ef4444';
       cmpLog('⚠️ Il motore caricato non dichiara una versione: e\' una copia precedente. Le funzioni nuove non ci sono.');
     } else if (_bScan !== _bComp) {
