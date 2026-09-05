@@ -134,6 +134,58 @@ Dove i due mesi discordano il valore è smorzato verso il centro. `xgot` e
 (VAEP, xT, PV): scope e baseline diversi, quindi valori diversi — non
 copiarli da una parte all'altra.
 
+### Aggiungere una metrica: `ADV_SPEC`
+
+Dal `0905-b4` le metriche di `/advanced` non si cablano più a mano. `ADV_SPEC`,
+appena sopra `aggregaTeam`, è una tabella `[chiave, getter, tipo]` e da lì
+discendono **da sole**: estrazione (prodotta *e* concessa), inizializzazione
+delle serie, lista `OPT`, `calcFeatures`, `STAT_PAIRS`, la mappa `pair` della
+baseline di lega e `STAT_TYPE`. Aggiungere una metrica è **una riga**.
+
+```js
+['tackles', m => m.defending?.tackles, 'volume'],
+```
+
+Il getter viene applicato due volte allo stesso payload, a `myAdv` e a `oppAdv`:
+`tackles` è quanto ne facciamo noi, `tackles_ag` quanto ne fa chi ci affronta.
+È il secondo fattore del modello moltiplicativo, e costa zero chiamate perché
+`/advanced` contiene già entrambe le squadre.
+
+Il Comparatore ha la tabella speculare `CMP_NEW_SPEC`, **stesse chiavi, stesso
+ordine**, che serve a estrarre i valori reali per il CSV. Se aggiungi una riga
+in `ADV_SPEC`, aggiungila anche lì (e in `NEWK` dell'export), altrimenti la
+metrica viene prevista ma mai verificata.
+
+Otto metriche erano raccolte da sempre ma non passavano da `calcFeatures`
+(`ppda`, `field_tilt`, `direct_speed`, `seq_time`, `avg_x`, `avg_def_x`,
+`cp_regains`, `rec_time`): `predictStat` tornava `null` e finivano sulla media
+semplice. Ora sono in `ORPHAN_PAIRS`, che le aggancia ai rispettivi `opp_*`.
+
+### I tipi di metrica: `volume` e `additivo`
+
+`STAT_TYPE` decide la forma del modello, e la distinzione **non è cosmetica**.
+
+- **`volume`** (default) — conteggi e somme non negative. Forma moltiplicativa
+  `lg × sh(mio/lg) × sh(concesso/lg)`.
+- **`additivo`** — forma `lg + k·((mio − lg) + (concesso − lg))`, per due casi:
+  - **valori che attraversano lo zero.** `vaep_defensive` e `pv_defensive` sono
+    **negativi per definizione** (misurano il rischio di subire). Il rapporto
+    `mio/lg` fra due negativi ha segno invertito e il prodotto è privo di senso;
+    peggio, i guardiani storici `decay > 0` e `v > 0` li scartavano in silenzio
+    e `predictStat` tornava `null`. `vaep`, `pv`, `vaep_def`, `pv_def` sono
+    additive, e i guardiani per queste sono su `isFinite`, non sul segno.
+  - **coordinate**, non volumi. `avg_x` e `avg_def_x` sono metri sul campo: un
+    prodotto di rapporti su una coordinata non ha dimensioni sensate.
+
+Nel campo normale le due forme danno quasi lo stesso numero (baseline 40, mio
+42, concesso 38: 39.98 contro 40.00). Divergono agli estremi, dove la
+moltiplicativa esplode: mio 70 e concesso 10 danno 34.4 contro 40.0. Per le
+metriche a segno variabile la moltiplicativa non è "meno precisa", è **rotta**.
+
+Le metriche a rapporto (`ppda`) restano `volume` per compatibilità, ma dal
+`0905-b4` ci sono anche `ppda_num` e `ppda_den` sciolti: prevedere i due
+conteggi e fare il rapporto dopo è più stabile che prevedere il rapporto.
+
 ## Politica sui valori mancanti
 
 È una decisione di progetto, non un dettaglio: la v9.4 forzava tutto a 0, la
