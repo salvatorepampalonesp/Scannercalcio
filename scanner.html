@@ -155,7 +155,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b11</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b12</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -1504,7 +1504,7 @@ function renderVerdetti(mk) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b11';
+window.__SCANNER_BUILD = '0905-b12';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -1649,7 +1649,9 @@ function applyResidualCorrection(probs, att, dif) {
   return { p1: p1 / tot, pX: pX / tot, p2: p2 / tot, debug: dbg };
 }
 
-window.MARKET_SHRINK_K = window.MARKET_SHRINK_K || { cor: 0.15, sot: 0.09, yel: 0.10, fouls: 0.15 };
+window.MARKET_SHRINK_K = window.MARKET_SHRINK_K || { cor: 0.07, sot: 0.30, yel: 0.10, fouls: 0.15 };
+window.MARKET_BASE_SHRINK = window.MARKET_BASE_SHRINK || { cor: 0.50, sot: 0.75, yel: 0.75, fouls: 1.00 };
+window.MARKET_PER_GOAL = window.MARKET_PER_GOAL || { cor: 3.61, sot: 3.20, yel: 1.48, fouls: null };
 const MARKET_LINES = { cor: [8.5, 9.5, 10.5, 11.5], sot: [6.5, 7.5, 8.5, 9.5], yel: [3.5, 4.5, 5.5] };
 
 const GOALS_SOT_CAP = 0.20;
@@ -1764,12 +1766,22 @@ async function avviaScanner() {
         const pool = [bH, bA].filter(v => v != null && isFinite(v) && v > 0);
         return pool.length ? pool.reduce((s2, v) => s2 + v, 0) / pool.length : null;
       };
+      const lgGoals = (LG && isFinite(LG.avgH) && isFinite(LG.avgA)) ? (LG.avgH + LG.avgA) : null;
       const lamOf = (feat) => {
         const kk = window.MARKET_SHRINK_K[feat];
         const a = predictStat(dH, dA, feat, scope, kk), b = predictStat(dA, dH, feat, scope, kk);
-        if (a != null && b != null && isFinite(a) && isFinite(b) && a >= 0 && b >= 0) return a + b;
-        const mH = getF(dH,feat), mA = getF(dA,feat), gH = getF(dH,feat+'_ag'), gA = getF(dA,feat+'_ag');
-        return Math.sqrt(mH*gA) + Math.sqrt(mA*gH);
+        let raw;
+        if (a != null && b != null && isFinite(a) && isFinite(b) && a >= 0 && b >= 0) raw = a + b;
+        else {
+          const mH = getF(dH,feat), mA = getF(dA,feat), gH = getF(dH,feat+'_ag'), gA = getF(dA,feat+'_ag');
+          raw = Math.sqrt(mH*gA) + Math.sqrt(mA*gH);
+        }
+        const c = window.MARKET_BASE_SHRINK[feat], perGoal = window.MARKET_PER_GOAL[feat];
+        const bs = baseOf(feat);
+        if (c == null || c >= 1 || perGoal == null || bs == null || !(lgGoals > 0)) return raw;
+        const ref = perGoal * lgGoals, pairBase = 2 * bs;
+        const out = ref + c * (pairBase - ref) + (raw - pairBase);
+        return (isFinite(out) && out > 0) ? out : raw;
       };
       const cH = getF(dH,'cor'), cA = getF(dA,'cor'); const lCor = lamOf('cor');
       const sH = getF(dH,'sot'), sA = getF(dA,'sot'); const lSot = lamOf('sot');
@@ -1788,8 +1800,11 @@ async function avviaScanner() {
       const pOv9c = over(9.5, lCor, kCor); const pOv8s = over(8.5, lSot, kSot); const pOv3y = over(3.5, lYel, kYel);
       const pRed = 1 - poisson(0, rH + rA);
       const baseCor = baseOf('cor'), baseSot = baseOf('sot'), baseYel = baseOf('yel');
+      const lgRefCor = (lgGoals > 0) ? window.MARKET_PER_GOAL.cor * lgGoals : null;
+      const lgRefSot = (lgGoals > 0) ? window.MARKET_PER_GOAL.sot * lgGoals : null;
+      const lgRefYel = (lgGoals > 0) ? window.MARKET_PER_GOAL.yel * lgGoals : null;
       return { lCor, cH, cA, lSot, sH, sA, lYel, yH, yA, lFls, scope,
-               baseCor, baseSot, baseYel,
+               baseCor, baseSot, baseYel, lgRefCor, lgRefSot, lgRefYel, lgGoals,
                linesCor, linesSot, linesYel, pOv9c, pOv8s, pOv3y, pRed, kCor, kSot, kYel };
     };
     const advRole = calcAdv(true); const advOver = calcAdv(false);

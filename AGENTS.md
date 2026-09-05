@@ -24,7 +24,7 @@ tutti attraverso `fetchMatchRaw` (che li mette in `RAW_CACHE`).
 Sezione di consegna: dice a che punto siamo, così una sessione nuova non
 ricomincia da capo. Aggiornala quando cambia qualcosa di sostanziale.
 
-**Build corrente: `0905-b11`.** Scanner e Comparatore devono coincidere, e sul
+**Build corrente: `0905-b12`.** Scanner e Comparatore devono coincidere, e sul
 Comparatore il badge sotto la dropzone deve uscire **verde** dopo aver trascinato
 lo Scanner. Il branch di lavoro è `claude/scanner-stat-optimization-sgs62u`;
 `main` è indietro (fermo al merge della PR #1, cioè al `0905-b2`), quindi
@@ -57,6 +57,10 @@ lo Scanner. Il branch di lavoro è `claude/scanner-stat-optimization-sgs62u`;
 11. `0905-b11` — **il backtest ha bocciato meta' del `b9` e del `b10`, e ha detto
     perche'**: un'unica causa, `_base` usata come se fosse una media di lega
     quando e' una media *della coppia*. Vedi *La baseline di coppia*.
+12. `0905-b12` — il backtest su **tre leghe** conferma i gol e scompone i mercati:
+    la dispersione di troppo non veniva dal termine in `k` ma **dalla baseline
+    stessa**, che e' una media di 30 partite con meta' della varianza fatta di
+    rumore di campionamento. Ora viene ristretta verso un riferimento di lega.
 
 **`0905-b9`, prima voce: `sum_sot` che corregge i lambda.**
 `sum_sot` (la somma dei tiri in porta previsti delle due squadre) è l'unica
@@ -124,17 +128,20 @@ estrae la stessa informazione meglio.
    tenere e che nel `b8` è stata resa leggibile.
 1. ~~`sum_sot` nell'Over/Under~~ — **fatto nel `0905-b9`**. Resta da confermare
    col primo backtest vero su PitchAPI.
-2. **Tarare `MARKET_SHRINK_K.yel` e `.fouls` sui dati.** Ora sono estrapolati dal
-   rapporto misurato su corner e tiri (circa 0.6 volte il `k` per squadra), non
-   misurati: il panel non portava i cartellini, il CSV del Comparatore sì. Basta
-   rifare il panel includendo `yel` e `fouls` e ripetere la ricerca dell'ottimo
-   interno sul Brier.
-3. **L'endpoint `/shots`.** Il candidato più serio per il muro dell'Over, con la
+2. ~~Tarare `MARKET_SHRINK_K.yel`~~ — **fatto nel `0905-b12`** sul backtest a tre
+   leghe, insieme a corner e tiri. Restano i **falli**, che non hanno un
+   ancoraggio di lega utilizzabile (rapporto coi gol instabile del 28%).
+3. **Capire la Premier sui tiri in porta**: pendenza 0.10–0.20 contro 0.77 in
+   LaLiga e 0.35 in Serie A. O la Premier ha qualcosa di diverso, o è rumore.
+4. **Il mercato dei cartellini è il migliore dei tre** (AUC ~0.57 contro 0.53
+   dell'Over 2.5) e nessuno l'ha ancora guardato davvero: arbitro, derby,
+   posizione in classifica sono tutte cose che PitchAPI potrebbe dare.
+5. **L'endpoint `/shots`.** Il candidato più serio per il muro dell'Over, con la
    ragione spiegata in *Il muro dell'Over/Under*. Costa una chiamata in più per
    partita.
-4. **Ricontrollare `avg_def_x`**: pendenza 0.06, la previsione è quasi scorrelata
+6. **Ricontrollare `avg_def_x`**: pendenza 0.06, la previsione è quasi scorrelata
    dal reale. O è un problema di forma del modello, o la metrica va tolta.
-5. **Togliere `vaep_def`, `pv_def`, `sca_def`** dalle feature: correlazione
+7. **Togliere `vaep_def`, `pv_def`, `sca_def`** dalle feature: correlazione
    previsto/reale a zero misurata su 1133 partite. Il fix additivo che le ha rese
    calcolabili era giusto, ma quello che si vede è rumore.
 
@@ -471,6 +478,10 @@ a `scanner.html` al commit `cd51a69`, prima della ripulitura.
   segnale; usarla come moltiplicatore fa entrare due volte l'effetto coppia e
   gonfia le previsioni. Ha svuotato due modifiche di fila. Vedi *La baseline di
   coppia*.
+- **Una previsione fatta da media + scarto va scomposta prima di ritararla.** Sui
+  mercati statistici la dispersione di troppo veniva dalla baseline (sd 0.81) e
+  non dal termine attacco/difesa (sd 0.11), ma la pendenza da sola non lo diceva:
+  abbassare `k` è stato un giro a vuoto. Guardare le sd delle componenti prima.
 - **Non leggere mai l'AUC dei mercati gol aggregata fra leghe.** Con base rate
   diversi (Premier 55.1% di Over 2.5, Serie A 45.7%) l'aggregato dava 0.531 dove
   dentro ogni lega era 0.495 e 0.500, cioè caso puro. Sempre per lega.
@@ -812,6 +823,105 @@ la sovradispersione residua venisse da `lg` invece che dal termine in `k`,
 abbassare `k` non basterebbe. Per chiudere la questione il CSV ora esporta la
 baseline di coppia usata per ogni mercato: al prossimo backtest si misura
 direttamente quanto pesa `lg` e quanto il termine in `k`.
+
+## Il backtest a tre leghe (1133 partite): cosa ha detto
+
+Terzo giro, `0905-b11`, Serie A + Premier + **LaLiga**. LaLiga non era stata usata
+per tarare ne' `w` ne' i `k`, quindi e' un test fuori campione vero.
+
+### I gol: confermato, e w resta a 0.50
+
+La seconda stima del lambda dai tiri regge in tutte e tre le leghe, LaLiga
+compresa. AUC sull'Over 2.5, **per lega** (mai aggregata):
+
+| w | LaLiga | Premier | Serie A | Brier |
+|---|---|---|---|---|
+| 0.00 | 0.554 | 0.495 | 0.501 | 0.2518 |
+| **0.50** | **0.572** | **0.514** | **0.521** | **0.2490** |
+| 0.75 | 0.576 | 0.524 | 0.529 | 0.2486 |
+| 1.00 | 0.580 | 0.532 | 0.532 | 0.2487 |
+
+Migliora **ogni** linea Over su AUC e Brier insieme, e il livello resta calibrato
+a ogni `w` (0.5: 92 vs 93 · 1.5: 72 vs 76 · 2.5: 47 vs 50 · 3.5: 26 vs 25 ·
+4.5: 12 vs 12). L'errore standard dell'AUC per lega e' ±0.030, quindi il passo da
+0.50 a 0.75 (+0.007 in media) **non e' distinguibile**: si resta a 0.50, che sta
+dentro l'ottimo piatto e ha dalla sua l'unica linea con un massimo interno
+(Over 3.5, AUC 0.543 a w 0.50–0.75 contro 0.538 a w 1.00). Il cap ±20% ha morso
+sullo 0.18% delle partite, il `SoT per gol` implicito e' 3.19 (LaLiga 3.19,
+Premier 3.04, Serie A 3.33) contro il 3.25 usato.
+
+### I mercati sui numeri: abbassare `k` era la cura sbagliata
+
+Il `b11` aveva abbassato i `k` sulla pendenza misurata. Non e' servito: corner da
+0.60 a **0.55**, gialli da 0.64 a **0.66**. La scomposizione, resa possibile
+dalla baseline esportata nel CSV, dice perche'.
+
+Scomponendo `previsione = 2·lg + scarto attacco/difesa`:
+
+| | sd di `2·lg` | sd dello scarto | rapporto |
+|---|---|---|---|
+| corner | 0.812 | 0.105 | **8:1** |
+| tiri in porta | 0.748 | 0.066 | **11:1** |
+| gialli | 0.503 | 0.162 | **3:1** |
+
+**Quasi tutta la dispersione della previsione viene dalla baseline di coppia**, non
+dal termine che `k` governa. Toccare `k` non poteva funzionare.
+
+E la baseline e' sovradispersa perche' e' **una media di ~30 partite**, quindi
+porta il proprio errore di campionamento. La teoria lo prevede esattamente:
+
+| | sd di una partita | SE della media su 30 | affidabilita' attesa | pendenza misurata |
+|---|---|---|---|---|
+| corner | 3.32 | 0.605 | 0.44 | 0.55 |
+| tiri in porta | 2.89 | 0.527 | 0.50 | 0.46 |
+| gialli | 1.99 | 0.364 | 0.48 | 0.67 |
+
+Circa **meta' della varianza di `_base` e' rumore di stima**, ed e' per questo che
+la pendenza gira attorno a 0.5: e' la definizione di affidabilita'.
+
+### La cura: restringere la baseline, non lo scarto
+
+```
+riferimento = X_PER_GOAL x (LG.avgH + LG.avgA)      // costante DENTRO la lega
+lambda = riferimento + c x (2*lg - riferimento) + (grezzo - 2*lg)
+```
+
+Il riferimento e' ancorato ai gol di lega, che `computeLeagueParams` calcola su
+**tutte** le partite della lega: e' l'unica quantita' davvero di lega che il
+motore ha a disposizione. Lo scarto attacco/difesa non viene toccato.
+
+| | `c` | pendenza prima → dopo | Brier prima → dopo |
+|---|---|---|---|
+| corner | **0.50** | 0.55 → **0.96** | 0.2281 → **0.2251** |
+| tiri in porta | **0.75** | 0.49 → 0.63 | 0.2275 → **0.2261** |
+| gialli | **0.75** | 0.66 → 0.88 | 0.2077 → **0.2066** |
+
+Migliora in tutte e tre le leghe sui corner; su tiri e gialli in due su tre, con
+la terza sostanzialmente ferma. Il `c` piu' alto su tiri e gialli non e' timidezza:
+**il rischio sta tutto nell'ancoraggio**, e l'esposizione vale `(1-c)`. Il rapporto
+con i gol e' stabilissimo sui corner (**1.1%** di scarto fra leghe: 3.585 / 3.619 /
+3.625) ma vale 8.7% sui tiri e 14.7% sui gialli, quindi li' si stringe meno.
+Per i **falli** il rapporto varia del **28%** fra leghe (7.9 in Premier, 10.5 in
+Serie A): nessun ancoraggio affidabile, `MARKET_PER_GOAL.fouls = null` e la
+correzione si spegne da sola.
+
+Con la baseline sistemata, i `k` sono stati ri-cercati e il quadro si ribalta
+rispetto al `b11`:
+
+| | k | cosa dice la misura |
+|---|---|---|
+| corner | **0.07** | il Brier migliora monotonamente scendendo: il termine attacco/difesa sui corner **e' rumore** |
+| tiri in porta | **0.30** | ottimo interno fra 0.25 e 0.40: qui il termine porta segnale |
+| gialli | **0.10** | ottimo interno attorno a 0.09 |
+
+Nota per il futuro: i mercati sui numeri discriminano **meglio dei gol**. AUC
+media delle tre leghe: gialli ~0.57, tiri in porta ~0.56, corner ~0.53, contro lo
+0.53 dell'Over 2.5. Il mercato migliore e' quello dei cartellini, che nessuno
+aveva ancora guardato.
+
+**Cosa resta aperto:** la Premier sui tiri in porta ha pendenza 0.10–0.20, cioe'
+la previsione e' scorrelata dal reale. Le altre due leghe stanno a 0.77 e 0.35.
+Va capito se e' la Premier ad avere qualcosa di diverso o se e' rumore.
 
 ## Le costanti messe a mano: quali sono legittime e quali rompono i conti
 
