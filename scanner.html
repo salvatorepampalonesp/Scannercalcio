@@ -155,7 +155,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b1</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b2</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -352,7 +352,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
                     <td id="conf-p2" style="font-weight:bold;font-size:11px">--</td>
                   </tr>
                 </table>
-                <div style="font-size:9px; color:var(--dim); margin-top:4px">Confidence per esito: quanto i 3 modelli concordano su QUELL'esito specifico.</div>
+                <div style="font-size:9px; color:var(--dim); margin-top:4px">Confidence per esito = probabilita' calibrata di indovinare quell'esito (stesse rette del tabellone: 6.26 + 0.880 x p per l'1X2, -5.06 + 1.091 x p per i mercati binari). Non misura l'accordo fra i modelli: sui backtest quello correlava zero con l'azzeccare.</div>
               </div>
               <div style="background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:10px; margin-top:12px">
                 <div style="font-size:11px;font-weight:bold;color:var(--dim);margin-bottom:6px">🎯 Doppie Chance & Gol (con confidence)</div>
@@ -1135,6 +1135,12 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
     let ppda=null, field_tilt=null, direct_speed=null, pass_acc=null, ht=null, seq_time=null, pps=null, build_att=null, dir_att=null, avg_x=null, f3_entries=null, box_entries=null, tch_box=null, centr=null;
     let avg_def_x=null, cp_regains=null, rec_time=null, npxg=null, xg_op=null, xg_sp=null, xgot=null, bc=null, bcm=null, xg_shot=null;
     let cross=null, drib=null, thru=null, aer=null, misc=null, disp=null;
+    // V9.7.1 - metriche di creazione e progressione (PitchAPI /advanced). Il payload arrivava
+    // gia' ad ogni fetch ma queste chiavi non venivano lette: il comparatore le ri-aggregava
+    // per conto suo con fino a 15 chiamate extra per squadra. Estrarle qui costa zero richieste
+    // in piu' e le rende previsioni del motore come tutte le altre.
+    let gca=null, sca=null, xag=null, prog_passes=null, passes_box=null, carries_box=null, prog_carries=null;
+    let gca_ag=null, sca_ag=null, xag_ag=null, prog_passes_ag=null, passes_box_ag=null, carries_box_ag=null, prog_carries_ag=null;
     let opp_ppda=null, opp_field_tilt=null, opp_direct_speed=null, opp_seq_time=null, opp_avg_x=null, opp_avg_def_x=null, opp_cp_regains=null, opp_rec_time=null;
 
     let advHasMe = false;
@@ -1160,6 +1166,10 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
           thru = myAdv.passing?.through_balls ?? myAdv.creation?.through_balls ?? null; aer = myAdv.defending?.aerials_won ?? myAdv.duels?.aerials_won ?? null;
           misc = myAdv.carrying?.miscontrols ?? myAdv.possession?.miscontrols ?? myAdv.attacking?.miscontrols ?? null;
           disp = myAdv.carrying?.dispossessed ?? myAdv.possession?.dispossessed ?? myAdv.attacking?.dispossessed ?? null;
+          // creazione e progressione: stesse chiavi usate dal comparatore in CMP_ADV_KEYS
+          gca = myAdv.creation?.gca ?? null; sca = myAdv.creation?.sca ?? null; xag = myAdv.creation?.xag ?? null;
+          prog_passes = myAdv.passing?.progressive_passes ?? null; passes_box = myAdv.passing?.passes_into_box ?? null;
+          carries_box = myAdv.carrying?.carries_into_box ?? null; prog_carries = myAdv.carrying?.progressive_carries ?? null;
         }
         if (oppAdv) { 
           opp_ppda = oppAdv.defending?.ppda; opp_field_tilt = oppAdv.territory?.field_tilt; opp_direct_speed = oppAdv.tempo?.direct_speed; 
@@ -1167,6 +1177,11 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
           opp_avg_def_x = oppAdv.defending?.avg_defensive_action_x ?? oppAdv.positioning?.avg_defensive_action_x ?? null;
           opp_cp_regains = oppAdv.defending?.counterpress_regains_5s ?? oppAdv.pressing?.counterpress_regains_5s ?? null;
           opp_rec_time = oppAdv.defending?.ball_recovery_time ?? oppAdv.tempo?.ball_recovery_time ?? null;
+          // il "concesso": quanto l'avversario di quel giorno ha prodotto contro di noi.
+          // Serve a predictStat come secondo fattore del modello attacco x difesa.
+          gca_ag = oppAdv.creation?.gca ?? null; sca_ag = oppAdv.creation?.sca ?? null; xag_ag = oppAdv.creation?.xag ?? null;
+          prog_passes_ag = oppAdv.passing?.progressive_passes ?? null; passes_box_ag = oppAdv.passing?.passes_into_box ?? null;
+          carries_box_ag = oppAdv.carrying?.carries_into_box ?? null; prog_carries_ag = oppAdv.carrying?.progressive_carries ?? null;
         }
     }
 
@@ -1284,6 +1299,8 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
       fouls: zeroIf(extractSafeStat(d, ['fouls', 'falli'], isH), statsOk), fouls_ag: zeroIf(extractSafeStat(d, ['fouls', 'falli'], !isH), statsOk),
       ppda, field_tilt, direct_speed, seq_time, avg_x, f3_entries, tch_box, avg_def_x, cp_regains, rec_time, npxg, xg_sp, xgot, bc, bcm, xg_shot, cross, drib, thru, aer, misc, disp,
       opp_ppda, opp_field_tilt, opp_direct_speed, opp_seq_time, opp_avg_x, opp_avg_def_x, opp_cp_regains, opp_rec_time,
+      gca, sca, xag, prog_passes, passes_box, carries_box, prog_carries,
+      gca_ag, sca_ag, xag_ag, prog_passes_ag, passes_box_ag, carries_box_ag, prog_carries_ag,
       red_cards, goal_timings_scored, goal_timings_conceded, scorers, rawPresent
     };
   }
@@ -1291,7 +1308,9 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
   function buildStats(matchList) {
     let out = { n: matchList.length, vals: { poss_ag: [], xgot_ag: [], tch_box_ag: [], gf:[], ga:[], xg:[], xga:[], npxg:[], npxga:[], sot:[], sot_ag:[], cor:[], cor_ag:[], yel:[], yel_ag:[], fouls:[], fouls_ag:[], poss:[], moduli:[], 
       ppda:[], field_tilt:[], direct_speed:[], seq_time:[], avg_x:[], f3_entries:[], tch_box:[], avg_def_x:[], cp_regains:[], rec_time:[], xg_sp:[], xgot:[], bc:[], bcm:[], xg_shot:[], cross:[], drib:[], thru:[], aer:[], misc:[], disp:[],
-      opp_ppda:[], opp_field_tilt:[], opp_direct_speed:[], opp_seq_time:[], opp_avg_x:[], opp_avg_def_x:[], opp_cp_regains:[], opp_rec_time:[], red_cards:[], dates:[] },
+      opp_ppda:[], opp_field_tilt:[], opp_direct_speed:[], opp_seq_time:[], opp_avg_x:[], opp_avg_def_x:[], opp_cp_regains:[], opp_rec_time:[],
+      gca:[], sca:[], xag:[], prog_passes:[], passes_box:[], carries_box:[], prog_carries:[],
+      gca_ag:[], sca_ag:[], xag_ag:[], prog_passes_ag:[], passes_box_ag:[], carries_box_ag:[], prog_carries_ag:[], red_cards:[], dates:[] },
       matchInfo: [], streak: [], historyForElo: [], all_timings_scored: [], all_timings_conceded: [], all_scorers: [], win_pts: 0 };
 
     for(let i=0; i<matchList.length; i++) {
@@ -1307,7 +1326,9 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
       
       // I metrici opzionali si inseriscono SEMPRE, anche come null: nella v9.4 venivano inseriti solo se
       // presenti, quindi vals.ppda[3] non era il PPDA del quarto match e il decay lo accoppiava alla data sbagliata.
-      const OPT = ['ppda','field_tilt','direct_speed','seq_time','avg_x','f3_entries','tch_box','avg_def_x','cp_regains','rec_time','xg_sp','xgot','bc','bcm','xg_shot','cross','drib','thru','aer','misc','disp','opp_ppda','opp_field_tilt','opp_direct_speed','opp_seq_time','opp_avg_x','opp_avg_def_x','opp_cp_regains','opp_rec_time'];
+      const OPT = ['ppda','field_tilt','direct_speed','seq_time','avg_x','f3_entries','tch_box','avg_def_x','cp_regains','rec_time','xg_sp','xgot','bc','bcm','xg_shot','cross','drib','thru','aer','misc','disp','opp_ppda','opp_field_tilt','opp_direct_speed','opp_seq_time','opp_avg_x','opp_avg_def_x','opp_cp_regains','opp_rec_time',
+                   'gca','sca','xag','prog_passes','passes_box','carries_box','prog_carries',
+                   'gca_ag','sca_ag','xag_ag','prog_passes_ag','passes_box_ag','carries_box_ag','prog_carries_ag'];
       OPT.forEach(kk => { const v = det[kk]; out.vals[kk].push((v === undefined || v === null || isNaN(v)) ? null : v); });
 
       out.all_timings_scored = out.all_timings_scored.concat(det.goal_timings_scored); out.all_timings_conceded = out.all_timings_conceded.concat(det.goal_timings_conceded); out.all_scorers = out.all_scorers.concat(det.scorers);
@@ -1334,7 +1355,10 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
       // squadre forti alzavano la baseline e il loro vantaggio spariva.
       _base: (function(){
         const b={}; const pair={gf:'ga',xg:'xga',npxg:'npxga',sot:'sot_ag',cor:'cor_ag',
-                                yel:'yel_ag',fouls:'fouls_ag',poss:'poss_ag'};
+                                yel:'yel_ag',fouls:'fouls_ag',poss:'poss_ag',
+                                xgot:'xgot_ag',tch_box:'tch_box_ag',
+                                gca:'gca_ag',sca:'sca_ag',xag:'xag_ag',prog_passes:'prog_passes_ag',
+                                passes_box:'passes_box_ag',carries_box:'carries_box_ag',prog_carries:'prog_carries_ag'};
         for (const k in pair) {
           const a=(out.vals[k]||[]).filter(v=>v!=null&&isFinite(v));
           const c=(out.vals[pair[k]]||[]).filter(v=>v!=null&&isFinite(v));
@@ -1345,9 +1369,23 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
       })(),
       xgot_ag: calcFeatures(out.vals.xgot_ag, out.vals.dates, targetTimeMs),
       tch_box_ag: calcFeatures(out.vals.tch_box_ag, out.vals.dates, targetTimeMs),
+      // Le serie PRODOTTE di xgot e tch_box erano gia' raccolte (sono nella lista OPT)
+      // ma non passavano da calcFeatures: predictStat non trovava il "mio" valore e
+      // tornava null, cosi' le due colonne del CSV finivano sulla catena di fallback.
+      xgot: calcFeatures(out.vals.xgot, out.vals.dates, targetTimeMs),
+      tch_box: calcFeatures(out.vals.tch_box, out.vals.dates, targetTimeMs),
       poss: calcFeatures(out.vals.poss, out.vals.dates, targetTimeMs), modulo_main: getMostFrequentWithPct(out.vals.moduli),
       ppda: calcFeatures(out.vals.ppda, out.vals.dates, targetTimeMs), field_tilt: calcFeatures(out.vals.field_tilt, out.vals.dates, targetTimeMs),
-      direct_speed: calcFeatures(out.vals.direct_speed, out.vals.dates, targetTimeMs), red_cards: calcFeatures(out.vals.red_cards, out.vals.dates, targetTimeMs)
+      direct_speed: calcFeatures(out.vals.direct_speed, out.vals.dates, targetTimeMs), red_cards: calcFeatures(out.vals.red_cards, out.vals.dates, targetTimeMs),
+      // creazione / progressione: prodotte e concesse, cosi' predictStat puo' usarle
+      // col modello moltiplicativo invece della sola media della squadra.
+      gca: calcFeatures(out.vals.gca, out.vals.dates, targetTimeMs), gca_ag: calcFeatures(out.vals.gca_ag, out.vals.dates, targetTimeMs),
+      sca: calcFeatures(out.vals.sca, out.vals.dates, targetTimeMs), sca_ag: calcFeatures(out.vals.sca_ag, out.vals.dates, targetTimeMs),
+      xag: calcFeatures(out.vals.xag, out.vals.dates, targetTimeMs), xag_ag: calcFeatures(out.vals.xag_ag, out.vals.dates, targetTimeMs),
+      prog_passes: calcFeatures(out.vals.prog_passes, out.vals.dates, targetTimeMs), prog_passes_ag: calcFeatures(out.vals.prog_passes_ag, out.vals.dates, targetTimeMs),
+      passes_box: calcFeatures(out.vals.passes_box, out.vals.dates, targetTimeMs), passes_box_ag: calcFeatures(out.vals.passes_box_ag, out.vals.dates, targetTimeMs),
+      carries_box: calcFeatures(out.vals.carries_box, out.vals.dates, targetTimeMs), carries_box_ag: calcFeatures(out.vals.carries_box_ag, out.vals.dates, targetTimeMs),
+      prog_carries: calcFeatures(out.vals.prog_carries, out.vals.dates, targetTimeMs), prog_carries_ag: calcFeatures(out.vals.prog_carries_ag, out.vals.dates, targetTimeMs)
     };
     out.n = out.vals.gf.length;   // numero REALE di match con dati (prima era la lunghezza della lista richiesta)
     // Copertura: in quante partite l'API ha davvero restituito la metrica.
@@ -1687,15 +1725,70 @@ function renderVerdetti(mk) {
 // ===========================================================================
 // Versione del motore, letta dal comparatore dopo l'iniezione: cosi' si vede
 // subito se il file trascinato e' quello aggiornato o una copia vecchia.
-window.__SCANNER_BUILD = '0905-b1';
+window.__SCANNER_BUILD = '0905-b2';
 
-const STAT_SHRINK = 0.35;
+// ═══════════════════════════════════════════════════════════════════════════
+// SHRINKAGE ADATTIVO PER METRICA (V9.7.1)
+// ═══════════════════════════════════════════════════════════════════════════
+// ATTENZIONE ALLA CONVENZIONE, e' l'opposto di quella intuitiva:
+//     sh(r) = 1 + k * (r - 1)
+//   k = 1  -> nessuno smorzamento, si crede al rapporto grezzo
+//   k = 0  -> smorzamento totale, la stima collassa sulla media di lega
+// Quindi k ALTO = MENO shrinkage. Un k=0.55 su una metrica rumorosa la rende
+// piu' volatile, non meno.
+//
+// Il vecchio 0.35 fisso veniva da una ricerca walk-forward sul RMSE, ma tarata
+// su una versione precedente delle feature. Ricalibrato sul backtest di aprile
+// 2026 (40 partite di Serie A, 80 osservazioni squadra-partita) il quadro e'
+// diverso: le stime sono SOTTO-disperse, non sopra.
+//
+//   - grid search diretta sui componenti esposti dalla diagnostica
+//     (prodotto / concesso / baseline / reale): RMSE minima a k~0.65 su npxg
+//     (0.598 -> 0.588) e a k~0.70 sul possesso (8.77 -> 8.16).
+//   - regressione reale ~ previsto sulle undici metriche avanzate del
+//     comparatore: pendenza fra 1.4 e 1.8 su nove metriche su undici, cioe'
+//     il previsto varia troppo poco rispetto al reale. La pendenza b implica
+//     k* ~ 0.35 * b (la deviazione dalla baseline e' lineare in k al primo
+//     ordine). Gli SE sono larghi (0.35-0.57 su n=80), quindi ogni stima e'
+//     smorzata verso 1 con un prior di sd 0.35 prima di diventare k.
+//   - la sola metrica che chiede PIU' shrinkage e' SCA (pendenza 0.67):
+//     era anche quella con la correlazione peggiore (0.17).
+//
+// I guadagni sono di calibrazione, non di accuratezza: le correlazioni
+// previsto/reale non si muovono, si muove la dispersione. MAE su passaggi
+// progressivi 6.76 -> 6.63, su passaggi in area 3.33 -> 3.29.
+//
+// Su window per permettere al comparatore di fare A/B sul singolo valore.
+const STAT_SHRINK_DEFAULT = 0.45;   // era 0.35 per tutte
+// k con cui e' stata calibrata la correzione residuale (vedi RESID_*): le sue
+// costanti valgono a QUESTO k, quindi il segnale residuale si calcola sempre
+// qui, indipendentemente da come viene tarata la tabella qui sotto.
+const STAT_SHRINK_LEGACY = 0.35;
+window.STAT_SHRINK_TABLE = window.STAT_SHRINK_TABLE || {
+  npxg:         0.55,   // grid diretta: minimo piatto fra 0.5 e 0.8
+  xg:           0.55,   // stessa famiglia di npxg
+  poss:         0.60,   // grid diretta: minimo a 0.70, tenuto sotto per prudenza
+  gca:          0.44,
+  sca:          0.30,   // unica metrica che chiede piu' smorzamento
+  xag:          0.35,   // pendenza 1.01: il valore storico era gia' giusto
+  prog_passes:  0.47,
+  passes_box:   0.45,
+  carries_box:  0.44,
+  prog_carries: 0.41
+};
+// Compatibilita': parte del codice storico legge ancora STAT_SHRINK come scalare.
+const STAT_SHRINK = STAT_SHRINK_DEFAULT;
+function statShrinkFor(feat) {
+  const t = window.STAT_SHRINK_TABLE || {};
+  const k = t[feat];
+  return (typeof k === 'number' && isFinite(k)) ? k : STAT_SHRINK_DEFAULT;
+}
 
 // mappa: nome della feature "prodotta" -> nome della feature "concessa"
 const STAT_PAIRS = {
   // Solo le coppie dove ESISTONO entrambe le feature: quella prodotta e quella
-  // concessa. xgot e tch_box hanno il concesso ma non la produzione (il motore
-  // non li aggrega come serie), quindi restano fuori e usano la media semplice.
+  // concessa. Dal 0905-b2 anche xgot e tch_box sono qui: le serie prodotte
+  // c'erano gia', mancava solo il passaggio da calcFeatures.
   gf: 'ga',
   xg: 'xga',
   npxg: 'npxga',
@@ -1704,13 +1797,26 @@ const STAT_PAIRS = {
   yel: 'yel_ag',
   fouls: 'fouls_ag',
   poss: 'poss_ag',
+  xgot: 'xgot_ag',
+  tch_box: 'tch_box_ag',
+  // creazione e progressione (dal 0905-b2 aggregate anche dal motore)
+  gca: 'gca_ag',
+  sca: 'sca_ag',
+  xag: 'xag_ag',
+  prog_passes: 'prog_passes_ag',
+  passes_box: 'passes_box_ag',
+  carries_box: 'carries_box_ag',
+  prog_carries: 'prog_carries_ag',
 };
 
 // Restituisce il valore atteso della metrica per la squadra "att" contro "dif".
 // Se manca il dato del concesso o la media di lega, torna alla media semplice:
 // meglio una stima grezza che un buco, e le leghe fuori dalle top europee
 // spesso non hanno tutte le metriche.
-function predictStat(att, dif, feat, scope) {
+// kOverride: forza un k specifico ignorando la tabella. Serve a chi consuma la
+// stima con una calibrazione propria (l'Ordered Logit e la correzione residuale
+// sono tarati a STAT_SHRINK_LEGACY e devono restare stabili se la tabella cambia).
+function predictStat(att, dif, feat, scope, kOverride) {
   const sc = scope || 'role';
   const gv = (t, f) => {
     const x = t && t[sc] && t[sc].features && t[sc].features[f];
@@ -1732,9 +1838,102 @@ function predictStat(att, dif, feat, scope) {
   const lg = pool.reduce((s, v) => s + v, 0) / pool.length;
   if (!(lg > 0)) return mine;
 
-  const sh = r => 1 + STAT_SHRINK * (r - 1);
+  const k = (typeof kOverride === 'number' && isFinite(kOverride)) ? kOverride : statShrinkFor(feat);
+  const sh = r => 1 + k * (r - 1);
   const out = lg * sh(mine / lg) * sh(conc / lg);
   return (isFinite(out) && out >= 0) ? out : mine;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CORREZIONE RESIDUALE (V9.7.1) — le metriche di creazione DOPO il Dixon-Coles
+// ═══════════════════════════════════════════════════════════════════════════
+// L'idea di correggere le probabilita' 1X2 con le statistiche avanzate e'
+// giusta, ma va fatta con la parte di segnale che il DC NON ha gia'. Misurato
+// sul backtest di aprile 2026 (40 partite), correlazione fra la differenza
+// casa-trasferta della metrica PREVISTA e l'edge dell'ensemble (p1 - p2):
+//
+//     npxg           0.992   <- e' l'ingresso stesso del DC: ridondante
+//     passaggi in area 0.873
+//     SCA            0.872
+//     pass. progr.   0.876
+//     GCA            0.803
+//     conduz. in area 0.708
+//
+// Correggere con npxg significa moltiplicare per due l'informazione che il
+// lambda contiene gia': non e' una correzione, e' un affilamento mascherato.
+// Quel che resta DOPO aver tolto l'edge (correlazione col residuo esito-edge):
+//
+//     conduzioni in area  0.438
+//     GCA                 0.403
+//     SCA                 0.374
+//     passaggi progr.     0.184
+//     npxg                0.147
+//
+// Quindi il segnale utile e' nelle metriche di CREAZIONE e PENETRAZIONE, che
+// il motore non usa per i lambda, non in npxg.
+//
+// COSTRUZIONE (ortogonale per costruzione, senza regressioni a runtime):
+//   sig  = media pesata delle differenze casa-trasferta normalizzate
+//   edge = p1 - p2 dell'ensemble
+//   res  = GAMMA * sig - edge          GAMMA porta sig sulla scala dell'edge
+//   d    = ALPHA * tanh(res)           tanh limita gli estremi
+// e si sposta p1 di e^(+d), p2 di e^(-d), la X assorbe poco (e^-0.25|d|).
+//
+// TARATURA: GAMMA = 0.56 e' la pendenza di edge su sig, stimata sulle 40
+// partite e stabile fra le due meta' del campione (0.576 / 0.544). ALPHA e'
+// tenuto BASSO di proposito: sul backtest logloss e Brier migliorano in modo
+// monotono fino ad ALPHA 0.6 in entrambe le meta' (0.9650 -> 0.9493 sulla
+// prima, 1.1140 -> 1.1047 sulla seconda), ma un ottimo interno non c'e' e con
+// 40 partite quella monotonia dice soprattutto che l'ensemble e' sotto-sicuro.
+// 0.25 sposta al massimo di ~3 punti percentuali p1 e p2: abbastanza da
+// contare, poco da fare danni se il segnale non regge su piu' dati.
+// Su window per l'A/B del comparatore: 0 disattiva del tutto la correzione.
+const RESID_W     = { gca: 0.35, sca: 0.25, carries_box: 0.25, prog_passes: 0.15 };
+const RESID_SCALE = { gca: 2.5,  sca: 12.0, carries_box: 2.0,  prog_passes: 15.0 };
+const RESID_GAMMA = 0.56;
+window.RESID_ALPHA = (typeof window.RESID_ALPHA === 'number') ? window.RESID_ALPHA : 0.25;
+
+// probs: {p1, pX, p2} gia' normalizzate. att/dif: gli oggetti squadra.
+// Torna le probabilita' corrette piu' il dettaglio del calcolo (per il CSV).
+function applyResidualCorrection(probs, att, dif) {
+  const dbg = { available: [], sig: null, edge: null, resid: null, delta: 0, alpha: window.RESID_ALPHA, applied: false };
+  const out = { p1: probs.p1, pX: probs.pX, p2: probs.p2, debug: dbg };
+  const alpha = window.RESID_ALPHA;
+  if (!(alpha > 0) || !att || !dif) return out;
+
+  // Le previsioni usate qui sono SEMPRE a STAT_SHRINK_LEGACY: GAMMA e ALPHA
+  // sono tarati a quel k. La tabella adattiva serve ai numeri mostrati, non a
+  // questa correzione, altrimenti ritarare la tabella sposterebbe in silenzio
+  // anche le probabilita' 1X2.
+  let sig = 0, wTot = 0;
+  for (const f in RESID_W) {
+    const h = predictStat(att, dif, f, 'role', STAT_SHRINK_LEGACY);
+    const a = predictStat(dif, att, f, 'role', STAT_SHRINK_LEGACY);
+    if (h == null || a == null || !isFinite(h) || !isFinite(a)) continue;
+    sig += RESID_W[f] * ((h - a) / RESID_SCALE[f]);
+    wTot += RESID_W[f];
+    dbg.available.push(f);
+  }
+  // Con una sola metrica disponibile il composito e' troppo rumoroso: meglio
+  // lasciare l'ensemble com'e' (le leghe fuori dalle top europee non hanno
+  // /advanced e finiscono tutte qui).
+  if (dbg.available.length < 2 || !(wTot > 0)) return out;
+  // rinormalizzo sui pesi effettivamente usati, cosi' la scala di sig non
+  // dipende da quante metriche la lega espone
+  sig = sig / wTot;
+
+  const edge = probs.p1 - probs.p2;
+  const resid = RESID_GAMMA * sig - edge;
+  const delta = alpha * Math.tanh(resid);
+  let p1 = probs.p1 * Math.exp(+delta);
+  let p2 = probs.p2 * Math.exp(-delta);
+  let pX = probs.pX * Math.exp(-0.25 * Math.abs(delta));
+  const tot = p1 + pX + p2;
+  if (!(tot > 0) || !isFinite(tot)) return out;
+
+  dbg.sig = sig; dbg.edge = edge; dbg.resid = resid; dbg.delta = delta; dbg.applied = true;
+  dbg.before = { p1: probs.p1, pX: probs.pX, p2: probs.p2 };
+  return { p1: p1 / tot, pX: pX / tot, p2: p2 / tot, debug: dbg };
 }
 
 async function avviaScanner() {
@@ -1983,8 +2182,16 @@ async function avviaScanner() {
     // Forza = schema attacco-vs-difesa ADDITIVO 70/30 (validato: additivo batte
     // moltiplicativo, e l'attacco pesa piu' della difesa avversaria - corr 0.26 vs 0.17).
     const _olStrength = (att, oppDef) => 0.7 * att + 0.3 * oppDef;
-    const olH = _olStrength(npxgH_ro, safeDecay(dA, 'npxga'));
-    const olA = _olStrength(npxgA_ro, safeDecay(dH, 'npxga'));
+    // OL_BETA/T1/T2 sono stimati su ingressi calcolati con lo shrinkage storico 0.35.
+    // Se l'OL leggesse la tabella adattiva, alzare k su npxg allargherebbe la scala
+    // latente e le due soglie diventerebbero sbagliate senza che nulla lo segnali:
+    // qui il k resta fissato a quello della taratura.
+    const _olNpxg = (team) => {
+      const v = predictStat(team, _oppOf(team), 'npxg', 'role', STAT_SHRINK_LEGACY);
+      return (v != null && isFinite(v)) ? v : safeDecay(team, 'npxg');
+    };
+    const olH = _olStrength(_olNpxg(dH), safeDecay(dA, 'npxga'));
+    const olA = _olStrength(_olNpxg(dA), safeDecay(dH, 'npxga'));
     const _olY = OL_BETA * (olH - olA);
     let ol_p2 = _sig(OL_T1 - _olY);
     let ol_pX = _sig(OL_T2 - _olY) - ol_p2;
@@ -2011,7 +2218,14 @@ async function avviaScanner() {
     let m1_raw = (probsRole.p1 * wDc) + (probsOL.p1 * wOL) + (mk_ro.p1 * wMk);
     let mX_raw = (probsRole.pX * wDc) + (probsOL.pX * wOL) + (mk_ro.pX * wMk);
     let m2_raw = (probsRole.p2 * wDc) + (probsOL.p2 * wOL) + (mk_ro.p2 * wMk);
-    const m_tot = m1_raw + mX_raw + m2_raw; const m1 = m_tot > 0 ? m1_raw / m_tot : 0.33; const mX = m_tot > 0 ? mX_raw / m_tot : 0.33; const m2 = m_tot > 0 ? m2_raw / m_tot : 0.33;
+    const m_tot = m1_raw + mX_raw + m2_raw;
+    const _ens1 = m_tot > 0 ? m1_raw / m_tot : 0.33, _ensX = m_tot > 0 ? mX_raw / m_tot : 0.33, _ens2 = m_tot > 0 ? m2_raw / m_tot : 0.33;
+    // CORREZIONE RESIDUALE: sposta l'ensemble con la sola parte delle metriche di
+    // creazione che il Dixon-Coles non contiene gia' (vedi applyResidualCorrection).
+    // Se la lega non espone /advanced torna l'ensemble immutato.
+    const _RC = applyResidualCorrection({ p1: _ens1, pX: _ensX, p2: _ens2 }, dH, dA);
+    window.__RESID_DEBUG = _RC.debug;
+    const m1 = _RC.p1; const mX = _RC.pX; const m2 = _RC.p2;
 
     // ═══════════════════════════════════════════════════════════════════════
     // CONFIDENCE CALIBRATA — riscritta su base empirica (6824 partite: Europa+MLS+Turchia)
@@ -2059,7 +2273,10 @@ async function avviaScanner() {
     // prodotto PRIMA di quella riga. Quando questi due blocchi stavano sotto,
     // l'hook copiava i valori della chiamata precedente ad avviaScanner (e null
     // alla prima): nel CSV finivano le stime di un'altra partita.
-    const _statKeys = ['gf','npxg','xg','xgot','sot','cor','yel','fouls','poss','tch_box','ppda','field_tilt'];
+    const _statKeys = ['gf','npxg','xg','xgot','sot','cor','yel','fouls','poss','tch_box','ppda','field_tilt',
+                       // dal 0905-b2 anche creazione e progressione: il comparatore le riceve
+                       // gia' previste invece di ri-aggregarle con chiamate proprie
+                       'gca','sca','xag','prog_passes','passes_box','carries_box','prog_carries'];
 
     // Diagnostica: i valori intermedi del calcolo per NPxG e Possesso, esposti
     // cosi' come sono. Se la stima esce schiacciata sul centro, qui si vede se
@@ -2071,9 +2288,10 @@ async function avviaScanner() {
         const b = (t,f) => { const x=t&&t.role&&t.role.features&&t.role.features._base;
                              return (x&&x[f]!=null)?+x[f].toFixed(3):null; };
         const o={};
-        for (const f of ['npxg','poss']) {
+        for (const f of ['npxg','poss','gca','sca','carries_box','prog_passes']) {
           const v = predictStat(dH,dA,f,'role');
           o[f] = { mineH:g(dH,f), concA:g(dA,STAT_PAIRS[f]), baseH:b(dH,f), baseA:b(dA,f),
+                   k:statShrinkFor(f),
                    outH:(v!=null&&isFinite(v))?+v.toFixed(3):null };
         }
         return o;
@@ -2088,6 +2306,11 @@ async function avviaScanner() {
       } catch (e) { /* metrica assente in questa lega */ }
     }
 
+    // NB: dal 0905-b2 m1/mX/m2 arrivano gia' corretti dalla correzione residuale, quindi
+    // il pick e la confidence si riferiscono alle probabilita' finali. Le rette di
+    // calibrazione (6.26 + 0.880 p) sono state stimate su probabilita' NON corrette: con
+    // alpha 0.25 lo spostamento massimo e' ~3 punti, dentro il rumore della regressione,
+    // ma se un backtest futuro alzasse alpha andranno ristimate sulle nuove probabilita'.
     const _pickProb = Math.max(m1, mX, m2);
     const confidence = Math.round(_calibConf1X2(_pickProb));
 
@@ -2102,16 +2325,33 @@ async function avviaScanner() {
                              return (b&&b[f]!=null)?b[f]:null; };
       const _fm = v => (v==null||isNaN(v)) ? '<span style="color:#ef4444">assente</span>' : (+v).toFixed(3);
       let _h = '<table class="table-ui" style="font-size:12px"><thead><tr>'
-             + '<th style="text-align:left">metrica</th><th>prodotto</th><th>concesso avv.</th>'
+             + '<th style="text-align:left">metrica</th><th>k</th><th>prodotto</th><th>concesso avv.</th>'
              + '<th>baseline casa</th><th>baseline trasf.</th><th>stima</th></tr></thead><tbody>';
-      for (const f of ['npxg','poss','sot','cor']) {
+      for (const f of ['npxg','poss','sot','cor','gca','sca','carries_box','prog_passes']) {
         const ag = STAT_PAIRS[f];
         _h += '<tr><td style="text-align:left">'+f+'</td>'
+            + '<td style="color:var(--dim)">'+statShrinkFor(f).toFixed(2)+'</td>'
             + '<td>'+_fm(_dg(dH,f))+'</td><td>'+_fm(ag?_dg(dA,ag):null)+'</td>'
             + '<td>'+_fm(_db(dH,f))+'</td><td>'+_fm(_db(dA,f))+'</td>'
             + '<td><b>'+_fm(predictStat(dH,dA,f,'role'))+'</b></td></tr>';
       }
       _h += '</tbody></table>';
+      // Riga di sintesi della correzione residuale: dice se e' stata applicata,
+      // su quante metriche e di quanto ha spostato le probabilita'.
+      const _rc = window.__RESID_DEBUG;
+      if (_rc && _rc.applied) {
+        const _d1 = ((m1 - _rc.before.p1) * 100), _d2 = ((m2 - _rc.before.p2) * 100);
+        _h += '<div style="font-size:11px;color:var(--dim);margin-top:6px">'
+            + 'Correzione residuale attiva su ' + _rc.available.length + ' metriche ('
+            + _rc.available.join(', ') + ') &middot; alpha ' + _rc.alpha.toFixed(2)
+            + ' &middot; segnale ' + _rc.sig.toFixed(3) + ' vs edge ' + _rc.edge.toFixed(3)
+            + ' &middot; spostamento 1 ' + (_d1 >= 0 ? '+' : '') + _d1.toFixed(1)
+            + ' pt, 2 ' + (_d2 >= 0 ? '+' : '') + _d2.toFixed(1) + ' pt</div>';
+      } else {
+        _h += '<div style="font-size:11px;color:var(--dim);margin-top:6px">'
+            + 'Correzione residuale non applicata (' + (window.RESID_ALPHA > 0
+                ? 'metriche di creazione assenti in questa lega' : 'alpha a zero') + ').</div>';
+      }
       safeHtml('pred-debug-body', _h);
     } catch (e) {
       safeHtml('pred-debug-body', '<div style="color:#ef4444">errore nel predittore: '
@@ -2349,15 +2589,18 @@ async function avviaScanner() {
     let p = `SEI UN DATA SCIENTIST ESPERTO DI CALCIO. Partita: ${hName} vs ${aName} (Simulazione al ${dateInput}).
 
 1. THE MASTER ENSEMBLE E QUOTE REALI (Modello NPxG)
-- Probabilità (Dixon-Coles + KNN 11D pesato dinamico + Markov 10%): 1 (${pct(m1)}) | X (${pct(mX)}) | 2 (${pct(m2)})
+- Probabilità (Dixon-Coles 60% + Ordered Logit 30% + Markov 10%, poi correzione residuale sulle metriche di creazione): 1 (${pct(m1)}) | X (${pct(mX)}) | 2 (${pct(m2)})
 - Fair Odds Ensemble: 1 @${oddM1} | X @${oddMX} | 2 @${oddM2}   (Dixon-Coles puro: 1 @${odd1} | X @${oddX} | 2 @${odd2})
 - Affidabilita' campionaria: ${dH.role.n} match casa per ${hName}, ${dA.role.n} match trasferta per ${aName}. Vicini KNN efficaci: ${f1(knn_H.nEff)} / ${f1(knn_A.nEff)}
 - Confidence Score: ${confidence}/100
 - Hidden Value / Blood Scent: ${hiddenValueMsgClean}
 
 2. SCOMPOSIZIONE MODELLI
-- Dixon-Coles Puro (Ruolo NPxG): 1 (${pct(probsRole.p1)}) | X (${pct(probsRole.pX)}) | 2 (${pct(probsRole.p2)})
-- KNN 11D Puro (Tattica): 1 (${pct(probsKnn.p1)}) | X (${pct(probsKnn.pX)}) | 2 (${pct(probsKnn.p2)})
+- Dixon-Coles Puro (Ruolo NPxG) [nell'ensemble, peso 60%]: 1 (${pct(probsRole.p1)}) | X (${pct(probsRole.pX)}) | 2 (${pct(probsRole.p2)})
+- Ordered Logit [nell'ensemble, peso 30%]: 1 (${pct(probsOL.p1)}) | X (${pct(probsOL.pX)}) | 2 (${pct(probsOL.p2)})
+- Markov [nell'ensemble, peso 10%]: 1 (${pct(mk_ro.p1)}) | X (${pct(mk_ro.pX)}) | 2 (${pct(mk_ro.p2)})
+- KNN 11D Puro (Tattica) [FUORI dall'ensemble, solo riferimento tattico]: 1 (${pct(probsKnn.p1)}) | X (${pct(probsKnn.pX)}) | 2 (${pct(probsKnn.p2)})
+- Correzione residuale: ${(window.__RESID_DEBUG && window.__RESID_DEBUG.applied) ? ('attiva su ' + window.__RESID_DEBUG.available.join('/') + ', spostamento ' + (window.__RESID_DEBUG.delta >= 0 ? '+' : '') + window.__RESID_DEBUG.delta.toFixed(3) + ' in log-odds verso ' + (window.__RESID_DEBUG.delta >= 0 ? 'la casa' : 'la trasferta')) : 'non applicata (metriche di creazione assenti)'}
 
 3. QUALITA' E CINISMO (The Sniper Box)
 - NPxG vs xGOT (Indice Cecchino): ${hName} ${f2(npxgH_ro)} vs ${xgotH > 0 ? f2(xgotH) : (xgShotH > 0 ? f2(xgShotH) + " (xG/Tiro)" : "N/D")} | ${aName} ${f2(npxgA_ro)} vs ${xgotA > 0 ? f2(xgotA) : (xgShotA > 0 ? f2(xgShotA) + " (xG/Tiro)" : "N/D")}
