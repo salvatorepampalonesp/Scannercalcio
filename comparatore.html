@@ -162,7 +162,7 @@ select{cursor:pointer}
   <div class="topbar">
     <div class="brand">
       <h1>Comparatore V9.7</h1>
-      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b1</span>
+      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b2</span>
       <span class="badge" id="engine-badge">motore non caricato</span>
     </div>
     <span class="badge">previsioni vs realtà</span>
@@ -627,6 +627,7 @@ async function loadEngineFromText(text, fileName) {
         probsOL:  (typeof probsOL!=='undefined') ? probsOL : null,   /* ordered logit */
         predStats: (typeof window.__PRED_STATS !== 'undefined') ? window.__PRED_STATS : null,
         predDebug: (typeof window.__PRED_DEBUG !== 'undefined') ? window.__PRED_DEBUG : null,
+        residDebug: (typeof window.__RESID_DEBUG !== 'undefined') ? window.__RESID_DEBUG : null,
         probsKnn:    (typeof probsKnn    !== 'undefined') ? probsKnn    : null,
         mk_ro:       (typeof mk_ro       !== 'undefined') ? mk_ro       : null,
         m1: (typeof m1!=='undefined')?m1:null, mX: (typeof mX!=='undefined')?mX:null, m2: (typeof m2!=='undefined')?m2:null,
@@ -667,7 +668,7 @@ async function loadEngineFromText(text, fileName) {
     } else {
       // Fallback: dopo l'ensemble m1/mX/m2. In questo caso confidence/sampleFactor potrebbero
       // non esistere ancora: l'hook li mette a null ma cattura comunque le probabilità.
-      const afterEnsemble = /(const\s+m_tot\s*=\s*m1_raw\s*\+\s*mX_raw\s*\+\s*m2_raw[^;]*;\s*const\s+m1\s*=[^;]*;\s*const\s+mX\s*=[^;]*;\s*const\s+m2\s*=[^;]*;)/;
+      const afterEnsemble = /(const\s+m1\s*=[^;]*;\s*const\s+mX\s*=[^;]*;\s*const\s+m2\s*=[^;]*;)/;
       if (afterEnsemble.test(processedJs)) {
         processedJs = processedJs.replace(afterEnsemble, '$1\n' + hookCode);
         cmpLog(`   ✅ Hook iniettato dopo l'ensemble (fallback; confidence potrebbe risultare null)`);
@@ -742,7 +743,7 @@ async function loadEngineFromText(text, fileName) {
   // perche' e' quella a creare #engine-build. Stando prima, getElementById
   // restituiva l'oggetto fantasma del proxy e il messaggio non compariva mai.
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b1';
+  const _bComp = '0905-b2';
   const _el = document.getElementById('engine-build');
   if (_el) {
     if (!_bScan) {
@@ -1378,7 +1379,7 @@ async function cmpRunMatch(match, limit, render) {
     };
     const pastH = buildPast(R._homeId);
     const pastA = buildPast(R._awayId);
-    cmpLog(`   → Metriche avanzate: modello attacco×difesa (shrink ${CMP_DC_SHRINK}) su ${pastH.length}+${pastA.length} match...`);
+    cmpLog(`   → Metriche avanzate: modello attacco×difesa (k per metrica, default ${CMP_DC_SHRINK}) su ${pastH.length}+${pastA.length} match...`);
     try {
       const [aggH, aggA] = await Promise.all([
         cmpAggregateExtraMetrics(pastH, targetMs, R._homeId),
@@ -1430,7 +1431,7 @@ async function cmpEsegui() {
 // nell'intervallo [dataInizio, dataFine] e le elabora tutte, accumulandole per l'export.
 async function cmpEseguiIntervallo() {
   if (!engineReady) return alert("Prima trascina il file V9.7");
-  if (!cmpAllMatches.length) return alert('Storico del campionato non ancora caricato.\n\nPremi prima "Trova Partite del Giorno": scarica le 3 stagioni che servono come storico.');
+  if (!cmpAllMatches.length) return alert('Storico del campionato non ancora caricato.\n\nPremi prima "Carica storico campionato": scarica le 3 stagioni che servono come storico.');
   // "Da" dal campo dedicato; se vuoto ripiega sulla "Data" in cima (retrocompatibile).
   const startDate = document.getElementById('cmp-range-start').value || document.getElementById('cmp-target-date').value;
   const endDate = document.getElementById('cmp-range-end').value;
@@ -1579,7 +1580,40 @@ function cmpTimeDecayWeighted(vals, times, targetMs) {
 // le metriche testate. Senza shrinkage (k=1) il prodotto dei due rapporti
 // amplifica gli estremi e l'errore peggiora, pur migliorando la correlazione.
 // ═══════════════════════════════════════════════════════════════════════════
-const CMP_DC_SHRINK = 0.35;
+// ─── AGGIORNAMENTO 0905-b2: k per metrica invece di 0.35 per tutte ─────────
+// ATTENZIONE alla convenzione: k=1 vuol dire NESSUNO smorzamento (si crede al
+// rapporto grezzo), k=0 vuol dire smorzamento totale sulla media di lega.
+// k ALTO = MENO shrinkage.
+//
+// Ricalibrato sul backtest di aprile 2026 (40 partite, 80 osservazioni
+// squadra-partita per metrica) con la regressione reale ~ previsto: la
+// pendenza b dice quanto il previsto varia POCO rispetto al reale, e la
+// deviazione dalla baseline e' lineare in k al primo ordine, quindi
+// k* ~ 0.35 * b. Gli errori standard sono larghi (0.35-0.57), percio' ogni
+// stima e' smorzata verso 1 con un prior di sd 0.35 prima di diventare k.
+//
+//   metrica        b     SE     k
+//   vaep_off     1.73  0.52   0.43
+//   vaep_def     0.44  0.57   0.30
+//   xt           1.54  0.35   0.44
+//   pv_off       1.73  0.54   0.43
+//   gca          1.82  0.50   0.44
+//   xag          1.01  0.44   0.35   <- il valore storico era gia' giusto
+//   sca          0.67  0.43   0.30   <- unica che chiede PIU' smorzamento
+//   prog_passes  1.69  0.35   0.47
+//   passes_box   1.68  0.41   0.45
+//   carries_box  1.54  0.38   0.44
+//   prog_carries 1.39  0.41   0.41
+//
+// Il guadagno e' di calibrazione, non di correlazione: MAE sui passaggi
+// progressivi 6.76 -> 6.63, sui passaggi in area 3.33 -> 3.29, sulle
+// conduzioni in area 1.560 -> 1.542. Le correlazioni non si muovono.
+const CMP_DC_SHRINK = 0.35;   // fallback per le metriche non in tabella
+const CMP_DC_SHRINK_TABLE = {
+  vaep_off: 0.43, vaep_def: 0.30, xt: 0.44, pv_off: 0.43,
+  gca: 0.44, xag: 0.35, sca: 0.30,
+  prog_passes: 0.47, passes_box: 0.45, carries_box: 0.44, prog_carries: 0.41
+};
 
 const CMP_ADV_KEYS = [
   ['vaep_off',    m => m.possession_value?.vaep_offensive],
@@ -1653,9 +1687,9 @@ async function cmpAggregateExtraMetrics(pastMatches, targetMs, teamId) {
 // non e' la media di lega esatta, ma e' l'unica disponibile senza altre chiamate.
 function cmpDcPredict(aggH, aggA) {
   if (!aggH || !aggA) return { H: null, A: null };
-  const k = CMP_DC_SHRINK;
   const H = {}, A = {};
   for (const [key] of CMP_ADV_KEYS) {
+    const k = (typeof CMP_DC_SHRINK_TABLE[key] === 'number') ? CMP_DC_SHRINK_TABLE[key] : CMP_DC_SHRINK;
     const pH = aggH._prod[key], cH = aggH._conc[key];
     const pA = aggA._prod[key], cA = aggA._conc[key];
     const vals = [pH, cH, pA, cA].filter(v => v != null && isFinite(v));
@@ -1861,7 +1895,6 @@ function cmpRender(match, R, actH, actA) {
     return `<span style="background:${col};color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold">${v}</span>`;
   };
 
-  // Confidence per esito: usa DC+KNN+Markov con lo stesso sampleFactor del motore.
   // Confidence: stesse rette di calibrazione del motore V9.7 (regressione su 6824
   // partite). NON e' piu' l'accordo fra i modelli: sui backtest lo spread fra DC,
   // KNN e Markov non correlava con l'accuratezza, e il KNN non e' nemmeno piu'
@@ -2044,6 +2077,7 @@ function cmpBuildResult(match, R, actH, actA) {
     // Erano gia' catturate dall'hook ma non arrivavano fin qui: la sezione
     // "DIAGNOSTICA PREDITTORE" del CSV usciva sempre N/D.
     predDebug: R.predDebug || null,
+    residDebug: R.residDebug || null,
     predStats: R.predStats || null,
     goalsMarket: gm,
     realTotals: { cor: (actH.cor!=null&&actA.cor!=null)?actH.cor+actA.cor:null,
@@ -2121,8 +2155,9 @@ function cmpExportCSV() {
   rows.push('Esito 1X2: WIN/LOSS solo se la probabilita\' era >=55% (vera scommessa).' + pad);
   rows.push('Sotto il 45% un esito non previsto che non accade e\' COERENTE, non un errore.' + pad);
   rows.push('Metriche avanzate: previste col modello attacco x difesa avversario x media lega,' + pad);
-  rows.push(`shrinkage ${CMP_DC_SHRINK} sui rapporti (non media semplice della squadra).` + pad);
+  rows.push(`shrinkage per metrica sui rapporti (k da 0.30 a 0.47, default ${CMP_DC_SHRINK}); non media semplice.` + pad);
   rows.push('Sezione A/B SHRINKAGE: stessa partita ricalcolata con piu\' valori di SHRINK_K.' + pad);
+  rows.push('Sezione A/B CORREZIONE RESIDUALE: stessa partita con piu\' valori di alpha (ricostruiti, senza rilanciare il motore).' + pad);
   rows.push('');
 
   const dateRow = ['DATA'];
@@ -2404,9 +2439,11 @@ function cmpExportCSV() {
   // Se "stima" e' sempre vicina a "baseline" mentre "prodotto" varia molto, vuol
   // dire che i rapporti si annullano e la stima collassa sul centro.
   rows.push('');
-  rows.push('--- DIAGNOSTICA PREDITTORE (npxg e possesso) ---' + ';;;;'.repeat(M.length));
-  for (const f of ['npxg','poss']) {
-    for (const [lbl,k] of [['prodotto casa','mineH'],['concesso trasferta','concA'],
+  rows.push('--- DIAGNOSTICA PREDITTORE (componenti del modello moltiplicativo) ---' + ';;;;'.repeat(M.length));
+  // Dal motore 0905-b2 la diagnostica copre anche le metriche di creazione e la
+  // riga "k" dice con quale shrinkage e' stata calcolata quella stima.
+  for (const f of ['npxg','poss','gca','sca','carries_box','prog_passes']) {
+    for (const [lbl,k] of [['k shrinkage','k'],['prodotto casa','mineH'],['concesso trasferta','concA'],
                            ['baseline casa','baseH'],['baseline trasferta','baseA'],
                            ['stima finale','outH']]) {
       const r = [f + ' - ' + lbl];
@@ -2414,6 +2451,73 @@ function cmpExportCSV() {
       rows.push(r.join(';'));
     }
   }
+
+  // Correzione residuale: quanto le metriche di creazione hanno spostato l'ensemble.
+  // "segnale" e' il composito normalizzato, "edge" la differenza p1-p2 PRIMA della
+  // correzione: se i due sono vicini la correzione non fa (giustamente) quasi nulla,
+  // perche' vuol dire che il Dixon-Coles sapeva gia' quello che dicono le stats.
+  rows.push('');
+  rows.push('--- CORREZIONE RESIDUALE (metriche di creazione dopo il DC) ---' + ';;;;'.repeat(M.length));
+  const _rcNum = (v) => (v == null || isNaN(v)) ? 'N/D' : String((+v).toFixed(4)).replace('.', ',');
+  const rcRows = [
+    ['applicata',           d => d ? (d.applied ? 'SI' : 'no') : 'N/D'],
+    ['metriche usate',      d => (d && d.available && d.available.length) ? d.available.join(' ') : 'N/D'],
+    ['alpha',               d => d && d.alpha != null ? _rcNum(d.alpha) : 'N/D'],
+    ['segnale (sig)',       d => d && d.sig  != null ? _rcNum(d.sig)  : 'N/D'],
+    ['edge ensemble (p1-p2)', d => d && d.edge != null ? _rcNum(d.edge) : 'N/D'],
+    ['residuo',             d => d && d.resid!= null ? _rcNum(d.resid): 'N/D'],
+    ['delta log-odds',      d => d && d.delta!= null ? _rcNum(d.delta): 'N/D'],
+    ['1 prima della corr.', d => (d && d.before) ? _rcNum(d.before.p1) : 'N/D'],
+    ['X prima della corr.', d => (d && d.before) ? _rcNum(d.before.pX) : 'N/D'],
+    ['2 prima della corr.', d => (d && d.before) ? _rcNum(d.before.p2) : 'N/D']
+  ];
+  rcRows.forEach(([lbl, fn]) => {
+    const r = [lbl];
+    M.forEach(m => r.push(fn(m.residDebug), '', '', ''));
+    rows.push(r.join(';'));
+  });
+
+  // ─── A/B su ALPHA, ricostruito senza rilanciare il motore ────────────────
+  // La correzione e' una funzione chiusa di (probabilita' prima, residuo, alpha):
+  // avendo entrambi nella diagnostica, ogni altro alpha si ricava a costo zero.
+  // Serve a decidere il valore su un backtest vero invece che sulle 40 partite
+  // su cui e' stato tarato: se l'esito reale premia sistematicamente un alpha
+  // piu' alto, si alza; se lo penalizza, si scende (0 = correzione spenta).
+  rows.push('');
+  rows.push('--- A/B CORREZIONE RESIDUALE (stesse partite, alpha a confronto) ---' + ';;;;'.repeat(M.length));
+  const RC_ALPHAS = [0, 0.25, 0.50];
+  const rcApply = (d, alpha, which) => {
+    if (!d || !d.applied || !d.before) return null;
+    const delta = alpha * Math.tanh(d.resid);
+    let a = d.before.p1 * Math.exp(+delta);
+    let c = d.before.p2 * Math.exp(-delta);
+    let b = d.before.pX * Math.exp(-0.25 * Math.abs(delta));
+    const t = a + b + c;
+    if (!(t > 0)) return null;
+    return ({ p1: a, pX: b, p2: c }[which]) / t;
+  };
+  RC_ALPHAS.forEach(alpha => {
+    [['1','p1'],['X','pX'],['2','p2']].forEach(([lbl, key]) => {
+      const r = ['alpha=' + alpha.toFixed(2) + ' · ' + lbl];
+      M.forEach(m => {
+        const v = rcApply(m.residDebug, alpha, key);
+        r.push(v == null ? 'N/D' : fmt(v), '', '', '');
+      });
+      rows.push(r.join(';'));
+    });
+    const rp = ['alpha=' + alpha.toFixed(2) + ' · pick'];
+    const rh = ['alpha=' + alpha.toFixed(2) + ' · azzeccato'];
+    M.forEach(m => {
+      const v1 = rcApply(m.residDebug, alpha, 'p1'), vX = rcApply(m.residDebug, alpha, 'pX'), v2 = rcApply(m.residDebug, alpha, 'p2');
+      if (v1 == null) { rp.push('N/D','','',''); rh.push('N/D','','',''); return; }
+      const mx = Math.max(v1, vX, v2);
+      const pick = mx === v1 ? '1' : (mx === vX ? 'X' : '2');
+      rp.push(pick, '', '', '');
+      rh.push(m.outcome ? (pick === m.outcome ? 'SI' : 'NO') : 'N/D', '', '', '');
+    });
+    rows.push(rp.join(';'));
+    rows.push(rh.join(';'));
+  });
   // \u2500\u2500\u2500 IDENTIFICATIVI (in FONDO al file di proposito) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   // Messi per ultimi per non spostare di una riga nulla di quello che c'era prima:
   // uno script che legge il file per posizione continua a funzionare identico.
