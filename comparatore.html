@@ -162,7 +162,7 @@ select{cursor:pointer}
   <div class="topbar">
     <div class="brand">
       <h1>Comparatore V9.7</h1>
-      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b2</span>
+      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b3</span>
       <span class="badge" id="engine-badge">motore non caricato</span>
     </div>
     <span class="badge">previsioni vs realtà</span>
@@ -743,7 +743,7 @@ async function loadEngineFromText(text, fileName) {
   // perche' e' quella a creare #engine-build. Stando prima, getElementById
   // restituiva l'oggetto fantasma del proxy e il messaggio non compariva mai.
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b2';
+  const _bComp = '0905-b3';
   const _el = document.getElementById('engine-build');
   if (_el) {
     if (!_bScan) {
@@ -1585,34 +1585,42 @@ function cmpTimeDecayWeighted(vals, times, targetMs) {
 // rapporto grezzo), k=0 vuol dire smorzamento totale sulla media di lega.
 // k ALTO = MENO shrinkage.
 //
-// Ricalibrato sul backtest di aprile 2026 (40 partite, 80 osservazioni
-// squadra-partita per metrica) con la regressione reale ~ previsto: la
-// pendenza b dice quanto il previsto varia POCO rispetto al reale, e la
-// deviazione dalla baseline e' lineare in k al primo ordine, quindi
-// k* ~ 0.35 * b. Gli errori standard sono larghi (0.35-0.57), percio' ogni
-// stima e' smorzata verso 1 con un prior di sd 0.35 prima di diventare k.
+// Ricalibrato con la regressione reale ~ previsto: la pendenza b dice quanto il
+// previsto varia POCO rispetto al reale, e la deviazione dalla baseline e'
+// lineare in k al primo ordine, quindi k* ~ k_corrente * b. Ogni stima e'
+// smorzata verso 1 con un prior di sd 0.35 in proporzione al proprio errore
+// standard, e dove i due mesi non concordano sulla direzione viene tirata a
+// meta' strada verso il valore precedente.
 //
-//   metrica        b     SE     k
-//   vaep_off     1.73  0.52   0.43
-//   vaep_def     0.44  0.57   0.30
-//   xt           1.54  0.35   0.44
-//   pv_off       1.73  0.54   0.43
-//   gca          1.82  0.50   0.44
-//   xag          1.01  0.44   0.35   <- il valore storico era gia' giusto
-//   sca          0.67  0.43   0.30   <- unica che chiede PIU' smorzamento
-//   prog_passes  1.69  0.35   0.47
-//   passes_box   1.68  0.41   0.45
-//   carries_box  1.54  0.38   0.44
-//   prog_carries 1.39  0.41   0.41
+// TARATURA CORRENTE — 76 partite di Serie A (marzo + aprile 2026), 152
+// osservazioni squadra-partita per metrica. Gli SE sono circa la meta' di
+// quelli della taratura del 0905-b2 (che aveva solo aprile), e le pendenze
+// restano sopra 1 su nove metriche su undici anche DOPO il primo aumento:
+// i k del 0905-b2 erano ancora troppo bassi.
 //
-// Il guadagno e' di calibrazione, non di correlazione: MAE sui passaggi
-// progressivi 6.76 -> 6.63, sui passaggi in area 3.33 -> 3.29, sulle
-// conduzioni in area 1.560 -> 1.542. Le correlazioni non si muovono.
+//   metrica      k b2    b(76)  SE    apr    mar    k
+//   vaep_off     0.43    1.51  0.33   1.56   1.45   0.55
+//   vaep_def     0.30    0.36  0.41   0.49   0.27   0.25  <- l'unica sotto 1
+//   xt           0.44    1.65  0.24   1.30   1.99   0.63
+//   pv_off       0.43    1.48  0.35   1.57   1.37   0.53
+//   gca          0.44    1.38  0.32   1.61   1.11   0.53
+//   xag          0.35    1.42  0.34   1.01   1.88   0.43
+//   sca          0.30    1.18  0.32   0.76   1.52   0.35  <- mesi discordi: neutro
+//   prog_passes  0.47    1.55  0.19   1.37   1.74   0.67
+//   passes_box   0.45    1.56  0.22   1.40   1.70   0.63
+//   carries_box  0.44    1.66  0.27   1.38   2.01   0.62
+//   prog_carries 0.41    1.66  0.26   1.23   2.18   0.59
+//
+// Il guadagno e' di calibrazione, non di correlazione: le correlazioni
+// previsto/reale non si muovono, si muove la dispersione. Sul passaggio
+// 0.35 -> tabella b2, sulle stesse 40 partite, MAE dei passaggi progressivi
+// 6.756 -> 6.635 e pendenza 1.69 -> 1.37; questo secondo giro va nella stessa
+// direzione, piu' deciso.
 const CMP_DC_SHRINK = 0.35;   // fallback per le metriche non in tabella
 const CMP_DC_SHRINK_TABLE = {
-  vaep_off: 0.43, vaep_def: 0.30, xt: 0.44, pv_off: 0.43,
-  gca: 0.44, xag: 0.35, sca: 0.30,
-  prog_passes: 0.47, passes_box: 0.45, carries_box: 0.44, prog_carries: 0.41
+  vaep_off: 0.55, vaep_def: 0.25, xt: 0.63, pv_off: 0.53,
+  gca: 0.53, xag: 0.43, sca: 0.35,
+  prog_passes: 0.67, passes_box: 0.63, carries_box: 0.62, prog_carries: 0.59
 };
 
 const CMP_ADV_KEYS = [
@@ -2155,7 +2163,7 @@ function cmpExportCSV() {
   rows.push('Esito 1X2: WIN/LOSS solo se la probabilita\' era >=55% (vera scommessa).' + pad);
   rows.push('Sotto il 45% un esito non previsto che non accade e\' COERENTE, non un errore.' + pad);
   rows.push('Metriche avanzate: previste col modello attacco x difesa avversario x media lega,' + pad);
-  rows.push(`shrinkage per metrica sui rapporti (k da 0.30 a 0.47, default ${CMP_DC_SHRINK}); non media semplice.` + pad);
+  rows.push(`shrinkage per metrica sui rapporti (k da 0.25 a 0.67, default ${CMP_DC_SHRINK}); non media semplice.` + pad);
   rows.push('Sezione A/B SHRINKAGE: stessa partita ricalcolata con piu\' valori di SHRINK_K.' + pad);
   rows.push('Sezione A/B CORREZIONE RESIDUALE: stessa partita con piu\' valori di alpha (ricostruiti, senza rilanciare il motore).' + pad);
   rows.push('');
@@ -2456,6 +2464,10 @@ function cmpExportCSV() {
   // "segnale" e' il composito normalizzato, "edge" la differenza p1-p2 PRIMA della
   // correzione: se i due sono vicini la correzione non fa (giustamente) quasi nulla,
   // perche' vuol dire che il Dixon-Coles sapeva gia' quello che dicono le stats.
+  // Dal motore 0905-b3 "applicata" esce NO perche' alpha e' zero: il segnale viene
+  // comunque misurato ed esportato, ed e' la sezione A/B qui sotto a dire se
+  // riaccenderla. Il motivo dello spegnimento sta nel commento di
+  // applyResidualCorrection nello Scanner: fuori campione il segnale cambiava segno.
   rows.push('');
   rows.push('--- CORREZIONE RESIDUALE (metriche di creazione dopo il DC) ---' + ';;;;'.repeat(M.length));
   const _rcNum = (v) => (v == null || isNaN(v)) ? 'N/D' : String((+v).toFixed(4)).replace('.', ',');
@@ -2487,7 +2499,10 @@ function cmpExportCSV() {
   rows.push('--- A/B CORREZIONE RESIDUALE (stesse partite, alpha a confronto) ---' + ';;;;'.repeat(M.length));
   const RC_ALPHAS = [0, 0.25, 0.50];
   const rcApply = (d, alpha, which) => {
-    if (!d || !d.applied || !d.before) return null;
+    // NB: non richiede d.applied. Dal 0905-b3 la correzione e' spenta di default
+    // (alpha 0) ma il motore continua a esporre segnale e residuo: e' proprio con
+    // questa sezione che si decide se ha senso riaccenderla.
+    if (!d || d.resid == null || !d.before) return null;
     const delta = alpha * Math.tanh(d.resid);
     let a = d.before.p1 * Math.exp(+delta);
     let c = d.before.p2 * Math.exp(-delta);

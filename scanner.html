@@ -155,7 +155,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b2</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b3</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -1725,7 +1725,7 @@ function renderVerdetti(mk) {
 // ===========================================================================
 // Versione del motore, letta dal comparatore dopo l'iniezione: cosi' si vede
 // subito se il file trascinato e' quello aggiornato o una copia vecchia.
-window.__SCANNER_BUILD = '0905-b2';
+window.__SCANNER_BUILD = '0905-b3';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SHRINKAGE ADATTIVO PER METRICA (V9.7.1)
@@ -1738,43 +1738,52 @@ window.__SCANNER_BUILD = '0905-b2';
 // piu' volatile, non meno.
 //
 // Il vecchio 0.35 fisso veniva da una ricerca walk-forward sul RMSE, ma tarata
-// su una versione precedente delle feature. Ricalibrato sul backtest di aprile
-// 2026 (40 partite di Serie A, 80 osservazioni squadra-partita) il quadro e'
-// diverso: le stime sono SOTTO-disperse, non sopra.
+// su una versione precedente delle feature. Misurato sui backtest, il difetto e'
+// l'opposto di quello che sembra: le stime sono SOTTO-disperse. La regressione
+// reale ~ previsto ha pendenza sopra 1 su nove metriche su undici, cioe' il
+// previsto varia troppo poco.
 //
-//   - grid search diretta sui componenti esposti dalla diagnostica
-//     (prodotto / concesso / baseline / reale): RMSE minima a k~0.65 su npxg
-//     (0.598 -> 0.588) e a k~0.70 sul possesso (8.77 -> 8.16).
-//   - regressione reale ~ previsto sulle undici metriche avanzate del
-//     comparatore: pendenza fra 1.4 e 1.8 su nove metriche su undici, cioe'
-//     il previsto varia troppo poco rispetto al reale. La pendenza b implica
-//     k* ~ 0.35 * b (la deviazione dalla baseline e' lineare in k al primo
-//     ordine). Gli SE sono larghi (0.35-0.57 su n=80), quindi ogni stima e'
-//     smorzata verso 1 con un prior di sd 0.35 prima di diventare k.
-//   - la sola metrica che chiede PIU' shrinkage e' SCA (pendenza 0.67):
-//     era anche quella con la correlazione peggiore (0.17).
+// TARATURA CORRENTE — grid search sui componenti che la diagnostica del motore
+// espone (prodotto / concesso / baseline / reale), su 76 partite di Serie A
+// (marzo + aprile 2026). E' la misura piu' diretta possibile: sono i numeri del
+// motore stesso, non una stima indiretta dalla pendenza.
+//
+//   metrica       k prec.  k ottimo   aprile  marzo   RMSE
+//   poss            0.60     0.80       0.75   0.90   8.335 -> 8.031  (-3.7%)
+//   gca             0.44     0.80       0.90   0.75   2.142 -> 2.099  (-2.0%)
+//   carries_box     0.44     0.80       0.60   1.00   2.113 -> 2.060  (-2.5%)
+//   prog_passes     0.47     0.60       0.65   0.55   7.601 -> 7.538  (-0.8%)
+//   sca             0.30     0.40       0.35   0.40   8.777 -> 8.757  (-0.2%)
+//   npxg            0.55     0.45       0.65   0.35   0.592 -> 0.590  (-0.2%)
+//
+// I valori qui sotto NON sono gli ottimi: dove i due mesi discordano (npxg,
+// carries_box) sono smorzati verso il centro, e ognuno e' stato verificato
+// mese per mese — nessuno peggiora di piu' dello 0.3% in un singolo mese.
+// npxg ha la curva piattissima fra 0.40 e 0.55 e i due mesi in disaccordo:
+// li' il valore conta poco, sta al centro e ci resta.
+// Chi non ha misura diretta (xg, xag, passes_box, prog_carries) prende il k
+// dedotto dalla pendenza lato comparatore, smorzato col suo errore standard.
 //
 // I guadagni sono di calibrazione, non di accuratezza: le correlazioni
-// previsto/reale non si muovono, si muove la dispersione. MAE su passaggi
-// progressivi 6.76 -> 6.63, su passaggi in area 3.33 -> 3.29.
+// previsto/reale non si muovono, si muove la dispersione.
 //
 // Su window per permettere al comparatore di fare A/B sul singolo valore.
-const STAT_SHRINK_DEFAULT = 0.45;   // era 0.35 per tutte
+const STAT_SHRINK_DEFAULT = 0.50;   // 0.35 fino al 0905-b1, 0.45 nel 0905-b2
 // k con cui e' stata calibrata la correzione residuale (vedi RESID_*): le sue
 // costanti valgono a QUESTO k, quindi il segnale residuale si calcola sempre
 // qui, indipendentemente da come viene tarata la tabella qui sotto.
 const STAT_SHRINK_LEGACY = 0.35;
 window.STAT_SHRINK_TABLE = window.STAT_SHRINK_TABLE || {
-  npxg:         0.55,   // grid diretta: minimo piatto fra 0.5 e 0.8
-  xg:           0.55,   // stessa famiglia di npxg
-  poss:         0.60,   // grid diretta: minimo a 0.70, tenuto sotto per prudenza
-  gca:          0.44,
-  sca:          0.30,   // unica metrica che chiede piu' smorzamento
-  xag:          0.35,   // pendenza 1.01: il valore storico era gia' giusto
-  prog_passes:  0.47,
-  passes_box:   0.45,
-  carries_box:  0.44,
-  prog_carries: 0.41
+  npxg:         0.50,   // curva piatta 0.40-0.55, mesi in disaccordo: sta al centro
+  xg:           0.50,   // stessa famiglia di npxg
+  poss:         0.75,   // ottimo 0.80, entrambi i mesi >= 0.75
+  gca:          0.75,   // ottimo 0.80 (apr 0.90, mar 0.75)
+  sca:          0.40,   // ottimo 0.40, i due mesi concordano (0.35 / 0.40)
+  xag:          0.40,   // solo pendenza lato comparatore, mesi discordi: prudente
+  prog_passes:  0.60,   // ottimo 0.60, i due mesi lo racchiudono (0.65 / 0.55)
+  passes_box:   0.60,   // niente grid diretta; pendenza 1.56 su 152 oss., mesi concordi
+  carries_box:  0.70,   // ottimo 0.80 ma mesi larghi (0.60 / 1.00): smorzato
+  prog_carries: 0.55    // niente grid diretta; pendenza 1.66, mesi concordi in direzione
 };
 // Compatibilita': parte del codice storico legge ancora STAT_SHRINK come scalare.
 const STAT_SHRINK = STAT_SHRINK_DEFAULT;
@@ -1875,23 +1884,43 @@ function predictStat(att, dif, feat, scope, kOverride) {
 // COSTRUZIONE (ortogonale per costruzione, senza regressioni a runtime):
 //   sig  = media pesata delle differenze casa-trasferta normalizzate
 //   edge = p1 - p2 dell'ensemble
-//   res  = GAMMA * sig - edge          GAMMA porta sig sulla scala dell'edge
-//   d    = ALPHA * tanh(res)           tanh limita gli estremi
+//   res  = GAMMA * sig + INTERCETTA - edge     porta sig sulla scala dell'edge
+//   d    = ALPHA * tanh(res)                   tanh limita gli estremi
 // e si sposta p1 di e^(+d), p2 di e^(-d), la X assorbe poco (e^-0.25|d|).
 //
-// TARATURA: GAMMA = 0.56 e' la pendenza di edge su sig, stimata sulle 40
-// partite e stabile fra le due meta' del campione (0.576 / 0.544). ALPHA e'
-// tenuto BASSO di proposito: sul backtest logloss e Brier migliorano in modo
-// monotono fino ad ALPHA 0.6 in entrambe le meta' (0.9650 -> 0.9493 sulla
-// prima, 1.1140 -> 1.1047 sulla seconda), ma un ottimo interno non c'e' e con
-// 40 partite quella monotonia dice soprattutto che l'ensemble e' sotto-sicuro.
-// 0.25 sposta al massimo di ~3 punti percentuali p1 e p2: abbastanza da
-// contare, poco da fare danni se il segnale non regge su piu' dati.
-// Su window per l'A/B del comparatore: 0 disattiva del tutto la correzione.
+// ═══ ALPHA = 0: LA CORREZIONE E' SPENTA. PERCHE'. ═══════════════════════════
+// Nel 0905-b2 girava con ALPHA 0.25, tarata sulle 40 partite di aprile 2026.
+// Il backtest successivo (76 partite: le stesse 40 piu' 36 di marzo mai viste)
+// dice che quel segnale non esiste fuori campione. Correlazione fra il residuo
+// e l'errore effettivo dell'ensemble:
+//
+//     aprile (dove era tarata)   +0.336   su 40 partite
+//     marzo  (mai visto)         -0.174   su 36 partite
+//     insieme                    +0.081   con SE 0.11, cioe' zero
+//
+// Il SEGNO si ribalta. E lo stesso si vede nell'A/B del CSV: in aprile il pick
+// passa da 45.0% a 47.5% a 50.0% alzando ALPHA, in marzo da 66.7% a 66.7% a
+// 63.9%. E' overfitting da manuale, e la singola partita in cui la correzione
+// cambiava il pick (Napoli-Milan 06/04, azzeccata) era di aprile.
+//
+// La struttura resta qui, con la sua diagnostica, perche' e' stata proprio
+// quella a far vedere il problema in dieci minuti senza rilanciare il motore.
+// Va rivalutata su una stagione intera e possibilmente su piu' leghe: con un
+// mese solo non si distingue un effetto da un capriccio del calendario
+// (marzo 66.7% di pick azzeccati contro il 47.5% di aprile, stesso motore).
+// Per riaccenderla: window.RESID_ALPHA = 0.25 prima di iniettare il motore.
+//
+// GAMMA e INTERCETTA sono la retta edge ~ sig MISURATA IN PRODUZIONE sulle 76
+// partite (edge = 0.678 * sig + 0.0165), stabile fra i due mesi (0.668 / 0.683).
+// Il 0.56 del 0905-b2 veniva invece dalle previsioni del comparatore, che usa
+// scope e baseline diversi: sottostimava la pendenza e dava a ogni partita una
+// spinta costante verso la trasferta (delta medio -0.0088). Corretto qui, cosi'
+// se la correzione viene riaccesa non parte gia' storta.
 const RESID_W     = { gca: 0.35, sca: 0.25, carries_box: 0.25, prog_passes: 0.15 };
 const RESID_SCALE = { gca: 2.5,  sca: 12.0, carries_box: 2.0,  prog_passes: 15.0 };
-const RESID_GAMMA = 0.56;
-window.RESID_ALPHA = (typeof window.RESID_ALPHA === 'number') ? window.RESID_ALPHA : 0.25;
+const RESID_GAMMA = 0.678;
+const RESID_INTERCEPT = 0.0165;
+window.RESID_ALPHA = (typeof window.RESID_ALPHA === 'number') ? window.RESID_ALPHA : 0;
 
 // probs: {p1, pX, p2} gia' normalizzate. att/dif: gli oggetti squadra.
 // Torna le probabilita' corrette piu' il dettaglio del calcolo (per il CSV).
@@ -1899,7 +1928,11 @@ function applyResidualCorrection(probs, att, dif) {
   const dbg = { available: [], sig: null, edge: null, resid: null, delta: 0, alpha: window.RESID_ALPHA, applied: false };
   const out = { p1: probs.p1, pX: probs.pX, p2: probs.p2, debug: dbg };
   const alpha = window.RESID_ALPHA;
-  if (!(alpha > 0) || !att || !dif) return out;
+  // NB: il segnale e il residuo si calcolano SEMPRE, anche con alpha a zero.
+  // Sono quelli che alimentano la sezione A/B del CSV, con cui si decide se la
+  // correzione vada riaccesa: spegnendoli insieme alla correzione si perderebbe
+  // proprio la misura che serve a rivalutarla.
+  if (!att || !dif) return out;
 
   // Le previsioni usate qui sono SEMPRE a STAT_SHRINK_LEGACY: GAMMA e ALPHA
   // sono tarati a quel k. La tabella adattiva serve ai numeri mostrati, non a
@@ -1923,16 +1956,19 @@ function applyResidualCorrection(probs, att, dif) {
   sig = sig / wTot;
 
   const edge = probs.p1 - probs.p2;
-  const resid = RESID_GAMMA * sig - edge;
-  const delta = alpha * Math.tanh(resid);
+  const resid = RESID_GAMMA * sig + RESID_INTERCEPT - edge;
+  const delta = alpha > 0 ? alpha * Math.tanh(resid) : 0;
+  dbg.sig = sig; dbg.edge = edge; dbg.resid = resid; dbg.delta = delta;
+  dbg.before = { p1: probs.p1, pX: probs.pX, p2: probs.p2 };
+  if (!(alpha > 0)) return out;   // diagnostica sì, spostamento no
+
   let p1 = probs.p1 * Math.exp(+delta);
   let p2 = probs.p2 * Math.exp(-delta);
   let pX = probs.pX * Math.exp(-0.25 * Math.abs(delta));
   const tot = p1 + pX + p2;
   if (!(tot > 0) || !isFinite(tot)) return out;
 
-  dbg.sig = sig; dbg.edge = edge; dbg.resid = resid; dbg.delta = delta; dbg.applied = true;
-  dbg.before = { p1: probs.p1, pX: probs.pX, p2: probs.p2 };
+  dbg.applied = true;
   return { p1: p1 / tot, pX: pX / tot, p2: p2 / tot, debug: dbg };
 }
 
@@ -2347,10 +2383,20 @@ async function avviaScanner() {
             + ' &middot; segnale ' + _rc.sig.toFixed(3) + ' vs edge ' + _rc.edge.toFixed(3)
             + ' &middot; spostamento 1 ' + (_d1 >= 0 ? '+' : '') + _d1.toFixed(1)
             + ' pt, 2 ' + (_d2 >= 0 ? '+' : '') + _d2.toFixed(1) + ' pt</div>';
+      } else if (_rc && _rc.sig != null) {
+        // alpha a zero: la correzione non sposta nulla ma il segnale c'e' e viene
+        // esportato, cosi' l'A/B del CSV puo' continuare a valutare se riaccenderla.
+        _h += '<div style="font-size:11px;color:var(--dim);margin-top:6px">'
+            + 'Correzione residuale <b>spenta</b> (alpha 0, vedi commento nel codice: fuori '
+            + 'campione il segnale cambiava segno). Segnale comunque misurato su '
+            + _rc.available.length + ' metriche: sig ' + _rc.sig.toFixed(3)
+            + ' vs edge ' + _rc.edge.toFixed(3) + ', residuo ' + _rc.resid.toFixed(3)
+            + ' &middot; ad alpha 0.25 sposterebbe di '
+            + (0.25 * Math.tanh(_rc.resid) >= 0 ? '+' : '')
+            + (0.25 * Math.tanh(_rc.resid)).toFixed(3) + ' in log-odds.</div>';
       } else {
         _h += '<div style="font-size:11px;color:var(--dim);margin-top:6px">'
-            + 'Correzione residuale non applicata (' + (window.RESID_ALPHA > 0
-                ? 'metriche di creazione assenti in questa lega' : 'alpha a zero') + ').</div>';
+            + 'Correzione residuale non calcolabile: metriche di creazione assenti in questa lega.</div>';
       }
       safeHtml('pred-debug-body', _h);
     } catch (e) {
@@ -2600,7 +2646,7 @@ async function avviaScanner() {
 - Ordered Logit [nell'ensemble, peso 30%]: 1 (${pct(probsOL.p1)}) | X (${pct(probsOL.pX)}) | 2 (${pct(probsOL.p2)})
 - Markov [nell'ensemble, peso 10%]: 1 (${pct(mk_ro.p1)}) | X (${pct(mk_ro.pX)}) | 2 (${pct(mk_ro.p2)})
 - KNN 11D Puro (Tattica) [FUORI dall'ensemble, solo riferimento tattico]: 1 (${pct(probsKnn.p1)}) | X (${pct(probsKnn.pX)}) | 2 (${pct(probsKnn.p2)})
-- Correzione residuale: ${(window.__RESID_DEBUG && window.__RESID_DEBUG.applied) ? ('attiva su ' + window.__RESID_DEBUG.available.join('/') + ', spostamento ' + (window.__RESID_DEBUG.delta >= 0 ? '+' : '') + window.__RESID_DEBUG.delta.toFixed(3) + ' in log-odds verso ' + (window.__RESID_DEBUG.delta >= 0 ? 'la casa' : 'la trasferta')) : 'non applicata (metriche di creazione assenti)'}
+- Correzione residuale: ${(window.__RESID_DEBUG && window.__RESID_DEBUG.applied) ? ('attiva su ' + window.__RESID_DEBUG.available.join('/') + ', spostamento ' + (window.__RESID_DEBUG.delta >= 0 ? '+' : '') + window.__RESID_DEBUG.delta.toFixed(3) + ' in log-odds verso ' + (window.__RESID_DEBUG.delta >= 0 ? 'la casa' : 'la trasferta')) : ((window.__RESID_DEBUG && window.__RESID_DEBUG.sig != null) ? ('spenta (alpha 0); segnale misurato ' + window.__RESID_DEBUG.sig.toFixed(3) + ' vs edge ' + window.__RESID_DEBUG.edge.toFixed(3)) : 'non calcolabile (metriche di creazione assenti)')}
 
 3. QUALITA' E CINISMO (The Sniper Box)
 - NPxG vs xGOT (Indice Cecchino): ${hName} ${f2(npxgH_ro)} vs ${xgotH > 0 ? f2(xgotH) : (xgShotH > 0 ? f2(xgShotH) + " (xG/Tiro)" : "N/D")} | ${aName} ${f2(npxgA_ro)} vs ${xgotA > 0 ? f2(xgotA) : (xgShotA > 0 ? f2(xgShotA) + " (xG/Tiro)" : "N/D")}

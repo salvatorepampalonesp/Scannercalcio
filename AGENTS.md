@@ -126,6 +126,39 @@ Suggerimenti presi da fuori (altri modelli, altri strumenti) vanno **sempre
 verificati sul CSV prima di essere incollati**: più di una volta erano tarati
 sulla convenzione sbagliata di `k`, o su metriche che il codice non espone.
 
+### Il caso della correzione residuale (perché `RESID_ALPHA` è a zero)
+
+`applyResidualCorrection` esiste, è cablata nell'ensemble, ma **alpha è 0: non
+sposta niente**. Non è un residuo di sviluppo, è il risultato di una misura.
+
+Nel `0905-b2` girava con alpha 0.25, tarata su 40 partite di aprile 2026. Il
+backtest successivo (76 partite: le stesse 40 più 36 di marzo mai viste) ha
+mostrato che la correlazione fra il residuo e l'errore dell'ensemble è +0.336
+in aprile e **−0.174 in marzo**: il segno si ribalta. Sull'insieme è +0.081
+con SE 0.11, cioè zero. Nel frattempo il segnale sembrava funzionare benissimo
+in aprile, dove era stato tarato.
+
+Due lezioni che valgono oltre questo caso:
+
+- **una costante tarata sulle previsioni del Comparatore non si trasferisce
+  allo Scanner.** `RESID_GAMMA` era 0.56 perché stimato sul predittore del
+  Comparatore (scope `overall`, ultimi 15 match, baseline a quattro valori);
+  in produzione il segnale lo calcola lo Scanner (scope `role`, baseline
+  `_base`) e la pendenza vera è 0.678. Risultato: un bias costante verso la
+  trasferta su ogni partita. Se tari su un predittore, verifica sulla
+  diagnostica dell'altro prima di spedire.
+- **la diagnostica va calcolata anche quando la funzione è spenta.** Con
+  alpha 0 lo Scanner continua a esporre `sig`, `edge`, `resid` e le
+  probabilità pre-correzione: è la sezione *A/B CORREZIONE RESIDUALE* del CSV
+  a dire se e quando riaccenderla, e spegnere anche quella significherebbe non
+  poterlo più sapere. Se tocchi `applyResidualCorrection`, tieni separati i
+  due percorsi (misura sempre, applica solo se alpha > 0).
+
+Per rivalutarla serve una stagione intera e possibilmente più leghe. Con un
+mese solo non si distingue un effetto da un capriccio del calendario: con lo
+stesso identico motore, marzo 2026 ha dato 66.7% di pick azzeccati e aprile
+2026 il 47.5%.
+
 ## Come validare una modifica
 
 Non c'è una suite. Questo è il minimo prima di committare:
