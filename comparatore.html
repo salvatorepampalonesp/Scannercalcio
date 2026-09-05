@@ -162,7 +162,7 @@ select{cursor:pointer}
   <div class="topbar">
     <div class="brand">
       <h1>Comparatore V9.7</h1>
-      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b9</span>
+      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b10</span>
       <span class="badge" id="engine-badge">motore non caricato</span>
     </div>
     <span class="badge">previsioni vs realtà</span>
@@ -674,7 +674,7 @@ async function loadEngineFromText(text, fileName) {
     <p><code>${fileName}</code> — clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
 
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b9';
+  const _bComp = '0905-b10';
   const _el = document.getElementById('engine-build');
   if (_el) {
     if (!_bScan) {
@@ -2056,8 +2056,27 @@ function cmpExportCSV() {
     ['Tiri porta tot (atteso)', m => { const a = m.R.advRole||m.R.advOver; return [a?_num(a.lSot):'N/D', '-', m.realTotals.sot!=null?m.realTotals.sot:'N/D', '']; }],
     ['Tiri porta Over 8.5', m => { const a = m.R.advRole||m.R.advOver; return [a?fmt(a.pOv8s):'N/D', '-', m.realTotals.sot!=null?(m.realTotals.sot>8?'Over':'Under'):'N/D', (a&&m.realTotals.sot!=null)?verd(a.pOv8s, m.realTotals.sot>8):'']; }],
     ['Gialli tot (atteso)', m => { const a = m.R.advRole||m.R.advOver; return [a?_num(a.lYel):'N/D', '-', m.realTotals.yel!=null?m.realTotals.yel:'N/D', '']; }],
-    ['Gialli Over 3.5', m => { const a = m.R.advRole||m.R.advOver; return [a?fmt(a.pOv3y):'N/D', '-', m.realTotals.yel!=null?(m.realTotals.yel>3?'Over':'Under'):'N/D', (a&&m.realTotals.yel!=null)?verd(a.pOv3y, m.realTotals.yel>3):'']; }]
+    ['Gialli Over 3.5', m => { const a = m.R.advRole||m.R.advOver; return [a?fmt(a.pOv3y):'N/D', '-', m.realTotals.yel!=null?(m.realTotals.yel>3?'Over':'Under'):'N/D', (a&&m.realTotals.yel!=null)?verd(a.pOv3y, m.realTotals.yel>3):'']; }],
+    ['Dispersione corner (k)', m => { const a = m.R.advRole||m.R.advOver; return [a?(isFinite(a.kCor)?_num(a.kCor):'Poisson'):'N/D', '-', '', '']; }],
+    ['Dispersione tiri porta (k)', m => { const a = m.R.advRole||m.R.advOver; return [a?(isFinite(a.kSot)?_num(a.kSot):'Poisson'):'N/D', '-', '', '']; }],
+    ['Dispersione gialli (k)', m => { const a = m.R.advRole||m.R.advOver; return [a?(isFinite(a.kYel)?_num(a.kYel):'Poisson'):'N/D', '-', '', '']; }],
+    ['Ambito usato', m => { const a = m.R.advRole||m.R.advOver; return [a&&a.scope?a.scope:'N/D', '-', '', '']; }]
   ];
+  const lineMkts = [];
+  [['Corner','linesCor','cor'], ['Tiri porta','linesSot','sot'], ['Gialli','linesYel','yel']].forEach(([nome, campo, real]) => {
+    const any = M.map(m => m.R.advRole||m.R.advOver).find(a => a && a[campo]);
+    if (!any) return;
+    any[campo].forEach((_, i) => {
+      lineMkts.push([nome + ' Over #' + (i+1), m => {
+        const a = m.R.advRole||m.R.advOver; const x = a && a[campo] ? a[campo][i] : null;
+        const rv = m.realTotals[real];
+        if (!x) return ['N/D', '-', rv!=null?rv:'N/D', ''];
+        const hit = rv!=null ? (rv > x.l) : null;
+        return [String(x.l).replace('.',',') + ' ' + fmt(x.p), '-', rv!=null?(hit?'Over':'Under'):'N/D', hit!=null?verd(x.p, hit):''];
+      }]);
+    });
+  });
+  statMkts.push(...lineMkts);
   statMkts.forEach(([lbl, fn]) => {
     const r = [lbl];
     M.forEach(m => r.push(...fn(m)));

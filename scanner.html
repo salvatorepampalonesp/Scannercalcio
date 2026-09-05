@@ -155,7 +155,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b9</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b10</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -390,7 +390,8 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
     </div>
 
     <div class="card" style="border-top: 4px solid var(--purple);">
-      <div class="section-title" style="color:var(--purple)">📈 Progressione Storica: Trend Analitico</div>
+      <div class="section-title" style="color:var(--purple)">📈 Progressione Storica: dove la forma recente conta davvero</div>
+      <div style="font-size:9px; color:var(--dim); margin-bottom:8px">Su 1133 partite di tre leghe, per quasi tutte le metriche la media lunga prevede la partita successiva meglio delle ultime 3 o 5. Qui restano solo le sei in cui uno scostamento recente si e' dimostrato persistente: sono volumi strutturali, quelli che si muovono quando cambia il modulo. Su NPxG, tiri, corner e possesso la colonna «ultime 3» sarebbe solo rumore, per questo non ci sono piu'.</div>
       <div style="margin-bottom:5px; font-weight:bold; color:var(--blue); font-size:12px" id="prog-h-name">Casa</div>
       <table class="table-ui" id="table-prog-h"></table>
       <div style="margin-bottom:5px; margin-top:15px; font-weight:bold; color:var(--red); font-size:12px" id="prog-a-name">Trasferta</div>
@@ -453,16 +454,16 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <div class="card" style="border-top: 4px solid var(--orange);">
         <div class="section-title" style="color:var(--orange)">📐 Alta Varianza e Disciplina</div>
         <div class="tbl-scroll"><table class="table-ui">
-          <tr><th>Mercato</th><th style="color:var(--dim)">GENERALE</th><th style="color:var(--orange)">SOLO RUOLO</th></tr>
-          <tr><td>Corner Attesi (Tot)</td><td id="cor-tot-over">--</td><td id="cor-tot-role" class="td-highlight">--</td></tr>
-          <tr><td>Prob Over 9.5 Corner</td><td id="pov9-cor-over">--%</td><td id="pov9-cor-role" style="font-weight:bold; color:var(--blue)">--%</td></tr>
-          <tr style="background:rgba(255,255,255,.03)"><td>SoT Attesi (Tot)</td><td id="sot-tot-over">--</td><td id="sot-tot-role" class="td-highlight">--</td></tr>
-          <tr style="background:rgba(255,255,255,.03)"><td>Prob Over 8.5 SoT</td><td id="pov8-sot-over">--%</td><td id="pov8-sot-role" style="font-weight:bold; color:var(--purple)">--%</td></tr>
-          <tr><td>Falli Attesi (Tot)</td><td id="fls-tot-over">--</td><td id="fls-tot-role" class="td-highlight">--</td></tr>
-          <tr><td>Gialli Attesi (Tot)</td><td id="yel-tot-over">--</td><td id="yel-tot-role" class="td-highlight">--</td></tr>
-          <tr><td>Prob Over 3.5 Gialli</td><td id="pov3-yel-over">--%</td><td id="pov3-yel-role" style="font-weight:bold; color:var(--orange)">--%</td></tr>
-          <tr><td>Prob. Cart. Rosso</td><td id="red-tot-over" style="color:var(--red); font-weight:bold">--%</td><td id="red-tot-role" style="color:var(--red); font-weight:bold" class="td-highlight">--%</td></tr>
+          <tr><th>Atteso sulla partita</th><th style="color:var(--dim)">GENERALE</th><th style="color:var(--orange)">SOLO RUOLO</th></tr>
+          <tr><td>Corner (tot)</td><td id="cor-tot-over">--</td><td id="cor-tot-role" class="td-highlight">--</td></tr>
+          <tr style="background:rgba(255,255,255,.03)"><td>Tiri in porta (tot)</td><td id="sot-tot-over">--</td><td id="sot-tot-role" class="td-highlight">--</td></tr>
+          <tr><td>Falli (tot)</td><td id="fls-tot-over">--</td><td id="fls-tot-role" class="td-highlight">--</td></tr>
+          <tr style="background:rgba(255,255,255,.03)"><td>Gialli (tot)</td><td id="yel-tot-over">--</td><td id="yel-tot-role" class="td-highlight">--</td></tr>
+          <tr><td>Almeno un rosso</td><td id="red-tot-over" style="color:var(--red); font-weight:bold">--%</td><td id="red-tot-role" style="color:var(--red); font-weight:bold" class="td-highlight">--%</td></tr>
         </table></div>
+        <div class="section-title" style="color:var(--orange); margin-top:14px">Over per linea (solo ruolo)</div>
+        <div class="tbl-scroll"><table class="table-ui" id="mkt-lines"></table></div>
+        <div style="font-size:9px; color:var(--dim); margin-top:6px" id="mkt-legend"></div>
       </div>
 
       <div class="card" style="border-top: 4px solid #5a5a8a;">
@@ -661,10 +662,17 @@ function negBinCDF(n, mu, k) { if (isNaN(mu) || mu <= 0) return 1; let s = 0; fo
 
 function negBinK(vals) {
   const v = (vals||[]).filter(x => x != null && !isNaN(x));
-  if (v.length < 6) return Infinity;
-  const m = _mean(v); const s2 = Math.pow(_stddev(v), 2);
-  if (m <= 0 || s2 <= m * 1.05) return Infinity;
-  return Math.max(2, (m * m) / (s2 - m));
+  const n = v.length;
+  if (n < 6) return Infinity;
+  const m = _mean(v); if (m <= 0) return Infinity;
+  const s2 = Math.pow(_stddev(v), 2);
+  const ex = s2 / m - 1;
+  if (!(ex > 0)) return Infinity;
+  const varPhi = 2 / n;
+  const phi = 1 + ex * (ex * ex / (ex * ex + varPhi));
+  if (!(phi > 1)) return Infinity;
+  const k = m / (phi - 1);
+  return isFinite(k) && k > 0 ? k : Infinity;
 }
 function poisson(k, lam) { if (isNaN(lam) || lam <= 0) return k === 0 ? 1 : 0; let p = Math.exp(-lam); for (let i = 0; i < k; i++) p *= lam / (i + 1); return p; }
 
@@ -1496,7 +1504,7 @@ function renderVerdetti(mk) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b9';
+window.__SCANNER_BUILD = '0905-b10';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -1641,6 +1649,9 @@ function applyResidualCorrection(probs, att, dif) {
   return { p1: p1 / tot, pX: pX / tot, p2: p2 / tot, debug: dbg };
 }
 
+window.MARKET_SHRINK_K = window.MARKET_SHRINK_K || { cor: 0.25, sot: 0.30, yel: 0.15, fouls: 0.30 };
+const MARKET_LINES = { cor: [8.5, 9.5, 10.5, 11.5], sot: [6.5, 7.5, 8.5, 9.5], yel: [3.5, 4.5, 5.5] };
+
 const GOALS_SOT_CAP = 0.15;
 window.GOALS_ALPHA = (typeof window.GOALS_ALPHA === 'number') ? window.GOALS_ALPHA : 0.50;
 
@@ -1741,21 +1752,35 @@ async function avviaScanner() {
     const ahData = [-1.5, -1.0, -0.75, -0.5, +0.5, +1.0, +1.5].map(h => ({ h, ...asianHandicapMat(dcMat, h) }));
 
     const calcAdv = (useRole) => {
-      const pick = (team) => (useRole && team.role.n >= 3) ? team.role : team.overall;
+      const scope = (useRole && dH.role.n >= 3 && dA.role.n >= 3) ? 'role' : 'overall';
+      const pick = (team) => (scope === 'role') ? team.role : team.overall;
       const getF = (team, feat) => { const o = pick(team).features[feat]; return (o && o.decay > 0) ? o.decay : 0; };
       const getA = (team, feat) => pick(team).vals[feat] || [];
-      const cH = getF(dH,'cor'), cA = getF(dA,'cor'), cAgH = getF(dH,'cor_ag'), cAgA = getF(dA,'cor_ag'); const lCor = Math.sqrt(cH*cAgA) + Math.sqrt(cA*cAgH);
-      const sH = getF(dH,'sot'), sA = getF(dA,'sot'), sAgH = getF(dH,'sot_ag'), sAgA = getF(dA,'sot_ag'); const lSot = Math.sqrt(sH*sAgA) + Math.sqrt(sA*sAgH);
-      const yH = getF(dH,'yel'), yA = getF(dA,'yel'), yAgH = getF(dH,'yel_ag'), yAgA = getF(dA,'yel_ag'); const lYel = Math.sqrt(yH*yAgA) + Math.sqrt(yA*yAgH);
+      const lamOf = (feat) => {
+        const kk = window.MARKET_SHRINK_K[feat];
+        const a = predictStat(dH, dA, feat, scope, kk), b = predictStat(dA, dH, feat, scope, kk);
+        if (a != null && b != null && isFinite(a) && isFinite(b) && a >= 0 && b >= 0) return a + b;
+        const mH = getF(dH,feat), mA = getF(dA,feat), gH = getF(dH,feat+'_ag'), gA = getF(dA,feat+'_ag');
+        return Math.sqrt(mH*gA) + Math.sqrt(mA*gH);
+      };
+      const cH = getF(dH,'cor'), cA = getF(dA,'cor'); const lCor = lamOf('cor');
+      const sH = getF(dH,'sot'), sA = getF(dA,'sot'); const lSot = lamOf('sot');
+      const yH = getF(dH,'yel'), yA = getF(dA,'yel'); const lYel = lamOf('yel');
+      const lFls = lamOf('fouls');
       const rH = getF(dH,'red_cards'), rA = getF(dA,'red_cards');
 
       const tot = (team, a, b) => getA(team,a).map((v,i) => ((v==null?null:v) == null || getA(team,b)[i] == null) ? null : v + getA(team,b)[i]);
       const kCor = negBinK(tot(dH,'cor','cor_ag').concat(tot(dA,'cor','cor_ag')));
       const kSot = negBinK(tot(dH,'sot','sot_ag').concat(tot(dA,'sot','sot_ag')));
       const kYel = negBinK(tot(dH,'yel','yel_ag').concat(tot(dA,'yel','yel_ag')));
-      const pOv9c = 1 - negBinCDF(9, lCor, kCor); const pOv8s = 1 - negBinCDF(8, lSot, kSot); const pOv3y = 1 - negBinCDF(3, lYel, kYel);
+      const over = (line, lam, k) => 1 - negBinCDF(Math.floor(line), lam, k);
+      const linesCor = MARKET_LINES.cor.map(l => ({ l, p: over(l, lCor, kCor) }));
+      const linesSot = MARKET_LINES.sot.map(l => ({ l, p: over(l, lSot, kSot) }));
+      const linesYel = MARKET_LINES.yel.map(l => ({ l, p: over(l, lYel, kYel) }));
+      const pOv9c = over(9.5, lCor, kCor); const pOv8s = over(8.5, lSot, kSot); const pOv3y = over(3.5, lYel, kYel);
       const pRed = 1 - poisson(0, rH + rA);
-      return { lCor, cH, cA, lSot, sH, sA, lYel, yH, yA, pOv9c, pOv8s, pOv3y, pRed, kCor, kSot, kYel };
+      return { lCor, cH, cA, lSot, sH, sA, lYel, yH, yA, lFls, scope,
+               linesCor, linesSot, linesYel, pOv9c, pOv8s, pOv3y, pRed, kCor, kSot, kYel };
     };
     const advRole = calcAdv(true); const advOver = calcAdv(false);
 
@@ -2127,11 +2152,29 @@ async function avviaScanner() {
     const renderMg = (obj) => Object.keys(obj).map(k => `<div style="background:rgba(79,140,255,.10); border:1px solid rgba(79,140,255,.30); border-radius:6px; padding:6px 8px; display:flex; justify-content:space-between; align-items:center;"><span style="font-weight:bold; font-size:11px">${k} Gol</span><span style="font-weight:900; color:var(--blue); font-size:13px">${pct(obj[k])}</span></div>`).join('');
     safeHtml('mg-tot', renderMg(mgTot)); safeHtml('mg-h', renderMg(mgH)); safeHtml('mg-a', renderMg(mgA));
 
-    safeTxt('cor-tot-over', f1(advOver.lCor)); safeTxt('cor-tot-role', f1(advRole.lCor)); safeTxt('pov9-cor-over', pct(advOver.pOv9c)); safeTxt('pov9-cor-role', pct(advRole.pOv9c));
-    safeTxt('sot-tot-over', f1(advOver.lSot)); safeTxt('sot-tot-role', f1(advRole.lSot)); safeTxt('pov8-sot-over', pct(advOver.pOv8s)); safeTxt('pov8-sot-role', pct(advRole.pOv8s));
-    safeTxt('fls-tot-over', f1((dH.overall.features.fouls?.avg_tot||0) + (dA.overall.features.fouls?.avg_tot||0))); safeTxt('fls-tot-role', f1((dH.role.features.fouls?.avg_tot||0) + (dA.role.features.fouls?.avg_tot||0)));
-    safeTxt('yel-tot-over', f1(advOver.lYel)); safeTxt('yel-tot-role', f1(advRole.lYel)); safeTxt('pov3-yel-over', pct(advOver.pOv3y)); safeTxt('pov3-yel-role', pct(advRole.pOv3y));
+    safeTxt('cor-tot-over', f1(advOver.lCor)); safeTxt('cor-tot-role', f1(advRole.lCor));
+    safeTxt('sot-tot-over', f1(advOver.lSot)); safeTxt('sot-tot-role', f1(advRole.lSot));
+    safeTxt('fls-tot-over', f1(advOver.lFls)); safeTxt('fls-tot-role', f1(advRole.lFls));
+    safeTxt('yel-tot-over', f1(advOver.lYel)); safeTxt('yel-tot-role', f1(advRole.lYel));
     safeTxt('red-tot-over', pct(advOver.pRed)); safeTxt('red-tot-role', pct(advRole.pRed));
+
+    const _mktRows = [['Corner', advRole.linesCor, advRole.lCor, advRole.kCor, 'var(--blue)'],
+                      ['Tiri in porta', advRole.linesSot, advRole.lSot, advRole.kSot, 'var(--purple)'],
+                      ['Gialli', advRole.linesYel, advRole.lYel, advRole.kYel, 'var(--orange)']];
+    let _mktHtml = `<tr><th>Mercato</th><th>atteso</th><th>linea</th><th>Over</th><th>Under</th></tr>`;
+    _mktRows.forEach(([nome, linee, lam, kk, col]) => {
+      (linee || []).forEach((x, i) => {
+        _mktHtml += `<tr${i % 2 ? ' style="background:rgba(255,255,255,.03)"' : ''}>` +
+          (i === 0 ? `<td rowspan="${linee.length}" style="font-weight:bold; color:${col}">${nome}</td>` +
+                     `<td rowspan="${linee.length}" style="font-weight:bold">${f1(lam)}</td>` : '') +
+          `<td>${x.l}</td><td style="font-weight:bold; color:${col}">${pct(x.p)}</td><td>${pct(1 - x.p)}</td></tr>`;
+      });
+    });
+    safeHtml('mkt-lines', _mktHtml);
+    const _disp = (k) => (!isFinite(k)) ? 'Poisson' : ('k ' + Math.round(k));
+    safeTxt('mkt-legend', `Conteggi con binomiale negativa: corner ${_disp(advRole.kCor)}, tiri in porta ${_disp(advRole.kSot)}, gialli ${_disp(advRole.kYel)}. ` +
+      `«Poisson» vuol dire che le partite viste non sono piu' disperse del caso puro. ` +
+      `Ambito ${advRole.scope === 'role' ? 'casa/trasferta' : 'generale (poche partite nel ruolo)'}.`);
 
     const badgeZ = (z) => { const az = Math.abs(z); if (az < 0.5) return '→ Eq.'; return z > 0 ? `Dom. Att` : `Dom. Dif`; };
     safeTxt('z-xg-h-ov', f2(zXgH_over)); safeTxt('z-xg-h-ro', f2(zXgH_role)); safeTxt('z-xg-a-ov', f2(zXgA_over)); safeTxt('z-xg-a-ro', f2(zXgA_role));
@@ -2148,8 +2191,12 @@ async function avviaScanner() {
 
     const renderProgRow = (label, feat) => `<tr><td style="font-weight:bold; color:var(--dim)">${label}</td><td>${f2(feat?.avg_3)}</td><td>${f2(feat?.avg_5)}</td><td>${f2(feat?.avg_10)}</td><td>${f2(feat?.avg_15)}</td><td class="td-highlight">${f2(feat?.avg_tot)}</td></tr>`;
     const tHead = `<tr><th>Metrica</th><th>Ult 3</th><th>Ult 5</th><th>Ult 10</th><th>Ult 15</th><th style="color:var(--blue)">Generale</th></tr>`;
-    safeHtml('table-prog-h', tHead + renderProgRow('NPxG Fatti', dH.overall.features.npxg) + renderProgRow('NPxG Subiti', dH.overall.features.npxga) + renderProgRow('Field Tilt %', dH.overall.features.field_tilt) + renderProgRow('PPDA', dH.overall.features.ppda));
-    safeHtml('table-prog-a', tHead + renderProgRow('NPxG Fatti', dA.overall.features.npxg) + renderProgRow('NPxG Subiti', dA.overall.features.npxga) + renderProgRow('Field Tilt %', dA.overall.features.field_tilt) + renderProgRow('PPDA', dA.overall.features.ppda));
+    const PROG_ROWS = [['Conduzioni prog.', 'prog_carries'], ['Cambi di gioco', 'switches'],
+                       ['Contrasti', 'tackles'], ['Conduzioni in area', 'carries_box'],
+                       ['Ingressi ultimo terzo', 'f3_entries'], ['Duelli aerei', 'aerials']];
+    const progTable = (d) => tHead + PROG_ROWS.map(([lab, k]) => renderProgRow(lab, d.overall.features[k])).join('');
+    safeHtml('table-prog-h', progTable(dH));
+    safeHtml('table-prog-a', progTable(dA));
     safeTxt('prog-h-name', hName + ' (generale)'); safeTxt('prog-a-name', aName + ' (generale)');
 
     let timingHtml = ''; const maxT = Math.max(...Object.values(bHs), ...Object.values(bHc), ...Object.values(bAs), ...Object.values(bAc), 1);
