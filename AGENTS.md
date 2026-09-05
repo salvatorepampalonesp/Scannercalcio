@@ -517,6 +517,7 @@ riga qui sotto costa già un backtest.
 | Ritoccare i pesi dell'ensemble (DC/OL/Markov) | **non serve** | la griglia in-sample preferisce Markov, ma fuori campione è pari e patta: una lega meglio, una peggio, differenze da 0.0007 di Brier |
 | Ricalibrare le rette della confidence | **non serve** | rifittate su 756 partite danno 16.88 + 0.686·p contro 6.26 + 0.880·p: ai punti che contano (50–60%) coincidono entro un punto |
 | Affilare le probabilità (temperatura) | **non serve** | il Brier peggiora oltre T≈1.1 su 716 partite |
+| Stimare attacco/difesa su **tutta la lega** invece che su 15 partite a squadra | **non serve** | AUC 0.681 contro 0.680 del modello attuale; mescolato 0.688 contro lo 0.690 che l'Elo dà già. Sul totale gol è perfino peggio. Vedi *L'Elo nell'1X2* |
 | Individuare le partite che finiranno pari | **non regge** | `pX` ha AUC **0.487** (SE ±0.020) su 1133 partite: nessuna capacità di distinguere. Anche `-\|p1−p2\|` e `-max(p1,p2)` stanno a 0.495–0.498. La calibrazione è giusta in media (27.6% detto contro 25.9% reale) ma piatta a fasce. Vedi *Lo scenario singolo* |
 
 **L'unica cosa che ha superato la verifica incrociata su tre leghe:**
@@ -727,9 +728,26 @@ chi), mentre le forze attacco/difesa del Dixon-Coles si stimano sulle ~15 partit
 di ciascuna delle due squadre e basta. Non è informazione nuova, è **più dati
 sullo stesso segnale**.
 
-Vale la pena tenerlo a mente: la strada lunga sarebbe stimare attacco e difesa su
-tutta la lega invece che su 15 partite a testa. L'Elo è la scorciatoia che cattura
-buona parte dello stesso guadagno a costo zero.
+Sembrava seguirne che la strada lunga fosse **stimare attacco e difesa su tutta
+la lega** invece che su 15 partite a testa, e che l'Elo fosse solo la scorciatoia.
+**Provato, e non è così.** Un modello di Poisson attacco/difesa a punto fisso,
+stimato in walk-forward su *tutte* le partite passate della lega con lo stesso
+decadimento a 106 giorni (i punteggi sono già in `globalLeagueMatchesCache`,
+costo zero chiamate):
+
+| predittore | AUC vittoria casa | Bun | LaL | Lig | Pre | Ser |
+|---|---|---|---|---|---|---|
+| `p1` del modello (15 partite/squadra) | 0.680 | 0.722 | 0.688 | 0.680 | 0.642 | 0.670 |
+| differenza Elo | **0.689** | 0.747 | 0.684 | 0.656 | 0.675 | 0.688 |
+| attacco/difesa su tutta la lega | 0.681 | 0.759 | 0.665 | 0.645 | 0.658 | 0.672 |
+
+Mescolato col modello arriva a **0.688** al suo meglio (w 0.50), contro lo
+**0.690** che l'inclinazione dall'Elo dà già. Sul **totale dei gol** va perfino
+peggio del modello attuale: corr +0.114 contro +0.153, AUC 0.551 contro 0.555.
+
+**Conclusione: la stima delle forze non è il collo di bottiglia.** Con più dati
+sullo stesso segnale non si va oltre; quello che l'Elo aggiunge, lo aggiunge tutto
+lui. Non riaprire questa strada senza un'idea diversa da «più partite».
 
 ### Come è collegato
 
