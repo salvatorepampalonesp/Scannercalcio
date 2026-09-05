@@ -155,7 +155,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b6</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b7</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -219,16 +219,6 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
           <div style="font-size:11px;font-weight:bold;color:var(--dim);margin-bottom:5px">Alert: Smart Money & Blood Scent</div>
           <div id="hidden-value-msg" style="font-size:12px; line-height:1.4; color:var(--txt);">--</div>
         </div>
-      </div>
-      <div style="margin-top:15px; background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:12px">
-        <div style="font-size:11px;font-weight:bold;color:var(--dim);margin-bottom:8px">💶 Confronto col Book: Valore Atteso e Stake</div>
-        <div class="grid-4" style="align-items:end">
-          <div><label style="font-size:10px;color:var(--dim)">Quota book 1</label><input type="number" step="0.01" id="bk-1" oninput="calcValue()" placeholder="es. 2.10"></div>
-          <div><label style="font-size:10px;color:var(--dim)">Quota book X</label><input type="number" step="0.01" id="bk-x" oninput="calcValue()" placeholder="es. 3.40"></div>
-          <div><label style="font-size:10px;color:var(--dim)">Quota book 2</label><input type="number" step="0.01" id="bk-2" oninput="calcValue()" placeholder="es. 3.60"></div>
-          <div><label style="font-size:10px;color:var(--dim)">Bankroll</label><input type="number" step="1" id="bk-bank" value="100" oninput="calcValue()"></div>
-        </div>
-        <div id="value-out" style="margin-top:10px; font-size:11px; color:var(--txt)"><span style="color:var(--dim)">Inserisci le quote del bookmaker: senza confronto col mercato una probabilita' non e' una scommessa.</span></div>
       </div>
     </div>
 
@@ -948,10 +938,8 @@ const ADV_SPEC = [
   ['xt',              m => m.possession_value?.xt_total,                'volume'],
   ['vaep',            m => m.possession_value?.vaep_total,              'additivo'],
   ['vaep_off',        m => m.possession_value?.vaep_offensive,          'volume'],
-  ['vaep_def',        m => m.possession_value?.vaep_defensive,          'additivo'],
   ['pv',              m => m.possession_value?.pv_total,                'additivo'],
   ['pv_off',          m => m.possession_value?.pv_offensive,            'volume'],
-  ['pv_def',          m => m.possession_value?.pv_defensive,            'additivo'],
 
   ['passes',          m => m.passing?.passes,                           'volume'],
   ['key_passes',      m => m.passing?.key_passes,                       'volume'],
@@ -972,7 +960,6 @@ const ADV_SPEC = [
   ['sca_takeon',      m => m.creation?.sca_breakdown?.take_on,          'volume'],
   ['sca_shot',        m => m.creation?.sca_breakdown?.shot,             'volume'],
   ['sca_foul',        m => m.creation?.sca_breakdown?.foul_drawn,       'volume'],
-  ['sca_def',         m => m.creation?.sca_breakdown?.defensive,        'volume'],
 
   ['tackles',         m => m.defending?.tackles,                        'volume'],
   ['interceptions',   m => m.defending?.interceptions,                  'volume'],
@@ -1506,7 +1493,7 @@ function renderVerdetti(mk) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b6';
+window.__SCANNER_BUILD = '0905-b7';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -1518,11 +1505,11 @@ window.STAT_SHRINK_TABLE = window.STAT_SHRINK_TABLE || {
   gca: 0.31, xag: 0.24, sca: 0.34, prog_passes: 0.47, passes_box: 0.44,
   carries_box: 0.55, prog_carries: 0.48,
 
-  xt: 0.40, vaep: 0.18, vaep_off: 0.23, vaep_def: 0.10, pv: 0.15, pv_off: 0.21, pv_def: 0.10,
+  xt: 0.40, vaep: 0.18, vaep_off: 0.23, pv: 0.15, pv_off: 0.21,
   passes: 0.54, key_passes: 0.39, switches: 0.28, prog_pass_dist: 0.36, assists: 0.16,
   carries: 0.49, carry_dist: 0.48, carries_f3: 0.38, take_ons: 0.37, prog_carry_dist: 0.50,
   chances_created: 0.39, second_assists: 0.17,
-  sca_live: 0.41, sca_dead: 0.18, sca_takeon: 0.16, sca_shot: 0.10, sca_foul: 0.11, sca_def: 0.10,
+  sca_live: 0.41, sca_dead: 0.18, sca_takeon: 0.16, sca_shot: 0.10, sca_foul: 0.11,
   tackles: 0.23, interceptions: 0.23, blocks: 0.20, clearances: 0.30, duels_won: 0.22,
   aerials: 0.54, challenges: 0.14, ppda_num: 0.53, ppda_den: 0.29
 };
@@ -1864,9 +1851,6 @@ async function avviaScanner() {
       : { p1: probsRole.p1, pX: probsRole.pX, p2: probsRole.p2 };
     const mk_ov = markovFlow(lamH_over, lamA_over); const mk_ro = markovFlow(lamH_role, lamA_role);
 
-    const nEffMin = Math.min(knn_H.nEff, knn_A.nEff);
-    const knnRel = nEffMin > 0 ? nEffMin / (nEffMin + 3) : 0;
-    const wKnn = 0.45 * knnRel;
 
     const wOL = 0.30, wMk = 0.10; const wDc = 1 - wOL - wMk;
 
@@ -1887,14 +1871,7 @@ async function avviaScanner() {
 
     const nMinRole = Math.min(dH.role.n, dA.role.n);
 
-    const sampleFactor = Math.min(1, Math.sqrt(nMinRole / 15));
 
-    let tvDist;
-    if (wKnn < 0.05) {
-      tvDist = (Math.abs(probsRole.p1 - mk_ro.p1) + Math.abs(probsRole.pX - mk_ro.pX) + Math.abs(probsRole.p2 - mk_ro.p2)) / 2;
-    } else {
-      tvDist = (Math.abs(probsRole.p1 - probsKnn.p1) + Math.abs(probsRole.pX - probsKnn.pX) + Math.abs(probsRole.p2 - probsKnn.p2)) / 2;
-    }
 
     const _statKeys = ['gf','npxg','xg','xgot','sot','cor','yel','fouls','poss','tch_box','ppda','field_tilt',
 
@@ -1964,7 +1941,7 @@ async function avviaScanner() {
     safeTxt('mdl-mk-1', pct(mk_ro.p1)); safeTxt('mdl-mk-x', pct(mk_ro.pX)); safeTxt('mdl-mk-2', pct(mk_ro.p2));
     safeTxt('mdl-ens-1', pct(m1)); safeTxt('mdl-ens-x', pct(mX)); safeTxt('mdl-ens-2', pct(m2));
 
-    const _confMarket = (probs, sf, isBin) => {
+    const _confMarket = (probs, isBin) => {
       const valid = probs.filter(p => isFinite(p) && p >= 0);
       if (!valid.length) return null;
       const pMean = valid.reduce((s, x) => s + x, 0) / valid.length;
@@ -1977,9 +1954,9 @@ async function avviaScanner() {
       return '<span style="color:' + col + '">' + v + '</span>';
     };
 
-    safeHtml('conf-p1', _badgeConf(_confMarket([m1], sampleFactor)));
-    safeHtml('conf-px', _badgeConf(_confMarket([mX], sampleFactor)));
-    safeHtml('conf-p2', _badgeConf(_confMarket([m2], sampleFactor)));
+    safeHtml('conf-p1', _badgeConf(_confMarket([m1])));
+    safeHtml('conf-px', _badgeConf(_confMarket([mX])));
+    safeHtml('conf-p2', _badgeConf(_confMarket([m2])));
 
     const dcP1X = probsRole.p1 + probsRole.pX, dcPX2 = probsRole.pX + probsRole.p2, dcP12 = probsRole.p1 + probsRole.p2;
     const knnP1X = probsKnn.p1 + probsKnn.pX, knnPX2 = probsKnn.pX + probsKnn.p2, knnP12 = probsKnn.p1 + probsKnn.p2;
@@ -1993,21 +1970,21 @@ async function avviaScanner() {
     safeTxt('mdl-knn-gg', pct(knnGG)); safeTxt('mdl-knn-ng', pct(knnNG));
     safeTxt('mdl-knn-ov', pct(knnOv)); safeTxt('mdl-knn-un', pct(knnUn));
 
-    safeHtml('conf-1x', _badgeConf(_confMarket([dcP1X], sampleFactor, true)));
-    safeHtml('conf-x2', _badgeConf(_confMarket([dcPX2], sampleFactor, true)));
-    safeHtml('conf-12', _badgeConf(_confMarket([dcP12], sampleFactor, true)));
+    safeHtml('conf-1x', _badgeConf(_confMarket([dcP1X], true)));
+    safeHtml('conf-x2', _badgeConf(_confMarket([dcPX2], true)));
+    safeHtml('conf-12', _badgeConf(_confMarket([dcP12], true)));
 
-    safeHtml('conf-gg', _badgeConf(_confMarket([dcGG], sampleFactor, true)));
-    safeHtml('conf-ng', _badgeConf(_confMarket([dcNG], sampleFactor, true)));
-    safeHtml('conf-ov', _badgeConf(_confMarket([dcOv], sampleFactor, true)));
-    safeHtml('conf-un', _badgeConf(_confMarket([dcUn], sampleFactor, true)));
+    safeHtml('conf-gg', _badgeConf(_confMarket([dcGG], true)));
+    safeHtml('conf-ng', _badgeConf(_confMarket([dcNG], true)));
+    safeHtml('conf-ov', _badgeConf(_confMarket([dcOv], true)));
+    safeHtml('conf-un', _badgeConf(_confMarket([dcUn], true)));
 
     renderVerdetti({ p1:m1, pX:mX, p2:m2, p1X:m1+mX, pX2:mX+m2, p12:m1+m2,
                      pOv:dcOv, pUn:dcUn, pGG:dcGG, pNG:dcNG });
     const odd1 = probsRole.p1 > 0 ? (1/probsRole.p1).toFixed(2) : "N/A"; const oddX = probsRole.pX > 0 ? (1/probsRole.pX).toFixed(2) : "N/A"; const odd2 = probsRole.p2 > 0 ? (1/probsRole.p2).toFixed(2) : "N/A";
     const oddM1 = m1 > 0 ? (1/m1).toFixed(2) : "N/A"; const oddMX = mX > 0 ? (1/mX).toFixed(2) : "N/A"; const oddM2 = m2 > 0 ? (1/m2).toFixed(2) : "N/A";
     safeTxt('m-odd-1', oddM1); safeTxt('m-odd-x', oddMX); safeTxt('m-odd-2', oddM2);
-    window.__MASTER = { p1: m1, pX: mX, p2: m2 }; calcValue();
+    window.__MASTER = { p1: m1, pX: mX, p2: m2 };
     safeTxt('master-conf', confidence + "/100");
     document.getElementById('conf-bar').style.width = confidence + "%";
 
@@ -2225,29 +2202,6 @@ Gol/Over-Under:
   }
 }
 
-function calcValue() {
-  const out = document.getElementById('value-out'); if(!out) return;
-  if(!window.__MASTER) { return; }
-  const P = window.__MASTER;
-  const gv = id => parseFloat((document.getElementById(id)||{}).value);
-  const bank = gv('bk-bank') || 100;
-  const legs = [ {k:'1', p:P.p1, o:gv('bk-1')}, {k:'X', p:P.pX, o:gv('bk-x')}, {k:'2', p:P.p2, o:gv('bk-2')} ];
-  const valid = legs.filter(l => l.o > 1 && isFinite(l.o));
-  if(!valid.length) { out.innerHTML = "<span style='color:var(--dim)'>Inserisci le quote del bookmaker: senza confronto col mercato una probabilita' non e' una scommessa.</span>"; return; }
-  const over = (valid.length === 3) ? valid.reduce((s,l) => s + 1/l.o, 0) : 0;
-  let html = `<table class="table-ui" style="margin-bottom:6px"><tr><th>Esito</th><th>P modello</th><th>P book netta</th><th>Quota</th><th>Valore Atteso</th><th>Stake (Kelly 1/4)</th></tr>`;
-  valid.forEach(l => {
-    const pb = over > 0 ? (1/l.o)/over : (1/l.o);
-    const ev = l.p * l.o - 1;
-    const b = l.o - 1; const kf = Math.max(0, (b*l.p - (1-l.p))/b) * 0.25;
-    const col = ev > 0.03 ? 'var(--green)' : (ev < 0 ? 'var(--red)' : '#555');
-    html += `<tr><td style="font-weight:bold">${l.k}</td><td>${pct(l.p)}</td><td>${pct(pb)}</td><td>${l.o.toFixed(2)}</td><td style="color:${col};font-weight:bold">${(ev*100).toFixed(1)}%</td><td>${kf > 0 ? (kf*100).toFixed(1)+'% ('+(kf*bank).toFixed(2)+')' : '-'}</td></tr>`;
-  });
-  html += `</table>`;
-  if(over > 0) html += `<div style="font-size:10px;color:var(--dim)">Margine del book: ${((over-1)*100).toFixed(1)}%. La colonna "P book netta" e' la probabilita' implicita depurata dal margine: se e' vicina alla tua, il valore apparente e' solo rumore.</div>`;
-  html += `<div style="font-size:10px;color:var(--dim);margin-top:4px">Kelly frazionato a 1/4: riduce lo stake rispetto al Kelly pieno. La confidence e' calibrata sui backtest, ma la calibrazione non sostituisce la gestione del bankroll.</div>`;
-  out.innerHTML = html;
-}
 
 async function copiaPrompt() {
   const el = document.getElementById('ai-prompt'); if(!el) return;
