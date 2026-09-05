@@ -49,8 +49,18 @@ del «gioca sempre in casa», e la fascia ≥60% rende il 71–78%), ma l'Over/U
 correggerlo con le statistiche avanzate sono cadute alla verifica incrociata —
 la tabella in *Cosa è già stato provato* le elenca una per una.
 
+**Tre strade chiuse da misure, non da opinioni** (i numeri sono in *Cosa è già
+stato provato*): prevedere meglio le stats avanzate — siamo al tetto; usare le
+stats per calibrare la forza dell'avversario — si fa già, e non resta niente
+oltre; sistemare il KNN — la sua premessa è vera ma ridondante, il Dixon-Coles
+estrae la stessa informazione meglio.
+
 **La prossima cosa da fare, in ordine di rapporto valore/rischio:**
 
+0. **Togliere il KNN.** Non entra nell'ensemble dal `0905-b2`, costa `getSimilarMatches`
+   su tutto lo storico a ogni partita, ed è misurato come strutturalmente ridondante.
+   Attenzione: `knnRel` e `wKnn` sono ancora letti altrove (narrativi, fallback della
+   confidence), e `probsKnn` finisce nel CSV e nel mega-prompt. Vanno ripuliti insieme.
 1. **`sum_sot` nell'Over/Under.** È l'unica feature che ha superato le tre leghe.
    Va integrata correggendo il **totale dei lambda** e tenendo il rapporto
    casa/trasferta della matrice, così migliorano insieme tutti i mercati gol e
@@ -333,6 +343,79 @@ Da notare due cose. La prima: `sum_sot` **da solo** batte `dc_over` **e** la
 combinazione dei due (0.581 contro 0.577), cioè la probabilità Over della matrice
 non aggiunge niente sopra i tiri in porta previsti. La seconda: `sot` non è una
 metrica «avanzata», viene da `/stats` ed era disponibile da sempre.
+
+### Il tetto: le previsioni delle stats sono al massimo, o quasi
+
+Misurato su un panel di **2266 osservazioni squadra-partita** (1133 partite, tre
+leghe, 60 squadre) costruito dai CSV del backtest. Per ogni metrica si calcola
+l'**ICC** — quanta della sua varianza sta *fra* le squadre invece che da partita
+a partita — e il tetto teorico di qualunque modello pre-partita è `sqrt(ICC)`.
+
+Il risultato chiude la questione: **26 metriche su 47 sono al 90% o più del loro
+tetto**, e diverse lo superano (il tetto ICC ignora l'effetto avversario, che il
+modello invece usa). Il punto è che i tetti sono **bassi**, perché nel calcio la
+varianza è quasi tutta dentro la squadra:
+
+| metrica | ICC | tetto | correlazione attuale |
+|---|---|---|---|
+| `npxg` | 0.136 | 0.369 | **0.393** |
+| `sot` | 0.124 | 0.351 | **0.367** |
+| `poss` | 0.287 | 0.535 | **0.655** |
+| `sca` | 0.145 | 0.381 | 0.373 |
+| `passes` | 0.380 | 0.616 | 0.555 |
+
+L'86% della varianza di `npxg` è rumore partita-a-partita: nessun modello
+pre-partita lo può prevedere, e siamo già oltre il tetto naive. **Lavorare per
+prevedere meglio le stats non è dove sta il valore.**
+
+Il margine residuo, dove c'è, sta su metriche il cui tetto è comunque basso:
+`avg_def_x` (26% del tetto, ma vedi la nota nella taratura), `assists` e
+`second_assists` (47%), `sca_takeon` (49%), `sca_foul` (51%), `pv_off` (58%),
+`vaep_off` (63%), `gca` (71%, tetto 0.30), `xag` (74%, tetto 0.35).
+
+### Usare le stats per calibrare la forza dell'avversario: si fa già
+
+Idea ragionevole e già implementata: il termine "concesso" di `predictStat` **è**
+la calibrazione della forza dell'avversario. La domanda vera è se resta qualcosa
+oltre a quella.
+
+Misurato: si stima `reale ~ media squadra + concesso avversario` in leave-one-out,
+e si guarda se il residuo correla con lo **stile** dell'avversario (possesso,
+PPDA, field tilt, altezza difensiva, passaggi, conduzioni). Risultato: le
+correlazioni stanno fra 0.02 e 0.09, appena sopra la soglia dei 2 sigma — ma
+soprattutto **hanno tutte lo stesso segno su tutte le metriche**. Sette variabili
+di stile che dicono la stessa cosa non sono stile: sono forza residua.
+
+Aggiungere un indice composito di forza dell'avversario al modello dà **+0.001**
+di correlazione. Zero. La strada è chiusa.
+
+### Il KNN non è rotto, è ridondante
+
+Testata la sua premessa direttamente: per prevedere una metrica di una squadra,
+la media pesata sulla **somiglianza di stile fra l'avversario di allora e quello
+di adesso** batte la media semplice?
+
+| metrica | media semplice | pesata per somiglianza | modello attuale |
+|---|---|---|---|
+| `poss` | 0.506 | 0.656 | **0.714** |
+| `field_tilt` | 0.435 | 0.569 | **0.612** |
+| `prog_passes` | 0.401 | 0.500 | **0.534** |
+| `sca` | 0.343 | 0.406 | **0.446** |
+| `npxg` | 0.340 | 0.362 | **0.382** |
+
+La premessa è **vera**: pesare per somiglianza batte ignorare l'avversario, su
+tutte e dieci le metriche provate. Ma il modello attuale (media × concesso) batte
+la versione a somiglianza su **tutte e dieci**, e la media dei due non aiuta.
+
+Cioè il KNN estrae in modo rumoroso un'informazione che il Dixon-Coles estrae già
+in modo pulito. Non c'è una versione "sistemata" del KNN che possa fare meglio:
+il difetto è strutturale, non di implementazione. **Toglierlo, non aggiustarlo.**
+
+Attenzione a un tranello trovato durante questa misura: se il profilo di stile
+dell'avversario si calcola includendo la partita in esame, `poss` e `field_tilt`
+risultano gonfiati, perché nella stessa partita le due squadre sono complementari
+(la somma fa ~100). Il profilo va calcolato **escludendo la partita**, entrambe
+le righe.
 
 ### Il muro dell'Over/Under
 
