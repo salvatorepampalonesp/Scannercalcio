@@ -24,7 +24,7 @@ tutti attraverso `fetchMatchRaw` (che li mette in `RAW_CACHE`).
 Sezione di consegna: dice a che punto siamo, così una sessione nuova non
 ricomincia da capo. Aggiornala quando cambia qualcosa di sostanziale.
 
-**Build corrente: `0905-b15`.** Scanner e Comparatore devono coincidere, e sul
+**Build corrente: `0905-b16`.** Scanner e Comparatore devono coincidere, e sul
 Comparatore il badge sotto la dropzone deve uscire **verde** dopo aver trascinato
 lo Scanner. Il branch di lavoro è `claude/scanner-stat-optimization-sgs62u`;
 `main` è indietro (fermo al merge della PR #1, cioè al `0905-b2`), quindi
@@ -67,6 +67,7 @@ stessa informazione meglio.
 | `b13` | l'Elo entra nell'1X2 inclinando i lambda: batteva il modello e non era usato |
 | `b14` | **cinque leghe**: Bundesliga e Ligue 1 confermano l'Elo fuori campione, il peso sale a 0.75 |
 | `b15` | le differenze fra leghe erano rumore; la pendenza dei mercati va misurata **dentro** la lega |
+| `b16` | **lo squilibrio della partita prevede i cartellini**: AUC 0.562 → 0.593, a costo zero |
 
 Le tre build finali hanno una storia sola e va letta in *La baseline di coppia*:
 tre tentativi svuotati dallo stesso malinteso.
@@ -93,9 +94,13 @@ se un giro non mostra differenze sull'Elo, è il comportamento atteso.
 
 ### La prossima cosa da fare, in ordine di rapporto valore/rischio
 
-1. **Il mercato dei cartellini.** È il migliore dei tre (AUC ~0.57) e nessuno l'ha
-   guardato davvero: arbitro, derby, posizione in classifica sono tutte cose che
-   PitchAPI potrebbe dare e che il modello oggi ignora.
+1. **Continuare sui cartellini.** Il `b16` ha preso il primo pezzo (lo squilibrio,
+   AUC 0.562 → 0.593). Restano: l'**arbitro** — `/v1/matches/{id}` lo espone e il
+   nome è già in `globalLeagueMatchesCache`, ma i cartellini delle sue partite
+   passate no, quindi servirebbero ~15 chiamate in più per profilarlo; la
+   **posizione in classifica** (calcolabile a costo zero dai punteggi già in
+   cache); e lo stesso effetto squilibrio sui **tiri in porta**, oggi a 2.8 sigma
+   con una lega discorde.
 2. **Capire la Premier sui tiri in porta**: pendenza 0.10–0.20 contro 0.77 in
    LaLiga e 0.35 in Serie A. O ha qualcosa di diverso, o è rumore.
 3. ~~Capire perché il Dixon-Coles è cieco sull'Over in Premier e Serie A~~ —
@@ -823,6 +828,83 @@ cap a 0.60: il paracadute non ha mai morso.
   essere ridondante o peggio. Va misurato: serve esportarla nel CSV, oggi non c'è.
 - **L'HFA stimato varia molto fra leghe**: LaLiga 78, Premier 49, Serie A 47. È
   plausibile, ma non è mai stato verificato contro il vantaggio campo reale.
+
+## Lo squilibrio e i cartellini: il guadagno più grande, e gratis
+
+Il risultato migliore di tutta la serie `b9`–`b16`, trovato cercando cosa manca al
+mercato che discrimina meglio.
+
+**Le partite squilibrate hanno meno cartellini di quanti il modello ne preveda.**
+Correlazione fra `|differenza Elo|` e il residuo dei gialli: **−0.138** su 1743
+partite, con lo **stesso segno in tutte e cinque le leghe**.
+
+| | coefficiente | SE | sigma |
+|---|---|---|---|
+| Bundesliga | −0.00294 | 0.00137 | −2.2 |
+| LaLiga | −0.00306 | 0.00132 | −2.3 |
+| Ligue 1 | −0.00405 | 0.00144 | −2.8 |
+| Premier | −0.00313 | 0.00140 | −2.2 |
+| Serie A | −0.00429 | 0.00115 | −3.7 |
+| **comune** | **−0.00354** | | **−5.8** |
+
+Test di omogeneità: **Q = 0.97 su 4 gradi di libertà, p = 0.914**. È lo stesso
+effetto ovunque, e questa volta il test lo conferma invece di smentirlo.
+
+Gialli reali per quintile di squilibrio (Q1 = partite più equilibrate):
+
+| | Q1 | Q2 | Q3 | Q4 | Q5 |
+|---|---|---|---|---|---|
+| tutte | 4.33 | 3.93 | 3.72 | 3.81 | 3.21 |
+
+Fra una partita equilibrata (scarto Elo 20) e una squilibrata (300) c'è quasi **un
+cartellino intero** di differenza, su una base di 3.8.
+
+### Come è implementato
+
+```js
+lYel = lYel_grezzo + CARDS_ELO_B * (|Elo_casa − Elo_trasferta| − scarto_medio_di_lega)
+```
+
+`CARDS_ELO_B = −0.0035`, e lo **scarto medio di lega** è calcolato al volo come
+media di `|r_i − r_j|` su tutte le coppie di squadre in `ELO.table`: si
+auto-calibra, non è una costante. Cap al ±30% di lambda, che non morde mai nei
+dati (lo scarto Elo arriva a ~400, l'aggiustamento a ~1 cartellino su 3.8).
+
+### Le misure
+
+| coefficiente | pendenza dentro lega | Brier | Bun | LaL | Lig | Pre | Ser |
+|---|---|---|---|---|---|---|---|
+| 0 (com'era) | 0.68 | 0.20245 | 0.1991 | 0.2270 | 0.1895 | 0.2047 | 0.1889 |
+| −0.0020 | 0.80 | 0.20032 | | | | | |
+| **−0.0035** | **0.75** | **0.19968** | **0.1974** | **0.2237** | **0.1869** | **0.2035** | **0.1839** |
+| −0.0050 | 0.65 | 0.19983 | | | | | |
+
+Ottimo **interno** esattamente sul coefficiente stimato, e il Brier migliora in
+**tutte e cinque le leghe**. L'AUC media delle cinque leghe:
+
+| linea | prima | dopo |
+|---|---|---|
+| Over 3.5 | 0.562 | **0.593** |
+| Over 4.5 | 0.567 | **0.590** |
+| Over 5.5 | 0.580 | **0.599** |
+
+Trenta punti base di AUC: più di qualunque altra cosa ottenuta in questa serie, e
+non costa una chiamata in più perché l'Elo è già calcolato.
+
+### Perché solo i cartellini
+
+Lo stesso test sugli altri mercati:
+
+| mercato | corr col residuo | sigma | segni per lega |
+|---|---|---|---|
+| gialli | −0.138 | −5.8 | **tutti negativi** |
+| tiri in porta | +0.067 | +2.8 | 4 su 5 positivi |
+| corner | +0.041 | +1.7 | 3 su 5 positivi |
+
+Sui **corner** i segni si ribaltano: scartato. Sui **tiri in porta** l'effetto è a
+2.8 sigma con 4 leghe su 5 concordi — **candidato, non applicato**: la regola è che
+il segno regga ovunque, ed è la regola che ha evitato quattro falsi positivi.
+Riprovarlo alla sesta lega.
 
 ## Il modello non fallisce in una lega più che in un'altra
 
