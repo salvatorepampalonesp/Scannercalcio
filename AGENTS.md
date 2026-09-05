@@ -24,7 +24,7 @@ tutti attraverso `fetchMatchRaw` (che li mette in `RAW_CACHE`).
 Sezione di consegna: dice a che punto siamo, così una sessione nuova non
 ricomincia da capo. Aggiornala quando cambia qualcosa di sostanziale.
 
-**Build corrente: `0905-b12`.** Scanner e Comparatore devono coincidere, e sul
+**Build corrente: `0905-b13`.** Scanner e Comparatore devono coincidere, e sul
 Comparatore il badge sotto la dropzone deve uscire **verde** dopo aver trascinato
 lo Scanner. Il branch di lavoro è `claude/scanner-stat-optimization-sgs62u`;
 `main` è indietro (fermo al merge della PR #1, cioè al `0905-b2`), quindi
@@ -64,6 +64,7 @@ stessa informazione meglio.
 | `b10` | mercati sui numeri: shrinkage tarato, dispersione ristretta, più linee; Progressione Storica rifatta |
 | `b11` | il backtest boccia metà del `b9` e del `b10`: `_base` usata come media di lega |
 | `b12` | tre leghe: i gol confermati; la sovradispersione dei mercati veniva dalla **baseline**, non da `k` |
+| `b13` | l'Elo entra nell'1X2 inclinando i lambda: batteva il modello e non era usato |
 
 Le tre build finali hanno una storia sola e va letta in *La baseline di coppia*:
 tre tentativi svuotati dallo stesso malinteso.
@@ -95,20 +96,23 @@ se un giro non mostra differenze sull'Elo, è il comportamento atteso.
    PitchAPI potrebbe dare e che il modello oggi ignora.
 2. **Capire la Premier sui tiri in porta**: pendenza 0.10–0.20 contro 0.77 in
    LaLiga e 0.35 in Serie A. O ha qualcosa di diverso, o è rumore.
-3. **`GOALS_SOT_W` alla quarta lega.** Il backtest dice 0.50, ma 0.75 e 1.00 sono
+3. **Verificare la pendenza dell'Elo** (`penH`/`penA`, ±8% sui lambda): non è mai
+   stata misurata, e ora che il livello entra dall'inclinazione potrebbe essere
+   ridondante. Serve esportarla nel CSV.
+4. **`GOALS_SOT_W` e `ELO_1X2_W` alla quarta lega.** Il backtest dice 0.50, ma 0.75 e 1.00 sono
    migliori di un margine non distinguibile (±0.030 di errore standard). Il CSV
    ricostruisce tutti i pesi senza rilanciare il motore: basta un'altra lega.
-4. **L'endpoint `/shots`.** Il candidato più serio per la forma della
+5. **L'endpoint `/shots`.** Il candidato più serio per la forma della
    distribuzione dei gol, con la ragione spiegata in *Il muro dell'Over/Under*.
    Costa una chiamata in più per partita.
-5. **Un ancoraggio di lega per i falli**, che oggi non ce l'hanno (il rapporto coi
+6. **Un ancoraggio di lega per i falli**, che oggi non ce l'hanno (il rapporto coi
    gol varia del 28% fra leghe, quindi `MARKET_PER_GOAL.fouls = null`).
-6. **La tab «racconto»**: mostrare uno scenario invece di una distribuzione. Idea
+7. **La tab «racconto»**: mostrare uno scenario invece di una distribuzione. Idea
    arrivata da fuori, già misurata e in parte bocciata — vedi *Lo scenario
    singolo*. La parte che sopravvive è la card dei risultati esatti.
-7. **Ricontrollare `avg_def_x`**: pendenza 0.06, la previsione è quasi scorrelata
+8. **Ricontrollare `avg_def_x`**: pendenza 0.06, la previsione è quasi scorrelata
    dal reale. O è un problema di forma del modello, o la metrica va tolta.
-8. **Togliere `vaep_def`, `pv_def`, `sca_def`** dalle feature: correlazione
+9. **Togliere `vaep_def`, `pv_def`, `sca_def`** dalle feature: correlazione
    previsto/reale a zero su 1133 partite. Il fix additivo che le ha rese
    calcolabili era giusto, ma quello che si vede è rumore.
 
@@ -204,7 +208,9 @@ già stato guardato nel codice e quello che è ancora un sospetto.
 - ~~**Alta varianza e disciplina**~~ — **fatto nel `0905-b10`–`b12`**: era già
   relazionale (usava il concesso dall'avversario) ma senza shrinkage, e come
   probabilità valeva meno di sparare la media. Vedi *I mercati sui numeri*.
-- ~~**Elo, salto data**~~ — **fatto nel `0905-b9`**, vedi *Stato del lavoro*.
+- ~~**Elo, salto data**~~ — **fatto nel `0905-b9`**, vedi *Stato del lavoro*. E nel
+  `b13` l'Elo è finalmente **collegato all'1X2**: era il predittore migliore del
+  motore e non veniva usato. Vedi *L'Elo nell'1X2*.
 - **Markov** — `markovFlow` con rate dipendenti dal punteggio. Verificato solo
   negli invarianti (`p1+pX+p2` fa 1, simmetrico scambiando i lambda, scarto
   massimo dal Dixon-Coles 0.035); **mai** verificato contro il backtest come
@@ -647,6 +653,103 @@ quarta lega a decidere.
 `SOT_PER_GOAL = 3.25` è misurato (LaLiga 3.19, Premier 3.04, Serie A 3.33) e tocca
 solo il **livello**, mai il rango. Il cap ±20% ha morso sullo **0.18%** delle
 partite: è un paracadute inerte, come dev'essere.
+
+## L'Elo nell'1X2: il pezzo migliore del motore non era collegato
+
+Trovato rispondendo alla domanda «correggiamo l'Elo?». La risposta è che l'Elo non
+andava corretto: **andava usato**.
+
+### Cosa succedeva
+
+`buildGlobalElo` è strutturalmente sano: HFA stimato dalle vittorie reali della
+lega, K adattivo (30 sotto le 15 partite, poi 20), moltiplicatore per scarto di
+gol, cronologico, a somma zero, con la regressione per inattività sistemata nel
+`b9`. Ma del suo risultato il modello usava **solo la pendenza**:
+
+```js
+trendH = media(ultimi 5 Elo) − media(dal 5° al 15°)
+penH   = clamp(trendH / 1200, ±0.08)
+lamH  *= (1 + penH)
+```
+
+Il **livello** del rating — cioè tutto il punto di un Elo — non entrava da nessuna
+parte. E il livello è la parte che sa qualcosa:
+
+| | AUC sulla vittoria casa | LaLiga | Premier | Serie A |
+|---|---|---|---|---|
+| differenza Elo | **0.689** | 0.697 | 0.671 | 0.702 |
+| `p1` dell'ensemble | 0.662 | 0.688 | 0.625 | 0.663 |
+
+L'Elo **batte il modello in tutte e tre le leghe**, e correla meglio con la
+differenza reti (+0.405 contro +0.367).
+
+### Perché vince, e perché non è magia
+
+L'Elo pesca dalla **stessa** storia del modello, ma la comprime meglio: propaga i
+risultati di *tutta* la lega in modo transitivo (chi batte chi, e chi ha battuto
+chi), mentre le forze attacco/difesa del Dixon-Coles si stimano sulle ~15 partite
+di ciascuna delle due squadre e basta. Non è informazione nuova, è **più dati
+sullo stesso segnale**.
+
+Vale la pena tenerlo a mente: la strada lunga sarebbe stimare attacco e difesa su
+tutta la lega invece che su 15 partite a testa. L'Elo è la scorciatoia che cattura
+buona parte dello stesso guadagno a costo zero.
+
+### Come è collegato
+
+Non sovrascrivendo l'1X2 — quello romperebbe il principio della matrice unica —
+ma **inclinando il rapporto fra i lambda tenendo fisso il totale**:
+
+```
+lgModel  = logit( p1 / (p1 + p2) )         dalla matrice attuale
+lgElo    = (Elo_casa − Elo_trasferta + HFA) / 173.72
+lgTarget = (1 − w) · lgModel + w · lgElo    w = ELO_1X2_W = 0.50
+```
+
+poi `eloTiltLambdas` cerca per bisezione l'inclinazione `t` tale che
+`lamH·e^t`, `lamA·e^−t` (riscalati perché la somma resti identica) producano
+esattamente `lgTarget`. Ventiquattro iterazioni su una matrice 7×7: costo
+trascurabile.
+
+Il 173.72 è `400/ln(10)`, la conversione esatta da punti Elo a log-odds: **non è
+una costante tarata**, è la definizione della scala Elo.
+
+**Cosa si muove e cosa no.** Il totale dei lambda è identico al bit, quindi
+Over/Under non si sposta di un punto. Si spostano 1X2, doppia chance, handicap
+asiatico, risultati esatti — e il **GG**, che dipende dallo squilibrio e non solo
+dal totale: su un esempio con Elo +250 va da 55.9% a 51.8%. È corretto che si
+muova, una partita più squilibrata ha meno GG.
+
+### Le misure
+
+Tenendo `pX` del modello (che è calibrata) e ribilanciando solo 1 contro 2:
+
+| w | pick giusti | Brier 1X2 | logloss | LaLiga | Premier | Serie A |
+|---|---|---|---|---|---|---|
+| 0.00 | 49.5% | 0.6163 | 1.0266 | 51.7% | 47.6% | 49.2% |
+| **0.50** | **50.7%** | **0.6079** | **1.0156** | **52.3%** | **48.7%** | **51.1%** |
+| 0.70 | 51.0% | 0.6064 | 1.0138 | 52.5% | 48.9% | 51.6% |
+| 1.00 | 50.8% | 0.6059 | 1.0139 | 52.0% | 48.4% | 52.1% |
+
+Il logloss ha un minimo **interno** a w 0.70. Migliora in tutte e tre le leghe.
+
+**Verifica fuori campione nel tempo** (taratura sulla prima metà di stagione,
+verifica sulla seconda, 567 partite mai viste): pick 48.3% → 48.9%, Brier
+0.6194 → 0.6107, logloss 1.0317 → 1.0202. Più contenuto dell'in-sample, ma tutte e
+tre le metriche migliorano insieme.
+
+`w = 0.50` invece dello 0.70 dell'ottimo: la curva è piatta fra 0.4 e 1.0 e ogni
+valore migliora, quindi si sta sul conservativo. `window.ELO_1X2_W` è esposto e il
+CSV ricostruisce w = 0 / 0.25 / 0.5 / 0.75 / 1.0 dai soli log-odds, senza
+rilanciare il motore.
+
+### Cosa resta da capire
+
+- **La pendenza (`penH`/`penA`) è ancora lì e non è mai stata verificata.** Ora
+  che il livello entra dalla porta principale, il ±8% sulla pendenza potrebbe
+  essere ridondante o peggio. Va misurato: serve esportarla nel CSV, oggi non c'è.
+- **L'HFA stimato varia molto fra leghe**: LaLiga 78, Premier 49, Serie A 47. È
+  plausibile, ma non è mai stato verificato contro il vantaggio campo reale.
 
 ## I mercati sui numeri: corner, tiri in porta, cartellini
 

@@ -155,7 +155,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b12</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b13</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -1504,7 +1504,7 @@ function renderVerdetti(mk) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b12';
+window.__SCANNER_BUILD = '0905-b13';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -1656,6 +1656,58 @@ window.MARKET_BASE_SHRINK = window.MARKET_BASE_SHRINK || { cor: 0.50, sot: 0.75,
 window.MARKET_PER_GOAL = window.MARKET_PER_GOAL || { cor: 3.61, sot: 3.20, yel: 1.48, fouls: null };
 const MARKET_LINES = { cor: [8.5, 9.5, 10.5, 11.5], sot: [6.5, 7.5, 8.5, 9.5], yel: [3.5, 4.5, 5.5] };
 
+window.ELO_1X2_W = (typeof window.ELO_1X2_W === 'number') ? window.ELO_1X2_W : 0.50;
+const ELO_TILT_MAX = 0.60;
+
+// inclina il rapporto casa/trasferta dei lambda tenendo FISSO il totale, cosi' i mercati
+// gol non si muovono e la matrice resta una sola (AGENTS.md, L'Elo nell'1X2)
+function eloTiltLambdas(lamH, lamA, eloDiff, hfa, rho) {
+  const dbg = { w: window.ELO_1X2_W, applied: false, lgModel: null, lgElo: null, lgTarget: null,
+                tilt: 0, capped: false, lamH: lamH, lamA: lamA };
+  const w = window.ELO_1X2_W;
+  if (!(w > 0) || eloDiff == null || !isFinite(eloDiff)) return dbg;
+  if (!(lamH > 0) || !(lamA > 0)) return dbg;
+  const tot = lamH + lamA;
+  const clip = p => Math.max(1e-6, Math.min(1 - 1e-6, p));
+  const balance = (lh, la) => {
+    const P = probsFromMatrix(calcDCMatrix(lh, la, rho));
+    const d = P.p1 + P.p2;
+    if (!(d > 0)) return null;
+    const c = clip(P.p1 / d);
+    return Math.log(c / (1 - c));
+  };
+  const lgModel = balance(lamH, lamA);
+  if (lgModel == null || !isFinite(lgModel)) return dbg;
+  const lgElo = (eloDiff + (isFinite(hfa) ? hfa : 65)) / 173.7178;
+  const lgTarget = (1 - w) * lgModel + w * lgElo;
+  dbg.lgModel = lgModel; dbg.lgElo = lgElo; dbg.lgTarget = lgTarget;
+  if (Math.abs(lgTarget - lgModel) < 1e-4) { dbg.applied = true; return dbg; }
+  const at = t => {
+    const lh = lamH * Math.exp(t), la = lamA * Math.exp(-t);
+    const k = tot / (lh + la);
+    return balance(lh * k, la * k);
+  };
+  let lo = -ELO_TILT_MAX, hi = ELO_TILT_MAX;
+  const bLo = at(lo), bHi = at(hi);
+  if (bLo == null || bHi == null) return dbg;
+  let t;
+  if (lgTarget <= bLo) { t = lo; dbg.capped = true; }
+  else if (lgTarget >= bHi) { t = hi; dbg.capped = true; }
+  else {
+    for (let i = 0; i < 24; i++) {
+      t = (lo + hi) / 2;
+      const b = at(t);
+      if (b == null) return dbg;
+      if (b < lgTarget) lo = t; else hi = t;
+    }
+    t = (lo + hi) / 2;
+  }
+  const lh = lamH * Math.exp(t), la = lamA * Math.exp(-t), k = tot / (lh + la);
+  if (!isFinite(lh) || !isFinite(la) || !(k > 0)) return dbg;
+  dbg.tilt = t; dbg.lamH = lh * k; dbg.lamA = la * k; dbg.applied = true;
+  return dbg;
+}
+
 const GOALS_SOT_CAP = 0.20;
 window.SOT_PER_GOAL = (typeof window.SOT_PER_GOAL === 'number') ? window.SOT_PER_GOAL : 3.25;
 window.GOALS_SOT_W  = (typeof window.GOALS_SOT_W  === 'number') ? window.GOALS_SOT_W  : 0.50;
@@ -1746,6 +1798,13 @@ async function avviaScanner() {
       lamH_over *= _GC.scale; lamA_over *= _GC.scale;
     }
     if(!isFinite(lamH_role) || lamH_role < 0.15) lamH_role = lamH_over; if(!isFinite(lamA_role) || lamA_role < 0.15) lamA_role = lamA_over;
+
+    const _eloDiff = (isFinite(eloH_ov) && isFinite(eloA_ov)) ? (eloH_ov - eloA_ov) : null;
+    const _ET = eloTiltLambdas(lamH_role, lamA_role, _eloDiff, ELO._hfa, RHO);
+    window.__ELO_DEBUG = _ET;
+    if (_ET.applied && _ET.lamH > 0 && _ET.lamA > 0) { lamH_role = _ET.lamH; lamA_role = _ET.lamA; }
+    const _ETo = eloTiltLambdas(lamH_over, lamA_over, _eloDiff, ELO._hfa, RHO);
+    if (_ETo.applied && _ETo.lamH > 0 && _ETo.lamA > 0) { lamH_over = _ETo.lamH; lamA_over = _ETo.lamA; }
 
     const dcOver = calcDCMatrix(lamH_over, lamA_over, RHO); const dcRole = calcDCMatrix(lamH_role, lamA_role, RHO);
     const probsOver = probsFromMatrix(dcOver); const probsRole = probsFromMatrix(dcRole);
