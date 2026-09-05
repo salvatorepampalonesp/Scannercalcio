@@ -24,7 +24,7 @@ tutti attraverso `fetchMatchRaw` (che li mette in `RAW_CACHE`).
 Sezione di consegna: dice a che punto siamo, così una sessione nuova non
 ricomincia da capo. Aggiornala quando cambia qualcosa di sostanziale.
 
-**Build corrente: `0905-b16`.** Scanner e Comparatore devono coincidere, e sul
+**Build corrente: `0905-b17`.** Scanner e Comparatore devono coincidere, e sul
 Comparatore il badge sotto la dropzone deve uscire **verde** dopo aver trascinato
 lo Scanner. Il branch di lavoro è `claude/scanner-stat-optimization-sgs62u`;
 `main` è indietro (fermo al merge della PR #1, cioè al `0905-b2`), quindi
@@ -68,6 +68,7 @@ stessa informazione meglio.
 | `b14` | **cinque leghe**: Bundesliga e Ligue 1 confermano l'Elo fuori campione, il peso sale a 0.75 |
 | `b15` | le differenze fra leghe erano rumore; la pendenza dei mercati va misurata **dentro** la lega |
 | `b16` | **lo squilibrio della partita prevede i cartellini**: AUC 0.562 → 0.593, a costo zero |
+| `b17` | trovato un **disallineamento di unità** nel lambda: attacco e difesa sono NPxG divisi per la media **gol**. Correzione pronta ma spenta |
 
 Le tre build finali hanno una storia sola e va letta in *La baseline di coppia*:
 tre tentativi svuotati dallo stesso malinteso.
@@ -94,37 +95,42 @@ se un giro non mostra differenze sull'Elo, è il comportamento atteso.
 
 ### La prossima cosa da fare, in ordine di rapporto valore/rischio
 
-1. **Continuare sui cartellini.** Il `b16` ha preso il primo pezzo (lo squilibrio,
+1. **Provare `GOALS_UNIT_FIX` col prossimo backtest.** È la cosa più grossa
+   trovata finora sui mercati che contano davvero, ed è già cablata e strumentata:
+   basta un giro con 0 / 0.25 / 0.50 / 0.75 / 1.0. Vedi *Il disallineamento di
+   unità nel lambda*.
+2. **Continuare sui cartellini.** Il `b16` ha preso il primo pezzo (lo squilibrio,
    AUC 0.562 → 0.593). Restano: l'**arbitro** — `/v1/matches/{id}` lo espone e il
    nome è già in `globalLeagueMatchesCache`, ma i cartellini delle sue partite
    passate no, quindi servirebbero ~15 chiamate in più per profilarlo; la
    **posizione in classifica** (calcolabile a costo zero dai punteggi già in
    cache); e lo stesso effetto squilibrio sui **tiri in porta**, oggi a 2.8 sigma
    con una lega discorde.
-2. **Capire la Premier sui tiri in porta**: pendenza 0.10–0.20 contro 0.77 in
-   LaLiga e 0.35 in Serie A. O ha qualcosa di diverso, o è rumore.
-3. ~~Capire perché il Dixon-Coles è cieco sull'Over in Premier e Serie A~~ —
+3. ~~Capire la Premier sui tiri in porta~~ — **era rumore**: test di omogeneità
+   sulle pendenze p = 0.12, con errori standard di 0.27–0.33 su ~300 partite.
+   Nessuna lega è diversa dalle altre su nessuno dei tre mercati statistici.
+4. ~~Capire perché il Dixon-Coles è cieco sull'Over in Premier e Serie A~~ —
    **domanda mal posta**, le cinque leghe sono indistinguibili (p = 0.19). Vedi
    *Il modello non fallisce in una lega più che in un'altra*. La domanda giusta
    resta quella di sempre: il lambda correla **+0.087** col totale dei gol, e
    nessuna feature provata lo alza. È il muro dell'Over/Under, punto.
-4. **Verificare la pendenza dell'Elo** (`penH`/`penA`, ±8% sui lambda): non è mai
+5. **Verificare la pendenza dell'Elo** (`penH`/`penA`, ±8% sui lambda): non è mai
    stata misurata, e ora che il livello entra dall'inclinazione potrebbe essere
    ridondante. Serve esportarla nel CSV.
-5. **`GOALS_SOT_W` e `ELO_1X2_W` alla sesta lega.** Il backtest dice 0.50, ma 0.75 e 1.00 sono
+6. **`GOALS_SOT_W` e `ELO_1X2_W` alla sesta lega.** Il backtest dice 0.50, ma 0.75 e 1.00 sono
    migliori di un margine non distinguibile (±0.030 di errore standard). Il CSV
    ricostruisce tutti i pesi senza rilanciare il motore: basta un'altra lega.
-6. **L'endpoint `/shots`.** Il candidato più serio per la forma della
+7. **L'endpoint `/shots`.** Il candidato più serio per la forma della
    distribuzione dei gol, con la ragione spiegata in *Il muro dell'Over/Under*.
    Costa una chiamata in più per partita.
-7. **Un ancoraggio di lega per i falli**, che oggi non ce l'hanno (il rapporto coi
+8. **Un ancoraggio di lega per i falli**, che oggi non ce l'hanno (il rapporto coi
    gol varia del 28% fra leghe, quindi `MARKET_PER_GOAL.fouls = null`).
-8. **La tab «racconto»**: mostrare uno scenario invece di una distribuzione. Idea
+9. **La tab «racconto»**: mostrare uno scenario invece di una distribuzione. Idea
    arrivata da fuori, già misurata e in parte bocciata — vedi *Lo scenario
    singolo*. La parte che sopravvive è la card dei risultati esatti.
-9. **Ricontrollare `avg_def_x`**: pendenza 0.06, la previsione è quasi scorrelata
+10. **Ricontrollare `avg_def_x`**: pendenza 0.06, la previsione è quasi scorrelata
    dal reale. O è un problema di forma del modello, o la metrica va tolta.
-10. **Togliere `vaep_def`, `pv_def`, `sca_def`** dalle feature: correlazione
+11. **Togliere `vaep_def`, `pv_def`, `sca_def`** dalle feature: correlazione
    previsto/reale a zero su 1133 partite. Il fix additivo che le ha rese
    calcolabili era giusto, ma quello che si vede è rumore.
 
@@ -828,6 +834,82 @@ cap a 0.60: il paracadute non ha mai morso.
   essere ridondante o peggio. Va misurato: serve esportarla nel CSV, oggi non c'è.
 - **L'HFA stimato varia molto fra leghe**: LaLiga 78, Premier 49, Serie A 47. È
   plausibile, ma non è mai stato verificato contro il vantaggio campo reale.
+
+## I sei mercati che contano: dove siamo davvero
+
+Audit su 1743 partite e cinque leghe (`b17`). Sono i mercati su cui si scommette
+davvero, e per metà di essi questa è la **prima** misura separata mai fatta.
+
+| mercato | base | detto | bias | AUC | Brier |
+|---|---|---|---|---|---|
+| `1` / `X2` | 43.9% | 44.2% | +0.3 | **0.686** | 0.2224 |
+| `2` / `1X` | 30.6% | 28.8% | −1.8 | **0.695** | 0.1935 |
+| `X` / `12` | 25.4% | 27.0% | +1.6 | 0.521 | 0.1893 |
+| `Goal` / `NoGoal` | 53.9% | 53.2% | −0.7 | 0.544 | 0.2471 |
+| `Over 2.5` / `Under` | 53.1% | **49.3%** | **−3.8** | 0.564 | 0.2469 |
+
+Da leggere così: **1X2 e doppie chance funzionano** (AUC 0.69, e le doppie sono la
+stessa cosa degli esiti singoli per costruzione — `1X` è il complemento di `2`).
+Il **pareggio non funziona** e trascina il `12` con sé: AUC 0.521, e sotto 0.50 in
+Premier e Serie A. **GG è debole** (0.544, e 0.476 in Bundesliga). L'**Over 2.5
+ordina discretamente ma sbaglia il livello di 3.8 punti**.
+
+Quel −3.8 non è rumore ed è la cosa più concreta emersa: non è un problema di
+ordinamento ma di **taratura**, e si porta dietro anche il pareggio
+(sovrastimato di 1.6, coerente con lambda troppo bassi).
+
+## Il disallineamento di unità nel lambda
+
+Il lambda nasce così:
+
+```js
+attH = shrink(npxg_casa / LG.avgH)     // NPxG diviso la media GOL
+defA = shrink(npxga_trasf / LG.avgH)   // NPxG diviso la media GOL
+lamH = LG.avgH * attH * defA * (1+pen) + pxH
+```
+
+**Attacco e difesa sono NPxG normalizzati sulla media dei gol.** Sono unità
+diverse: gli NPxG escludono i rigori e stanno sotto ai gol veri. Il rapporto
+misurato:
+
+| lega | gol/squadra | NPxG/squadra | NPxG÷gol | effetto al quadrato |
+|---|---|---|---|---|
+| Bundesliga | 1.623 | 1.434 | 0.884 | **−21.9%** |
+| LaLiga | 1.349 | 1.215 | 0.901 | −18.8% |
+| Ligue 1 | 1.413 | 1.292 | 0.914 | −16.4% |
+| Premier | 1.377 | 1.305 | 0.947 | −10.2% |
+| Serie A | 1.213 | 1.150 | 0.948 | −10.1% |
+
+Siccome `lambda = base × attacco × difesa`, lo scarto entra **due volte**: da qui
+la colonna al quadrato. Il deficit misurato sui lambda è più piccolo — −8.8%
+Bundesliga, −3.6% LaLiga, −2.5% Serie A, −1.5% Premier, +1.3% Ligue 1, **−3.1%
+complessivo** — perché il termine rigori (`xG − NPxG`, aggiunto dopo) e lo
+shrinkage verso la media di lega ne compensano una parte.
+
+**Ed è per questo che nessuno l'aveva visto: sono due errori che si annullano a
+metà.** L'ordine delle leghe però torna quasi esattamente fra deficit teorico e
+misurato, ed è la prova che il meccanismo è quello.
+
+Il deficit **non è stagionale**: −2.6% / −4.1% / −2.7% nei tre terzi di stagione.
+
+### Perché la correzione è pronta ma spenta
+
+`window.GOALS_UNIT_FIX` (default **0**, cioè comportamento identico a prima)
+normalizza attacco e difesa sugli **NPxG** invece che sui gol, usando la media dei
+`_base.npxg` delle due squadre, e nello stesso passo **toglie il termine rigori**,
+che a quel punto sarebbe doppio (`LG.avgH` contiene già i gol su rigore).
+
+Non è accesa perché **non è validabile qui**: tocca il cuore del lambda, quindi
+muove 1X2, doppie chance, GG, Over/Under e tutti i mercati della matrice insieme.
+Su un esempio realistico alza il lambda del **21%**, che è molto più del 3% di
+deficit misurato — segno che togliendo un errore senza togliere anche la sua
+compensazione si va oltre. Il peso è continuo apposta: il CSV esporta tutta la
+diagnostica (`Unita: ...`), quindi il prossimo backtest può provare 0, 0.25, 0.50,
+0.75, 1.0 e vedere dove cade il Brier di *ogni* mercato, non solo dell'Over.
+
+**Quando lo provi, guarda insieme:** livello dell'Over 2.5 (deve salire verso il
+53%), pareggio (deve scendere verso il 25.4%), pick 1X2 (non deve peggiorare) e
+GG. Se il livello si sistema ma l'1X2 peggiora, il peso giusto è intermedio.
 
 ## Lo squilibrio e i cartellini: il guadagno più grande, e gratis
 

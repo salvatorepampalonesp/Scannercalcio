@@ -155,7 +155,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b16</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b17</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -1504,7 +1504,7 @@ function renderVerdetti(mk) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b16';
+window.__SCANNER_BUILD = '0905-b17';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -1659,6 +1659,13 @@ const MARKET_LINES = { cor: [8.5, 9.5, 10.5, 11.5], sot: [6.5, 7.5, 8.5, 9.5], y
 // le partite squilibrate hanno meno cartellini: -0.0035 gialli per punto Elo di
 // scarto, stesso effetto in cinque leghe (AGENTS.md, Lo squilibrio e i cartellini)
 window.CARDS_ELO_B = (typeof window.CARDS_ELO_B === 'number') ? window.CARDS_ELO_B : -0.0035;
+
+// attacco e difesa nascono come NPxG / media GOL di lega: unita diverse, e lo
+// scarto entra due volte perche lambda = base x attacco x difesa. Il termine
+// rigori e lo shrinkage compensano per meta, per caso. GOALS_UNIT_FIX normalizza
+// sugli NPxG e toglie il rattoppo. SPENTA finche un backtest non la conferma
+// (AGENTS.md, Il disallineamento di unita nel lambda)
+window.GOALS_UNIT_FIX = (typeof window.GOALS_UNIT_FIX === 'number') ? window.GOALS_UNIT_FIX : 0;
 const CARDS_ELO_CAP = 0.30;
 
 function cardsMismatchAdj(lam, eloDiff, meanPair) {
@@ -1811,10 +1818,22 @@ async function avviaScanner() {
     let lamH_over = LG.avgH * attH_o * defA_o * (1 + penH) + pxH;
     let lamA_over = LG.avgA * attA_o * defH_o * (1 + penA) + pxA;
 
-    const attH_r = shrink((dec(dH,'role','npxg') ?? LG.avgH) / LG.avgH, nHr), defA_r = shrink((dec(dA,'role','npxga') ?? LG.avgH) / LG.avgH, nAr);
-    const attA_r = shrink((dec(dA,'role','npxg') ?? LG.avgA) / LG.avgA, nAr), defH_r = shrink((dec(dH,'role','npxga') ?? LG.avgA) / LG.avgA, nHr);
-    let lamH_role = LG.avgH * attH_r * defA_r * (1 + penH) + pxH;
-    let lamA_role = LG.avgA * attA_r * defH_r * (1 + penA) + pxA;
+    const _baseN = (() => {
+      const b = [dH, dA].map(t => (t.role && t.role.features && t.role.features._base) ? t.role.features._base.npxg : null)
+                        .filter(v => v != null && isFinite(v) && v > 0);
+      return b.length ? b.reduce((a, v) => a + v, 0) / b.length : null;
+    })();
+    const _uf = window.GOALS_UNIT_FIX;
+    const _useUnit = (_uf > 0) && (_baseN > 0);
+    const _dH_r = _useUnit ? _baseN : LG.avgH, _dA_r = _useUnit ? _baseN : LG.avgA;
+    const attH_r = shrink((dec(dH,'role','npxg') ?? _dH_r) / _dH_r, nHr), defA_r = shrink((dec(dA,'role','npxga') ?? _dH_r) / _dH_r, nAr);
+    const attA_r = shrink((dec(dA,'role','npxg') ?? _dA_r) / _dA_r, nAr), defH_r = shrink((dec(dH,'role','npxga') ?? _dA_r) / _dA_r, nHr);
+    const _pxH = _useUnit ? (1 - _uf) * pxH : pxH, _pxA = _useUnit ? (1 - _uf) * pxA : pxA;
+    let lamH_role = LG.avgH * attH_r * defA_r * (1 + penH) + _pxH;
+    let lamA_role = LG.avgA * attA_r * defH_r * (1 + penA) + _pxA;
+    window.__UNIT_DEBUG = { on: _useUnit, w: _uf, baseNpxg: _baseN,
+                            lgH: LG.avgH, lgA: LG.avgA, attH: attH_r, defA: defA_r,
+                            attA: attA_r, defH: defH_r, pxH: _pxH, pxA: _pxA };
 
     const _lk = window.SHRINK_LAM_K;
     const wSH = nHr / (nHr + _lk), wSA = nAr / (nAr + _lk);
