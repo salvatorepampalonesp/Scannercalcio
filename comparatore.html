@@ -402,12 +402,7 @@ select{cursor:pointer}
   <button id="cmp-btn-tutte"></button><button id="cmp-btn-range"></button>
 </div>
 
-<script>
-
-// ═══════════════════════════════════════════════════════════════════════════
-// PATCH TOLLERANTE getElementById — assorbe accessi a elementi mancanti del V9.7
-// ═══════════════════════════════════════════════════════════════════════════
-(function(){
+<script>(function(){
   const _orig = document.getElementById.bind(document);
   const ghost = new Proxy({}, {
     get: function(t, k) {
@@ -430,28 +425,17 @@ select{cursor:pointer}
   document.getElementById = function(id) { return _orig(id) || ghost; };
 })();
 
-// ═══════════════════════════════════════════════════════════════════════════
-// COMPARATORE — Drag & drop del V9.7 con iniezione automatica
-// ═══════════════════════════════════════════════════════════════════════════
-
 let cmpMatchesOfTheDay = [];
-let cmpAllMatches = []; // tutte le partite delle 3 stagioni caricate (per il filtro intervallo/mese)
+let cmpAllMatches = [];
 let cmpSavedMatches = [];
 let cmpLeagues = [];
 let cmpCurrentResult = null;
 let engineReady = false;
-// Valori di shrinkage confrontati automaticamente a ogni partita del batch.
-// Il primo e' quello mostrato a schermo; tutti finiscono nel CSV.
-//   4  = taratura storica del motore (crede al 79% alle forze su 15 match)
-//   12 = via di mezzo (peso 0.56)
-//   28 = peso 0.35, l'ottimo emerso dai test walk-forward sulle metriche
+
 const CMP_K_LIST = [4, 12, 28];
 
-let cmpCurrentLeagueId = '';   // lega selezionata, per taggare i match e settare sel-league
+let cmpCurrentLeagueId = '';
 
-// Copia integrale di leghe.json (42 leghe), usata come fallback quando fetch('leghe.json')
-// fallisce — SEMPRE il caso se il file viene aperto con doppio click invece che via server
-// locale, perché i browser bloccano i fetch verso file:// per policy CORS.
 const CMP_LEAGUES_FALLBACK = [{"id":"l_3hvsne","name":"2. Bundesliga","country_code":"GER","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_4MPd7x","name":"A-League","country_code":"AUS","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_1XsMdH","name":"Allsvenskan","country_code":"SWE","seasons":["2021","2022","2023","2024","2025","2026"]},{"id":"l_3zsMpo","name":"Bundesliga","country_code":"AUT","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_1Isor4","name":"Bundesliga","country_code":"GER","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_1pQOHK","name":"Challenger Pro League","country_code":"BEL","seasons":["2025/2026","2026/2027"]},{"id":"l_0bfbkO","name":"Champions League","country_code":"INT-2","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_4DWyTT","name":"Championship","country_code":"ENG","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_2WZ2tt","name":"Conference League","country_code":"INT-2","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_214sqK","name":"Ekstraklasa","country_code":"POL","seasons":["2025/2026","2026/2027"]},{"id":"l_0uqFK8","name":"Eliteserien","country_code":"NOR","seasons":["2021","2022","2023","2024","2025","2026"]},{"id":"l_4H43wr","name":"Eredivisie","country_code":"NED","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_38d9HA","name":"Europa League","country_code":"INT-2","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_2L6d1F","name":"First Division A","country_code":"BEL","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_1qpFVw","name":"Indian Super League","country_code":"IND","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_2ApGa4","name":"J. League","country_code":"JPN","seasons":["2022","2023","2024","2025","2026"]},{"id":"l_2EKrnc","name":"K League 1","country_code":"KOR","seasons":["2022","2023","2024","2025","2026"]},{"id":"l_0ErfuF","name":"LaLiga","country_code":"ESP","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_3kyHLd","name":"LaLiga2","country_code":"ESP","seasons":["2025/2026","2026/2027"]},{"id":"l_0ahLw8","name":"League One","country_code":"ENG","seasons":["2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_1W6idJ","name":"League Two","country_code":"ENG","seasons":["2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_3v84VE","name":"Liga MX","country_code":"MEX","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_4QexZg","name":"Liga Portugal","country_code":"POR","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_45VZuL","name":"Liga Profesional","country_code":"ARG","seasons":["2023","2024","2025","2026"]},{"id":"l_3FJFUl","name":"Ligue 1","country_code":"FRA","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_0275VP","name":"Ligue 2","country_code":"FRA","seasons":["2025/2026","2026/2027"]},{"id":"l_0eg6C9","name":"MLS","country_code":"USA","seasons":["2021","2022","2023","2024","2025","2026"]},{"id":"l_2Mh0jT","name":"Premier League","country_code":"RUS","seasons":["2025/2026","2026/2027"]},{"id":"l_46aZMC","name":"Premier League","country_code":"EGY","seasons":["2025/2026","2026/2027"]},{"id":"l_4WFCIZ","name":"Premier League","country_code":"ENG","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_1Kknkl","name":"Premier Soccer League","country_code":"RSA","seasons":["2025/2026","2026/2027"]},{"id":"l_1LMdEO","name":"Premiership","country_code":"SCO","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_0Lpz1f","name":"Saudi Pro League","country_code":"KSA","seasons":["2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_0ALvwF","name":"Serie A","country_code":"ITA","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_1D8Xrl","name":"Serie A","country_code":"BRA","seasons":["2023","2024","2025","2026"]},{"id":"l_0jy5yE","name":"Serie B","country_code":"ITA","seasons":["2025/2026","2026/2027"]},{"id":"l_4d6Bwl","name":"Super League","country_code":"SUI","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_3xwVF2","name":"Super League 1","country_code":"GRE","seasons":["2024/2025","2025/2026","2026/2027"]},{"id":"l_0S1uaf","name":"Super Lig","country_code":"TUR","seasons":["2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_49Zmno","name":"Superligaen","country_code":"DEN","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_3hW1NO","name":"Thai League 1","country_code":"THA","seasons":["2025/2026"]},{"id":"l_1XLtP0","name":"World Cup","country_code":"INT","seasons":["2022","2026"]}];
 
 const cmpLog = m => {
@@ -464,8 +448,6 @@ const _pct = v => (v==null || isNaN(v)) ? '--' : (v*100).toFixed(1)+'%';
 const _num = v => (v==null || isNaN(v)) ? '--' : Number(v).toFixed(2);
 const _mean = arr => { if(!Array.isArray(arr)) return null; const v = arr.filter(x=>x!=null&&!isNaN(x)); return v.length? v.reduce((s,x)=>s+x,0)/v.length : null; };
 
-// Deriva TUTTI i mercati gol da una matrice Dixon-Coles: Over/Under per ogni linea, GG/NG,
-// e le fasce multigol. Serve per lo studio approfondito Over/Under (più linee, non solo 2.5).
 function marketsFromMatrix(mat) {
   if (!mat || !mat.length) return null;
   const out = { ou: {}, gg: 0, ng: 0 };
@@ -484,7 +466,6 @@ function marketsFromMatrix(mat) {
   return out;
 }
 
-// ─── DRAG & DROP ─────────────────────────────────────────────────────────
 const dropzone = document.getElementById('dropzone');
 const fileInput = document.getElementById('file-input');
 
@@ -498,12 +479,6 @@ dropzone.addEventListener('drop', e => {
 });
 fileInput.addEventListener('change', e => { if (e.target.files[0]) loadEngineFromFile(e.target.files[0]); });
 
-
-// Carica il motore direttamente da scanner.html sul server, senza trascinare nulla.
-// Su telefono il drag&drop non e' praticabile e passare dai Download e' scomodo:
-// cosi' il comparatore prende il file che sta accanto a lui, quindi le due versioni
-// sono per forza quelle dello stesso deploy. Il parametro con il timestamp aggira
-// la cache del browser, che ci ha gia' fatto lavorare su file vecchi senza saperlo.
 async function loadEngineFromServer() {
   const url = 'scanner.html?v=' + Date.now();
   cmpLog('Scarico il motore da ' + url.split('?')[0] + '...');
@@ -515,7 +490,7 @@ async function loadEngineFromServer() {
     try {
       localStorage.setItem('cmp_engine_html', text);
       localStorage.setItem('cmp_engine_name', 'scanner.html (server)');
-    } catch (e) { /* spazio esaurito: pazienza, il motore resta comunque attivo */ }
+    } catch (e) {  }
     return loadEngineFromText(text, 'scanner.html (dal server)');
   } catch (e) {
     cmpLog('Non riesco a scaricare scanner.html: ' + e.message);
@@ -528,9 +503,7 @@ async function loadEngineFromServer() {
 async function loadEngineFromFile(file) {
   if (!file.name.endsWith('.html')) return alert("Il file deve essere .html");
   const text = await file.text();
-  // Memorizzo il motore: così, se la pagina viene ricaricata (o il PC riavviato) durante
-  // uno sweep lungo, alla riapertura il motore si riattiva da solo e si può premere
-  // "Riprendi" senza dover ri-trascinare lo scanner.
+
   try {
     localStorage.setItem('cmp_engine_html', text);
     localStorage.setItem('cmp_engine_name', file.name);
@@ -542,7 +515,6 @@ async function loadEngineFromText(text, fileName) {
   cmpLog(`📂 Caricamento motore: ${fileName}`);
   cmpLog(`   → ${(text.length/1024).toFixed(1)} KB letti`);
 
-  // ─── STEP 1: Estraggo tutto il codice JavaScript degli <script> ─────
   const scriptRegex = /<script[^>]*>([\s\S]*?)<\/script>/gi;
   let match, rawJs = '';
   while ((match = scriptRegex.exec(text)) !== null) {
@@ -556,17 +528,9 @@ async function loadEngineFromText(text, fileName) {
 
   let processedJs = rawJs;
 
-  // ─── STEP 2a: Disattivo la chiamata auto-eseguita loadLegheJson() del motore ──
-  // (qui gestiamo noi le leghe; quella chiamata fa un fetch che può fallire e interrompere l'eval).
   processedJs = processedJs.replace(/^\s*loadLegheJson\(\)\s*;?\s*$/m,
     '/* loadLegheJson() del motore disattivata dal comparatore */');
 
-  // ─── STEP 2b: CACHE CONDIVISA (fix bug bloccante) ─────────────────────────
-  // Il motore dichiara `let globalLeagueMatchesCache = []` e le sue funzioni leggono QUEL binding.
-  // Con eval, quel `let` resta nello scope dell'eval e non è raggiungibile da window: se il
-  // comparatore scrive su window.globalLeagueMatchesCache, il motore continua a vedere la cache
-  // VUOTA → "Storico insufficiente" → l'hook non parte mai. Rimpiazzo la dichiarazione con un
-  // riferimento condiviso a window.__ENGINE_CACHE, così comparatore e motore usano lo STESSO array.
   const cacheRe = /(^|\n)\s*(?:let|var|const)\s+globalLeagueMatchesCache\s*=\s*\[\]\s*;?/;
   if (cacheRe.test(processedJs)) {
     processedJs = processedJs.replace(cacheRe,
@@ -578,13 +542,6 @@ async function loadEngineFromText(text, fileName) {
     cmpLog(`   ⚠️ Dichiarazione cache non trovata: il motore potrebbe avere struttura diversa.`);
   }
 
-  // ─── STEP 2b-bis: RAW_CACHE CONDIVISA ─────────────────────────────────────
-  // Il motore tiene in `let RAW_CACHE = {}` i 4 endpoint di ogni partita storica già
-  // scaricata. È la cache che rende veloce tutto il batch, ma in uno sweep di 24h su
-  // decine di leghe crescerebbe fino a saturare la memoria della scheda. Con lo stesso
-  // trucco usato sopra per globalLeagueMatchesCache la aggancio a window, così lo sweep
-  // può svuotarla al cambio di lega (dentro la stessa lega invece va tenuta: le stagioni
-  // consecutive condividono gran parte dello storico).
   const rawRe = /(^|\n)\s*(?:let|var|const)\s+RAW_CACHE\s*=\s*\{\}\s*;?/;
   if (rawRe.test(processedJs)) {
     processedJs = processedJs.replace(rawRe,
@@ -594,14 +551,6 @@ async function loadEngineFromText(text, fileName) {
     cmpLog(`🔧 RAW_CACHE condivisa agganciata (window.__RAW_CACHE)`);
   }
 
-  // ─── STEP 2b-ter: NON MEMORIZZARE I BUCHI DI RETE ─────────────────────────
-  // `fetchMatchRaw` mette in cache il risultato ANCHE quando tutti e quattro gli endpoint
-  // sono falliti: su una connessione instabile (hotspot) un buco di pochi secondi veniva
-  // memorizzato come "questa partita non ha dati" e non veniva più ritentato per tutta la
-  // lega, impoverendo le previsioni in silenzio. Qui la cache accetta il risultato solo se
-  // almeno un endpoint ha risposto. Per non ritentare all'infinito le partite che davvero
-  // non hanno dati (capita nelle serie minori), dopo 3 tentativi a vuoto si arrende e
-  // memorizza comunque.
   const rawSaveRe = /RAW_CACHE\[id\]\s*=\s*res;/;
   if (rawSaveRe.test(processedJs)) {
     processedJs = processedJs.replace(rawSaveRe,
@@ -612,13 +561,9 @@ async function loadEngineFromText(text, fileName) {
     cmpLog(`🔧 Cache resistente ai buchi di rete attivata`);
   }
 
-  // ─── STEP 2c: INIETTO L'HOOK per _V97_probs se manca ──────────────────────
   if (!processedJs.includes('_V97_probs')) {
     cmpLog(`🔧 Iniezione hook window._V97_probs...`);
 
-    // FIX TDZ: l'hook viene iniettato DOPO la riga di confidence (non dopo m1/mX/m2), così
-    // sampleFactor e confidence sono già inizializzati. Iniettarlo prima causava una
-    // ReferenceError (temporal dead zone su const) che, catturata dal try, impediva l'assegnazione.
     const hookCode = `
     /* ─── HOOK COMPARATORE ESTESO (iniettato al volo) ─── */
     try {
@@ -659,15 +604,14 @@ async function loadEngineFromText(text, fileName) {
     /* ─── FINE HOOK ─── */
     `;
 
-    // Ancora l'hook SUBITO DOPO la definizione di `confidence` (ultima variabile che ci serve).
-    // Pattern primario: la riga `const confidence = Math.round(... sampleFactor);`
+    // i tre agganci al motore sono TESTUALI: cambiare forma a quelle righe nello Scanner
+    // li fa fallire in silenzio (AGENTS.md, sezione contratto)
     const afterConfidence = /(const\s+confidence\s*=\s*Math\.round\([^;]*;)/;
     if (afterConfidence.test(processedJs)) {
       processedJs = processedJs.replace(afterConfidence, '$1\n' + hookCode);
       cmpLog(`   ✅ Hook iniettato dopo il calcolo di confidence`);
     } else {
-      // Fallback: dopo l'ensemble m1/mX/m2. In questo caso confidence/sampleFactor potrebbero
-      // non esistere ancora: l'hook li mette a null ma cattura comunque le probabilità.
+
       const afterEnsemble = /(const\s+m1\s*=[^;]*;\s*const\s+mX\s*=[^;]*;\s*const\s+m2\s*=[^;]*;)/;
       if (afterEnsemble.test(processedJs)) {
         processedJs = processedJs.replace(afterEnsemble, '$1\n' + hookCode);
@@ -680,18 +624,12 @@ async function loadEngineFromText(text, fileName) {
     cmpLog(`   ℹ️ Hook _V97_probs già presente nel V9.7`);
   }
 
-  // ─── STEP 3: ESPOSIZIONE FUNZIONI — in CODA, dentro new Function ───────────
-  // NB: NON uso (0,eval) con blocco di esposizione in testa. Motivo: in eval indiretto i browser
-  // moderni NON "leakano" le function declaration allo scope globale come fa Node, quindi
-  // `typeof apiCall` in testa risultava undefined nel browser → "Funzioni mancanti".
-  // new Function crea invece un UNICO scope-funzione prevedibile: eseguo il motore e, IN CODA,
-  // copio su window ogni funzione (a quel punto tutte già dichiarate). this=window per l'aggancio.
+  // nomi cercati nel motore: se lo Scanner ne rinomina uno, il batch si ferma (AGENTS.md)
   const exposeNames = ['apiCall','avviaScanner','aggregaTeam','extractSafeStat','buildGlobalElo',
     'calcDCMatrix','markovFlow','probsFromMatrix','estimateRho','calculateRho','getSimilarMatches',
     'computeLeagueParams','multigoal','asianHandicapMat','negBinCDF','negBinK','poisson',
     'expectedPoints','loadLegheJson','fetchMatchRaw',
-    // servono al log di verifica e a un eventuale ricalcolo lato comparatore:
-    // erano state tolte e il messaggio "diagnostica predittore" usciva sempre ASSENTE
+
     'predictStat','leagueStatBaseline'];
   let exposer = '\n;(function(){\n';
   exposeNames.forEach(n => {
@@ -699,17 +637,15 @@ async function loadEngineFromText(text, fileName) {
   });
   exposer += '})();\n';
 
-  // ─── STEP 4: ESEGUO IL JS PROCESSATO (motore + esposizione in coda) ─────────
   cmpLog(`⚙️ Iniezione motore in memoria...`);
   try {
     const runner = new Function(processedJs + exposer);
     runner.call(window);
   } catch (e) {
     cmpLog(`⚠️ Warning durante iniezione: ${e.message}`);
-    // Non blocco: alcune funzioni potrebbero essere state esposte prima dell'errore.
+
   }
 
-  // ─── STEP 5: Verifica funzioni esposte ──────────────────────────────
   const required = ['apiCall', 'avviaScanner', 'aggregaTeam', 'extractSafeStat',
                     'buildGlobalElo', 'calcDCMatrix', 'markovFlow', 'probsFromMatrix'];
   const missing = required.filter(fn => typeof globalThis[fn] !== 'function');
@@ -720,8 +656,7 @@ async function loadEngineFromText(text, fileName) {
   }
 
   cmpLog(`✅ Tutte le ${required.length} funzioni chiave esposte.`);
-  // Verifica esplicita: se il motore non porta la diagnostica, il batch girera'
-  // lo stesso ma la sezione nel CSV uscira' vuota. Meglio saperlo adesso.
+
   if (typeof window.__SCANNER_BUILD === 'string') {
     cmpLog('   motore build ' + window.__SCANNER_BUILD);
   } else {
@@ -737,11 +672,6 @@ async function loadEngineFromText(text, fileName) {
   dropzone.innerHTML = `<h2>Motore attivo</h2>
     <p><code>${fileName}</code> — clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
 
-  // Versione del motore appena iniettato. Se non la dichiara e' una copia vecchia:
-  // meglio dirlo subito che scoprirlo dopo un batch da mezz'ora.
-  // NB: questo blocco DEVE stare dopo la riscrittura della dropzone qui sopra,
-  // perche' e' quella a creare #engine-build. Stando prima, getElementById
-  // restituiva l'oggetto fantasma del proxy e il messaggio non compariva mai.
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
   const _bComp = '0905-b3';
   const _el = document.getElementById('engine-build');
@@ -764,7 +694,6 @@ async function loadEngineFromText(text, fileName) {
   cmpStep(2);
   document.getElementById('setup-area').classList.remove('hidden');
 
-  // Init
   await cmpLoadLeghe();
   const t = new Date(); t.setDate(t.getDate() - 1);
   document.getElementById('cmp-target-date').value = t.toISOString().split('T')[0];
@@ -774,7 +703,6 @@ async function loadEngineFromText(text, fileName) {
   cmpLog(`🎯 Pronto. Seleziona lega e data.`);
 }
 
-// ─── LEGHE ───────────────────────────────────────────────────────────────
 async function cmpLoadLeghe() {
   const cSel = document.getElementById('cmp-country');
   cSel.innerHTML = '<option value="">-- --</option>';
@@ -785,12 +713,7 @@ async function cmpLoadLeghe() {
       cmpLeagues = json.data?.leagues || json.leagues || [];
     } else throw new Error();
   } catch {
-    // Fallback: quando il file viene aperto con doppio click (file://), i browser bloccano
-    // il fetch() di risorse locali per policy CORS, quindi leghe.json non si carica mai e si
-    // finiva qui con solo 6 leghe hardcoded (le "top 5 nazioni"). Ora il fallback è l'intero
-    // catalogo leghe.json (42 leghe) copiato qui dentro: funziona SEMPRE, anche via file://.
-    // Se in futuro PitchAPI aggiunge nuove leghe, aggiornare anche questo array (o servire la
-    // pagina via server locale così il fetch va a buon fine e la copia diventa superflua).
+
     cmpLeagues = CMP_LEAGUES_FALLBACK;
   }
   const countries = [...new Set(cmpLeagues.map(l => l.country_code))].sort();
@@ -814,7 +737,6 @@ function cmpUpdateSeasons() {
   cmpRenderBatchSeasons();
 }
 
-// ─── BATCH MULTI-STAGIONE ──────────────────────────────────────────────────
 function cmpRenderBatchSeasons() {
   const lId = document.getElementById('cmp-league').value;
   const box = document.getElementById('cmp-batch-seasons');
@@ -837,14 +759,8 @@ function cmpBatchToggleAll(v) {
 }
 
 let cmpBatchRunning = false;
-let cmpBatchExportFilename = null; // se impostato, cmpExportCSV lo usa al posto del nome data-based
+let cmpBatchExportFilename = null;
 
-// ═══════════════════════════════════════════════════════════════════════════
-// SWEEP TOTALE — un Excel per ogni lega e ogni stagione, con ripresa
-// Pensato per girare per ore incustodito: salva un checkpoint dopo OGNI stagione
-// completata, così si può fermare (o subire un riavvio) e riprendere da dove era
-// arrivato, perdendo al massimo la stagione in corso.
-// ═══════════════════════════════════════════════════════════════════════════
 const CMP_SWEEP_KEY = 'cmp_sweep_state_v1';
 let cmpSweepRunning = false;
 let cmpSweepStopRequested = false;
@@ -857,9 +773,6 @@ function cmpSweepSave(st) {
   catch (e) { cmpLog(`⚠️ Checkpoint non salvato: ${e.message}`); }
 }
 
-// Ordino per lega e, dentro la lega, per stagione: le stagioni consecutive della stessa
-// lega condividono quasi tutto lo storico, quindi la RAW_CACHE resta calda e si evita
-// di riscaricare le stesse partite. La cache viene svuotata solo al cambio di lega.
 function cmpSweepBuildJobs(includeCups) {
   const cups = new Set(['INT', 'INT-2']);
   const jobs = [];
@@ -886,9 +799,6 @@ function cmpSweepRender(st, extra) {
     + ` · ${left} da fare${empty ? ` · ${empty} vuote` : ''}${err ? ` · ${err} errori` : ''}`
     + (extra ? `<br>${extra}` : '');
 
-  // Dettaglio delle fallite: senza, si sa solo QUANTE sono e non si può decidere se
-  // valga la pena ritentarle. "error" = nemmeno una partita elaborata, quindi per
-  // quella stagione non è stato scaricato alcun Excel.
   const falliti = st.jobs.filter(j => j.status === 'error');
   if (falliti.length) {
     box.innerHTML += `<br><br><b>Stagioni fallite (nessun Excel prodotto):</b><br>`
@@ -898,9 +808,6 @@ function cmpSweepRender(st, extra) {
   }
 }
 
-// La ripresa elabora SOLO i job 'pending': quelli finiti in 'error' verrebbero saltati
-// per sempre. Questo li rimette in coda senza toccare le stagioni già completate
-// (che "Azzera progresso" invece butterebbe via tutte).
 function cmpSweepRetryFailed() {
   if (cmpSweepRunning) return alert('Ferma prima lo sweep in corso.');
   const st = cmpSweepLoad();
@@ -913,8 +820,6 @@ function cmpSweepRetryFailed() {
   cmpLog(`🔁 Rimesse in coda ${falliti.length} stagioni fallite: ${falliti.map(j=>`${j.cc} ${j.lgName} ${j.season}`).join(', ')}`);
 }
 
-// Esegue UNA stagione: carica lo storico, elabora solo le partite di QUELLA stagione,
-// esporta l'Excel. Restituisce lo stato finale del job.
 async function cmpSweepRunSeason(job, limit, onTick) {
   document.getElementById('cmp-country').value = job.cc;
   cmpUpdateLeagues();
@@ -924,12 +829,11 @@ async function cmpSweepRunSeason(job, limit, onTick) {
   document.getElementById('cmp-range-start').value = '';
   document.getElementById('cmp-range-end').value = '';
   document.getElementById('cmp-history-limit').value = limit;
-  document.getElementById('cmp-target-date').value = '2000-01-01'; // non usato qui, deve solo esserci
+  document.getElementById('cmp-target-date').value = '2000-01-01';
   cmpSavedMatches.length = 0;
 
   await cmpCaricaDatabase();
 
-  // SOLO le partite della stagione richiesta: le altre due stagioni servono da storico.
   const target = cmpAllMatches.filter(m =>
     m._season === job.season && m.status === 'finished' &&
     m.score_home != null && m.time_utc
@@ -998,7 +902,6 @@ async function cmpSweepStart(resume) {
   document.getElementById('cmp-sweep-resume').disabled = true;
   document.getElementById('cmp-sweep-stop').disabled = false;
 
-  // Popup del motore soppressi: un alert nativo bloccherebbe lo sweep per ore in attesa di un click.
   const origAlert = window.alert, origConfirm = window.confirm;
   window.alert = (m) => cmpLog(`   🔕 [popup soppresso] ${m}`);
   window.confirm = () => true;
@@ -1010,9 +913,6 @@ async function cmpSweepStart(resume) {
       if (job.status !== 'pending') { lastLeague = job.lgId; continue; }
       if (cmpSweepStopRequested) break;
 
-      // Cambio lega: svuoto la RAW_CACHE, altrimenti dopo decine di leghe la scheda
-      // esaurisce la memoria. Dentro la stessa lega la tengo: è ciò che rende veloci
-      // le stagioni successive alla prima.
       if (lastLeague && lastLeague !== job.lgId && window.__RAW_CACHE) {
         const n = Object.keys(window.__RAW_CACHE).length;
         window.__RAW_CACHE = {};
@@ -1036,11 +936,11 @@ async function cmpSweepStart(resume) {
       job.matches = r.matches || 0;
       job.sec = Math.round((Date.now() - t0) / 1000);
       if (r.error) job.error = r.error;
-      cmpSweepSave(st);              // ← checkpoint dopo OGNI stagione completata
+      cmpSweepSave(st);
       cmpSweepRender(st);
       cmpLog(`   ${r.status === 'done' ? '✅' : '⚠️'} ${job.season}: ${r.status} (${job.matches} partite, ${job.sec}s)`);
 
-      await new Promise(res => setTimeout(res, 800)); // respiro fra i download automatici
+      await new Promise(res => setTimeout(res, 800));
     }
   } finally {
     window.alert = origAlert;
@@ -1072,12 +972,6 @@ function cmpSweepReset() {
   cmpSweepRender(null, 'Progresso azzerato.');
 }
 
-// Cicla su tutte le stagioni selezionate: per ognuna carica lo storico, rileva da solo
-// l'intervallo di date della stagione (già fatto da cmpCaricaDatabase), elabora tutte le
-// partite ed esporta un Excel dedicato, prima di passare alla stagione successiva.
-// Sopprime alert()/confirm() SOLO per la durata del batch: il motore V9.7 a volte apre un
-// alert bloccante ("Storico insufficiente...") che altrimenti fermerebbe tutto il batch
-// finché non lo si chiude a mano — qui lo logghiamo in console e si continua da soli.
 async function cmpAvviaBatchStagioni() {
   if (cmpBatchRunning) return;
   if (!engineReady) return alert("Prima trascina il file V9.7");
@@ -1144,8 +1038,6 @@ async function cmpAvviaBatchStagioni() {
       done++;
       cmpLog(`   ✅ Stagione ${season} esportata (${cmpSavedMatches.length} partite).`);
 
-      // Piccola pausa fra un download automatico e l'altro: alcuni browser mostrano un
-      // avviso "il sito sta scaricando più file" la prima volta (basta consentirlo una volta).
       await new Promise(r => setTimeout(r, 800));
     }
   } finally {
@@ -1160,7 +1052,6 @@ async function cmpAvviaBatchStagioni() {
   cmpLog(`\n🏁 Batch multi-stagione completato: ${done}/${checked.length} stagioni esportate.`);
 }
 
-// ─── CARICA DATABASE ─────────────────────────────────────────────────────
 async function cmpCaricaDatabase() {
   if (!engineReady) return alert("Prima trascina il file V9.7");
   try {
@@ -1179,13 +1070,13 @@ async function cmpCaricaDatabase() {
     const key = document.getElementById('cmp-api-key').value.trim();
     if (key) {
       localStorage.setItem('pitchapi_key', key);
-      // Passo la key anche all'input della sandbox: apiCall del motore legge id="api-key".
+
       const v97Key = document.getElementById('api-key');
       if (v97Key) v97Key.value = key;
     }
-    // Setto anche gli altri campi che il motore legge internamente.
+
     const setV = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
-    setV('sel-league', lId);       // ⚠️ serve a computeLeagueParams/estimateRho
+    setV('sel-league', lId);
     setV('sel-country', cCode);
     setV('sel-season', season);
     setV('target-date', targetDate);
@@ -1213,13 +1104,9 @@ async function cmpCaricaDatabase() {
       }
       if (json) {
         const m = json.data?.matches || json.matches || [];
-        // ⚠️ FIX: taggo ogni match con league_id, come fa il vero caricaSquadreLega del motore.
-        // Senza questo, computeLeagueParams/estimateRho non trovano i match della lega e usano i default.
-        m.forEach(mm => { mm.league_id = lId; mm._season = s; });   // _season: serve allo sweep per
-        // elaborare SOLO la stagione scelta. Le 3 stagioni servono come STORICO (ELO, forma, KNN),
-        // ma le partite da prevedere sono quelle della stagione selezionata: senza questo tag
-        // l'intervallo auto-rilevato copre tutte e 3 le stagioni e ogni partita finisce in 3 file
-        // diversi (lavoro triplicato e duplicati nel dataset di addestramento).
+
+        m.forEach(mm => { mm.league_id = lId; mm._season = s; });
+
         allMatches = allMatches.concat(m);
         cmpLog(`  → Stagione ${s}: ${m.length} partite`);
       }
@@ -1230,10 +1117,9 @@ async function cmpCaricaDatabase() {
       return alert("Nessun match trovato. Verifica API key.");
     }
 
-    // Scrivo la cache CONDIVISA: grazie al binding get/set iniettato, il motore la vede.
     window.__ENGINE_CACHE = allMatches;
     globalThis.globalLeagueMatchesCache = allMatches;
-    cmpAllMatches = allMatches; // tengo tutte le partite delle 3 stagioni per il filtro intervallo
+    cmpAllMatches = allMatches;
 
     cmpMatchesOfTheDay = allMatches.filter(m =>
       m.status === 'finished' && m.time_utc && m.time_utc.startsWith(targetDate)
@@ -1253,9 +1139,6 @@ async function cmpCaricaDatabase() {
       cmpLog(`✅ ${cmpMatchesOfTheDay.length} partite per ${targetDate}`);
     }
 
-    // Mostro il range di date REALMENTE disponibile nella stagione caricata, e pre-riempio Da/A
-    // con l'intera stagione: così è chiaro quale intervallo si può elaborare (evita l'errore
-    // "date fuori stagione" tipico se si mette una data di un'altra annata).
     const finiteMatches = allMatches.filter(m => m.status === 'finished' && m.time_utc).map(m => m.time_utc.split('T')[0]).sort();
     if (finiteMatches.length) {
       const dMin = finiteMatches[0], dMax = finiteMatches[finiteMatches.length-1];
@@ -1275,13 +1158,9 @@ async function cmpCaricaDatabase() {
   }
 }
 
-// ─── ESEGUI V9.7 ─────────────────────────────────────────────────────────
-// Esegue il motore + confronto per UNA partita data. Se render=true aggiorna la UI (uso singolo);
-// se render=false lavora in silenzio e restituisce il risultato (uso batch multi-partita).
-// Restituisce l'oggetto risultato (come cmpCurrentResult) oppure null se fallisce.
 async function cmpRunMatch(match, limit, render) {
   const mId = match.id;
-  // Popolo la UI nascosta del V9.7 con gli id ESATTI che avviaScanner legge.
+
   const setSel = (id, valId, valName) => {
     const el = document.getElementById(id);
     if (el && el.add) { el.innerHTML = ''; el.add(new Option(valName, valId)); el.value = valId; }
@@ -1290,32 +1169,15 @@ async function cmpRunMatch(match, limit, render) {
   setSel('sel-away', match.away_team.id, match.away_team.name);
   const lim = document.getElementById('history-limit'); if (lim) lim.value = limit;
   const lg = document.getElementById('sel-league'); if (lg && !lg.value) lg.value = cmpCurrentLeagueId;
-  // taratura shrinkage: nessun campo da compilare, il batch prova da solo
-  // tutti i valori di CMP_K_LIST sulla stessa partita (vedi ciclo piu' sotto).
+
   window.SHRINK_LAM_K = 3;
 
   const td = document.getElementById('target-date');
   if (td && match.time_utc) {
-    // ⚠️ FIX CRITICO (v5.1): imposto il giorno PRECEDENTE alla partita target.
-    // Il V9.7 costruisce matchTime = "giorno T23:59:00Z" e filtra t < matchTime.
-    // Se mettessimo target-date = giorno della partita, targetMs sarebbe le 23:59
-    // e la partita target (giocata in orario diurno) sarebbe INCLUSA negli storici,
-    // contaminando le predizioni con il risultato che vogliamo prevedere.
-    // Usando il giorno prima, target-date "23:59" precede il time_utc della partita.
-    // v2.1: il motore ora taglia a T00:00 del giorno scelto, quindi il giorno
-    // della partita e' gia' corretto (la partita target resta esclusa).
+
     td.value = match.time_utc.split('T')[0];
   }
 
-  // ═════════════════════════════════════════════════════════════════════
-  // A/B AUTOMATICO SULLO SHRINKAGE
-  // La stessa partita viene calcolata con ogni valore di CMP_K_LIST. Il primo
-  // giro paga i fetch, i successivi girano sulla cache API del motore e sono
-  // rapidi. Cosi' un solo batch produce il confronto completo fra tarature,
-  // sulle stesse identiche partite e nello stesso ordine: niente da impostare
-  // a mano, niente batch da rifare, nessun rischio di confrontare periodi diversi.
-  // CMP_K_LIST[0] e' la taratura "titolare": alimenta il render e i mercati.
-  // ═════════════════════════════════════════════════════════════════════
   const kRuns = {};
   let R = null;
   for (const kVal of CMP_K_LIST) {
@@ -1327,13 +1189,10 @@ async function cmpRunMatch(match, limit, render) {
     kRuns[kVal] = { m1: S.m1, mX: S.mX, m2: S.m2, confidence: S.confidence,
                     dc1: S.probsRole?.p1, dcX: S.probsRole?.pX, dc2: S.probsRole?.p2,
                     pOv: S.probsRole?.pOv, pGG: S.probsRole?.pGG };
-    if (R === null) R = S;          // la prima taratura resta quella mostrata
+    if (R === null) R = S;
   }
   R._kRuns = kRuns;
 
-  // ⚡ Anche la partita target passa dalla RAW_CACHE: costa 4 endpoint invece di 2 adesso,
-  // ma questa stessa partita diventerà "storico" per le giornate successive, e allora sarà
-  // già in cache. Totale 4 chiamate invece di 2+4=6 su quasi ogni partita della stagione.
   let sRes, aRes;
   if (typeof globalThis.fetchMatchRaw === 'function') {
     const raw = await globalThis.fetchMatchRaw(mId);
@@ -1353,17 +1212,12 @@ async function cmpRunMatch(match, limit, render) {
   actH.gf = match.score_home; actH.ga = match.score_away;
   actA.gf = match.score_away; actA.ga = match.score_home;
 
-  // ─── PREDIZIONE metriche extra dalle storico match (v5) ───
-  // Il motore V9.7 non aggrega VAEP/xT/GCA/xAG/prog_passes perché non li usa.
-  // Qui li calcoliamo con lo stesso time decay per validarli come predittori.
-  // Nota: queste chiamate sono costose (fino a 15 fetch /advanced per squadra)
-  // ma sono solo per il match target scelto, non per lo storico intero.
   let predExtraH = null, predExtraA = null;
   if (R._homeId && R._awayId && R._targetTimeMs) {
-    // Costruisco lo storico direttamente dal cache globale del motore
+
     const cache = globalThis.globalLeagueMatchesCache || [];
     const targetMs = R._targetTimeMs;
-    const minMs = targetMs - (500 * 86400000); // 500 giorni come il motore
+    const minMs = targetMs - (500 * 86400000);
     const buildPast = (teamId) => {
       const seen = new Set();
       return cache
@@ -1385,7 +1239,7 @@ async function cmpRunMatch(match, limit, render) {
         cmpAggregateExtraMetrics(pastH, targetMs, R._homeId),
         cmpAggregateExtraMetrics(pastA, targetMs, R._awayId)
       ]);
-      // dalle medie prodotte/concesse al valore atteso col modello moltiplicativo
+
       const dcp = cmpDcPredict(aggH, aggA);
       predExtraH = dcp.H; predExtraA = dcp.A;
       cmpLog(`   → Estratti da ${predExtraH?._nSampled||0}/${predExtraA?._nSampled||0} match storici`);
@@ -1395,12 +1249,12 @@ async function cmpRunMatch(match, limit, render) {
   } else {
     cmpLog(`   ⚠️ Hook non ha esposto homeId/awayId/targetMs — metriche extra non calcolate`);
   }
-  // Aggancio a R così arriva a Render e BuildResult
+
   R._predExtraH = predExtraH;
   R._predExtraA = predExtraA;
 
   if (render) { cmpRender(match, R, actH, actA); return cmpCurrentResult; }
-  return cmpBuildResult(match, R, actH, actA); // batch: costruisce senza toccare il DOM
+  return cmpBuildResult(match, R, actH, actA);
 }
 
 async function cmpEsegui() {
@@ -1423,16 +1277,10 @@ async function cmpEsegui() {
   }
 }
 
-// ─── ESEGUI TUTTE LE PARTITE DEL GIORNO E SALVALE ────────────────────────
-// Cicla su tutte le partite concluse caricate, esegue il motore per ognuna, e le accumula
-// per l'export. Può richiedere qualche minuto (una chiamata motore + 2 fetch per partita).
-// ─── ELABORA UN INTERVALLO DI DATE (es. mese intero) ─────────────────────
-// Riutilizza cmpAllMatches (già in cache dalle 3 stagioni): filtra le partite concluse
-// nell'intervallo [dataInizio, dataFine] e le elabora tutte, accumulandole per l'export.
 async function cmpEseguiIntervallo() {
   if (!engineReady) return alert("Prima trascina il file V9.7");
   if (!cmpAllMatches.length) return alert('Storico del campionato non ancora caricato.\n\nPremi prima "Carica storico campionato": scarica le 3 stagioni che servono come storico.');
-  // "Da" dal campo dedicato; se vuoto ripiega sulla "Data" in cima (retrocompatibile).
+
   const startDate = document.getElementById('cmp-range-start').value || document.getElementById('cmp-target-date').value;
   const endDate = document.getElementById('cmp-range-end').value;
   if (!startDate) return alert('Imposta la data di inizio nel campo "Da (data inizio)".');
@@ -1440,7 +1288,7 @@ async function cmpEseguiIntervallo() {
   if (endDate < startDate) return alert(`La data fine (${endDate}) è precedente alla data inizio (${startDate}). Controlla i due campi "Da" e "A".`);
 
   const limit = parseInt(document.getElementById('cmp-history-limit').value) || 15;
-  // Filtro le partite concluse nell'intervallo (confronto su YYYY-MM-DD, che è ordinabile come stringa)
+
   const inRange = cmpAllMatches.filter(m => {
     if (m.status !== 'finished' || m.score_home == null || !m.time_utc) return false;
     const d = m.time_utc.split('T')[0];
@@ -1509,7 +1357,7 @@ async function cmpEseguiTutte() {  if (!cmpMatchesOfTheDay.length) return alert(
     try {
       const res = await cmpRunMatch(m, limit, false);
       if (res) {
-        // Clono il risultato (cmpCurrentResult viene sovrascritto ad ogni giro)
+
         cmpSavedMatches.push(JSON.parse(JSON.stringify(res)));
         ok++;
       } else { fail++; failed.push(`${m.home_team.name}-${m.away_team.name}`); }
@@ -1517,33 +1365,25 @@ async function cmpEseguiTutte() {  if (!cmpMatchesOfTheDay.length) return alert(
       fail++; failed.push(`${m.home_team.name}-${m.away_team.name} (${e.message.slice(0,40)})`);
       cmpLog(`  ❌ ${m.home_team.name} vs ${m.away_team.name}: ${e.message}`);
     }
-    // piccola pausa per non saturare l'API (fair-use burst guard)
+
     await new Promise(r => setTimeout(r, 150));
   }
 
   prog.innerHTML = `✅ Fatto! ${ok} partite salvate${fail?`, ${fail} saltate`:''}. Totale in memoria: ${cmpSavedMatches.length}. Premi "Scarica Excel".`;
   document.getElementById('banner-export').style.display = 'flex';
   document.getElementById('export-count').textContent = cmpSavedMatches.length;
-  // FIX: mostro il pannello risultati così compare il pulsante "Scarica Excel" (prima restava
-  // nascosto nel batch, perché veniva svelato solo da cmpRender del singolo).
+
   cmpModoBatch(`${ok} partite del giorno elaborate e salvate.`);
     cmpLog(`✅ Batch completato: ${ok} ok, ${fail} saltate. Totale salvate: ${cmpSavedMatches.length}`);
   if (failed.length) cmpLog(`   Saltate: ${failed.join('; ')}`);
   btn.disabled = false;
 }
 
-
-// ═══════════════════════════════════════════════════════════════════════════
-// PREDIZIONE metriche extra (VAEP, xT, GCA, xAG, prog_passes) — v5
-// Il motore V9.7 non aggrega queste metriche perché non le usa nei lambda.
-// Le calcoliamo qui dallo storico dei match, con lo STESSO time decay del motore.
-// ═══════════════════════════════════════════════════════════════════════════
-
-const CMP_HALF_LIFE_DAYS = 106; // stesso valore del motore V9.7
+const CMP_HALF_LIFE_DAYS = 106;
 const CMP_LN2 = Math.log(2);
 
 function cmpTimeDecayWeighted(vals, times, targetMs) {
-  // Replica di _timeDecayDates del motore V9.7
+
   if (!vals || !vals.length) return null;
   const xi = CMP_LN2 / CMP_HALF_LIFE_DAYS;
   let sumW = 0, sumWV = 0, nValid = 0;
@@ -1558,65 +1398,8 @@ function cmpTimeDecayWeighted(vals, times, targetMs) {
   return sumWV / sumW;
 }
 
-// Aggregatore per una squadra: fetcha /advanced per ogni match storico
-// ed estrae le nuove metriche, poi restituisce medie decayed.
-// ═══════════════════════════════════════════════════════════════════════════
-// PREDIZIONE METRICHE AVANZATE — modello moltiplicativo, non media semplice
-//
-// Prima queste metriche erano previste con la sola media decayed della squadra,
-// ignorando chi aveva di fronte. Sui backtest quell'errore risultava sistematico:
-// il residuo (reale - previsto) correlava con la forza dell'avversario fino a
-// -0.47 su Field Tilt, -0.37 su passaggi progressivi, +0.35 su PPDA.
-//
-// Ora si usa la stessa struttura del Dixon-Coles, applicata a ogni metrica:
-//     attesa = media_lega x (quanto produco / lega) x (quanto concede lui / lega)
-//
-// con shrinkage sui due rapporti, perche' stimati su 15 partite sono rumorosi:
-//     rapporto_usato = 1 + k x (rapporto_grezzo - 1),  k = 0.35
-//
-// Il valore di k viene da una ricerca walk-forward: allenato sulla prima meta'
-// del campione e verificato sulla seconda mai vista, riduce l'RMSE del 29%
-// rispetto alla media semplice, con k stabile fra 0.30 e 0.40 su tutte e undici
-// le metriche testate. Senza shrinkage (k=1) il prodotto dei due rapporti
-// amplifica gli estremi e l'errore peggiora, pur migliorando la correlazione.
-// ═══════════════════════════════════════════════════════════════════════════
-// ─── AGGIORNAMENTO 0905-b2: k per metrica invece di 0.35 per tutte ─────────
-// ATTENZIONE alla convenzione: k=1 vuol dire NESSUNO smorzamento (si crede al
-// rapporto grezzo), k=0 vuol dire smorzamento totale sulla media di lega.
-// k ALTO = MENO shrinkage.
-//
-// Ricalibrato con la regressione reale ~ previsto: la pendenza b dice quanto il
-// previsto varia POCO rispetto al reale, e la deviazione dalla baseline e'
-// lineare in k al primo ordine, quindi k* ~ k_corrente * b. Ogni stima e'
-// smorzata verso 1 con un prior di sd 0.35 in proporzione al proprio errore
-// standard, e dove i due mesi non concordano sulla direzione viene tirata a
-// meta' strada verso il valore precedente.
-//
-// TARATURA CORRENTE — 76 partite di Serie A (marzo + aprile 2026), 152
-// osservazioni squadra-partita per metrica. Gli SE sono circa la meta' di
-// quelli della taratura del 0905-b2 (che aveva solo aprile), e le pendenze
-// restano sopra 1 su nove metriche su undici anche DOPO il primo aumento:
-// i k del 0905-b2 erano ancora troppo bassi.
-//
-//   metrica      k b2    b(76)  SE    apr    mar    k
-//   vaep_off     0.43    1.51  0.33   1.56   1.45   0.55
-//   vaep_def     0.30    0.36  0.41   0.49   0.27   0.25  <- l'unica sotto 1
-//   xt           0.44    1.65  0.24   1.30   1.99   0.63
-//   pv_off       0.43    1.48  0.35   1.57   1.37   0.53
-//   gca          0.44    1.38  0.32   1.61   1.11   0.53
-//   xag          0.35    1.42  0.34   1.01   1.88   0.43
-//   sca          0.30    1.18  0.32   0.76   1.52   0.35  <- mesi discordi: neutro
-//   prog_passes  0.47    1.55  0.19   1.37   1.74   0.67
-//   passes_box   0.45    1.56  0.22   1.40   1.70   0.63
-//   carries_box  0.44    1.66  0.27   1.38   2.01   0.62
-//   prog_carries 0.41    1.66  0.26   1.23   2.18   0.59
-//
-// Il guadagno e' di calibrazione, non di correlazione: le correlazioni
-// previsto/reale non si muovono, si muove la dispersione. Sul passaggio
-// 0.35 -> tabella b2, sulle stesse 40 partite, MAE dei passaggi progressivi
-// 6.756 -> 6.635 e pendenza 1.69 -> 1.37; questo secondo giro va nella stessa
-// direzione, piu' deciso.
-const CMP_DC_SHRINK = 0.35;   // fallback per le metriche non in tabella
+const CMP_DC_SHRINK = 0.35;
+// k ALTO = MENO shrinkage. Taratura e provenienza dei valori in AGENTS.md.
 const CMP_DC_SHRINK_TABLE = {
   vaep_off: 0.55, vaep_def: 0.25, xt: 0.63, pv_off: 0.53,
   gca: 0.53, xag: 0.43, sca: 0.35,
@@ -1637,9 +1420,6 @@ const CMP_ADV_KEYS = [
   ['prog_carries',m => m.carrying?.progressive_carries]
 ];
 
-// Raccoglie, per una squadra, quanto PRODUCE e quanto CONCEDE su ogni metrica.
-// Le stesse chiamate /advanced servono per entrambe: in ogni partita ci sono due
-// squadre, quella che guardiamo e la sua avversaria di quel giorno.
 async function cmpAggregateExtraMetrics(pastMatches, targetMs, teamId) {
   if (!pastMatches || !pastMatches.length) return null;
   const sample = pastMatches.slice(0, 15);
@@ -1648,17 +1428,11 @@ async function cmpAggregateExtraMetrics(pastMatches, targetMs, teamId) {
 
   for (const m of sample) {
     try {
-      // ⚡ OTTIMIZZAZIONE: passo dalla RAW_CACHE del motore (fetchMatchRaw) invece di
-      // richiamare /advanced direttamente. Queste 15 partite per squadra sono un
-      // SOTTOINSIEME delle 30 che aggregaTeam ha già scaricato per la stessa squadra e
-      // la stessa data, quindi sono praticamente sempre già in cache: prima erano 30
-      // fetch RIDONDANTI per ogni partita analizzata (~1.7s buttati a partita, che su
-      // un batch di migliaia di partite diventano ore). Se il motore non espone
-      // fetchMatchRaw (versione diversa dello scanner) si ricade sul vecchio percorso.
+
       let advRes;
       if (typeof globalThis.fetchMatchRaw === 'function') {
         const raw = await globalThis.fetchMatchRaw(m.id);
-        advRes = raw ? raw[2] : null;   // [stats, lineups, advanced, events]
+        advRes = raw ? raw[2] : null;
       } else {
         advRes = await globalThis.apiCall(`/matches/${m.id}/advanced`, true);
       }
@@ -1672,9 +1446,7 @@ async function cmpAggregateExtraMetrics(pastMatches, targetMs, teamId) {
         conc[k].push(opp ? (get(opp) ?? null) : null);
       }
     } catch (e) {
-      // Una partita senza dati advanced e' normale (PitchAPI li espone solo dalle
-      // top leghe europee, dal 2025). Un errore di rete invece no: distinguo,
-      // altrimenti un problema di connessione passa per assenza di dati.
+
       if (!/404|ANALYTICS_UNAVAILABLE|not found/i.test(String(e && e.message))) {
         cmpLog(`   ⚠️ errore su /advanced di ${m.id}: ${e && e.message}`);
       }
@@ -1690,9 +1462,6 @@ async function cmpAggregateExtraMetrics(pastMatches, targetMs, teamId) {
   return out;
 }
 
-// Combina le due squadre col modello moltiplicativo. La media di lega e' stimata
-// dalle partite gia' scaricate per entrambe (30 match x 2 squadre = 60 osservazioni):
-// non e' la media di lega esatta, ma e' l'unica disponibile senza altre chiamate.
 function cmpDcPredict(aggH, aggA) {
   if (!aggH || !aggA) return { H: null, A: null };
   const H = {}, A = {};
@@ -1701,7 +1470,7 @@ function cmpDcPredict(aggH, aggA) {
     const pH = aggH._prod[key], cH = aggH._conc[key];
     const pA = aggA._prod[key], cA = aggA._conc[key];
     const vals = [pH, cH, pA, cA].filter(v => v != null && isFinite(v));
-    if (vals.length < 4) { H[key] = pH; A[key] = pA; continue; }   // fallback: media semplice
+    if (vals.length < 4) { H[key] = pH; A[key] = pA; continue; }
     const lg = vals.reduce((s, v) => s + v, 0) / vals.length;
     if (!lg) { H[key] = pH; A[key] = pA; continue; }
     const sh = r => 1 + k * (r - 1);
@@ -1713,9 +1482,6 @@ function cmpDcPredict(aggH, aggA) {
   return { H, A };
 }
 
-// ─── ESTRAI STATS REALI ──────────────────────────────────────────────────
-// Chiavi ALLINEATE a quelle esatte del motore (aggregaTeam). Dopo il fix di extractSafeStat
-// (match esatto, niente più .includes) le chiavi devono combaciare col titolo/key reale dell'API.
 function cmpExtractReal(sData, advData, teamId, isH) {
   const out = {};
   const ext = (keys) => typeof globalThis.extractSafeStat === 'function'
@@ -1726,7 +1492,7 @@ function cmpExtractReal(sData, advData, teamId, isH) {
   if (out.npxg == null) out.npxg = out.xg;
   out.xgot = ext(['expected_goals_on_target', 'xgot', 'xg_on_target']);
   out.xg_sp = ext(['expected_goals_set_play', 'expected_goals_set_piece']);
-  // 'ShotsOnTarget' e 'BallPossesion' sono le chiavi reali del motore (con i loro refusi).
+
   out.shots = ext(['total_shots', 'totalshots', 'shots', 'tiri totali', 'total shots']);
   out.sot  = ext(['ShotsOnTarget', 'shots_on_target', 'shotsontarget', 'shots on target', 'sot']);
   out.cor  = ext(['corners', 'corner_kicks']);
@@ -1753,20 +1519,18 @@ function cmpExtractReal(sData, advData, teamId, isH) {
     if (out.npxg == null) out.npxg = myA.shooting?.npxg;
     if (out.xgot == null) out.xgot = myA.shooting?.xgot;
 
-    // ─── NUOVE METRICHE (Opzione 1: cattura reale per validazione predittiva) ───
-    // possession_value: valori piccoli (xt ~1.2, vaep ~0.3 per squadra). Path esatti dalla doc PitchAPI.
     const pv = myA.possession_value || {};
     out.vaep     = pv.vaep_total;
     out.vaep_off = pv.vaep_offensive;
     out.vaep_def = pv.vaep_defensive;
     out.xt       = pv.xt_total;
     out.pv_off   = pv.pv_offensive;
-    // creation: azioni che creano gol/occasioni
+
     const cr = myA.creation || {};
     out.gca      = cr.gca;
     out.xag      = cr.xag;
     out.sca      = cr.sca;
-    // progressione (passing/carrying): quanto una squadra porta la palla in zona pericolosa
+
     const pa = myA.passing || {};
     out.prog_passes   = pa.progressive_passes;
     out.passes_box    = pa.passes_into_box;
@@ -1775,17 +1539,12 @@ function cmpExtractReal(sData, advData, teamId, isH) {
     out.prog_carries  = ca.progressive_carries;
   }
 
-  // FALLBACK identico al motore: se i path advanced non danno il dato, provo extractSafeStat
-  // sui dati stats. Il motore lo fa per lo storico (colonna Previsto), quindi lo replico qui
-  // per la partita target (colonna Reale), così le due colonne restano confrontabili.
   if (out.box == null)  out.box  = ext(['touches_in_opp_box', 'touches_opp_box', 'touchesinoppbox']);
   if (out.drib == null) out.drib = ext(['take_ons_won', 'successful_dribbles', 'dribbling']);
   if (out.misc == null) out.misc = ext(['miscontrols', 'bad_controls', 'errori']);
   if (out.disp == null) out.disp = ext(['dispossessed', 'perse']);
   if (out.f3 == null)   out.f3   = ext(['final_third_entries', 'ingressi trequarti']);
 
-  // TIRI TOTALI / SoT / BIG CHANCES: stessa logica robusta del motore (ciclo con esclusione
-  // esplicita di "shots on target/off target"), per non prendere valori sbagliati via match generico.
   if (sData && sData.periods) {
     const allP = sData.periods.find(p => p.period === 'All');
     if (allP && allP.groups) {
@@ -1804,32 +1563,24 @@ function cmpExtractReal(sData, advData, teamId, isH) {
   return out;
 }
 
-// ─── ESTRAI STATS PREVISTE (dal dH/dA del motore) ─────────────────────────
-// Legge sia features (calcolate solo per ~20 metriche base) SIA vals grezzi (tutte le altre:
-// xgot, xg_sp, bc, bcm, box, f3, defX, recTime, cp5s, drib, misc, disp, shots...).
-// side: 'H' o 'A'; predStats: window.__PRED_STATS come lo espone il motore.
-// Le colonne "Previsto" del CSV contenevano la MEDIA della squadra, non la stima
-// contro quell'avversario: il motore calcola predictStat (attacco x difesa,
-// smorzato sulla baseline di lega) e la espone apposta, ma qui non arrivava.
-// Con predStats assente (motore vecchio) resta la vecchia catena di fallback.
 function cmpExtractPrev(t, side, predStats) {
   const map = { 'tilt':'field_tilt', 'f3':'f3_entries', 'box':'tch_box',
                 'defX':'avg_def_x', 'dirSpd':'direct_speed',
                 'recTime':'rec_time', 'cp5s':'cp_regains' };
   const _dec = (k) => {
     const key = map[k] || k;
-    // 0) stima del motore contro questo avversario, se disponibile
+
     if (predStats && side && predStats[side]) {
       const ps = predStats[side][key];
       if (ps != null && isFinite(ps)) return ps;
     }
-    // 1) features (decay o media) se disponibili
+
     const f = t?.role?.features?.[key] || t?.overall?.features?.[key];
     if (f) {
       if (f.decay > 0) return f.decay;
       if (f.avg_tot > 0) return f.avg_tot;
     }
-    // 2) media degli array grezzi vals (ruolo, poi overall) — per le stat avanzate senza features
+
     const rAvg = _mean(t?.role?.vals?.[key]);
     if (rAvg != null) return rAvg;
     return _mean(t?.overall?.vals?.[key]);
@@ -1839,13 +1590,6 @@ function cmpExtractPrev(t, side, predStats) {
     .map(k => [k, _dec(k)]));
 }
 
-// ─── RENDER ──────────────────────────────────────────────────────────────
-
-// Dopo un batch il pannello dei risultati veniva svelato solo per far comparire
-// il pulsante "Scarica Excel", ma sotto restavano tutte le tabelle della partita
-// singola, vuote o riferite all'ultima elaborata: sembrava un errore. Qui il
-// pannello resta visibile per il pulsante e le card di dettaglio vengono
-// nascoste, con un riepilogo al loro posto.
 function cmpModoBatch(testo) {
   const box = document.getElementById('cmp-results');
   if (!box) return;
@@ -1866,7 +1610,6 @@ function cmpModoBatch(testo) {
     + 'partita a schermo, scegli "una partita" e rilancia.</div>';
 }
 
-// Ripristina le card quando si torna alla partita singola.
 function cmpModoSingolo() {
   const box = document.getElementById('cmp-results');
   if (!box) return;
@@ -1888,8 +1631,7 @@ function cmpRender(match, R, actH, actA) {
   const ov = goalTot > 2.5 ? 'Over 2.5' : 'Under 2.5';
 
   const _win = b => `<span style="color:${b?'var(--green)':'var(--red)'};font-weight:bold">${b?'✅':'❌'}</span>`;
-  // Verdetto consapevole della probabilità: ≥55% WIN/LOSS ha senso; ≤45% un esito non previsto
-  // che non accade è coerenza (✅), se accade è sorpresa (⚠️); in mezzo è incerto (➖).
+
   const _verdict = (p, happened) => {
     if (p == null || isNaN(p)) return '<span style="color:#999">--</span>';
     if (p >= 0.55) return happened ? '<span style="color:var(--green);font-weight:bold">✅</span>' : '<span style="color:var(--red);font-weight:bold">❌</span>';
@@ -1898,16 +1640,11 @@ function cmpRender(match, R, actH, actA) {
   };
   const _badge = v => {
     if (v == null || isNaN(v)) return '--';
-    // scala nuova = probabilita' reale: >=60 buona, 50-59 incerta, <50 sotto il coin-flip
+
     const col = v>=60?'#2e7d32':v>=50?'#f57c00':'#c62828';
     return `<span style="background:${col};color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold">${v}</span>`;
   };
 
-  // Confidence: stesse rette di calibrazione del motore V9.7 (regressione su 6824
-  // partite). NON e' piu' l'accordo fra i modelli: sui backtest lo spread fra DC,
-  // KNN e Markov non correlava con l'accuratezza, e il KNN non e' nemmeno piu'
-  // nell'ensemble. "conf 64" ora vuol dire "64% di probabilita' di indovinare",
-  // ed e' lo stesso numero che il motore mostra a schermo.
   const _calibConf1X2 = (p) => (p == null || !isFinite(p)) ? null
     : Math.max(0, Math.min(100, Math.round(6.26 + 0.880 * (p * 100))));
   const _conf = (p) => _calibConf1X2(p);
@@ -1928,9 +1665,6 @@ function cmpRender(match, R, actH, actA) {
     rowMdl('Markov Score-Flow', R.mk_ro?.p1, R.mk_ro?.pX, R.mk_ro?.p2) +
     `<tr style="background:#f0f8ff;font-weight:bold">${rowMdl('ENSEMBLE V9.7', R.m1, R.mX, R.m2).slice(4)}`;
 
-  // Colonna in piu' per l'Ordered Logit: e' il secondo membro dell'ensemble (30%),
-  // il KNN resta solo come modello di confronto. L'OL vive sul solo 1X2, quindi
-  // sui mercati gol la sua cella e' vuota.
   const rowMkt = (lbl, ens, dc, ol, knn, conf, realeTxt, happened) =>
     `<tr><td>${lbl}</td><td style="font-weight:bold">${_pct(ens)}</td><td>${_pct(dc)}</td><td>${_pct(ol)}</td><td>${_pct(knn)}</td><td>${_badge(conf)}</td><td>${realeTxt}</td><td>${_verdict(ens, happened)}</td></tr>`;
 
@@ -1949,14 +1683,13 @@ function cmpRender(match, R, actH, actA) {
     rowMkt('Over 2.5',      dc.pOv,      dc.pOv, null,              K?K.pOv:null,       null, `${goalTot} gol`, ov==='Over 2.5') +
     rowMkt('Under 2.5',     1-(dc.pOv||0), 1-(dc.pOv||0), null,     K?1-K.pOv:null, null, `${goalTot} gol`, ov==='Under 2.5');
 
-  // ─── STUDIO GOL: Over/Under multi-linea + GG dalla matrice DC ───
   const gm = marketsFromMatrix(R.dcMat);
   let goalsHtml = '';
   if (gm) {
     [0.5, 1.5, 2.5, 3.5, 4.5].forEach(L => {
       const pOver = gm.ou[L].over;
       const realOver = goalTot > L;
-      // verdetto: WIN/LOSS solo se prob >=55% sul lato dominante
+
       const side = pOver >= 0.5 ? 'Over' : 'Under';
       const pSide = pOver >= 0.5 ? pOver : (1-pOver);
       const sideHit = pOver >= 0.5 ? realOver : !realOver;
@@ -1968,8 +1701,6 @@ function cmpRender(match, R, actH, actA) {
   }
   document.getElementById('cmp-goals-body').innerHTML = goalsHtml;
 
-  // ─── MERCATI STATISTICI: corner/tiri/cartellini (negBin) + handicap ───
-  // Totali reali della partita = somma casa + trasferta
   const realCor = (actH.cor != null && actA.cor != null) ? actH.cor + actA.cor : null;
   const realSot = (actH.sot != null && actA.sot != null) ? actH.sot + actA.sot : null;
   const realYel = (actH.yel != null && actA.yel != null) ? actH.yel + actA.yel : null;
@@ -1984,7 +1715,7 @@ function cmpRender(match, R, actH, actA) {
   } else {
     statsHtml += '<tr><td colspan="4" style="color:#999">Mercati statistici non catturati</td></tr>';
   }
-  // Handicap asiatico principale (-0.5 = vittoria secca casa)
+
   if (R.ahData && R.ahData.length) {
     const ah05 = R.ahData.find(h => Math.abs(h.h + 0.5) < 0.01);
     if (ah05) {
@@ -1994,7 +1725,6 @@ function cmpRender(match, R, actH, actA) {
   }
   document.getElementById('cmp-stats-mkt-body').innerHTML = statsHtml;
 
-  // ─── CARD METRICHE VAEP/xT/GCA (solo reale) ───
   const nmList = [
     ['VAEP totale','vaep'],['VAEP offensivo','vaep_off'],['VAEP difensivo','vaep_def'],
     ['xT totale','xt'],['PV offensivo','pv_off'],['GCA','gca'],['xAG','xag'],['SCA','sca'],
@@ -2036,7 +1766,6 @@ function cmpRender(match, R, actH, actA) {
   cmpCurrentResult = cmpBuildResult(match, R, actH, actA);
 }
 
-// Costruisce l'oggetto risultato SENZA toccare il DOM (usato sia dal render sia dal batch).
 function cmpBuildResult(match, R, actH, actA) {
   const outcome = actH.gf > actA.gf ? '1' : (actH.gf === actA.gf ? 'X' : '2');
   const gg = (actH.gf > 0 && actA.gf > 0) ? 'Goal' : 'NoGoal';
@@ -2045,18 +1774,11 @@ function cmpBuildResult(match, R, actH, actA) {
   const gm = marketsFromMatrix(R.dcMat);
   const prevH = cmpExtractPrev(R.dH, 'H', R.predStats);
   const prevA = cmpExtractPrev(R.dA, 'A', R.predStats);
-  // Confidence: stesse rette di calibrazione del motore V9.7 (regressione su 6824
-  // partite). NON e' piu' l'accordo fra i modelli: sui backtest lo spread fra DC,
-  // KNN e Markov non correlava con l'accuratezza, e il KNN non e' nemmeno piu'
-  // nell'ensemble. "conf 64" ora vuol dire "64% di probabilita' di indovinare",
-  // ed e' lo stesso numero che il motore mostra a schermo.
+
   const _calibConf1X2 = (p) => (p == null || !isFinite(p)) ? null
     : Math.max(0, Math.min(100, Math.round(6.26 + 0.880 * (p * 100))));
   const _conf = (p) => _calibConf1X2(p);
-  // Identificativi della partita: servono per agganciare fonti esterne (quote, infortuni)
-  // senza dover incrociare sui NOMI delle squadre, che cambiano da fonte a fonte
-  // ("Inter" / "Internazionale" / "Inter Milan"). Il paese serve a distinguere leghe
-  // omonime: "Serie A" esiste per ITA e BRA, "Premier League" per ENG, RUS ed EGY.
+
   const _lgSel = document.getElementById('cmp-league');
   const _lgName = (_lgSel && _lgSel.selectedOptions && _lgSel.selectedOptions[0])
     ? _lgSel.selectedOptions[0].text : '';
@@ -2078,12 +1800,10 @@ function cmpBuildResult(match, R, actH, actA) {
       c1: _conf(R.m1),
       cX: _conf(R.mX),
       c2: _conf(R.m2),
-      // confidence globale come la calcola il motore: la probabilita' del pick
+
       global: R.confidence != null ? R.confidence : _conf(Math.max(R.m1||0, R.mX||0, R.m2||0))
     },
-    // Diagnostica e stime del predittore, cosi' come le espone il motore.
-    // Erano gia' catturate dall'hook ma non arrivavano fin qui: la sezione
-    // "DIAGNOSTICA PREDITTORE" del CSV usciva sempre N/D.
+
     predDebug: R.predDebug || null,
     residDebug: R.residDebug || null,
     predStats: R.predStats || null,
@@ -2091,7 +1811,7 @@ function cmpBuildResult(match, R, actH, actA) {
     realTotals: { cor: (actH.cor!=null&&actA.cor!=null)?actH.cor+actA.cor:null,
                   sot: (actH.sot!=null&&actA.sot!=null)?actH.sot+actA.sot:null,
                   yel: (actH.yel!=null&&actA.yel!=null)?actH.yel+actA.yel:null },
-    // Nuove metriche REALI (Opzione 1) — casa e trasferta, per validazione predittiva
+
     newMetrics: {
       H: { vaep:actH.vaep, vaep_off:actH.vaep_off, vaep_def:actH.vaep_def, xt:actH.xt, pv_off:actH.pv_off,
            gca:actH.gca, xag:actH.xag, sca:actH.sca, prog_passes:actH.prog_passes, passes_box:actH.passes_box,
@@ -2100,20 +1820,17 @@ function cmpBuildResult(match, R, actH, actA) {
            gca:actA.gca, xag:actA.xag, sca:actA.sca, prog_passes:actA.prog_passes, passes_box:actA.passes_box,
            carries_box:actA.carries_box, prog_carries:actA.prog_carries }
     },
-    // Nuove metriche PREDETTE (v5) — aggregate dai match storici col time decay del motore
+
     newMetricsPred: {
       H: R._predExtraH || null,
       A: R._predExtraA || null
     },
-    // Handicap asiatico e multigol: il motore li calcola dalla stessa matrice
-    // Dixon-Coles dell'1X2 ma tagliano la distribuzione in punti diversi.
-    // Finora venivano mostrati a schermo e mai esportati, quindi non sono mai
-    // stati messi alla prova su un backtest.
+
     ah: (R.ahData || []).map(x => ({ h: x.h, home: x.pHome, push: x.pRefund, away: x.pAway })),
     mg: R.mgTot || null,
     tuning: { shrinkK: CMP_K_LIST[0], shrinkLamK: window.SHRINK_LAM_K, kList: CMP_K_LIST.slice() },
     kRuns: R._kRuns || null,
-    // ELO (v5) — per validare il fix HFA dinamico + K adattivo + regressione stagionale
+
     eloData: {
       H: R.eloH != null ? Math.round(R.eloH) : null,
       A: R.eloA != null ? Math.round(R.eloA) : null,
@@ -2124,7 +1841,6 @@ function cmpBuildResult(match, R, actH, actA) {
   };
 }
 
-// ─── SALVA + EXPORT ─────────────────────────────────────────────────────
 function cmpSalva() {
   if (!cmpCurrentResult) return alert("Prima esegui il confronto");
   cmpSavedMatches.push(cmpCurrentResult);
@@ -2133,8 +1849,6 @@ function cmpSalva() {
   cmpLog(`💾 Salvato (totale: ${cmpSavedMatches.length})`);
 }
 
-// Azzera le partite salvate: utile per iniziare un batch nuovo senza ricaricare
-// la pagina, che costringerebbe a riscaricare tutto lo storico della lega.
 function cmpSvuota() {
   if (!cmpSavedMatches.length) return;
   if (!confirm(`Elimino le ${cmpSavedMatches.length} partite salvate? Lo storico della lega resta in cache.`)) return;
@@ -2153,7 +1867,6 @@ function cmpExportCSV() {
   const pad = ';;;;'.repeat(M.length);
   const nowStr = new Date().toISOString().slice(0,16).replace('T',' ');
 
-  // ── testata: cosa contiene il file e come si legge ──────────────────────
   rows.push('=== BACKTEST SCANNER V9.7 ===' + pad);
   rows.push(`Generato il;${nowStr}` + ';;;'.repeat(M.length));
   rows.push(`Partite nel file;${M.length}` + ';;;'.repeat(M.length));
@@ -2185,7 +1898,6 @@ function cmpExportCSV() {
   M.forEach(m => scoreRow.push(`${m.tgt.sH}-${m.tgt.sA}`, '', 'Esito:', m.outcome));
   rows.push(scoreRow.join(';'));
 
-  // ── righe di sintesi: bastano per valutare un batch senza ricostruire nulla ──
   const golRow = ['GOL TOTALI'];
   M.forEach(m => golRow.push(m.tgt.sH + m.tgt.sA, '', 'Over 2.5:', (m.tgt.sH + m.tgt.sA) > 2.5 ? 'SI' : 'NO'));
   rows.push(golRow.join(';'));
@@ -2194,7 +1906,6 @@ function cmpExportCSV() {
   M.forEach(m => ggRealRow.push((m.tgt.sH > 0 && m.tgt.sA > 0) ? 'GG' : 'NG', '', '', ''));
   rows.push(ggRealRow.join(';'));
 
-  // pick dell'ensemble, sua probabilita', se e' stato azzeccato e se era giocabile
   const pickOf = m => {
     const P = [[m.R?.m1, '1'], [m.R?.mX, 'X'], [m.R?.m2, '2']].filter(x => x[0] != null);
     if (!P.length) return null;
@@ -2214,8 +1925,6 @@ function cmpExportCSV() {
   rows.push('');
   rows.push(['METRICA'].concat(...M.map(() => ['Previsto', 'Confidence', 'Reale', 'Esito/Scarto'])).join(';'));
 
-
-  // Verdetto CSV coerente con la vista: WIN/LOSS solo per prob>=55%, altrimenti COERENTE/SORPRESA/INCERTO.
   const verd = (p, happened) => {
     if (p == null || isNaN(p)) return '';
     if (p >= 0.55) return happened ? 'WIN' : 'LOSS';
@@ -2243,7 +1952,6 @@ function cmpExportCSV() {
     rows.push(r.join(';'));
   });
 
-  // ─── SEZIONE STUDIO GOL: Over/Under multi-linea + GG (focus richiesto) ───
   rows.push('');
   rows.push('--- OVER/UNDER MULTI-LINEA (prob DC vs reale) ---' + ';;;;'.repeat(M.length));
   [0.5, 1.5, 2.5, 3.5, 4.5].forEach(L => {
@@ -2256,7 +1964,7 @@ function cmpExportCSV() {
     });
     rows.push(r.join(';'));
   });
-  // Riga GG dedicata (già presente nei mercati 1X2 ma qui con prob dalla matrice, coerente)
+
   const ggRow = ['GG (da matrice)'];
   M.forEach(m => {
     const gmm = m.goalsMarket;
@@ -2266,7 +1974,6 @@ function cmpExportCSV() {
   });
   rows.push(ggRow.join(';'));
 
-  // ─── SEZIONE MERCATI STATISTICI (negBin): corner/tiri/cartellini ───
   rows.push('');
   rows.push('--- MERCATI STATISTICI (atteso + prob Over, binomiale negativa) ---' + ';;;;'.repeat(M.length));
   const statMkts = [
@@ -2330,9 +2037,6 @@ function cmpExportCSV() {
     rows.push(r.join(';'));
   });
 
-  // ─── NUOVE METRICHE REALI (Opzione 1: VAEP/xT/GCA/progressione) ───
-  // Solo valori REALI (il motore non le prevede ancora). Servono all'analisi predittiva:
-  // discriminano l'esito meglio delle metriche tattiche deboli del KNN?
   const newMetricList = [
     ['VAEP totale','vaep'],['VAEP offensivo','vaep_off'],['VAEP difensivo','vaep_def'],
     ['xT totale','xt'],['PV offensivo','pv_off'],
@@ -2340,14 +2044,11 @@ function cmpExportCSV() {
     ['Passaggi progressivi','prog_passes'],['Passaggi in area','passes_box'],
     ['Conduzioni in area','carries_box'],['Conduzioni progressive','prog_carries']
   ];
-  // ─── TARATURA usata per generare il batch (serve per confrontare A/B) ───
+
   rows.push('');
   const tk = M[0]?.tuning || {};
   rows.push(`--- TARATURA: SHRINK_K testati = ${(tk.kList||[tk.shrinkK]).join(', ')} · SHRINK_LAM_K=${tk.shrinkLamK ?? '?'} ---` + ';;;;'.repeat(M.length));
 
-  // ─── A/B SHRINKAGE: stessa partita, una riga per ogni valore di k ───
-  // Serve a scegliere la taratura confrontando Brier, accuratezza e numero di
-  // pick giocabili sulle stesse identiche partite.
   const kl = tk.kList || [];
   if (kl.length > 1) {
     rows.push('');
@@ -2367,7 +2068,6 @@ function cmpExportCSV() {
     }
   }
 
-  // ─── SEZIONE ELO (v5) — 4 righe totali ───
   rows.push('');
   rows.push('--- ELO (v5 con HFA dinamico + regressione + K adattivo) ---' + ';;;;'.repeat(M.length));
   const fmtInt = v => v==null?'N/D':String(Math.round(v));
@@ -2382,7 +2082,6 @@ function cmpExportCSV() {
   rows.push(eloH_r.join(';')); rows.push(eloA_r.join(';'));
   rows.push(eloD_r.join(';')); rows.push(eloHFA_r.join(';'));
 
-  // ─── SEZIONE NUOVE METRICHE — Previsto + Reale + Scarto ───
   const fmtN = v => v==null||isNaN(v) ? 'N/D' : Number(v).toFixed(3).replace('.',',');
   const scartoN = (prev, real) => {
     if (prev==null || real==null || isNaN(prev) || isNaN(real)) return '';
@@ -2413,11 +2112,6 @@ function cmpExportCSV() {
     rows.push(r.join(';'));
   });
 
-  // HANDICAP ASIATICO E MULTIGOL — mai testati prima.
-  // Il motore li calcola dalla stessa matrice Dixon-Coles dell'1X2, ma tagliano
-  // la distribuzione in punti diversi. Finora venivano mostrati a schermo e mai
-  // esportati, quindi non sono mai passati per un backtest.
-  // In coda come gli identificativi: nessuna riga esistente cambia posizione.
   rows.push('');
   rows.push('--- HANDICAP ASIATICO (prob casa copre + esito reale) ---' + ';;;;'.repeat(M.length));
   for (const h of [-1.5, -1.0, -0.75, -0.5, 0.5, 1.0, 1.5]) {
@@ -2442,14 +2136,9 @@ function cmpExportCSV() {
     rows.push(r.join(';'));
   }
 
-
-  // Diagnostica del predittore: i valori intermedi cosi' come li calcola il motore.
-  // Se "stima" e' sempre vicina a "baseline" mentre "prodotto" varia molto, vuol
-  // dire che i rapporti si annullano e la stima collassa sul centro.
   rows.push('');
   rows.push('--- DIAGNOSTICA PREDITTORE (componenti del modello moltiplicativo) ---' + ';;;;'.repeat(M.length));
-  // Dal motore 0905-b2 la diagnostica copre anche le metriche di creazione e la
-  // riga "k" dice con quale shrinkage e' stata calcolata quella stima.
+
   for (const f of ['npxg','poss','gca','sca','carries_box','prog_passes']) {
     for (const [lbl,k] of [['k shrinkage','k'],['prodotto casa','mineH'],['concesso trasferta','concA'],
                            ['baseline casa','baseH'],['baseline trasferta','baseA'],
@@ -2460,14 +2149,6 @@ function cmpExportCSV() {
     }
   }
 
-  // Correzione residuale: quanto le metriche di creazione hanno spostato l'ensemble.
-  // "segnale" e' il composito normalizzato, "edge" la differenza p1-p2 PRIMA della
-  // correzione: se i due sono vicini la correzione non fa (giustamente) quasi nulla,
-  // perche' vuol dire che il Dixon-Coles sapeva gia' quello che dicono le stats.
-  // Dal motore 0905-b3 "applicata" esce NO perche' alpha e' zero: il segnale viene
-  // comunque misurato ed esportato, ed e' la sezione A/B qui sotto a dire se
-  // riaccenderla. Il motivo dello spegnimento sta nel commento di
-  // applyResidualCorrection nello Scanner: fuori campione il segnale cambiava segno.
   rows.push('');
   rows.push('--- CORREZIONE RESIDUALE (metriche di creazione dopo il DC) ---' + ';;;;'.repeat(M.length));
   const _rcNum = (v) => (v == null || isNaN(v)) ? 'N/D' : String((+v).toFixed(4)).replace('.', ',');
@@ -2489,19 +2170,13 @@ function cmpExportCSV() {
     rows.push(r.join(';'));
   });
 
-  // ─── A/B su ALPHA, ricostruito senza rilanciare il motore ────────────────
-  // La correzione e' una funzione chiusa di (probabilita' prima, residuo, alpha):
-  // avendo entrambi nella diagnostica, ogni altro alpha si ricava a costo zero.
-  // Serve a decidere il valore su un backtest vero invece che sulle 40 partite
-  // su cui e' stato tarato: se l'esito reale premia sistematicamente un alpha
-  // piu' alto, si alza; se lo penalizza, si scende (0 = correzione spenta).
   rows.push('');
   rows.push('--- A/B CORREZIONE RESIDUALE (stesse partite, alpha a confronto) ---' + ';;;;'.repeat(M.length));
   const RC_ALPHAS = [0, 0.25, 0.50];
+  // non richiede d.applied: dal 0905-b3 la correzione e' spenta ma il segnale c'e' ancora,
+  // ed e' questa sezione a dire se riaccenderla (AGENTS.md)
   const rcApply = (d, alpha, which) => {
-    // NB: non richiede d.applied. Dal 0905-b3 la correzione e' spenta di default
-    // (alpha 0) ma il motore continua a esporre segnale e residuo: e' proprio con
-    // questa sezione che si decide se ha senso riaccenderla.
+
     if (!d || d.resid == null || !d.before) return null;
     const delta = alpha * Math.tanh(d.resid);
     let a = d.before.p1 * Math.exp(+delta);
@@ -2533,11 +2208,7 @@ function cmpExportCSV() {
     rows.push(rp.join(';'));
     rows.push(rh.join(';'));
   });
-  // \u2500\u2500\u2500 IDENTIFICATIVI (in FONDO al file di proposito) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-  // Messi per ultimi per non spostare di una riga nulla di quello che c'era prima:
-  // uno script che legge il file per posizione continua a funzionare identico.
-  // Servono per unire questi dati con fonti esterne (quote di chiusura, infortuni)
-  // usando chiavi stabili invece dei nomi delle squadre, e per riconoscere i duplicati.
+
   rows.push('');
   rows.push('--- IDENTIFICATIVI PARTITA (per join con fonti esterne) ---' + ';;;;'.repeat(M.length));
   const idRows = [
@@ -2566,12 +2237,6 @@ function cmpExportCSV() {
   URL.revokeObjectURL(url);
 }
 
-
-// ═══════════════════════════════════════════════════════════════════════════
-// STRATO UI — gestione modalità e flusso lineare
-// Un solo pulsante "Avvia analisi" smista alle tre funzioni di elaborazione
-// già esistenti, invece dei tre pulsanti sparsi della vecchia interfaccia.
-// ═══════════════════════════════════════════════════════════════════════════
 let cmpMode = 'one';
 const CMP_HINTS = {
   one:   'Analizza una singola partita e vedi il confronto completo a schermo.',
@@ -2588,14 +2253,10 @@ function cmpSetMode(m){
   cmpRefreshMatches();
 }
 
-// Tiene allineate le due date (singola partita / giorno) e aggiorna la lista partite.
 function cmpRefreshMatches(){
   const dOne = document.getElementById('cmp-target-date');
   const dDay = document.getElementById('cmp-day-date');
-  // La sincronizzazione deve avvenire SEMPRE, anche prima del caricamento:
-  // cmpCaricaDatabase legge cmp-target-date, ma in modalita' "un giorno" o
-  // "periodo" l'utente compila un campo diverso. Se uscissimo prima di aver
-  // allineato le date, il caricamento partirebbe con la data vuota.
+
   if (dDay && dDay.value && dOne && !dOne.value) dOne.value = dDay.value;
   if (dOne && dOne.value && dDay && !dDay.value) dDay.value = dOne.value;
   if (cmpMode==='day' && dDay && dDay.value && dOne) dOne.value = dDay.value;
@@ -2609,9 +2270,7 @@ function cmpRefreshMatches(){
   if (sel){
     sel.innerHTML='';
     if(!cmpMatchesOfTheDay.length){
-      // Distinguo i tre motivi per cui la lista puo' essere vuota, altrimenti
-      // "nessuna partita" sembra un errore del programma invece che una data
-      // in cui non si gioca o fuori dalle stagioni caricate.
+
       const done = cmpAllMatches.filter(m => m.status==='finished' && m.time_utc)
                                 .map(m => m.time_utc.slice(0,10)).sort();
       let msg = 'nessuna partita conclusa in questa data';
@@ -2639,10 +2298,6 @@ function cmpRefreshMatches(){
     : 'nessuna partita conclusa in questa data';
 }
 
-// Pulsante unico: smista in base alla modalità scelta.
-// All'apertura: se il motore era già stato caricato in una sessione precedente lo
-// riattivo da solo, e mostro lo stato dello sweep interrotto. Serve perché uno sweep
-// lungo può essere interrotto da un riavvio: alla riapertura basta premere "Riprendi".
 window.addEventListener('DOMContentLoaded', async () => {
   const saved = localStorage.getItem('cmp_engine_html');
   if (!saved) return;
@@ -2664,7 +2319,6 @@ function cmpRun(){
   if (cmpMode==='range') return cmpEseguiIntervallo();
 }
 
-// Avanzamento visivo degli step
 function cmpStep(n){
   for(let i=1;i<=3;i++){
     const el=document.getElementById('st'+i);
@@ -2673,7 +2327,6 @@ function cmpStep(n){
     el.classList.toggle('done', i<n);
   }
 }
-
 </script>
 </body>
 </html>

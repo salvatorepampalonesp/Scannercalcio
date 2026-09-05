@@ -566,93 +566,8 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
   </div>
 </div>
 
-<script>
-/* =========================================================================
-   SCANNER v9.6
-
-   NOVITA' v9.6 — gestione dei valori mancanti, distinta per tipo di metrica.
-   La v9.4 forzava tutto a 0, la v9.5 lasciava tutto null: entrambe sbagliate,
-   perche' i due casi non sono lo stesso problema.
-     - CONTEGGI (Big Chances, cross, filtranti, tocchi in area, recuperi):
-       molte API omettono la chiave quando il valore e' zero. Se la risposta
-       e' arrivata ma la chiave manca, il valore ora e' 0.
-     - RAPPORTI, PERCENTUALI, DISTANZE, xG (possesso, PPDA, field tilt,
-       baricentro, xG): uno 0 e' fisicamente impossibile. Se manca, il dato
-       non c'e' e la partita viene esclusa da quella media, non contata come
-       prestazione nulla.
-     - Se l'endpoint /advanced fallisce, nulla viene zero-fillato: quella
-       partita semplicemente non porta metriche avanzate.
-     - Nuova tabella "Copertura Dati API": mostra in quante partite ogni
-       metrica e' stata davvero restituita, cosi' si distingue a colpo d'occhio
-       una metrica assente (0%) da una con zeri legittimi.
-     - N/D mostrato solo a copertura zero: uno zero reale resta zero.
-
-   modifiche gia' introdotte nella v9.5 rispetto alla v9.4
-
-   BUG CORRETTI
-   1. Elo calcolato a ritroso nel tempo: il trend usciva col segno invertito
-      e penalizzava i lambda delle squadre in crescita. Ora Elo di lega,
-      cronologico, a somma zero, con vantaggio campo esplicito.
-   2. Array delle metriche avanzate (ppda, field tilt, ecc.) compattati
-      saltando i null: gli indici non corrispondevano piu' ai match ne' alle
-      date. Ora si inserisce sempre un valore, anche null.
-   3. out.n era la lunghezza della lista richiesta, non dei match con dati:
-      i cicli leggevano undefined in coda.
-   4. Dati mancanti forzati a 0 (corner, big chances, xG): abbassavano le medie.
-      Ora restano null e vengono esclusi.
-   5. avg_3/5/10 saltavano ai match piu' vecchi per riempire i buchi.
-   6. Colonna "GENERALE" dei mercati ad alta varianza: mostrava gli stessi
-      numeri della colonna "RUOLO" (calcAdv(false) non veniva mai chiamata).
-   7. Elementi mai popolati (box tattico, nomi squadre) e id inesistenti
-      (Over 3.5 gialli non veniva mai mostrato).
-   8. Nel mega-prompt le probabilita' ensemble erano accostate alle quote
-      del solo Dixon-Coles.
-
-   ANALISI CASA/TRASFERTA
-   9. Vantaggio campo contato due volte nel modello "ruolo" (dati di sola
-      casa + moltiplicatore 1.10). Ora ogni statistica e' normalizzata sul
-      baseline della propria sede e i moltiplicatori 1.10/0.95 sono
-      sostituiti dalle medie gol reali della lega.
-   10. Il campione di ruolo era un sottoinsieme degli ultimi N complessivi
-       (con 15 restavano ~7 gare). Ora i due insiemi sono indipendenti.
-   11. Il profilo tattico dell'avversario per il KNN era quello generale,
-       non quello del suo ruolo.
-   12. Shrinkage empirico-bayesiano: con pochi match di ruolo le stime
-       tornano verso la media di lega invece di fidarsi di 3 partite.
-
-   RIGORE STATISTICO
-   13. Lambda moltiplicativi (attacco x difesa x baseline) invece della media
-       aritmetica fra attacco proprio e difesa avversaria.
-   14. Componente rigori reintegrata: gli NPxG li escludono, i gol no.
-   15. Una sola matrice Dixon-Coles governa 1X2, GG, Over, multigol,
-       risultati esatti e handicap. Prima l'1X2 era Poisson puro senza rho e
-       i risultati esatti usavano lambda diversi.
-   16. rho tarato sulle frequenze reali di 0-0/1-0/0-1/1-1 della lega.
-   17. Pitagorica sostituita dai punti attesi simulati dagli xG, con errore
-       standard: uno scarto si giudica solo se supera il rumore.
-   18. KNN: kernel gaussiano con decay temporale al posto di k=4 fisso,
-       distanza normalizzata sulle dimensioni disponibili, peso
-       nell'ensemble proporzionale ai vicini realmente efficaci.
-   19. Markov con rate dipendenti dal punteggio e fatica normalizzata
-       (prima replicava quasi esattamente il Poisson).
-   20. Sovradispersione di corner, tiri e cartellini stimata dai dati.
-   21. Confidence score modulato dalla numerosita' campionaria.
-   22. Deviazione standard campionaria (n-1).
-   23. Nuovo: confronto con le quote del book, valore atteso e Kelly 1/4.
-   ========================================================================= */
-/* =========================================================================
-   ⚠️  COMPATIBILITÀ COMPARATORE LITE — NON MODIFICARE QUESTA RIGA
-   Il Comparatore Lite carica questo file e ha bisogno di trovare la cache
-   dichiarata ESATTAMENTE così: `let globalLeagueMatchesCache = [];`
-   (la trasforma in una cache condivisa via window per far vedere i dati al
-   motore). Se rinomini questa variabile, cambi `let` o la sposti, il
-   Comparatore Lite smette di popolare le partite e "non fa più nulla".
-   Vale anche per i NOMI delle funzioni-motore più sotto (aggregaTeam,
-   buildGlobalElo, calcDCMatrix, probsFromMatrix, markovFlow, extractSafeStat,
-   apiCall, computeLeagueParams, estimateRho, calculateRho): il Lite le chiama
-   per nome, quindi non rinominarle. Puoi cambiarne liberamente il CONTENUTO.
-   ========================================================================= */
-let LEAGUES_CATALOG = [];
+<script>let LEAGUES_CATALOG = [];
+// NON rinominare ne' cambiare in const: il Comparatore cerca questa riga per testo (AGENTS.md)
 let globalLeagueMatchesCache = [];
 
 async function loadLegheJson() {
@@ -668,10 +583,7 @@ async function loadLegheJson() {
             countries.forEach(c => cSel.add(new Option(c, c)));
         } else { throw new Error(); }
     } catch (e) {
-        // Fallback: aprendo il file con doppio click (file://) il browser blocca sempre il
-        // fetch('leghe.json') per policy CORS, quindi si finiva sempre qui con solo 7 leghe
-        // (le "top 5 nazioni"). Ora il fallback è l'intero catalogo leghe.json (42 leghe),
-        // così funziona anche via file:// senza dover passare da un server locale.
+
         LEAGUES_CATALOG = [{"id":"l_3hvsne","name":"2. Bundesliga","country_code":"GER","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_4MPd7x","name":"A-League","country_code":"AUS","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_1XsMdH","name":"Allsvenskan","country_code":"SWE","seasons":["2021","2022","2023","2024","2025","2026"]},{"id":"l_3zsMpo","name":"Bundesliga","country_code":"AUT","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_1Isor4","name":"Bundesliga","country_code":"GER","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_1pQOHK","name":"Challenger Pro League","country_code":"BEL","seasons":["2025/2026","2026/2027"]},{"id":"l_0bfbkO","name":"Champions League","country_code":"INT-2","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_4DWyTT","name":"Championship","country_code":"ENG","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_2WZ2tt","name":"Conference League","country_code":"INT-2","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_214sqK","name":"Ekstraklasa","country_code":"POL","seasons":["2025/2026","2026/2027"]},{"id":"l_0uqFK8","name":"Eliteserien","country_code":"NOR","seasons":["2021","2022","2023","2024","2025","2026"]},{"id":"l_4H43wr","name":"Eredivisie","country_code":"NED","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_38d9HA","name":"Europa League","country_code":"INT-2","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_2L6d1F","name":"First Division A","country_code":"BEL","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_1qpFVw","name":"Indian Super League","country_code":"IND","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_2ApGa4","name":"J. League","country_code":"JPN","seasons":["2022","2023","2024","2025","2026"]},{"id":"l_2EKrnc","name":"K League 1","country_code":"KOR","seasons":["2022","2023","2024","2025","2026"]},{"id":"l_0ErfuF","name":"LaLiga","country_code":"ESP","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_3kyHLd","name":"LaLiga2","country_code":"ESP","seasons":["2025/2026","2026/2027"]},{"id":"l_0ahLw8","name":"League One","country_code":"ENG","seasons":["2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_1W6idJ","name":"League Two","country_code":"ENG","seasons":["2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_3v84VE","name":"Liga MX","country_code":"MEX","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_4QexZg","name":"Liga Portugal","country_code":"POR","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_45VZuL","name":"Liga Profesional","country_code":"ARG","seasons":["2023","2024","2025","2026"]},{"id":"l_3FJFUl","name":"Ligue 1","country_code":"FRA","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_0275VP","name":"Ligue 2","country_code":"FRA","seasons":["2025/2026","2026/2027"]},{"id":"l_0eg6C9","name":"MLS","country_code":"USA","seasons":["2021","2022","2023","2024","2025","2026"]},{"id":"l_2Mh0jT","name":"Premier League","country_code":"RUS","seasons":["2025/2026","2026/2027"]},{"id":"l_46aZMC","name":"Premier League","country_code":"EGY","seasons":["2025/2026","2026/2027"]},{"id":"l_4WFCIZ","name":"Premier League","country_code":"ENG","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_1Kknkl","name":"Premier Soccer League","country_code":"RSA","seasons":["2025/2026","2026/2027"]},{"id":"l_1LMdEO","name":"Premiership","country_code":"SCO","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_0Lpz1f","name":"Saudi Pro League","country_code":"KSA","seasons":["2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_0ALvwF","name":"Serie A","country_code":"ITA","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_1D8Xrl","name":"Serie A","country_code":"BRA","seasons":["2023","2024","2025","2026"]},{"id":"l_0jy5yE","name":"Serie B","country_code":"ITA","seasons":["2025/2026","2026/2027"]},{"id":"l_4d6Bwl","name":"Super League","country_code":"SUI","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_3xwVF2","name":"Super League 1","country_code":"GRE","seasons":["2024/2025","2025/2026","2026/2027"]},{"id":"l_0S1uaf","name":"Super Lig","country_code":"TUR","seasons":["2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_49Zmno","name":"Superligaen","country_code":"DEN","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_3hW1NO","name":"Thai League 1","country_code":"THA","seasons":["2025/2026"]},{"id":"l_1XLtP0","name":"World Cup","country_code":"INT","seasons":["2022","2026"]}];
         const cSel = document.getElementById('sel-country');
         if(cSel) {
@@ -681,11 +593,7 @@ async function loadLegheJson() {
         }
     }
 }
-// ⚠️ COMPARATORE LITE: la chiamata qui sotto e' auto-eseguita all'avvio. Il Lite la
-// disattiva quando carica il motore (le leghe le gestisce lui). Puoi lasciarla: nel Lite
-// viene neutralizzata da sola, nello Scanner normale serve. Non rinominarla.
-// Il commento sta SOPRA e non in coda alla riga di proposito: il Lite cerca la riga con
-// /^\s*loadLegheJson\(\)\s*;?\s*$/m e con il commento in coda non agganciava piu' nulla.
+
 loadLegheJson();
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -721,7 +629,6 @@ function artIl(name){if(!name)return 'la squadra';const n=name.trim();const fem=
 function artDel(name){if(!name)return 'della squadra';const n=name.trim();const fem=['Roma','Juve','Juventus','Lazio','Fiorentina','Atalanta','Sampdoria','Cremonese','Salernitana'];if(fem.some(f=>n.startsWith(f)))return 'della '+n;if('aeiouhAEIOUH'.includes(n[0]))return "dell'"+n;return 'del '+n;}
 function Cap(s){return s ? s.charAt(0).toUpperCase()+s.slice(1) : s;}
 
-
 function getMostFrequentWithPct(arr) {
   if(!arr || !Array.isArray(arr)) return 'N/D';
   const valid = arr.filter(v => v !== null && v !== undefined && v !== 'N/D' && v !== '');
@@ -747,7 +654,7 @@ function getTopScorersPlain(scorersArray) {
 }
 
 function _mean(arr) { if(!arr || !Array.isArray(arr)) return 0; const valid = arr.filter(v => v != null && !isNaN(v)); if (!valid.length) return 0; return valid.reduce((s,v) => s+v, 0) / valid.length; }
-// deviazione standard CAMPIONARIA (n-1): con 10-15 match la versione /n sottostima la dispersione
+
 function _stddev(arr) { if(!arr || !Array.isArray(arr)) return 0; const valid = arr.filter(v => v != null && !isNaN(v)); if (valid.length < 2) return 0; const m = _mean(valid); return Math.sqrt(valid.reduce((s,v) => s+(v-m)*(v-m), 0) / (valid.length - 1)); }
 function _nValid(arr) { return (arr||[]).filter(v => v != null && !isNaN(v)).length; }
 function _timeDecayDates(vals, dates, targetTimeMs, halfLifeDays = 106) {
@@ -760,7 +667,7 @@ function _timeDecayDates(vals, dates, targetTimeMs, halfLifeDays = 106) {
   }
   return wTot > 0 ? wSum / wTot : 0;
 }
-// avg_N = media degli ULTIMI N MATCH (i valori mancanti si saltano, NON si pescano match piu' vecchi per riempire)
+
 function calcFeatures(vals, dates, targetTimeMs) {
   if(!vals || !Array.isArray(vals)) return { avg_3: 0, avg_5: 0, avg_10: 0, avg_15: 0, avg_tot: 0, decay: 0, std: 0, nValid: 0 };
   return { avg_3: _mean(vals.slice(0, 3)), avg_5: _mean(vals.slice(0, 5)), avg_10: _mean(vals.slice(0, 10)), avg_15: _mean(vals.slice(0, 15)), avg_tot: _mean(vals), decay: _timeDecayDates(vals, dates, targetTimeMs), std: _stddev(vals), nValid: _nValid(vals) };
@@ -769,7 +676,7 @@ function calcFeatures(vals, dates, targetTimeMs) {
 function _logGamma(x) { if (x < 12) { let z = x; let result = 0; while (z < 12) { result -= Math.log(z); z++; } return result + (z-0.5)*Math.log(z) - z + 0.5*Math.log(2*Math.PI) + (1/12 - (1/(z*z))/360)/z; } return (x-0.5)*Math.log(x) - x + 0.5*Math.log(2*Math.PI) + (1/12 - (1/(x*x))/360)/x; }
 function negBinPMF(x, mu, k) { if (isNaN(mu) || mu <= 0) return x === 0 ? 1 : 0; if (isNaN(k) || k <= 0 || !isFinite(k)) return poisson(x, mu); return Math.exp(_logGamma(x + k) - _logGamma(x + 1) - _logGamma(k) + k * Math.log(k / (k + mu)) + x * Math.log(mu / (k + mu))); }
 function negBinCDF(n, mu, k) { if (isNaN(mu) || mu <= 0) return 1; let s = 0; for (let i = 0; i <= n; i++) s += negBinPMF(i, mu, k); return Math.min(s, 1); }
-// stima della sovradispersione col metodo dei momenti: k = mu^2 / (var - mu). Infinity => Poisson
+
 function negBinK(vals) {
   const v = (vals||[]).filter(x => x != null && !isNaN(x));
   if (v.length < 6) return Infinity;
@@ -789,7 +696,7 @@ function calcDCMatrix(lH, lA, rhoIn) {
   if(tot > 0) { for (let i=0; i<=10; i++) for (let j=0; j<=10; j++) mat[i][j] /= tot; }
   return mat;
 }
-// TUTTI i mercati 1X2/GG/Over discendono dalla STESSA matrice: niente piu' 1X2 in Poisson puro e risultati esatti in Dixon-Coles
+
 function probsFromMatrix(mat, ouLine = 2.5) {
   let p1=0, pX=0, p2=0, pGG=0, pOv=0;
   for (let i=0; i<mat.length; i++) for (let j=0; j<mat[i].length; j++) {
@@ -801,7 +708,7 @@ function probsFromMatrix(mat, ouLine = 2.5) {
   return { p1, pX, p2, pGG, pOv };
 }
 function multigoal(mat, lo, hi, mode='tot') { let p = 0; for (let i=0; i<=10; i++) { for (let j=0; j<=10; j++) { if(mat[i] && mat[i][j] !== undefined) { let val = mode==='tot' ? (i+j) : (mode==='h' ? i : j); if (val >= lo && val <= hi) p += mat[i][j]; } } } return p; }
-// handicap asiatico calcolato sulla matrice DC (coerente con l'1X2); le linee a quarti si spezzano in due mezze puntate
+
 function asianHandicapMat(mat, handicap) {
   const isQuarter = Math.abs((handicap * 2) % 1) > 1e-9;
   const lines = isQuarter ? [handicap - 0.25, handicap + 0.25] : [handicap];
@@ -812,8 +719,7 @@ function asianHandicapMat(mat, handicap) {
   }
   return { pHome: win, pRefund: push, pAway: lose };
 }
-// Markov a passo 1': i rate dipendono dal PUNTEGGIO CORRENTE (chi e' sotto spinge, chi e' avanti si abbassa).
-// La fatica finale e' normalizzata cosi' che il totale gol atteso resti uguale ai lambda in ingresso.
+
 function markovFlow(lH, lA) {
   if (isNaN(lH) || isNaN(lA) || lH <= 0 || lA <= 0) return { p1: 0, pX: 0, p2: 0, dist: new Array(11).fill(0) };
   const FAT_FROM = 75, FAT = 1.30;
@@ -836,58 +742,39 @@ function markovFlow(lH, lA) {
   let p1=0, pX=0, p2=0; for (let s = -5; s <= 5; s++) { const p = dist[s + 5]; if (s > 0) p1 += p; else if (s === 0) pX += p; else p2 += p; }
   return { p1, pX, p2, dist };
 }
-// ELO DI LEGA V2 — modifiche del 30/08/2026:
-//   1) REGRESSIONE PROPORZIONALE AL GAP: se una squadra non gioca in questa lega
-//      per >150 giorni (pausa estiva/anno in B/rientro), l'ELO regredisce verso 1500
-//      con forza proporzionale al gap. Copre pause estive, yo-yo A-B-A, rientri lunghi.
-//   2) K ADATTIVO: squadre con pochi match in cache (<15) usano K=30 per apprendere
-//      velocemente il loro vero valore. Aiuta le neopromosse e i team con storico corto.
-//   3) HFA DINAMICO PER LEGA: calcolato dai match della cache invece che fisso a 65.
-//      Serie A ~63, Premier ~52, Bundesliga ~72. Corregge la sovrastima casa strutturale
-//      identificata sui backtest (94% degli errori L1 = sovrastima casa).
+
 function buildGlobalElo(targetTimeMs) {
-  // ─── FIX CACHE (v2): filtra SOLO la lega scelta ───────────────────────
-  // Prima leggeva TUTTE le leghe in cache (incluse Champions/Europa/coppe/altre
-  // leghe nazionali). Contamina ELO, HFA e conteggio K adattivo perché:
-  //  - le top squadre giocano coppe europee → più match → ELO gonfiato
-  //  - avversari europei (Real, Bayern) partono da 1500 → sballano il calcolo
-  //  - le neopromosse hanno solo campionato → K adattivo squilibrato
-  // Ora leggiamo l'ID della lega selezionata dall'UI e filtriamo tutto.
+
   const _chosenLeagueId = (typeof document !== 'undefined' && document.getElementById('sel-league'))
     ? document.getElementById('sel-league').value : null;
 
-  // ─── Calcolo HFA DINAMICO dalla lega ─────────────────────────────────
-  //   HFA = 400 * log10(win_rate_home / win_rate_away)
-  //   Formula ELO standard (FiveThirtyEight). Cap [30, 100] per sicurezza.
   const _seenHFA = new Set(); let _h_w = 0, _a_w = 0, _n_hfa = 0;
   for (const m of globalLeagueMatchesCache) {
     if (m.status !== 'finished' || !m.time_utc) continue;
-    if (_chosenLeagueId && m.league_id !== _chosenLeagueId) continue;  // ← FIX
+    if (_chosenLeagueId && m.league_id !== _chosenLeagueId) continue;
     if (new Date(m.time_utc).getTime() >= targetTimeMs) continue;
     if (_seenHFA.has(m.id)) continue; _seenHFA.add(m.id);
     const gh = m.score_home ?? 0, ga = m.score_away ?? 0;
     if (gh > ga) _h_w++; else if (gh < ga) _a_w++;
     _n_hfa++;
   }
-  let HFA_ELO = 65; // default se dati insufficienti
+  let HFA_ELO = 65;
   if (_n_hfa >= 50 && _h_w > 0 && _a_w > 0) {
     const wr_h = _h_w / _n_hfa, wr_a = _a_w / _n_hfa;
     HFA_ELO = Math.max(30, Math.min(100, Math.round(400 * Math.log10(wr_h / wr_a))));
   }
 
-  // ─── Costanti regressione ────────────────────────────────────────────
-  const GAP_THRESHOLD_DAYS = 60;   // 2 mesi: scatta per pausa estiva (~90gg)
-                                   //         MA non per break invernale Bundesliga (~30gg)
-                                   //         Fine maggio → metà agosto = ~90 giorni
-  const K_LOW = 30;  // K per squadre con pochi match
-  const K_HIGH = 20; // K standard
+  const GAP_THRESHOLD_DAYS = 60;
+
+  const K_LOW = 30;
+  const K_HIGH = 20;
   const K_THRESHOLD = 15;
 
   const table = {}, series = {}, lastMatchTime = {}, nMatchesPlayed = {};
   const seen = new Set();
   const ms = globalLeagueMatchesCache
     .filter(m => m.status === 'finished' && m.time_utc && m.home_team && m.away_team
-                 && (!_chosenLeagueId || m.league_id === _chosenLeagueId)  // ← FIX cache
+                 && (!_chosenLeagueId || m.league_id === _chosenLeagueId)
                  && new Date(m.time_utc).getTime() < targetTimeMs)
     .sort((a, b) => new Date(a.time_utc) - new Date(b.time_utc));
 
@@ -896,11 +783,9 @@ function buildGlobalElo(targetTimeMs) {
     const h = m.home_team.id, a = m.away_team.id; if (!h || !a) continue;
     const matchMs = new Date(m.time_utc).getTime();
 
-    // Inizializzazione (uguale a prima: parte da 1500)
     if (table[h] === undefined) { table[h] = 1500; series[h] = []; nMatchesPlayed[h] = 0; }
     if (table[a] === undefined) { table[a] = 1500; series[a] = []; nMatchesPlayed[a] = 0; }
 
-    // ─── MODIFICA 1: Regressione proporzionale al gap ─────────────────
     for (const teamId of [h, a]) {
       if (lastMatchTime[teamId] !== undefined) {
         const gapMs = matchMs - lastMatchTime[teamId];
@@ -913,14 +798,12 @@ function buildGlobalElo(targetTimeMs) {
       }
     }
 
-    // ─── Calcolo ELO standard con HFA dinamico ────────────────────────
     const gh = m.score_home ?? 0, ga = m.score_away ?? 0;
     const act = gh > ga ? 1 : (gh < ga ? 0 : 0.5);
     const diff = Math.abs(gh - ga);
     const mov = diff <= 1 ? 1.0 : (diff === 2 ? 1.5 : (11 + diff) / 8);
     const exp = 1 / (1 + Math.pow(10, (table[a] - (table[h] + HFA_ELO)) / 400));
 
-    // ─── MODIFICA 2: K adattivo (media dei due team) ──────────────────
     const K_h = nMatchesPlayed[h] < K_THRESHOLD ? K_LOW : K_HIGH;
     const K_a = nMatchesPlayed[a] < K_THRESHOLD ? K_LOW : K_HIGH;
     const K = (K_h + K_a) / 2;
@@ -933,7 +816,7 @@ function buildGlobalElo(targetTimeMs) {
   }
   return { table, series, _hfa: HFA_ELO, _nHfa: _n_hfa };
 }
-// medie gol reali della lega: sostituiscono i moltiplicatori arbitrari 1.10 / 0.95
+
 function computeLeagueParams(leagueId, targetTimeMs) {
   const seen = new Set(); let gh = 0, ga = 0, n = 0;
   for (const m of globalLeagueMatchesCache) {
@@ -945,7 +828,7 @@ function computeLeagueParams(leagueId, targetTimeMs) {
   if (n < 30) return { avgH: 1.50, avgA: 1.20, n };
   return { avgH: gh / n, avgA: ga / n, n };
 }
-// rho tarato sulla lega: si cerca il valore che riproduce le frequenze osservate di 0-0, 1-0, 0-1, 1-1
+
 function estimateRho(leagueId, targetTimeMs, LG) {
   const seen = new Set(); const obs = {'0-0':0,'1-0':0,'0-1':0,'1-1':0}; let n = 0;
   for (const m of globalLeagueMatchesCache) {
@@ -964,8 +847,7 @@ function estimateRho(leagueId, targetTimeMs, LG) {
   }
   return best;
 }
-// Punti attesi dagli xG match per match, con banda d'errore: sostituisce la Pitagorica
-// (l'esponente 1.7 su una win% 1/0.5/0 non e' dimensionalmente corretto nel calcio, dove i pareggi pesano molto)
+
 function expectedPoints(xgFor, xgAg, gf, ga) {
   let expPts = 0, actPts = 0, varPts = 0, n = 0;
   for (let i = 0; i < (xgFor||[]).length; i++) {
@@ -991,8 +873,7 @@ const PITCH_BASE = 'https://pitchapi-proxy.salvatorepampalone-sp.workers.dev';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 function logConsole(msg) { const c = document.getElementById('console-loader'); if(c) { c.style.display = 'block'; c.innerHTML += msg + '<br>'; c.scrollTop = c.scrollHeight; } }
 async function apiCall(endpoint, silent = false) {
-  // ⚠️ COMPARATORE LITE: legge la API key dall'elemento con id="api-key". Il Lite ha lo stesso id,
-  // quindi funziona in entrambi. Non cambiare quell'id qui o nell'HTML senza aggiornare anche l'altro.
+
   const key = document.getElementById('api-key').value.trim();
   try { const res = await fetch(PITCH_BASE + endpoint, { headers: { 'X-API-KEY': key } }); if(!res.ok) { if(!silent) logConsole(`⚠️ Errore API ${res.status} per ${endpoint}.`); return null; } return await res.json();
   } catch(e) { return null; }
@@ -1005,19 +886,9 @@ async function caricaSquadreLega() {
     document.getElementById('console-loader').innerHTML = ''; logConsole(`⏳ Costruzione Database Storico per la Lega...`); document.getElementById("btn-carica").disabled = true;
 
     let s1, s2, s3;
-    if (season.includes('/')) { const p = season.split('/'); s1 = season; s2 = `${parseInt(p[0])-1}/${parseInt(p[1])-1}`; s3 = `${parseInt(p[0])-2}/${parseInt(p[1])-2}`; } 
+    if (season.includes('/')) { const p = season.split('/'); s1 = season; s2 = `${parseInt(p[0])-1}/${parseInt(p[1])-1}`; s3 = `${parseInt(p[0])-2}/${parseInt(p[1])-2}`; }
     else { s1 = season; s2 = `${parseInt(season)-1}`; s3 = `${parseInt(season)-2}`; }
-    
-    // ─── FIX v2: fetch SOLO della lega selezionata ────────────────────────
-    // Prima scaricava: tutte le leghe del paese (Serie A + Serie B) + 3 leghe
-    // europee hardcoded = 5 leghe x 3 stagioni = 15 chiamate (fino a 30 col
-    // fallback). Due problemi:
-    //  1) ELO/features contaminati da coppe e altre leghe (fix applicato sopra)
-    //  2) 15-30 chiamate seriali: su mobile/GitHub Pages via proxy il
-    //     caricamento sembra bloccato per minuti, e se una lega non esiste
-    //     il fallback raddoppia i tentativi falliti.
-    // Dato che ELO, aggregaTeam e computeLeagueParams ora filtrano tutti per
-    // league_id, scaricare le altre leghe era puro spreco: 3 chiamate bastano.
+
     const leaguesToFetch = [lId];
 
     let allMatches = [];
@@ -1050,14 +921,12 @@ async function caricaSquadreLega() {
   } catch(e) { alert("Errore caricamento database: " + e.message); document.getElementById("btn-carica").disabled = false; }
 }
 
-// Ritorna null (non 0) quando il dato manca: uno 0 finto falsa medie, deviazioni standard e distanze KNN.
 function extractSafeStat(data, keys, isHome) {
-  // FIX BUG .includes(): usa match ESATTO su key o title (case-insensitive).
-  // Prima: title.toLowerCase().includes(k) causava che 'shots' matchasse 'shots on target'.
+
   if(!Array.isArray(keys)) keys = [keys];
   if(!data || !data.periods) return null;
   const all = data.periods.find(p => p.period === 'All'); if(!all || !all.groups) return null;
-  for(let k of keys) {                       // le chiavi si scorrono in ordine di PREFERENZA, non i gruppi
+  for(let k of keys) {
     const kLow = k.toLowerCase();
     for(let g of all.groups) {
       const item = (g.items||[]).find(i => i.key === k || (i.title && i.title.toLowerCase() === kLow));
@@ -1071,16 +940,14 @@ function extractSafeStat(data, keys, isHome) {
   }
   return null;
 }
-// una sola chiamata API per match, condivisa fra le due squadre (gli scontri diretti non si scaricano due volte)
+
 let RAW_CACHE = {};
-// Esposta su window: il comparatore calcola le metriche avanzate sugli stessi
-// match che il motore ha appena scaricato. Senza, rifarebbe una /advanced per
-// ogni partita storica di ogni squadra: una trentina di richieste per partita
-// analizzata, tutte per dati gia' presenti qui dentro.
+
 window.__RAW_CACHE = RAW_CACHE;
 async function fetchMatchRaw(id) {
   if (RAW_CACHE[id]) return RAW_CACHE[id];
   const res = await Promise.all([ apiCall(`/matches/${id}/stats`, true), apiCall(`/matches/${id}/lineups`, true), apiCall(`/matches/${id}/advanced`, true), apiCall(`/matches/${id}/events`, true) ]);
+  // il Comparatore riscrive l'assegnazione qui sotto per non memorizzare le risposte vuote (AGENTS.md)
   RAW_CACHE[id] = res; window.__RAW_CACHE = RAW_CACHE; await sleep(180);
   return res;
 }
@@ -1090,31 +957,22 @@ window.__fetchMatchRaw = (typeof fetchMatchRaw !== 'undefined') ? fetchMatchRaw 
 async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) {
   logConsole(`Filtro lo storico per ${teamName}...`);
   logConsole("    -> Limite richiesto: " + limit + " partite complessive");
-  const targetTimeMs = new Date(matchTimeStr).getTime(); const minTimeMs = targetTimeMs - (500 * 24 * 60 * 60 * 1000); 
+  const targetTimeMs = new Date(matchTimeStr).getTime(); const minTimeMs = targetTimeMs - (500 * 24 * 60 * 60 * 1000);
 
-  // ─── FIX CACHE (v2): filtra SOLO la lega scelta ───────────────────
-  // Prima leggeva TUTTE le leghe. Le medie NPxG/PPDA/Field Tilt/ecc.
-  // erano contaminate da partite Champions/coppe con difese di livello
-  // diverso. Le top squadre uscivano sistematicamente "più forti" del reale
-  // in Serie A perché il loro NPxG medio includeva coppe europee.
   const _chosenLeagueId = (typeof document !== 'undefined' && document.getElementById('sel-league'))
     ? document.getElementById('sel-league').value : null;
 
   let past = globalLeagueMatchesCache.filter(m => {
     if(m.status !== 'finished') return false; if(m.home_team.id !== teamId && m.away_team.id !== teamId) return false;
-    if(_chosenLeagueId && m.league_id !== _chosenLeagueId) return false;  // ← FIX cache
-    if(!m.time_utc) return false; const t = new Date(m.time_utc).getTime(); return t < targetTimeMs && t > minTimeMs; 
+    if(_chosenLeagueId && m.league_id !== _chosenLeagueId) return false;
+    if(!m.time_utc) return false; const t = new Date(m.time_utc).getTime(); return t < targetTimeMs && t > minTimeMs;
   });
   const uniqueIdsSet = new Set(); past = past.filter(m => { if(!uniqueIdsSet.has(m.id)) { uniqueIdsSet.add(m.id); return true; } return false; });
   past.sort((a,b) => new Date(b.time_utc) - new Date(a.time_utc));
-  
-  // Rispetta ESATTAMENTE il limite selezionato dall'utente.
-  // overallMatches = ultime N partite. roleMatches = quelle FRA queste che sono nel ruolo.
-  // Cosi' se scegli 30, il totale unique e' 30 (mai di piu').
-  // Il ruolo puo' essere meno di 30 perche' e' un subset (partite in casa/trasferta tra le 30).
+
   let overallMatches = past.slice(0, limit);
   let roleMatches = overallMatches.filter(m => (m.home_team.id === teamId) === isHomeTeamUI);
-  const roleLimit = roleMatches.length;   // il ruolo e' quello che c'e' dentro le "limit" scelte
+  const roleLimit = roleMatches.length;
   logConsole("    -> Effettive: " + overallMatches.length + " complessive, di cui " + roleMatches.length + " in " + (isHomeTeamUI ? "casa" : "trasferta"));
   const fetchSet = []; const fseen = new Set();
   [...overallMatches, ...roleMatches].forEach(m => { if(!fseen.has(m.id)) { fseen.add(m.id); fetchSet.push(m); } });
@@ -1124,21 +982,18 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
     const m = fetchSet[i]; const isH = m.home_team.id === teamId;
     logConsole(`[${teamName}] Fetch Dati (Adv & Eventi): ${i+1}/${fetchSet.length}...`);
     const [statsRes, lineupsRes, advRes, eventsRes] = await fetchMatchRaw(m.id);
-    
+
     const d = statsRes ? (statsRes.data || statsRes) : null;
     const gf = isH ? (m.score_home||0) : (m.score_away||0); const ga = isH ? (m.score_away||0) : (m.score_home||0);
     const avv = isH ? m.away_team.name : m.home_team.name; const dateStrUtc = m.time_utc; const dateShort = m.time_utc ? m.time_utc.substring(5,10) : '-';
-    
+
     let modulo = 'N/D', oppModulo = 'N/D';
     if (lineupsRes && lineupsRes.data) { modulo = lineupsRes.data[isH ? 'home' : 'away']?.formation || 'N/D'; oppModulo = lineupsRes.data[isH ? 'away' : 'home']?.formation || 'N/D'; }
 
     let ppda=null, field_tilt=null, direct_speed=null, pass_acc=null, ht=null, seq_time=null, pps=null, build_att=null, dir_att=null, avg_x=null, f3_entries=null, box_entries=null, tch_box=null, centr=null;
     let avg_def_x=null, cp_regains=null, rec_time=null, npxg=null, xg_op=null, xg_sp=null, xgot=null, bc=null, bcm=null, xg_shot=null;
     let cross=null, drib=null, thru=null, aer=null, misc=null, disp=null;
-    // V9.7.1 - metriche di creazione e progressione (PitchAPI /advanced). Il payload arrivava
-    // gia' ad ogni fetch ma queste chiavi non venivano lette: il comparatore le ri-aggregava
-    // per conto suo con fino a 15 chiamate extra per squadra. Estrarle qui costa zero richieste
-    // in piu' e le rende previsioni del motore come tutte le altre.
+
     let gca=null, sca=null, xag=null, prog_passes=null, passes_box=null, carries_box=null, prog_carries=null;
     let gca_ag=null, sca_ag=null, xag_ag=null, prog_passes_ag=null, passes_box_ag=null, carries_box_ag=null, prog_carries_ag=null;
     let opp_ppda=null, opp_field_tilt=null, opp_direct_speed=null, opp_seq_time=null, opp_avg_x=null, opp_avg_def_x=null, opp_cp_regains=null, opp_rec_time=null;
@@ -1147,8 +1002,8 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
     if (advRes && advRes.data && advRes.data.teams) {
         const myAdv = advRes.data.teams.find(t => t.team.id === teamId); const oppAdv = advRes.data.teams.find(t => t.team.id !== teamId);
         advHasMe = !!myAdv;
-        if (myAdv) { 
-          ppda = myAdv.defending?.ppda; field_tilt = myAdv.territory?.field_tilt; direct_speed = myAdv.tempo?.direct_speed; pass_acc = myAdv.passing?.pass_accuracy; 
+        if (myAdv) {
+          ppda = myAdv.defending?.ppda; field_tilt = myAdv.territory?.field_tilt; direct_speed = myAdv.tempo?.direct_speed; pass_acc = myAdv.passing?.pass_accuracy;
           ht = myAdv.defending?.high_turnovers; seq_time = myAdv.tempo?.sequence_time; pps = myAdv.passing?.passes_per_sequence || myAdv.tempo?.passes_per_sequence;
           build_att = myAdv.creation?.buildup_attacks || myAdv.attacking?.buildup_attacks; dir_att = myAdv.creation?.direct_attacks || myAdv.attacking?.direct_attacks;
           centr = myAdv.passing?.centralization || myAdv.network?.centralization; avg_x = myAdv.territory?.avg_action_x || myAdv.positioning?.avg_action_x;
@@ -1161,24 +1016,23 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
           bc = myAdv.creation?.big_chances ?? myAdv.attacking?.big_chances ?? null; bcm = myAdv.creation?.big_chances_missed ?? myAdv.attacking?.big_chances_missed ?? null;
           xg_shot = myAdv.creation?.xg_per_shot ?? myAdv.attacking?.xg_per_shot ?? null;
           cross = myAdv.passing?.crosses ?? myAdv.attacking?.crosses ?? null;
-          // PitchAPI: drib/misc/disp sono in carrying (documentazione ufficiale)
+
           drib = myAdv.carrying?.take_ons_won ?? myAdv.attacking?.take_ons_won ?? myAdv.possession?.take_ons_won ?? null;
           thru = myAdv.passing?.through_balls ?? myAdv.creation?.through_balls ?? null; aer = myAdv.defending?.aerials_won ?? myAdv.duels?.aerials_won ?? null;
           misc = myAdv.carrying?.miscontrols ?? myAdv.possession?.miscontrols ?? myAdv.attacking?.miscontrols ?? null;
           disp = myAdv.carrying?.dispossessed ?? myAdv.possession?.dispossessed ?? myAdv.attacking?.dispossessed ?? null;
-          // creazione e progressione: stesse chiavi usate dal comparatore in CMP_ADV_KEYS
+
           gca = myAdv.creation?.gca ?? null; sca = myAdv.creation?.sca ?? null; xag = myAdv.creation?.xag ?? null;
           prog_passes = myAdv.passing?.progressive_passes ?? null; passes_box = myAdv.passing?.passes_into_box ?? null;
           carries_box = myAdv.carrying?.carries_into_box ?? null; prog_carries = myAdv.carrying?.progressive_carries ?? null;
         }
-        if (oppAdv) { 
-          opp_ppda = oppAdv.defending?.ppda; opp_field_tilt = oppAdv.territory?.field_tilt; opp_direct_speed = oppAdv.tempo?.direct_speed; 
+        if (oppAdv) {
+          opp_ppda = oppAdv.defending?.ppda; opp_field_tilt = oppAdv.territory?.field_tilt; opp_direct_speed = oppAdv.tempo?.direct_speed;
           opp_seq_time = oppAdv.tempo?.sequence_time; opp_avg_x = oppAdv.territory?.avg_action_x || oppAdv.positioning?.avg_action_x;
           opp_avg_def_x = oppAdv.defending?.avg_defensive_action_x ?? oppAdv.positioning?.avg_defensive_action_x ?? null;
           opp_cp_regains = oppAdv.defending?.counterpress_regains_5s ?? oppAdv.pressing?.counterpress_regains_5s ?? null;
           opp_rec_time = oppAdv.defending?.ball_recovery_time ?? oppAdv.tempo?.ball_recovery_time ?? null;
-          // il "concesso": quanto l'avversario di quel giorno ha prodotto contro di noi.
-          // Serve a predictStat come secondo fattore del modello attacco x difesa.
+
           gca_ag = oppAdv.creation?.gca ?? null; sca_ag = oppAdv.creation?.sca ?? null; xag_ag = oppAdv.creation?.xag ?? null;
           prog_passes_ag = oppAdv.passing?.progressive_passes ?? null; passes_box_ag = oppAdv.passing?.passes_into_box ?? null;
           carries_box_ag = oppAdv.carrying?.carries_into_box ?? null; prog_carries_ag = oppAdv.carrying?.progressive_carries ?? null;
@@ -1186,24 +1040,21 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
     }
 
     let base_xg = extractSafeStat(d, 'expected_goals', isH);
-    // Quanto la squadra CONCEDE su queste metriche: stesso match, squadra opposta.
-    // Serve per stimare le statistiche col modello moltiplicativo invece che con
-    // la media semplice (vedi predictStat piu' sotto).
+
     const poss_ag  = extractSafeStat(d, ['BallPossesion','ball_possession','ballpossession','possession'], !isH);
     const xgot_ag  = extractSafeStat(d, ['expected_goals_on_target','xgot','xg_on_target'], !isH);
     const tchbox_ag = extractSafeStat(d, ['touches_in_opp_box','touches_opp_box','touchesinoppbox'], !isH);
     if (tch_box === null && d) tch_box = extractSafeStat(d, ['touches_in_opp_box', 'touches_opp_box', 'touchesinoppbox'], isH);
     if (npxg === null && d) { let fall = extractSafeStat(d, ['npxg', 'non_penalty_xg', 'expected_goals_non_penalty'], isH); npxg = fall !== null ? fall : base_xg; }
     if (xgot === null && d) xgot = extractSafeStat(d, ['expected_goals_on_target', 'xgot', 'xg_on_target'], isH);
-    
-    // BLINDATURA ESTRAZIONI V9.4
+
     if (d) {
         const allP = d.periods?.find(p => p.period === 'All');
         if (allP) {
             let foundTotalShots = 0;
             allP.groups.forEach(g => g.items.forEach(i => {
                 const k = (i.key || '').toLowerCase(); const t = (i.title || '').toLowerCase();
-                // Assicuriamoci di non pescare "big_chances_missed" mentre cerchiamo "big_chances"
+
                 if ((k === 'bigchances' || k === 'big_chances' || t === 'big chances' || t === 'big chances created') && bc === null) {
                     bc = parseFloat(String(isH ? i.home : i.away).split(' ')[0]) || 0;
                 }
@@ -1213,7 +1064,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
                 if ((k === 'totalshots' || k === 'shots' || t === 'total shots' || t === 'tiri totali' || t === 'tiri') && t !== 'shots on target' && t !== 'shots off target') {
                     foundTotalShots = parseFloat(String(isH ? i.home : i.away).split(' ')[0]) || 0;
                 }
-                // PitchAPI: chiave ufficiale 'expected_goals_set_play' in group 'Expected goals (xG)'
+
                 if ((k === 'expected_goals_set_play' || k === 'expected_goals_set_piece' || k.includes('set_play') || k.includes('set_piece') || t.includes('set play') || t.includes('set piece')) && xg_sp === null) {
                     xg_sp = parseFloat(String(isH ? i.home : i.away).split(' ')[0]) || 0;
                 }
@@ -1221,44 +1072,32 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
             if ((xg_shot === null || xg_shot === 0) && foundTotalShots > 0 && base_xg > 0) xg_shot = base_xg / foundTotalShots;
         }
     }
-    // ===================== POLITICA DEI VALORI MANCANTI (v9.6) =====================
-    // Molte API sportive OMETTONO la chiave quando il valore e' zero: se una squadra non crea
-    // Big Chances, "big_chances" non compare affatto. Per i CONTEGGI, quindi, chiave assente = 0.
-    // Ma questo vale solo se la risposta e' effettivamente arrivata, e solo per i conteggi:
-    // per rapporti, percentuali, distanze e xG uno 0 e' fisicamente impossibile (nessuna squadra
-    // ha 0% di possesso o un baricentro a 0 metri), quindi assente = dato non disponibile.
-    // Confondere i due casi e' il modo piu' rapido per avere lambda falsati.
+
     const statsOk = !!(d && d.periods && d.periods.some(p => p.period === 'All'));
-    // non basta che la risposta esista: serve che contenga proprio QUESTA squadra,
-    // altrimenti si zero-fillerebbero conteggi su un payload che non la riguarda
+
     const advOk   = advHasMe;
     const anyOk   = statsOk || advOk;
     const isNil = v => (v === null || v === undefined || (typeof v === 'number' && isNaN(v)));
-    const zeroIf = (v, ok) => isNil(v) ? (ok ? 0 : null) : v;   // CONTEGGIO: assente ma risposta ok => 0
-    const keepNull = v => isNil(v) ? null : v;                  // RAPPORTO/DISTANZA/xG: assente => sconosciuto
+    const zeroIf = (v, ok) => isNil(v) ? (ok ? 0 : null) : v;
+    const keepNull = v => isNil(v) ? null : v;
 
-    // Si fotografa quali chiavi erano REALMENTE presenti prima dello zero-fill:
-    // senza questo, la diagnostica di copertura mostrerebbe sempre 100% sui conteggi.
     const _rawSnap = { bc, bcm, xg_sp, xgot, cross, drib, thru, aer, misc, disp, f3_entries, tch_box, cp_regains };
     const rawPresent = {}; Object.keys(_rawSnap).forEach(k => rawPresent[k] = !isNil(_rawSnap[k]));
 
-    // CONTEGGI: possono valere davvero zero
     bc = zeroIf(bc, anyOk); bcm = zeroIf(bcm, anyOk); xg_sp = zeroIf(xg_sp, anyOk);
-    xgot = zeroIf(xgot, anyOk);                       // 0 tiri in porta => 0 xGOT: e' un valore legittimo
+    xgot = zeroIf(xgot, anyOk);
     cross = zeroIf(cross, anyOk); drib = zeroIf(drib, anyOk); thru = zeroIf(thru, anyOk); aer = zeroIf(aer, anyOk);
     misc = zeroIf(misc, anyOk); disp = zeroIf(disp, anyOk);
     f3_entries = zeroIf(f3_entries, advOk); tch_box = zeroIf(tch_box, anyOk); cp_regains = zeroIf(cp_regains, advOk);
     opp_cp_regains = zeroIf(opp_cp_regains, advOk);
 
-    // RAPPORTI / PERCENTUALI / DISTANZE / xG: zero impossibile, quindi restano null
     ppda = keepNull(ppda); field_tilt = keepNull(field_tilt); direct_speed = keepNull(direct_speed);
     seq_time = keepNull(seq_time); avg_x = keepNull(avg_x); avg_def_x = keepNull(avg_def_x);
     rec_time = keepNull(rec_time); npxg = keepNull(npxg); xg_shot = keepNull(xg_shot);
     opp_ppda = keepNull(opp_ppda); opp_field_tilt = keepNull(opp_field_tilt); opp_direct_speed = keepNull(opp_direct_speed);
     opp_seq_time = keepNull(opp_seq_time); opp_avg_x = keepNull(opp_avg_x); opp_avg_def_x = keepNull(opp_avg_def_x);
     opp_rec_time = keepNull(opp_rec_time);
-    
-    // Fallback finale per xg_sp/xg_op via advanced se non trovati in /stats
+
     if (xg_sp === null && advRes?.data?.teams) {
       const myA = advRes.data.teams.find(t => t.team.id === teamId);
       if (myA) {
@@ -1277,7 +1116,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
         const evs = eventsRes.data?.events || eventsRes.events || eventsRes.data || [];
         evs.forEach(ev => {
             if(ev.event_type && ev.event_type.toLowerCase() === 'goal') {
-                if (ev.team_id === teamId) { if (!ev.is_own_goal) { goal_timings_scored.push(ev.minute); if(ev.player && ev.player.name) scorers.push(ev.player.name); } else goal_timings_conceded.push(ev.minute); } 
+                if (ev.team_id === teamId) { if (!ev.is_own_goal) { goal_timings_scored.push(ev.minute); if(ev.player && ev.player.name) scorers.push(ev.player.name); } else goal_timings_conceded.push(ev.minute); }
                 else { if (!ev.is_own_goal) goal_timings_conceded.push(ev.minute); else goal_timings_scored.push(ev.minute); }
             }
             if(ev.event_type && ev.event_type.toLowerCase() === 'redcard' && ev.team_id === teamId) red_cards++;
@@ -1286,13 +1125,12 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
 
     matchDetails[m.id] = {
       gf, ga, avv, dateStrUtc, dateShort, modulo, oppModulo, isH,
-      poss_ag, xgot_ag, tchbox_ag,   // <- viaggiano con l'oggetto, non come variabili libere
+      poss_ag, xgot_ag, tchbox_ag,
 
-      // xG e possesso: mai zero-fillati. Uno 0 qui non e' "non ha creato nulla", e' "il provider non copre la metrica".
       xg: keepNull(base_xg), xga: keepNull(extractSafeStat(d, 'expected_goals', !isH)),
       npxga: keepNull(extractSafeStat(d, ['npxg', 'non_penalty_xg', 'expected_goals_non_penalty'], !isH)),
       poss: keepNull(extractSafeStat(d, ['BallPossesion', 'ball_possession', 'ballpossession', 'possession', 'ballPossession'], isH)),
-      // conteggi: zero legittimo quando la risposta e' arrivata ma la chiave manca
+
       sot: zeroIf(extractSafeStat(d, 'ShotsOnTarget', isH), statsOk), sot_ag: zeroIf(extractSafeStat(d, 'ShotsOnTarget', !isH), statsOk),
       cor: zeroIf(extractSafeStat(d, 'corners', isH), statsOk), cor_ag: zeroIf(extractSafeStat(d, 'corners', !isH), statsOk),
       yel: zeroIf(extractSafeStat(d, ['yellow_cards', 'yellowcards', 'gialli'], isH), statsOk), yel_ag: zeroIf(extractSafeStat(d, ['yellow_cards', 'yellowcards', 'gialli'], !isH), statsOk),
@@ -1306,7 +1144,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
   }
 
   function buildStats(matchList) {
-    let out = { n: matchList.length, vals: { poss_ag: [], xgot_ag: [], tch_box_ag: [], gf:[], ga:[], xg:[], xga:[], npxg:[], npxga:[], sot:[], sot_ag:[], cor:[], cor_ag:[], yel:[], yel_ag:[], fouls:[], fouls_ag:[], poss:[], moduli:[], 
+    let out = { n: matchList.length, vals: { poss_ag: [], xgot_ag: [], tch_box_ag: [], gf:[], ga:[], xg:[], xga:[], npxg:[], npxga:[], sot:[], sot_ag:[], cor:[], cor_ag:[], yel:[], yel_ag:[], fouls:[], fouls_ag:[], poss:[], moduli:[],
       ppda:[], field_tilt:[], direct_speed:[], seq_time:[], avg_x:[], f3_entries:[], tch_box:[], avg_def_x:[], cp_regains:[], rec_time:[], xg_sp:[], xgot:[], bc:[], bcm:[], xg_shot:[], cross:[], drib:[], thru:[], aer:[], misc:[], disp:[],
       opp_ppda:[], opp_field_tilt:[], opp_direct_speed:[], opp_seq_time:[], opp_avg_x:[], opp_avg_def_x:[], opp_cp_regains:[], opp_rec_time:[],
       gca:[], sca:[], xag:[], prog_passes:[], passes_box:[], carries_box:[], prog_carries:[],
@@ -1314,18 +1152,16 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
       matchInfo: [], streak: [], historyForElo: [], all_timings_scored: [], all_timings_conceded: [], all_scorers: [], win_pts: 0 };
 
     for(let i=0; i<matchList.length; i++) {
-      let det = matchDetails[matchList[i].id]; if(!det) continue; 
+      let det = matchDetails[matchList[i].id]; if(!det) continue;
       let res = 'P'; let pts = 1; if (det.gf > det.ga) { res = 'V'; pts = 3; } else if (det.gf < det.ga) { res = 'S'; pts = 0; }
-      out.win_pts += (pts === 3 ? 1 : (pts === 1 ? 0.5 : 0)); if (out.streak.length < 5) out.streak.push(res); out.historyForElo.unshift({ g: det.gf, ga: det.ga }); 
-      
+      out.win_pts += (pts === 3 ? 1 : (pts === 1 ? 0.5 : 0)); if (out.streak.length < 5) out.streak.push(res); out.historyForElo.unshift({ g: det.gf, ga: det.ga });
+
       out.vals.gf.push(det.gf); out.vals.ga.push(det.ga); out.vals.xg.push(det.xg); out.vals.xga.push(det.xga);
       let safe_npxg = (det.npxg != null && det.npxg > 0) ? det.npxg : det.xg; let safe_npxga = (det.npxga != null && det.npxga > 0) ? det.npxga : det.xga;
       out.vals.npxg.push(safe_npxg); out.vals.npxga.push(safe_npxga); out.vals.sot.push(det.sot); out.vals.sot_ag.push(det.sot_ag); out.vals.cor.push(det.cor); out.vals.cor_ag.push(det.cor_ag);
       out.vals.yel.push(det.yel); out.vals.yel_ag.push(det.yel_ag); out.vals.fouls.push(det.fouls); out.vals.fouls_ag.push(det.fouls_ag); out.vals.poss.push(det.poss); out.vals.poss_ag.push(det.poss_ag); out.vals.xgot_ag.push(det.xgot_ag); out.vals.tch_box_ag.push(det.tchbox_ag); out.vals.moduli.push(det.modulo);
       out.vals.red_cards.push(det.red_cards); out.vals.dates.push(det.dateStrUtc);
-      
-      // I metrici opzionali si inseriscono SEMPRE, anche come null: nella v9.4 venivano inseriti solo se
-      // presenti, quindi vals.ppda[3] non era il PPDA del quarto match e il decay lo accoppiava alla data sbagliata.
+
       const OPT = ['ppda','field_tilt','direct_speed','seq_time','avg_x','f3_entries','tch_box','avg_def_x','cp_regains','rec_time','xg_sp','xgot','bc','bcm','xg_shot','cross','drib','thru','aer','misc','disp','opp_ppda','opp_field_tilt','opp_direct_speed','opp_seq_time','opp_avg_x','opp_avg_def_x','opp_cp_regains','opp_rec_time',
                    'gca','sca','xag','prog_passes','passes_box','carries_box','prog_carries',
                    'gca_ag','sca_ag','xag_ag','prog_passes_ag','passes_box_ag','carries_box_ag','prog_carries_ag'];
@@ -1343,16 +1179,9 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
       cor: calcFeatures(out.vals.cor, out.vals.dates, targetTimeMs), cor_ag: calcFeatures(out.vals.cor_ag, out.vals.dates, targetTimeMs),
       yel: calcFeatures(out.vals.yel, out.vals.dates, targetTimeMs), yel_ag: calcFeatures(out.vals.yel_ag, out.vals.dates, targetTimeMs),
       fouls: calcFeatures(out.vals.fouls, out.vals.dates, targetTimeMs), fouls_ag: calcFeatures(out.vals.fouls_ag, out.vals.dates, targetTimeMs),
-      // Le serie "concesse" vanno trasformate in feature qui sopra, accanto alla
-      // metrica prodotta: STAT_PAIRS puntava a nomi inesistenti e predictStat
-      // trovava sempre null, ripiegando su una media di lega costruita su due
-      // valori invece di quattro. (Erano ridichiarate una seconda volta qui,
-      // con gli stessi identici valori: calcFeatures girava due volte a vuoto.)
+
       poss_ag: calcFeatures(out.vals.poss_ag, out.vals.dates, targetTimeMs),
-      // baseline: media grezza su tutte le osservazioni raccolte, prodotte e concesse.
-      // Serve a predictStat come scala di riferimento. Stimarla dai soli quattro
-      // valori del confronto la rendeva dipendente dalle squadre in campo: due
-      // squadre forti alzavano la baseline e il loro vantaggio spariva.
+
       _base: (function(){
         const b={}; const pair={gf:'ga',xg:'xga',npxg:'npxga',sot:'sot_ag',cor:'cor_ag',
                                 yel:'yel_ag',fouls:'fouls_ag',poss:'poss_ag',
@@ -1369,16 +1198,13 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
       })(),
       xgot_ag: calcFeatures(out.vals.xgot_ag, out.vals.dates, targetTimeMs),
       tch_box_ag: calcFeatures(out.vals.tch_box_ag, out.vals.dates, targetTimeMs),
-      // Le serie PRODOTTE di xgot e tch_box erano gia' raccolte (sono nella lista OPT)
-      // ma non passavano da calcFeatures: predictStat non trovava il "mio" valore e
-      // tornava null, cosi' le due colonne del CSV finivano sulla catena di fallback.
+
       xgot: calcFeatures(out.vals.xgot, out.vals.dates, targetTimeMs),
       tch_box: calcFeatures(out.vals.tch_box, out.vals.dates, targetTimeMs),
       poss: calcFeatures(out.vals.poss, out.vals.dates, targetTimeMs), modulo_main: getMostFrequentWithPct(out.vals.moduli),
       ppda: calcFeatures(out.vals.ppda, out.vals.dates, targetTimeMs), field_tilt: calcFeatures(out.vals.field_tilt, out.vals.dates, targetTimeMs),
       direct_speed: calcFeatures(out.vals.direct_speed, out.vals.dates, targetTimeMs), red_cards: calcFeatures(out.vals.red_cards, out.vals.dates, targetTimeMs),
-      // creazione / progressione: prodotte e concesse, cosi' predictStat puo' usarle
-      // col modello moltiplicativo invece della sola media della squadra.
+
       gca: calcFeatures(out.vals.gca, out.vals.dates, targetTimeMs), gca_ag: calcFeatures(out.vals.gca_ag, out.vals.dates, targetTimeMs),
       sca: calcFeatures(out.vals.sca, out.vals.dates, targetTimeMs), sca_ag: calcFeatures(out.vals.sca_ag, out.vals.dates, targetTimeMs),
       xag: calcFeatures(out.vals.xag, out.vals.dates, targetTimeMs), xag_ag: calcFeatures(out.vals.xag_ag, out.vals.dates, targetTimeMs),
@@ -1387,11 +1213,10 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
       carries_box: calcFeatures(out.vals.carries_box, out.vals.dates, targetTimeMs), carries_box_ag: calcFeatures(out.vals.carries_box_ag, out.vals.dates, targetTimeMs),
       prog_carries: calcFeatures(out.vals.prog_carries, out.vals.dates, targetTimeMs), prog_carries_ag: calcFeatures(out.vals.prog_carries_ag, out.vals.dates, targetTimeMs)
     };
-    out.n = out.vals.gf.length;   // numero REALE di match con dati (prima era la lunghezza della lista richiesta)
-    // Copertura: in quante partite l'API ha davvero restituito la metrica.
-    // 0% = il provider non la fornisce affatto: va mostrata come N/D, non come zero.
+    out.n = out.vals.gf.length;
+
     out.coverage = {}; Object.keys(out.vals).forEach(k => { const a = out.vals[k]; if(Array.isArray(a)) out.coverage[k] = out.n ? _nValid(a) / out.n : 0; });
-    // per i conteggi si usa la presenza reale della chiave, non il valore dopo lo zero-fill
+
     const rawCount = {};
     for(let i=0; i<matchList.length; i++) { const det = matchDetails[matchList[i].id]; if(!det || !det.rawPresent) continue; Object.keys(det.rawPresent).forEach(k => { rawCount[k] = (rawCount[k]||0) + (det.rawPresent[k] ? 1 : 0); }); }
     out.rawCoverage = {}; Object.keys(rawCount).forEach(k => { out.rawCoverage[k] = out.n ? rawCount[k] / out.n : 0; out.coverage[k] = out.rawCoverage[k]; });
@@ -1411,12 +1236,6 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
   return { overall: outOverall, role: outRole, logHtml, teamName, isHomeTeamUI };
 }
 
-// ====== KNN TATTICO ======
-// Correzioni rispetto alla v9.4:
-// 1) il profilo dell'avversario si costruisce sul SUO ruolo (casa/trasferta), non sul generale
-// 2) le dimensioni realmente usate sono 11 (non 14) e sono pesate
-// 3) niente k fisso a 4: kernel gaussiano su tutti i match, con decay temporale e numerosita' efficace
-// 4) i valori mancanti vengono ESCLUSI dalla distanza, non sostituiti da un default che falsa il confronto
 function _shrunkMean(roleArr, overallArr, fallback, k = 5) {
   const nr = _nValid(roleArr); const mr = _mean(roleArr), mo = _mean(overallArr);
   if (!nr && !mo) return fallback;
@@ -1424,43 +1243,28 @@ function _shrunkMean(roleArr, overallArr, fallback, k = 5) {
   if (!mo) return mr;
   return (nr * mr + k * mo) / (nr + k);
 }
-// FIX v2.2: costanti per la penalita' di copertura dimensioni (vedi getSimilarMatches)
-// ── PARAMETRI DI SHRINKAGE (esposti per taratura A/B) ─────────────────────────
-// SHRINK_K governa quanto il motore crede alle forze relative (attacco/difesa)
-// stimate sui match storici:   peso_dati = n / (n + SHRINK_K)
-//   k=4  -> con 15 match crede al 79%   (valore storico del V9.7)
-//   k=10 -> 60%
-//   k=28 -> 35%   (valore suggerito dai test walk-forward sui backtest)
-// SHRINK_LAM_K governa il secondo shrinkage, quello del lambda verso la media
-// di lega:   peso = n / (n + SHRINK_LAM_K).  Storico: 3.
-// Sono su window cosi' il comparatore puo' impostarli PRIMA di iniettare il
-// motore, per generare batch con tarature diverse e confrontarli.
+
 window.SHRINK_K     = (typeof window.SHRINK_K     === 'number') ? window.SHRINK_K     : 4;
 window.SHRINK_LAM_K = (typeof window.SHRINK_LAM_K === 'number') ? window.SHRINK_LAM_K : 3;
 
-const KNN_MIN_COVERAGE = 0.6;   // sotto il 60% del peso MEDIO DISPONIBILE nel dataset la partita esce
+const KNN_MIN_COVERAGE = 0.6;
 const KNN_DIMS = [
-  // === CORE OFFENSIVO/DIFENSIVO (peso alto) ===
-  { own: 'npxga',            opp: 'npxg',          w: 1.5, def: 1.2 },     // difesa mia vs attacco avv
-  { own: 'npxg',             opp: 'npxga',         w: 1.5, def: 1.2 },     // attacco mio vs difesa avv
-  { own: 'opp_field_tilt',   opp: 'field_tilt',    w: 1.2, def: 50.0 },    // territorialità avversaria
-  { own: 'opp_avg_def_x',    opp: 'avg_def_x',     w: 1.2, def: 40.0 },    // altezza linea difensiva avv
 
-  // === MEDIO (contesto tattico) ===
-  { own: 'poss',             opp: 'poss',          w: 1.0, def: 50.0, invert: true },  // possesso complementare
-  { own: 'opp_ppda',         opp: 'ppda',          w: 1.0, def: 12.0 },    // pressing avversario
+  { own: 'npxga',            opp: 'npxg',          w: 1.5, def: 1.2 },
+  { own: 'npxg',             opp: 'npxga',         w: 1.5, def: 1.2 },
+  { own: 'opp_field_tilt',   opp: 'field_tilt',    w: 1.2, def: 50.0 },
+  { own: 'opp_avg_def_x',    opp: 'avg_def_x',     w: 1.2, def: 40.0 },
 
-  // === NUOVE (grazie ai fix su chiavi PitchAPI ora disponibili) ===
-  { own: 'tch_box',          opp: 'tch_box',       w: 1.1, def: 20.0 },    // penetrazione area (nostra vs affrontate)
-  { own: 'f3_entries',       opp: 'f3_entries',    w: 0.9, def: 40.0 },    // ingressi trequarti
-  { own: 'cp_regains',       opp: 'cp_regains',    w: 0.7, def: 8.0 },     // riconquiste alte
-  
-  // === POSIZIONALE ===
-  { own: 'opp_seq_time',     opp: 'seq_time',      w: 0.6, def: 10.0 },    // durata sequenze avversarie
-  { own: 'opp_avg_x',        opp: 'avg_x',         w: 0.8, def: 45.0 }     // baricentro avversario
-  // RIMOSSE dalla v9.6:
-  // - sot_ag/sot (ridondante con npxga/npxg)
-  // - opp_direct_speed (correla con opp_seq_time)
+  { own: 'poss',             opp: 'poss',          w: 1.0, def: 50.0, invert: true },
+  { own: 'opp_ppda',         opp: 'ppda',          w: 1.0, def: 12.0 },
+
+  { own: 'tch_box',          opp: 'tch_box',       w: 1.1, def: 20.0 },
+  { own: 'f3_entries',       opp: 'f3_entries',    w: 0.9, def: 40.0 },
+  { own: 'cp_regains',       opp: 'cp_regains',    w: 0.7, def: 8.0 },
+
+  { own: 'opp_seq_time',     opp: 'seq_time',      w: 0.6, def: 10.0 },
+  { own: 'opp_avg_x',        opp: 'avg_x',         w: 0.8, def: 45.0 }
+
 ];
 function getSimilarMatches(teamDataRole, oppTeam, targetTimeMs) {
   const empty = { topMatches: [], avg_xg: 0, avg_xga: 0, pts_per_game: 0, nEff: 0, targetInfo: {} };
@@ -1491,21 +1295,10 @@ function getSimilarMatches(teamDataRole, oppTeam, targetTimeMs) {
       const z = (v - target[d.opp]) / sd[d.own];
       dSum += d.w * z * z; wSum += d.w;
     });
-    // FIX v2.2 - COPERTURA DIMENSIONI.
-    // La distanza e' sqrt(dSum / wSum): normalizzata sul peso PRESENTE. Una partita
-    // priva dei dati /advanced (PPDA, field tilt, avg_def_x, f3, cp_regains, seq_time,
-    // avg_x = 6.4 degli 11.5 punti di peso totale) veniva confrontata su sole 4
-    // dimensioni senza alcuna penalita': meno informazione = meno occasioni di
-    // risultare diversa, quindi vinceva la gara di somiglianza per default.
-    // La copertura e' RELATIVA al meglio disponibile in questo dataset, non assoluta:
-    // PitchAPI espone gli advanced solo per le top leghe europee dal 2025 in poi, e
-    // una soglia assoluta avrebbe scartato ogni partita di MLS, Super Lig e delle
-    // stagioni precedenti, azzerando il KNN proprio dove serve.
+
     rows.push({ index: i, dist: Math.sqrt(dSum / wSum), dimsW: wSum, snap, info: teamDataRole.matchInfo[i] });
   }
-  // normalizzo la copertura sul massimo osservato: se nessuna partita ha gli advanced
-  // tutte valgono 1 e il comportamento resta quello di prima; se invece la maggioranza
-  // li ha, chi ne e' privo viene penalizzato e sotto il 60% esce.
+
   const wBest = Math.max(...rows.map(r => r.dimsW));
   for (const r of rows) r.coverage = wBest > 0 ? r.dimsW / wBest : 1;
   const kept = rows.filter(r => r.coverage >= KNN_MIN_COVERAGE);
@@ -1524,7 +1317,7 @@ function getSimilarMatches(teamDataRole, oppTeam, targetTimeMs) {
     const dt = dates[r.index] ? (targetTimeMs - new Date(dates[r.index]).getTime()) / 86400000 : 0;
     if (dt > 0) w *= Math.exp(-xiDay * dt);
     const gf = teamDataRole.vals.gf[r.index], ga = teamDataRole.vals.ga[r.index];
-    w *= r.coverage;   // FIX v2.2: chi ha meno dimensioni note pesa meno
+    w *= r.coverage;
     r.w = w; sw += w; sw2 += w * w; sXg += w * xg; sXga += w * xga;
     sPts += w * (gf > ga ? 3 : (gf === ga ? 1 : 0));
   });
@@ -1556,38 +1349,6 @@ function bucketTimings(timings) {
   return b;
 }
 
-// ==========================================
-// ESECUZIONE MAIN E RENDER
-// ==========================================
-
-// ===========================================================================
-// TABELLONE SCOMMESSE
-// Traduce le probabilita' in un verdetto operativo. Soglie e tassi di successo
-// vengono dai backtest (Serie A 1134 match + archivio 4001 match ripuliti dal
-// leakage di data), non da una stima del modello su se stesso:
-//   1  >=65% -> 83% hit, SOTTOSTIMATO (gap +14)   |  1 >=55% -> 64%, calibrato
-//   2  >=60% -> 66%   |  X2 >=65% -> 74% sottostimato  |  12 -> 73-74% stabile
-//   X        -> mai scelto sopra il 55% su 1134 partite: nessun campione
-//   Over 2.5 -> sottostimato di 3.6pp ma hit 56%: marginale
-//   Under / NoGoal / Goal -> gap -9 e -12, nessun potere discriminante
-// ===========================================================================
-
-// ===========================================================================
-// RENDIMENTO PER CAMPIONATO — misurato su 32.929 partite di 26 leghe
-//
-// Il modello non vale uguale ovunque, e il discrimine non e' la categoria ma
-// quanto la lega e' competitivamente compressa: la Saudi Pro League fa 55.0%
-// e la Premier 53.4% perche' hanno poche squadre che vincono quasi sempre;
-// la Championship scende al 45.1% e la Ligue 2 al 39.4% perche' si somigliano
-// tutte. La League One fa meglio della Championship pur essendo una categoria
-// sotto, quindi non e' questione di livello tecnico.
-//
-// acc     = accuratezza sul segno (baseline "sempre 1" circa 43%)
-// netHit  = accuratezza sui pick sopra il 55%
-// confHit = accuratezza con confidence >= 60, la soglia che conta davvero
-// gapCasa = quanto il modello sbaglia la frequenza delle vittorie casalinghe
-//           (negativo = ne prevede piu' di quante ne accadano)
-// ===========================================================================
 const LEAGUE_STATS = {
   'KSA_Saudi_Pro_League': { n:934, acc:55.0, netHit:76.4, confHit:84.2, gapCasa:+0.8 },
   'ENG_Premier_League': { n:1900, acc:53.4, netHit:65.8, confHit:72.1, gapCasa:-1.3 },
@@ -1631,8 +1392,6 @@ function _leagueKey() {
   return null;
 }
 
-// Riquadro sopra il tabellone: come si e' comportato il modello proprio in
-// questo campionato, invece della media di tutti.
 function renderLeagueNote() {
   const box = document.getElementById('league-note');
   if (!box) return;
@@ -1695,97 +1454,25 @@ function renderVerdetti(mk) {
   renderLeagueNote();
 }
 
-
-// ===========================================================================
-// PREVISIONE DELLE STATISTICHE — modello moltiplicativo
-//
-// Fino a ieri ogni statistica prevista era la media decayed della squadra e
-// basta: "l'Inter di solito fa 37 tocchi in area" restava 37 sia contro il
-// Genoa sia contro il Napoli. Il difetto era misurabile: sui backtest il
-// residuo (reale meno previsto) correlava con la forza dell'avversario fino a
-// -0.47 sul Field Tilt. Non rumore, errore di struttura.
-//
-// Ora si usa la stessa forma del Dixon-Coles applicata a ogni metrica:
-//
-//     attesa = media_lega x (quanto produco / lega) x (quanto concede lui / lega)
-//
-// con smorzamento sui due rapporti, perche' stimati su 15 partite sono
-// rumorosi e il loro prodotto amplifica gli estremi:
-//
-//     rapporto_usato = 1 + k (rapporto_grezzo - 1),   k = 0.35
-//
-// Il valore di k viene da una ricerca walk-forward sui backtest: allenato
-// sulla prima meta' del campione e verificato sulla seconda mai vista, riduce
-// l'errore del 29% rispetto alla media semplice, ed e' risultato stabile fra
-// 0.30 e 0.40 su tutte e undici le metriche testate. Senza smorzamento (k=1)
-// la correlazione migliora ma l'errore assoluto peggiora.
-//
-// Sulle correlazioni previsto/reale misurate: Field Tilt da 0.44 a 0.61,
-// Ingressi Trequarti da 0.45 a 0.55, PPDA da 0.30 a 0.43.
-// ===========================================================================
-// Versione del motore, letta dal comparatore dopo l'iniezione: cosi' si vede
-// subito se il file trascinato e' quello aggiornato o una copia vecchia.
 window.__SCANNER_BUILD = '0905-b3';
 
-// ═══════════════════════════════════════════════════════════════════════════
-// SHRINKAGE ADATTIVO PER METRICA (V9.7.1)
-// ═══════════════════════════════════════════════════════════════════════════
-// ATTENZIONE ALLA CONVENZIONE, e' l'opposto di quella intuitiva:
-//     sh(r) = 1 + k * (r - 1)
-//   k = 1  -> nessuno smorzamento, si crede al rapporto grezzo
-//   k = 0  -> smorzamento totale, la stima collassa sulla media di lega
-// Quindi k ALTO = MENO shrinkage. Un k=0.55 su una metrica rumorosa la rende
-// piu' volatile, non meno.
-//
-// Il vecchio 0.35 fisso veniva da una ricerca walk-forward sul RMSE, ma tarata
-// su una versione precedente delle feature. Misurato sui backtest, il difetto e'
-// l'opposto di quello che sembra: le stime sono SOTTO-disperse. La regressione
-// reale ~ previsto ha pendenza sopra 1 su nove metriche su undici, cioe' il
-// previsto varia troppo poco.
-//
-// TARATURA CORRENTE — grid search sui componenti che la diagnostica del motore
-// espone (prodotto / concesso / baseline / reale), su 76 partite di Serie A
-// (marzo + aprile 2026). E' la misura piu' diretta possibile: sono i numeri del
-// motore stesso, non una stima indiretta dalla pendenza.
-//
-//   metrica       k prec.  k ottimo   aprile  marzo   RMSE
-//   poss            0.60     0.80       0.75   0.90   8.335 -> 8.031  (-3.7%)
-//   gca             0.44     0.80       0.90   0.75   2.142 -> 2.099  (-2.0%)
-//   carries_box     0.44     0.80       0.60   1.00   2.113 -> 2.060  (-2.5%)
-//   prog_passes     0.47     0.60       0.65   0.55   7.601 -> 7.538  (-0.8%)
-//   sca             0.30     0.40       0.35   0.40   8.777 -> 8.757  (-0.2%)
-//   npxg            0.55     0.45       0.65   0.35   0.592 -> 0.590  (-0.2%)
-//
-// I valori qui sotto NON sono gli ottimi: dove i due mesi discordano (npxg,
-// carries_box) sono smorzati verso il centro, e ognuno e' stato verificato
-// mese per mese — nessuno peggiora di piu' dello 0.3% in un singolo mese.
-// npxg ha la curva piattissima fra 0.40 e 0.55 e i due mesi in disaccordo:
-// li' il valore conta poco, sta al centro e ci resta.
-// Chi non ha misura diretta (xg, xag, passes_box, prog_carries) prende il k
-// dedotto dalla pendenza lato comparatore, smorzato col suo errore standard.
-//
-// I guadagni sono di calibrazione, non di accuratezza: le correlazioni
-// previsto/reale non si muovono, si muove la dispersione.
-//
-// Su window per permettere al comparatore di fare A/B sul singolo valore.
-const STAT_SHRINK_DEFAULT = 0.50;   // 0.35 fino al 0905-b1, 0.45 nel 0905-b2
-// k con cui e' stata calibrata la correzione residuale (vedi RESID_*): le sue
-// costanti valgono a QUESTO k, quindi il segnale residuale si calcola sempre
-// qui, indipendentemente da come viene tarata la tabella qui sotto.
+const STAT_SHRINK_DEFAULT = 0.50;
+
 const STAT_SHRINK_LEGACY = 0.35;
+// k ALTO = MENO shrinkage: sh(r)=1+k(r-1). Taratura e provenienza dei valori in AGENTS.md.
 window.STAT_SHRINK_TABLE = window.STAT_SHRINK_TABLE || {
-  npxg:         0.50,   // curva piatta 0.40-0.55, mesi in disaccordo: sta al centro
-  xg:           0.50,   // stessa famiglia di npxg
-  poss:         0.75,   // ottimo 0.80, entrambi i mesi >= 0.75
-  gca:          0.75,   // ottimo 0.80 (apr 0.90, mar 0.75)
-  sca:          0.40,   // ottimo 0.40, i due mesi concordano (0.35 / 0.40)
-  xag:          0.40,   // solo pendenza lato comparatore, mesi discordi: prudente
-  prog_passes:  0.60,   // ottimo 0.60, i due mesi lo racchiudono (0.65 / 0.55)
-  passes_box:   0.60,   // niente grid diretta; pendenza 1.56 su 152 oss., mesi concordi
-  carries_box:  0.70,   // ottimo 0.80 ma mesi larghi (0.60 / 1.00): smorzato
-  prog_carries: 0.55    // niente grid diretta; pendenza 1.66, mesi concordi in direzione
+  npxg:         0.50,
+  xg:           0.50,
+  poss:         0.75,
+  gca:          0.75,
+  sca:          0.40,
+  xag:          0.40,
+  prog_passes:  0.60,
+  passes_box:   0.60,
+  carries_box:  0.70,
+  prog_carries: 0.55
 };
-// Compatibilita': parte del codice storico legge ancora STAT_SHRINK come scalare.
+
 const STAT_SHRINK = STAT_SHRINK_DEFAULT;
 function statShrinkFor(feat) {
   const t = window.STAT_SHRINK_TABLE || {};
@@ -1793,11 +1480,8 @@ function statShrinkFor(feat) {
   return (typeof k === 'number' && isFinite(k)) ? k : STAT_SHRINK_DEFAULT;
 }
 
-// mappa: nome della feature "prodotta" -> nome della feature "concessa"
 const STAT_PAIRS = {
-  // Solo le coppie dove ESISTONO entrambe le feature: quella prodotta e quella
-  // concessa. Dal 0905-b2 anche xgot e tch_box sono qui: le serie prodotte
-  // c'erano gia', mancava solo il passaggio da calcFeatures.
+
   gf: 'ga',
   xg: 'xga',
   npxg: 'npxga',
@@ -1808,7 +1492,7 @@ const STAT_PAIRS = {
   poss: 'poss_ag',
   xgot: 'xgot_ag',
   tch_box: 'tch_box_ag',
-  // creazione e progressione (dal 0905-b2 aggregate anche dal motore)
+
   gca: 'gca_ag',
   sca: 'sca_ag',
   xag: 'xag_ag',
@@ -1818,13 +1502,6 @@ const STAT_PAIRS = {
   prog_carries: 'prog_carries_ag',
 };
 
-// Restituisce il valore atteso della metrica per la squadra "att" contro "dif".
-// Se manca il dato del concesso o la media di lega, torna alla media semplice:
-// meglio una stima grezza che un buco, e le leghe fuori dalle top europee
-// spesso non hanno tutte le metriche.
-// kOverride: forza un k specifico ignorando la tabella. Serve a chi consuma la
-// stima con una calibrazione propria (l'Ordered Logit e la correzione residuale
-// sono tarati a STAT_SHRINK_LEGACY e devono restare stabili se la tabella cambia).
 function predictStat(att, dif, feat, scope, kOverride) {
   const sc = scope || 'role';
   const gv = (t, f) => {
@@ -1835,11 +1512,8 @@ function predictStat(att, dif, feat, scope, kOverride) {
   if (mine == null) return null;
   const agFeat = STAT_PAIRS[feat];
   const conc = agFeat ? gv(dif, agFeat) : null;
-  if (conc == null) return mine;                    // niente avversario: media semplice
+  if (conc == null) return mine;
 
-  // Baseline di lega: media di tutte le osservazioni raccolte per entrambe le
-  // squadre, prodotte e concesse. Con 30 partite sono una sessantina di valori,
-  // abbastanza stabili da non muoversi col singolo confronto.
   const bA = (att[sc] && att[sc].features && att[sc].features._base) ? att[sc].features._base[feat] : null;
   const bD = (dif[sc] && dif[sc].features && dif[sc].features._base) ? dif[sc].features._base[feat] : null;
   const pool = [bA, bD].filter(v => v != null && isFinite(v) && v > 0);
@@ -1853,91 +1527,20 @@ function predictStat(att, dif, feat, scope, kOverride) {
   return (isFinite(out) && out >= 0) ? out : mine;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// CORREZIONE RESIDUALE (V9.7.1) — le metriche di creazione DOPO il Dixon-Coles
-// ═══════════════════════════════════════════════════════════════════════════
-// L'idea di correggere le probabilita' 1X2 con le statistiche avanzate e'
-// giusta, ma va fatta con la parte di segnale che il DC NON ha gia'. Misurato
-// sul backtest di aprile 2026 (40 partite), correlazione fra la differenza
-// casa-trasferta della metrica PREVISTA e l'edge dell'ensemble (p1 - p2):
-//
-//     npxg           0.992   <- e' l'ingresso stesso del DC: ridondante
-//     passaggi in area 0.873
-//     SCA            0.872
-//     pass. progr.   0.876
-//     GCA            0.803
-//     conduz. in area 0.708
-//
-// Correggere con npxg significa moltiplicare per due l'informazione che il
-// lambda contiene gia': non e' una correzione, e' un affilamento mascherato.
-// Quel che resta DOPO aver tolto l'edge (correlazione col residuo esito-edge):
-//
-//     conduzioni in area  0.438
-//     GCA                 0.403
-//     SCA                 0.374
-//     passaggi progr.     0.184
-//     npxg                0.147
-//
-// Quindi il segnale utile e' nelle metriche di CREAZIONE e PENETRAZIONE, che
-// il motore non usa per i lambda, non in npxg.
-//
-// COSTRUZIONE (ortogonale per costruzione, senza regressioni a runtime):
-//   sig  = media pesata delle differenze casa-trasferta normalizzate
-//   edge = p1 - p2 dell'ensemble
-//   res  = GAMMA * sig + INTERCETTA - edge     porta sig sulla scala dell'edge
-//   d    = ALPHA * tanh(res)                   tanh limita gli estremi
-// e si sposta p1 di e^(+d), p2 di e^(-d), la X assorbe poco (e^-0.25|d|).
-//
-// ═══ ALPHA = 0: LA CORREZIONE E' SPENTA. PERCHE'. ═══════════════════════════
-// Nel 0905-b2 girava con ALPHA 0.25, tarata sulle 40 partite di aprile 2026.
-// Il backtest successivo (76 partite: le stesse 40 piu' 36 di marzo mai viste)
-// dice che quel segnale non esiste fuori campione. Correlazione fra il residuo
-// e l'errore effettivo dell'ensemble:
-//
-//     aprile (dove era tarata)   +0.336   su 40 partite
-//     marzo  (mai visto)         -0.174   su 36 partite
-//     insieme                    +0.081   con SE 0.11, cioe' zero
-//
-// Il SEGNO si ribalta. E lo stesso si vede nell'A/B del CSV: in aprile il pick
-// passa da 45.0% a 47.5% a 50.0% alzando ALPHA, in marzo da 66.7% a 66.7% a
-// 63.9%. E' overfitting da manuale, e la singola partita in cui la correzione
-// cambiava il pick (Napoli-Milan 06/04, azzeccata) era di aprile.
-//
-// La struttura resta qui, con la sua diagnostica, perche' e' stata proprio
-// quella a far vedere il problema in dieci minuti senza rilanciare il motore.
-// Va rivalutata su una stagione intera e possibilmente su piu' leghe: con un
-// mese solo non si distingue un effetto da un capriccio del calendario
-// (marzo 66.7% di pick azzeccati contro il 47.5% di aprile, stesso motore).
-// Per riaccenderla: window.RESID_ALPHA = 0.25 prima di iniettare il motore.
-//
-// GAMMA e INTERCETTA sono la retta edge ~ sig MISURATA IN PRODUZIONE sulle 76
-// partite (edge = 0.678 * sig + 0.0165), stabile fra i due mesi (0.668 / 0.683).
-// Il 0.56 del 0905-b2 veniva invece dalle previsioni del comparatore, che usa
-// scope e baseline diversi: sottostimava la pendenza e dava a ogni partita una
-// spinta costante verso la trasferta (delta medio -0.0088). Corretto qui, cosi'
-// se la correzione viene riaccesa non parte gia' storta.
 const RESID_W     = { gca: 0.35, sca: 0.25, carries_box: 0.25, prog_passes: 0.15 };
 const RESID_SCALE = { gca: 2.5,  sca: 12.0, carries_box: 2.0,  prog_passes: 15.0 };
 const RESID_GAMMA = 0.678;
 const RESID_INTERCEPT = 0.0165;
+// alpha 0 = correzione SPENTA di proposito (fuori campione il segnale cambiava segno): AGENTS.md
 window.RESID_ALPHA = (typeof window.RESID_ALPHA === 'number') ? window.RESID_ALPHA : 0;
 
-// probs: {p1, pX, p2} gia' normalizzate. att/dif: gli oggetti squadra.
-// Torna le probabilita' corrette piu' il dettaglio del calcolo (per il CSV).
 function applyResidualCorrection(probs, att, dif) {
   const dbg = { available: [], sig: null, edge: null, resid: null, delta: 0, alpha: window.RESID_ALPHA, applied: false };
   const out = { p1: probs.p1, pX: probs.pX, p2: probs.p2, debug: dbg };
   const alpha = window.RESID_ALPHA;
-  // NB: il segnale e il residuo si calcolano SEMPRE, anche con alpha a zero.
-  // Sono quelli che alimentano la sezione A/B del CSV, con cui si decide se la
-  // correzione vada riaccesa: spegnendoli insieme alla correzione si perderebbe
-  // proprio la misura che serve a rivalutarla.
+
   if (!att || !dif) return out;
 
-  // Le previsioni usate qui sono SEMPRE a STAT_SHRINK_LEGACY: GAMMA e ALPHA
-  // sono tarati a quel k. La tabella adattiva serve ai numeri mostrati, non a
-  // questa correzione, altrimenti ritarare la tabella sposterebbe in silenzio
-  // anche le probabilita' 1X2.
   let sig = 0, wTot = 0;
   for (const f in RESID_W) {
     const h = predictStat(att, dif, f, 'role', STAT_SHRINK_LEGACY);
@@ -1947,12 +1550,9 @@ function applyResidualCorrection(probs, att, dif) {
     wTot += RESID_W[f];
     dbg.available.push(f);
   }
-  // Con una sola metrica disponibile il composito e' troppo rumoroso: meglio
-  // lasciare l'ensemble com'e' (le leghe fuori dalle top europee non hanno
-  // /advanced e finiscono tutte qui).
+
   if (dbg.available.length < 2 || !(wTot > 0)) return out;
-  // rinormalizzo sui pesi effettivamente usati, cosi' la scala di sig non
-  // dipende da quante metriche la lega espone
+
   sig = sig / wTot;
 
   const edge = probs.p1 - probs.p2;
@@ -1960,7 +1560,7 @@ function applyResidualCorrection(probs, att, dif) {
   const delta = alpha > 0 ? alpha * Math.tanh(resid) : 0;
   dbg.sig = sig; dbg.edge = edge; dbg.resid = resid; dbg.delta = delta;
   dbg.before = { p1: probs.p1, pX: probs.pX, p2: probs.p2 };
-  if (!(alpha > 0)) return out;   // diagnostica sì, spostamento no
+  if (!(alpha > 0)) return out;
 
   let p1 = probs.p1 * Math.exp(+delta);
   let p2 = probs.p2 * Math.exp(-delta);
@@ -1979,7 +1579,7 @@ async function avviaScanner() {
     if(selH.value === selA.value) return alert("Non puoi far sfidare la squadra contro se stessa!");
 
     const hId = selH.value; const hName = selH.options[selH.selectedIndex].text; const aId = selA.value; const aName = selA.options[selA.selectedIndex].text;
-    const limit = parseInt(document.getElementById('history-limit').value) || 15; const dateInput = document.getElementById('target-date').value; const matchTime = dateInput + "T00:00:00Z";  /* FIX v2.1: taglio a MEZZANOTTE del giorno scelto, non a fine giornata. Con T23:59 la partita target (giocata nel pomeriggio) rientrava negli storici e nei vicini KNN: il modello vedeva il risultato che doveva prevedere. Con T00:00 basta inserire il giorno della partita e il taglio e' corretto. */ 
+    const limit = parseInt(document.getElementById('history-limit').value) || 15; const dateInput = document.getElementById('target-date').value; const matchTime = dateInput + "T00:00:00Z";
 
     document.getElementById('console-loader').innerHTML = ''; document.getElementById('console-loader').style.display = 'block'; document.getElementById('btn-avvia').disabled = true; document.getElementById('btn-avvia').innerHTML = "⏳ Simulazione in corso (Attendi)...";
 
@@ -1987,64 +1587,47 @@ async function avviaScanner() {
     document.getElementById('console-loader').style.display = 'none'; document.getElementById('btn-avvia').disabled = false; document.getElementById('btn-avvia').innerHTML = "🚀 2. ESTRAI DATI E SIMULA MODELLI";
     if(dH.overall.n === 0 || dA.overall.n === 0) return alert("Storico insufficiente per una delle due squadre prima della data target.");
 
-    // ============ ELO DI LEGA (ordine cronologico corretto, scala comune) ============
-    const lId = document.getElementById('sel-league').value;   // serve per i parametri di lega
+    const lId = document.getElementById('sel-league').value;
     const targetMs = new Date(matchTime).getTime();
     const ELO = buildGlobalElo(targetMs);
     const eloSeriesH = ELO.series[hId] || []; const eloSeriesA = ELO.series[aId] || [];
     const eloH_ov = Math.round(ELO.table[hId] ?? 1500); const eloA_ov = Math.round(ELO.table[aId] ?? 1500);
     const calcTrend = (series) => { if(series.length < 10) return 0; return _mean(series.slice(0,5)) - _mean(series.slice(5,15)); };
     const trendH = calcTrend(eloSeriesH); const trendA = calcTrend(eloSeriesA);
-    // il time-decay sugli xG cattura gia' gran parte della forma: qui resta solo una correzione residua max +/-8%
+
     const penH = Math.max(-0.08, Math.min(0.08, trendH / 1200)); const penA = Math.max(-0.08, Math.min(0.08, trendA / 1200));
 
-    // ============ PARAMETRI DI LEGA: vantaggio campo e rho stimati dai dati ============
     const LG = computeLeagueParams(lId, targetMs); const RHO = estimateRho(lId, targetMs, LG);
     logConsole(`Lega: media gol casa ${LG.avgH.toFixed(2)} / trasferta ${LG.avgA.toFixed(2)} su ${LG.n} match | rho=${RHO.toFixed(3)}`);
-    // gli NPxG escludono i rigori ma i gol no: si recupera la componente rigori come (xG - NPxG)
+
     const pxH = Math.max(0, _mean(dH.overall.vals.xg) - _mean(dH.overall.vals.npxg));
     const pxA = Math.max(0, _mean(dA.overall.vals.xg) - _mean(dA.overall.vals.npxg));
 
-    // ============ LAMBDA MOLTIPLICATIVI (struttura Dixon-Coles) ============
-    // v9.4 faceva la MEDIA fra attacco proprio e difesa avversaria: comprime tutto verso il centro e
-    // ignora la forza relativa. Qui: lambda = baseline_sede * forza_attacco * debolezza_difesa.
     const shrink = (x, n, k = window.SHRINK_K) => (n > 0 && isFinite(x) && x > 0) ? (n * x + k) / (n + k) : 1;
     const dec = (team, scope, feat) => { const f = team[scope].features[feat]; return (f && f.decay > 0) ? f.decay : null; };
-    // Stima che tiene conto dell'avversario. Il lambda dei gol continua a usare
-    // dec() con la sua struttura attacco x difesa gia' presente: qui cambiano le
-    // statistiche mostrate e quelle esportate, che prima erano medie semplici.
+
     const pred = (att, dif, feat, scope) => predictStat(att, dif, feat, scope || 'role');
     const predH = (feat, scope) => pred(dH, dA, feat, scope);
     const predA = (feat, scope) => pred(dA, dH, feat, scope);
     const nHr = dH.role.n, nAr = dA.role.n, nHo = dH.overall.n, nAo = dA.overall.n;
     const mu = (LG.avgH + LG.avgA) / 2;
 
-    // modello GENERALE: forze su media lega, il vantaggio campo arriva da LG.avgH / LG.avgA
     const attH_o = shrink((dec(dH,'overall','npxg') ?? mu) / mu, nHo), defA_o = shrink((dec(dA,'overall','npxga') ?? mu) / mu, nAo);
     const attA_o = shrink((dec(dA,'overall','npxg') ?? mu) / mu, nAo), defH_o = shrink((dec(dH,'overall','npxga') ?? mu) / mu, nHo);
     let lamH_over = LG.avgH * attH_o * defA_o * (1 + penH) + pxH;
     let lamA_over = LG.avgA * attA_o * defH_o * (1 + penA) + pxA;
 
-    // modello RUOLO: ogni statistica normalizzata sul baseline della PROPRIA sede.
-    // Chi gioca in casa si rapporta a LG.avgH, chi in trasferta a LG.avgA: cosi' il vantaggio campo
-    // conta UNA volta sola invece di essere contato due volte come nella v9.4 (dati casa + moltiplicatore 1.10).
     const attH_r = shrink((dec(dH,'role','npxg') ?? LG.avgH) / LG.avgH, nHr), defA_r = shrink((dec(dA,'role','npxga') ?? LG.avgH) / LG.avgH, nAr);
     const attA_r = shrink((dec(dA,'role','npxg') ?? LG.avgA) / LG.avgA, nAr), defH_r = shrink((dec(dH,'role','npxga') ?? LG.avgA) / LG.avgA, nHr);
     let lamH_role = LG.avgH * attH_r * defA_r * (1 + penH) + pxH;
     let lamA_role = LG.avgA * attA_r * defH_r * (1 + penA) + pxA;
-    // con pochi match di ruolo si torna verso la media di lega invece di fidarsi di 3 partite
-    // k ridotto da 4 a 3 ora che roleLimit=20 permette sample piu' grandi.
-    // Con 15 match di ruolo: 15/(15+3) = 83% peso ai dati vs 79% con k=4.
-    // Piu' fedele quando i dati di ruolo sono abbondanti.
+
     const _lk = window.SHRINK_LAM_K;
     const wSH = nHr / (nHr + _lk), wSA = nAr / (nAr + _lk);
     lamH_role = wSH * lamH_role + (1 - wSH) * LG.avgH; lamA_role = wSA * lamA_role + (1 - wSA) * LG.avgA;
     if(!isFinite(lamH_over) || lamH_over < 0.15) lamH_over = LG.avgH; if(!isFinite(lamA_over) || lamA_over < 0.15) lamA_over = LG.avgA;
     if(!isFinite(lamH_role) || lamH_role < 0.15) lamH_role = lamH_over; if(!isFinite(lamA_role) || lamA_role < 0.15) lamA_role = lamA_over;
 
-    // ============ UNA SOLA MATRICE GOVERNA TUTTI I MERCATI ============
-    // Nella v9.4 l'1X2 usava Skellam/Poisson puro (senza rho) mentre i risultati esatti usavano Dixon-Coles
-    // con lambda diversi (mix 40/60): i due blocchi non erano coerenti fra loro.
     const dcOver = calcDCMatrix(lamH_over, lamA_over, RHO); const dcRole = calcDCMatrix(lamH_role, lamA_role, RHO);
     const probsOver = probsFromMatrix(dcOver); const probsRole = probsFromMatrix(dcRole);
     const dcMat = dcRole; const lamH_mix = lamH_role, lamA_mix = lamA_role;
@@ -2065,7 +1648,7 @@ async function avviaScanner() {
       const sH = getF(dH,'sot'), sA = getF(dA,'sot'), sAgH = getF(dH,'sot_ag'), sAgA = getF(dA,'sot_ag'); const lSot = Math.sqrt(sH*sAgA) + Math.sqrt(sA*sAgH);
       const yH = getF(dH,'yel'), yA = getF(dA,'yel'), yAgH = getF(dH,'yel_ag'), yAgA = getF(dA,'yel_ag'); const lYel = Math.sqrt(yH*yAgA) + Math.sqrt(yA*yAgH);
       const rH = getF(dH,'red_cards'), rA = getF(dA,'red_cards');
-      // dispersione STIMATA dai totali di match osservati invece del k=30 fisso della v9.4
+
       const tot = (team, a, b) => getA(team,a).map((v,i) => ((v==null?null:v) == null || getA(team,b)[i] == null) ? null : v + getA(team,b)[i]);
       const kCor = negBinK(tot(dH,'cor','cor_ag').concat(tot(dA,'cor','cor_ag')));
       const kSot = negBinK(tot(dH,'sot','sot_ag').concat(tot(dA,'sot','sot_ag')));
@@ -2076,11 +1659,6 @@ async function avviaScanner() {
     };
     const advRole = calcAdv(true); const advOver = calcAdv(false);
 
-    // safeDecay alimenta le statistiche mostrate a schermo e quelle esportate.
-    // Ora passa dal modello moltiplicativo: il valore atteso tiene conto di
-    // quanto l'avversario concede su quella metrica, non solo di quanto la
-    // squadra produce di solito. Se il concesso non e' disponibile (leghe senza
-    // dati avanzati) predictStat torna da solo alla media semplice di prima.
     const _oppOf = (team) => (team === dH ? dA : dH);
     const safeDecay = (team, feat) => {
       const p = predictStat(team, _oppOf(team), feat, 'role');
@@ -2096,18 +1674,16 @@ async function avviaScanner() {
     const zXgA_role = zScore(safeDecay(dA,'npxg'), safeDecay(dH,'npxga'), safeStd(dA,'npxg'), safeStd(dH,'npxga'));
 
     const getSafeAvg = (team, feat) => team.overall.features[feat] ? team.overall.features[feat].avg_tot : 0;
-    
+
     const npxgH_ro = safeDecay(dH, 'npxg'); const npxgA_ro = safeDecay(dA, 'npxg');
     const xgotH = _mean(dH.overall.vals.xgot) || 0; const xgotA = _mean(dA.overall.vals.xgot) || 0;
     const xgShotH = _mean(dH.overall.vals.xg_shot) || 0; const xgShotA = _mean(dA.overall.vals.xg_shot) || 0;
     const xgSpH = _mean(dH.overall.vals.xg_sp) || 0; const xgSpA = _mean(dA.overall.vals.xg_sp) || 0;
-    // Palle inattive: usa xg_sp da advRes se disponibile, altrimenti usa corner_xg / xg totali
-    // dai dati stats (xg_sp ≈ xG da angoli + punizioni). Fallback piu' robusto.
+
     const _xgSpFallback = (team) => {
       const cov = (team.overall.coverage || {});
       if (cov['xg_sp'] > 0) return _mean(team.overall.vals.xg_sp) || 0;
-      // fallback: dai dati di stats abbiamo xg da corner e punizioni aggregati
-      // non disponibili direttamente, usiamo 0 esplicito (non N/D)
+
       return null;
     };
     const xgSpH_final = _xgSpFallback(dH);
@@ -2126,31 +1702,27 @@ async function avviaScanner() {
     const tiltH = getSafeAvg(dH, 'field_tilt'); const tiltA = getSafeAvg(dA, 'field_tilt');
     const possH = getSafeAvg(dH, 'poss'); const possA = getSafeAvg(dA, 'poss');
     const ppdaH = getSafeAvg(dH, 'ppda'); const ppdaA = getSafeAvg(dA, 'ppda');
-    // TDI normalizzato: ciascun fattore e' scalato sulla propria deviazione standard di lega
-    // per rendere i contributi comparabili. Valori di riferimento empirici europei:
-    // tilt media ~50, sd~8 | ppda media ~12, sd~3 | poss media ~50, sd~7
+
     const _zTilt = (v) => (v - 50) / 8;
-    const _zPpda = (v) => -(v - 12) / 3;   // PPDA basso = pressing intenso = vantaggio → inversione segno
+    const _zPpda = (v) => -(v - 12) / 3;
     const _zPoss = (v) => (v - 50) / 7;
     const tdiH = (_zTilt(tiltH) * 1.2) + (_zPpda(ppdaH) * 1.0) + (_zPoss(possH) * 0.5);
     const tdiA = (_zTilt(tiltA) * 1.2) + (_zPpda(ppdaA) * 1.0) + (_zPoss(possA) * 0.5);
     const tdiDelta = tdiH - tdiA;
-    // Usa NPxG (senza rigori): coerente con i lambda di previsione DC/KNN che usano npxg
+
     const pytH = expectedPoints(dH.overall.vals.npxg, dH.overall.vals.npxga, dH.overall.vals.gf, dH.overall.vals.ga);
     const pytA = expectedPoints(dA.overall.vals.npxg, dA.overall.vals.npxga, dA.overall.vals.gf, dA.overall.vals.ga);
 
     const avgX_H = _mean(dH.overall.vals.avg_x) || 0; const avgX_A = _mean(dA.overall.vals.avg_x) || 0;
     const f3H = _mean(dH.overall.vals.f3_entries); const f3A = _mean(dA.overall.vals.f3_entries);
     const tbH = _mean(dH.overall.vals.tch_box) || 0; const tbA = _mean(dA.overall.vals.tch_box) || 0;
-    const penRateH = f3H > 0 ? (tbH / f3H) * 100 : 0; const penRateA = f3A > 0 ? (tbA / f3A) * 100 : 0;  // niente divisione per un "1" fittizio
+    const penRateH = f3H > 0 ? (tbH / f3H) * 100 : 0; const penRateA = f3A > 0 ? (tbA / f3A) * 100 : 0;
 
     const defX_H = _mean(dH.overall.vals.avg_def_x) || 0; const defX_A = _mean(dA.overall.vals.avg_def_x) || 0;
     const cp_H = _mean(dH.overall.vals.cp_regains) || 0; const cp_A = _mean(dA.overall.vals.cp_regains) || 0;
     const recH = _mean(dH.overall.vals.rec_time) || 0; const recA = _mean(dA.overall.vals.rec_time) || 0;
     const lenH = (avgX_H > 0 && defX_H > 0) ? (avgX_H - defX_H) : 0; const lenA = (avgX_A > 0 && defX_A > 0) ? (avgX_A - defX_A) : 0;
-    // Choke Index: recuperi palla nelle 5s / tempo medio di recupero
-    // Il fattore 1.5 bilancia scale diverse (cp_regains ~10-20, rec_time ~15-30).
-    // Protezione aggiuntiva: se meno di 3 match hanno entrambe le metriche, valore null.
+
     const _nBothValid = (a1, a2) => a1.filter((v,i) => v != null && a2[i] != null).length;
     const nChokeH = _nBothValid(dH.overall.vals.cp_regains, dH.overall.vals.rec_time);
     const nChokeA = _nBothValid(dA.overall.vals.cp_regains, dA.overall.vals.rec_time);
@@ -2160,7 +1732,6 @@ async function avviaScanner() {
     const bHs = bucketTimings(dH.overall.all_timings_scored); const bHc = bucketTimings(dH.overall.all_timings_conceded);
     const bAs = bucketTimings(dA.overall.all_timings_scored); const bAc = bucketTimings(dA.overall.all_timings_conceded);
 
-    // profilo temporale empirico dei gol invece del tasso costante (nel calcio si segna di piu' a fine gara)
     const _bk = ['1-15','16-30','31-45','46-60','61-75','76-90+'];
     const _bTot = _bk.map(k => (bHs[k]+bHc[k]+bAs[k]+bAc[k])); const _bSum = _bTot.reduce((a,b)=>a+b,0);
     const shape = _bSum > 30 ? _bTot.map(v => v/_bSum) : [1/6,1/6,1/6,1/6,1/6,1/6];
@@ -2169,26 +1740,22 @@ async function avviaScanner() {
     const probGoal30 = 1 - Math.exp(-lamTot * shareTo(2)); const probGoalHT = 1 - Math.exp(-lamTot * shareTo(3));
 
     const formH_disp = dH.overall.features.modulo_main || 'N/D'; const formA_disp = dA.overall.features.modulo_main || 'N/D';
-    const statsVsFormH_over = getStatsVsFormation(dH, formA_disp, false); const statsVsFormA_over = getStatsVsFormation(dA, formH_disp, false); 
-    const statsVsFormH_role = getStatsVsFormation(dH, formA_disp, true); const statsVsFormA_role = getStatsVsFormation(dA, formH_disp, true); 
+    const statsVsFormH_over = getStatsVsFormation(dH, formA_disp, false); const statsVsFormA_over = getStatsVsFormation(dA, formH_disp, false);
+    const statsVsFormH_role = getStatsVsFormation(dH, formA_disp, true); const statsVsFormA_role = getStatsVsFormation(dA, formH_disp, true);
 
     const knn_H = getSimilarMatches(dH.role, dA, targetMs); const knn_A = getSimilarMatches(dA.role, dH, targetMs);
-    // knn_H.avg_xg = quanto la squadra crea contro avversari simili all'attuale
-    // knn_A.avg_xga = quanto l'avversario concede contro squadre simili alla nostra
-    // Combinazione moltiplicativa (coerente con parametrizzazione DC): 
-    //   λ = LG.baseline × (attacco_normalizzato) × (difesa_normalizzata)
-    // Prima si mediava aritmeticamente: OK vicino alla media di lega, distorto agli estremi.
+
     const _knnCombine = (att, def, baseAtt, baseDef) => {
       if (baseAtt <= 0 || baseDef <= 0) return null;
-      const attNorm = att / baseAtt;   // 1.0 = media lega
+      const attNorm = att / baseAtt;
       const defNorm = def / baseDef;
       return baseAtt * attNorm * defNorm;
     };
-    let knn_lamH_raw = (knn_H.avg_xg > 0 || knn_A.avg_xga > 0) 
-      ? _knnCombine(knn_H.avg_xg, knn_A.avg_xga, LG.avgH, LG.avgA) 
+    let knn_lamH_raw = (knn_H.avg_xg > 0 || knn_A.avg_xga > 0)
+      ? _knnCombine(knn_H.avg_xg, knn_A.avg_xga, LG.avgH, LG.avgA)
       : null;
-    let knn_lamA_raw = (knn_A.avg_xg > 0 || knn_H.avg_xga > 0) 
-      ? _knnCombine(knn_A.avg_xg, knn_H.avg_xga, LG.avgA, LG.avgH) 
+    let knn_lamA_raw = (knn_A.avg_xg > 0 || knn_H.avg_xga > 0)
+      ? _knnCombine(knn_A.avg_xg, knn_H.avg_xga, LG.avgA, LG.avgH)
       : null;
     let knn_lamH = (knn_lamH_raw != null) ? knn_lamH_raw + pxH : lamH_role;
     let knn_lamA = (knn_lamA_raw != null) ? knn_lamA_raw + pxA : lamA_role;
@@ -2196,32 +1763,13 @@ async function avviaScanner() {
     if(!isFinite(knn_lamA) || knn_lamA < 0.15) knn_lamA = lamA_role;
     const probsKnn = probsFromMatrix(calcDCMatrix(knn_lamH, knn_lamA, RHO));
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // ORDERED LOGIT — sostituisce il KNN nell'ensemble
-    // ═══════════════════════════════════════════════════════════════════════
-    // PERCHE': sui backtest (2639 partite, stesse partite per entrambi) il KNN faceva
-    // 46.3% e l'Ordered Logit 50.2%. Ma soprattutto il KNN era MAL CALIBRATO: quando
-    // diceva "70%" succedeva il 63%, quando diceva "50-60%" succedeva il 42% (scarti
-    // fino a -18 punti). Causa: media di pochi vicini → stime estreme e instabili
-    // (dava prob >70% in 1007 partite su 6824, DC solo in 55).
-    // L'Ordered Logit ha scarti di calibrazione entro ±3.6 punti su tutte le fasce.
-    //
-    // COS'E': modella l'esito come variabile ORDINALE (2 < X < 1) su una scala latente
-    // y* = beta × (forza_casa - forza_trasferta). Due soglie t1,t2 tagliano la scala nei
-    // tre esiti. E' il modello standard in letteratura per outcome ordinati, e produce
-    // probabilita' calibrate per costruzione (a differenza di una media di vicini).
-    //
-    // PARAMETRI stimati per massima verosimiglianza su 1903 partite di training
-    // (split temporale 70/30, validato su 816 partite mai viste):
+    // stimati per massima verosimiglianza su 1903 partite, validati su 816 (AGENTS.md)
     const OL_BETA = 1.950, OL_T1 = -0.850, OL_T2 = 0.350;
     const _sig = (z) => 1 / (1 + Math.exp(-Math.max(-30, Math.min(30, z))));
-    // Forza = schema attacco-vs-difesa ADDITIVO 70/30 (validato: additivo batte
-    // moltiplicativo, e l'attacco pesa piu' della difesa avversaria - corr 0.26 vs 0.17).
+
     const _olStrength = (att, oppDef) => 0.7 * att + 0.3 * oppDef;
-    // OL_BETA/T1/T2 sono stimati su ingressi calcolati con lo shrinkage storico 0.35.
-    // Se l'OL leggesse la tabella adattiva, alzare k su npxg allargherebbe la scala
-    // latente e le due soglie diventerebbero sbagliate senza che nulla lo segnali:
-    // qui il k resta fissato a quello della taratura.
+
+    // k fisso: OL_BETA e le soglie valgono a QUELLO shrinkage (AGENTS.md)
     const _olNpxg = (team) => {
       const v = predictStat(team, _oppOf(team), 'npxg', 'role', STAT_SHRINK_LEGACY);
       return (v != null && isFinite(v)) ? v : safeDecay(team, 'npxg');
@@ -2235,88 +1783,45 @@ async function avviaScanner() {
     const _olTot = ol_p1 + ol_pX + ol_p2;
     const probsOL = (_olTot > 0 && isFinite(_olTot))
       ? { p1: ol_p1/_olTot, pX: ol_pX/_olTot, p2: ol_p2/_olTot }
-      : { p1: probsRole.p1, pX: probsRole.pX, p2: probsRole.p2 };  // fallback su DC
+      : { p1: probsRole.p1, pX: probsRole.pX, p2: probsRole.p2 };
     const mk_ov = markovFlow(lamH_over, lamA_over); const mk_ro = markovFlow(lamH_role, lamA_role);
 
-    // Pesi DINAMICI del KNN: calcolati ancora perche' knnRel/wKnn sono usati altrove
-    // (narrativi, confidence fallback), ma il KNN NON entra piu' nell'ensemble.
     const nEffMin = Math.min(knn_H.nEff, knn_A.nEff);
     const knnRel = nEffMin > 0 ? nEffMin / (nEffMin + 3) : 0;
     const wKnn = 0.45 * knnRel;
-    // ENSEMBLE: l'Ordered Logit prende il posto del KNN come terzo modello.
-    // Il peso NON dipende piu' da knnRel (numero di vicini tattici): l'OL non usa vicini,
-    // stima la forza dallo storico completo, quindi e' affidabile sempre. Peso fisso 0.30:
-    // sotto il vecchio 0.45 di picco del KNN perche' l'OL usa gli stessi ingredienti di DC
-    // (xG attacco/difesa) ed e' quindi parzialmente ridondante — un peso alto duplicherebbe DC.
+
     const wOL = 0.30, wMk = 0.10; const wDc = 1 - wOL - wMk;
-    // knnRel resta calcolato: il KNN e' ancora mostrato a schermo come riferimento tattico,
-    // ma non entra piu' nel calcolo dell'ensemble.
+
     let m1_raw = (probsRole.p1 * wDc) + (probsOL.p1 * wOL) + (mk_ro.p1 * wMk);
     let mX_raw = (probsRole.pX * wDc) + (probsOL.pX * wOL) + (mk_ro.pX * wMk);
     let m2_raw = (probsRole.p2 * wDc) + (probsOL.p2 * wOL) + (mk_ro.p2 * wMk);
     const m_tot = m1_raw + mX_raw + m2_raw;
     const _ens1 = m_tot > 0 ? m1_raw / m_tot : 0.33, _ensX = m_tot > 0 ? mX_raw / m_tot : 0.33, _ens2 = m_tot > 0 ? m2_raw / m_tot : 0.33;
-    // CORREZIONE RESIDUALE: sposta l'ensemble con la sola parte delle metriche di
-    // creazione che il Dixon-Coles non contiene gia' (vedi applyResidualCorrection).
-    // Se la lega non espone /advanced torna l'ensemble immutato.
+
     const _RC = applyResidualCorrection({ p1: _ens1, pX: _ensX, p2: _ens2 }, dH, dA);
     window.__RESID_DEBUG = _RC.debug;
     const m1 = _RC.p1; const mX = _RC.pX; const m2 = _RC.p2;
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // CONFIDENCE CALIBRATA — riscritta su base empirica (6824 partite: Europa+MLS+Turchia)
-    // ═══════════════════════════════════════════════════════════════════════
-    // PROBLEMA della vecchia formula: misurava l'ACCORDO tra i modelli (1-tvDist).
-    // Verificato sui backtest: correlazione accordo↔azzeccare = -0.007, cioè ZERO.
-    // Due modelli che concordano non azzeccano piu' spesso di due che discordano.
-    // Il numero era alto (spesso 90+) ma non significava nulla.
-    //
-    // NUOVA formula: la confidence e' la PROBABILITA' DEL PICK, calibrata sull'hit reale.
-    // Regressione empirica su 6824 partite: hit_reale ≈ 6.26 + 0.880 × prob_pick (1X2)
-    //                                        hit_reale ≈ -5.06 + 1.091 × prob (mercati binari)
-    // Ora "confidence 64" significa davvero "64% di probabilita' di indovinare".
-    // Riscontro sui dati: pick ≥60% → 64.7% hit reale (821 partite), ≥65% → 69.5% (387).
+    // rette di calibrazione empiriche su 6824 partite: la confidence e' la probabilita'
+    // reale di indovinare, non l'accordo fra i modelli (AGENTS.md)
     const _calibConf1X2 = (p) => Math.max(0, Math.min(100, 6.26 + 0.880 * (p * 100)));
     const _calibConfBin = (p) => Math.max(0, Math.min(100, -5.06 + 1.091 * (p * 100)));
 
     const nMinRole = Math.min(dH.role.n, dA.role.n);
-    // sampleFactor con sqrt: penalizza sample < 8 ma raggiunge 100% a n=20
-    // (prima formula n/(n+5) tappava il confidence al 70% anche con n=12 e modelli perfettamente d'accordo)
-    // sampleFactor calibrato: 12 partite di ruolo (max con roleLimit=12) → 89%
-    // 15 partite → 100%. Motivazione: 12 partite di ruolo sono quasi tutta 
-    // la stagione (19 max), non "poco". La formula sqrt(n/20) tappava al 77%
-    // anche con modelli perfettamente d'accordo.
+
     const sampleFactor = Math.min(1, Math.sqrt(nMinRole / 15));
-    // Se il KNN non ha dati tracking (wKnn < 0.05), confronta DC vs Markov
-    // (molto piu' stabili → confidence realistica anche senza tracking data)
+
     let tvDist;
     if (wKnn < 0.05) {
       tvDist = (Math.abs(probsRole.p1 - mk_ro.p1) + Math.abs(probsRole.pX - mk_ro.pX) + Math.abs(probsRole.p2 - mk_ro.p2)) / 2;
     } else {
       tvDist = (Math.abs(probsRole.p1 - probsKnn.p1) + Math.abs(probsRole.pX - probsKnn.pX) + Math.abs(probsRole.p2 - probsKnn.p2)) / 2;
     }
-    // tvDist e sampleFactor restano calcolati (usati altrove per i narrativi), ma NON
-    // determinano piu' la confidence: sui backtest non correlavano con l'accuratezza.
-    // La confidence e' ora la probabilita' del pick dell'ensemble, calibrata sull'hit reale.
-    // Statistiche previste col modello moltiplicativo, esposte per il comparatore:
-    // cosi' il CSV contiene le stesse stime che vedi a schermo invece di doverle
-    // ricalcolare dalle feature grezze (che sono medie semplici).
-    //
-    // ATTENZIONE ALL'ORDINE: il comparatore inietta il suo hook SUBITO DOPO la
-    // riga che assegna la costante "confidence" qui sotto (la trova per regex,
-    // quindi quella riga non va ne' riscritta ne' citata testualmente altrove:
-    // la regex prenderebbe la citazione). Tutto cio' che l'hook deve leggere va
-    // prodotto PRIMA di quella riga. Quando questi due blocchi stavano sotto,
-    // l'hook copiava i valori della chiamata precedente ad avviaScanner (e null
-    // alla prima): nel CSV finivano le stime di un'altra partita.
+
     const _statKeys = ['gf','npxg','xg','xgot','sot','cor','yel','fouls','poss','tch_box','ppda','field_tilt',
-                       // dal 0905-b2 anche creazione e progressione: il comparatore le riceve
-                       // gia' previste invece di ri-aggregarle con chiamate proprie
+
                        'gca','sca','xag','prog_passes','passes_box','carries_box','prog_carries'];
 
-    // Diagnostica: i valori intermedi del calcolo per NPxG e Possesso, esposti
-    // cosi' come sono. Se la stima esce schiacciata sul centro, qui si vede se
-    // il problema e' la baseline, il valore prodotto o quello concesso.
     window.__PRED_DEBUG = (function(){
       try {
         const g = (t,f) => { const x=t&&t.role&&t.role.features&&t.role.features[f];
@@ -2331,7 +1836,7 @@ async function avviaScanner() {
                    outH:(v!=null&&isFinite(v))?+v.toFixed(3):null };
         }
         return o;
-      } catch (e) { return null; }   /* una metrica assente non deve fermare la simulazione */
+      } catch (e) { return null; }
     })();
 
     window.__PRED_STATS = { H: {}, A: {} };
@@ -2339,21 +1844,14 @@ async function avviaScanner() {
       try {
         window.__PRED_STATS.H[k] = predictStat(dH, dA, k, 'role');
         window.__PRED_STATS.A[k] = predictStat(dA, dH, k, 'role');
-      } catch (e) { /* metrica assente in questa lega */ }
+      } catch (e) {  }
     }
 
-    // NB: dal 0905-b2 m1/mX/m2 arrivano gia' corretti dalla correzione residuale, quindi
-    // il pick e la confidence si riferiscono alle probabilita' finali. Le rette di
-    // calibrazione (6.26 + 0.880 p) sono state stimate su probabilita' NON corrette: con
-    // alpha 0.25 lo spostamento massimo e' ~3 punti, dentro il rumore della regressione,
-    // ma se un backtest futuro alzasse alpha andranno ristimate sulle nuove probabilita'.
+    // Il Comparatore aggancia il suo hook subito dopo la riga qui sotto, trovandola per
+    // regex: non riscriverla, e produci PRIMA tutto cio' che deve leggere (AGENTS.md).
     const _pickProb = Math.max(m1, mX, m2);
     const confidence = Math.round(_calibConf1X2(_pickProb));
 
-
-    // ── Diagnostica del predittore, mostrata a schermo ──────────────────────
-    // La catena motore -> hook -> comparatore -> CSV e' lunga e si rompe in
-    // silenzio. Questi sono i numeri che servono, letti dove vengono prodotti.
     try {
       const _dg = (t,f) => { const x=t&&t.role&&t.role.features&&t.role.features[f];
                              return (x&&x.decay>0)?x.decay:null; };
@@ -2372,8 +1870,7 @@ async function avviaScanner() {
             + '<td><b>'+_fm(predictStat(dH,dA,f,'role'))+'</b></td></tr>';
       }
       _h += '</tbody></table>';
-      // Riga di sintesi della correzione residuale: dice se e' stata applicata,
-      // su quante metriche e di quanto ha spostato le probabilita'.
+
       const _rc = window.__RESID_DEBUG;
       if (_rc && _rc.applied) {
         const _d1 = ((m1 - _rc.before.p1) * 100), _d2 = ((m2 - _rc.before.p2) * 100);
@@ -2384,8 +1881,7 @@ async function avviaScanner() {
             + ' &middot; spostamento 1 ' + (_d1 >= 0 ? '+' : '') + _d1.toFixed(1)
             + ' pt, 2 ' + (_d2 >= 0 ? '+' : '') + _d2.toFixed(1) + ' pt</div>';
       } else if (_rc && _rc.sig != null) {
-        // alpha a zero: la correzione non sposta nulla ma il segnale c'e' e viene
-        // esportato, cosi' l'A/B del CSV puo' continuare a valutare se riaccenderla.
+
         _h += '<div style="font-size:11px;color:var(--dim);margin-top:6px">'
             + 'Correzione residuale <b>spenta</b> (alpha 0, vedi commento nel codice: fuori '
             + 'campione il segnale cambiava segno). Segnale comunque misurato su '
@@ -2404,7 +1900,7 @@ async function avviaScanner() {
         + (e && e.message ? e.message : e) + '</div>');
     }
 
-    let hiddenValueMsg = ""; let hiddenValueMsgClean = ""; 
+    let hiddenValueMsg = ""; let hiddenValueMsgClean = "";
     if (chokeH > 1.2 && clumsyA > 15) {
         hiddenValueMsg = `🩸 <strong>BLOOD SCENT ALERT:</strong> Il Gegenpressing ${artDel(hName)} scontrerà la goffaggine in disimpegno dell'${aName} (${f1(clumsyA)} perse). Goleada in transizione possibile.`;
         hiddenValueMsgClean = `BLOOD SCENT ALERT: Gegenpressing ${hName} vs Goffaggine ${aName}. Rischio imbarcata.`;
@@ -2422,68 +1918,52 @@ async function avviaScanner() {
     document.getElementById('setup-card').style.display = 'none'; document.getElementById('dashboard-area').style.display = 'block';
     safeTxt('ui-title', `${hName} - ${aName}`); safeTxt('ui-subtitle', `Motore V9.7: Analisi Integrale su ${dH.overall.n} match (Simulazione al ${dateInput})`);
 
-    // mostra N/D solo quando la metrica non e' MAI stata restituita: uno zero reale resta zero
     const covOf = (team, key) => ((team.overall.coverage||{})[key]||0);
     const nd = (team, key, txt) => covOf(team, key) > 0 ? txt : 'N/D';
     const renderStreak = (arr) => arr.map(s => { let bg = s==='V' ? 'var(--green)' : (s==='S' ? 'var(--red)' : '#f57c00'); return `<span style="display:inline-block;width:18px;height:18px;line-height:18px;text-align:center;border-radius:50%;background:${bg};color:white;font-size:10px;font-weight:bold;margin:0 2px">${s}</span>`; }).join('');
     safeHtml('ui-streak', `<div style="display:flex; align-items:center; gap:5px"><span style="font-size:11px;font-weight:bold;color:var(--blue)">${hName}</span> ${renderStreak(dH.overall.streak.slice().reverse())}</div><div style="font-size:12px;color:var(--dim)">vs</div><div style="display:flex; align-items:center; gap:5px">${renderStreak(dA.overall.streak.slice().reverse())} <span style="font-size:11px;font-weight:bold;color:var(--red)">${aName}</span></div>`);
 
     safeTxt('master-1', pct(m1)); safeTxt('master-x', pct(mX)); safeTxt('master-2', pct(m2));
-    // 1X2 per modello
+
     safeTxt('mdl-dc-1', pct(probsRole.p1)); safeTxt('mdl-dc-x', pct(probsRole.pX)); safeTxt('mdl-dc-2', pct(probsRole.p2));
     safeTxt('mdl-knn-1', pct(probsKnn.p1)); safeTxt('mdl-knn-x', pct(probsKnn.pX)); safeTxt('mdl-knn-2', pct(probsKnn.p2));
     safeTxt('mdl-ol-1', pct(probsOL.p1)); safeTxt('mdl-ol-x', pct(probsOL.pX)); safeTxt('mdl-ol-2', pct(probsOL.p2));
     safeTxt('mdl-mk-1', pct(mk_ro.p1)); safeTxt('mdl-mk-x', pct(mk_ro.pX)); safeTxt('mdl-mk-2', pct(mk_ro.p2));
     safeTxt('mdl-ens-1', pct(m1)); safeTxt('mdl-ens-x', pct(mX)); safeTxt('mdl-ens-2', pct(m2));
-    
-    // === CONFIDENCE PER MERCATO SPECIFICO ===
-    // Formula: 100 * (1 - max_spread) * sampleFactor
-    // dove max_spread = max_pairwise_disagreement tra i modelli su quel mercato.
-    // Uso max invece di media per essere piu' conservativo: se un modello divergesse 
-    // di 15% mentre gli altri concordano, va segnalato.
-    // CONFIDENCE PER MERCATO — stessa riscrittura: non piu' accordo tra modelli (correlazione 0),
-    // ma la probabilita' del mercato calibrata sull'hit reale osservato nei backtest.
-    // isBin=true per i mercati a due esiti (doppie chance, GG/NG, Over/Under), che hanno
-    // una calibrazione diversa dall'1X2 a tre esiti.
+
     const _confMarket = (probs, sf, isBin) => {
       const valid = probs.filter(p => isFinite(p) && p >= 0);
       if (!valid.length) return null;
       const pMean = valid.reduce((s, x) => s + x, 0) / valid.length;
       return Math.round(isBin ? _calibConfBin(pMean) : _calibConf1X2(pMean));
     };
-    // Soglie ricalibrate sul NUOVO significato (= probabilita' reale di indovinare).
-    // Sui backtest: ≥60 → 64.7% hit (12% delle partite) | 50-60 → 53-57% | <50 → sotto il 50%.
-    // NB: il massimo osservato su 6824 partite e' ~84, quindi le vecchie soglie (85/70)
-    // avrebbero colorato di rosso quasi tutto.
+
     const _badgeConf = (v) => {
       if (v == null) return '<span style="color:var(--dim)">--</span>';
       const col = v >= 60 ? 'var(--green)' : (v >= 50 ? 'var(--orange)' : 'var(--red)');
       return '<span style="color:' + col + '">' + v + '</span>';
     };
-    
-    // Confidence per ESITO 1X2 (usa i 3 modelli DC/KNN/Markov)
+
     safeHtml('conf-p1', _badgeConf(_confMarket([m1], sampleFactor)));
     safeHtml('conf-px', _badgeConf(_confMarket([mX], sampleFactor)));
     safeHtml('conf-p2', _badgeConf(_confMarket([m2], sampleFactor)));
-    
-    // Valori DC/KNN per doppie chance e mercati gol
+
     const dcP1X = probsRole.p1 + probsRole.pX, dcPX2 = probsRole.pX + probsRole.p2, dcP12 = probsRole.p1 + probsRole.p2;
     const knnP1X = probsKnn.p1 + probsKnn.pX, knnPX2 = probsKnn.pX + probsKnn.p2, knnP12 = probsKnn.p1 + probsKnn.p2;
     const dcGG = probsRole.pGG, dcNG = 1 - probsRole.pGG, dcOv = probsRole.pOv, dcUn = 1 - probsRole.pOv;
     const knnGG = probsKnn.pGG, knnNG = 1 - probsKnn.pGG, knnOv = probsKnn.pOv, knnUn = 1 - probsKnn.pOv;
-    
+
     safeTxt('mdl-dc-1x', pct(dcP1X)); safeTxt('mdl-dc-x2', pct(dcPX2)); safeTxt('mdl-dc-12', pct(dcP12));
     safeTxt('mdl-dc-gg', pct(dcGG)); safeTxt('mdl-dc-ng', pct(dcNG));
     safeTxt('mdl-dc-ov', pct(dcOv)); safeTxt('mdl-dc-un', pct(dcUn));
     safeTxt('mdl-knn-1x', pct(knnP1X)); safeTxt('mdl-knn-x2', pct(knnPX2)); safeTxt('mdl-knn-12', pct(knnP12));
     safeTxt('mdl-knn-gg', pct(knnGG)); safeTxt('mdl-knn-ng', pct(knnNG));
     safeTxt('mdl-knn-ov', pct(knnOv)); safeTxt('mdl-knn-un', pct(knnUn));
-    
-    // Confidence per doppie chance (DC vs KNN)
+
     safeHtml('conf-1x', _badgeConf(_confMarket([dcP1X], sampleFactor, true)));
     safeHtml('conf-x2', _badgeConf(_confMarket([dcPX2], sampleFactor, true)));
     safeHtml('conf-12', _badgeConf(_confMarket([dcP12], sampleFactor, true)));
-    // Confidence per mercati gol (DC vs KNN)
+
     safeHtml('conf-gg', _badgeConf(_confMarket([dcGG], sampleFactor, true)));
     safeHtml('conf-ng', _badgeConf(_confMarket([dcNG], sampleFactor, true)));
     safeHtml('conf-ov', _badgeConf(_confMarket([dcOv], sampleFactor, true)));
@@ -2497,21 +1977,19 @@ async function avviaScanner() {
     window.__MASTER = { p1: m1, pX: mX, p2: m2 }; calcValue();
     safeTxt('master-conf', confidence + "/100");
     document.getElementById('conf-bar').style.width = confidence + "%";
-    // Soglie sul nuovo significato: <50 = sotto il coin-flip, ≥60 = fascia buona (64.7% hit sui backtest)
+
     { const _cb = document.getElementById('conf-bar');
       if (confidence < 50) _cb.style.background = "var(--red)";
       else if (confidence >= 60) _cb.style.background = "var(--green)";
       else _cb.style.background = "var(--orange)"; }
     safeHtml('hidden-value-msg', hiddenValueMsg);
 
-
-    
     let strSniperH = covOf(dH,'xgot') > 0 ? f2(xgotH) : (covOf(dH,'xg_shot') > 0 ? `${f2(xgShotH)} (xG/Tiro)` : "N/D");
     let strSniperA = covOf(dA,'xgot') > 0 ? f2(xgotA) : (covOf(dA,'xg_shot') > 0 ? `${f2(xgShotA)} (xG/Tiro)` : "N/D");
     safeTxt('l-xgot-h', f2(npxgH_ro) + " vs " + strSniperH); safeTxt('l-xgot-a', f2(npxgA_ro) + " vs " + strSniperA);
     safeTxt('l-set-h', setPctH != null ? f1(setPctH) + "%" : 'N/D'); safeTxt('l-set-a', setPctA != null ? f1(setPctA) + "%" : 'N/D');
     safeTxt('l-bc-h', nd(dH,'bc', f1(bcH) + " / " + f1(bcmH))); safeTxt('l-bc-a', nd(dA,'bc', f1(bcA) + " / " + f1(bcmA)));
-    
+
     let lethNarrative = "";
     if(xgotH > npxgH_ro + 0.3) lethNarrative += `🔪 <strong>Cecchini:</strong> ${Cap(artIl(hName))} aggiunge valore ai tiri (xGOT > NPxG). Calciano angolato e sprecano poco.<br>`;
     else if(npxgH_ro > xgotH + 0.3 && xgotH > 0) lethNarrative += `🧱 <strong>Tiri Sporchi:</strong> ${Cap(artIl(hName))} depotenzia i propri xG calciando male o centralmente (xGOT < NPxG).<br>`;
@@ -2530,7 +2008,7 @@ async function avviaScanner() {
     if (defNarrative === "") defNarrative = "Squadre con metriche di compattezza standard e Gegenpressing nella norma.";
     safeHtml('defensive-dialogue', defNarrative);
 
-    safeTxt('tr-x-h', nd(dH,'avg_x', f1(avgX_H) + "m")); safeTxt('tr-x-a', nd(dA,'avg_x', f1(avgX_A) + "m")); 
+    safeTxt('tr-x-h', nd(dH,'avg_x', f1(avgX_H) + "m")); safeTxt('tr-x-a', nd(dA,'avg_x', f1(avgX_A) + "m"));
     let styleStr = "Equilibrato"; if(avgX_H > 52 && avgX_A < 42) styleStr = "Dominio vs Muro"; else if(avgX_H > 50 && avgX_A > 50) styleStr = "Box-to-Box"; safeTxt('tr-style', styleStr);
     safeTxt('tr-f3-h', nd(dH,'f3_entries', String(Math.round(f3H)))); safeTxt('tr-box-h', nd(dH,'tch_box', String(Math.round(tbH)))); safeTxt('tr-pen-h', (covOf(dH,'f3_entries') > 0 && covOf(dH,'tch_box') > 0) ? f1(penRateH) + "%" : "N/D");
     safeTxt('tr-f3-a', nd(dA,'f3_entries', String(Math.round(f3A)))); safeTxt('tr-box-a', nd(dA,'tch_box', String(Math.round(tbA)))); safeTxt('tr-pen-a', (covOf(dA,'f3_entries') > 0 && covOf(dA,'tch_box') > 0) ? f1(penRateA) + "%" : "N/D");
@@ -2620,9 +2098,6 @@ async function avviaScanner() {
     safeTxt('elo-a-ov', eloA_ov); safeTxt('elo-a-tr', (trendA > 0 ? "+" : "") + Math.round(trendA)); if(trendA < -20) document.getElementById('elo-a-tr').style.color = "var(--red)";
     safeHtml('table-log-home', dH.logHtml); safeHtml('table-log-away', dA.logHtml);
 
-    // ============ DIAGNOSTICA COPERTURA API ============
-    // Serve a distinguere i due regimi: se una metrica e' coperta al 60-90% le chiavi assenti erano
-    // degli zeri; se e' coperta allo 0% il provider non la espone e nessuna imputazione la recupera.
     const COV_LIST = [['npxg','NPxG','rapporto'],['xg','xG','rapporto'],['poss','Possesso','rapporto'],['xgot','xGOT','conteggio'],['bc','Big Chances','conteggio'],['bcm','Big Chances sprecate','conteggio'],['xg_sp','xG palle inattive','conteggio'],['ppda','PPDA','rapporto'],['field_tilt','Field Tilt','rapporto'],['avg_x','Baricentro offensivo','rapporto'],['avg_def_x','Altezza difensiva','rapporto'],['rec_time','Tempo di recupero','rapporto'],['cp_regains','Recuperi &lt;5s','conteggio'],['tch_box','Tocchi in area','conteggio'],['f3_entries','Ingressi trequarti','conteggio'],['cross','Cross','conteggio'],['drib','Dribbling riusciti','conteggio'],['thru','Filtranti','conteggio'],['misc','Controlli sbagliati','conteggio'],['disp','Palle perse','conteggio']];
     let covHtml = `<tr><th>Metrica</th><th>Tipo</th><th>${hName}</th><th>${aName}</th></tr>`;
     COV_LIST.forEach(([k, label, type]) => {
@@ -2706,7 +2181,7 @@ Gol/Over-Under:
 - NoGoal (NG): ${pct(1 - probsRole.pGG)} → [ALTO/MEDIO/BASSO] Motivo in 1 frase.
 - Over 2.5: ${pct(probsRole.pOv)} → [ALTO/MEDIO/BASSO] Cita ritmo, timing gol per fascia e NPxG totali.
 - Under 2.5: ${pct(1 - probsRole.pOv)} → [ALTO/MEDIO/BASSO] Motivo in 1 frase.`;
-    
+
     document.getElementById('ai-prompt').value = p;
 
   } catch(e) {
@@ -2717,7 +2192,6 @@ Gol/Over-Under:
   }
 }
 
-// Il modello da solo non dice se una scommessa conviene: serve il confronto con la quota offerta.
 function calcValue() {
   const out = document.getElementById('value-out'); if(!out) return;
   if(!window.__MASTER) { return; }
