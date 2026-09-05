@@ -155,7 +155,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b10</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b11</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -1504,7 +1504,7 @@ function renderVerdetti(mk) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b10';
+window.__SCANNER_BUILD = '0905-b11';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -1649,30 +1649,32 @@ function applyResidualCorrection(probs, att, dif) {
   return { p1: p1 / tot, pX: pX / tot, p2: p2 / tot, debug: dbg };
 }
 
-window.MARKET_SHRINK_K = window.MARKET_SHRINK_K || { cor: 0.25, sot: 0.30, yel: 0.15, fouls: 0.30 };
+window.MARKET_SHRINK_K = window.MARKET_SHRINK_K || { cor: 0.15, sot: 0.09, yel: 0.10, fouls: 0.15 };
 const MARKET_LINES = { cor: [8.5, 9.5, 10.5, 11.5], sot: [6.5, 7.5, 8.5, 9.5], yel: [3.5, 4.5, 5.5] };
 
-const GOALS_SOT_CAP = 0.15;
-window.GOALS_ALPHA = (typeof window.GOALS_ALPHA === 'number') ? window.GOALS_ALPHA : 0.50;
+const GOALS_SOT_CAP = 0.20;
+window.SOT_PER_GOAL = (typeof window.SOT_PER_GOAL === 'number') ? window.SOT_PER_GOAL : 3.25;
+window.GOALS_SOT_W  = (typeof window.GOALS_SOT_W  === 'number') ? window.GOALS_SOT_W  : 0.50;
 
-function goalsSotCorrection(att, dif) {
-  const dbg = { sotH: null, sotA: null, lgSot: null, ratio: null, mult: 1, alpha: window.GOALS_ALPHA, applied: false };
-  const alpha = window.GOALS_ALPHA;
-  if (!(alpha > 0) || !att || !dif) return dbg;
+function goalsSotCorrection(att, dif, lamTot) {
+  const dbg = { sotH: null, sotA: null, sumSot: null, lamSot: null, lamDC: lamTot,
+                w: window.GOALS_SOT_W, spg: window.SOT_PER_GOAL, scale: 1, capped: false, applied: false };
+  const w = window.GOALS_SOT_W, spg = window.SOT_PER_GOAL;
+  if (!(w > 0) || !(spg > 0) || !att || !dif) return dbg;
+  if (!isFinite(lamTot) || lamTot <= 0) return dbg;
   const sH = predictStat(att, dif, 'sot', 'role');
   const sA = predictStat(dif, att, 'sot', 'role');
-  if (sH == null || sA == null || !isFinite(sH) || !isFinite(sA)) return dbg;
-  const bA = att.role && att.role.features && att.role.features._base ? att.role.features._base.sot : null;
-  const bB = dif.role && dif.role.features && dif.role.features._base ? dif.role.features._base.sot : null;
-  const pool = [bA, bB].filter(v => v != null && isFinite(v) && v > 0);
-  if (!pool.length) return dbg;
-  const lg = pool.reduce((a, b) => a + b, 0) / pool.length;
-  if (!(lg > 0)) return dbg;
-  const ratio = (sH + sA) / (2 * lg);
-  if (!isFinite(ratio) || ratio <= 0) return dbg;
-  let mult = 1 + alpha * (ratio - 1);
-  mult = Math.max(1 - GOALS_SOT_CAP, Math.min(1 + GOALS_SOT_CAP, mult));
-  dbg.sotH = sH; dbg.sotA = sA; dbg.lgSot = lg; dbg.ratio = ratio; dbg.mult = mult; dbg.applied = true;
+  if (sH == null || sA == null || !isFinite(sH) || !isFinite(sA) || sH < 0 || sA < 0) return dbg;
+  const sum = sH + sA;
+  if (!(sum > 0)) return dbg;
+  const lamSot = sum / spg;
+  let scale = ((1 - w) * lamTot + w * lamSot) / lamTot;
+  if (!isFinite(scale) || scale <= 0) return dbg;
+  const lo = 1 - GOALS_SOT_CAP, hi = 1 + GOALS_SOT_CAP;
+  dbg.capped = (scale < lo || scale > hi);
+  scale = Math.max(lo, Math.min(hi, scale));
+  dbg.sotH = sH; dbg.sotA = sA; dbg.sumSot = sum; dbg.lamSot = lamSot;
+  dbg.scale = scale; dbg.applied = true;
   return dbg;
 }
 
@@ -1731,11 +1733,11 @@ async function avviaScanner() {
     lamH_role = wSH * lamH_role + (1 - wSH) * LG.avgH; lamA_role = wSA * lamA_role + (1 - wSA) * LG.avgA;
     if(!isFinite(lamH_over) || lamH_over < 0.15) lamH_over = LG.avgH; if(!isFinite(lamA_over) || lamA_over < 0.15) lamA_over = LG.avgA;
 
-    const _GC = goalsSotCorrection(dH, dA);
+    const _GC = goalsSotCorrection(dH, dA, lamH_role + lamA_role);
     window.__GOALS_DEBUG = _GC;
-    if (_GC.applied && isFinite(_GC.mult) && _GC.mult > 0) {
-      lamH_role *= _GC.mult; lamA_role *= _GC.mult;
-      lamH_over *= _GC.mult; lamA_over *= _GC.mult;
+    if (_GC.applied && isFinite(_GC.scale) && _GC.scale > 0) {
+      lamH_role *= _GC.scale; lamA_role *= _GC.scale;
+      lamH_over *= _GC.scale; lamA_over *= _GC.scale;
     }
     if(!isFinite(lamH_role) || lamH_role < 0.15) lamH_role = lamH_over; if(!isFinite(lamA_role) || lamA_role < 0.15) lamA_role = lamA_over;
 
@@ -1756,6 +1758,12 @@ async function avviaScanner() {
       const pick = (team) => (scope === 'role') ? team.role : team.overall;
       const getF = (team, feat) => { const o = pick(team).features[feat]; return (o && o.decay > 0) ? o.decay : 0; };
       const getA = (team, feat) => pick(team).vals[feat] || [];
+      const baseOf = (feat) => {
+        const bH = (dH[scope] && dH[scope].features && dH[scope].features._base) ? dH[scope].features._base[feat] : null;
+        const bA = (dA[scope] && dA[scope].features && dA[scope].features._base) ? dA[scope].features._base[feat] : null;
+        const pool = [bH, bA].filter(v => v != null && isFinite(v) && v > 0);
+        return pool.length ? pool.reduce((s2, v) => s2 + v, 0) / pool.length : null;
+      };
       const lamOf = (feat) => {
         const kk = window.MARKET_SHRINK_K[feat];
         const a = predictStat(dH, dA, feat, scope, kk), b = predictStat(dA, dH, feat, scope, kk);
@@ -1779,7 +1787,9 @@ async function avviaScanner() {
       const linesYel = MARKET_LINES.yel.map(l => ({ l, p: over(l, lYel, kYel) }));
       const pOv9c = over(9.5, lCor, kCor); const pOv8s = over(8.5, lSot, kSot); const pOv3y = over(3.5, lYel, kYel);
       const pRed = 1 - poisson(0, rH + rA);
+      const baseCor = baseOf('cor'), baseSot = baseOf('sot'), baseYel = baseOf('yel');
       return { lCor, cH, cA, lSot, sH, sA, lYel, yH, yA, lFls, scope,
+               baseCor, baseSot, baseYel,
                linesCor, linesSot, linesYel, pOv9c, pOv8s, pOv3y, pRed, kCor, kSot, kYel };
     };
     const advRole = calcAdv(true); const advOver = calcAdv(false);

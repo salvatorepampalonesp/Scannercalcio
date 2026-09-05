@@ -24,7 +24,7 @@ tutti attraverso `fetchMatchRaw` (che li mette in `RAW_CACHE`).
 Sezione di consegna: dice a che punto siamo, così una sessione nuova non
 ricomincia da capo. Aggiornala quando cambia qualcosa di sostanziale.
 
-**Build corrente: `0905-b10`.** Scanner e Comparatore devono coincidere, e sul
+**Build corrente: `0905-b11`.** Scanner e Comparatore devono coincidere, e sul
 Comparatore il badge sotto la dropzone deve uscire **verde** dopo aver trascinato
 lo Scanner. Il branch di lavoro è `claude/scanner-stat-optimization-sgs62u`;
 `main` è indietro (fermo al merge della PR #1, cioè al `0905-b2`), quindi
@@ -50,11 +50,13 @@ lo Scanner. Il branch di lavoro è `claude/scanner-stat-optimization-sgs62u`;
    una sola, KNN delle formazioni leggibile a schermo, `xg_sp_ag` cablata.
 9. `0905-b9` — **correzione dei lambda coi tiri in porta previsti** e **salto
    data dell'Elo reso continuo**. Le due voci sotto.
-10. `0905-b10` — **i mercati sui numeri (corner, tiri, cartellini) resi
-    scommettibili**: lambda con shrinkage tarato, dispersione ristretta invece
-    che tagliata a mano, piu' linee invece di una sola; e la **Progressione
-    Storica** ricostruita sulle metriche in cui la forma recente esiste davvero.
-    Vedi *I mercati sui numeri* e *Le costanti messe a mano*.
+10. `0905-b10` — **i mercati sui numeri (corner, tiri, cartellini)**: lambda con
+    shrinkage tarato, dispersione ristretta invece che tagliata a mano, piu' linee
+    invece di una sola; e la **Progressione Storica** ricostruita sulle metriche
+    in cui la forma recente esiste davvero.
+11. `0905-b11` — **il backtest ha bocciato meta' del `b9` e del `b10`, e ha detto
+    perche'**: un'unica causa, `_base` usata come se fosse una media di lega
+    quando e' una media *della coppia*. Vedi *La baseline di coppia*.
 
 **`0905-b9`, prima voce: `sum_sot` che corregge i lambda.**
 `sum_sot` (la somma dei tiri in porta previsti delle due squadre) è l'unica
@@ -464,6 +466,15 @@ reintrodurre modificando in buona fede.
 Il dettaglio completo delle 23 correzioni v9.4 → v9.6 sta nel commento in testa
 a `scanner.html` al commit `cd51a69`, prima della ripulitura.
 
+- **`_base` non è una media di lega, è una media della coppia.** Usarla come
+  denominatore di qualcosa che le correla (0.84 sui tiri in porta) cancella il
+  segnale; usarla come moltiplicatore fa entrare due volte l'effetto coppia e
+  gonfia le previsioni. Ha svuotato due modifiche di fila. Vedi *La baseline di
+  coppia*.
+- **Non leggere mai l'AUC dei mercati gol aggregata fra leghe.** Con base rate
+  diversi (Premier 55.1% di Over 2.5, Serie A 45.7%) l'aggregato dava 0.531 dove
+  dentro ogni lega era 0.495 e 0.500, cioè caso puro. Sempre per lega.
+
 ## Cosa è già stato provato, e come è andata
 
 Questa è la sezione da leggere **prima** di proporre un miglioramento: quasi tutte
@@ -581,7 +592,7 @@ diverse. Servirebbe l'endpoint `/v1/matches/{id}/shots`, che dà ogni tiro con
 una chiamata in più per partita storica (da 4 a 5, +25% sul batch) ed è il
 candidato più serio rimasto.
 
-## I mercati sui numeri: perché non erano scommettibili, e cosa e' cambiato
+## I mercati sui numeri: perché non erano scommettibili, e cosa è cambiato
 
 Misurato sul panel (786 partite con storico sufficiente, walk-forward: ogni
 previsione usa solo le partite precedenti).
@@ -619,8 +630,11 @@ le metriche misurabili, ed e' da li' che viene il valore proposto per `yel`
 perche' il panel non porta i cartellini. Il CSV del Comparatore li esporta gia',
 quindi bastera' rifare il panel includendoli.
 
-Risultato sulle 786 partite, con l'ottimo **interno** (non monotono, come la
-disciplina richiede):
+Risultato sulle 786 partite del panel, con l'ottimo **interno** (non monotono,
+come la disciplina richiede). **Attenzione: questi numeri vengono da una
+simulazione fuori dal motore, che usava una vera media di lega. In produzione il
+motore usa `_base`, che e' una media di coppia, e le pendenze reali sono uscite
+molto piu' basse — vedi *La baseline di coppia*.**
 
 | | pendenza | Brier | errore di calibrazione |
 |---|---|---|---|
@@ -659,7 +673,8 @@ peggiorare, e infatti il campione da 30 partite la invocava a sproposito nel 38%
 dei casi sui corner e nel 62% sui tiri, saltando fra due distribuzioni diverse
 per puro rumore di campionamento.
 
-**Il tetto.** Se si conoscesse *esattamente* il lambda di ogni partita, l'AUC
+**Il tetto.** (Misura sul panel.) Se si conoscesse *esattamente* il lambda di
+ogni partita, l'AUC
 massima sui corner sarebbe **circa 0.68**, con la probabilita' di Over 9.5 che
 spazia dal 27% al 68% fra il 10° e il 90° percentile. C'e' quindi spazio vero:
 siamo a 0.56 contro un tetto di 0.68, molto piu' margine che sui gol. Ma
@@ -703,6 +718,100 @@ Le quattro metriche che la card mostrava — NPxG fatti, NPxG subiti, Field Tilt
 PPDA — hanno `b2` di -0.01, +0.01, -0.06 e +0.06, con |t| sotto 1. Erano
 esattamente le quattro su cui la forma recente non dice nulla. Sostituite con sei
 delle nove persistenti.
+
+## La baseline di coppia: l'errore che ha svuotato due modifiche
+
+Trovato dal backtest `0905-b10` su 756 partite (Serie A + Premier, 2025/26).
+Vale la pena leggerlo prima di toccare qualunque cosa passi da `predictStat`.
+
+`_base[k]` **non e' la media di lega.** E' la media di *tutti i valori visti nelle
+partite di quella squadra*, prodotti e concessi insieme. Su ~30 partite e'
+un'ottima stima del livello di quella squadra e dei suoi avversari — cioe'
+contiene un **effetto coppia**, non solo il livello della lega. Misurato:
+`corr(sum_sot previsto, baseline usata) = +0.841`.
+
+Per `predictStat` va benissimo: il rapporto `mine/lg` significa «quanto sopra il
+proprio ambiente», ed e' proprio quello che serve. Ma usarla in due punti l'ha
+rotta:
+
+**1. La correzione gol del `b9` era un rapporto contro se stessa.** Il codice
+faceva `ratio = sum_sot / (2 x lg)` con `lg` la media dei due `_base`. Dividere
+per una quantita' che correla 0.84 col numeratore cancella la variazione fra
+partite, cioe' esattamente il segnale. Misura:
+
+| | AUC Over 2.5 (Premier / Serie A) |
+|---|---|
+| `sum_sot` grezzo | 0.534 / 0.537 |
+| `sum_sot / baseline di coppia` (il `b9`) | **0.469 / 0.542** |
+| `sum_sot / media della lega` | 0.534 / 0.537 |
+
+La correzione applicata spostava l'AUC di **+0.0018** con un errore standard di
+±0.021: indistinguibile da zero, come previsto da un rapporto quasi costante
+(5°–95° percentile 0.936–1.061, contro 0.846–1.165 con un riferimento sano).
+
+**2. Le previsioni di mercato del `b10` erano troppo larghe.** Se
+`pred ≈ lg x (1 + k(...))` e `lg` varia con la coppia, la variazione della coppia
+entra **due volte**. Pendenze misurate in produzione contro lo 0.85 atteso:
+corner **0.60**, tiri in porta **0.30**, gialli **0.64** (per lega: corner 0.43
+Premier e 0.19 Serie A). Le previsioni hanno sd 0.814 sui corner dove la sd utile
+sarebbe 0.486.
+
+**Attenzione al tranello dell'aggregazione.** L'AUC complessiva sull'Over 2.5 era
+0.531, ma dentro le leghe era 0.495 e 0.500 — cioe' puro caso. Il numero
+aggregato era gonfiato dai base rate diversi (Premier 55.1% di Over, Serie A
+45.7%). **Le AUC dei mercati gol vanno sempre lette per lega**, mai aggregate.
+
+### Come e' stato risolto
+
+**Per i gol**, la correzione non e' piu' un moltiplicatore ma una **seconda stima
+del lambda**, mediata con quella del Dixon-Coles:
+
+```
+lam_sot = sum_sot / SOT_PER_GOAL          (SOT_PER_GOAL = 3.25)
+lam_mix = (1 - w) x lam_DC + w x lam_sot   (w = 0.50)
+scala   = lam_mix / lam_DC                 (cap +/-20%, tocca lo 0.1% delle volte)
+```
+
+La differenza non e' cosmetica. Un moltiplicatore limitato lascia il *rango*
+dominato da `lam_DC`, che sull'Over 2.5 vale 0.495/0.500, cioe' niente: per
+smuoverlo servirebbe alpha 5 e cap ±90%, e il Brier passerebbe da 0.2537 a
+**0.3151**. Una media pesata invece sposta il rango mantenendo il livello. Le
+misure, per lega:
+
+| w | AUC Pre | AUC Ser | Brier | media lambda | MAE gol |
+|---|---|---|---|---|---|
+| 0.00 | 0.495 | 0.500 | 0.2537 | 2.54 | 1.251 |
+| **0.50** | **0.514** | **0.520** | **0.2508** | **2.53** | — |
+| 1.00 | 0.534 | 0.537 | 0.2487 | 2.54 | 1.235 |
+
+Migliora **ogni** linea Over (0.5, 1.5, 2.5, 4.5) su AUC e Brier insieme, e il
+livello resta calibrato su tutte. `w = 0.50` e' scelto invece di 1.00 per
+disciplina: il miglioramento e' monotono fino al bordo, e l'unica linea con un
+ottimo interno (Over 3.5, massimo attorno a w 0.35–0.70) suggerisce di non
+spingere. `window.GOALS_SOT_W` e' esposto e il CSV ricostruisce w = 0 / 0.25 /
+0.5 / 0.75 / 1.0 senza rilanciare il motore: sara' la terza lega a decidere se
+alzarlo.
+
+`SOT_PER_GOAL = 3.25` e' misurato (3.08 Premier, 3.41 Serie A) e tocca solo il
+*livello*, mai il rango: a 3.0 la media del lambda sale a 2.64, a 3.5 scende a
+2.44, contro un reale di 2.59.
+
+**Per i mercati sui numeri**, i `k` sono stati moltiplicati per la pendenza
+misurata (`k_nuovo = k_vecchio x pendenza`), che al primo ordine e' esatto perche'
+lo scarto dalla baseline e' proporzionale a `k`:
+
+| | k del `b10` | pendenza misurata | k del `b11` |
+|---|---|---|---|
+| corner | 0.25 | 0.60 | **0.15** |
+| tiri in porta | 0.30 | 0.30 | **0.09** |
+| gialli | 0.15 | 0.64 | **0.10** |
+| falli | 0.30 | non misurata | 0.15 |
+
+Questo e' **un passo di un ciclo di calibrazione, non una taratura finita**: se
+la sovradispersione residua venisse da `lg` invece che dal termine in `k`,
+abbassare `k` non basterebbe. Per chiudere la questione il CSV ora esporta la
+baseline di coppia usata per ogni mercato: al prossimo backtest si misura
+direttamente quanto pesa `lg` e quanto il termine in `k`.
 
 ## Le costanti messe a mano: quali sono legittime e quali rompono i conti
 

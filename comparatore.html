@@ -162,7 +162,7 @@ select{cursor:pointer}
   <div class="topbar">
     <div class="brand">
       <h1>Comparatore V9.7</h1>
-      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b10</span>
+      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b11</span>
       <span class="badge" id="engine-badge">motore non caricato</span>
     </div>
     <span class="badge">previsioni vs realtà</span>
@@ -674,7 +674,7 @@ async function loadEngineFromText(text, fileName) {
     <p><code>${fileName}</code> — clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
 
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b10';
+  const _bComp = '0905-b11';
   const _el = document.getElementById('engine-build');
   if (_el) {
     if (!_bScan) {
@@ -1952,7 +1952,7 @@ function cmpExportCSV() {
   rows.push('Sezione A/B SHRINKAGE: stessa partita ricalcolata con piu\' valori di SHRINK_K.' + pad);
   rows.push('Sezione A/B CORREZIONE RESIDUALE: stessa partita con piu\' valori di alpha (ricostruiti, senza rilanciare il motore).' + pad);
   rows.push('Sezioni METRICHE 0905-b4: le 34 metriche aggiunte al motore, previste col modello moltiplicativo e reali.' + pad);
-  rows.push('Sezione CORREZIONE GOL: i lambda sono moltiplicati per un fattore dai tiri in porta previsti (alpha 0.50).' + pad);
+  rows.push('Sezione LAMBDA DAI TIRI: i tiri in porta previsti danno una SECONDA stima del totale gol, mediata col Dixon-Coles (peso w 0.50).' + pad);
   rows.push('');
 
   const dateRow = ['DATA'];
@@ -2060,7 +2060,10 @@ function cmpExportCSV() {
     ['Dispersione corner (k)', m => { const a = m.R.advRole||m.R.advOver; return [a?(isFinite(a.kCor)?_num(a.kCor):'Poisson'):'N/D', '-', '', '']; }],
     ['Dispersione tiri porta (k)', m => { const a = m.R.advRole||m.R.advOver; return [a?(isFinite(a.kSot)?_num(a.kSot):'Poisson'):'N/D', '-', '', '']; }],
     ['Dispersione gialli (k)', m => { const a = m.R.advRole||m.R.advOver; return [a?(isFinite(a.kYel)?_num(a.kYel):'Poisson'):'N/D', '-', '', '']; }],
-    ['Ambito usato', m => { const a = m.R.advRole||m.R.advOver; return [a&&a.scope?a.scope:'N/D', '-', '', '']; }]
+    ['Ambito usato', m => { const a = m.R.advRole||m.R.advOver; return [a&&a.scope?a.scope:'N/D', '-', '', '']; }],
+    ['Baseline coppia corner', m => { const a = m.R.advRole||m.R.advOver; return [a&&a.baseCor!=null?_num(a.baseCor):'N/D', '-', '', '']; }],
+    ['Baseline coppia tiri porta', m => { const a = m.R.advRole||m.R.advOver; return [a&&a.baseSot!=null?_num(a.baseSot):'N/D', '-', '', '']; }],
+    ['Baseline coppia gialli', m => { const a = m.R.advRole||m.R.advOver; return [a&&a.baseYel!=null?_num(a.baseYel):'N/D', '-', '', '']; }]
   ];
   const lineMkts = [];
   [['Corner','linesCor','cor'], ['Tiri porta','linesSot','sot'], ['Gialli','linesYel','yel']].forEach(([nome, campo, real]) => {
@@ -2275,16 +2278,19 @@ function cmpExportCSV() {
   emitNew('A');
 
   rows.push('');
-  rows.push('--- CORREZIONE GOL DAI TIRI IN PORTA (moltiplicatore sui lambda) ---' + ';;;;'.repeat(M.length));
+  rows.push('--- LAMBDA DAI TIRI IN PORTA (seconda stima, mediata col Dixon-Coles) ---' + ';;;;'.repeat(M.length));
   const _g4 = (v) => (v == null || isNaN(v)) ? 'N/D' : String((+v).toFixed(4)).replace('.', ',');
   const gRows = [
-    ['applicata',              d => d ? (d.applied ? 'SI' : 'no') : 'N/D'],
-    ['alpha',                  d => d && d.alpha != null ? _g4(d.alpha) : 'N/D'],
-    ['SoT previsti casa',      d => d ? _g4(d.sotH) : 'N/D'],
-    ['SoT previsti trasferta', d => d ? _g4(d.sotA) : 'N/D'],
-    ['baseline SoT di lega',   d => d ? _g4(d.lgSot) : 'N/D'],
-    ['rapporto',               d => d ? _g4(d.ratio) : 'N/D'],
-    ['moltiplicatore lambda',  d => d ? _g4(d.mult) : 'N/D']
+    ['applicata',               d => d ? (d.applied ? 'SI' : 'no') : 'N/D'],
+    ['peso w',                  d => d && d.w != null ? _g4(d.w) : 'N/D'],
+    ['SoT per gol usato',       d => d && d.spg != null ? _g4(d.spg) : 'N/D'],
+    ['SoT previsti casa',       d => d ? _g4(d.sotH) : 'N/D'],
+    ['SoT previsti trasferta',  d => d ? _g4(d.sotA) : 'N/D'],
+    ['sum_sot',                 d => d ? _g4(d.sumSot) : 'N/D'],
+    ['lambda dai tiri',         d => d ? _g4(d.lamSot) : 'N/D'],
+    ['lambda Dixon-Coles',      d => d ? _g4(d.lamDC) : 'N/D'],
+    ['scala applicata',         d => d ? _g4(d.scale) : 'N/D'],
+    ['ha toccato il cap',       d => d ? (d.capped ? 'SI' : 'no') : 'N/D']
   ];
   gRows.forEach(([lbl, fn]) => {
     const r = [lbl];
@@ -2292,15 +2298,15 @@ function cmpExportCSV() {
     rows.push(r.join(';'));
   });
   rows.push('');
-  rows.push('--- A/B CORREZIONE GOL (moltiplicatore a confronto) ---' + ';;;;'.repeat(M.length));
-  [0, 0.25, 0.5, 1.0].forEach(al => {
-    const r = ['alpha=' + al.toFixed(2) + ' · moltiplicatore'];
+  rows.push('--- A/B PESO DEI TIRI IN PORTA (scala sui lambda, ricostruita) ---' + ';;;;'.repeat(M.length));
+  [0, 0.25, 0.5, 0.75, 1.0].forEach(w => {
+    const r = ['w=' + w.toFixed(2) + ' · scala'];
     M.forEach(m => {
       const d = m.goalsDebug;
-      if (!d || !d.applied || d.ratio == null) { r.push('N/D', '', '', ''); return; }
-      let mult = 1 + al * (d.ratio - 1);
-      mult = Math.max(0.85, Math.min(1.15, mult));
-      r.push(_g4(mult), '', '', '');
+      if (!d || !d.applied || d.lamSot == null || !(d.lamDC > 0)) { r.push('N/D', '', '', ''); return; }
+      let sc = ((1 - w) * d.lamDC + w * d.lamSot) / d.lamDC;
+      sc = Math.max(0.80, Math.min(1.20, sc));
+      r.push(_g4(sc), '', '', '');
     });
     rows.push(r.join(';'));
   });
