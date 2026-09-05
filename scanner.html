@@ -155,7 +155,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b8</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b9</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -745,7 +745,8 @@ function buildGlobalElo(targetTimeMs) {
     HFA_ELO = Math.max(30, Math.min(100, Math.round(400 * Math.log10(wr_h / wr_a))));
   }
 
-  const GAP_THRESHOLD_DAYS = 60;
+  const GAP_THRESHOLD_DAYS = 45;
+  const ELO_GAP_TAU = (typeof window.ELO_GAP_TAU === 'number') ? window.ELO_GAP_TAU : 110;
 
   const K_LOW = 30;
   const K_HIGH = 20;
@@ -772,8 +773,7 @@ function buildGlobalElo(targetTimeMs) {
         const gapMs = matchMs - lastMatchTime[teamId];
         const gapDays = gapMs / 86400000;
         if (gapDays > GAP_THRESHOLD_DAYS) {
-          const gapYears = gapDays / 365;
-          const strength = Math.min(0.9, 0.3 * Math.ceil(gapYears));
+          const strength = 0.9 * (1 - Math.exp(-(gapDays - GAP_THRESHOLD_DAYS) / ELO_GAP_TAU));
           table[teamId] = (1 - strength) * table[teamId] + strength * 1500;
         }
       }
@@ -1496,7 +1496,7 @@ function renderVerdetti(mk) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b8';
+window.__SCANNER_BUILD = '0905-b9';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -1641,6 +1641,30 @@ function applyResidualCorrection(probs, att, dif) {
   return { p1: p1 / tot, pX: pX / tot, p2: p2 / tot, debug: dbg };
 }
 
+const GOALS_SOT_CAP = 0.15;
+window.GOALS_ALPHA = (typeof window.GOALS_ALPHA === 'number') ? window.GOALS_ALPHA : 0.50;
+
+function goalsSotCorrection(att, dif) {
+  const dbg = { sotH: null, sotA: null, lgSot: null, ratio: null, mult: 1, alpha: window.GOALS_ALPHA, applied: false };
+  const alpha = window.GOALS_ALPHA;
+  if (!(alpha > 0) || !att || !dif) return dbg;
+  const sH = predictStat(att, dif, 'sot', 'role');
+  const sA = predictStat(dif, att, 'sot', 'role');
+  if (sH == null || sA == null || !isFinite(sH) || !isFinite(sA)) return dbg;
+  const bA = att.role && att.role.features && att.role.features._base ? att.role.features._base.sot : null;
+  const bB = dif.role && dif.role.features && dif.role.features._base ? dif.role.features._base.sot : null;
+  const pool = [bA, bB].filter(v => v != null && isFinite(v) && v > 0);
+  if (!pool.length) return dbg;
+  const lg = pool.reduce((a, b) => a + b, 0) / pool.length;
+  if (!(lg > 0)) return dbg;
+  const ratio = (sH + sA) / (2 * lg);
+  if (!isFinite(ratio) || ratio <= 0) return dbg;
+  let mult = 1 + alpha * (ratio - 1);
+  mult = Math.max(1 - GOALS_SOT_CAP, Math.min(1 + GOALS_SOT_CAP, mult));
+  dbg.sotH = sH; dbg.sotA = sA; dbg.lgSot = lg; dbg.ratio = ratio; dbg.mult = mult; dbg.applied = true;
+  return dbg;
+}
+
 async function avviaScanner() {
   try {
     const selH = document.getElementById('sel-home'); const selA = document.getElementById('sel-away');
@@ -1695,6 +1719,13 @@ async function avviaScanner() {
     const wSH = nHr / (nHr + _lk), wSA = nAr / (nAr + _lk);
     lamH_role = wSH * lamH_role + (1 - wSH) * LG.avgH; lamA_role = wSA * lamA_role + (1 - wSA) * LG.avgA;
     if(!isFinite(lamH_over) || lamH_over < 0.15) lamH_over = LG.avgH; if(!isFinite(lamA_over) || lamA_over < 0.15) lamA_over = LG.avgA;
+
+    const _GC = goalsSotCorrection(dH, dA);
+    window.__GOALS_DEBUG = _GC;
+    if (_GC.applied && isFinite(_GC.mult) && _GC.mult > 0) {
+      lamH_role *= _GC.mult; lamA_role *= _GC.mult;
+      lamH_over *= _GC.mult; lamA_over *= _GC.mult;
+    }
     if(!isFinite(lamH_role) || lamH_role < 0.15) lamH_role = lamH_over; if(!isFinite(lamA_role) || lamA_role < 0.15) lamA_role = lamA_over;
 
     const dcOver = calcDCMatrix(lamH_over, lamA_over, RHO); const dcRole = calcDCMatrix(lamH_role, lamA_role, RHO);

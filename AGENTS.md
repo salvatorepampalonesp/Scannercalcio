@@ -24,7 +24,7 @@ tutti attraverso `fetchMatchRaw` (che li mette in `RAW_CACHE`).
 Sezione di consegna: dice a che punto siamo, così una sessione nuova non
 ricomincia da capo. Aggiornala quando cambia qualcosa di sostanziale.
 
-**Build corrente: `0905-b5`.** Scanner e Comparatore devono coincidere, e sul
+**Build corrente: `0905-b9`.** Scanner e Comparatore devono coincidere, e sul
 Comparatore il badge sotto la dropzone deve uscire **verde** dopo aver trascinato
 lo Scanner. Il branch di lavoro è `claude/scanner-stat-optimization-sgs62u`;
 `main` è indietro (fermo al merge della PR #1, cioè al `0905-b2`), quindi
@@ -42,12 +42,66 @@ lo Scanner. Il branch di lavoro è `claude/scanner-stat-optimization-sgs62u`;
    metriche orfane cablate, tipi `volume` / `additivo`, unificazione col
    Comparatore che ora usa le previsioni del motore invece di rifarle.
 5. `0905-b5` — `STAT_SHRINK_TABLE` rifatta su **1133 partite, tre leghe**.
+6. `0905-b6` — giro di revisione della UI: testo nero su nero, card diagnostica
+   di troppo, `skellamPMF` morta rimossa e titolo della card corretto.
+7. `0905-b7` — via il confronto col book, i resti del KNN nell'ensemble e tre
+   metriche a segnale zero.
+8. `0905-b8` — narrative che confrontano le due squadre invece di descriverne
+   una sola, KNN delle formazioni leggibile a schermo, `xg_sp_ag` cablata.
+9. `0905-b9` — **correzione dei lambda coi tiri in porta previsti** e **salto
+   data dell'Elo reso continuo**. Le due voci sotto.
+
+**`0905-b9`, prima voce: `sum_sot` che corregge i lambda.**
+`sum_sot` (la somma dei tiri in porta previsti delle due squadre) è l'unica
+feature sopravvissuta alla verifica su tre leghe: AUC sull'Over 2.5 di
+**0.581 / 0.531 / 0.546** contro **0.556 / 0.494 / 0.503** di `dc_over`. Ora è
+integrata come **moltiplicatore sul totale dei lambda**, non come modello a parte:
+`goalsSotCorrection` prevede i SoT delle due squadre con `predictStat(..., 'role')`,
+li rapporta alla baseline di lega, e moltiplica `lamH` e `lamA` per
+`1 + alpha*(rapporto - 1)`, tagliato a ±15%. Moltiplicare entrambi i lambda
+conserva il rapporto casa/trasferta, quindi l'1X2 non si muove e migliorano
+insieme tutti i mercati che escono dalla matrice.
+Il compromesso è stato **misurato** su 1133 partite, non scelto a occhio:
+
+| alpha | AUC Over 2.5 | Brier | note |
+|---|---|---|---|
+| 0.00 | 0.517 | 0.2514 | com'era |
+| **0.50** | **0.531** | **0.2515** | **scelto**: discrimina di più senza costo di calibrazione |
+| 1.00 | 0.539 | 0.2532 | la calibrazione inizia a pagare |
+| 2.00 | 0.544 | 0.2609 | le linee Over si rompono |
+
+`window.GOALS_ALPHA` è esposto per l'A/B, e il CSV del Comparatore ha due sezioni
+nuove: la diagnostica per partita (SoT previsti, baseline, rapporto,
+moltiplicatore) e un A/B che ricostruisce alpha 0 / 0.25 / 0.5 / 1.0 dal solo
+`ratio`, **senza rilanciare il motore**. È la stessa strumentazione che sulla
+correzione residuale ha fatto scoprire in dieci minuti che non funzionava.
+**Da fare al prossimo backtest vero:** confermare che l'AUC salga come previsto e
+che le linee Over restino calibrate. Qui non si può: il motore ha bisogno di
+PitchAPI.
+
+**`0905-b9`, seconda voce: il salto data dell'Elo.**
+Era una funzione a gradini: `min(0.9, 0.3*ceil(giorni/365))`, quindi 61 giorni e
+11 mesi ricevevano la stessa regressione del 30% e a 1.01 anni si saltava di
+colpo al 60%. Ora è continua: `0.9*(1 - exp(-(giorni - soglia)/110))`, con soglia
+a 45 giorni. Parte esattamente da zero alla soglia — nessuno scalino residuo, il
+salto massimo in un giorno passa da **0.300 a 0.008**.
+La costante 110 non è arbitraria: è scelta perché a **90 giorni** (una pausa
+estiva) la curva dia **0.302**, cioè riproduca il valore che la vecchia funzione
+usava nell'unico regime che si presenta davvero.
+Il resto è stato misurato sul panel: nelle tre leghe 2025/26 l'intervallo massimo
+fra due partite della stessa squadra **dentro la stagione è 28.8 giorni**, e zero
+intervalli superano i 30. Quindi **la correzione non scatta mai in stagione**: la
+soglia a 45 ha 16 giorni di margine, e i regimi che contano sono la pausa estiva
+(75–105 giorni) e l'assenza di una squadra dalla lega. Attenzione: `buildGlobalElo`
+filtra per `_chosenLeagueId`, quindi una neopromossa non ha un Elo vecchio da
+regredire — parte da 1500 e basta.
 
 **Dove siamo bloccati:** i mercati gol. L'1X2 funziona (48–49% contro il 39–42%
 del «gioca sempre in casa», e la fascia ≥60% rende il 71–78%), ma l'Over/Under
 2.5 della matrice non discrimina fuori dalla LaLiga. Tutte le idee provate per
 correggerlo con le statistiche avanzate sono cadute alla verifica incrociata —
-la tabella in *Cosa è già stato provato* le elenca una per una.
+la tabella in *Cosa è già stato provato* le elenca una per una. `sum_sot` è la
+prima a passare, ed è quella entrata nel `b9`.
 
 **Tre strade chiuse da misure, non da opinioni** (i numeri sono in *Cosa è già
 stato provato*): prevedere meglio le stats avanzate — siamo al tetto; usare le
@@ -61,13 +115,8 @@ estrae la stessa informazione meglio.
    (`tvDist`, `wKnn`, `knnRel`). Il KNN come *modello* non era già nell'ensemble
    dal `b2`; resta calcolato per la card delle formazioni, che l'utente vuole
    tenere e che nel `b8` è stata resa leggibile.
-1. **`sum_sot` nell'Over/Under.** È l'unica feature che ha superato le tre leghe.
-   Va integrata correggendo il **totale dei lambda** e tenendo il rapporto
-   casa/trasferta della matrice, così migliorano insieme tutti i mercati gol e
-   resta valido il principio «una matrice governa tutto». Esporre la forza su
-   `window` per l'A/B e mettere la diagnostica nel CSV, come è stato fatto per la
-   correzione residuale: è quella che ha permesso di scoprire in dieci minuti che
-   non funzionava.
+1. ~~`sum_sot` nell'Over/Under~~ — **fatto nel `0905-b9`**. Resta da confermare
+   col primo backtest vero su PitchAPI.
 2. **L'endpoint `/shots`.** Il candidato più serio per il muro dell'Over, con la
    ragione spiegata in *Il muro dell'Over/Under*. Costa una chiamata in più per
    partita.
@@ -164,7 +213,8 @@ difetti accertati.
   l'avversario invece che come numeri assoluti.
 - **Markov** — `markovFlow` con rate dipendenti dal punteggio, mai verificato
   contro il backtest se non come colonna dell'ensemble.
-- **Elo** — la funzione a gradini del salto data (vedi sopra).
+- ~~**Elo** — la funzione a gradini del salto data~~ — **fatto nel `0905-b9`**,
+  vedi *Stato del lavoro*.
 - **Probabili formazioni**: PitchAPI espone `/lineups` anche in versione prevista.
   Da valutare dopo il resto.
 
