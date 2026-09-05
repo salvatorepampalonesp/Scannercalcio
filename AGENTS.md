@@ -24,7 +24,7 @@ tutti attraverso `fetchMatchRaw` (che li mette in `RAW_CACHE`).
 Sezione di consegna: dice a che punto siamo, così una sessione nuova non
 ricomincia da capo. Aggiornala quando cambia qualcosa di sostanziale.
 
-**Build corrente: `0905-b13`.** Scanner e Comparatore devono coincidere, e sul
+**Build corrente: `0905-b14`.** Scanner e Comparatore devono coincidere, e sul
 Comparatore il badge sotto la dropzone deve uscire **verde** dopo aver trascinato
 lo Scanner. Il branch di lavoro è `claude/scanner-stat-optimization-sgs62u`;
 `main` è indietro (fermo al merge della PR #1, cioè al `0905-b2`), quindi
@@ -65,6 +65,7 @@ stessa informazione meglio.
 | `b11` | il backtest boccia metà del `b9` e del `b10`: `_base` usata come media di lega |
 | `b12` | tre leghe: i gol confermati; la sovradispersione dei mercati veniva dalla **baseline**, non da `k` |
 | `b13` | l'Elo entra nell'1X2 inclinando i lambda: batteva il modello e non era usato |
+| `b14` | **cinque leghe**: Bundesliga e Ligue 1 confermano l'Elo fuori campione, il peso sale a 0.75 |
 
 Le tre build finali hanno una storia sola e va letta in *La baseline di coppia*:
 tre tentativi svuotati dallo stesso malinteso.
@@ -96,33 +97,42 @@ se un giro non mostra differenze sull'Elo, è il comportamento atteso.
    PitchAPI potrebbe dare e che il modello oggi ignora.
 2. **Capire la Premier sui tiri in porta**: pendenza 0.10–0.20 contro 0.77 in
    LaLiga e 0.35 in Serie A. O ha qualcosa di diverso, o è rumore.
-3. **Verificare la pendenza dell'Elo** (`penH`/`penA`, ±8% sui lambda): non è mai
+3. **Capire perché il Dixon-Coles è cieco sull'Over in Premier e Serie A** (AUC
+   0.495 e 0.500) mentre in Bundesliga, Ligue 1 e LaLiga fa 0.53–0.55. È la stessa
+   domanda della Premier sui tiri in porta, e ora ha due leghe di controllo in cui
+   il modello funziona: c'è di che confrontare invece di tirare a indovinare.
+4. **Verificare la pendenza dell'Elo** (`penH`/`penA`, ±8% sui lambda): non è mai
    stata misurata, e ora che il livello entra dall'inclinazione potrebbe essere
    ridondante. Serve esportarla nel CSV.
-4. **`GOALS_SOT_W` e `ELO_1X2_W` alla quarta lega.** Il backtest dice 0.50, ma 0.75 e 1.00 sono
+5. **`GOALS_SOT_W` e `ELO_1X2_W` alla sesta lega.** Il backtest dice 0.50, ma 0.75 e 1.00 sono
    migliori di un margine non distinguibile (±0.030 di errore standard). Il CSV
    ricostruisce tutti i pesi senza rilanciare il motore: basta un'altra lega.
-5. **L'endpoint `/shots`.** Il candidato più serio per la forma della
+6. **L'endpoint `/shots`.** Il candidato più serio per la forma della
    distribuzione dei gol, con la ragione spiegata in *Il muro dell'Over/Under*.
    Costa una chiamata in più per partita.
-6. **Un ancoraggio di lega per i falli**, che oggi non ce l'hanno (il rapporto coi
+7. **Un ancoraggio di lega per i falli**, che oggi non ce l'hanno (il rapporto coi
    gol varia del 28% fra leghe, quindi `MARKET_PER_GOAL.fouls = null`).
-7. **La tab «racconto»**: mostrare uno scenario invece di una distribuzione. Idea
+8. **La tab «racconto»**: mostrare uno scenario invece di una distribuzione. Idea
    arrivata da fuori, già misurata e in parte bocciata — vedi *Lo scenario
    singolo*. La parte che sopravvive è la card dei risultati esatti.
-8. **Ricontrollare `avg_def_x`**: pendenza 0.06, la previsione è quasi scorrelata
+9. **Ricontrollare `avg_def_x`**: pendenza 0.06, la previsione è quasi scorrelata
    dal reale. O è un problema di forma del modello, o la metrica va tolta.
-9. **Togliere `vaep_def`, `pv_def`, `sca_def`** dalle feature: correlazione
+10. **Togliere `vaep_def`, `pv_def`, `sca_def`** dalle feature: correlazione
    previsto/reale a zero su 1133 partite. Il fix additivo che le ha rese
    calcolabili era giusto, ma quello che si vede è rumore.
 
 Già fatte e da non riaprire: togliere il KNN dall'ensemble (`b7`), `sum_sot`
 nell'Over/Under (`b9`, riformulato nel `b12`), tarare i `k` di mercato (`b12`).
 
-**Il campione di riferimento** per qualunque nuova taratura è: Serie A + Premier +
-LaLiga 2025/26, 1133 partite, esportate dal Comparatore `0905-b12` o successivo.
-Meno di due leghe non basta — è l'errore che ha prodotto quattro falsi positivi di
-fila — e **le AUC dei mercati gol non si leggono mai aggregate fra leghe**.
+**Il campione di riferimento** per qualunque nuova taratura è ora: Serie A +
+Premier + LaLiga + **Bundesliga + Ligue 1** 2025/26, **1743 partite**, esportate
+dal Comparatore `0905-b14` o successivo. Meno di due leghe non basta — è l'errore
+che ha prodotto quattro falsi positivi di fila — e **le AUC dei mercati gol non si
+leggono mai aggregate fra leghe**.
+
+Bundesliga e Ligue 1 sono le uniche due su cui **non è mai stata tarata nessuna
+costante**: finché resta così, sono il miglior banco di prova che abbiamo. Se le
+usi per tarare qualcosa, scrivilo qui, perché da quel momento non lo sono più.
 
 ## Revisione della UI: cosa è stato verificato e cosa resta
 
@@ -472,6 +482,12 @@ a `scanner.html` al commit `cd51a69`, prima della ripulitura.
   mercati statistici la dispersione di troppo veniva dalla baseline (sd 0.81) e
   non dal termine attacco/difesa (sd 0.11), ma la pendenza da sola non lo diceva:
   abbassare `k` è stato un giro a vuoto. Guardare le sd delle componenti prima.
+- **Le etichette di riga del CSV devono essere uniche.** Tre sezioni diverse
+  usavano `applicata`, due `peso w` e due `ha toccato il cap`: un parser che
+  cerca per etichetta prende la prima e legge la sezione sbagliata **senza
+  accorgersene**. Corretto nel `b14` con un prefisso (`Tiri:`, `Elo:`). Le uniche
+  ripetizioni legittime sono le metriche nelle sezioni CASA e TRASFERTA, che vanno
+  in coppia per costruzione.
 - **Non leggere mai l'AUC dei mercati gol aggregata fra leghe.** Con base rate
   diversi (Premier 55.1% di Over 2.5, Serie A 45.7%) l'aggregato dava 0.531 dove
   dentro ogni lega era 0.495 e 0.500, cioè caso puro. Sempre per lega.
@@ -645,10 +661,28 @@ il livello resta calibrato a ogni `w` (0.5: 92 vs 93 · 1.5: 72 vs 76 · 2.5: 47
 **Perché `w = 0.50` e non 1.00.** L'errore standard dell'AUC per lega è ±0.030,
 quindi il passo da 0.50 a 0.75 (+0.007 in media) non è distinguibile da zero. In
 più l'unica linea con un massimo interno è l'Over 3.5 (0.543 a w 0.50–0.75 contro
-0.538 a w 1.00). Muovere una costante quando i dati non distinguono è come
-sceglierla a caso: `window.GOALS_SOT_W` è esposto e il CSV ricostruisce
-w = 0 / 0.25 / 0.5 / 0.75 / 1.0 senza rilanciare il motore, quindi sarà la
-quarta lega a decidere.
+0.538 a w 1.00).
+
+**Le due leghe nuove hanno confermato lo 0.50 e ridimensionato il resto** (`b14`,
+1734 partite, cinque leghe). Il Brier ha il minimo a w 0.50 (0.2469 contro 0.2486
+a w 0), quindi la costante resta. Ma l'AUC per lega dice una cosa nuova:
+
+| w | Bundesliga | LaLiga | Ligue 1 | Premier | Serie A |
+|---|---|---|---|---|---|
+| 0.00 | 0.535 | 0.554 | 0.550 | 0.495 | 0.500 |
+| 0.50 | 0.530 | 0.572 | 0.536 | 0.514 | 0.521 |
+| 1.00 | 0.520 | 0.580 | 0.523 | 0.532 | 0.532 |
+
+**Su Bundesliga e Ligue 1 la correzione non aiuta, anzi peggiora leggermente.** Il
+motivo è visibile nella prima riga: lì il lambda del Dixon-Coles da solo fa già
+0.535 e 0.550, mentre in Premier e Serie A fa 0.495 e 0.500. Dove il modello
+funziona, i tiri in porta non hanno niente da aggiungere; dove non funziona, lo
+sostituiscono. Il guadagno non è universale, è **un rattoppo dove il modello è
+cieco** — e questo suggerisce che la strada giusta sia capire perché il
+Dixon-Coles fallisce in quelle due leghe, non alzare `w`.
+
+`window.GOALS_SOT_W` è esposto e il CSV ricostruisce w = 0 / 0.25 / 0.5 / 0.75 /
+1.0 senza rilanciare il motore.
 
 `SOT_PER_GOAL = 3.25` è misurato (LaLiga 3.19, Premier 3.04, Serie A 3.33) e tocca
 solo il **livello**, mai il rango. Il cap ±20% ha morso sullo **0.18%** delle
@@ -724,24 +758,43 @@ muova, una partita più squilibrata ha meno GG.
 
 Tenendo `pX` del modello (che è calibrata) e ribilanciando solo 1 contro 2:
 
-| w | pick giusti | Brier 1X2 | logloss | LaLiga | Premier | Serie A |
-|---|---|---|---|---|---|---|
-| 0.00 | 49.5% | 0.6163 | 1.0266 | 51.7% | 47.6% | 49.2% |
-| **0.50** | **50.7%** | **0.6079** | **1.0156** | **52.3%** | **48.7%** | **51.1%** |
-| 0.70 | 51.0% | 0.6064 | 1.0138 | 52.5% | 48.9% | 51.6% |
-| 1.00 | 50.8% | 0.6059 | 1.0139 | 52.0% | 48.4% | 52.1% |
+Misure su **1743 partite e cinque leghe** (`b13`), di cui **Bundesliga e Ligue 1
+mai usate per tarare nulla**:
 
-Il logloss ha un minimo **interno** a w 0.70. Migliora in tutte e tre le leghe.
+| w | pick giusti | Brier 1X2 | logloss | Bun | LaL | Lig | Pre | Ser |
+|---|---|---|---|---|---|---|---|---|
+| 0.00 | 50.8% | 0.6108 | 1.0198 | 52.1% | 52.8% | 52.1% | 48.9% | 48.4% |
+| 0.50 | 51.5% | 0.6034 | 1.0094 | 53.8% | 51.2% | 52.5% | 48.1% | 52.6% |
+| **0.75** | **51.7%** | **0.6018** | **1.0073** | **55.4%** | 51.2% | 51.5% | **49.7%** | 51.6% |
+| 1.00 | 51.5% | 0.6015 | 1.0072 | 53.8% | 52.0% | 51.8% | 48.4% | 52.1% |
 
-**Verifica fuori campione nel tempo** (taratura sulla prima metà di stagione,
-verifica sulla seconda, 567 partite mai viste): pick 48.3% → 48.9%, Brier
-0.6194 → 0.6107, logloss 1.0317 → 1.0202. Più contenuto dell'in-sample, ma tutte e
-tre le metriche migliorano insieme.
+**Sulle sole due leghe nuove** (610 partite): pick 52.1% → **53.4%**, Brier
+0.6012 → **0.5944**, logloss 1.0065 → **0.9965**, con l'ottimo di nuovo a 0.75 su
+tutte e tre le metriche.
 
-`w = 0.50` invece dello 0.70 dell'ottimo: la curva è piatta fra 0.4 e 1.0 e ogni
-valore migliora, quindi si sta sul conservativo. `window.ELO_1X2_W` è esposto e il
-CSV ricostruisce w = 0 / 0.25 / 0.5 / 0.75 / 1.0 dai soli log-odds, senza
-rilanciare il motore.
+Test appaiato sul logloss, che è quello che conta:
+
+| confronto | tutte | solo leghe nuove |
+|---|---|---|
+| w 0.00 → 0.50 | **+5.02 sigma** | +2.55 sigma |
+| w 0.50 → 0.75 | +2.09 sigma | +0.91 sigma |
+| w 0.75 → 1.00 | +0.14 sigma | −0.21 sigma |
+
+Quindi: **che l'Elo serva è fuori discussione** (5 sigma, replicato su leghe
+mai viste). Che 0.75 batta 0.50 è più tenue — 2 sigma aggregate, meno di 1 fuori
+campione — ma è l'argmin ovunque, l'ottimo è **interno** (1.00 è peggio) e nessuna
+metrica preferisce 0.50. Alzato a **0.75** nel `b14`.
+
+C'era anche una verifica temporale sul `b13` a tre leghe (taratura sulla prima
+metà di stagione, verifica sui 567 match della seconda): pick 48.3% → 48.9%,
+Brier 0.6194 → 0.6107, logloss 1.0317 → 1.0202.
+
+`window.ELO_1X2_W` è esposto e il CSV ricostruisce w = 0 / 0.25 / 0.5 / 0.75 / 1.0
+dai soli log-odds, senza rilanciare il motore.
+
+**In produzione** l'inclinazione si applica al 100% delle partite, ha mediana
+−0.001, 5°–95° percentile −0.103 / +0.109 e massimo assoluto **0.215** contro un
+cap a 0.60: il paracadute non ha mai morso.
 
 ### Cosa resta da capire
 
@@ -753,7 +806,7 @@ rilanciare il motore.
 
 ## I mercati sui numeri: corner, tiri in porta, cartellini
 
-**Sono i mercati che discriminano meglio.** AUC media delle tre leghe: cartellini
+**Sono i mercati che discriminano meglio.** AUC media delle leghe: cartellini
 **~0.57**, tiri in porta ~0.56, corner ~0.53 — contro lo 0.53 dell'Over 2.5. Ci si
 è arrivati in tre giri (`b10` → `b12`), due dei quali hanno curato la cosa
 sbagliata: la storia è in *La baseline di coppia*, ed è la parte più utile da
@@ -808,6 +861,17 @@ Effetto della cura, misurato su 1133 partite:
 
 Sui corner migliora in tutte e tre le leghe; su tiri e gialli in due su tre, con
 la terza ferma.
+
+**Confermato su cinque leghe** (`b14`, 1743 partite, Bundesliga e Ligue 1 mai
+usate per tarare): il livello è ottimo — bias aggregato **+0.8% sui corner, −0.6%
+sui tiri, +0.7% sui gialli** — e le pendenze sono vicine al bersaglio: **0.88**
+corner, **0.84** tiri, **0.82** gialli, contro lo 0.55 / 0.49 / 0.66 di prima
+della cura. Sulle sole due leghe nuove: 0.64 / 0.79 / 0.68, con bias sotto il 3%.
+
+Attenzione però a non leggere troppo il dettaglio per lega: con ~300 partite le
+pendenze ballano parecchio (Ligue 1 fa **−0.14** sui corner, Bundesliga **0.05**
+sui gialli, ma anche 1.25 e 1.18 sugli altri). Il pooled è il numero da guardare,
+il per-lega serve solo a vedere se c'è un segno sistematico.
 
 ### La dispersione: `negBinK`
 
