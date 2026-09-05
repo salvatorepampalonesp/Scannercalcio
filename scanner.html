@@ -1649,6 +1649,8 @@ function applyResidualCorrection(probs, att, dif) {
   return { p1: p1 / tot, pX: pX / tot, p2: p2 / tot, debug: dbg };
 }
 
+// il riferimento DEVE restare costante dentro la lega: _base e' una media di coppia,
+// usarla come ancoraggio svuota la correzione (AGENTS.md, La baseline di coppia)
 window.MARKET_SHRINK_K = window.MARKET_SHRINK_K || { cor: 0.07, sot: 0.30, yel: 0.10, fouls: 0.15 };
 window.MARKET_BASE_SHRINK = window.MARKET_BASE_SHRINK || { cor: 0.50, sot: 0.75, yel: 0.75, fouls: 1.00 };
 window.MARKET_PER_GOAL = window.MARKET_PER_GOAL || { cor: 3.61, sot: 3.20, yel: 1.48, fouls: null };
@@ -1658,6 +1660,8 @@ const GOALS_SOT_CAP = 0.20;
 window.SOT_PER_GOAL = (typeof window.SOT_PER_GOAL === 'number') ? window.SOT_PER_GOAL : 3.25;
 window.GOALS_SOT_W  = (typeof window.GOALS_SOT_W  === 'number') ? window.GOALS_SOT_W  : 0.50;
 
+// media pesata fra due stime del lambda, NON un moltiplicatore: un fattore limitato
+// lascia il rango dominato dal Dixon-Coles e non sposta niente (AGENTS.md, I gol)
 function goalsSotCorrection(att, dif, lamTot) {
   const dbg = { sotH: null, sotA: null, sumSot: null, lamSot: null, lamDC: lamTot,
                 w: window.GOALS_SOT_W, spg: window.SOT_PER_GOAL, scale: 1, capped: false, applied: false };

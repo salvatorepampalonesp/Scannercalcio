@@ -30,125 +30,92 @@ lo Scanner. Il branch di lavoro è `claude/scanner-stat-optimization-sgs62u`;
 `main` è indietro (fermo al merge della PR #1, cioè al `0905-b2`), quindi
 **scaricare i file dal branch, non da `main`**.
 
-**Cosa è stato fatto, in ordine:**
+### Dove siamo
 
-1. `0905-b2` — shrinkage per metrica al posto dello 0.35 fisso; correzione
-   residuale sull'1X2 con le metriche di creazione.
-2. `0905-b3` — correzione residuale **spenta** (`RESID_ALPHA = 0`): non reggeva
-   fuori campione. `k` ritarati su 76 partite.
-3. Ripulitura — via i commenti dal JS (26% del codice), la spiegazione è passata
-   in questo file. Verifica per confronto di AST: stesso identico programma.
-4. `0905-b4` — 34 metriche nuove da `/advanced` (zero chiamate in più), otto
-   metriche orfane cablate, tipi `volume` / `additivo`, unificazione col
-   Comparatore che ora usa le previsioni del motore invece di rifarle.
-5. `0905-b5` — `STAT_SHRINK_TABLE` rifatta su **1133 partite, tre leghe**.
-6. `0905-b6` — giro di revisione della UI: testo nero su nero, card diagnostica
-   di troppo, `skellamPMF` morta rimossa e titolo della card corretto.
-7. `0905-b7` — via il confronto col book, i resti del KNN nell'ensemble e tre
-   metriche a segnale zero.
-8. `0905-b8` — narrative che confrontano le due squadre invece di descriverne
-   una sola, KNN delle formazioni leggibile a schermo, `xg_sp_ag` cablata.
-9. `0905-b9` — **correzione dei lambda coi tiri in porta previsti** e **salto
-   data dell'Elo reso continuo**. Le due voci sotto.
-10. `0905-b10` — **i mercati sui numeri (corner, tiri, cartellini)**: lambda con
-    shrinkage tarato, dispersione ristretta invece che tagliata a mano, piu' linee
-    invece di una sola; e la **Progressione Storica** ricostruita sulle metriche
-    in cui la forma recente esiste davvero.
-11. `0905-b11` — **il backtest ha bocciato meta' del `b9` e del `b10`, e ha detto
-    perche'**: un'unica causa, `_base` usata come se fosse una media di lega
-    quando e' una media *della coppia*. Vedi *La baseline di coppia*.
-12. `0905-b12` — il backtest su **tre leghe** conferma i gol e scompone i mercati:
-    la dispersione di troppo non veniva dal termine in `k` ma **dalla baseline
-    stessa**, che e' una media di 30 partite con meta' della varianza fatta di
-    rumore di campionamento. Ora viene ristretta verso un riferimento di lega.
+L'**1X2 funziona** (48–49% di pick azzeccati contro il 39–42% del «gioca sempre in
+casa», e la fascia ≥60% rende il 71–78%). I **mercati gol** erano il muro: il
+lambda del Dixon-Coles sull'Over 2.5 fa 0.554 / 0.495 / 0.501 per lega, cioè quasi
+il caso fuori dalla LaLiga. Il `b12` li porta a 0.572 / 0.514 / 0.521 usando i
+tiri in porta previsti come seconda stima del lambda — vedi *I gol*.
 
-**`0905-b9`, prima voce: `sum_sot` che corregge i lambda.**
-`sum_sot` (la somma dei tiri in porta previsti delle due squadre) è l'unica
-feature sopravvissuta alla verifica su tre leghe: AUC sull'Over 2.5 di
-**0.581 / 0.531 / 0.546** contro **0.556 / 0.494 / 0.503** di `dc_over`. Ora è
-integrata come **moltiplicatore sul totale dei lambda**, non come modello a parte:
-`goalsSotCorrection` prevede i SoT delle due squadre con `predictStat(..., 'role')`,
-li rapporta alla baseline di lega, e moltiplica `lamH` e `lamA` per
-`1 + alpha*(rapporto - 1)`, tagliato a ±15%. Moltiplicare entrambi i lambda
-conserva il rapporto casa/trasferta, quindi l'1X2 non si muove e migliorano
-insieme tutti i mercati che escono dalla matrice.
-Il compromesso è stato **misurato** su 1133 partite, non scelto a occhio:
+La sorpresa dell'ultimo giro è che i **mercati sui numeri discriminano meglio dei
+gol**: cartellini ~0.57 di AUC, tiri in porta ~0.56, corner ~0.53. Sono anche i
+meno guardati.
 
-| alpha | AUC Over 2.5 | Brier | note |
-|---|---|---|---|
-| 0.00 | 0.517 | 0.2514 | com'era |
-| **0.50** | **0.531** | **0.2515** | **scelto**: discrimina di più senza costo di calibrazione |
-| 1.00 | 0.539 | 0.2532 | la calibrazione inizia a pagare |
-| 2.00 | 0.544 | 0.2609 | le linee Over si rompono |
+**Tre strade chiuse da misure, non da opinioni** (i numeri in *Cosa è già stato
+provato*): prevedere meglio le stats avanzate — siamo al tetto; usare le stats per
+calibrare la forza dell'avversario — si fa già, e non resta niente oltre;
+sistemare il KNN — la premessa è vera ma ridondante, il Dixon-Coles estrae la
+stessa informazione meglio.
 
-`window.GOALS_ALPHA` è esposto per l'A/B, e il CSV del Comparatore ha due sezioni
-nuove: la diagnostica per partita (SoT previsti, baseline, rapporto,
-moltiplicatore) e un A/B che ricostruisce alpha 0 / 0.25 / 0.5 / 1.0 dal solo
-`ratio`, **senza rilanciare il motore**. È la stessa strumentazione che sulla
-correzione residuale ha fatto scoprire in dieci minuti che non funzionava.
-**Da fare al prossimo backtest vero:** confermare che l'AUC salga come previsto e
-che le linee Over restino calibrate. Qui non si può: il motore ha bisogno di
-PitchAPI.
+### La cronologia
 
-**`0905-b9`, seconda voce: il salto data dell'Elo.**
-Era una funzione a gradini: `min(0.9, 0.3*ceil(giorni/365))`, quindi 61 giorni e
-11 mesi ricevevano la stessa regressione del 30% e a 1.01 anni si saltava di
-colpo al 60%. Ora è continua: `0.9*(1 - exp(-(giorni - soglia)/110))`, con soglia
-a 45 giorni. Parte esattamente da zero alla soglia — nessuno scalino residuo, il
-salto massimo in un giorno passa da **0.300 a 0.008**.
-La costante 110 non è arbitraria: è scelta perché a **90 giorni** (una pausa
+| build | cosa |
+|---|---|
+| `b2` | shrinkage per metrica al posto dello 0.35 fisso; correzione residuale sull'1X2 |
+| `b3` | correzione residuale **spenta** (`RESID_ALPHA = 0`): non reggeva fuori campione |
+| — | via i commenti dal JS (26% del codice); verifica per confronto di AST |
+| `b4` | 34 metriche nuove da `/advanced` (zero chiamate in più), tipi `volume`/`additivo`, Comparatore che usa le previsioni del motore |
+| `b5` | `STAT_SHRINK_TABLE` rifatta su 1133 partite, tre leghe |
+| `b6` | revisione UI: testo nero su nero, card diagnostica di troppo, `skellamPMF` morta |
+| `b7` | via il confronto col book, i resti del KNN nell'ensemble, tre metriche a segnale zero |
+| `b8` | narrative che confrontano le due squadre, KNN delle formazioni leggibile, `xg_sp_ag` |
+| `b9` | `sum_sot` sui lambda gol; salto data dell'Elo reso continuo |
+| `b10` | mercati sui numeri: shrinkage tarato, dispersione ristretta, più linee; Progressione Storica rifatta |
+| `b11` | il backtest boccia metà del `b9` e del `b10`: `_base` usata come media di lega |
+| `b12` | tre leghe: i gol confermati; la sovradispersione dei mercati veniva dalla **baseline**, non da `k` |
+
+Le tre build finali hanno una storia sola e va letta in *La baseline di coppia*:
+tre tentativi svuotati dallo stesso malinteso.
+
+### Il salto data dell'Elo (`b9`, e non è più stato toccato)
+
+Era una funzione a gradini, `min(0.9, 0.3*ceil(giorni/365))`: 61 giorni e 11 mesi
+ricevevano la stessa regressione del 30%, e a 1.01 anni si saltava al 60%. Ora è
+continua, `0.9*(1 - exp(-(giorni - soglia)/110))` con soglia a 45 giorni, quindi
+parte da zero alla soglia senza scalino: il salto massimo in un giorno passa da
+**0.300 a 0.008**. La costante 110 è scelta perché a **90 giorni** (una pausa
 estiva) la curva dia **0.302**, cioè riproduca il valore che la vecchia funzione
 usava nell'unico regime che si presenta davvero.
-Il resto è stato misurato sul panel: nelle tre leghe 2025/26 l'intervallo massimo
-fra due partite della stessa squadra **dentro la stagione è 28.8 giorni**, e zero
-intervalli superano i 30. Quindi **la correzione non scatta mai in stagione**: la
-soglia a 45 ha 16 giorni di margine, e i regimi che contano sono la pausa estiva
-(75–105 giorni) e l'assenza di una squadra dalla lega. Attenzione: `buildGlobalElo`
-filtra per `_chosenLeagueId`, quindi una neopromossa non ha un Elo vecchio da
-regredire — parte da 1500 e basta.
 
-**Dove siamo bloccati:** i mercati gol. L'1X2 funziona (48–49% contro il 39–42%
-del «gioca sempre in casa», e la fascia ≥60% rende il 71–78%), ma l'Over/Under
-2.5 della matrice non discrimina fuori dalla LaLiga. Tutte le idee provate per
-correggerlo con le statistiche avanzate sono cadute alla verifica incrociata —
-la tabella in *Cosa è già stato provato* le elenca una per una. `sum_sot` è la
-prima a passare, ed è quella entrata nel `b9`.
+Misurato sul panel: nelle tre leghe 2025/26 l'intervallo massimo fra due partite
+della stessa squadra **dentro la stagione è 28.8 giorni**, e nessuno supera i 30.
+Quindi **la correzione non scatta mai in stagione** — la soglia a 45 ha 16 giorni
+di margine — e i regimi che contano sono la pausa estiva (75–105 giorni) e
+l'assenza dalla lega. Attenzione: `buildGlobalElo` filtra per `_chosenLeagueId`,
+quindi una neopromossa non ha un Elo vecchio da regredire, parte da 1500.
 
-**Tre strade chiuse da misure, non da opinioni** (i numeri sono in *Cosa è già
-stato provato*): prevedere meglio le stats avanzate — siamo al tetto; usare le
-stats per calibrare la forza dell'avversario — si fa già, e non resta niente
-oltre; sistemare il KNN — la sua premessa è vera ma ridondante, il Dixon-Coles
-estrae la stessa informazione meglio.
+Nei backtest di una sola stagione questa modifica è **invisibile per costruzione**:
+se un giro non mostra differenze sull'Elo, è il comportamento atteso.
 
-**La prossima cosa da fare, in ordine di rapporto valore/rischio:**
+### La prossima cosa da fare, in ordine di rapporto valore/rischio
 
-0. ~~Togliere il KNN dall'ensemble~~ — **fatto nel `0905-b7`** per la parte morta
-   (`tvDist`, `wKnn`, `knnRel`). Il KNN come *modello* non era già nell'ensemble
-   dal `b2`; resta calcolato per la card delle formazioni, che l'utente vuole
-   tenere e che nel `b8` è stata resa leggibile.
-1. ~~`sum_sot` nell'Over/Under~~ — **fatto nel `0905-b9`**. Resta da confermare
-   col primo backtest vero su PitchAPI.
-2. ~~Tarare `MARKET_SHRINK_K.yel`~~ — **fatto nel `0905-b12`** sul backtest a tre
-   leghe, insieme a corner e tiri. Restano i **falli**, che non hanno un
-   ancoraggio di lega utilizzabile (rapporto coi gol instabile del 28%).
-3. **Capire la Premier sui tiri in porta**: pendenza 0.10–0.20 contro 0.77 in
-   LaLiga e 0.35 in Serie A. O la Premier ha qualcosa di diverso, o è rumore.
-4. **Il mercato dei cartellini è il migliore dei tre** (AUC ~0.57 contro 0.53
-   dell'Over 2.5) e nessuno l'ha ancora guardato davvero: arbitro, derby,
-   posizione in classifica sono tutte cose che PitchAPI potrebbe dare.
-5. **L'endpoint `/shots`.** Il candidato più serio per il muro dell'Over, con la
-   ragione spiegata in *Il muro dell'Over/Under*. Costa una chiamata in più per
-   partita.
+1. **Il mercato dei cartellini.** È il migliore dei tre (AUC ~0.57) e nessuno l'ha
+   guardato davvero: arbitro, derby, posizione in classifica sono tutte cose che
+   PitchAPI potrebbe dare e che il modello oggi ignora.
+2. **Capire la Premier sui tiri in porta**: pendenza 0.10–0.20 contro 0.77 in
+   LaLiga e 0.35 in Serie A. O ha qualcosa di diverso, o è rumore.
+3. **`GOALS_SOT_W` alla quarta lega.** Il backtest dice 0.50, ma 0.75 e 1.00 sono
+   migliori di un margine non distinguibile (±0.030 di errore standard). Il CSV
+   ricostruisce tutti i pesi senza rilanciare il motore: basta un'altra lega.
+4. **L'endpoint `/shots`.** Il candidato più serio per la forma della
+   distribuzione dei gol, con la ragione spiegata in *Il muro dell'Over/Under*.
+   Costa una chiamata in più per partita.
+5. **Un ancoraggio di lega per i falli**, che oggi non ce l'hanno (il rapporto coi
+   gol varia del 28% fra leghe, quindi `MARKET_PER_GOAL.fouls = null`).
 6. **Ricontrollare `avg_def_x`**: pendenza 0.06, la previsione è quasi scorrelata
    dal reale. O è un problema di forma del modello, o la metrica va tolta.
 7. **Togliere `vaep_def`, `pv_def`, `sca_def`** dalle feature: correlazione
-   previsto/reale a zero misurata su 1133 partite. Il fix additivo che le ha rese
+   previsto/reale a zero su 1133 partite. Il fix additivo che le ha rese
    calcolabili era giusto, ma quello che si vede è rumore.
 
-**Il campione di riferimento** per qualunque nuova taratura è: Serie A + Premier
-+ LaLiga 2025/26, 1133 partite, esportate dal Comparatore `0905-b4` o successivo.
-Meno di due leghe non basta — è l'errore che ha prodotto quattro falsi positivi
-di fila.
+Già fatte e da non riaprire: togliere il KNN dall'ensemble (`b7`), `sum_sot`
+nell'Over/Under (`b9`, riformulato nel `b12`), tarare i `k` di mercato (`b12`).
+
+**Il campione di riferimento** per qualunque nuova taratura è: Serie A + Premier +
+LaLiga 2025/26, 1133 partite, esportate dal Comparatore `0905-b12` o successivo.
+Meno di due leghe non basta — è l'errore che ha prodotto quattro falsi positivi di
+fila — e **le AUC dei mercati gol non si leggono mai aggregate fra leghe**.
 
 ## Revisione della UI: cosa è stato verificato e cosa resta
 
@@ -210,10 +177,11 @@ già stato guardato nel codice e quello che è ancora un sospetto.
 ### Coda: leggibilità e presentazione
 
 - **Tabellone scommesse**: propone solo 1X / X2 / 12, mai gli altri mercati. È il
-  sintomo del problema noto (l'1X2 discrimina, i gol no), non un difetto della
-  card.
+  sintomo del problema noto (l'1X2 discrimina, i gol molto meno), non un difetto
+  della card. Da rivedere ora che i mercati sui numeri discriminano **meglio dei
+  gol**: cartellini e tiri in porta meriterebbero di comparirci.
 - **Doppie chance e gol con confidence**: tabella confusa e, sui gol, poggia su
-  probabilità che sappiamo non discriminare.
+  probabilità che discriminano poco.
 - ~~**Progressione storica**~~ — **fatto nel `0905-b10`**: le quattro metriche
   mostrate erano proprio quelle su cui la forma recente non dice nulla.
   Sostituite con sei in cui lo scostamento recente si è dimostrato persistente,
@@ -223,20 +191,21 @@ già stato guardato nel codice e quello che è ancora un sospetto.
 
 ### Coda: da controllare nel modello
 
-Nessuno di questi è ancora stato verificato. Sono sospetti dell'utente, non
-difetti accertati.
-
-- **Handicap asiatico** — le linee a quarti si spezzano in due mezze puntate,
-  da verificare che la somma torni.
-- **Multigol** — `multigoal()` somma celle della matrice, da controllare estremi
-  e sovrapposizioni fra le fasce.
-- ~~**Alta varianza e disciplina**~~ — **fatto nel `0905-b10`**: era gia'
+- ~~**Handicap asiatico**~~ — **verificato**: le linee a quarti si spezzano
+  correttamente, `pHome + pRefund + pAway` fa 1 su tutte le linee da −1.5 a +1.5,
+  la copertura è monotona nell'handicap e AH −0.5 coincide con `p1`, AH +0.5 con
+  `p1 + pX`. Attenzione a un'asserzione sbagliata facile da rifare: **AH −0.75 sta
+  fra −1 e −0.5**, non fra −0.5 e +0.5.
+- ~~**Multigol**~~ — **verificato**: `0-1 + 2-3 + 4+` fa 1, le fasce più larghe
+  contengono quelle strette, `0-20` copre tutto per totali, casa e trasferta.
+- ~~**Alta varianza e disciplina**~~ — **fatto nel `0905-b10`–`b12`**: era già
   relazionale (usava il concesso dall'avversario) ma senza shrinkage, e come
-  probabilita' valeva meno di sparare la media. Vedi *I mercati sui numeri*.
-- **Markov** — `markovFlow` con rate dipendenti dal punteggio, mai verificato
-  contro il backtest se non come colonna dell'ensemble.
-- ~~**Elo** — la funzione a gradini del salto data~~ — **fatto nel `0905-b9`**,
-  vedi *Stato del lavoro*.
+  probabilità valeva meno di sparare la media. Vedi *I mercati sui numeri*.
+- ~~**Elo, salto data**~~ — **fatto nel `0905-b9`**, vedi *Stato del lavoro*.
+- **Markov** — `markovFlow` con rate dipendenti dal punteggio. Verificato solo
+  negli invarianti (`p1+pX+p2` fa 1, simmetrico scambiando i lambda, scarto
+  massimo dal Dixon-Coles 0.035); **mai** verificato contro il backtest come
+  modello a sé.
 - **Probabili formazioni**: PitchAPI espone `/lineups` anche in versione prevista.
   Da valutare dopo il resto.
 
@@ -252,8 +221,15 @@ serie in `{avg_3, avg_5, avg_10, avg_15, avg_tot, decay, std, nValid}`, dove
 `decay` è la media pesata con emivita 106 giorni ed è il valore che il motore
 usa quasi ovunque. Da lì si costruiscono i lambda, da un solo lambda-paio esce
 **una sola matrice Dixon-Coles**, e da quella matrice discendono *tutti* i
-mercati: 1X2, doppia chance, GG, Over/Under multilinea, multigol, risultati
-esatti, handicap asiatico. Non ci sono mercati calcolati per conto proprio.
+mercati sui gol: 1X2, doppia chance, GG, Over/Under multilinea, multigol,
+risultati esatti, handicap asiatico. Nessuno di questi è calcolato per conto
+proprio, ed è il motivo per cui una correzione ai lambda li migliora o li rompe
+tutti insieme.
+
+L'unica cosa **fuori** dalla matrice è `calcAdv`, che produce i mercati sui
+numeri (corner, tiri in porta, cartellini, falli) con un proprio lambda e una
+binomiale negativa: sono conteggi diversi dai gol e non escono dallo stesso
+processo. Vedi *I mercati sui numeri*.
 
 **Due scope.** `overall` sono le ultime N partite di qualunque tipo, `role`
 sono le ultime N **in casa** per la squadra di casa e **in trasferta** per
@@ -268,6 +244,11 @@ avversaria), più la componente rigori recuperata come `xG − NPxG` (gli NPxG
 escludono i rigori, i gol no), più una correzione di forma dall'Elo limitata a
 ±8%. `rho` di Dixon-Coles è stimato dalle frequenze reali di 0-0/1-0/0-1/1-1
 della lega, non fisso.
+
+Subito prima di costruire la matrice, il totale dei lambda viene mediato con una
+**seconda stima ricavata dai tiri in porta previsti** (`goalsSotCorrection`), e la
+scala risultante moltiplica entrambi i lambda così il rapporto casa/trasferta non
+cambia. È l'unica correzione esterna attiva sui gol: vedi *I gol*.
 
 **I due shrinkage dei lambda**, entrambi su `window` così il Comparatore può
 fare A/B prima di iniettare il motore:
@@ -508,12 +489,17 @@ riga qui sotto costa già un backtest.
 
 | idea | esito | numeri |
 |---|---|---|
-| `sum_sot` (tiri in porta previsti, somma delle due squadre) sull'Over 2.5 | **regge** | AUC 0.581 / 0.531 / 0.546 sulle tre leghe, pooled 0.556 (3.3 sigma). Batte `dc_over` in **tutti e tre** gli holdout: +0.021, +0.028, +0.036. Spread fra quintile alto e basso: +21.3 / +9.3 / +10.7 punti |
+| `sum_sot` (tiri in porta previsti, somma delle due squadre) sull'Over 2.5 | **regge** | AUC 0.581 / 0.531 / 0.546 sulle tre leghe nel panel, e **0.579 / 0.534 / 0.537 confermate in produzione** sul backtest `b11`. Batte il lambda del Dixon-Coles in tutti e tre gli holdout |
 
-Da notare due cose. La prima: `sum_sot` **da solo** batte `dc_over` **e** la
-combinazione dei due (0.581 contro 0.577), cioè la probabilità Over della matrice
-non aggiunge niente sopra i tiri in porta previsti. La seconda: `sot` non è una
-metrica «avanzata», viene da `/stats` ed era disponibile da sempre.
+Tre cose da notare. La prima: `sum_sot` **da solo** batte il lambda del
+Dixon-Coles **e** la combinazione dei due — la stessa cosa che si rivede
+nell'A/B sul peso, dove l'AUC cresce fino a `w = 1.00`. La probabilità Over della
+matrice non aggiunge quasi niente sopra i tiri in porta previsti.
+La seconda: `sot` non è una metrica «avanzata», viene da `/stats` ed era
+disponibile da sempre. La terza: è l'unica idea sopravvissuta su una decina
+provate, ed è servita **una riformulazione completa** (da moltiplicatore a media
+di lambda) perché il segnale arrivasse davvero al motore — vedi *La baseline di
+coppia*.
 
 ### Il tetto: le previsioni delle stats sono al massimo, o quasi
 
@@ -588,251 +574,52 @@ risultano gonfiati, perché nella stessa partita le due squadre sono complementa
 (la somma fa ~100). Il profilo va calcolato **escludendo la partita**, entrambe
 le righe.
 
-### Il muro dell'Over/Under
+### Il muro dell'Over/Under, e dove siamo adesso
 
-`dc_over` ha AUC **0.503 in Serie A, 0.494 in Premier, 0.556 in LaLiga**. Fuori
-dalla LaLiga la probabilità Over della matrice non distingue una partita
-dall'altra. Il totale di gol lo azzecca in media (le linee 0.5, 1.5, 3.5, 4.5
-sono calibrate entro 2 punti), quindi il problema non è il livello dei lambda ma
-la **capacità di ordinare le partite**.
+Il lambda del Dixon-Coles da solo ha AUC **0.554 / 0.495 / 0.501** (LaLiga /
+Premier / Serie A): fuori dalla LaLiga la probabilità Over della matrice non
+distingue una partita dall'altra. Il totale di gol lo azzecca in media (le linee
+0.5, 1.5, 3.5, 4.5 sono calibrate entro 2–4 punti), quindi il problema non è mai
+stato il **livello** dei lambda ma la **capacità di ordinare le partite**.
+
+Il `b12` scavalca in parte il muro con i tiri in porta previsti (0.572 / 0.514 /
+0.521, vedi *I gol*), ma il margine resta piccolo e nessuna delle altre feature
+provate è sopravvissuta alla verifica incrociata.
 
 L'ipotesi ancora non testata è che manchi la *forma* della distribuzione: dieci
 tiri da 0.10 xG e due da 0.50 danno lo stesso lambda ma distribuzioni di gol
 diverse. Servirebbe l'endpoint `/v1/matches/{id}/shots`, che dà ogni tiro con
 `expected_goals`, `is_on_target`, `is_inside_box`, `situation` e coordinate. Costa
 una chiamata in più per partita storica (da 4 a 5, +25% sul batch) ed è il
-candidato più serio rimasto.
+candidato più serio rimasto. Nota che `sum_sot` funziona già come *proxy* grezzo
+della stessa informazione: i tiri in porta sono la coda buona della distribuzione
+dei tiri, ed è probabilmente per questo che è l'unica cosa che ha retto.
 
-## I mercati sui numeri: perché non erano scommettibili, e cosa è cambiato
+## I gol: la seconda stima del lambda dai tiri in porta
 
-Misurato sul panel (786 partite con storico sufficiente, walk-forward: ogni
-previsione usa solo le partite precedenti).
+`sum_sot` (la somma dei tiri in porta previsti delle due squadre) è l'unica
+feature sopravvissuta a tre leghe. Da sola fa **AUC 0.579 / 0.534 / 0.537**
+sull'Over 2.5 dove il lambda del Dixon-Coles fa **0.554 / 0.495 / 0.501**, cioè
+quasi il caso fuori dalla LaLiga.
 
-**Il verdetto di partenza era brutale.** Il punteggio di Brier dei mercati
-statistici, mediato sulle linee, era *pari o peggiore* di quello che si ottiene
-sparando sempre la frequenza media:
-
-| | Brier attuale | Brier previsione piatta |
-|---|---|---|
-| corner | 0.2409 | 0.2404 (**peggio della media**) |
-| tiri in porta | 0.2370 | 0.2370 (pari) |
-
-Discriminavano un pochino (AUC 0.564 e 0.571), ma le probabilita' erano cosi'
-sbilanciate da annullare il vantaggio. Nella fascia piu' bassa di corner attesi
-la card diceva **29.6% di Over 9.5 dove la realta' era 45.8%**: sedici punti.
-
-**La causa non era la distribuzione, era il lambda.** `calcAdv` stimava i
-corner attesi come `sqrt(miei x concessi_avversario)`: una media geometrica
-**senza nessuno shrinkage**. La pendenza di reale~previsto era **0.47**, cioe'
-le previsioni erano larghe piu' del doppio del vero. Quando la card diceva 12
-corner, la realta' ne portava 10.4.
-
-**La correzione.** I lambda passano da `predictStat` con un `k` tarato *sul
-totale di partita*, che e' il bersaglio del mercato:
+Entra nel motore **non come moltiplicatore ma come seconda stima del lambda**:
 
 ```js
-window.MARKET_SHRINK_K = { cor: 0.25, sot: 0.30, yel: 0.15, fouls: 0.30 };
+lam_sot = sum_sot / SOT_PER_GOAL          // SOT_PER_GOAL = 3.25
+lam_mix = (1 - w) * lam_DC + w * lam_sot  // GOALS_SOT_W = 0.50
+scala   = lam_mix / lam_DC                // cap ±20% (GOALS_SOT_CAP)
 ```
 
-Il `k` di mercato e' sistematicamente **piu' basso** di quello per squadra in
-`STAT_SHRINK_TABLE` (cor 0.40, sot 0.50): il rapporto e' circa 0.6 su entrambe
-le metriche misurabili, ed e' da li' che viene il valore proposto per `yel`
-(0.23 x 0.6 ≈ 0.15) — **non misurato, da confermare col prossimo backtest**,
-perche' il panel non porta i cartellini. Il CSV del Comparatore li esporta gia',
-quindi bastera' rifare il panel includendoli.
+La scala moltiplica **entrambi** i lambda, quindi il rapporto casa/trasferta della
+matrice non cambia e tutti i mercati che escono dal Dixon-Coles si muovono
+insieme.
 
-Risultato sulle 786 partite del panel, con l'ottimo **interno** (non monotono,
-come la disciplina richiede). **Attenzione: questi numeri vengono da una
-simulazione fuori dal motore, che usava una vera media di lega. In produzione il
-motore usa `_base`, che e' una media di coppia, e le pendenze reali sono uscite
-molto piu' basse — vedi *La baseline di coppia*.**
+**Perché non un moltiplicatore.** Un fattore limitato lascia il *rango* dominato
+da `lam_DC`, che sull'Over 2.5 vale 0.495/0.500 cioè niente: per smuoverlo
+servirebbe `alpha 5` e cap ±90%, e il Brier passerebbe da 0.2537 a **0.3151**.
+Una media pesata sposta il rango **tenendo il livello**.
 
-| | pendenza | Brier | errore di calibrazione |
-|---|---|---|---|
-| corner, com'era | 0.47 | 0.2409 | 6.3 punti |
-| corner, k=0.25 | 0.85 | **0.2379** | **2.5 punti** |
-| tiri, com'era | 0.56 | 0.2370 | 5.8 punti |
-| tiri, k=0.30 | 0.94 | **0.2340** | **3.3 punti** |
-
-L'AUC non si muove (0.560 vs 0.564 sui corner): lo shrinkage non aggiunge
-discriminazione, **rende utilizzabile quella che c'era gia'**. Il miglioramento
-del Brier e' presente in tutte e tre le leghe.
-
-**Attenzione a un tranello in cui sono quasi caduto:** minimizzare l'errore di
-calibrazione da solo porta a `k` bassissimi, perche' una previsione *piatta* ha
-calibrazione perfetta e zero valore. L'arbitro giusto e' il Brier (che penalizza
-entrambi i difetti) con la pendenza a fare da controllo.
-
-**La dispersione.** `negBinK` finiva con `Math.max(2, ...)`. Un `k = 2` su una
-media di 9.5 corner significa varianza 54, quando quella vera e' 11. In pratica
-il pavimento non mordeva mai (su 4000 campioni da 30 partite il minimo osservato
-era 4.9), ma era una toppa senza giustificazione. Ora la **dispersione viene
-ristretta verso Poisson** col peso empirico-bayesiano `ex²/(ex²+2/n)`, dove `ex`
-e' l'eccesso osservato e `2/n` la sua varianza di campionamento: un eccesso
-piccolo rispetto al proprio rumore viene assorbito, uno grande sopravvive. Non
-serve piu' nessun pavimento.
-
-Cosa dicono i dati sulla dispersione vera dei totali di partita:
-
-| | media | varianza | k di lega |
-|---|---|---|---|
-| corner | 9.49 | 11.10 | 56 |
-| tiri in porta | 8.38 | 8.36 | **nessuna sovradispersione** |
-
-I tiri in porta **non sono sovradispersi**: la binomiale negativa li puo' solo
-peggiorare, e infatti il campione da 30 partite la invocava a sproposito nel 38%
-dei casi sui corner e nel 62% sui tiri, saltando fra due distribuzioni diverse
-per puro rumore di campionamento.
-
-**Il tetto.** (Misura sul panel.) Se si conoscesse *esattamente* il lambda di
-ogni partita, l'AUC
-massima sui corner sarebbe **circa 0.68**, con la probabilita' di Over 9.5 che
-spazia dal 27% al 68% fra il 10° e il 90° percentile. C'e' quindi spazio vero:
-siamo a 0.56 contro un tetto di 0.68, molto piu' margine che sui gol. Ma
-attenzione, il tetto e' calcolato assumendo che il totale sia Poisson attorno al
-suo lambda; per i tiri in porta la stessa formula dice tetto zero, il che e'
-smentito dal fatto che il modello fa 0.571. La spiegazione e' che i tiri sono
-**sotto**-dispersi rispetto a Poisson, quindi quella scomposizione li sottostima.
-Il tetto sui corner va letto come indicativo, non come una misura esatta.
-
-**Un test piu' onesto: la meta' della storia contro l'altra meta'.** Costruendo
-due stime indipendenti dalla stessa storia (partite pari e dispari), la
-correlazione fra le due e' solo **+0.26 sui corner** e diventa **negativa in
-Serie A**. Vuol dire che gran parte di quello che lo stimatore produce e' rumore
-di stima, non segnale. Corretta per attenuazione, la correlazione col reale che
-si otterrebbe con storia infinita e' circa **0.25**: reale, ma piccola. Non
-aspettarsi che i corner diventino un mercato facile.
-
-### La Progressione Storica mostrava le metriche sbagliate
-
-Domanda: le medie brevi (ultime 3, ultime 5) prevedono la partita successiva
-meglio della media lunga? Misurato su tutte e 47 le metriche: **no, mai**. Per
-ognuna la media lunga vince, con uno svantaggio del breve fra 0.02 e 0.09 di
-correlazione. La colonna «Ult 3» era il peggior previsore della tabella ed era la
-prima che l'occhio andava a leggere.
-
-Ma «la forma non esiste» sarebbe la conclusione sbagliata. Con la regressione
-`reale = a + b1 x media_lunga + b2 x (media_ultime5 - media_lunga)`, il
-coefficiente `b2` dice se uno scostamento recente **persiste**. Mediana su 47
-metriche: **+0.014** contro +0.73 della media lunga, cioe' niente. Ma **12
-metriche su 47 hanno |t| > 2** dove il caso ne darebbe 2.4, e i segni non sono
-casuali:
-
-- **persistono** (la forma conta): `prog_carries` t=+3.5, `switches` +2.9,
-  `prog_carry_dist` +2.7, `tackles` +2.7, `ppda_den` +2.5, `carries_box` +2.4,
-  `aerials` +2.4, `f3_entries` +2.2, `carry_dist` +2.0. Sono tutti **volumi
-  strutturali**: quello che si sposta quando cambia il modulo, e resta spostato.
-- **si invertono** (la forma torna indietro): `sca` t=-2.2, `sca_live` -2.1,
-  `sca_shot` -2.0. Sono metriche di **creazione**: una fiammata rientra.
-
-Le quattro metriche che la card mostrava — NPxG fatti, NPxG subiti, Field Tilt,
-PPDA — hanno `b2` di -0.01, +0.01, -0.06 e +0.06, con |t| sotto 1. Erano
-esattamente le quattro su cui la forma recente non dice nulla. Sostituite con sei
-delle nove persistenti.
-
-## La baseline di coppia: l'errore che ha svuotato due modifiche
-
-Trovato dal backtest `0905-b10` su 756 partite (Serie A + Premier, 2025/26).
-Vale la pena leggerlo prima di toccare qualunque cosa passi da `predictStat`.
-
-`_base[k]` **non e' la media di lega.** E' la media di *tutti i valori visti nelle
-partite di quella squadra*, prodotti e concessi insieme. Su ~30 partite e'
-un'ottima stima del livello di quella squadra e dei suoi avversari — cioe'
-contiene un **effetto coppia**, non solo il livello della lega. Misurato:
-`corr(sum_sot previsto, baseline usata) = +0.841`.
-
-Per `predictStat` va benissimo: il rapporto `mine/lg` significa «quanto sopra il
-proprio ambiente», ed e' proprio quello che serve. Ma usarla in due punti l'ha
-rotta:
-
-**1. La correzione gol del `b9` era un rapporto contro se stessa.** Il codice
-faceva `ratio = sum_sot / (2 x lg)` con `lg` la media dei due `_base`. Dividere
-per una quantita' che correla 0.84 col numeratore cancella la variazione fra
-partite, cioe' esattamente il segnale. Misura:
-
-| | AUC Over 2.5 (Premier / Serie A) |
-|---|---|
-| `sum_sot` grezzo | 0.534 / 0.537 |
-| `sum_sot / baseline di coppia` (il `b9`) | **0.469 / 0.542** |
-| `sum_sot / media della lega` | 0.534 / 0.537 |
-
-La correzione applicata spostava l'AUC di **+0.0018** con un errore standard di
-±0.021: indistinguibile da zero, come previsto da un rapporto quasi costante
-(5°–95° percentile 0.936–1.061, contro 0.846–1.165 con un riferimento sano).
-
-**2. Le previsioni di mercato del `b10` erano troppo larghe.** Se
-`pred ≈ lg x (1 + k(...))` e `lg` varia con la coppia, la variazione della coppia
-entra **due volte**. Pendenze misurate in produzione contro lo 0.85 atteso:
-corner **0.60**, tiri in porta **0.30**, gialli **0.64** (per lega: corner 0.43
-Premier e 0.19 Serie A). Le previsioni hanno sd 0.814 sui corner dove la sd utile
-sarebbe 0.486.
-
-**Attenzione al tranello dell'aggregazione.** L'AUC complessiva sull'Over 2.5 era
-0.531, ma dentro le leghe era 0.495 e 0.500 — cioe' puro caso. Il numero
-aggregato era gonfiato dai base rate diversi (Premier 55.1% di Over, Serie A
-45.7%). **Le AUC dei mercati gol vanno sempre lette per lega**, mai aggregate.
-
-### Come e' stato risolto
-
-**Per i gol**, la correzione non e' piu' un moltiplicatore ma una **seconda stima
-del lambda**, mediata con quella del Dixon-Coles:
-
-```
-lam_sot = sum_sot / SOT_PER_GOAL          (SOT_PER_GOAL = 3.25)
-lam_mix = (1 - w) x lam_DC + w x lam_sot   (w = 0.50)
-scala   = lam_mix / lam_DC                 (cap +/-20%, tocca lo 0.1% delle volte)
-```
-
-La differenza non e' cosmetica. Un moltiplicatore limitato lascia il *rango*
-dominato da `lam_DC`, che sull'Over 2.5 vale 0.495/0.500, cioe' niente: per
-smuoverlo servirebbe alpha 5 e cap ±90%, e il Brier passerebbe da 0.2537 a
-**0.3151**. Una media pesata invece sposta il rango mantenendo il livello. Le
-misure, per lega:
-
-| w | AUC Pre | AUC Ser | Brier | media lambda | MAE gol |
-|---|---|---|---|---|---|
-| 0.00 | 0.495 | 0.500 | 0.2537 | 2.54 | 1.251 |
-| **0.50** | **0.514** | **0.520** | **0.2508** | **2.53** | — |
-| 1.00 | 0.534 | 0.537 | 0.2487 | 2.54 | 1.235 |
-
-Migliora **ogni** linea Over (0.5, 1.5, 2.5, 4.5) su AUC e Brier insieme, e il
-livello resta calibrato su tutte. `w = 0.50` e' scelto invece di 1.00 per
-disciplina: il miglioramento e' monotono fino al bordo, e l'unica linea con un
-ottimo interno (Over 3.5, massimo attorno a w 0.35–0.70) suggerisce di non
-spingere. `window.GOALS_SOT_W` e' esposto e il CSV ricostruisce w = 0 / 0.25 /
-0.5 / 0.75 / 1.0 senza rilanciare il motore: sara' la terza lega a decidere se
-alzarlo.
-
-`SOT_PER_GOAL = 3.25` e' misurato (3.08 Premier, 3.41 Serie A) e tocca solo il
-*livello*, mai il rango: a 3.0 la media del lambda sale a 2.64, a 3.5 scende a
-2.44, contro un reale di 2.59.
-
-**Per i mercati sui numeri**, i `k` sono stati moltiplicati per la pendenza
-misurata (`k_nuovo = k_vecchio x pendenza`), che al primo ordine e' esatto perche'
-lo scarto dalla baseline e' proporzionale a `k`:
-
-| | k del `b10` | pendenza misurata | k del `b11` |
-|---|---|---|---|
-| corner | 0.25 | 0.60 | **0.15** |
-| tiri in porta | 0.30 | 0.30 | **0.09** |
-| gialli | 0.15 | 0.64 | **0.10** |
-| falli | 0.30 | non misurata | 0.15 |
-
-Questo e' **un passo di un ciclo di calibrazione, non una taratura finita**: se
-la sovradispersione residua venisse da `lg` invece che dal termine in `k`,
-abbassare `k` non basterebbe. Per chiudere la questione il CSV ora esporta la
-baseline di coppia usata per ogni mercato: al prossimo backtest si misura
-direttamente quanto pesa `lg` e quanto il termine in `k`.
-
-## Il backtest a tre leghe (1133 partite): cosa ha detto
-
-Terzo giro, `0905-b11`, Serie A + Premier + **LaLiga**. LaLiga non era stata usata
-per tarare ne' `w` ne' i `k`, quindi e' un test fuori campione vero.
-
-### I gol: confermato, e w resta a 0.50
-
-La seconda stima del lambda dai tiri regge in tutte e tre le leghe, LaLiga
-compresa. AUC sull'Over 2.5, **per lega** (mai aggregata):
+Misure su 1133 partite, AUC Over 2.5 per lega:
 
 | w | LaLiga | Premier | Serie A | Brier |
 |---|---|---|---|---|
@@ -841,22 +628,204 @@ compresa. AUC sull'Over 2.5, **per lega** (mai aggregata):
 | 0.75 | 0.576 | 0.524 | 0.529 | 0.2486 |
 | 1.00 | 0.580 | 0.532 | 0.532 | 0.2487 |
 
-Migliora **ogni** linea Over su AUC e Brier insieme, e il livello resta calibrato
-a ogni `w` (0.5: 92 vs 93 · 1.5: 72 vs 76 · 2.5: 47 vs 50 · 3.5: 26 vs 25 ·
-4.5: 12 vs 12). L'errore standard dell'AUC per lega e' ±0.030, quindi il passo da
-0.50 a 0.75 (+0.007 in media) **non e' distinguibile**: si resta a 0.50, che sta
-dentro l'ottimo piatto e ha dalla sua l'unica linea con un massimo interno
-(Over 3.5, AUC 0.543 a w 0.50–0.75 contro 0.538 a w 1.00). Il cap ±20% ha morso
-sullo 0.18% delle partite, il `SoT per gol` implicito e' 3.19 (LaLiga 3.19,
-Premier 3.04, Serie A 3.33) contro il 3.25 usato.
+Migliora **ogni** linea Over (0.5, 1.5, 2.5, 3.5, 4.5) su AUC e Brier insieme, e
+il livello resta calibrato a ogni `w` (0.5: 92 vs 93 · 1.5: 72 vs 76 · 2.5: 47 vs
+50 · 3.5: 26 vs 25 · 4.5: 12 vs 12).
 
-### I mercati sui numeri: abbassare `k` era la cura sbagliata
+**Perché `w = 0.50` e non 1.00.** L'errore standard dell'AUC per lega è ±0.030,
+quindi il passo da 0.50 a 0.75 (+0.007 in media) non è distinguibile da zero. In
+più l'unica linea con un massimo interno è l'Over 3.5 (0.543 a w 0.50–0.75 contro
+0.538 a w 1.00). Muovere una costante quando i dati non distinguono è come
+sceglierla a caso: `window.GOALS_SOT_W` è esposto e il CSV ricostruisce
+w = 0 / 0.25 / 0.5 / 0.75 / 1.0 senza rilanciare il motore, quindi sarà la
+quarta lega a decidere.
 
-Il `b11` aveva abbassato i `k` sulla pendenza misurata. Non e' servito: corner da
-0.60 a **0.55**, gialli da 0.64 a **0.66**. La scomposizione, resa possibile
-dalla baseline esportata nel CSV, dice perche'.
+`SOT_PER_GOAL = 3.25` è misurato (LaLiga 3.19, Premier 3.04, Serie A 3.33) e tocca
+solo il **livello**, mai il rango. Il cap ±20% ha morso sullo **0.18%** delle
+partite: è un paracadute inerte, come dev'essere.
 
-Scomponendo `previsione = 2·lg + scarto attacco/difesa`:
+## I mercati sui numeri: corner, tiri in porta, cartellini
+
+**Sono i mercati che discriminano meglio.** AUC media delle tre leghe: cartellini
+**~0.57**, tiri in porta ~0.56, corner ~0.53 — contro lo 0.53 dell'Over 2.5. Ci si
+è arrivati in tre giri (`b10` → `b12`), due dei quali hanno curato la cosa
+sbagliata: la storia è in *La baseline di coppia*, ed è la parte più utile da
+leggere prima di toccarli.
+
+### Come sono calcolati adesso
+
+`calcAdv` produce un lambda per mercato in tre pezzi:
+
+```
+riferimento = MARKET_PER_GOAL[m] × (LG.avgH + LG.avgA)   // costante DENTRO la lega
+lambda      = riferimento
+            + MARKET_BASE_SHRINK[m] × (2·lg − riferimento)   // livello della coppia
+            + (grezzo − 2·lg)                                // attacco vs difesa
+```
+
+dove `grezzo = predictStat(H,A,m,scope,k) + predictStat(A,H,m,scope,k)` e `lg` è
+la media dei due `_base[m]`. Lo `scope` è `role` se **entrambe** le squadre hanno
+almeno 3 partite nel ruolo, altrimenti `overall` per tutte e due.
+
+Le tre costanti, e da dove viene ciascuna:
+
+| | `MARKET_SHRINK_K` | `MARKET_BASE_SHRINK` | `MARKET_PER_GOAL` |
+|---|---|---|---|
+| corner | 0.07 | 0.50 | 3.61 |
+| tiri in porta | 0.30 | 0.75 | 3.20 |
+| gialli | 0.10 | 0.75 | 1.48 |
+| falli | 0.15 | 1.00 | `null` |
+
+- **`MARKET_SHRINK_K`** governa il termine attacco-vs-difesa. Cercato sul backtest
+  a tre leghe: sui **corner** il Brier migliora monotonamente scendendo, cioè quel
+  termine è rumore e va quasi spento; sui **tiri** c'è un ottimo interno fra 0.25 e
+  0.40; sui **gialli** attorno a 0.09.
+- **`MARKET_BASE_SHRINK`** è l'affidabilità della baseline di coppia (vedi sotto).
+  Più alto su tiri e gialli **non per prudenza sul modello ma per prudenza
+  sull'ancoraggio**: l'esposizione all'errore del riferimento vale `(1−c)`.
+- **`MARKET_PER_GOAL`** ancora il riferimento ai gol di lega, che
+  `computeLeagueParams` calcola su **tutte** le partite: è l'unica quantità
+  davvero di lega che il motore abbia (corner e tiri non stanno nella lista
+  partite, solo nei dettagli scaricati per le due squadre). Stabilità del rapporto
+  fra le tre leghe: corner **1.1%**, tiri 8.7%, gialli 14.7%, **falli 28%** — per
+  i falli non c'è ancoraggio utilizzabile, quindi `null` e la correzione si spegne
+  da sola (`c = 1.00` fa lo stesso).
+
+Effetto della cura, misurato su 1133 partite:
+
+| | pendenza prima → dopo | Brier prima → dopo |
+|---|---|---|
+| corner | 0.55 → **0.96** | 0.2281 → **0.2251** |
+| tiri in porta | 0.49 → 0.63 | 0.2275 → **0.2261** |
+| gialli | 0.66 → 0.88 | 0.2077 → **0.2066** |
+
+Sui corner migliora in tutte e tre le leghe; su tiri e gialli in due su tre, con
+la terza ferma.
+
+### La dispersione: `negBinK`
+
+`negBinK` finiva con `Math.max(2, ...)`. Un `k = 2` su una media di 9.5 corner
+significa varianza 54 dove quella vera è 11. In pratica il pavimento non mordeva
+quasi mai (su 4000 campioni da 30 partite il minimo osservato era 4.9), ma era una
+toppa senza giustificazione. Ora la dispersione viene **ristretta verso Poisson**
+col peso empirico-bayesiano `ex²/(ex²+2/n)`, dove `ex` è l'eccesso osservato e
+`2/n` la sua varianza di campionamento: un eccesso piccolo rispetto al proprio
+rumore viene assorbito, uno grande sopravvive, e nessun pavimento serve più.
+
+Dispersione vera dei totali di partita:
+
+| | media | varianza | `k` di lega |
+|---|---|---|---|
+| corner | 9.49 | 11.10 | 56 |
+| tiri in porta | 8.38 | 8.36 | **nessuna sovradispersione** |
+
+I tiri in porta **non sono sovradispersi**: la binomiale negativa lì può solo
+peggiorare. Il campione da 30 partite la invocava a sproposito nel 38% dei casi
+sui corner e nel 62% sui tiri, saltando fra due distribuzioni diverse per puro
+rumore di campionamento.
+
+### Quanto ci si può aspettare
+
+Due misure indipendenti dicono di non farsi illusioni.
+
+**Il tetto.** Se si conoscesse *esattamente* il lambda di ogni partita, l'AUC
+massima sui corner sarebbe **circa 0.68**, con la probabilità di Over 9.5 che
+spazia dal 27% al 68% fra il 10° e il 90° percentile: più margine che sui gol.
+Il tetto assume però che il totale sia Poisson attorno al suo lambda; sui tiri in
+porta la stessa formula dà tetto zero, smentita dal fatto che il modello fa 0.56.
+La spiegazione è che i tiri sono **sotto**-dispersi rispetto a Poisson. Leggere il
+tetto come indicativo.
+
+**Metà della storia contro l'altra metà.** Costruendo due stime indipendenti dalla
+stessa storia (partite pari e dispari), la correlazione fra le due è **+0.26 sui
+corner**, e negativa in Serie A. Corretta per attenuazione, la correlazione col
+reale che si avrebbe con storia infinita è circa **0.25**: reale, ma piccola.
+
+### Un tranello da non ripetere
+
+Minimizzare l'**errore di calibrazione** da solo porta a shrinkage estremi, perché
+una previsione *piatta* ha calibrazione perfetta e valore zero. L'arbitro giusto è
+il **Brier** — che penalizza sia la miscalibrazione sia l'appiattirsi — con la
+**pendenza** a fare da controllo.
+
+### Cosa resta aperto
+
+- **La Premier sui tiri in porta** ha pendenza 0.10–0.20 contro 0.77 di LaLiga e
+  0.35 della Serie A. O ha qualcosa di diverso, o è rumore: serve un'altra
+  stagione.
+- **I cartellini sono il mercato migliore e nessuno li ha guardati davvero.**
+  Arbitro, derby, posizione in classifica sono tutte cose che PitchAPI potrebbe
+  dare e che il modello oggi ignora.
+- **I falli** restano senza ancoraggio di lega.
+
+## La Progressione Storica: quali metriche ha senso mostrare
+
+Le medie brevi (ultime 3, ultime 5) prevedono la partita successiva meglio della
+media lunga? Misurato su tutte e 47 le metriche: **no, mai**. Per ognuna la media
+lunga vince, con uno svantaggio del breve fra 0.02 e 0.09 di correlazione. La
+colonna «Ult 3» era il peggior previsore della tabella ed era la prima che
+l'occhio andava a leggere.
+
+Ma «la forma non esiste» sarebbe la conclusione sbagliata. Con la regressione
+`reale = a + b1 × media_lunga + b2 × (media_ultime5 − media_lunga)`, il
+coefficiente `b2` dice se uno scostamento recente **persiste**. Mediana su 47
+metriche: **+0.014** contro +0.73 della media lunga, cioè niente. Ma **12 metriche
+su 47 hanno |t| > 2** dove il caso ne darebbe 2.4, e i segni non sono casuali:
+
+- **persistono**: `prog_carries` t=+3.5, `switches` +2.9, `prog_carry_dist` +2.7,
+  `tackles` +2.7, `ppda_den` +2.5, `carries_box` +2.4, `aerials` +2.4,
+  `f3_entries` +2.2, `carry_dist` +2.0. Sono tutti **volumi strutturali**: quello
+  che si sposta quando cambia il modulo, e resta spostato.
+- **si invertono**: `sca` t=−2.2, `sca_live` −2.1, `sca_shot` −2.0. Sono metriche
+  di **creazione**: una fiammata rientra.
+
+Le quattro metriche che la card mostrava — NPxG fatti, NPxG subiti, Field Tilt,
+PPDA — hanno `b2` di −0.01, +0.01, −0.06 e +0.06, con |t| sotto 1: esattamente le
+quattro su cui la forma recente non dice nulla. Sostituite con sei delle nove
+persistenti, e la card ora spiega il criterio.
+
+## La baseline di coppia: l'errore che ha svuotato tre tentativi
+
+La cosa più utile in questo documento. Tre modifiche di fila sono uscite vuote per
+la stessa ragione, e nessuna delle tre era sbagliata *in sé*.
+
+**`_base[k]` non è la media di lega.** È la media di *tutti i valori visti nelle
+partite di quella squadra*, prodotti e concessi insieme. Su ~30 partite è
+un'ottima stima del livello di quella squadra e dei suoi avversari — cioè contiene
+un **effetto coppia**, non solo il livello della lega. Misurato:
+`corr(sum_sot previsto, baseline usata) = +0.841`.
+
+Per `predictStat` va benissimo: il rapporto `mine/lg` significa «quanto sopra il
+proprio ambiente», ed è esattamente quello che serve. Ma usarla come se fosse una
+media di lega l'ha rotta tre volte.
+
+### 1. Un rapporto contro se stesso (`b9`)
+
+La correzione gol faceva `ratio = sum_sot / (2 × lg)`. Dividere per una quantità
+che correla 0.84 col numeratore cancella la variazione fra partite, cioè il
+segnale:
+
+| | AUC Over 2.5 (Premier / Serie A) |
+|---|---|
+| `sum_sot` grezzo | 0.534 / 0.537 |
+| `sum_sot / baseline di coppia` | **0.469 / 0.542** |
+| `sum_sot / media della lega` | 0.534 / 0.537 |
+
+Il rapporto usciva quasi costante (5°–95° percentile 0.936–1.061 contro
+0.846–1.165 con un riferimento sano) e la correzione spostava l'AUC di
+**+0.0018 con errore standard ±0.021**. Zero.
+
+### 2. Previsioni troppo larghe (`b10`)
+
+Se `pred ≈ lg × (1 + k(...))` e `lg` varia con la coppia, la variazione della
+coppia entra **due volte**. Pendenze in produzione contro lo 0.85 atteso dalla
+simulazione: corner **0.60**, tiri in porta **0.30**, gialli **0.64**.
+
+### 3. Abbassare `k`, che era la cura sbagliata (`b11`)
+
+Vista la sovradispersione, i `k` sono stati moltiplicati per la pendenza. Non è
+servito: corner da 0.60 a **0.55**, gialli da 0.64 a **0.66**. La scomposizione
+`previsione = 2·lg + scarto` dice perché:
 
 | | sd di `2·lg` | sd dello scarto | rapporto |
 |---|---|---|---|
@@ -864,64 +833,38 @@ Scomponendo `previsione = 2·lg + scarto attacco/difesa`:
 | tiri in porta | 0.748 | 0.066 | **11:1** |
 | gialli | 0.503 | 0.162 | **3:1** |
 
-**Quasi tutta la dispersione della previsione viene dalla baseline di coppia**, non
-dal termine che `k` governa. Toccare `k` non poteva funzionare.
+**Quasi tutta la dispersione veniva dalla baseline**, non dal termine che `k`
+governa. Toccare `k` non poteva funzionare, e la pendenza da sola non lo diceva:
+serviva guardare le **sd delle componenti**.
 
-E la baseline e' sovradispersa perche' e' **una media di ~30 partite**, quindi
-porta il proprio errore di campionamento. La teoria lo prevede esattamente:
+### La causa vera, e la cura
 
-| | sd di una partita | SE della media su 30 | affidabilita' attesa | pendenza misurata |
+La baseline è sovradispersa perché è **una media di ~30 partite**, quindi porta il
+proprio errore di campionamento. La teoria lo prevede quasi esattamente:
+
+| | sd di una partita | SE della media su 30 | affidabilità attesa | pendenza misurata |
 |---|---|---|---|---|
 | corner | 3.32 | 0.605 | 0.44 | 0.55 |
 | tiri in porta | 2.89 | 0.527 | 0.50 | 0.46 |
 | gialli | 1.99 | 0.364 | 0.48 | 0.67 |
 
-Circa **meta' della varianza di `_base` e' rumore di stima**, ed e' per questo che
-la pendenza gira attorno a 0.5: e' la definizione di affidabilita'.
+Circa **metà della varianza di `_base` è rumore di stima**, ed è per questo che la
+pendenza gira attorno a 0.5: è la definizione di affidabilità.
 
-### La cura: restringere la baseline, non lo scarto
+La cura è restringere **la baseline**, non lo scarto, verso un riferimento che sia
+davvero costante dentro la lega — e l'unico che il motore possiede sono i gol di
+lega di `computeLeagueParams`. La formula e le costanti sono in *I mercati sui
+numeri*; per i gol la stessa idea prende la forma della media pesata fra due
+lambda, in *I gol*.
 
-```
-riferimento = X_PER_GOAL x (LG.avgH + LG.avgA)      // costante DENTRO la lega
-lambda = riferimento + c x (2*lg - riferimento) + (grezzo - 2*lg)
-```
+### La regola che ne esce
 
-Il riferimento e' ancorato ai gol di lega, che `computeLeagueParams` calcola su
-**tutte** le partite della lega: e' l'unica quantita' davvero di lega che il
-motore ha a disposizione. Lo scarto attacco/difesa non viene toccato.
-
-| | `c` | pendenza prima → dopo | Brier prima → dopo |
-|---|---|---|---|
-| corner | **0.50** | 0.55 → **0.96** | 0.2281 → **0.2251** |
-| tiri in porta | **0.75** | 0.49 → 0.63 | 0.2275 → **0.2261** |
-| gialli | **0.75** | 0.66 → 0.88 | 0.2077 → **0.2066** |
-
-Migliora in tutte e tre le leghe sui corner; su tiri e gialli in due su tre, con
-la terza sostanzialmente ferma. Il `c` piu' alto su tiri e gialli non e' timidezza:
-**il rischio sta tutto nell'ancoraggio**, e l'esposizione vale `(1-c)`. Il rapporto
-con i gol e' stabilissimo sui corner (**1.1%** di scarto fra leghe: 3.585 / 3.619 /
-3.625) ma vale 8.7% sui tiri e 14.7% sui gialli, quindi li' si stringe meno.
-Per i **falli** il rapporto varia del **28%** fra leghe (7.9 in Premier, 10.5 in
-Serie A): nessun ancoraggio affidabile, `MARKET_PER_GOAL.fouls = null` e la
-correzione si spegne da sola.
-
-Con la baseline sistemata, i `k` sono stati ri-cercati e il quadro si ribalta
-rispetto al `b11`:
-
-| | k | cosa dice la misura |
-|---|---|---|
-| corner | **0.07** | il Brier migliora monotonamente scendendo: il termine attacco/difesa sui corner **e' rumore** |
-| tiri in porta | **0.30** | ottimo interno fra 0.25 e 0.40: qui il termine porta segnale |
-| gialli | **0.10** | ottimo interno attorno a 0.09 |
-
-Nota per il futuro: i mercati sui numeri discriminano **meglio dei gol**. AUC
-media delle tre leghe: gialli ~0.57, tiri in porta ~0.56, corner ~0.53, contro lo
-0.53 dell'Over 2.5. Il mercato migliore e' quello dei cartellini, che nessuno
-aveva ancora guardato.
-
-**Cosa resta aperto:** la Premier sui tiri in porta ha pendenza 0.10–0.20, cioe'
-la previsione e' scorrelata dal reale. Le altre due leghe stanno a 0.77 e 0.35.
-Va capito se e' la Premier ad avere qualcosa di diverso o se e' rumore.
+Prima di usare una quantità come «media di lega», chiedersi **su quante e quali
+partite è calcolata**. Se viene dallo storico delle due squadre in campo, non è di
+lega: è della coppia, correla con tutto il resto della previsione, e porta un
+errore di campionamento che va restretto. Le uniche quantità davvero di lega che
+il motore ha sono quelle costruite su `globalLeagueMatchesCache`, cioè `LG` e
+l'Elo — tutto il resto passa dai dettagli scaricati per le due squadre.
 
 ## Le costanti messe a mano: quali sono legittime e quali rompono i conti
 
@@ -956,17 +899,18 @@ proprio perche' **hanno una data di scadenza**. Nota il pattern giusto:
 `estimateRho`, che il rho lo **stima** con una ricerca a griglia sulle quattro
 celle basse. La versione a mano e' solo la rete.
 
-**Tipo 3 — il paracadute, legittimo finche' e' inerte.** Il cap ±15% su
-`goalsSotCorrection` e' di questo tipo. Un cap non e' un parametro del modello
-finche' non morde; quando morde, **diventa** il modello, e in silenzio. Ed e'
-misurabile: sulle 822 partite valutabili il cap morde nello **0.61% dei casi ad
-alpha 0.50**, nell'**11.8% ad alpha 1.00** e nel **42.3% ad alpha 2.00**. Ecco
-perche' alpha 2.00 rompeva la calibrazione: a quel punto quasi meta' delle
-partite riceveva il cap invece del modello. Regola operativa: **un guardrail va
-misurato, non solo scritto**; se morde piu' di qualche punto percentuale, non e'
-un guardrail.
+**Tipo 3 — il paracadute, legittimo finché è inerte.** Il cap ±20% su
+`goalsSotCorrection` è di questo tipo. Un cap non è un parametro del modello
+finché non morde; quando morde, **diventa** il modello, e in silenzio. Ed è
+misurabile: su 1133 partite morde nello **0.18% dei casi**. Nella formulazione
+precedente, a moltiplicatore, lo stesso cap mordeva nello 0.61% ad `alpha 0.50`,
+nell'11.8% ad `alpha 1.00` e nel **42.3% ad `alpha 2.00`** — ed è esattamente
+perché ad alpha 2.00 quasi metà delle partite riceveva il cap invece del modello
+che la calibrazione si rompeva. Regola operativa: **un guardrail va misurato, non
+solo scritto**; se morde più di qualche punto percentuale, non è un guardrail, è
+il modello.
 
-**Fuori classifica — questi rompono davvero i conti.** Due esempi trovati proprio
+**Fuori classifica — questi rompono davvero i conti.** Tre esempi, tutti trovati
 cercando la risposta a questa domanda:
 - `Math.max(2, ...)` in `negBinK`. Nessuna giustificazione: `k = 2` su media 9.5
   significa varianza 54 contro le 11 vere. Nei fatti non mordeva quasi mai, ma
@@ -975,8 +919,13 @@ cercando la risposta a questa domanda:
   e non ha bisogno di pavimenti.
 - La media geometrica `sqrt(miei x concessi)` in `calcAdv`, cioe' **shrinkage
   zero** deciso implicitamente non scrivendolo. Questo mordeva eccome:
-  pendenza 0.47, sedici punti di errore sulla prima fascia. Il valore piu'
-  pericoloso non e' quello scritto male, e' quello **non scritto**.
+  pendenza 0.47, sedici punti di errore sulla prima fascia. Il valore più
+  pericoloso non è quello scritto male, è quello **non scritto**.
+- **`_base` chiamata «baseline di lega» quando è una baseline di coppia.** Non è
+  nemmeno una costante: è un nome sbagliato, e ha svuotato tre modifiche di fila
+  prima che qualcuno guardasse cosa contenesse davvero. Vedi *La baseline di
+  coppia*. Il rischio non è solo nei numeri messi a mano, è anche nei **nomi** che
+  li descrivono male.
 
 **La regola.** Per ogni costante nel motore deve valere una di queste tre:
 1. **e' stimata dai dati** e c'e' scritto su quale campione;
@@ -1058,10 +1007,22 @@ l'emivita da una parte, cambiala dall'altra.
 (`matchTime` in `avviaScanner`). Qualunque nuova aggregazione deve filtrare
 `t < targetMs`, altrimenti il modello vede il risultato che deve prevedere.
 
-**Le costanti calibrate portano la loro provenienza in un commento.**
-`OL_BETA/OL_T1/OL_T2`, le rette della confidence, `RESID_GAMMA`, i `k` delle
-tabelle: ognuna dice su quante partite è stata stimata e con che metodo. Se
-ne cambi una, aggiorna il commento; se ne aggiungi una, scrivilo.
+**Le costanti calibrate portano la loro provenienza qui dentro, non nel codice.**
+I file non hanno commenti (vedi *Stile*), quindi `OL_BETA/OL_T1/OL_T2`, le rette
+della confidence, `RESID_GAMMA`, `STAT_SHRINK_TABLE`, le tre tabelle `MARKET_*`,
+`SOT_PER_GOAL` e `GOALS_SOT_W` devono dire **in AGENTS.md** su quante partite sono
+state stimate e con che metodo. Se ne cambi una, aggiorna la sezione che la
+descrive; se ne aggiungi una, scrivila da qualche parte prima di committare.
+
+**Le manopole di smorzamento hanno tre forme diverse.** Leggi la formula, non il
+nome:
+
+| costante | formula | verso |
+|---|---|---|
+| `STAT_SHRINK_TABLE`, `MARKET_SHRINK_K` | `1 + k(r−1)` | **k alto = meno** shrinkage |
+| `SHRINK_K`, `SHRINK_LAM_K` | `n/(n+k)` | **k alto = più** shrinkage |
+| `MARKET_BASE_SHRINK` | `ref + c(x−ref)` | **c alto = meno** restringimento (`c = 1` non fa niente) |
+| `GOALS_SOT_W` | `(1−w)·a + w·b` | **w alto = più** peso ai tiri in porta |
 
 **Chi consuma una stima con una calibrazione propria passa un `k` esplicito.**
 L'Ordered Logit e `applyResidualCorrection` chiamano
@@ -1147,20 +1108,43 @@ for f in ('scanner.html','comparatore.html'):
 PY
 node --check /tmp/scanner.js && node --check /tmp/comparatore.js
 
-# 2. le regex del Comparatore fanno ancora presa sul motore?
+# 2. i cinque agganci testuali del Comparatore fanno ancora presa sul motore?
 node -e '
 const js=require("fs").readFileSync("/tmp/scanner.js","utf8");
-console.log("hook confidence:", (js.match(/const\s+confidence\s*=\s*Math\.round\([^;]*;/g)||[]).length, "(deve essere 1)");
-console.log("RAW_CACHE:", /RAW_CACHE\[id\]\s*=\s*res;/.test(js));
-console.log("cache lite:", /let\s+globalLeagueMatchesCache\s*=\s*\[\]/.test(js));
-'
+const t=[["cache lega",  /(^|\n)\s*(?:let|var|const)\s+globalLeagueMatchesCache\s*=\s*\[\]\s*;?/],
+         ["RAW_CACHE decl", /(^|\n)\s*(?:let|var|const)\s+RAW_CACHE\s*=\s*\{\}\s*;?/],
+         ["RAW_CACHE save", /RAW_CACHE\[id\]\s*=\s*res;/],
+         ["punto hook 1",   /(const\s+confidence\s*=\s*Math\.round\([^;]*;)/],
+         ["punto hook 2",   /(const\s+m1\s*=[^;]*;\s*const\s+mX\s*=[^;]*;\s*const\s+m2\s*=[^;]*;)/]];
+for(const [n,re] of t) console.log((re.test(js)?"OK  ":"KO  ")+n);
+' # e le build: window.__SCANNER_BUILD deve coincidere con _bComp del Comparatore
 
 # 3. le pagine si aprono senza errori in console
-python3 -m http.server 8199 &
+python3 -m http.server 8204 &
 # poi Playwright (Chromium è preinstallato in /opt/pw-browsers/chromium):
-# apri http://127.0.0.1:8199/scanner.html e raccogli pageerror + console error.
-# L'unico 404 atteso è favicon.ico.
+# apri http://127.0.0.1:8204/scanner.html e raccogli pageerror + console error.
+# L'unico 404 atteso è leghe.json, che non sta nel repository.
+# Controlla anche che ogni id scritto da safeTxt/safeHtml esista nel DOM: una
+# card riscritta lascia facilmente scritture verso id che non ci sono più.
 ```
+
+**Oltre al minimo**, quando tocchi il motore vale la pena di:
+
+- **simulare `aggregaTeam`** con un payload `/advanced` finto (venti partite, due
+  squadre) e verificare che ogni coppia di `STAT_PAIRS` abbia la sua feature e che
+  `predictStat` non torni `null` dove non deve. È il test che ha trovato il bug
+  delle metriche a segno negativo (`vaep_defensive`), invisibile a occhio.
+- **controllare gli invarianti dei mercati**: la matrice somma a 1, l'handicap
+  asiatico somma a 1 su ogni linea ed è monotono, le fasce multigol disgiunte
+  sommano a 1, le probabilità Over decrescono al salire della linea. Due
+  asserzioni «ovvie» qui si sono rivelate sbagliate — l'AH −0.75 sta fra −1 e
+  −0.5, non fra −0.5 e +0.5, e `negBinK` **deve** restituire `Infinity` sui
+  campioni non sovradispersi — quindi quando un invariante fallisce, sospetta
+  prima del test.
+- **testare le funzioni nuove in isolamento** sostituendo `predictStat` con uno
+  stub (le dichiarazioni di funzione dentro `new Function` sono riassegnabili):
+  serve a verificare cap, spegnimento a peso zero e comportamento coi dati
+  mancanti senza dipendere dai dati veri.
 
 Se hai aggiunto una metrica ad `aggregaTeam`, controlla anche la coerenza
 delle cinque liste che la devono contenere: dichiarazione, estrazione
@@ -1202,13 +1186,14 @@ leggibile a schermo. Se aggiungi qualcosa che ha bisogno di essere spiegato,
 la spiegazione va **in questo file**, nella sezione che le compete, non sopra
 la riga.
 
-Le uniche eccezioni sono **dodici marcatori, sedici righe in tutto**, nei punti
-dove una modifica in buona fede rompe tutto in silenzio: le tre righe che il Comparatore aggancia
-per testo, la convenzione di `k`, `RESID_ALPHA` a zero, la provenienza di
-`OL_BETA` e delle rette della confidence, il `k` fisso dell'Ordered Logit, e
-tre agganci lato Comparatore. Sono una riga l'una e rimandano qui. Se ne
-aggiungi una, che sia perché *senza* quella riga qualcuno romperebbe qualcosa,
-non perché il codice è complicato.
+Le uniche eccezioni sono una trentina di marcatori brevi, nei punti dove una
+modifica in buona fede rompe tutto **in silenzio**: le righe che il Comparatore
+aggancia per testo, le due convenzioni opposte di `k`, `RESID_ALPHA` a zero, la
+provenienza di `OL_BETA` e delle rette della confidence, il `k` fisso
+dell'Ordered Logit, il fatto che il riferimento dei mercati deve restare costante
+dentro la lega, e che la correzione dai tiri è una media di lambda e non un
+moltiplicatore. Rimandano tutti qui. Se ne aggiungi uno, che sia perché *senza*
+quella riga qualcuno romperebbe qualcosa, non perché il codice è complicato.
 
 I commenti CSS (etichette di sezione, ~1.9 KB in tutto) e i marcatori HTML
 `<!-- STEP 1 -->` restano: servono a navigare file da 2000 righe e non pesano.
