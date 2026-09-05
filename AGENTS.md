@@ -19,6 +19,59 @@ Dati da PitchAPI via proxy Cloudflare: `PITCH_BASE` in `scanner.html`.
 Endpoint usati per partita: `/stats`, `/lineups`, `/advanced`, `/events`,
 tutti attraverso `fetchMatchRaw` (che li mette in `RAW_CACHE`).
 
+## Stato del lavoro, e da dove ripartire
+
+Sezione di consegna: dice a che punto siamo, così una sessione nuova non
+ricomincia da capo. Aggiornala quando cambia qualcosa di sostanziale.
+
+**Build corrente: `0905-b5`.** Scanner e Comparatore devono coincidere, e sul
+Comparatore il badge sotto la dropzone deve uscire **verde** dopo aver trascinato
+lo Scanner. Il branch di lavoro è `claude/scanner-stat-optimization-sgs62u`;
+`main` è indietro (fermo al merge della PR #1, cioè al `0905-b2`), quindi
+**scaricare i file dal branch, non da `main`**.
+
+**Cosa è stato fatto, in ordine:**
+
+1. `0905-b2` — shrinkage per metrica al posto dello 0.35 fisso; correzione
+   residuale sull'1X2 con le metriche di creazione.
+2. `0905-b3` — correzione residuale **spenta** (`RESID_ALPHA = 0`): non reggeva
+   fuori campione. `k` ritarati su 76 partite.
+3. Ripulitura — via i commenti dal JS (26% del codice), la spiegazione è passata
+   in questo file. Verifica per confronto di AST: stesso identico programma.
+4. `0905-b4` — 34 metriche nuove da `/advanced` (zero chiamate in più), otto
+   metriche orfane cablate, tipi `volume` / `additivo`, unificazione col
+   Comparatore che ora usa le previsioni del motore invece di rifarle.
+5. `0905-b5` — `STAT_SHRINK_TABLE` rifatta su **1133 partite, tre leghe**.
+
+**Dove siamo bloccati:** i mercati gol. L'1X2 funziona (48–49% contro il 39–42%
+del «gioca sempre in casa», e la fascia ≥60% rende il 71–78%), ma l'Over/Under
+2.5 della matrice non discrimina fuori dalla LaLiga. Tutte le idee provate per
+correggerlo con le statistiche avanzate sono cadute alla verifica incrociata —
+la tabella in *Cosa è già stato provato* le elenca una per una.
+
+**La prossima cosa da fare, in ordine di rapporto valore/rischio:**
+
+1. **`sum_sot` nell'Over/Under.** È l'unica feature che ha superato le tre leghe.
+   Va integrata correggendo il **totale dei lambda** e tenendo il rapporto
+   casa/trasferta della matrice, così migliorano insieme tutti i mercati gol e
+   resta valido il principio «una matrice governa tutto». Esporre la forza su
+   `window` per l'A/B e mettere la diagnostica nel CSV, come è stato fatto per la
+   correzione residuale: è quella che ha permesso di scoprire in dieci minuti che
+   non funzionava.
+2. **L'endpoint `/shots`.** Il candidato più serio per il muro dell'Over, con la
+   ragione spiegata in *Il muro dell'Over/Under*. Costa una chiamata in più per
+   partita.
+3. **Ricontrollare `avg_def_x`**: pendenza 0.06, la previsione è quasi scorrelata
+   dal reale. O è un problema di forma del modello, o la metrica va tolta.
+4. **Togliere `vaep_def`, `pv_def`, `sca_def`** dalle feature: correlazione
+   previsto/reale a zero misurata su 1133 partite. Il fix additivo che le ha rese
+   calcolabili era giusto, ma quello che si vede è rumore.
+
+**Il campione di riferimento** per qualunque nuova taratura è: Serie A + Premier
++ LaLiga 2025/26, 1133 partite, esportate dal Comparatore `0905-b4` o successivo.
+Meno di due leghe non basta — è l'errore che ha prodotto quattro falsi positivi
+di fila.
+
 ## Come funziona il motore
 
 I file non hanno commenti (vedi *Stile*): quello che spiegava il codice sta qui.
@@ -110,29 +163,40 @@ Field Tilt e −0.37 sui passaggi progressivi. Se manca il dato del concesso o l
 baseline di lega, `predictStat` torna da solo alla media semplice: le leghe
 fuori dalle top europee spesso non hanno `/advanced`.
 
-**Taratura di `STAT_SHRINK_TABLE` (0905-b3)** — grid search sui componenti che
-la diagnostica del motore espone, 76 partite di Serie A (marzo + aprile 2026),
-con verifica mese per mese: nessun valore peggiora di più dello 0.3% in un
-singolo mese.
+**Taratura di `STAT_SHRINK_TABLE` (0905-b5)** — rifatta da zero su **1133 partite,
+tre leghe intere** (Serie A, Premier, LaLiga, stagione 2025/26), col metodo della
+pendenza: si regredisce `reale ~ previsto`, e siccome la deviazione dalla baseline
+è lineare in `k` al primo ordine, `k_nuovo = k_attuale × pendenza`. Ogni metrica è
+verificata **lega per lega**: quelle dove le tre pendenze divergono di più di 0.35
+sono marcate qui sotto e tenute prudenti.
 
-| metrica | k | ottimo | apr | mar | RMSE al nuovo k |
-|---|---|---|---|---|---|
-| `poss` | 0.75 | 0.80 | 0.75 | 0.90 | 8.335 → 8.031 (−3.7%) |
-| `gca` | 0.75 | 0.80 | 0.90 | 0.75 | 2.142 → 2.099 (−2.0%) |
-| `carries_box` | 0.70 | 0.80 | 0.60 | 1.00 | 2.113 → 2.060 (−2.5%) |
-| `prog_passes` | 0.60 | 0.60 | 0.65 | 0.55 | 7.601 → 7.538 (−0.8%) |
-| `sca` | 0.40 | 0.40 | 0.35 | 0.40 | 8.777 → 8.757 (−0.2%) |
-| `npxg`, `xg` | 0.50 | 0.45 | 0.65 | 0.35 | curva piatta, mesi discordi |
-| `passes_box` | 0.60 | — | — | — | solo pendenza lato Comparatore |
-| `prog_carries` | 0.55 | — | — | — | solo pendenza lato Comparatore |
-| `xag` | 0.40 | — | — | — | mesi discordi: prudente |
-| default | 0.50 | | | | |
+Il quadro è netto: quasi tutto era **sopra-disperso**, cioè `k` troppo alto. Le
+tarature precedenti venivano da 40–76 partite di un mese solo e sbagliavano di
+molto su diverse metriche (`gca` era a 0.75, la pendenza dice 0.31).
 
-Dove i due mesi discordano il valore è smorzato verso il centro. `xgot` e
-`tch_box` usano il default. Il Comparatore ha una **seconda** tabella
-(`CMP_DC_SHRINK_TABLE`) per le metriche che il motore non aggrega
-(VAEP, xT, PV): scope e baseline diversi, quindi valori diversi — non
-copiarli da una parte all'altra.
+| famiglia | metriche e `k` |
+|---|---|
+| gol e tiri | `npxg` 0.54 · `xg` 0.50 · `sot` 0.50 · `xgot` 0.46 · `cor` 0.40 |
+| possesso e territorio | `poss` 0.76 · `tch_box` 0.61 · `field_tilt` 0.41 · `ppda` 0.35 · `f3_entries` 0.29 · `avg_def_x` 0.10 |
+| creazione | `sca` 0.34 · `sca_live` 0.41 · `gca` 0.31 · `xag` 0.24 · `chances_created` 0.39 · `key_passes` 0.39 |
+| breakdown SCA | `sca_dead` 0.18 · `sca_takeon` 0.16 · `sca_foul` 0.11 · `sca_shot` 0.10 · `sca_def` 0.10 |
+| passaggi | `passes` 0.54 · `prog_passes` 0.47 · `passes_box` 0.44 · `prog_pass_dist` 0.36 · `switches` 0.28 · `assists` 0.16 · `second_assists` 0.17 |
+| conduzioni | `carries` 0.49 · `prog_carry_dist` 0.50 · `carry_dist` 0.48 · `prog_carries` 0.48 · `carries_f3` 0.38 · `take_ons` 0.37 · `carries_box` 0.55 |
+| difesa | `aerials` 0.54 · `ppda_num` 0.53 · `ppda_den` 0.29 · `clearances` 0.30 · `tackles` 0.23 · `interceptions` 0.23 · `duels_won` 0.22 · `blocks` 0.20 · `challenges` 0.14 · `yel` 0.23 · `fouls` 0.48 |
+| possession value | `xt` 0.40 · `vaep_off` 0.23 · `pv_off` 0.21 · `vaep` 0.18 · `pv` 0.15 · `vaep_def` 0.10 · `pv_def` 0.10 |
+| default | 0.50 |
+
+Leghe discordi (pendenze con spread > 0.35, valore tenuto prudente): `fouls`,
+`vaep_off`, `pv_off`, `assists`, `sca_def`.
+
+**`avg_def_x` ha pendenza 0.06**, cioè la previsione non ha praticamente
+relazione col valore reale. È a `k` 0.10 e non va usata come feature finché non
+si capisce perché: è una coordinata media, e forse il modello attacco × difesa
+non è la forma giusta per prevederla.
+
+Il Comparatore ha una **seconda** tabella (`CMP_DC_SHRINK_TABLE`) usata solo come
+fallback per i motori precedenti al 0905-b4: dal b4 le previsioni arrivano dal
+motore. Non copiare valori dall'una all'altra: scope e baseline sono diversi.
 
 ### Aggiungere una metrica: `ADV_SPEC`
 
@@ -240,6 +304,50 @@ reintrodurre modificando in buona fede.
 
 Il dettaglio completo delle 23 correzioni v9.4 → v9.6 sta nel commento in testa
 a `scanner.html` al commit `cd51a69`, prima della ripulitura.
+
+## Cosa è già stato provato, e come è andata
+
+Questa è la sezione da leggere **prima** di proporre un miglioramento: quasi tutte
+le idee ovvie sono già state misurate, e la maggior parte non ha funzionato. Ogni
+riga qui sotto costa già un backtest.
+
+| idea | esito | dove si vede |
+|---|---|---|
+| Correggere l'1X2 con GCA / conduzioni in area / passaggi progressivi | **smentita** | il residuo correla +0.336 su aprile (dove era tarata) e −0.174 su marzo: il segno si ribalta. Con GAMMA misurato bene la correlazione è +0.015 su 716 partite |
+| `min(npxg)` per il GG | **non regge** | 0.584 in Serie A ma 0.494 in LaLiga. Il campione «a due leghe» che sembrava confermarlo conteneva la Serie A stessa: non era una replica |
+| `interceptions` invertita sui gol | **non regge** | usciva quattro volte in Serie A, ma il segno si ribalta sulle altre due leghe |
+| Breakdown SCA (`sca_takeon`, `sca_shot`) sui gol | **non regge** | 0.588 in LaLiga, 0.484 in Premier |
+| SCA totale con segno negativo sui gol | **non regge** | 0.584 / 0.467 / 0.505 |
+| Altezza difensiva (`sum_defx`) sull'Over | **debole** | 0.9 sigma, e la metrica ha pendenza 0.06: la previsione è quasi scorrelata dal reale |
+| Ritoccare i pesi dell'ensemble (DC/OL/Markov) | **non serve** | la griglia in-sample preferisce Markov, ma fuori campione è pari e patta: una lega meglio, una peggio, differenze da 0.0007 di Brier |
+| Ricalibrare le rette della confidence | **non serve** | rifittate su 756 partite danno 16.88 + 0.686·p contro 6.26 + 0.880·p: ai punti che contano (50–60%) coincidono entro un punto |
+| Affilare le probabilità (temperatura) | **non serve** | il Brier peggiora oltre T≈1.1 su 716 partite |
+
+**L'unica cosa che ha superato la verifica incrociata su tre leghe:**
+
+| idea | esito | numeri |
+|---|---|---|
+| `sum_sot` (tiri in porta previsti, somma delle due squadre) sull'Over 2.5 | **regge** | AUC 0.581 / 0.531 / 0.546 sulle tre leghe, pooled 0.556 (3.3 sigma). Batte `dc_over` in **tutti e tre** gli holdout: +0.021, +0.028, +0.036. Spread fra quintile alto e basso: +21.3 / +9.3 / +10.7 punti |
+
+Da notare due cose. La prima: `sum_sot` **da solo** batte `dc_over` **e** la
+combinazione dei due (0.581 contro 0.577), cioè la probabilità Over della matrice
+non aggiunge niente sopra i tiri in porta previsti. La seconda: `sot` non è una
+metrica «avanzata», viene da `/stats` ed era disponibile da sempre.
+
+### Il muro dell'Over/Under
+
+`dc_over` ha AUC **0.503 in Serie A, 0.494 in Premier, 0.556 in LaLiga**. Fuori
+dalla LaLiga la probabilità Over della matrice non distingue una partita
+dall'altra. Il totale di gol lo azzecca in media (le linee 0.5, 1.5, 3.5, 4.5
+sono calibrate entro 2 punti), quindi il problema non è il livello dei lambda ma
+la **capacità di ordinare le partite**.
+
+L'ipotesi ancora non testata è che manchi la *forma* della distribuzione: dieci
+tiri da 0.10 xG e due da 0.50 danno lo stesso lambda ma distribuzioni di gol
+diverse. Servirebbe l'endpoint `/v1/matches/{id}/shots`, che dà ogni tiro con
+`expected_goals`, `is_on_target`, `is_inside_box`, `situation` e coordinate. Costa
+una chiamata in più per partita storica (da 4 a 5, +25% sul batch) ed è il
+candidato più serio rimasto.
 
 ## Il contratto Scanner ↔ Comparatore
 
@@ -376,10 +484,13 @@ Due lezioni che valgono oltre questo caso:
   poterlo più sapere. Se tocchi `applyResidualCorrection`, tieni separati i
   due percorsi (misura sempre, applica solo se alpha > 0).
 
-Per rivalutarla serve una stagione intera e possibilmente più leghe. Con un
-mese solo non si distingue un effetto da un capriccio del calendario: con lo
-stesso identico motore, marzo 2026 ha dato 66.7% di pick azzeccati e aprile
-2026 il 47.5%.
+**Aggiornamento (0905-b5): la questione è chiusa.** I dati sono arrivati — 1133
+partite su tre leghe — e la risposta è no: con GAMMA misurato correttamente
+(0.360, non lo 0.678 che c'era) la correlazione fra il residuo e l'errore
+dell'ensemble è **+0.015 su 716 partite**, cioè zero, e l'A/B non migliora a
+nessun alpha. Il guadagno che si vedeva con GAMMA 0.678 era edge residuo
+rimasto dentro il residuo per errore di scala: affilamento mascherato, non
+informazione nuova. Non riaprirla senza un'idea diversa.
 
 ## Come validare una modifica
 

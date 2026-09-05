@@ -155,7 +155,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b4</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b5</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -1516,23 +1516,25 @@ function renderVerdetti(mk) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b4';
+window.__SCANNER_BUILD = '0905-b5';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
 const STAT_SHRINK_LEGACY = 0.35;
 // k ALTO = MENO shrinkage: sh(r)=1+k(r-1). Taratura e provenienza dei valori in AGENTS.md.
 window.STAT_SHRINK_TABLE = window.STAT_SHRINK_TABLE || {
-  npxg:         0.50,
-  xg:           0.50,
-  poss:         0.75,
-  gca:          0.75,
-  sca:          0.40,
-  xag:          0.40,
-  prog_passes:  0.60,
-  passes_box:   0.60,
-  carries_box:  0.70,
-  prog_carries: 0.55
+  npxg: 0.54, xg: 0.50, poss: 0.76, sot: 0.50, cor: 0.40, yel: 0.23, fouls: 0.48,
+  xgot: 0.46, tch_box: 0.61, ppda: 0.35, field_tilt: 0.41, avg_def_x: 0.10, f3_entries: 0.29,
+  gca: 0.31, xag: 0.24, sca: 0.34, prog_passes: 0.47, passes_box: 0.44,
+  carries_box: 0.55, prog_carries: 0.48,
+
+  xt: 0.40, vaep: 0.18, vaep_off: 0.23, vaep_def: 0.10, pv: 0.15, pv_off: 0.21, pv_def: 0.10,
+  passes: 0.54, key_passes: 0.39, switches: 0.28, prog_pass_dist: 0.36, assists: 0.16,
+  carries: 0.49, carry_dist: 0.48, carries_f3: 0.38, take_ons: 0.37, prog_carry_dist: 0.50,
+  chances_created: 0.39, second_assists: 0.17,
+  sca_live: 0.41, sca_dead: 0.18, sca_takeon: 0.16, sca_shot: 0.10, sca_foul: 0.11, sca_def: 0.10,
+  tackles: 0.23, interceptions: 0.23, blocks: 0.20, clearances: 0.30, duels_won: 0.22,
+  aerials: 0.54, challenges: 0.14, ppda_num: 0.53, ppda_den: 0.29
 };
 
 const STAT_SHRINK = STAT_SHRINK_DEFAULT;
