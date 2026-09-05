@@ -21,6 +21,8 @@
   /* alias storici usati dal codice per colorare esiti, scarti e badge */
   --green:#22c55e; --red:#f87171; --orange:#fbbf24; --blue:#60a5fa;
   --purple:#a78bfa; --dark:#e8eaed; --card:#171a21; --sub:#9aa3b2;
+  /* usate nelle card KNN e nei titoli: mancavano, il colore cadeva sull'ereditato */
+  --knn:#a78bfa; --text:#e8eaed;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{
@@ -153,7 +155,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0904-b4</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b1</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -186,12 +188,12 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
     <div style="text-align:center; margin-bottom:20px; padding:15px; background:var(--card); border-radius:12px; box-shadow:none">
       <h2 id="ui-title" style="font-size:26px;color:var(--text); letter-spacing:-0.5px">Home vs Away</h2>
       <div id="ui-streak" style="margin:10px 0; display:flex; justify-content:center; gap:20px; align-items:center;"></div>
-      <p id="ui-subtitle" style="font-size:12px;color:var(--sub)">Motore: V9.6 - Analisi Integrale su NPxG, Qualita' e Tracking Data</p>
+      <p id="ui-subtitle" style="font-size:12px;color:var(--sub)">Motore: V9.7 - Analisi Integrale su NPxG, Qualita' e Tracking Data</p>
     </div>
 
     <div class="card" style="border-top:3px solid var(--accent); background:var(--panel); box-shadow:none">
       <div class="section-title" style="color:var(--txt); font-size:16px">👑 MASTER ENSEMBLE: La Sentenza Algoritmica</div>
-      <p style="font-size:11px;color:var(--dim);margin-bottom:15px">Sintesi pesata dei motori (Dixon-Coles su NPxG, KNN tattico con peso dinamico, Markov 10%) e calcolo delle True Odds. Tutti i mercati derivano dalla stessa matrice Dixon-Coles.</p>
+      <p style="font-size:11px;color:var(--dim);margin-bottom:15px">Sintesi pesata dei motori (Dixon-Coles su NPxG 60%, Ordered Logit 30%, Markov 10%) e calcolo delle True Odds. Tutti i mercati derivano dalla stessa matrice Dixon-Coles.</p>
       
       <div class="grid-3" style="margin-bottom:15px">
         <div style="text-align:center; background:var(--panel2); padding:15px; border-radius:8px; border:2px solid var(--blue)">
@@ -245,6 +247,8 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       </tr></thead>
       <tbody id="verdetti-body"></tbody>
     </table></div>
+  </div>
+
   <div class="card" id="card-pred-debug" style="border-top:3px solid #f59e0b">
     <div class="section-title" style="color:#f59e0b">Diagnostica predittore</div>
     <div style="font-size:11px;color:var(--dim);margin-bottom:10px">
@@ -255,12 +259,10 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
     <div class="tbl-scroll" id="pred-debug-body"></div>
   </div>
 
-  </div>
-
 
     
   <div style="margin:28px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--accent)"><span style="font-size:11px;font-weight:800;letter-spacing:.09em;color:var(--accent)">PERCH&Eacute; &mdash; LE STATISTICHE CHE PRODUCONO QUEI NUMERI</span></div>
-<div class="card" style="border-top: 4px solid var(--orange); background:var(--panel2)af5">
+<div class="card" style="border-top: 4px solid var(--orange); background:var(--panel2)">
       <div class="section-title" style="color:var(--orange)">🎯 Qualità del Tiro, Cinismo & Palle Inattive</div>
       <p style="font-size:10px;color:var(--dim);margin-bottom:10px">Misura la letalità (xG per Tiro / xGOT) vs i gol attesi (NPxG) e le grandi occasioni da rete.</p>
       <table class="table-ui" style="background:transparent; margin-bottom:10px">
@@ -272,7 +274,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
     </div>
 
     <div class="grid-2">
-      <div class="card" style="border-top: 4px solid #d32f2f; background:var(--panel2)afa">
+      <div class="card" style="border-top: 4px solid #d32f2f; background:var(--panel2)">
         <div class="section-title" style="color:#d32f2f">🛡️ Fase di Non-Possesso & Gegenpressing</div>
         <p style="font-size:10px;color:var(--dim);margin-bottom:10px">Misura la compattezza e l'aggressività difensiva.</p>
         <table class="table-ui" style="background:transparent">
@@ -390,7 +392,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
 
         
   <div style="margin:28px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--line)"><span style="font-size:11px;font-weight:800;letter-spacing:.09em;color:var(--dim)">APPROFONDIMENTO &mdash; DETTAGLIO E DIAGNOSTICA</span></div>
-<div class="card" style="border-top: 4px solid #fbc02d; background:var(--panel2)de7">
+<div class="card" style="border-top: 4px solid #fbc02d; background:var(--panel2)">
             <div class="section-title" style="color:#fbc02d">⚖️ Punti Attesi dagli xG (con test di significativita')</div>
             <p style="font-size:10px;color:var(--dim);margin-bottom:10px">Punti reali vs punti attesi simulando ogni partita dagli xG. Lo scarto viene giudicato solo se supera l'errore standard: sotto quella soglia e' rumore, non fortuna.</p>
             <table class="table-ui" style="background:transparent">
@@ -679,9 +681,12 @@ async function loadLegheJson() {
         }
     }
 }
-loadLegheJson(); // ⚠️ COMPARATORE LITE: chiamata auto-eseguita all'avvio. Il Lite la disattiva
-                 // automaticamente quando carica il motore (gestisce lui le leghe). Puoi lasciarla:
-                 // nel Lite viene neutralizzata da sola, nello Scanner normale serve. Non rinominarla.
+// ⚠️ COMPARATORE LITE: la chiamata qui sotto e' auto-eseguita all'avvio. Il Lite la
+// disattiva quando carica il motore (le leghe le gestisce lui). Puoi lasciarla: nel Lite
+// viene neutralizzata da sola, nello Scanner normale serve. Non rinominarla.
+// Il commento sta SOPRA e non in coda alla riga di proposito: il Lite cerca la riga con
+// /^\s*loadLegheJson\(\)\s*;?\s*$/m e con il commento in coda non agganciava piu' nulla.
+loadLegheJson();
 
 document.addEventListener('DOMContentLoaded', () => {
     const dField = document.getElementById('target-date');
@@ -1317,16 +1322,11 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
       cor: calcFeatures(out.vals.cor, out.vals.dates, targetTimeMs), cor_ag: calcFeatures(out.vals.cor_ag, out.vals.dates, targetTimeMs),
       yel: calcFeatures(out.vals.yel, out.vals.dates, targetTimeMs), yel_ag: calcFeatures(out.vals.yel_ag, out.vals.dates, targetTimeMs),
       fouls: calcFeatures(out.vals.fouls, out.vals.dates, targetTimeMs), fouls_ag: calcFeatures(out.vals.fouls_ag, out.vals.dates, targetTimeMs),
-      // Le serie "concesse" venivano raccolte ma mai trasformate in feature:
-      // STAT_PAIRS puntava a nomi inesistenti e predictStat trovava sempre null,
-      // ripiegando su una media di lega costruita su due valori invece di quattro.
-      ga:      calcFeatures(out.vals.ga,      out.vals.dates, targetTimeMs),
-      xga:     calcFeatures(out.vals.xga,     out.vals.dates, targetTimeMs),
-      npxga:   calcFeatures(out.vals.npxga,   out.vals.dates, targetTimeMs),
-      sot_ag:  calcFeatures(out.vals.sot_ag,  out.vals.dates, targetTimeMs),
-      cor_ag:  calcFeatures(out.vals.cor_ag,  out.vals.dates, targetTimeMs),
-      yel_ag:  calcFeatures(out.vals.yel_ag,  out.vals.dates, targetTimeMs),
-      fouls_ag:calcFeatures(out.vals.fouls_ag,out.vals.dates, targetTimeMs),
+      // Le serie "concesse" vanno trasformate in feature qui sopra, accanto alla
+      // metrica prodotta: STAT_PAIRS puntava a nomi inesistenti e predictStat
+      // trovava sempre null, ripiegando su una media di lega costruita su due
+      // valori invece di quattro. (Erano ridichiarate una seconda volta qui,
+      // con gli stessi identici valori: calcFeatures girava due volte a vuoto.)
       poss_ag: calcFeatures(out.vals.poss_ag, out.vals.dates, targetTimeMs),
       // baseline: media grezza su tutte le osservazioni raccolte, prodotte e concesse.
       // Serve a predictStat come scala di riferimento. Stimarla dai soli quattro
@@ -1687,7 +1687,7 @@ function renderVerdetti(mk) {
 // ===========================================================================
 // Versione del motore, letta dal comparatore dopo l'iniezione: cosi' si vede
 // subito se il file trascinato e' quello aggiornato o una copia vecchia.
-window.__SCANNER_BUILD = '0904-b4';
+window.__SCANNER_BUILD = '0905-b1';
 
 const STAT_SHRINK = 0.35;
 
@@ -1704,7 +1704,7 @@ const STAT_PAIRS = {
   yel: 'yel_ag',
   fouls: 'fouls_ag',
   poss: 'poss_ag',
-};;
+};
 
 // Restituisce il valore atteso della metrica per la squadra "att" contro "dif".
 // Se manca il dato del concesso o la media di lega, torna alla media semplice:
@@ -1749,7 +1749,7 @@ async function avviaScanner() {
     document.getElementById('console-loader').innerHTML = ''; document.getElementById('console-loader').style.display = 'block'; document.getElementById('btn-avvia').disabled = true; document.getElementById('btn-avvia').innerHTML = "⏳ Simulazione in corso (Attendi)...";
 
     const dH = await aggregaTeam(matchTime, hId, hName, limit, true); const dA = await aggregaTeam(matchTime, aId, aName, limit, false);
-    document.getElementById('console-loader').style.display = 'none'; document.getElementById('btn-avvia').disabled = false; document.getElementById('btn-avvia').innerHTML = "🚀 ESTRAI STORICO E SIMULA";
+    document.getElementById('console-loader').style.display = 'none'; document.getElementById('btn-avvia').disabled = false; document.getElementById('btn-avvia').innerHTML = "🚀 2. ESTRAI DATI E SIMULA MODELLI";
     if(dH.overall.n === 0 || dA.overall.n === 0) return alert("Storico insufficiente per una delle due squadre prima della data target.");
 
     // ============ ELO DI LEGA (ordine cronologico corretto, scala comune) ============
@@ -2048,28 +2048,49 @@ async function avviaScanner() {
     // tvDist e sampleFactor restano calcolati (usati altrove per i narrativi), ma NON
     // determinano piu' la confidence: sui backtest non correlavano con l'accuratezza.
     // La confidence e' ora la probabilita' del pick dell'ensemble, calibrata sull'hit reale.
-    const _pickProb = Math.max(m1, mX, m2);
-    const confidence = Math.round(_calibConf1X2(_pickProb));
-
     // Statistiche previste col modello moltiplicativo, esposte per il comparatore:
     // cosi' il CSV contiene le stesse stime che vedi a schermo invece di doverle
     // ricalcolare dalle feature grezze (che sono medie semplici).
+    //
+    // ATTENZIONE ALL'ORDINE: il comparatore inietta il suo hook SUBITO DOPO la
+    // riga che assegna la costante "confidence" qui sotto (la trova per regex,
+    // quindi quella riga non va ne' riscritta ne' citata testualmente altrove:
+    // la regex prenderebbe la citazione). Tutto cio' che l'hook deve leggere va
+    // prodotto PRIMA di quella riga. Quando questi due blocchi stavano sotto,
+    // l'hook copiava i valori della chiamata precedente ad avviaScanner (e null
+    // alla prima): nel CSV finivano le stime di un'altra partita.
     const _statKeys = ['gf','npxg','xg','xgot','sot','cor','yel','fouls','poss','tch_box','ppda','field_tilt'];
+
     // Diagnostica: i valori intermedi del calcolo per NPxG e Possesso, esposti
     // cosi' come sono. Se la stima esce schiacciata sul centro, qui si vede se
     // il problema e' la baseline, il valore prodotto o quello concesso.
     window.__PRED_DEBUG = (function(){
-      const g = (t,f) => { const x=t&&t.role&&t.role.features&&t.role.features[f];
-                           return (x&&x.decay>0)?+x.decay.toFixed(3):null; };
-      const b = (t,f) => { const x=t&&t.role&&t.role.features&&t.role.features._base;
-                           return (x&&x[f]!=null)?+x[f].toFixed(3):null; };
-      const o={};
-      for (const f of ['npxg','poss']) {
-        o[f] = { mineH:g(dH,f), concA:g(dA,STAT_PAIRS[f]), baseH:b(dH,f), baseA:b(dA,f),
-                 outH:(function(){const v=predictStat(dH,dA,f,'role');return v!=null?+v.toFixed(3):null;})() };
-      }
-      return o;
+      try {
+        const g = (t,f) => { const x=t&&t.role&&t.role.features&&t.role.features[f];
+                             return (x&&x.decay>0)?+x.decay.toFixed(3):null; };
+        const b = (t,f) => { const x=t&&t.role&&t.role.features&&t.role.features._base;
+                             return (x&&x[f]!=null)?+x[f].toFixed(3):null; };
+        const o={};
+        for (const f of ['npxg','poss']) {
+          const v = predictStat(dH,dA,f,'role');
+          o[f] = { mineH:g(dH,f), concA:g(dA,STAT_PAIRS[f]), baseH:b(dH,f), baseA:b(dA,f),
+                   outH:(v!=null&&isFinite(v))?+v.toFixed(3):null };
+        }
+        return o;
+      } catch (e) { return null; }   /* una metrica assente non deve fermare la simulazione */
     })();
+
+    window.__PRED_STATS = { H: {}, A: {} };
+    for (const k of _statKeys) {
+      try {
+        window.__PRED_STATS.H[k] = predictStat(dH, dA, k, 'role');
+        window.__PRED_STATS.A[k] = predictStat(dA, dH, k, 'role');
+      } catch (e) { /* metrica assente in questa lega */ }
+    }
+
+    const _pickProb = Math.max(m1, mX, m2);
+    const confidence = Math.round(_calibConf1X2(_pickProb));
+
 
     // ── Diagnostica del predittore, mostrata a schermo ──────────────────────
     // La catena motore -> hook -> comparatore -> CSV e' lunga e si rompe in
@@ -2097,14 +2118,6 @@ async function avviaScanner() {
         + (e && e.message ? e.message : e) + '</div>');
     }
 
-    window.__PRED_STATS = { H: {}, A: {} };
-    for (const k of _statKeys) {
-      try {
-        window.__PRED_STATS.H[k] = predictStat(dH, dA, k, 'role');
-        window.__PRED_STATS.A[k] = predictStat(dA, dH, k, 'role');
-      } catch (e) { /* metrica assente in questa lega */ }
-    }
-
     let hiddenValueMsg = ""; let hiddenValueMsgClean = ""; 
     if (chokeH > 1.2 && clumsyA > 15) {
         hiddenValueMsg = `🩸 <strong>BLOOD SCENT ALERT:</strong> Il Gegenpressing ${artDel(hName)} scontrerà la goffaggine in disimpegno dell'${aName} (${f1(clumsyA)} perse). Goleada in transizione possibile.`;
@@ -2121,7 +2134,7 @@ async function avviaScanner() {
     }
 
     document.getElementById('setup-card').style.display = 'none'; document.getElementById('dashboard-area').style.display = 'block';
-    safeTxt('ui-title', `${hName} - ${aName}`); safeTxt('ui-subtitle', `Motore V9.4: Analisi Integrale su ${dH.overall.n} match (Simulazione al ${dateInput})`);
+    safeTxt('ui-title', `${hName} - ${aName}`); safeTxt('ui-subtitle', `Motore V9.7: Analisi Integrale su ${dH.overall.n} match (Simulazione al ${dateInput})`);
 
     // mostra N/D solo quando la metrica non e' MAI stata restituita: uno zero reale resta zero
     const covOf = (team, key) => ((team.overall.coverage||{})[key]||0);
@@ -2436,7 +2449,7 @@ function calcValue() {
   });
   html += `</table>`;
   if(over > 0) html += `<div style="font-size:10px;color:var(--dim)">Margine del book: ${((over-1)*100).toFixed(1)}%. La colonna "P book netta" e' la probabilita' implicita depurata dal margine: se e' vicina alla tua, il valore apparente e' solo rumore.</div>`;
-  html += `<div style="font-size:10px;color:var(--dim);margin-top:4px">Kelly frazionato a 1/4: il modello non e' calibrato su backtest, quindi il Kelly pieno sovrastima lo stake.</div>`;
+  html += `<div style="font-size:10px;color:var(--dim);margin-top:4px">Kelly frazionato a 1/4: riduce lo stake rispetto al Kelly pieno. La confidence e' calibrata sui backtest, ma la calibrazione non sostituisce la gestione del bankroll.</div>`;
   out.innerHTML = html;
 }
 

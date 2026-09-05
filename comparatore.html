@@ -162,7 +162,7 @@ select{cursor:pointer}
   <div class="topbar">
     <div class="brand">
       <h1>Comparatore V9.7</h1>
-      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0904-b2</span>
+      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b1</span>
       <span class="badge" id="engine-badge">motore non caricato</span>
     </div>
     <span class="badge">previsioni vs realtà</span>
@@ -340,7 +340,7 @@ select{cursor:pointer}
         <div class="card-t">Mercati</div>
         <div class="card-sub">Confidence = probabilità reale di indovinare (≥60 buona, &lt;50 sotto il coin-flip)</div>
         <table class="tbl">
-          <thead><tr><th>Mercato</th><th>Ensemble</th><th>DC</th><th>KNN</th><th>Conf.</th><th>Reale</th><th>Esito</th></tr></thead>
+          <thead><tr><th>Mercato</th><th>Ensemble</th><th>DC</th><th>Ord.Logit</th><th>KNN</th><th>Conf.</th><th>Reale</th><th>Esito</th></tr></thead>
           <tbody id="cmp-markets-body"></tbody>
         </table>
       </div>
@@ -688,7 +688,10 @@ async function loadEngineFromText(text, fileName) {
   const exposeNames = ['apiCall','avviaScanner','aggregaTeam','extractSafeStat','buildGlobalElo',
     'calcDCMatrix','markovFlow','probsFromMatrix','estimateRho','calculateRho','getSimilarMatches',
     'computeLeagueParams','multigoal','asianHandicapMat','negBinCDF','negBinK','poisson',
-    'expectedPoints','probsFromMatrix','loadLegheJson','fetchMatchRaw'];
+    'expectedPoints','loadLegheJson','fetchMatchRaw',
+    // servono al log di verifica e a un eventuale ricalcolo lato comparatore:
+    // erano state tolte e il messaggio "diagnostica predittore" usciva sempre ASSENTE
+    'predictStat','leagueStatBaseline'];
   let exposer = '\n;(function(){\n';
   exposeNames.forEach(n => {
     exposer += `  try { if (typeof ${n} !== 'undefined') window[${JSON.stringify(n)}] = ${n}; } catch(e){}\n`;
@@ -716,15 +719,34 @@ async function loadEngineFromText(text, fileName) {
   }
 
   cmpLog(`✅ Tutte le ${required.length} funzioni chiave esposte.`);
+  // Verifica esplicita: se il motore non porta la diagnostica, il batch girera'
+  // lo stesso ma la sezione nel CSV uscira' vuota. Meglio saperlo adesso.
+  if (typeof window.__SCANNER_BUILD === 'string') {
+    cmpLog('   motore build ' + window.__SCANNER_BUILD);
+  } else {
+    cmpLog('   ATTENZIONE: il motore non dichiara una build, e\' una versione precedente.');
+  }
+  cmpLog('   diagnostica predittore: ' + (typeof window.__PRED_DEBUG !== 'undefined' || typeof predictStat === 'function' ? 'presente' : 'ASSENTE — la sezione nel CSV restera\' vuota'));
+
+  cmpLog(`   → getSimilarMatches: ${typeof globalThis.getSimilarMatches}`);
+  cmpLog(`   → computeLeagueParams: ${typeof globalThis.computeLeagueParams}`);
+
+  engineReady = true;
+  dropzone.classList.add('loaded');
+  dropzone.innerHTML = `<h2>Motore attivo</h2>
+    <p><code>${fileName}</code> — clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
+
   // Versione del motore appena iniettato. Se non la dichiara e' una copia vecchia:
   // meglio dirlo subito che scoprirlo dopo un batch da mezz'ora.
+  // NB: questo blocco DEVE stare dopo la riscrittura della dropzone qui sopra,
+  // perche' e' quella a creare #engine-build. Stando prima, getElementById
+  // restituiva l'oggetto fantasma del proxy e il messaggio non compariva mai.
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0904-b2';
-  await new Promise(r => setTimeout(r, 0));   // attendo che il riquadro sia stato riscritto
+  const _bComp = '0905-b1';
   const _el = document.getElementById('engine-build');
   if (_el) {
     if (!_bScan) {
-      _el.textContent = '\u26a0 MOTORE VECCHIO: manca la diagnostica';
+      _el.textContent = '⚠ MOTORE VECCHIO: manca la diagnostica';
       _el.style.color = '#ef4444';
       cmpLog('⚠️ Il motore caricato non dichiara una versione: e\' una copia precedente. Le funzioni nuove non ci sono.');
     } else if (_bScan !== _bComp) {
@@ -736,14 +758,6 @@ async function loadEngineFromText(text, fileName) {
       _el.style.color = '#22c55e';
     }
   }
-
-  cmpLog(`   → getSimilarMatches: ${typeof globalThis.getSimilarMatches}`);
-  cmpLog(`   → computeLeagueParams: ${typeof globalThis.computeLeagueParams}`);
-
-  engineReady = true;
-  dropzone.classList.add('loaded');
-  dropzone.innerHTML = `<h2>Motore attivo</h2>
-    <p><code>${fileName}</code> — clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
   const eb=document.getElementById('engine-badge');
   if(eb){ eb.textContent='motore attivo'; eb.className='badge live'; }
   cmpStep(2);
@@ -1416,7 +1430,7 @@ async function cmpEsegui() {
 // nell'intervallo [dataInizio, dataFine] e le elabora tutte, accumulandole per l'export.
 async function cmpEseguiIntervallo() {
   if (!engineReady) return alert("Prima trascina il file V9.7");
-  if (!cmpAllMatches.length) return alert('Ogni partita viene calcolata con SHRINK_K = 4, 12 e 28: il CSV contiene tutte e tre le tarature a confronto, quindi un solo batch basta. Prima premi "Trova Partite del Giorno" per caricare lo storico della lega.');
+  if (!cmpAllMatches.length) return alert('Storico del campionato non ancora caricato.\n\nPremi prima "Trova Partite del Giorno": scarica le 3 stagioni che servono come storico.');
   // "Da" dal campo dedicato; se vuoto ripiega sulla "Data" in cima (retrocompatibile).
   const startDate = document.getElementById('cmp-range-start').value || document.getElementById('cmp-target-date').value;
   const endDate = document.getElementById('cmp-range-end').value;
@@ -1751,12 +1765,22 @@ function cmpExtractReal(sData, advData, teamId, isH) {
 // ─── ESTRAI STATS PREVISTE (dal dH/dA del motore) ─────────────────────────
 // Legge sia features (calcolate solo per ~20 metriche base) SIA vals grezzi (tutte le altre:
 // xgot, xg_sp, bc, bcm, box, f3, defX, recTime, cp5s, drib, misc, disp, shots...).
-function cmpExtractPrev(t) {
+// side: 'H' o 'A'; predStats: window.__PRED_STATS come lo espone il motore.
+// Le colonne "Previsto" del CSV contenevano la MEDIA della squadra, non la stima
+// contro quell'avversario: il motore calcola predictStat (attacco x difesa,
+// smorzato sulla baseline di lega) e la espone apposta, ma qui non arrivava.
+// Con predStats assente (motore vecchio) resta la vecchia catena di fallback.
+function cmpExtractPrev(t, side, predStats) {
   const map = { 'tilt':'field_tilt', 'f3':'f3_entries', 'box':'tch_box',
                 'defX':'avg_def_x', 'dirSpd':'direct_speed',
                 'recTime':'rec_time', 'cp5s':'cp_regains' };
   const _dec = (k) => {
     const key = map[k] || k;
+    // 0) stima del motore contro questo avversario, se disponibile
+    if (predStats && side && predStats[side]) {
+      const ps = predStats[side][key];
+      if (ps != null && isFinite(ps)) return ps;
+    }
     // 1) features (decay o media) se disponibili
     const f = t?.role?.features?.[key] || t?.overall?.features?.[key];
     if (f) {
@@ -1832,22 +1856,23 @@ function cmpRender(match, R, actH, actA) {
   };
   const _badge = v => {
     if (v == null || isNaN(v)) return '--';
-    const col = v>=80?'#2e7d32':v>=60?'#f57c00':'#c62828';
+    // scala nuova = probabilita' reale: >=60 buona, 50-59 incerta, <50 sotto il coin-flip
+    const col = v>=60?'#2e7d32':v>=50?'#f57c00':'#c62828';
     return `<span style="background:${col};color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold">${v}</span>`;
   };
 
   // Confidence per esito: usa DC+KNN+Markov con lo stesso sampleFactor del motore.
-  const sf = R.sampleFactor != null ? R.sampleFactor : 1;
-  const _conf = (arr) => {
-    const v = arr.filter(p => p != null && isFinite(p));
-    if (v.length < 2) return null;
-    let sp = 0;
-    for (let i=0; i<v.length; i++) for (let j=i+1; j<v.length; j++) sp = Math.max(sp, Math.abs(v[i]-v[j]));
-    return Math.max(0, Math.min(100, Math.round(100 * (1-sp) * sf)));
-  };
-  const c1 = _conf([R.probsRole?.p1, R.probsKnn?.p1, R.mk_ro?.p1]);
-  const cX = _conf([R.probsRole?.pX, R.probsKnn?.pX, R.mk_ro?.pX]);
-  const c2 = _conf([R.probsRole?.p2, R.probsKnn?.p2, R.mk_ro?.p2]);
+  // Confidence: stesse rette di calibrazione del motore V9.7 (regressione su 6824
+  // partite). NON e' piu' l'accordo fra i modelli: sui backtest lo spread fra DC,
+  // KNN e Markov non correlava con l'accuratezza, e il KNN non e' nemmeno piu'
+  // nell'ensemble. "conf 64" ora vuol dire "64% di probabilita' di indovinare",
+  // ed e' lo stesso numero che il motore mostra a schermo.
+  const _calibConf1X2 = (p) => (p == null || !isFinite(p)) ? null
+    : Math.max(0, Math.min(100, Math.round(6.26 + 0.880 * (p * 100))));
+  const _conf = (p) => _calibConf1X2(p);
+  const c1 = _conf(R.m1);
+  const cX = _conf(R.mX);
+  const c2 = _conf(R.m2);
 
   const rowMdl = (name, p1, pX, p2) => {
     if (p1 == null) return `<tr><td>${name}</td><td colspan="6" style="color:#999;font-size:11px">non disponibile (dati tracking insufficienti)</td></tr>`;
@@ -1857,26 +1882,31 @@ function cmpRender(match, R, actH, actA) {
   };
   document.getElementById('cmp-1x2-body').innerHTML =
     rowMdl('Dixon-Coles (Ruolo)', R.probsRole?.p1, R.probsRole?.pX, R.probsRole?.p2) +
-    rowMdl('KNN Storico (11 dim)', R.probsKnn?.p1, R.probsKnn?.pX, R.probsKnn?.p2) +
+    rowMdl('Ordered Logit (30%)', R.probsOL?.p1, R.probsOL?.pX, R.probsOL?.p2) +
+    rowMdl('KNN Storico (11 dim, fuori ensemble)', R.probsKnn?.p1, R.probsKnn?.pX, R.probsKnn?.p2) +
     rowMdl('Markov Score-Flow', R.mk_ro?.p1, R.mk_ro?.pX, R.mk_ro?.p2) +
     `<tr style="background:#f0f8ff;font-weight:bold">${rowMdl('ENSEMBLE V9.7', R.m1, R.mX, R.m2).slice(4)}`;
 
-  const rowMkt = (lbl, ens, dc, knn, conf, realeTxt, happened) =>
-    `<tr><td>${lbl}</td><td style="font-weight:bold">${_pct(ens)}</td><td>${_pct(dc)}</td><td>${_pct(knn)}</td><td>${_badge(conf)}</td><td>${realeTxt}</td><td>${_verdict(ens, happened)}</td></tr>`;
+  // Colonna in piu' per l'Ordered Logit: e' il secondo membro dell'ensemble (30%),
+  // il KNN resta solo come modello di confronto. L'OL vive sul solo 1X2, quindi
+  // sui mercati gol la sua cella e' vuota.
+  const rowMkt = (lbl, ens, dc, ol, knn, conf, realeTxt, happened) =>
+    `<tr><td>${lbl}</td><td style="font-weight:bold">${_pct(ens)}</td><td>${_pct(dc)}</td><td>${_pct(ol)}</td><td>${_pct(knn)}</td><td>${_badge(conf)}</td><td>${realeTxt}</td><td>${_verdict(ens, happened)}</td></tr>`;
 
   const dc = R.probsRole || {};
   const K = R.probsKnn || null;
+  const O = R.probsOL || null;
   document.getElementById('cmp-markets-body').innerHTML =
-    rowMkt('1 (Casa)',      R.m1,        dc.p1,  K?K.p1:null,  c1, outcome, outcome==='1') +
-    rowMkt('X (Pareggio)',  R.mX,        dc.pX,  K?K.pX:null,  cX, outcome, outcome==='X') +
-    rowMkt('2 (Trasferta)', R.m2,        dc.p2,  K?K.p2:null,  c2, outcome, outcome==='2') +
-    rowMkt('1X',            R.m1+R.mX,   (dc.p1||0)+(dc.pX||0), K?K.p1+K.pX:null, null, outcome, outcome!=='2') +
-    rowMkt('X2',            R.mX+R.m2,   (dc.pX||0)+(dc.p2||0), K?K.pX+K.p2:null, null, outcome, outcome!=='1') +
-    rowMkt('12',            R.m1+R.m2,   (dc.p1||0)+(dc.p2||0), K?K.p1+K.p2:null, null, outcome, outcome!=='X') +
-    rowMkt('Goal (GG)',     dc.pGG,      dc.pGG, K?K.pGG:null,       null, gg, gg==='Goal') +
-    rowMkt('NoGoal',        1-(dc.pGG||0), 1-(dc.pGG||0), K?1-K.pGG:null, null, gg, gg==='NoGoal') +
-    rowMkt('Over 2.5',      dc.pOv,      dc.pOv, K?K.pOv:null,       null, `${goalTot} gol`, ov==='Over 2.5') +
-    rowMkt('Under 2.5',     1-(dc.pOv||0), 1-(dc.pOv||0), K?1-K.pOv:null, null, `${goalTot} gol`, ov==='Under 2.5');
+    rowMkt('1 (Casa)',      R.m1,        dc.p1,  O?O.p1:null,       K?K.p1:null,  c1, outcome, outcome==='1') +
+    rowMkt('X (Pareggio)',  R.mX,        dc.pX,  O?O.pX:null,       K?K.pX:null,  cX, outcome, outcome==='X') +
+    rowMkt('2 (Trasferta)', R.m2,        dc.p2,  O?O.p2:null,       K?K.p2:null,  c2, outcome, outcome==='2') +
+    rowMkt('1X',            R.m1+R.mX,   (dc.p1||0)+(dc.pX||0), O?O.p1+O.pX:null, K?K.p1+K.pX:null, null, outcome, outcome!=='2') +
+    rowMkt('X2',            R.mX+R.m2,   (dc.pX||0)+(dc.p2||0), O?O.pX+O.p2:null, K?K.pX+K.p2:null, null, outcome, outcome!=='1') +
+    rowMkt('12',            R.m1+R.m2,   (dc.p1||0)+(dc.p2||0), O?O.p1+O.p2:null, K?K.p1+K.p2:null, null, outcome, outcome!=='X') +
+    rowMkt('Goal (GG)',     dc.pGG,      dc.pGG, null,              K?K.pGG:null,       null, gg, gg==='Goal') +
+    rowMkt('NoGoal',        1-(dc.pGG||0), 1-(dc.pGG||0), null,     K?1-K.pGG:null, null, gg, gg==='NoGoal') +
+    rowMkt('Over 2.5',      dc.pOv,      dc.pOv, null,              K?K.pOv:null,       null, `${goalTot} gol`, ov==='Over 2.5') +
+    rowMkt('Under 2.5',     1-(dc.pOv||0), 1-(dc.pOv||0), null,     K?1-K.pOv:null, null, `${goalTot} gol`, ov==='Under 2.5');
 
   // ─── STUDIO GOL: Over/Under multi-linea + GG dalla matrice DC ───
   const gm = marketsFromMatrix(R.dcMat);
@@ -1949,8 +1979,8 @@ function cmpRender(match, R, actH, actA) {
     ['Controlli Sbagliati','misc'],['Palle Perse','disp'],['Direct Speed','dirSpd'],
     ['Tempo Recupero','recTime'],['Counterpress 5s','cp5s']
   ];
-  const prevH = cmpExtractPrev(R.dH);
-  const prevA = cmpExtractPrev(R.dA);
+  const prevH = cmpExtractPrev(R.dH, 'H', R.predStats);
+  const prevA = cmpExtractPrev(R.dA, 'A', R.predStats);
   const rowStat = (lbl, prev, real) => {
     const pO = prev != null && !isNaN(prev);
     const rO = real != null && !isNaN(real);
@@ -1972,16 +2002,16 @@ function cmpBuildResult(match, R, actH, actA) {
   const goalTot = actH.gf + actA.gf;
   const ov = goalTot > 2.5 ? 'Over 2.5' : 'Under 2.5';
   const gm = marketsFromMatrix(R.dcMat);
-  const prevH = cmpExtractPrev(R.dH);
-  const prevA = cmpExtractPrev(R.dA);
-  const sf = R.sampleFactor != null ? R.sampleFactor : 1;
-  const _conf = (arr) => {
-    const v = arr.filter(p => p != null && isFinite(p));
-    if (v.length < 2) return null;
-    let sp = 0;
-    for (let i=0; i<v.length; i++) for (let j=i+1; j<v.length; j++) sp = Math.max(sp, Math.abs(v[i]-v[j]));
-    return Math.max(0, Math.min(100, Math.round(100 * (1-sp) * sf)));
-  };
+  const prevH = cmpExtractPrev(R.dH, 'H', R.predStats);
+  const prevA = cmpExtractPrev(R.dA, 'A', R.predStats);
+  // Confidence: stesse rette di calibrazione del motore V9.7 (regressione su 6824
+  // partite). NON e' piu' l'accordo fra i modelli: sui backtest lo spread fra DC,
+  // KNN e Markov non correlava con l'accuratezza, e il KNN non e' nemmeno piu'
+  // nell'ensemble. "conf 64" ora vuol dire "64% di probabilita' di indovinare",
+  // ed e' lo stesso numero che il motore mostra a schermo.
+  const _calibConf1X2 = (p) => (p == null || !isFinite(p)) ? null
+    : Math.max(0, Math.min(100, Math.round(6.26 + 0.880 * (p * 100))));
+  const _conf = (p) => _calibConf1X2(p);
   // Identificativi della partita: servono per agganciare fonti esterne (quote, infortuni)
   // senza dover incrociare sui NOMI delle squadre, che cambiano da fonte a fonte
   // ("Inter" / "Internazionale" / "Inter Milan"). Il paese serve a distinguere leghe
@@ -2004,10 +2034,17 @@ function cmpBuildResult(match, R, actH, actA) {
     tgt: { hName: match.home_team.name, aName: match.away_team.name, sH: actH.gf, sA: actA.gf, time: match.time_utc },
     R, actH, actA, outcome, gg, ov, goalTot, prevH, prevA,
     conf: {
-      c1: _conf([R.probsRole?.p1, R.probsKnn?.p1, R.mk_ro?.p1]),
-      cX: _conf([R.probsRole?.pX, R.probsKnn?.pX, R.mk_ro?.pX]),
-      c2: _conf([R.probsRole?.p2, R.probsKnn?.p2, R.mk_ro?.p2])
+      c1: _conf(R.m1),
+      cX: _conf(R.mX),
+      c2: _conf(R.m2),
+      // confidence globale come la calcola il motore: la probabilita' del pick
+      global: R.confidence != null ? R.confidence : _conf(Math.max(R.m1||0, R.mX||0, R.m2||0))
     },
+    // Diagnostica e stime del predittore, cosi' come le espone il motore.
+    // Erano gia' catturate dall'hook ma non arrivavano fin qui: la sezione
+    // "DIAGNOSTICA PREDITTORE" del CSV usciva sempre N/D.
+    predDebug: R.predDebug || null,
+    predStats: R.predStats || null,
     goalsMarket: gm,
     realTotals: { cor: (actH.cor!=null&&actA.cor!=null)?actH.cor+actA.cor:null,
                   sot: (actH.sot!=null&&actA.sot!=null)?actH.sot+actA.sot:null,
