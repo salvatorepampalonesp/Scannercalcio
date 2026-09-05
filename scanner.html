@@ -155,7 +155,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b5</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b10</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -199,17 +199,17 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
         <div style="text-align:center; background:var(--panel2); padding:15px; border-radius:8px; border:2px solid var(--blue)">
           <div style="font-size:12px;color:var(--dim);font-weight:bold;text-transform:uppercase">1 (Casa)</div>
           <div style="font-size:26px;font-weight:900;color:var(--blue)" id="master-1">--%</div>
-          <div style="font-size:11px;color:var(--dim);margin-top:5px; padding-top:5px; border-top:1px dashed #eee">Quota Reale: <span id="m-odd-1" style="font-weight:bold;color:var(--txt);font-size:14px">--</span></div>
+          <div style="font-size:11px;color:var(--dim);margin-top:5px; padding-top:5px; border-top:1px dashed var(--line)">Quota Reale: <span id="m-odd-1" style="font-weight:bold;color:var(--txt);font-size:14px">--</span></div>
         </div>
         <div style="text-align:center; background:var(--panel2); padding:15px; border-radius:8px; border:2px solid #555">
           <div style="font-size:12px;color:var(--dim);font-weight:bold;text-transform:uppercase">X (Pareggio)</div>
           <div style="font-size:26px;font-weight:900;color:var(--dim)" id="master-x">--%</div>
-          <div style="font-size:11px;color:var(--dim);margin-top:5px; padding-top:5px; border-top:1px dashed #eee">Quota Reale: <span id="m-odd-x" style="font-weight:bold;color:var(--txt);font-size:14px">--</span></div>
+          <div style="font-size:11px;color:var(--dim);margin-top:5px; padding-top:5px; border-top:1px dashed var(--line)">Quota Reale: <span id="m-odd-x" style="font-weight:bold;color:var(--txt);font-size:14px">--</span></div>
         </div>
         <div style="text-align:center; background:var(--panel2); padding:15px; border-radius:8px; border:2px solid var(--red)">
           <div style="font-size:12px;color:var(--dim);font-weight:bold;text-transform:uppercase">2 (Trasf)</div>
           <div style="font-size:26px;font-weight:900;color:var(--red)" id="master-2">--%</div>
-          <div style="font-size:11px;color:var(--dim);margin-top:5px; padding-top:5px; border-top:1px dashed #eee">Quota Reale: <span id="m-odd-2" style="font-weight:bold;color:var(--txt);font-size:14px">--</span></div>
+          <div style="font-size:11px;color:var(--dim);margin-top:5px; padding-top:5px; border-top:1px dashed var(--line)">Quota Reale: <span id="m-odd-2" style="font-weight:bold;color:var(--txt);font-size:14px">--</span></div>
         </div>
       </div>
       
@@ -219,16 +219,6 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
           <div style="font-size:11px;font-weight:bold;color:var(--dim);margin-bottom:5px">Alert: Smart Money & Blood Scent</div>
           <div id="hidden-value-msg" style="font-size:12px; line-height:1.4; color:var(--txt);">--</div>
         </div>
-      </div>
-      <div style="margin-top:15px; background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:12px">
-        <div style="font-size:11px;font-weight:bold;color:var(--dim);margin-bottom:8px">💶 Confronto col Book: Valore Atteso e Stake</div>
-        <div class="grid-4" style="align-items:end">
-          <div><label style="font-size:10px;color:var(--dim)">Quota book 1</label><input type="number" step="0.01" id="bk-1" oninput="calcValue()" placeholder="es. 2.10"></div>
-          <div><label style="font-size:10px;color:var(--dim)">Quota book X</label><input type="number" step="0.01" id="bk-x" oninput="calcValue()" placeholder="es. 3.40"></div>
-          <div><label style="font-size:10px;color:var(--dim)">Quota book 2</label><input type="number" step="0.01" id="bk-2" oninput="calcValue()" placeholder="es. 3.60"></div>
-          <div><label style="font-size:10px;color:var(--dim)">Bankroll</label><input type="number" step="1" id="bk-bank" value="100" oninput="calcValue()"></div>
-        </div>
-        <div id="value-out" style="margin-top:10px; font-size:11px; color:var(--txt)"><span style="color:var(--dim)">Inserisci le quote del bookmaker: senza confronto col mercato una probabilita' non e' una scommessa.</span></div>
       </div>
     </div>
 
@@ -249,15 +239,6 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
     </table></div>
   </div>
 
-  <div class="card" id="card-pred-debug" style="border-top:3px solid #f59e0b">
-    <div class="section-title" style="color:#f59e0b">Diagnostica predittore</div>
-    <div style="font-size:11px;color:var(--dim);margin-bottom:10px">
-      I valori intermedi della stima attacco &times; difesa, letti dove vengono prodotti.
-      Se &quot;stima&quot; resta vicina alla baseline mentre &quot;prodotto&quot; varia molto,
-      i rapporti si annullano. Se compare <b>assente</b>, quel dato non arriva.
-    </div>
-    <div class="tbl-scroll" id="pred-debug-body"></div>
-  </div>
 
 
     
@@ -270,7 +251,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
           <tr><td style="color:var(--blue); font-weight:bold">Casa</td><td id="l-xgot-h" style="font-weight:bold">--</td><td id="l-set-h">--%</td><td id="l-bc-h">-- / --</td></tr>
           <tr><td style="color:var(--red); font-weight:bold">Trasf</td><td id="l-xgot-a" style="font-weight:bold">--</td><td id="l-set-a">--%</td><td id="l-bc-a">-- / --</td></tr>
       </table>
-      <div id="lethality-dialogue" style="font-size:11px; line-height:1.5; color:#1c1c1e; padding:8px; background:var(--panel2); border-radius:6px; border:1px solid #ffe0b2"></div>
+      <div id="lethality-dialogue" style="font-size:11px; line-height:1.5; color:var(--txt); padding:8px; background:var(--panel2); border-radius:6px; border:1px solid var(--line)"></div>
     </div>
 
     <div class="grid-2">
@@ -282,7 +263,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
             <tr><td style="color:var(--blue); font-weight:bold">Casa</td><td id="np-defx-h">--</td><td id="np-len-h">--</td><td id="np-cp-h">--</td><td id="np-choke-h" style="font-weight:bold; color:var(--blue)">--</td></tr>
             <tr><td style="color:var(--red); font-weight:bold">Trasf</td><td id="np-defx-a">--</td><td id="np-len-a">--</td><td id="np-cp-a">--</td><td id="np-choke-a" style="font-weight:bold; color:var(--red)">--</td></tr>
         </table>
-        <div id="defensive-dialogue" style="font-size:11px; line-height:1.5; color:#1c1c1e; padding:8px; background:var(--panel2); border-radius:6px; border:1px solid #ffcdd2; margin-top:10px"></div>
+        <div id="defensive-dialogue" style="font-size:11px; line-height:1.5; color:var(--txt); padding:8px; background:var(--panel2); border-radius:6px; border:1px solid var(--line); margin-top:10px"></div>
       </div>
 
       <div class="card" style="border-top:3px solid var(--accent2); background:var(--panel)">
@@ -298,7 +279,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
             <tr><td style="color:var(--blue); font-weight:bold">Casa</td><td id="tr-f3-h">--</td><td id="tr-box-h">--</td><td id="tr-pen-h" style="font-weight:bold; color:var(--blue)">--%</td></tr>
             <tr><td style="color:var(--red); font-weight:bold">Trasf</td><td id="tr-f3-a">--</td><td id="tr-box-a">--</td><td id="tr-pen-a" style="font-weight:bold; color:var(--red)">--%</td></tr>
         </table>
-        <div id="tactical-dialogue" style="font-size:11px; line-height:1.5; color:#1c1c1e; padding:8px; background:var(--panel2); border-radius:6px; border:1px solid #e0f2f1"></div>
+        <div id="tactical-dialogue" style="font-size:11px; line-height:1.5; color:var(--txt); padding:8px; background:var(--panel2); border-radius:6px; border:1px solid var(--line)"></div>
       </div>
     </div>
 
@@ -401,7 +382,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
                 <tr><td style="color:var(--red); font-weight:bold" id="pyt-name-a">Trasf</td><td id="pyt-act-a">--%</td><td id="pyt-exp-a">--%</td><td id="pyt-diag-a">--</td></tr>
             </table>
             <div class="section-title" style="color:#fbc02d; margin-top:20px">🔥 Top Scorers</div>
-            <div style="font-size:11px; line-height:1.4; color:#1c1c1e;">
+            <div style="font-size:11px; line-height:1.4; color:var(--txt);">
               <strong>Casa:</strong> <span id="ts-h"></span><br><br>
               <strong>Trasf:</strong> <span id="ts-a"></span>
             </div>
@@ -409,7 +390,8 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
     </div>
 
     <div class="card" style="border-top: 4px solid var(--purple);">
-      <div class="section-title" style="color:var(--purple)">📈 Progressione Storica: Trend Analitico</div>
+      <div class="section-title" style="color:var(--purple)">📈 Progressione Storica: dove la forma recente conta davvero</div>
+      <div style="font-size:9px; color:var(--dim); margin-bottom:8px">Su 1133 partite di tre leghe, per quasi tutte le metriche la media lunga prevede la partita successiva meglio delle ultime 3 o 5. Qui restano solo le sei in cui uno scostamento recente si e' dimostrato persistente: sono volumi strutturali, quelli che si muovono quando cambia il modulo. Su NPxG, tiri, corner e possesso la colonna «ultime 3» sarebbe solo rumore, per questo non ci sono piu'.</div>
       <div style="margin-bottom:5px; font-weight:bold; color:var(--blue); font-size:12px" id="prog-h-name">Casa</div>
       <table class="table-ui" id="table-prog-h"></table>
       <div style="margin-bottom:5px; margin-top:15px; font-weight:bold; color:var(--red); font-size:12px" id="prog-a-name">Trasferta</div>
@@ -422,15 +404,15 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
           <table class="table-ui" style="margin-bottom:0; text-align:left;">
             <tr>
               <th>Fascia</th>
-              <th colspan="2" style="color:var(--blue); border-left:1px solid #eee; text-align:center">Casa</th>
-              <th colspan="2" style="color:var(--red); border-left:1px solid #eee; text-align:center">Trasferta</th>
+              <th colspan="2" style="color:var(--blue); border-left:1px solid var(--line); text-align:center">Casa</th>
+              <th colspan="2" style="color:var(--red); border-left:1px solid var(--line); text-align:center">Trasferta</th>
             </tr>
             <tr>
-              <th style="border-bottom:2px solid #ddd">Minuti</th>
-              <th style="border-bottom:2px solid #ddd; border-left:1px solid #eee">Fatti</th>
-              <th style="border-bottom:2px solid #ddd">Subiti</th>
-              <th style="border-bottom:2px solid #ddd; border-left:1px solid #eee">Fatti</th>
-              <th style="border-bottom:2px solid #ddd">Subiti</th>
+              <th style="border-bottom:2px solid var(--line)">Minuti</th>
+              <th style="border-bottom:2px solid var(--line); border-left:1px solid var(--line)">Fatti</th>
+              <th style="border-bottom:2px solid var(--line)">Subiti</th>
+              <th style="border-bottom:2px solid var(--line); border-left:1px solid var(--line)">Fatti</th>
+              <th style="border-bottom:2px solid var(--line)">Subiti</th>
             </tr>
             <tbody id="timing-body"></tbody>
           </table>
@@ -438,11 +420,11 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
         <div class="card" style="border-top:3px solid var(--purple); background:var(--panel)">
           <div class="section-title" style="color:#9c27b0">⏳ Analisi di Sopravvivenza (Goal Timing)</div>
           <p style="font-size:10px; color:var(--dim); margin-bottom:15px">Modello Esponenziale calcolato sull'intensità di gioco.</p>
-          <div style="background:var(--panel2); border-radius:8px; padding:12px; margin-bottom:10px; border:1px solid #e1bee7">
+          <div style="background:var(--panel2); border-radius:8px; padding:12px; margin-bottom:10px; border:1px solid var(--line)">
               <div style="font-size:11px; font-weight:bold; color:var(--dim)">Probabilità 1° Gol prima del 30:00'</div>
               <div style="font-size:22px; font-weight:900; color:#9c27b0" id="surv-30">--%</div>
           </div>
-          <div style="background:var(--panel2); border-radius:8px; padding:12px; border:1px solid #e1bee7">
+          <div style="background:var(--panel2); border-radius:8px; padding:12px; border:1px solid var(--line)">
               <div style="font-size:11px; font-weight:bold; color:var(--dim)">Probabilità Over 0.5 Primo Tempo (45:00')</div>
               <div style="font-size:22px; font-weight:900; color:#9c27b0" id="surv-45">--%</div>
           </div>
@@ -450,7 +432,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
     </div>
 
     <div class="card" style="border-top: 4px solid #607d8b;">
-      <div class="section-title" style="color:#607d8b">🎯 Modello Dixon-Coles (NPxG) & Skellam Distribution</div>
+      <div class="section-title" style="color:#607d8b">🎯 Risultati Esatti, Handicap e Multigol (dalla matrice Dixon-Coles)</div>
       <div class="grid-2">
           <div>
             <div style="font-size:11px; font-weight:bold; margin-bottom:5px; color:var(--dim)">Top 6 Risultati Esatti</div>
@@ -472,16 +454,16 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <div class="card" style="border-top: 4px solid var(--orange);">
         <div class="section-title" style="color:var(--orange)">📐 Alta Varianza e Disciplina</div>
         <div class="tbl-scroll"><table class="table-ui">
-          <tr><th>Mercato</th><th style="color:var(--dim)">GENERALE</th><th style="color:var(--orange)">SOLO RUOLO</th></tr>
-          <tr><td>Corner Attesi (Tot)</td><td id="cor-tot-over">--</td><td id="cor-tot-role" class="td-highlight">--</td></tr>
-          <tr><td>Prob Over 9.5 Corner</td><td id="pov9-cor-over">--%</td><td id="pov9-cor-role" style="font-weight:bold; color:var(--blue)">--%</td></tr>
-          <tr style="background:rgba(255,255,255,.03)"><td>SoT Attesi (Tot)</td><td id="sot-tot-over">--</td><td id="sot-tot-role" class="td-highlight">--</td></tr>
-          <tr style="background:rgba(255,255,255,.03)"><td>Prob Over 8.5 SoT</td><td id="pov8-sot-over">--%</td><td id="pov8-sot-role" style="font-weight:bold; color:var(--purple)">--%</td></tr>
-          <tr><td>Falli Attesi (Tot)</td><td id="fls-tot-over">--</td><td id="fls-tot-role" class="td-highlight">--</td></tr>
-          <tr><td>Gialli Attesi (Tot)</td><td id="yel-tot-over">--</td><td id="yel-tot-role" class="td-highlight">--</td></tr>
-          <tr><td>Prob Over 3.5 Gialli</td><td id="pov3-yel-over">--%</td><td id="pov3-yel-role" style="font-weight:bold; color:var(--orange)">--%</td></tr>
-          <tr><td>Prob. Cart. Rosso</td><td id="red-tot-over" style="color:var(--red); font-weight:bold">--%</td><td id="red-tot-role" style="color:var(--red); font-weight:bold" class="td-highlight">--%</td></tr>
+          <tr><th>Atteso sulla partita</th><th style="color:var(--dim)">GENERALE</th><th style="color:var(--orange)">SOLO RUOLO</th></tr>
+          <tr><td>Corner (tot)</td><td id="cor-tot-over">--</td><td id="cor-tot-role" class="td-highlight">--</td></tr>
+          <tr style="background:rgba(255,255,255,.03)"><td>Tiri in porta (tot)</td><td id="sot-tot-over">--</td><td id="sot-tot-role" class="td-highlight">--</td></tr>
+          <tr><td>Falli (tot)</td><td id="fls-tot-over">--</td><td id="fls-tot-role" class="td-highlight">--</td></tr>
+          <tr style="background:rgba(255,255,255,.03)"><td>Gialli (tot)</td><td id="yel-tot-over">--</td><td id="yel-tot-role" class="td-highlight">--</td></tr>
+          <tr><td>Almeno un rosso</td><td id="red-tot-over" style="color:var(--red); font-weight:bold">--%</td><td id="red-tot-role" style="color:var(--red); font-weight:bold" class="td-highlight">--%</td></tr>
         </table></div>
+        <div class="section-title" style="color:var(--orange); margin-top:14px">Over per linea (solo ruolo)</div>
+        <div class="tbl-scroll"><table class="table-ui" id="mkt-lines"></table></div>
+        <div style="font-size:9px; color:var(--dim); margin-top:6px" id="mkt-legend"></div>
       </div>
 
       <div class="card" style="border-top: 4px solid #5a5a8a;">
@@ -515,9 +497,10 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
         <tr id="row-form-ar" style="background:rgba(239,68,68,.10)"><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
       </table></div>
       
+      <div id="knn-legend" style="font-size:9.5px;color:var(--dim);line-height:1.5;margin-top:12px"></div>
       <div class="grid-2" style="margin-top:15px; margin-bottom:15px">
-        <div style="background:rgba(167,139,250,.10);border-radius:8px;padding:10px;border:1px solid #f8bbd0"><div style="font-size:11px;font-weight:bold;color:var(--knn);margin-bottom:6px" id="knn-title-h">Casa vs Simili</div><div id="knn-list-h"></div><div style="margin-top:6px;font-size:10px;color:var(--dim)" id="knn-res-h">Rendimento: -- Pts/Match</div></div>
-        <div style="background:rgba(167,139,250,.10);border-radius:8px;padding:10px;border:1px solid #f8bbd0"><div style="font-size:11px;font-weight:bold;color:var(--knn);margin-bottom:6px" id="knn-title-a">Trasf vs Simili</div><div id="knn-list-a"></div><div style="margin-top:6px;font-size:10px;color:var(--dim)" id="knn-res-a">Rendimento: -- Pts/Match</div></div>
+        <div style="background:rgba(167,139,250,.10);border-radius:8px;padding:10px;border:1px solid var(--line)"><div style="font-size:11px;font-weight:bold;color:var(--knn);margin-bottom:6px" id="knn-title-h">Casa vs Simili</div><div id="knn-list-h"></div><div style="margin-top:6px;font-size:10px;color:var(--dim)" id="knn-res-h">Rendimento: -- Pts/Match</div></div>
+        <div style="background:rgba(167,139,250,.10);border-radius:8px;padding:10px;border:1px solid var(--line)"><div style="font-size:11px;font-weight:bold;color:var(--knn);margin-bottom:6px" id="knn-title-a">Trasf vs Simili</div><div id="knn-list-a"></div><div style="margin-top:6px;font-size:10px;color:var(--dim)" id="knn-res-a">Rendimento: -- Pts/Match</div></div>
       </div>
     </div>
 
@@ -679,13 +662,19 @@ function negBinCDF(n, mu, k) { if (isNaN(mu) || mu <= 0) return 1; let s = 0; fo
 
 function negBinK(vals) {
   const v = (vals||[]).filter(x => x != null && !isNaN(x));
-  if (v.length < 6) return Infinity;
-  const m = _mean(v); const s2 = Math.pow(_stddev(v), 2);
-  if (m <= 0 || s2 <= m * 1.05) return Infinity;
-  return Math.max(2, (m * m) / (s2 - m));
+  const n = v.length;
+  if (n < 6) return Infinity;
+  const m = _mean(v); if (m <= 0) return Infinity;
+  const s2 = Math.pow(_stddev(v), 2);
+  const ex = s2 / m - 1;
+  if (!(ex > 0)) return Infinity;
+  const varPhi = 2 / n;
+  const phi = 1 + ex * (ex * ex / (ex * ex + varPhi));
+  if (!(phi > 1)) return Infinity;
+  const k = m / (phi - 1);
+  return isFinite(k) && k > 0 ? k : Infinity;
 }
 function poisson(k, lam) { if (isNaN(lam) || lam <= 0) return k === 0 ? 1 : 0; let p = Math.exp(-lam); for (let i = 0; i < k; i++) p *= lam / (i + 1); return p; }
-function skellamPMF(k, l1, l2) { if (isNaN(l1) || isNaN(l2) || l1 <= 0 || l2 <= 0) return 0; let p = 0; const jMin = Math.max(0, -k); for (let j = jMin; j <= 15; j++) p += poisson(k + j, l1) * poisson(j, l2); return p; }
 
 function calculateRho(lamH, lamA) { let tot = lamH + lamA; if (tot < 2.0) return -0.20; if (tot > 3.5) return -0.05; return -0.20 + (tot - 2.0) * (0.15 / 1.5); }
 function calcDCMatrix(lH, lA, rhoIn) {
@@ -764,7 +753,8 @@ function buildGlobalElo(targetTimeMs) {
     HFA_ELO = Math.max(30, Math.min(100, Math.round(400 * Math.log10(wr_h / wr_a))));
   }
 
-  const GAP_THRESHOLD_DAYS = 60;
+  const GAP_THRESHOLD_DAYS = 45;
+  const ELO_GAP_TAU = (typeof window.ELO_GAP_TAU === 'number') ? window.ELO_GAP_TAU : 110;
 
   const K_LOW = 30;
   const K_HIGH = 20;
@@ -791,8 +781,7 @@ function buildGlobalElo(targetTimeMs) {
         const gapMs = matchMs - lastMatchTime[teamId];
         const gapDays = gapMs / 86400000;
         if (gapDays > GAP_THRESHOLD_DAYS) {
-          const gapYears = gapDays / 365;
-          const strength = Math.min(0.9, 0.3 * Math.ceil(gapYears));
+          const strength = 0.9 * (1 - Math.exp(-(gapDays - GAP_THRESHOLD_DAYS) / ELO_GAP_TAU));
           table[teamId] = (1 - strength) * table[teamId] + strength * 1500;
         }
       }
@@ -958,10 +947,8 @@ const ADV_SPEC = [
   ['xt',              m => m.possession_value?.xt_total,                'volume'],
   ['vaep',            m => m.possession_value?.vaep_total,              'additivo'],
   ['vaep_off',        m => m.possession_value?.vaep_offensive,          'volume'],
-  ['vaep_def',        m => m.possession_value?.vaep_defensive,          'additivo'],
   ['pv',              m => m.possession_value?.pv_total,                'additivo'],
   ['pv_off',          m => m.possession_value?.pv_offensive,            'volume'],
-  ['pv_def',          m => m.possession_value?.pv_defensive,            'additivo'],
 
   ['passes',          m => m.passing?.passes,                           'volume'],
   ['key_passes',      m => m.passing?.key_passes,                       'volume'],
@@ -982,7 +969,6 @@ const ADV_SPEC = [
   ['sca_takeon',      m => m.creation?.sca_breakdown?.take_on,          'volume'],
   ['sca_shot',        m => m.creation?.sca_breakdown?.shot,             'volume'],
   ['sca_foul',        m => m.creation?.sca_breakdown?.foul_drawn,       'volume'],
-  ['sca_def',         m => m.creation?.sca_breakdown?.defensive,        'volume'],
 
   ['tackles',         m => m.defending?.tackles,                        'volume'],
   ['interceptions',   m => m.defending?.interceptions,                  'volume'],
@@ -1038,6 +1024,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
 
     let gca=null, sca=null, xag=null, prog_passes=null, passes_box=null, carries_box=null, prog_carries=null;
     let gca_ag=null, sca_ag=null, xag_ag=null, prog_passes_ag=null, passes_box_ag=null, carries_box_ag=null, prog_carries_ag=null;
+    let xg_sp_ag=null;
     let opp_ppda=null, opp_field_tilt=null, opp_direct_speed=null, opp_seq_time=null, opp_avg_x=null, opp_avg_def_x=null, opp_cp_regains=null, opp_rec_time=null;
 
     let advHasMe = false;
@@ -1080,6 +1067,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
           gca_ag = oppAdv.creation?.gca ?? null; sca_ag = oppAdv.creation?.sca ?? null; xag_ag = oppAdv.creation?.xag ?? null;
           prog_passes_ag = oppAdv.passing?.progressive_passes ?? null; passes_box_ag = oppAdv.passing?.passes_into_box ?? null;
           carries_box_ag = oppAdv.carrying?.carries_into_box ?? null; prog_carries_ag = oppAdv.carrying?.progressive_carries ?? null;
+          xg_sp_ag = oppAdv.creation?.expected_goals_set_play ?? oppAdv.attacking?.expected_goals_set_play ?? null;
         }
         for (const [k, get] of ADV_SPEC) {
           try { advX[k]        = myAdv  ? (get(myAdv)  ?? null) : null; } catch (e) { advX[k] = null; }
@@ -1186,7 +1174,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
       ppda, field_tilt, direct_speed, seq_time, avg_x, f3_entries, tch_box, avg_def_x, cp_regains, rec_time, npxg, xg_sp, xgot, bc, bcm, xg_shot, cross, drib, thru, aer, misc, disp,
       opp_ppda, opp_field_tilt, opp_direct_speed, opp_seq_time, opp_avg_x, opp_avg_def_x, opp_cp_regains, opp_rec_time,
       gca, sca, xag, prog_passes, passes_box, carries_box, prog_carries,
-      gca_ag, sca_ag, xag_ag, prog_passes_ag, passes_box_ag, carries_box_ag, prog_carries_ag,
+      gca_ag, sca_ag, xag_ag, prog_passes_ag, passes_box_ag, carries_box_ag, prog_carries_ag, xg_sp_ag,
       ...advX,
       red_cards, goal_timings_scored, goal_timings_conceded, scorers, rawPresent
     };
@@ -1197,7 +1185,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
       ppda:[], field_tilt:[], direct_speed:[], seq_time:[], avg_x:[], f3_entries:[], tch_box:[], avg_def_x:[], cp_regains:[], rec_time:[], xg_sp:[], xgot:[], bc:[], bcm:[], xg_shot:[], cross:[], drib:[], thru:[], aer:[], misc:[], disp:[],
       opp_ppda:[], opp_field_tilt:[], opp_direct_speed:[], opp_seq_time:[], opp_avg_x:[], opp_avg_def_x:[], opp_cp_regains:[], opp_rec_time:[],
       gca:[], sca:[], xag:[], prog_passes:[], passes_box:[], carries_box:[], prog_carries:[],
-      gca_ag:[], sca_ag:[], xag_ag:[], prog_passes_ag:[], passes_box_ag:[], carries_box_ag:[], prog_carries_ag:[], red_cards:[], dates:[] },
+      gca_ag:[], sca_ag:[], xag_ag:[], prog_passes_ag:[], passes_box_ag:[], carries_box_ag:[], prog_carries_ag:[], xg_sp_ag:[], red_cards:[], dates:[] },
       matchInfo: [], streak: [], historyForElo: [], all_timings_scored: [], all_timings_conceded: [], all_scorers: [], win_pts: 0 };
     for (const k of ADV_KEYS) { out.vals[k] = []; out.vals[k + '_ag'] = []; }
 
@@ -1214,7 +1202,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
 
       const OPT = ['ppda','field_tilt','direct_speed','seq_time','avg_x','f3_entries','tch_box','avg_def_x','cp_regains','rec_time','xg_sp','xgot','bc','bcm','xg_shot','cross','drib','thru','aer','misc','disp','opp_ppda','opp_field_tilt','opp_direct_speed','opp_seq_time','opp_avg_x','opp_avg_def_x','opp_cp_regains','opp_rec_time',
                    'gca','sca','xag','prog_passes','passes_box','carries_box','prog_carries',
-                   'gca_ag','sca_ag','xag_ag','prog_passes_ag','passes_box_ag','carries_box_ag','prog_carries_ag']
+                   'gca_ag','sca_ag','xag_ag','prog_passes_ag','passes_box_ag','carries_box_ag','prog_carries_ag','xg_sp_ag']
                   .concat(ADV_KEYS).concat(ADV_KEYS.map(k => k + '_ag'));
       OPT.forEach(kk => { const v = det[kk]; out.vals[kk].push((v === undefined || v === null || isNaN(v)) ? null : v); });
 
@@ -1386,7 +1374,7 @@ function getSimilarMatches(teamDataRole, oppTeam, targetTimeMs) {
   if (sw <= 0) return empty;
 
   rows.sort((a, b) => a.dist - b.dist);
-  const topMatches = rows.slice(0, 4).map(r => ({
+  const topMatches = rows.slice(0, 6).map(r => ({
     index: r.index, dist: r.dist, info: r.info, weight: r.w || 0,
     oppPoss: r.snap.poss ?? 50, oppXG: r.snap.npxg ?? 0, oppXGA: r.snap.npxga ?? 0,
     oppSoT: r.snap.sot ?? 0, oppPPDA: r.snap.ppda ?? 0, oppTilt: r.snap.field_tilt ?? 0,
@@ -1516,7 +1504,7 @@ function renderVerdetti(mk) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b5';
+window.__SCANNER_BUILD = '0905-b10';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -1528,11 +1516,11 @@ window.STAT_SHRINK_TABLE = window.STAT_SHRINK_TABLE || {
   gca: 0.31, xag: 0.24, sca: 0.34, prog_passes: 0.47, passes_box: 0.44,
   carries_box: 0.55, prog_carries: 0.48,
 
-  xt: 0.40, vaep: 0.18, vaep_off: 0.23, vaep_def: 0.10, pv: 0.15, pv_off: 0.21, pv_def: 0.10,
+  xt: 0.40, vaep: 0.18, vaep_off: 0.23, pv: 0.15, pv_off: 0.21,
   passes: 0.54, key_passes: 0.39, switches: 0.28, prog_pass_dist: 0.36, assists: 0.16,
   carries: 0.49, carry_dist: 0.48, carries_f3: 0.38, take_ons: 0.37, prog_carry_dist: 0.50,
   chances_created: 0.39, second_assists: 0.17,
-  sca_live: 0.41, sca_dead: 0.18, sca_takeon: 0.16, sca_shot: 0.10, sca_foul: 0.11, sca_def: 0.10,
+  sca_live: 0.41, sca_dead: 0.18, sca_takeon: 0.16, sca_shot: 0.10, sca_foul: 0.11,
   tackles: 0.23, interceptions: 0.23, blocks: 0.20, clearances: 0.30, duels_won: 0.22,
   aerials: 0.54, challenges: 0.14, ppda_num: 0.53, ppda_den: 0.29
 };
@@ -1574,7 +1562,8 @@ const ORPHAN_PAIRS = {
   avg_x: 'opp_avg_x',
   avg_def_x: 'opp_avg_def_x',
   cp_regains: 'opp_cp_regains',
-  rec_time: 'opp_rec_time'
+  rec_time: 'opp_rec_time',
+  xg_sp: 'xg_sp_ag'
 };
 for (const k of ADV_KEYS) STAT_PAIRS[k] = k + '_ag';
 Object.assign(STAT_PAIRS, ORPHAN_PAIRS);
@@ -1660,6 +1649,33 @@ function applyResidualCorrection(probs, att, dif) {
   return { p1: p1 / tot, pX: pX / tot, p2: p2 / tot, debug: dbg };
 }
 
+window.MARKET_SHRINK_K = window.MARKET_SHRINK_K || { cor: 0.25, sot: 0.30, yel: 0.15, fouls: 0.30 };
+const MARKET_LINES = { cor: [8.5, 9.5, 10.5, 11.5], sot: [6.5, 7.5, 8.5, 9.5], yel: [3.5, 4.5, 5.5] };
+
+const GOALS_SOT_CAP = 0.15;
+window.GOALS_ALPHA = (typeof window.GOALS_ALPHA === 'number') ? window.GOALS_ALPHA : 0.50;
+
+function goalsSotCorrection(att, dif) {
+  const dbg = { sotH: null, sotA: null, lgSot: null, ratio: null, mult: 1, alpha: window.GOALS_ALPHA, applied: false };
+  const alpha = window.GOALS_ALPHA;
+  if (!(alpha > 0) || !att || !dif) return dbg;
+  const sH = predictStat(att, dif, 'sot', 'role');
+  const sA = predictStat(dif, att, 'sot', 'role');
+  if (sH == null || sA == null || !isFinite(sH) || !isFinite(sA)) return dbg;
+  const bA = att.role && att.role.features && att.role.features._base ? att.role.features._base.sot : null;
+  const bB = dif.role && dif.role.features && dif.role.features._base ? dif.role.features._base.sot : null;
+  const pool = [bA, bB].filter(v => v != null && isFinite(v) && v > 0);
+  if (!pool.length) return dbg;
+  const lg = pool.reduce((a, b) => a + b, 0) / pool.length;
+  if (!(lg > 0)) return dbg;
+  const ratio = (sH + sA) / (2 * lg);
+  if (!isFinite(ratio) || ratio <= 0) return dbg;
+  let mult = 1 + alpha * (ratio - 1);
+  mult = Math.max(1 - GOALS_SOT_CAP, Math.min(1 + GOALS_SOT_CAP, mult));
+  dbg.sotH = sH; dbg.sotA = sA; dbg.lgSot = lg; dbg.ratio = ratio; dbg.mult = mult; dbg.applied = true;
+  return dbg;
+}
+
 async function avviaScanner() {
   try {
     const selH = document.getElementById('sel-home'); const selA = document.getElementById('sel-away');
@@ -1714,6 +1730,13 @@ async function avviaScanner() {
     const wSH = nHr / (nHr + _lk), wSA = nAr / (nAr + _lk);
     lamH_role = wSH * lamH_role + (1 - wSH) * LG.avgH; lamA_role = wSA * lamA_role + (1 - wSA) * LG.avgA;
     if(!isFinite(lamH_over) || lamH_over < 0.15) lamH_over = LG.avgH; if(!isFinite(lamA_over) || lamA_over < 0.15) lamA_over = LG.avgA;
+
+    const _GC = goalsSotCorrection(dH, dA);
+    window.__GOALS_DEBUG = _GC;
+    if (_GC.applied && isFinite(_GC.mult) && _GC.mult > 0) {
+      lamH_role *= _GC.mult; lamA_role *= _GC.mult;
+      lamH_over *= _GC.mult; lamA_over *= _GC.mult;
+    }
     if(!isFinite(lamH_role) || lamH_role < 0.15) lamH_role = lamH_over; if(!isFinite(lamA_role) || lamA_role < 0.15) lamA_role = lamA_over;
 
     const dcOver = calcDCMatrix(lamH_over, lamA_over, RHO); const dcRole = calcDCMatrix(lamH_role, lamA_role, RHO);
@@ -1729,21 +1752,35 @@ async function avviaScanner() {
     const ahData = [-1.5, -1.0, -0.75, -0.5, +0.5, +1.0, +1.5].map(h => ({ h, ...asianHandicapMat(dcMat, h) }));
 
     const calcAdv = (useRole) => {
-      const pick = (team) => (useRole && team.role.n >= 3) ? team.role : team.overall;
+      const scope = (useRole && dH.role.n >= 3 && dA.role.n >= 3) ? 'role' : 'overall';
+      const pick = (team) => (scope === 'role') ? team.role : team.overall;
       const getF = (team, feat) => { const o = pick(team).features[feat]; return (o && o.decay > 0) ? o.decay : 0; };
       const getA = (team, feat) => pick(team).vals[feat] || [];
-      const cH = getF(dH,'cor'), cA = getF(dA,'cor'), cAgH = getF(dH,'cor_ag'), cAgA = getF(dA,'cor_ag'); const lCor = Math.sqrt(cH*cAgA) + Math.sqrt(cA*cAgH);
-      const sH = getF(dH,'sot'), sA = getF(dA,'sot'), sAgH = getF(dH,'sot_ag'), sAgA = getF(dA,'sot_ag'); const lSot = Math.sqrt(sH*sAgA) + Math.sqrt(sA*sAgH);
-      const yH = getF(dH,'yel'), yA = getF(dA,'yel'), yAgH = getF(dH,'yel_ag'), yAgA = getF(dA,'yel_ag'); const lYel = Math.sqrt(yH*yAgA) + Math.sqrt(yA*yAgH);
+      const lamOf = (feat) => {
+        const kk = window.MARKET_SHRINK_K[feat];
+        const a = predictStat(dH, dA, feat, scope, kk), b = predictStat(dA, dH, feat, scope, kk);
+        if (a != null && b != null && isFinite(a) && isFinite(b) && a >= 0 && b >= 0) return a + b;
+        const mH = getF(dH,feat), mA = getF(dA,feat), gH = getF(dH,feat+'_ag'), gA = getF(dA,feat+'_ag');
+        return Math.sqrt(mH*gA) + Math.sqrt(mA*gH);
+      };
+      const cH = getF(dH,'cor'), cA = getF(dA,'cor'); const lCor = lamOf('cor');
+      const sH = getF(dH,'sot'), sA = getF(dA,'sot'); const lSot = lamOf('sot');
+      const yH = getF(dH,'yel'), yA = getF(dA,'yel'); const lYel = lamOf('yel');
+      const lFls = lamOf('fouls');
       const rH = getF(dH,'red_cards'), rA = getF(dA,'red_cards');
 
       const tot = (team, a, b) => getA(team,a).map((v,i) => ((v==null?null:v) == null || getA(team,b)[i] == null) ? null : v + getA(team,b)[i]);
       const kCor = negBinK(tot(dH,'cor','cor_ag').concat(tot(dA,'cor','cor_ag')));
       const kSot = negBinK(tot(dH,'sot','sot_ag').concat(tot(dA,'sot','sot_ag')));
       const kYel = negBinK(tot(dH,'yel','yel_ag').concat(tot(dA,'yel','yel_ag')));
-      const pOv9c = 1 - negBinCDF(9, lCor, kCor); const pOv8s = 1 - negBinCDF(8, lSot, kSot); const pOv3y = 1 - negBinCDF(3, lYel, kYel);
+      const over = (line, lam, k) => 1 - negBinCDF(Math.floor(line), lam, k);
+      const linesCor = MARKET_LINES.cor.map(l => ({ l, p: over(l, lCor, kCor) }));
+      const linesSot = MARKET_LINES.sot.map(l => ({ l, p: over(l, lSot, kSot) }));
+      const linesYel = MARKET_LINES.yel.map(l => ({ l, p: over(l, lYel, kYel) }));
+      const pOv9c = over(9.5, lCor, kCor); const pOv8s = over(8.5, lSot, kSot); const pOv3y = over(3.5, lYel, kYel);
       const pRed = 1 - poisson(0, rH + rA);
-      return { lCor, cH, cA, lSot, sH, sA, lYel, yH, yA, pOv9c, pOv8s, pOv3y, pRed, kCor, kSot, kYel };
+      return { lCor, cH, cA, lSot, sH, sA, lYel, yH, yA, lFls, scope,
+               linesCor, linesSot, linesYel, pOv9c, pOv8s, pOv3y, pRed, kCor, kSot, kYel };
     };
     const advRole = calcAdv(true); const advOver = calcAdv(false);
 
@@ -1874,9 +1911,6 @@ async function avviaScanner() {
       : { p1: probsRole.p1, pX: probsRole.pX, p2: probsRole.p2 };
     const mk_ov = markovFlow(lamH_over, lamA_over); const mk_ro = markovFlow(lamH_role, lamA_role);
 
-    const nEffMin = Math.min(knn_H.nEff, knn_A.nEff);
-    const knnRel = nEffMin > 0 ? nEffMin / (nEffMin + 3) : 0;
-    const wKnn = 0.45 * knnRel;
 
     const wOL = 0.30, wMk = 0.10; const wDc = 1 - wOL - wMk;
 
@@ -1897,14 +1931,7 @@ async function avviaScanner() {
 
     const nMinRole = Math.min(dH.role.n, dA.role.n);
 
-    const sampleFactor = Math.min(1, Math.sqrt(nMinRole / 15));
 
-    let tvDist;
-    if (wKnn < 0.05) {
-      tvDist = (Math.abs(probsRole.p1 - mk_ro.p1) + Math.abs(probsRole.pX - mk_ro.pX) + Math.abs(probsRole.p2 - mk_ro.p2)) / 2;
-    } else {
-      tvDist = (Math.abs(probsRole.p1 - probsKnn.p1) + Math.abs(probsRole.pX - probsKnn.pX) + Math.abs(probsRole.p2 - probsKnn.p2)) / 2;
-    }
 
     const _statKeys = ['gf','npxg','xg','xgot','sot','cor','yel','fouls','poss','tch_box','ppda','field_tilt',
 
@@ -1942,53 +1969,6 @@ async function avviaScanner() {
     const _pickProb = Math.max(m1, mX, m2);
     const confidence = Math.round(_calibConf1X2(_pickProb));
 
-    try {
-      const _dg = (t,f) => { const x=t&&t.role&&t.role.features&&t.role.features[f];
-                             return (x&&x.decay>0)?x.decay:null; };
-      const _db = (t,f) => { const b=t&&t.role&&t.role.features&&t.role.features._base;
-                             return (b&&b[f]!=null)?b[f]:null; };
-      const _fm = v => (v==null||isNaN(v)) ? '<span style="color:#ef4444">assente</span>' : (+v).toFixed(3);
-      let _h = '<table class="table-ui" style="font-size:12px"><thead><tr>'
-             + '<th style="text-align:left">metrica</th><th>k</th><th>prodotto</th><th>concesso avv.</th>'
-             + '<th>baseline casa</th><th>baseline trasf.</th><th>stima</th></tr></thead><tbody>';
-      for (const f of ['npxg','poss','sot','cor','gca','sca','carries_box','prog_passes']) {
-        const ag = STAT_PAIRS[f];
-        _h += '<tr><td style="text-align:left">'+f+'</td>'
-            + '<td style="color:var(--dim)">'+statShrinkFor(f).toFixed(2)+'</td>'
-            + '<td>'+_fm(_dg(dH,f))+'</td><td>'+_fm(ag?_dg(dA,ag):null)+'</td>'
-            + '<td>'+_fm(_db(dH,f))+'</td><td>'+_fm(_db(dA,f))+'</td>'
-            + '<td><b>'+_fm(predictStat(dH,dA,f,'role'))+'</b></td></tr>';
-      }
-      _h += '</tbody></table>';
-
-      const _rc = window.__RESID_DEBUG;
-      if (_rc && _rc.applied) {
-        const _d1 = ((m1 - _rc.before.p1) * 100), _d2 = ((m2 - _rc.before.p2) * 100);
-        _h += '<div style="font-size:11px;color:var(--dim);margin-top:6px">'
-            + 'Correzione residuale attiva su ' + _rc.available.length + ' metriche ('
-            + _rc.available.join(', ') + ') &middot; alpha ' + _rc.alpha.toFixed(2)
-            + ' &middot; segnale ' + _rc.sig.toFixed(3) + ' vs edge ' + _rc.edge.toFixed(3)
-            + ' &middot; spostamento 1 ' + (_d1 >= 0 ? '+' : '') + _d1.toFixed(1)
-            + ' pt, 2 ' + (_d2 >= 0 ? '+' : '') + _d2.toFixed(1) + ' pt</div>';
-      } else if (_rc && _rc.sig != null) {
-
-        _h += '<div style="font-size:11px;color:var(--dim);margin-top:6px">'
-            + 'Correzione residuale <b>spenta</b> (alpha 0, vedi commento nel codice: fuori '
-            + 'campione il segnale cambiava segno). Segnale comunque misurato su '
-            + _rc.available.length + ' metriche: sig ' + _rc.sig.toFixed(3)
-            + ' vs edge ' + _rc.edge.toFixed(3) + ', residuo ' + _rc.resid.toFixed(3)
-            + ' &middot; ad alpha 0.25 sposterebbe di '
-            + (0.25 * Math.tanh(_rc.resid) >= 0 ? '+' : '')
-            + (0.25 * Math.tanh(_rc.resid)).toFixed(3) + ' in log-odds.</div>';
-      } else {
-        _h += '<div style="font-size:11px;color:var(--dim);margin-top:6px">'
-            + 'Correzione residuale non calcolabile: metriche di creazione assenti in questa lega.</div>';
-      }
-      safeHtml('pred-debug-body', _h);
-    } catch (e) {
-      safeHtml('pred-debug-body', '<div style="color:#ef4444">errore nel predittore: '
-        + (e && e.message ? e.message : e) + '</div>');
-    }
 
     let hiddenValueMsg = ""; let hiddenValueMsgClean = "";
     if (chokeH > 1.2 && clumsyA > 15) {
@@ -2021,7 +2001,7 @@ async function avviaScanner() {
     safeTxt('mdl-mk-1', pct(mk_ro.p1)); safeTxt('mdl-mk-x', pct(mk_ro.pX)); safeTxt('mdl-mk-2', pct(mk_ro.p2));
     safeTxt('mdl-ens-1', pct(m1)); safeTxt('mdl-ens-x', pct(mX)); safeTxt('mdl-ens-2', pct(m2));
 
-    const _confMarket = (probs, sf, isBin) => {
+    const _confMarket = (probs, isBin) => {
       const valid = probs.filter(p => isFinite(p) && p >= 0);
       if (!valid.length) return null;
       const pMean = valid.reduce((s, x) => s + x, 0) / valid.length;
@@ -2034,9 +2014,9 @@ async function avviaScanner() {
       return '<span style="color:' + col + '">' + v + '</span>';
     };
 
-    safeHtml('conf-p1', _badgeConf(_confMarket([m1], sampleFactor)));
-    safeHtml('conf-px', _badgeConf(_confMarket([mX], sampleFactor)));
-    safeHtml('conf-p2', _badgeConf(_confMarket([m2], sampleFactor)));
+    safeHtml('conf-p1', _badgeConf(_confMarket([m1])));
+    safeHtml('conf-px', _badgeConf(_confMarket([mX])));
+    safeHtml('conf-p2', _badgeConf(_confMarket([m2])));
 
     const dcP1X = probsRole.p1 + probsRole.pX, dcPX2 = probsRole.pX + probsRole.p2, dcP12 = probsRole.p1 + probsRole.p2;
     const knnP1X = probsKnn.p1 + probsKnn.pX, knnPX2 = probsKnn.pX + probsKnn.p2, knnP12 = probsKnn.p1 + probsKnn.p2;
@@ -2050,21 +2030,21 @@ async function avviaScanner() {
     safeTxt('mdl-knn-gg', pct(knnGG)); safeTxt('mdl-knn-ng', pct(knnNG));
     safeTxt('mdl-knn-ov', pct(knnOv)); safeTxt('mdl-knn-un', pct(knnUn));
 
-    safeHtml('conf-1x', _badgeConf(_confMarket([dcP1X], sampleFactor, true)));
-    safeHtml('conf-x2', _badgeConf(_confMarket([dcPX2], sampleFactor, true)));
-    safeHtml('conf-12', _badgeConf(_confMarket([dcP12], sampleFactor, true)));
+    safeHtml('conf-1x', _badgeConf(_confMarket([dcP1X], true)));
+    safeHtml('conf-x2', _badgeConf(_confMarket([dcPX2], true)));
+    safeHtml('conf-12', _badgeConf(_confMarket([dcP12], true)));
 
-    safeHtml('conf-gg', _badgeConf(_confMarket([dcGG], sampleFactor, true)));
-    safeHtml('conf-ng', _badgeConf(_confMarket([dcNG], sampleFactor, true)));
-    safeHtml('conf-ov', _badgeConf(_confMarket([dcOv], sampleFactor, true)));
-    safeHtml('conf-un', _badgeConf(_confMarket([dcUn], sampleFactor, true)));
+    safeHtml('conf-gg', _badgeConf(_confMarket([dcGG], true)));
+    safeHtml('conf-ng', _badgeConf(_confMarket([dcNG], true)));
+    safeHtml('conf-ov', _badgeConf(_confMarket([dcOv], true)));
+    safeHtml('conf-un', _badgeConf(_confMarket([dcUn], true)));
 
     renderVerdetti({ p1:m1, pX:mX, p2:m2, p1X:m1+mX, pX2:mX+m2, p12:m1+m2,
                      pOv:dcOv, pUn:dcUn, pGG:dcGG, pNG:dcNG });
     const odd1 = probsRole.p1 > 0 ? (1/probsRole.p1).toFixed(2) : "N/A"; const oddX = probsRole.pX > 0 ? (1/probsRole.pX).toFixed(2) : "N/A"; const odd2 = probsRole.p2 > 0 ? (1/probsRole.p2).toFixed(2) : "N/A";
     const oddM1 = m1 > 0 ? (1/m1).toFixed(2) : "N/A"; const oddMX = mX > 0 ? (1/mX).toFixed(2) : "N/A"; const oddM2 = m2 > 0 ? (1/m2).toFixed(2) : "N/A";
     safeTxt('m-odd-1', oddM1); safeTxt('m-odd-x', oddMX); safeTxt('m-odd-2', oddM2);
-    window.__MASTER = { p1: m1, pX: mX, p2: m2 }; calcValue();
+    window.__MASTER = { p1: m1, pX: mX, p2: m2 };
     safeTxt('master-conf', confidence + "/100");
     document.getElementById('conf-bar').style.width = confidence + "%";
 
@@ -2080,22 +2060,66 @@ async function avviaScanner() {
     safeTxt('l-set-h', setPctH != null ? f1(setPctH) + "%" : 'N/D'); safeTxt('l-set-a', setPctA != null ? f1(setPctA) + "%" : 'N/D');
     safeTxt('l-bc-h', nd(dH,'bc', f1(bcH) + " / " + f1(bcmH))); safeTxt('l-bc-a', nd(dA,'bc', f1(bcA) + " / " + f1(bcmA)));
 
+    const _spConcH = _mean(dH.overall.vals.xg_sp_ag), _spConcA = _mean(dA.overall.vals.xg_sp_ag);
     let lethNarrative = "";
-    if(xgotH > npxgH_ro + 0.3) lethNarrative += `🔪 <strong>Cecchini:</strong> ${Cap(artIl(hName))} aggiunge valore ai tiri (xGOT > NPxG). Calciano angolato e sprecano poco.<br>`;
-    else if(npxgH_ro > xgotH + 0.3 && xgotH > 0) lethNarrative += `🧱 <strong>Tiri Sporchi:</strong> ${Cap(artIl(hName))} depotenzia i propri xG calciando male o centralmente (xGOT < NPxG).<br>`;
-    if(bcmH > 1.8) lethNarrative += `🗑️ <strong>Spreco Seriale:</strong> ${Cap(artIl(hName))} butta via letteralmente ${f1(bcmH)} gol fatti a partita (Big Chances sprecate).<br>`;
-    if(setPctH > 35) lethNarrative += `🚩 <strong>Palla Inattiva Dipendenti:</strong> ${Cap(artIl(hName))} produce il ${f1(setPctH)}% dei propri pericoli da calci piazzati.<br>`;
-    if(lethNarrative === "") lethNarrative = "Nessun picco estremo di letalità rilevato. Tiri e conversioni in media con i campionati top.";
+    {
+      const snipH = (xgotH > 0) ? xgotH - npxgH_ro : null;
+      const snipA = (xgotA > 0) ? xgotA - npxgA_ro : null;
+      if (snipH != null && snipA != null && Math.abs(snipH - snipA) > 0.15) {
+        const megH = snipH > snipA;
+        lethNarrative += `🔪 <strong>Cecchini:</strong> ${Cap(artIl(megH ? hName : aName))} tira meglio di quanto crei `
+          + `(xGOT − NPxG ${(megH?snipH:snipA)>=0?'+':''}${f2(megH?snipH:snipA)}), `
+          + `${artIl(megH ? aName : hName)} sta a ${(megH?snipA:snipH)>=0?'+':''}${f2(megH?snipA:snipH)}: `
+          + `a parità di occasioni segna di più ${artIl(megH ? hName : aName)}.<br>`;
+      }
+      if (bcmH > 1.2 || bcmA > 1.2) {
+        const pegg = bcmH >= bcmA;
+        lethNarrative += `🗑️ <strong>Spreco:</strong> ${Cap(artIl(pegg?hName:aName))} butta ${f1(pegg?bcmH:bcmA)} `
+          + `Big Chances a partita contro le ${f1(pegg?bcmA:bcmH)} ${artDel(pegg?aName:hName)}: `
+          + `${f1(Math.abs(bcmH-bcmA))} occasioni di scarto.<br>`;
+      }
+      if (setPctH != null && setPctA != null) {
+        const dip = setPctH >= setPctA;
+        const conc = dip ? _spConcA : _spConcH;
+        lethNarrative += `🚩 <strong>Palle inattive:</strong> ${Cap(artIl(dip?hName:aName))} ci ricava il `
+          + `${f1(dip?setPctH:setPctA)}% dei propri pericoli, ${artIl(dip?aName:hName)} il ${f1(dip?setPctA:setPctH)}%. `
+          + (conc > 0
+             ? `E ${artIl(dip?aName:hName)} ne concede ${f2(conc)} xG a partita: `
+               + (conc > 0.35 ? `accoppiamento favorevole.` : `difende bene sui piazzati.`)
+             : `Dato sul concesso non disponibile.`)
+          + `<br>`;
+      }
+      if(lethNarrative === "") lethNarrative = `Le due squadre si equivalgono su qualità del tiro, spreco di Big Chances e peso delle palle inattive: nessuno scarto sopra la soglia.`;
+    }
     safeHtml('lethality-dialogue', lethNarrative);
 
     safeTxt('np-defx-h', nd(dH,'avg_def_x', f1(defX_H) + "m")); safeTxt('np-len-h', lenH > 0 ? f1(lenH) + "m" : "N/D"); safeTxt('np-cp-h', nd(dH,'cp_regains', f1(cp_H))); safeTxt('np-choke-h', chokeH > 0 ? f2(chokeH) : "N/D");
     safeTxt('np-defx-a', nd(dA,'avg_def_x', f1(defX_A) + "m")); safeTxt('np-len-a', lenA > 0 ? f1(lenA) + "m" : "N/D"); safeTxt('np-cp-a', nd(dA,'cp_regains', f1(cp_A))); safeTxt('np-choke-a', chokeA > 0 ? f2(chokeA) : "N/D");
 
     let defNarrative = "";
-    if (lenH > 0 && lenH < 20) defNarrative += `🧱 <strong>Blocco Cortissimo:</strong> ${Cap(artIl(hName))} difende in un fazzoletto di ${f1(lenH)} metri. Estremamente compatto.<br>`;
-    else if (lenH > 32) defNarrative += `⚠️ <strong>Squadra Sfilacciata:</strong> ${Cap(artIl(hName))} si allunga troppo (${f1(lenH)} metri). Lascia molto spazio tra le linee.<br>`;
-    if (chokeH > 1.5 && recA > 20) defNarrative += `🌪️ <strong>Soffocamento:</strong> Il Gegenpressing ${artDel(hName)} (Choke Index ${f2(chokeH)}) distruggerà il giro palla lento dell'${aName}.<br>`;
-    if (defNarrative === "") defNarrative = "Squadre con metriche di compattezza standard e Gegenpressing nella norma.";
+    {
+      if (lenH > 0 && lenA > 0) {
+        const d = lenH - lenA;
+        const corta = d < 0 ? hName : aName, lunga = d < 0 ? aName : hName;
+        defNarrative += `📏 <strong>Compattezza:</strong> ${f1(lenH)}m ${hName} contro ${f1(lenA)}m ${aName}. `
+          + (Math.abs(d) < 4
+             ? `Distanze fra i reparti simili: nessuno dei due concede più spazio fra le linee.<br>`
+             : `${Cap(artIl(corta))} tiene ${f1(Math.abs(d))}m in meno ${artDel(lunga)}, quindi `
+               + `${artIl(lunga)} lascia più spazio fra le linee da attaccare.<br>`);
+      }
+      if (chokeH > 0 && chokeA > 0) {
+        const d = chokeH - chokeA;
+        const forte = d > 0 ? hName : aName, debole = d > 0 ? aName : hName;
+        const clumsyDeb = d > 0 ? clumsyA : clumsyH;
+        defNarrative += `🌪️ <strong>Riaggressione:</strong> Choke Index ${f2(chokeH)} contro ${f2(chokeA)}. `
+          + (Math.abs(d) < 0.3
+             ? `Si riaggrediscono a intensità simile.<br>`
+             : `${Cap(artIl(forte))} recupera più in fretta, e ${artIl(debole)} perde ${f1(clumsyDeb)} palloni a partita `
+               + `fra controlli sbagliati e dribbling subiti: `
+               + (clumsyDeb > 15 ? `è l'accoppiamento che può rompere la partita.<br>` : `ma li gestisce con pulizia.<br>`));
+      }
+      if (defNarrative === "") defNarrative = `Tracking non disponibile per almeno una delle due squadre: compattezza e riaggressione non confrontabili.`;
+    }
     safeHtml('defensive-dialogue', defNarrative);
 
     safeTxt('tr-x-h', nd(dH,'avg_x', f1(avgX_H) + "m")); safeTxt('tr-x-a', nd(dA,'avg_x', f1(avgX_A) + "m"));
@@ -2128,11 +2152,29 @@ async function avviaScanner() {
     const renderMg = (obj) => Object.keys(obj).map(k => `<div style="background:rgba(79,140,255,.10); border:1px solid rgba(79,140,255,.30); border-radius:6px; padding:6px 8px; display:flex; justify-content:space-between; align-items:center;"><span style="font-weight:bold; font-size:11px">${k} Gol</span><span style="font-weight:900; color:var(--blue); font-size:13px">${pct(obj[k])}</span></div>`).join('');
     safeHtml('mg-tot', renderMg(mgTot)); safeHtml('mg-h', renderMg(mgH)); safeHtml('mg-a', renderMg(mgA));
 
-    safeTxt('cor-tot-over', f1(advOver.lCor)); safeTxt('cor-tot-role', f1(advRole.lCor)); safeTxt('pov9-cor-over', pct(advOver.pOv9c)); safeTxt('pov9-cor-role', pct(advRole.pOv9c));
-    safeTxt('sot-tot-over', f1(advOver.lSot)); safeTxt('sot-tot-role', f1(advRole.lSot)); safeTxt('pov8-sot-over', pct(advOver.pOv8s)); safeTxt('pov8-sot-role', pct(advRole.pOv8s));
-    safeTxt('fls-tot-over', f1((dH.overall.features.fouls?.avg_tot||0) + (dA.overall.features.fouls?.avg_tot||0))); safeTxt('fls-tot-role', f1((dH.role.features.fouls?.avg_tot||0) + (dA.role.features.fouls?.avg_tot||0)));
-    safeTxt('yel-tot-over', f1(advOver.lYel)); safeTxt('yel-tot-role', f1(advRole.lYel)); safeTxt('pov3-yel-over', pct(advOver.pOv3y)); safeTxt('pov3-yel-role', pct(advRole.pOv3y));
+    safeTxt('cor-tot-over', f1(advOver.lCor)); safeTxt('cor-tot-role', f1(advRole.lCor));
+    safeTxt('sot-tot-over', f1(advOver.lSot)); safeTxt('sot-tot-role', f1(advRole.lSot));
+    safeTxt('fls-tot-over', f1(advOver.lFls)); safeTxt('fls-tot-role', f1(advRole.lFls));
+    safeTxt('yel-tot-over', f1(advOver.lYel)); safeTxt('yel-tot-role', f1(advRole.lYel));
     safeTxt('red-tot-over', pct(advOver.pRed)); safeTxt('red-tot-role', pct(advRole.pRed));
+
+    const _mktRows = [['Corner', advRole.linesCor, advRole.lCor, advRole.kCor, 'var(--blue)'],
+                      ['Tiri in porta', advRole.linesSot, advRole.lSot, advRole.kSot, 'var(--purple)'],
+                      ['Gialli', advRole.linesYel, advRole.lYel, advRole.kYel, 'var(--orange)']];
+    let _mktHtml = `<tr><th>Mercato</th><th>atteso</th><th>linea</th><th>Over</th><th>Under</th></tr>`;
+    _mktRows.forEach(([nome, linee, lam, kk, col]) => {
+      (linee || []).forEach((x, i) => {
+        _mktHtml += `<tr${i % 2 ? ' style="background:rgba(255,255,255,.03)"' : ''}>` +
+          (i === 0 ? `<td rowspan="${linee.length}" style="font-weight:bold; color:${col}">${nome}</td>` +
+                     `<td rowspan="${linee.length}" style="font-weight:bold">${f1(lam)}</td>` : '') +
+          `<td>${x.l}</td><td style="font-weight:bold; color:${col}">${pct(x.p)}</td><td>${pct(1 - x.p)}</td></tr>`;
+      });
+    });
+    safeHtml('mkt-lines', _mktHtml);
+    const _disp = (k) => (!isFinite(k)) ? 'Poisson' : ('k ' + Math.round(k));
+    safeTxt('mkt-legend', `Conteggi con binomiale negativa: corner ${_disp(advRole.kCor)}, tiri in porta ${_disp(advRole.kSot)}, gialli ${_disp(advRole.kYel)}. ` +
+      `«Poisson» vuol dire che le partite viste non sono piu' disperse del caso puro. ` +
+      `Ambito ${advRole.scope === 'role' ? 'casa/trasferta' : 'generale (poche partite nel ruolo)'}.`);
 
     const badgeZ = (z) => { const az = Math.abs(z); if (az < 0.5) return '→ Eq.'; return z > 0 ? `Dom. Att` : `Dom. Dif`; };
     safeTxt('z-xg-h-ov', f2(zXgH_over)); safeTxt('z-xg-h-ro', f2(zXgH_role)); safeTxt('z-xg-a-ov', f2(zXgA_over)); safeTxt('z-xg-a-ro', f2(zXgA_role));
@@ -2149,14 +2191,18 @@ async function avviaScanner() {
 
     const renderProgRow = (label, feat) => `<tr><td style="font-weight:bold; color:var(--dim)">${label}</td><td>${f2(feat?.avg_3)}</td><td>${f2(feat?.avg_5)}</td><td>${f2(feat?.avg_10)}</td><td>${f2(feat?.avg_15)}</td><td class="td-highlight">${f2(feat?.avg_tot)}</td></tr>`;
     const tHead = `<tr><th>Metrica</th><th>Ult 3</th><th>Ult 5</th><th>Ult 10</th><th>Ult 15</th><th style="color:var(--blue)">Generale</th></tr>`;
-    safeHtml('table-prog-h', tHead + renderProgRow('NPxG Fatti', dH.overall.features.npxg) + renderProgRow('NPxG Subiti', dH.overall.features.npxga) + renderProgRow('Field Tilt %', dH.overall.features.field_tilt) + renderProgRow('PPDA', dH.overall.features.ppda));
-    safeHtml('table-prog-a', tHead + renderProgRow('NPxG Fatti', dA.overall.features.npxg) + renderProgRow('NPxG Subiti', dA.overall.features.npxga) + renderProgRow('Field Tilt %', dA.overall.features.field_tilt) + renderProgRow('PPDA', dA.overall.features.ppda));
+    const PROG_ROWS = [['Conduzioni prog.', 'prog_carries'], ['Cambi di gioco', 'switches'],
+                       ['Contrasti', 'tackles'], ['Conduzioni in area', 'carries_box'],
+                       ['Ingressi ultimo terzo', 'f3_entries'], ['Duelli aerei', 'aerials']];
+    const progTable = (d) => tHead + PROG_ROWS.map(([lab, k]) => renderProgRow(lab, d.overall.features[k])).join('');
+    safeHtml('table-prog-h', progTable(dH));
+    safeHtml('table-prog-a', progTable(dA));
     safeTxt('prog-h-name', hName + ' (generale)'); safeTxt('prog-a-name', aName + ' (generale)');
 
     let timingHtml = ''; const maxT = Math.max(...Object.values(bHs), ...Object.values(bHc), ...Object.values(bAs), ...Object.values(bAc), 1);
     Object.keys(bHs).forEach(k => {
       let wHs = Math.max((bHs[k]/maxT)*100, 3); let wHc = Math.max((bHc[k]/maxT)*100, 3); let wAs = Math.max((bAs[k]/maxT)*100, 3); let wAc = Math.max((bAc[k]/maxT)*100, 3);
-      timingHtml += `<tr><td style="font-weight:bold;color:var(--dim)">${k}</td><td style="border-left:1px solid #eee"><div class="bucket-bar bg-hf" style="width:${wHs}%">${bHs[k]}</div></td><td><div class="bucket-bar bg-hc" style="width:${wHc}%">${bHc[k]}</div></td><td style="border-left:1px solid #eee"><div class="bucket-bar bg-af" style="width:${wAs}%">${bAs[k]}</div></td><td><div class="bucket-bar bg-ac" style="width:${wAc}%">${bAc[k]}</div></td></tr>`;
+      timingHtml += `<tr><td style="font-weight:bold;color:var(--dim)">${k}</td><td style="border-left:1px solid var(--line)"><div class="bucket-bar bg-hf" style="width:${wHs}%">${bHs[k]}</div></td><td><div class="bucket-bar bg-hc" style="width:${wHc}%">${bHc[k]}</div></td><td style="border-left:1px solid var(--line)"><div class="bucket-bar bg-af" style="width:${wAs}%">${bAs[k]}</div></td><td><div class="bucket-bar bg-ac" style="width:${wAc}%">${bAc[k]}</div></td></tr>`;
     });
     safeHtml('timing-body', timingHtml); safeTxt('surv-30', pct(probGoal30)); safeTxt('surv-45', pct(probGoalHT));
 
@@ -2166,19 +2212,36 @@ async function avviaScanner() {
     safeHtml('row-form-ar', `<td>${aName} (Trasf)</td><td>${formA_disp}</td><td>${formH_disp.split(' ')[0]}</td><td style="color:var(--red)">Solo Trasf</td><td>${statsVsFormA_role ? statsVsFormA_role.count : 0}</td><td style="font-weight:bold;color:var(--red)">${statsVsFormA_role ? f2(statsVsFormA_role.pts) : 'N/D'}</td>`);
 
     safeTxt('knn-title-h', `🏠 ${hName} in casa vs simili a ${aName}`); safeHtml('knn-res-h', `Rendimento Storico: <strong>${f2(knn_H.pts_per_game)} Pts/Match</strong>`);
-    let klistH = '';
-    knn_H.topMatches.forEach(m => {
-      let esito = m.info.gf > m.info.ga ? 'V' : (m.info.gf < m.info.ga ? 'S' : 'P'); let col = esito === 'V' ? 'var(--green)' : (esito === 'S' ? 'var(--red)' : '#f57c00');
-      klistH += `<div style="border-bottom:1px solid #eee;padding:6px 0;font-size:11px;"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>${m.info.date} vs <strong>${m.info.oppName}</strong></span><span style="color:${col};font-weight:bold">${m.info.gf}-${m.info.ga}</span></div><div style="font-size:9.5px;color:var(--dim);line-height:1.4">Poss: <b>${m.oppPoss.toFixed(0)}%</b> | NPxG: <b>${f2(m.oppXG)}</b> | Alt.Dif.: <b>${f1(m.oppDefX)}m</b><br>PPDA: <b>${f1(m.oppPPDA)}</b> | Tilt: <b>${f1(m.oppTilt)}%</b></div></div>`;
-    });
+    const _knnRow = (m, i, tgt) => {
+      const esito = m.info.gf > m.info.ga ? 'V' : (m.info.gf < m.info.ga ? 'S' : 'P');
+      const col = esito === 'V' ? 'var(--green)' : (esito === 'S' ? 'var(--red)' : 'var(--orange)');
+      const sim = Math.round(100 * Math.exp(-(m.dist * m.dist) / 2));
+      const cmp = (val, ref, unit, dec) => {
+        if (ref == null || !isFinite(ref) || ref === 0) return `<b>${dec ? f1(val) : val.toFixed(0)}${unit}</b>`;
+        const d = val - ref;
+        const c = Math.abs(d) < Math.abs(ref) * 0.08 ? 'var(--ok)' : 'var(--dim)';
+        return `<b>${dec ? f1(val) : val.toFixed(0)}${unit}</b><span style="color:${c};font-size:9px"> (${d>=0?'+':''}${dec?f1(d):d.toFixed(0)})</span>`;
+      };
+      return `<div style="border-bottom:1px solid var(--line);padding:7px 0;font-size:11px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+          <span><span style="color:var(--dim);font-family:monospace">${i+1}.</span> ${m.info.date} vs <strong>${m.info.oppName}</strong></span>
+          <span><span style="font-size:9.5px;color:var(--accent)">somiglianza ${sim}%</span>
+                <span style="color:${col};font-weight:bold;margin-left:8px">${m.info.gf}-${m.info.ga}</span></span>
+        </div>
+        <div style="font-size:9.5px;color:var(--dim);line-height:1.5">
+          Poss ${cmp(m.oppPoss, tgt.poss, '%', false)} &middot; NPxG ${cmp(m.oppXG, tgt.npxg, '', true)} &middot; Alt.Dif. ${cmp(m.oppDefX, tgt.avg_def_x, 'm', true)}<br>
+          PPDA ${cmp(m.oppPPDA, tgt.ppda, '', true)} &middot; Tilt ${cmp(m.oppTilt, tgt.field_tilt, '%', true)}
+        </div></div>`;
+    };
+
+    let klistH = knn_H.topMatches.map((m, i) => _knnRow(m, i, knn_H.targetInfo || {})).join('');
     safeHtml('knn-list-h', klistH);
+    safeHtml('knn-legend', `Ordinate dalla più simile alla meno simile. La somiglianza è il peso del kernel sulle `
+      + `5 dimensioni mostrate; fra parentesi lo scarto rispetto a chi si affronta oggi, `
+      + `<span style="color:var(--ok)">in verde</span> quando è sotto l'8%.`);
 
     safeTxt('knn-title-a', `✈️ ${aName} in trasferta vs simili a ${hName}`); safeHtml('knn-res-a', `Rendimento Storico: <strong>${f2(knn_A.pts_per_game)} Pts/Match</strong>`);
-    let klistA = '';
-    knn_A.topMatches.forEach(m => {
-      let esito = m.info.gf > m.info.ga ? 'V' : (m.info.gf < m.info.ga ? 'S' : 'P'); let col = esito === 'V' ? 'var(--green)' : (esito === 'S' ? 'var(--red)' : '#f57c00');
-      klistA += `<div style="border-bottom:1px solid #eee;padding:6px 0;font-size:11px;"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>${m.info.date} vs <strong>${m.info.oppName}</strong></span><span style="color:${col};font-weight:bold">${m.info.gf}-${m.info.ga}</span></div><div style="font-size:9.5px;color:var(--dim);line-height:1.4">Poss: <b>${m.oppPoss.toFixed(0)}%</b> | NPxG: <b>${f2(m.oppXG)}</b> | Alt.Dif.: <b>${f1(m.oppDefX)}m</b><br>PPDA: <b>${f1(m.oppPPDA)}</b> | Tilt: <b>${f1(m.oppTilt)}%</b></div></div>`;
-    });
+    let klistA = knn_A.topMatches.map((m, i) => _knnRow(m, i, knn_A.targetInfo || {})).join('');
     safeHtml('knn-list-a', klistA);
 
     safeTxt('mk-h2-ov', pct(mk_ov.dist[7]+mk_ov.dist[8]+mk_ov.dist[9]+mk_ov.dist[10])); safeTxt('mk-h2-ro', pct(mk_ro.dist[7]+mk_ro.dist[8]+mk_ro.dist[9]+mk_ro.dist[10]));
@@ -2282,29 +2345,6 @@ Gol/Over-Under:
   }
 }
 
-function calcValue() {
-  const out = document.getElementById('value-out'); if(!out) return;
-  if(!window.__MASTER) { return; }
-  const P = window.__MASTER;
-  const gv = id => parseFloat((document.getElementById(id)||{}).value);
-  const bank = gv('bk-bank') || 100;
-  const legs = [ {k:'1', p:P.p1, o:gv('bk-1')}, {k:'X', p:P.pX, o:gv('bk-x')}, {k:'2', p:P.p2, o:gv('bk-2')} ];
-  const valid = legs.filter(l => l.o > 1 && isFinite(l.o));
-  if(!valid.length) { out.innerHTML = "<span style='color:var(--dim)'>Inserisci le quote del bookmaker: senza confronto col mercato una probabilita' non e' una scommessa.</span>"; return; }
-  const over = (valid.length === 3) ? valid.reduce((s,l) => s + 1/l.o, 0) : 0;
-  let html = `<table class="table-ui" style="margin-bottom:6px"><tr><th>Esito</th><th>P modello</th><th>P book netta</th><th>Quota</th><th>Valore Atteso</th><th>Stake (Kelly 1/4)</th></tr>`;
-  valid.forEach(l => {
-    const pb = over > 0 ? (1/l.o)/over : (1/l.o);
-    const ev = l.p * l.o - 1;
-    const b = l.o - 1; const kf = Math.max(0, (b*l.p - (1-l.p))/b) * 0.25;
-    const col = ev > 0.03 ? 'var(--green)' : (ev < 0 ? 'var(--red)' : '#555');
-    html += `<tr><td style="font-weight:bold">${l.k}</td><td>${pct(l.p)}</td><td>${pct(pb)}</td><td>${l.o.toFixed(2)}</td><td style="color:${col};font-weight:bold">${(ev*100).toFixed(1)}%</td><td>${kf > 0 ? (kf*100).toFixed(1)+'% ('+(kf*bank).toFixed(2)+')' : '-'}</td></tr>`;
-  });
-  html += `</table>`;
-  if(over > 0) html += `<div style="font-size:10px;color:var(--dim)">Margine del book: ${((over-1)*100).toFixed(1)}%. La colonna "P book netta" e' la probabilita' implicita depurata dal margine: se e' vicina alla tua, il valore apparente e' solo rumore.</div>`;
-  html += `<div style="font-size:10px;color:var(--dim);margin-top:4px">Kelly frazionato a 1/4: riduce lo stake rispetto al Kelly pieno. La confidence e' calibrata sui backtest, ma la calibrazione non sostituisce la gestione del bankroll.</div>`;
-  out.innerHTML = html;
-}
 
 async function copiaPrompt() {
   const el = document.getElementById('ai-prompt'); if(!el) return;
