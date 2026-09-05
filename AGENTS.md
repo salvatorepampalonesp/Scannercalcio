@@ -103,9 +103,12 @@ se un giro non mostra differenze sull'Elo, è il comportamento atteso.
    Costa una chiamata in più per partita.
 5. **Un ancoraggio di lega per i falli**, che oggi non ce l'hanno (il rapporto coi
    gol varia del 28% fra leghe, quindi `MARKET_PER_GOAL.fouls = null`).
-6. **Ricontrollare `avg_def_x`**: pendenza 0.06, la previsione è quasi scorrelata
+6. **La tab «racconto»**: mostrare uno scenario invece di una distribuzione. Idea
+   arrivata da fuori, già misurata e in parte bocciata — vedi *Lo scenario
+   singolo*. La parte che sopravvive è la card dei risultati esatti.
+7. **Ricontrollare `avg_def_x`**: pendenza 0.06, la previsione è quasi scorrelata
    dal reale. O è un problema di forma del modello, o la metrica va tolta.
-7. **Togliere `vaep_def`, `pv_def`, `sca_def`** dalle feature: correlazione
+8. **Togliere `vaep_def`, `pv_def`, `sca_def`** dalle feature: correlazione
    previsto/reale a zero su 1133 partite. Il fix additivo che le ha rese
    calcolabili era giusto, ma quello che si vede è rumore.
 
@@ -484,6 +487,7 @@ riga qui sotto costa già un backtest.
 | Ritoccare i pesi dell'ensemble (DC/OL/Markov) | **non serve** | la griglia in-sample preferisce Markov, ma fuori campione è pari e patta: una lega meglio, una peggio, differenze da 0.0007 di Brier |
 | Ricalibrare le rette della confidence | **non serve** | rifittate su 756 partite danno 16.88 + 0.686·p contro 6.26 + 0.880·p: ai punti che contano (50–60%) coincidono entro un punto |
 | Affilare le probabilità (temperatura) | **non serve** | il Brier peggiora oltre T≈1.1 su 716 partite |
+| Individuare le partite che finiranno pari | **non regge** | `pX` ha AUC **0.487** (SE ±0.020) su 1133 partite: nessuna capacità di distinguere. Anche `-\|p1−p2\|` e `-max(p1,p2)` stanno a 0.495–0.498. La calibrazione è giusta in media (27.6% detto contro 25.9% reale) ma piatta a fasce. Vedi *Lo scenario singolo* |
 
 **L'unica cosa che ha superato la verifica incrociata su tre leghe:**
 
@@ -865,6 +869,81 @@ lega: è della coppia, correla con tutto il resto della previsione, e porta un
 errore di campionamento che va restretto. Le uniche quantità davvero di lega che
 il motore ha sono quelle costruite su `globalLeagueMatchesCache`, cioè `LG` e
 l'Elo — tutto il resto passa dai dettagli scaricati per le due squadre.
+
+## Lo scenario singolo: cosa si può prendere e cosa no
+
+Idea vista su un post che pubblica una classifica di Champions «giocando ogni
+partita una volta sola» invece di simulare: vince il favorito col suo risultato
+più probabile, **X quando nessuna delle due supera il 43% di vincere**. Poi una
+colonna ▲▼ dice di quanti posti il club finisce sopra o sotto il suo rango per
+punti attesi.
+
+**Attenzione a non leggerlo male:** il 43% non è una probabilità di pareggio
+corretta al rialzo, è una **soglia sulla probabilità di vittoria**. La probabilità
+di pareggio resta quella del modello, ~26%.
+
+### Il problema che risolve è nostro
+
+Sui 1133 match: **il pareggio è l'esito più probabile in 0 partite su 1133**. Una
+regola «prendi il più probabile» produce una classifica con **zero** pareggi
+quando in realtà sono il 25.9%. È la stessa cosa del «dà sempre 1-1»: la moda di
+una distribuzione è un pessimo riassunto della distribuzione.
+
+La cura è legittima e ha un nome: si sceglie la soglia perché il **conteggio**
+degli esiti previsti corrisponda a quello atteso, invece di prendere l'argmax che
+distrugge la distribuzione marginale. Sui nostri campionati la soglia equivalente
+è **0.396**, vicina al loro 0.43 — la differenza torna, la fase campionato di
+Champions ha più partite squilibrate.
+
+### Ma quali partite finiscono pari è una monetina
+
+| regola | precisione |
+|---|---|
+| `max(p1,p2) < soglia` (la loro) | 22.8% |
+| `pX > soglia` | 23.3% |
+| `\|p1−p2\| < soglia` | 22.9% |
+| **294 prese a caso** | **25.9%** |
+
+`pX` ha **AUC 0.487** nel prevedere i pareggi (SE ±0.020): zero capacità di
+distinguere. E la calibrazione è piatta — fasce da 23.6% a 30.4% di pareggio
+previsto danno 22.6 / 32.3 / 24.8 / 27.9 / **22.3**% di pareggi reali, senza
+andamento. «Metterli sulle partite più equilibrate» assume che l'equilibrio
+predica il pareggio, e non lo fa.
+
+**Non riaprire questa parte** senza una feature nuova: il pareggio è il buco nero
+del modello e non è colpa della soglia.
+
+### La colonna ▲▼ è un artefatto
+
+La regola dà 3 punti a **ogni** favorito marginale. Il 46% delle partite ha il
+favorito fra il 39.6% e il 50%: lì assegna 3 punti dove il valore atteso è
+**1.62**, cioè gonfia di 1.38 punti a partita. Su una stagione la correlazione fra
+forza della squadra e scarto regola-vs-attesi è **+0.955** (Arsenal +36.8, Real
+Oviedo −27.3).
+
+Il gonfiaggio è quasi monotono nella forza, quindi la **classifica** si conserva
+molto più dei punti: spostamento medio 0.7–1.7 posti. Il ▲▼ resta piccolo, ma
+quel poco nasce da come il calendario di una squadra si posiziona rispetto alla
+soglia — chi ha molte partite appena sopra prende tutto, chi le ha appena sotto
+pareggia tutto. È una proprietà del **sorteggio**, non del club. Se ne facciamo
+una versione nostra, quella colonna non ci va.
+
+### Cosa vale la pena provare
+
+**La versione classifica costa un batch intero.** Servono le probabilità di ogni
+partita rimanente, cioè far girare il motore su tutto il calendario: è il
+Comparatore, non lo Scanner. Ha senso solo come funzione del Comparatore, e solo
+se qualcuno la vuole.
+
+**La versione per partita è gratis ed è dove sta l'idea buona.** La card dei
+risultati esatti mostra già la distribuzione (sei punteggi con la loro
+probabilità), quindi tecnicamente fa la cosa giusta: il fastidio è che 1-1 è
+sempre in cima, ed è **corretto** che lo sia. Il modo di renderla informativa non
+è cambiare il criterio, è mostrare lo **scarto dal riferimento** invece del
+livello: quali punteggi sono più probabili *in questa partita che in una partita
+tipo di questa lega*. Un 3-1 all'1.8× della sua frequenza abituale dice qualcosa;
+un 1-1 al 12% no, perché lo dice sempre. Stessa logica che ha risolto i mercati
+sui numeri: il livello è ovvio, l'informazione sta nello scarto.
 
 ## Le costanti messe a mano: quali sono legittime e quali rompono i conti
 
