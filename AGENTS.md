@@ -24,7 +24,7 @@ tutti attraverso `fetchMatchRaw` (che li mette in `RAW_CACHE`).
 Sezione di consegna: dice a che punto siamo, così una sessione nuova non
 ricomincia da capo. Aggiornala quando cambia qualcosa di sostanziale.
 
-**Build corrente: `0905-b14`.** Scanner e Comparatore devono coincidere, e sul
+**Build corrente: `0905-b15`.** Scanner e Comparatore devono coincidere, e sul
 Comparatore il badge sotto la dropzone deve uscire **verde** dopo aver trascinato
 lo Scanner. Il branch di lavoro è `claude/scanner-stat-optimization-sgs62u`;
 `main` è indietro (fermo al merge della PR #1, cioè al `0905-b2`), quindi
@@ -66,6 +66,7 @@ stessa informazione meglio.
 | `b12` | tre leghe: i gol confermati; la sovradispersione dei mercati veniva dalla **baseline**, non da `k` |
 | `b13` | l'Elo entra nell'1X2 inclinando i lambda: batteva il modello e non era usato |
 | `b14` | **cinque leghe**: Bundesliga e Ligue 1 confermano l'Elo fuori campione, il peso sale a 0.75 |
+| `b15` | le differenze fra leghe erano rumore; la pendenza dei mercati va misurata **dentro** la lega |
 
 Le tre build finali hanno una storia sola e va letta in *La baseline di coppia*:
 tre tentativi svuotati dallo stesso malinteso.
@@ -97,10 +98,11 @@ se un giro non mostra differenze sull'Elo, è il comportamento atteso.
    PitchAPI potrebbe dare e che il modello oggi ignora.
 2. **Capire la Premier sui tiri in porta**: pendenza 0.10–0.20 contro 0.77 in
    LaLiga e 0.35 in Serie A. O ha qualcosa di diverso, o è rumore.
-3. **Capire perché il Dixon-Coles è cieco sull'Over in Premier e Serie A** (AUC
-   0.495 e 0.500) mentre in Bundesliga, Ligue 1 e LaLiga fa 0.53–0.55. È la stessa
-   domanda della Premier sui tiri in porta, e ora ha due leghe di controllo in cui
-   il modello funziona: c'è di che confrontare invece di tirare a indovinare.
+3. ~~Capire perché il Dixon-Coles è cieco sull'Over in Premier e Serie A~~ —
+   **domanda mal posta**, le cinque leghe sono indistinguibili (p = 0.19). Vedi
+   *Il modello non fallisce in una lega più che in un'altra*. La domanda giusta
+   resta quella di sempre: il lambda correla **+0.087** col totale dei gol, e
+   nessuna feature provata lo alza. È il muro dell'Over/Under, punto.
 4. **Verificare la pendenza dell'Elo** (`penH`/`penA`, ±8% sui lambda): non è mai
    stata misurata, e ora che il livello entra dall'inclinazione potrebbe essere
    ridondante. Serve esportarla nel CSV.
@@ -482,6 +484,12 @@ a `scanner.html` al commit `cd51a69`, prima della ripulitura.
   mercati statistici la dispersione di troppo veniva dalla baseline (sd 0.81) e
   non dal termine attacco/difesa (sd 0.11), ma la pendenza da sola non lo diceva:
   abbassare `k` è stato un giro a vuoto. Guardare le sd delle componenti prima.
+- **Prima di spiegare una differenza fra leghe, misurare se esiste.** Con una
+  stagione a lega l'errore standard di una correlazione è ~0.053: due leghe
+  possono distare 0.15 per puro caso. Prendere il minimo di cinque stime rumorose
+  e cercarne la causa è confronto multiplo, e il calcio offre un aneddoto
+  plausibile per qualunque ipotesi. Ci sono cascato io nel `b14`. Vedi *Il modello
+  non fallisce in una lega più che in un'altra*.
 - **Le etichette di riga del CSV devono essere uniche.** Tre sezioni diverse
   usavano `applicata`, due `peso w` e due `ha toccato il cap`: un parser che
   cerca per etichetta prende la prima e legge la sezione sbagliata **senza
@@ -663,23 +671,17 @@ quindi il passo da 0.50 a 0.75 (+0.007 in media) non è distinguibile da zero. I
 più l'unica linea con un massimo interno è l'Over 3.5 (0.543 a w 0.50–0.75 contro
 0.538 a w 1.00).
 
-**Le due leghe nuove hanno confermato lo 0.50 e ridimensionato il resto** (`b14`,
-1734 partite, cinque leghe). Il Brier ha il minimo a w 0.50 (0.2469 contro 0.2486
-a w 0), quindi la costante resta. Ma l'AUC per lega dice una cosa nuova:
+**Le due leghe nuove hanno confermato lo 0.50** (`b14`, 1734 partite, cinque
+leghe). Il Brier ha il minimo a w 0.50 (0.2469 contro 0.2486 a w 0), e il test
+appaiato sul logloss dà **+2.18 sigma** per w 0 → 0.50.
 
-| w | Bundesliga | LaLiga | Ligue 1 | Premier | Serie A |
-|---|---|---|---|---|---|
-| 0.00 | 0.535 | 0.554 | 0.550 | 0.495 | 0.500 |
-| 0.50 | 0.530 | 0.572 | 0.536 | 0.514 | 0.521 |
-| 1.00 | 0.520 | 0.580 | 0.523 | 0.532 | 0.532 |
-
-**Su Bundesliga e Ligue 1 la correzione non aiuta, anzi peggiora leggermente.** Il
-motivo è visibile nella prima riga: lì il lambda del Dixon-Coles da solo fa già
-0.535 e 0.550, mentre in Premier e Serie A fa 0.495 e 0.500. Dove il modello
-funziona, i tiri in porta non hanno niente da aggiungere; dove non funziona, lo
-sostituiscono. Il guadagno non è universale, è **un rattoppo dove il modello è
-cieco** — e questo suggerisce che la strada giusta sia capire perché il
-Dixon-Coles fallisce in quelle due leghe, non alzare `w`.
+Guardando l'AUC per lega sembrava che la correzione servisse solo dove il modello
+è debole (Premier e Serie A) e fosse inutile o dannosa in Bundesliga e Ligue 1.
+**Era una lettura sbagliata**, e la correzione di quella lettura è documentata in
+*Il modello non fallisce in una lega più che in un'altra*: il test di omogeneità
+sui guadagni per lega dà **Q = 3.93 su 4 gradi di libertà, p = 0.42**. Le leghe
+non rispondono diversamente; il guadagno comune è +0.0037 di logloss e lo scarto
+fra leghe è compatibile col caso.
 
 `window.GOALS_SOT_W` è esposto e il CSV ricostruisce w = 0 / 0.25 / 0.5 / 0.75 /
 1.0 senza rilanciare il motore.
@@ -804,6 +806,57 @@ cap a 0.60: il paracadute non ha mai morso.
 - **L'HFA stimato varia molto fra leghe**: LaLiga 78, Premier 49, Serie A 47. È
   plausibile, ma non è mai stato verificato contro il vantaggio campo reale.
 
+## Il modello non fallisce in una lega più che in un'altra
+
+Sezione nata da un errore mio, scritto in questo file e corretto un'ora dopo.
+Vale la pena tenerla perché l'errore è di quelli che si rifanno.
+
+**La domanda sbagliata era:** «perché il Dixon-Coles non discrimina l'Over in
+Premier e Serie A (AUC 0.493 e 0.501) mentre in Bundesliga, Ligue 1 e LaLiga fa
+0.538–0.556?»
+
+**La risposta è che non è vero.** Correlazione fra lambda previsto e gol reali,
+una stagione per lega:
+
+| lega | n | corr | z di Fisher | SE |
+|---|---|---|---|---|
+| Bundesliga | 305 | +0.168 | +0.169 | 0.058 |
+| LaLiga | 377 | +0.134 | +0.135 | 0.052 |
+| Serie A | 378 | +0.083 | +0.083 | 0.052 |
+| Ligue 1 | 305 | +0.065 | +0.065 | 0.058 |
+| Premier | 378 | **−0.004** | −0.004 | 0.052 |
+
+Test di omogeneità: **Q = 6.14 su 4 gradi di libertà, p = 0.19**. Le cinque leghe
+sono **statisticamente indistinguibili**. La correlazione comune è **+0.087**, e
+se fosse 0.087 ovunque, con ~350 partite a lega ci si aspetterebbe di vedere
+valori sparsi fra −0.021 e +0.193 solo per caso: esattamente l'intervallo
+osservato.
+
+Stessa storia sul guadagno della correzione dai tiri: Q = 3.93 su 4, **p = 0.42**.
+
+**Quindi la verità è meno interessante e più utile:** il lambda del Dixon-Coles
+correla **+0.087 col totale dei gol, ovunque**. Non c'è una lega rotta da
+riparare, c'è un modello che sull'Over è debole dappertutto. La forma della
+relazione lo conferma — gol medi per quintile di lambda, tutte le leghe: nessuna
+è monotona, e gli scarti fra quintili sono dell'ordine dell'errore standard di un
+quintile (~0.20 gol su ~65 partite).
+
+### L'errore, e come non rifarlo
+
+Ho guardato cinque numeri, ho preso i due più bassi e ho chiesto «perché questi
+due sono rotti». È **il confronto multiplo**: prendendo il minimo di cinque stime
+rumorose si trova sempre qualcosa da spiegare, e la spiegazione sarà sempre
+plausibile perché il calcio offre un aneddoto per ogni ipotesi (la Premier è più
+imprevedibile, la Serie A è più tattica, e così via).
+
+**Regola:** prima di spiegare una differenza fra leghe, misurare se la differenza
+esiste. Un test di omogeneità su cinque correlazioni costa dieci righe di codice.
+Con una stagione a lega (~350 partite) l'errore standard di una correlazione è
+**1/√n ≈ 0.053**: due leghe possono distare 0.15 senza che voglia dire niente.
+
+Questo vale anche al contrario: la stessa aritmetica dice che per **accorgersi**
+davvero che una lega è diversa servono più stagioni, non più leghe.
+
 ## I mercati sui numeri: corner, tiri in porta, cartellini
 
 **Sono i mercati che discriminano meglio.** AUC media delle leghe: cartellini
@@ -832,7 +885,7 @@ Le tre costanti, e da dove viene ciascuna:
 | | `MARKET_SHRINK_K` | `MARKET_BASE_SHRINK` | `MARKET_PER_GOAL` |
 |---|---|---|---|
 | corner | 0.07 | 0.50 | 3.61 |
-| tiri in porta | 0.30 | 0.75 | 3.20 |
+| tiri in porta | 0.30 | 0.55 | 3.20 |
 | gialli | 0.10 | 0.75 | 1.48 |
 | falli | 0.15 | 1.00 | `null` |
 
@@ -862,16 +915,37 @@ Effetto della cura, misurato su 1133 partite:
 Sui corner migliora in tutte e tre le leghe; su tiri e gialli in due su tre, con
 la terza ferma.
 
-**Confermato su cinque leghe** (`b14`, 1743 partite, Bundesliga e Ligue 1 mai
-usate per tarare): il livello è ottimo — bias aggregato **+0.8% sui corner, −0.6%
-sui tiri, +0.7% sui gialli** — e le pendenze sono vicine al bersaglio: **0.88**
-corner, **0.84** tiri, **0.82** gialli, contro lo 0.55 / 0.49 / 0.66 di prima
-della cura. Sulle sole due leghe nuove: 0.64 / 0.79 / 0.68, con bias sotto il 3%.
+**Confermato su cinque leghe** (`b14`–`b15`, 1743 partite, Bundesliga e Ligue 1
+mai usate per tarare): il livello è ottimo, bias aggregato **+0.8% sui corner,
+−0.6% sui tiri, +0.7% sui gialli**.
 
-Attenzione però a non leggere troppo il dettaglio per lega: con ~300 partite le
-pendenze ballano parecchio (Ligue 1 fa **−0.14** sui corner, Bundesliga **0.05**
-sui gialli, ma anche 1.25 e 1.18 sugli altri). Il pooled è il numero da guardare,
-il per-lega serve solo a vedere se c'è un segno sistematico.
+Sulle pendenze però c'è un tranello che mi è costato una misura sbagliata.
+
+**La pendenza va calcolata DENTRO la lega, non aggregata.** Il modello prevede una
+partita in una lega; la calibrazione che l'utente vede è quella. Aggregando cinque
+leghe con medie diverse, la variazione *fra* leghe gonfia la pendenza:
+
+| | pendenza aggregata | **dentro la lega** | SE | sigma da 1 |
+|---|---|---|---|---|
+| corner | 0.88 | **0.63** | 0.20 | −1.8 |
+| tiri in porta | 0.84 | **0.62** | 0.13 | −3.0 |
+| gialli | 0.82 | **0.68** | 0.13 | −2.5 |
+
+Quindi le previsioni sono ancora **più larghe del vero di circa un terzo**, non
+quasi calibrate come sembrava. Ma il Brier è **piatto** in `c` fra 0.40 e 0.75 su
+tutti e tre i mercati (differenze sotto 0.0004), quindi abbassare `c` non paga
+sulle probabilità: paga sul **numero mostrato**, che è quello che l'utente legge
+prima delle percentuali.
+
+Per questo nel `b15` è stato mosso **solo il valore per cui il Brier lo chiedeva
+insieme alla pendenza**: `sot` da 0.75 a **0.55** (Brier 0.22426 → 0.22392, il suo
+minimo, pendenza 0.62 → 0.83). Corner e gialli restano dove sono, perché lì il
+minimo del Brier coincide già col valore attuale e abbassare `c` lo peggiora.
+
+Le pendenze per singola lega **non vanno interpretate**: Ligue 1 fa −0.14 sui
+corner e Bundesliga 0.05 sui gialli, ma con errori standard di 0.64 e 0.40. Il
+test di omogeneità dà p = 0.54, 0.12 e 0.16 sui tre mercati: **nessuna lega è
+diversa dalle altre.**
 
 ### La dispersione: `negBinK`
 

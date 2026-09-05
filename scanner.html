@@ -155,7 +155,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b14</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b15</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -1504,7 +1504,7 @@ function renderVerdetti(mk) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b14';
+window.__SCANNER_BUILD = '0905-b15';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -1652,7 +1652,7 @@ function applyResidualCorrection(probs, att, dif) {
 // il riferimento DEVE restare costante dentro la lega: _base e' una media di coppia,
 // usarla come ancoraggio svuota la correzione (AGENTS.md, La baseline di coppia)
 window.MARKET_SHRINK_K = window.MARKET_SHRINK_K || { cor: 0.07, sot: 0.30, yel: 0.10, fouls: 0.15 };
-window.MARKET_BASE_SHRINK = window.MARKET_BASE_SHRINK || { cor: 0.50, sot: 0.75, yel: 0.75, fouls: 1.00 };
+window.MARKET_BASE_SHRINK = window.MARKET_BASE_SHRINK || { cor: 0.50, sot: 0.55, yel: 0.75, fouls: 1.00 };
 window.MARKET_PER_GOAL = window.MARKET_PER_GOAL || { cor: 3.61, sot: 3.20, yel: 1.48, fouls: null };
 const MARKET_LINES = { cor: [8.5, 9.5, 10.5, 11.5], sot: [6.5, 7.5, 8.5, 9.5], yel: [3.5, 4.5, 5.5] };
 
