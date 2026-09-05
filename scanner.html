@@ -155,7 +155,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b5</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b6</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -249,15 +249,6 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
     </table></div>
   </div>
 
-  <div class="card" id="card-pred-debug" style="border-top:3px solid #f59e0b">
-    <div class="section-title" style="color:#f59e0b">Diagnostica predittore</div>
-    <div style="font-size:11px;color:var(--dim);margin-bottom:10px">
-      I valori intermedi della stima attacco &times; difesa, letti dove vengono prodotti.
-      Se &quot;stima&quot; resta vicina alla baseline mentre &quot;prodotto&quot; varia molto,
-      i rapporti si annullano. Se compare <b>assente</b>, quel dato non arriva.
-    </div>
-    <div class="tbl-scroll" id="pred-debug-body"></div>
-  </div>
 
 
     
@@ -270,7 +261,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
           <tr><td style="color:var(--blue); font-weight:bold">Casa</td><td id="l-xgot-h" style="font-weight:bold">--</td><td id="l-set-h">--%</td><td id="l-bc-h">-- / --</td></tr>
           <tr><td style="color:var(--red); font-weight:bold">Trasf</td><td id="l-xgot-a" style="font-weight:bold">--</td><td id="l-set-a">--%</td><td id="l-bc-a">-- / --</td></tr>
       </table>
-      <div id="lethality-dialogue" style="font-size:11px; line-height:1.5; color:#1c1c1e; padding:8px; background:var(--panel2); border-radius:6px; border:1px solid #ffe0b2"></div>
+      <div id="lethality-dialogue" style="font-size:11px; line-height:1.5; color:var(--txt); padding:8px; background:var(--panel2); border-radius:6px; border:1px solid var(--line)"></div>
     </div>
 
     <div class="grid-2">
@@ -282,7 +273,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
             <tr><td style="color:var(--blue); font-weight:bold">Casa</td><td id="np-defx-h">--</td><td id="np-len-h">--</td><td id="np-cp-h">--</td><td id="np-choke-h" style="font-weight:bold; color:var(--blue)">--</td></tr>
             <tr><td style="color:var(--red); font-weight:bold">Trasf</td><td id="np-defx-a">--</td><td id="np-len-a">--</td><td id="np-cp-a">--</td><td id="np-choke-a" style="font-weight:bold; color:var(--red)">--</td></tr>
         </table>
-        <div id="defensive-dialogue" style="font-size:11px; line-height:1.5; color:#1c1c1e; padding:8px; background:var(--panel2); border-radius:6px; border:1px solid #ffcdd2; margin-top:10px"></div>
+        <div id="defensive-dialogue" style="font-size:11px; line-height:1.5; color:var(--txt); padding:8px; background:var(--panel2); border-radius:6px; border:1px solid var(--line); margin-top:10px"></div>
       </div>
 
       <div class="card" style="border-top:3px solid var(--accent2); background:var(--panel)">
@@ -298,7 +289,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
             <tr><td style="color:var(--blue); font-weight:bold">Casa</td><td id="tr-f3-h">--</td><td id="tr-box-h">--</td><td id="tr-pen-h" style="font-weight:bold; color:var(--blue)">--%</td></tr>
             <tr><td style="color:var(--red); font-weight:bold">Trasf</td><td id="tr-f3-a">--</td><td id="tr-box-a">--</td><td id="tr-pen-a" style="font-weight:bold; color:var(--red)">--%</td></tr>
         </table>
-        <div id="tactical-dialogue" style="font-size:11px; line-height:1.5; color:#1c1c1e; padding:8px; background:var(--panel2); border-radius:6px; border:1px solid #e0f2f1"></div>
+        <div id="tactical-dialogue" style="font-size:11px; line-height:1.5; color:var(--txt); padding:8px; background:var(--panel2); border-radius:6px; border:1px solid var(--line)"></div>
       </div>
     </div>
 
@@ -401,7 +392,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
                 <tr><td style="color:var(--red); font-weight:bold" id="pyt-name-a">Trasf</td><td id="pyt-act-a">--%</td><td id="pyt-exp-a">--%</td><td id="pyt-diag-a">--</td></tr>
             </table>
             <div class="section-title" style="color:#fbc02d; margin-top:20px">🔥 Top Scorers</div>
-            <div style="font-size:11px; line-height:1.4; color:#1c1c1e;">
+            <div style="font-size:11px; line-height:1.4; color:var(--txt);">
               <strong>Casa:</strong> <span id="ts-h"></span><br><br>
               <strong>Trasf:</strong> <span id="ts-a"></span>
             </div>
@@ -438,11 +429,11 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
         <div class="card" style="border-top:3px solid var(--purple); background:var(--panel)">
           <div class="section-title" style="color:#9c27b0">⏳ Analisi di Sopravvivenza (Goal Timing)</div>
           <p style="font-size:10px; color:var(--dim); margin-bottom:15px">Modello Esponenziale calcolato sull'intensità di gioco.</p>
-          <div style="background:var(--panel2); border-radius:8px; padding:12px; margin-bottom:10px; border:1px solid #e1bee7">
+          <div style="background:var(--panel2); border-radius:8px; padding:12px; margin-bottom:10px; border:1px solid var(--line)">
               <div style="font-size:11px; font-weight:bold; color:var(--dim)">Probabilità 1° Gol prima del 30:00'</div>
               <div style="font-size:22px; font-weight:900; color:#9c27b0" id="surv-30">--%</div>
           </div>
-          <div style="background:var(--panel2); border-radius:8px; padding:12px; border:1px solid #e1bee7">
+          <div style="background:var(--panel2); border-radius:8px; padding:12px; border:1px solid var(--line)">
               <div style="font-size:11px; font-weight:bold; color:var(--dim)">Probabilità Over 0.5 Primo Tempo (45:00')</div>
               <div style="font-size:22px; font-weight:900; color:#9c27b0" id="surv-45">--%</div>
           </div>
@@ -450,7 +441,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
     </div>
 
     <div class="card" style="border-top: 4px solid #607d8b;">
-      <div class="section-title" style="color:#607d8b">🎯 Modello Dixon-Coles (NPxG) & Skellam Distribution</div>
+      <div class="section-title" style="color:#607d8b">🎯 Risultati Esatti, Handicap e Multigol (dalla matrice Dixon-Coles)</div>
       <div class="grid-2">
           <div>
             <div style="font-size:11px; font-weight:bold; margin-bottom:5px; color:var(--dim)">Top 6 Risultati Esatti</div>
@@ -685,7 +676,6 @@ function negBinK(vals) {
   return Math.max(2, (m * m) / (s2 - m));
 }
 function poisson(k, lam) { if (isNaN(lam) || lam <= 0) return k === 0 ? 1 : 0; let p = Math.exp(-lam); for (let i = 0; i < k; i++) p *= lam / (i + 1); return p; }
-function skellamPMF(k, l1, l2) { if (isNaN(l1) || isNaN(l2) || l1 <= 0 || l2 <= 0) return 0; let p = 0; const jMin = Math.max(0, -k); for (let j = jMin; j <= 15; j++) p += poisson(k + j, l1) * poisson(j, l2); return p; }
 
 function calculateRho(lamH, lamA) { let tot = lamH + lamA; if (tot < 2.0) return -0.20; if (tot > 3.5) return -0.05; return -0.20 + (tot - 2.0) * (0.15 / 1.5); }
 function calcDCMatrix(lH, lA, rhoIn) {
@@ -1516,7 +1506,7 @@ function renderVerdetti(mk) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b5';
+window.__SCANNER_BUILD = '0905-b6';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -1942,53 +1932,6 @@ async function avviaScanner() {
     const _pickProb = Math.max(m1, mX, m2);
     const confidence = Math.round(_calibConf1X2(_pickProb));
 
-    try {
-      const _dg = (t,f) => { const x=t&&t.role&&t.role.features&&t.role.features[f];
-                             return (x&&x.decay>0)?x.decay:null; };
-      const _db = (t,f) => { const b=t&&t.role&&t.role.features&&t.role.features._base;
-                             return (b&&b[f]!=null)?b[f]:null; };
-      const _fm = v => (v==null||isNaN(v)) ? '<span style="color:#ef4444">assente</span>' : (+v).toFixed(3);
-      let _h = '<table class="table-ui" style="font-size:12px"><thead><tr>'
-             + '<th style="text-align:left">metrica</th><th>k</th><th>prodotto</th><th>concesso avv.</th>'
-             + '<th>baseline casa</th><th>baseline trasf.</th><th>stima</th></tr></thead><tbody>';
-      for (const f of ['npxg','poss','sot','cor','gca','sca','carries_box','prog_passes']) {
-        const ag = STAT_PAIRS[f];
-        _h += '<tr><td style="text-align:left">'+f+'</td>'
-            + '<td style="color:var(--dim)">'+statShrinkFor(f).toFixed(2)+'</td>'
-            + '<td>'+_fm(_dg(dH,f))+'</td><td>'+_fm(ag?_dg(dA,ag):null)+'</td>'
-            + '<td>'+_fm(_db(dH,f))+'</td><td>'+_fm(_db(dA,f))+'</td>'
-            + '<td><b>'+_fm(predictStat(dH,dA,f,'role'))+'</b></td></tr>';
-      }
-      _h += '</tbody></table>';
-
-      const _rc = window.__RESID_DEBUG;
-      if (_rc && _rc.applied) {
-        const _d1 = ((m1 - _rc.before.p1) * 100), _d2 = ((m2 - _rc.before.p2) * 100);
-        _h += '<div style="font-size:11px;color:var(--dim);margin-top:6px">'
-            + 'Correzione residuale attiva su ' + _rc.available.length + ' metriche ('
-            + _rc.available.join(', ') + ') &middot; alpha ' + _rc.alpha.toFixed(2)
-            + ' &middot; segnale ' + _rc.sig.toFixed(3) + ' vs edge ' + _rc.edge.toFixed(3)
-            + ' &middot; spostamento 1 ' + (_d1 >= 0 ? '+' : '') + _d1.toFixed(1)
-            + ' pt, 2 ' + (_d2 >= 0 ? '+' : '') + _d2.toFixed(1) + ' pt</div>';
-      } else if (_rc && _rc.sig != null) {
-
-        _h += '<div style="font-size:11px;color:var(--dim);margin-top:6px">'
-            + 'Correzione residuale <b>spenta</b> (alpha 0, vedi commento nel codice: fuori '
-            + 'campione il segnale cambiava segno). Segnale comunque misurato su '
-            + _rc.available.length + ' metriche: sig ' + _rc.sig.toFixed(3)
-            + ' vs edge ' + _rc.edge.toFixed(3) + ', residuo ' + _rc.resid.toFixed(3)
-            + ' &middot; ad alpha 0.25 sposterebbe di '
-            + (0.25 * Math.tanh(_rc.resid) >= 0 ? '+' : '')
-            + (0.25 * Math.tanh(_rc.resid)).toFixed(3) + ' in log-odds.</div>';
-      } else {
-        _h += '<div style="font-size:11px;color:var(--dim);margin-top:6px">'
-            + 'Correzione residuale non calcolabile: metriche di creazione assenti in questa lega.</div>';
-      }
-      safeHtml('pred-debug-body', _h);
-    } catch (e) {
-      safeHtml('pred-debug-body', '<div style="color:#ef4444">errore nel predittore: '
-        + (e && e.message ? e.message : e) + '</div>');
-    }
 
     let hiddenValueMsg = ""; let hiddenValueMsgClean = "";
     if (chokeH > 1.2 && clumsyA > 15) {

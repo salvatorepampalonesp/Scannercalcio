@@ -82,6 +82,85 @@ estrae la stessa informazione meglio.
 Meno di due leghe non basta — è l'errore che ha prodotto quattro falsi positivi
 di fila.
 
+## Revisione della UI: cosa è stato verificato e cosa resta
+
+Giro di revisione fatto dall'utente davanti allo Scanner. Diviso in quello che è
+già stato guardato nel codice e quello che è ancora un sospetto.
+
+### Verificato, e la risposta è questa
+
+- **«Skellam Distribution» non esisteva.** `skellamPMF` era definita e **mai
+  chiamata**: codice morto, ma il titolo della card la annunciava. Rimossa nel
+  `0905-b6` insieme al titolo, che ora dice quello che la card fa davvero.
+- **«Dà sempre 1-1» è corretto, non è un bug.** Con λ fra 1.0 e 2.0 per parte il
+  risultato modale *è* 1-1, al 12–15%. Smette di esserlo solo sopra λH 2.2
+  (2-0) o 2.4 (2-1), che quasi non capitano. Il problema non è il calcolo, è che
+  **mostrare la moda non informa**: l'informazione sta nella distribuzione.
+- **L'«Analisi di Sopravvivenza» non è un'analisi di sopravvivenza.** È
+  `P(gol entro il minuto X) = 1 − exp(−λ_totale × quota_di_tempo)`, cioè il
+  tempo al primo evento di un processo di Poisson, dove la quota viene dalla
+  distribuzione empirica dei minuti dei gol in sei fasce da 15'. Con meno di 30
+  gol nel campione la forma diventa uniforme. È legittimo ma il nome promette
+  molto più di quanto faccia.
+- **L'Elo è strutturalmente sano.** HFA stimato dalle vittorie reali
+  (`400·log10(wr_casa/wr_trasferta)`, limitato fra 30 e 100), K adattivo (30
+  sotto le 15 partite, poi 20), moltiplicatore per scarto di gol, cronologico e
+  a somma zero. Il **salto data** regredisce verso 1500 quando passano più di 60
+  giorni, con forza `min(0.9, 0.3 × ceil(anni_di_pausa))`. Funziona, ma è una
+  funzione a gradini: una pausa di 61 giorni e una di 11 mesi ricevono la stessa
+  regressione del 30%, e a 1.01 anni si salta di colpo al 60%. Da smussare.
+
+### Sistemato nel `0905-b6`
+
+- **Testo nero su nero in quattro riquadri** (qualità del tiro, fase di non
+  possesso, funnel, punti attesi): era `color:#1c1c1e` su `background:var(--panel2)`,
+  un residuo di quando l'app era a tema chiaro. Passati a `var(--txt)`. Stessa
+  origine per i bordi pastello (`#ffe0b2`, `#ffcdd2`, `#e0f2f1`, `#e1bee7`),
+  portati su `var(--line)`.
+- **Card «Diagnostica predittore» rimossa**: era nata per capire perché
+  `predictStat` collassava sulla baseline, problema risolto. `window.__PRED_DEBUG`
+  resta esposto perché lo consuma la sezione diagnostica del CSV.
+
+### Coda: leggibilità e presentazione
+
+- **Tabellone scommesse**: propone solo 1X / X2 / 12, mai gli altri mercati. È il
+  sintomo del problema noto (l'1X2 discrimina, i gol no), non un difetto della
+  card.
+- **Confronto con le quote del book**: non viene usato, si può togliere insieme a
+  `calcValue` e alla sezione Kelly.
+- **Le note narrative** (letalità, gegenpressing, funnel) dicono cose vere su una
+  squadra ma **mai in relazione all'altra**: «è corta» senza dire corta rispetto
+  a chi. Vanno riscritte come confronto, non come descrizione.
+- **Doppie chance e gol con confidence**: tabella confusa e, sui gol, poggia su
+  probabilità che sappiamo non discriminare.
+- **Progressione storica**: ha senso ma va spiegata, e va deciso quali statistiche
+  mostrarci (ora sono scelte storicamente, non per utilità misurata).
+- **KNN a schermo**: mostrare le avversarie simili **ordinate dalla più alla meno
+  simile**, con le statistiche che determinano la somiglianza. Nota: è il KNN
+  *delle formazioni* che interessa all'utente, non quello che era nell'ensemble —
+  che invece va tolto (vedi punto 0 della coda principale).
+- **Palle inattive**: si mostra quanto una squadra produce, non quanto **subisce**.
+  Il dato concesso c'è già (`xg_sp` ha la sua controparte).
+- **Mega-prompt**: da rifare quando le statistiche giuste saranno decise —
+  più dati, percentuali ed ensemble, meno prosa.
+
+### Coda: da controllare nel modello
+
+Nessuno di questi è ancora stato verificato. Sono sospetti dell'utente, non
+difetti accertati.
+
+- **Handicap asiatico** — le linee a quarti si spezzano in due mezze puntate,
+  da verificare che la somma torni.
+- **Multigol** — `multigoal()` somma celle della matrice, da controllare estremi
+  e sovrapposizioni fra le fasce.
+- **Alta varianza e disciplina** — da controllare, e da mettere in relazione con
+  l'avversario invece che come numeri assoluti.
+- **Markov** — `markovFlow` con rate dipendenti dal punteggio, mai verificato
+  contro il backtest se non come colonna dell'ensemble.
+- **Elo** — la funzione a gradini del salto data (vedi sopra).
+- **Probabili formazioni**: PitchAPI espone `/lineups` anche in versione prevista.
+  Da valutare dopo il resto.
+
 ## Come funziona il motore
 
 I file non hanno commenti (vedi *Stile*): quello che spiegava il codice sta qui.
