@@ -57,10 +57,10 @@ estrae la stessa informazione meglio.
 
 **La prossima cosa da fare, in ordine di rapporto valore/rischio:**
 
-0. **Togliere il KNN.** Non entra nell'ensemble dal `0905-b2`, costa `getSimilarMatches`
-   su tutto lo storico a ogni partita, ed è misurato come strutturalmente ridondante.
-   Attenzione: `knnRel` e `wKnn` sono ancora letti altrove (narrativi, fallback della
-   confidence), e `probsKnn` finisce nel CSV e nel mega-prompt. Vanno ripuliti insieme.
+0. ~~Togliere il KNN dall'ensemble~~ — **fatto nel `0905-b7`** per la parte morta
+   (`tvDist`, `wKnn`, `knnRel`). Il KNN come *modello* non era già nell'ensemble
+   dal `b2`; resta calcolato per la card delle formazioni, che l'utente vuole
+   tenere e che nel `b8` è stata resa leggibile.
 1. **`sum_sot` nell'Over/Under.** È l'unica feature che ha superato le tre leghe.
    Va integrata correggendo il **totale dei lambda** e tenendo il rapporto
    casa/trasferta della matrice, così migliorano insieme tutti i mercati gol e
@@ -110,7 +110,7 @@ già stato guardato nel codice e quello che è ancora un sospetto.
   funzione a gradini: una pausa di 61 giorni e una di 11 mesi ricevono la stessa
   regressione del 30%, e a 1.01 anni si salta di colpo al 60%. Da smussare.
 
-### Sistemato nel `0905-b6`
+### Sistemato (b6 → b8)
 
 - **Testo nero su nero in quattro riquadri** (qualità del tiro, fase di non
   possesso, funnel, punti attesi): era `color:#1c1c1e` su `background:var(--panel2)`,
@@ -120,27 +120,34 @@ già stato guardato nel codice e quello che è ancora un sospetto.
 - **Card «Diagnostica predittore» rimossa**: era nata per capire perché
   `predictStat` collassava sulla baseline, problema risolto. `window.__PRED_DEBUG`
   resta esposto perché lo consuma la sezione diagnostica del CSV.
+- **Confronto col book rimosso** (`b7`): markup, `calcValue` e la chiamata.
+- **Resti dell'ensemble rimossi** (`b7`): `tvDist`, `wKnn`, `knnRel`, `nEffMin` e
+  `sampleFactor` erano calcolati a ogni partita e nessuno li leggeva più.
+  `probsKnn` invece **resta**: alimenta la card a schermo e il CSV.
+- **`vaep_def`, `pv_def`, `sca_def` fuori da `ADV_SPEC`** (`b7`): correlazione
+  previsto/reale misurata a zero su 1133 partite.
+- **Le narrative parlano di entrambe le squadre** (`b8`): letalità e fase di non
+  possesso nominavano solo la squadra di casa. Ora ogni riga è un confronto —
+  chi tira meglio di quanto crea, chi spreca di più, chi tiene i reparti più
+  stretti — e le palle inattive incrociano quanto una produce con quanto l'altra
+  **concede** (`xg_sp_ag`, estratto da `b8`).
+- **KNN a schermo leggibile** (`b8`): sei vicini invece di quattro, numerati,
+  con la somiglianza in percentuale (il peso del kernel) e ogni statistica
+  affiancata dallo scarto rispetto all'avversario di oggi, in verde sotto l'8%.
+  Erano **già ordinati** per distanza crescente: mancava solo mostrarlo.
+- **Residui del tema chiaro normalizzati** (`b6`–`b8`): `#1c1c1e`, `#eee`,
+  `#ddd`, `#f8bbd0`, `#ffe0b2`, `#ffcdd2`, `#e0f2f1`, `#e1bee7` sostituiti dai
+  token del tema.
 
 ### Coda: leggibilità e presentazione
 
 - **Tabellone scommesse**: propone solo 1X / X2 / 12, mai gli altri mercati. È il
   sintomo del problema noto (l'1X2 discrimina, i gol no), non un difetto della
   card.
-- **Confronto con le quote del book**: non viene usato, si può togliere insieme a
-  `calcValue` e alla sezione Kelly.
-- **Le note narrative** (letalità, gegenpressing, funnel) dicono cose vere su una
-  squadra ma **mai in relazione all'altra**: «è corta» senza dire corta rispetto
-  a chi. Vanno riscritte come confronto, non come descrizione.
 - **Doppie chance e gol con confidence**: tabella confusa e, sui gol, poggia su
   probabilità che sappiamo non discriminare.
 - **Progressione storica**: ha senso ma va spiegata, e va deciso quali statistiche
   mostrarci (ora sono scelte storicamente, non per utilità misurata).
-- **KNN a schermo**: mostrare le avversarie simili **ordinate dalla più alla meno
-  simile**, con le statistiche che determinano la somiglianza. Nota: è il KNN
-  *delle formazioni* che interessa all'utente, non quello che era nell'ensemble —
-  che invece va tolto (vedi punto 0 della coda principale).
-- **Palle inattive**: si mostra quanto una squadra produce, non quanto **subisce**.
-  Il dato concesso c'è già (`xg_sp` ha la sua controparte).
 - **Mega-prompt**: da rifare quando le statistiche giuste saranno decise —
   più dati, percentuali ed ensemble, meno prosa.
 

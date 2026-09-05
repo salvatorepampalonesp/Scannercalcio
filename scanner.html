@@ -155,7 +155,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b7</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b8</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -199,17 +199,17 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
         <div style="text-align:center; background:var(--panel2); padding:15px; border-radius:8px; border:2px solid var(--blue)">
           <div style="font-size:12px;color:var(--dim);font-weight:bold;text-transform:uppercase">1 (Casa)</div>
           <div style="font-size:26px;font-weight:900;color:var(--blue)" id="master-1">--%</div>
-          <div style="font-size:11px;color:var(--dim);margin-top:5px; padding-top:5px; border-top:1px dashed #eee">Quota Reale: <span id="m-odd-1" style="font-weight:bold;color:var(--txt);font-size:14px">--</span></div>
+          <div style="font-size:11px;color:var(--dim);margin-top:5px; padding-top:5px; border-top:1px dashed var(--line)">Quota Reale: <span id="m-odd-1" style="font-weight:bold;color:var(--txt);font-size:14px">--</span></div>
         </div>
         <div style="text-align:center; background:var(--panel2); padding:15px; border-radius:8px; border:2px solid #555">
           <div style="font-size:12px;color:var(--dim);font-weight:bold;text-transform:uppercase">X (Pareggio)</div>
           <div style="font-size:26px;font-weight:900;color:var(--dim)" id="master-x">--%</div>
-          <div style="font-size:11px;color:var(--dim);margin-top:5px; padding-top:5px; border-top:1px dashed #eee">Quota Reale: <span id="m-odd-x" style="font-weight:bold;color:var(--txt);font-size:14px">--</span></div>
+          <div style="font-size:11px;color:var(--dim);margin-top:5px; padding-top:5px; border-top:1px dashed var(--line)">Quota Reale: <span id="m-odd-x" style="font-weight:bold;color:var(--txt);font-size:14px">--</span></div>
         </div>
         <div style="text-align:center; background:var(--panel2); padding:15px; border-radius:8px; border:2px solid var(--red)">
           <div style="font-size:12px;color:var(--dim);font-weight:bold;text-transform:uppercase">2 (Trasf)</div>
           <div style="font-size:26px;font-weight:900;color:var(--red)" id="master-2">--%</div>
-          <div style="font-size:11px;color:var(--dim);margin-top:5px; padding-top:5px; border-top:1px dashed #eee">Quota Reale: <span id="m-odd-2" style="font-weight:bold;color:var(--txt);font-size:14px">--</span></div>
+          <div style="font-size:11px;color:var(--dim);margin-top:5px; padding-top:5px; border-top:1px dashed var(--line)">Quota Reale: <span id="m-odd-2" style="font-weight:bold;color:var(--txt);font-size:14px">--</span></div>
         </div>
       </div>
       
@@ -403,15 +403,15 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
           <table class="table-ui" style="margin-bottom:0; text-align:left;">
             <tr>
               <th>Fascia</th>
-              <th colspan="2" style="color:var(--blue); border-left:1px solid #eee; text-align:center">Casa</th>
-              <th colspan="2" style="color:var(--red); border-left:1px solid #eee; text-align:center">Trasferta</th>
+              <th colspan="2" style="color:var(--blue); border-left:1px solid var(--line); text-align:center">Casa</th>
+              <th colspan="2" style="color:var(--red); border-left:1px solid var(--line); text-align:center">Trasferta</th>
             </tr>
             <tr>
-              <th style="border-bottom:2px solid #ddd">Minuti</th>
-              <th style="border-bottom:2px solid #ddd; border-left:1px solid #eee">Fatti</th>
-              <th style="border-bottom:2px solid #ddd">Subiti</th>
-              <th style="border-bottom:2px solid #ddd; border-left:1px solid #eee">Fatti</th>
-              <th style="border-bottom:2px solid #ddd">Subiti</th>
+              <th style="border-bottom:2px solid var(--line)">Minuti</th>
+              <th style="border-bottom:2px solid var(--line); border-left:1px solid var(--line)">Fatti</th>
+              <th style="border-bottom:2px solid var(--line)">Subiti</th>
+              <th style="border-bottom:2px solid var(--line); border-left:1px solid var(--line)">Fatti</th>
+              <th style="border-bottom:2px solid var(--line)">Subiti</th>
             </tr>
             <tbody id="timing-body"></tbody>
           </table>
@@ -496,9 +496,10 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
         <tr id="row-form-ar" style="background:rgba(239,68,68,.10)"><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
       </table></div>
       
+      <div id="knn-legend" style="font-size:9.5px;color:var(--dim);line-height:1.5;margin-top:12px"></div>
       <div class="grid-2" style="margin-top:15px; margin-bottom:15px">
-        <div style="background:rgba(167,139,250,.10);border-radius:8px;padding:10px;border:1px solid #f8bbd0"><div style="font-size:11px;font-weight:bold;color:var(--knn);margin-bottom:6px" id="knn-title-h">Casa vs Simili</div><div id="knn-list-h"></div><div style="margin-top:6px;font-size:10px;color:var(--dim)" id="knn-res-h">Rendimento: -- Pts/Match</div></div>
-        <div style="background:rgba(167,139,250,.10);border-radius:8px;padding:10px;border:1px solid #f8bbd0"><div style="font-size:11px;font-weight:bold;color:var(--knn);margin-bottom:6px" id="knn-title-a">Trasf vs Simili</div><div id="knn-list-a"></div><div style="margin-top:6px;font-size:10px;color:var(--dim)" id="knn-res-a">Rendimento: -- Pts/Match</div></div>
+        <div style="background:rgba(167,139,250,.10);border-radius:8px;padding:10px;border:1px solid var(--line)"><div style="font-size:11px;font-weight:bold;color:var(--knn);margin-bottom:6px" id="knn-title-h">Casa vs Simili</div><div id="knn-list-h"></div><div style="margin-top:6px;font-size:10px;color:var(--dim)" id="knn-res-h">Rendimento: -- Pts/Match</div></div>
+        <div style="background:rgba(167,139,250,.10);border-radius:8px;padding:10px;border:1px solid var(--line)"><div style="font-size:11px;font-weight:bold;color:var(--knn);margin-bottom:6px" id="knn-title-a">Trasf vs Simili</div><div id="knn-list-a"></div><div style="margin-top:6px;font-size:10px;color:var(--dim)" id="knn-res-a">Rendimento: -- Pts/Match</div></div>
       </div>
     </div>
 
@@ -1015,6 +1016,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
 
     let gca=null, sca=null, xag=null, prog_passes=null, passes_box=null, carries_box=null, prog_carries=null;
     let gca_ag=null, sca_ag=null, xag_ag=null, prog_passes_ag=null, passes_box_ag=null, carries_box_ag=null, prog_carries_ag=null;
+    let xg_sp_ag=null;
     let opp_ppda=null, opp_field_tilt=null, opp_direct_speed=null, opp_seq_time=null, opp_avg_x=null, opp_avg_def_x=null, opp_cp_regains=null, opp_rec_time=null;
 
     let advHasMe = false;
@@ -1057,6 +1059,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
           gca_ag = oppAdv.creation?.gca ?? null; sca_ag = oppAdv.creation?.sca ?? null; xag_ag = oppAdv.creation?.xag ?? null;
           prog_passes_ag = oppAdv.passing?.progressive_passes ?? null; passes_box_ag = oppAdv.passing?.passes_into_box ?? null;
           carries_box_ag = oppAdv.carrying?.carries_into_box ?? null; prog_carries_ag = oppAdv.carrying?.progressive_carries ?? null;
+          xg_sp_ag = oppAdv.creation?.expected_goals_set_play ?? oppAdv.attacking?.expected_goals_set_play ?? null;
         }
         for (const [k, get] of ADV_SPEC) {
           try { advX[k]        = myAdv  ? (get(myAdv)  ?? null) : null; } catch (e) { advX[k] = null; }
@@ -1163,7 +1166,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
       ppda, field_tilt, direct_speed, seq_time, avg_x, f3_entries, tch_box, avg_def_x, cp_regains, rec_time, npxg, xg_sp, xgot, bc, bcm, xg_shot, cross, drib, thru, aer, misc, disp,
       opp_ppda, opp_field_tilt, opp_direct_speed, opp_seq_time, opp_avg_x, opp_avg_def_x, opp_cp_regains, opp_rec_time,
       gca, sca, xag, prog_passes, passes_box, carries_box, prog_carries,
-      gca_ag, sca_ag, xag_ag, prog_passes_ag, passes_box_ag, carries_box_ag, prog_carries_ag,
+      gca_ag, sca_ag, xag_ag, prog_passes_ag, passes_box_ag, carries_box_ag, prog_carries_ag, xg_sp_ag,
       ...advX,
       red_cards, goal_timings_scored, goal_timings_conceded, scorers, rawPresent
     };
@@ -1174,7 +1177,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
       ppda:[], field_tilt:[], direct_speed:[], seq_time:[], avg_x:[], f3_entries:[], tch_box:[], avg_def_x:[], cp_regains:[], rec_time:[], xg_sp:[], xgot:[], bc:[], bcm:[], xg_shot:[], cross:[], drib:[], thru:[], aer:[], misc:[], disp:[],
       opp_ppda:[], opp_field_tilt:[], opp_direct_speed:[], opp_seq_time:[], opp_avg_x:[], opp_avg_def_x:[], opp_cp_regains:[], opp_rec_time:[],
       gca:[], sca:[], xag:[], prog_passes:[], passes_box:[], carries_box:[], prog_carries:[],
-      gca_ag:[], sca_ag:[], xag_ag:[], prog_passes_ag:[], passes_box_ag:[], carries_box_ag:[], prog_carries_ag:[], red_cards:[], dates:[] },
+      gca_ag:[], sca_ag:[], xag_ag:[], prog_passes_ag:[], passes_box_ag:[], carries_box_ag:[], prog_carries_ag:[], xg_sp_ag:[], red_cards:[], dates:[] },
       matchInfo: [], streak: [], historyForElo: [], all_timings_scored: [], all_timings_conceded: [], all_scorers: [], win_pts: 0 };
     for (const k of ADV_KEYS) { out.vals[k] = []; out.vals[k + '_ag'] = []; }
 
@@ -1191,7 +1194,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
 
       const OPT = ['ppda','field_tilt','direct_speed','seq_time','avg_x','f3_entries','tch_box','avg_def_x','cp_regains','rec_time','xg_sp','xgot','bc','bcm','xg_shot','cross','drib','thru','aer','misc','disp','opp_ppda','opp_field_tilt','opp_direct_speed','opp_seq_time','opp_avg_x','opp_avg_def_x','opp_cp_regains','opp_rec_time',
                    'gca','sca','xag','prog_passes','passes_box','carries_box','prog_carries',
-                   'gca_ag','sca_ag','xag_ag','prog_passes_ag','passes_box_ag','carries_box_ag','prog_carries_ag']
+                   'gca_ag','sca_ag','xag_ag','prog_passes_ag','passes_box_ag','carries_box_ag','prog_carries_ag','xg_sp_ag']
                   .concat(ADV_KEYS).concat(ADV_KEYS.map(k => k + '_ag'));
       OPT.forEach(kk => { const v = det[kk]; out.vals[kk].push((v === undefined || v === null || isNaN(v)) ? null : v); });
 
@@ -1363,7 +1366,7 @@ function getSimilarMatches(teamDataRole, oppTeam, targetTimeMs) {
   if (sw <= 0) return empty;
 
   rows.sort((a, b) => a.dist - b.dist);
-  const topMatches = rows.slice(0, 4).map(r => ({
+  const topMatches = rows.slice(0, 6).map(r => ({
     index: r.index, dist: r.dist, info: r.info, weight: r.w || 0,
     oppPoss: r.snap.poss ?? 50, oppXG: r.snap.npxg ?? 0, oppXGA: r.snap.npxga ?? 0,
     oppSoT: r.snap.sot ?? 0, oppPPDA: r.snap.ppda ?? 0, oppTilt: r.snap.field_tilt ?? 0,
@@ -1493,7 +1496,7 @@ function renderVerdetti(mk) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b7';
+window.__SCANNER_BUILD = '0905-b8';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -1551,7 +1554,8 @@ const ORPHAN_PAIRS = {
   avg_x: 'opp_avg_x',
   avg_def_x: 'opp_avg_def_x',
   cp_regains: 'opp_cp_regains',
-  rec_time: 'opp_rec_time'
+  rec_time: 'opp_rec_time',
+  xg_sp: 'xg_sp_ag'
 };
 for (const k of ADV_KEYS) STAT_PAIRS[k] = k + '_ag';
 Object.assign(STAT_PAIRS, ORPHAN_PAIRS);
@@ -2000,22 +2004,66 @@ async function avviaScanner() {
     safeTxt('l-set-h', setPctH != null ? f1(setPctH) + "%" : 'N/D'); safeTxt('l-set-a', setPctA != null ? f1(setPctA) + "%" : 'N/D');
     safeTxt('l-bc-h', nd(dH,'bc', f1(bcH) + " / " + f1(bcmH))); safeTxt('l-bc-a', nd(dA,'bc', f1(bcA) + " / " + f1(bcmA)));
 
+    const _spConcH = _mean(dH.overall.vals.xg_sp_ag), _spConcA = _mean(dA.overall.vals.xg_sp_ag);
     let lethNarrative = "";
-    if(xgotH > npxgH_ro + 0.3) lethNarrative += `🔪 <strong>Cecchini:</strong> ${Cap(artIl(hName))} aggiunge valore ai tiri (xGOT > NPxG). Calciano angolato e sprecano poco.<br>`;
-    else if(npxgH_ro > xgotH + 0.3 && xgotH > 0) lethNarrative += `🧱 <strong>Tiri Sporchi:</strong> ${Cap(artIl(hName))} depotenzia i propri xG calciando male o centralmente (xGOT < NPxG).<br>`;
-    if(bcmH > 1.8) lethNarrative += `🗑️ <strong>Spreco Seriale:</strong> ${Cap(artIl(hName))} butta via letteralmente ${f1(bcmH)} gol fatti a partita (Big Chances sprecate).<br>`;
-    if(setPctH > 35) lethNarrative += `🚩 <strong>Palla Inattiva Dipendenti:</strong> ${Cap(artIl(hName))} produce il ${f1(setPctH)}% dei propri pericoli da calci piazzati.<br>`;
-    if(lethNarrative === "") lethNarrative = "Nessun picco estremo di letalità rilevato. Tiri e conversioni in media con i campionati top.";
+    {
+      const snipH = (xgotH > 0) ? xgotH - npxgH_ro : null;
+      const snipA = (xgotA > 0) ? xgotA - npxgA_ro : null;
+      if (snipH != null && snipA != null && Math.abs(snipH - snipA) > 0.15) {
+        const megH = snipH > snipA;
+        lethNarrative += `🔪 <strong>Cecchini:</strong> ${Cap(artIl(megH ? hName : aName))} tira meglio di quanto crei `
+          + `(xGOT − NPxG ${(megH?snipH:snipA)>=0?'+':''}${f2(megH?snipH:snipA)}), `
+          + `${artIl(megH ? aName : hName)} sta a ${(megH?snipA:snipH)>=0?'+':''}${f2(megH?snipA:snipH)}: `
+          + `a parità di occasioni segna di più ${artIl(megH ? hName : aName)}.<br>`;
+      }
+      if (bcmH > 1.2 || bcmA > 1.2) {
+        const pegg = bcmH >= bcmA;
+        lethNarrative += `🗑️ <strong>Spreco:</strong> ${Cap(artIl(pegg?hName:aName))} butta ${f1(pegg?bcmH:bcmA)} `
+          + `Big Chances a partita contro le ${f1(pegg?bcmA:bcmH)} ${artDel(pegg?aName:hName)}: `
+          + `${f1(Math.abs(bcmH-bcmA))} occasioni di scarto.<br>`;
+      }
+      if (setPctH != null && setPctA != null) {
+        const dip = setPctH >= setPctA;
+        const conc = dip ? _spConcA : _spConcH;
+        lethNarrative += `🚩 <strong>Palle inattive:</strong> ${Cap(artIl(dip?hName:aName))} ci ricava il `
+          + `${f1(dip?setPctH:setPctA)}% dei propri pericoli, ${artIl(dip?aName:hName)} il ${f1(dip?setPctA:setPctH)}%. `
+          + (conc > 0
+             ? `E ${artIl(dip?aName:hName)} ne concede ${f2(conc)} xG a partita: `
+               + (conc > 0.35 ? `accoppiamento favorevole.` : `difende bene sui piazzati.`)
+             : `Dato sul concesso non disponibile.`)
+          + `<br>`;
+      }
+      if(lethNarrative === "") lethNarrative = `Le due squadre si equivalgono su qualità del tiro, spreco di Big Chances e peso delle palle inattive: nessuno scarto sopra la soglia.`;
+    }
     safeHtml('lethality-dialogue', lethNarrative);
 
     safeTxt('np-defx-h', nd(dH,'avg_def_x', f1(defX_H) + "m")); safeTxt('np-len-h', lenH > 0 ? f1(lenH) + "m" : "N/D"); safeTxt('np-cp-h', nd(dH,'cp_regains', f1(cp_H))); safeTxt('np-choke-h', chokeH > 0 ? f2(chokeH) : "N/D");
     safeTxt('np-defx-a', nd(dA,'avg_def_x', f1(defX_A) + "m")); safeTxt('np-len-a', lenA > 0 ? f1(lenA) + "m" : "N/D"); safeTxt('np-cp-a', nd(dA,'cp_regains', f1(cp_A))); safeTxt('np-choke-a', chokeA > 0 ? f2(chokeA) : "N/D");
 
     let defNarrative = "";
-    if (lenH > 0 && lenH < 20) defNarrative += `🧱 <strong>Blocco Cortissimo:</strong> ${Cap(artIl(hName))} difende in un fazzoletto di ${f1(lenH)} metri. Estremamente compatto.<br>`;
-    else if (lenH > 32) defNarrative += `⚠️ <strong>Squadra Sfilacciata:</strong> ${Cap(artIl(hName))} si allunga troppo (${f1(lenH)} metri). Lascia molto spazio tra le linee.<br>`;
-    if (chokeH > 1.5 && recA > 20) defNarrative += `🌪️ <strong>Soffocamento:</strong> Il Gegenpressing ${artDel(hName)} (Choke Index ${f2(chokeH)}) distruggerà il giro palla lento dell'${aName}.<br>`;
-    if (defNarrative === "") defNarrative = "Squadre con metriche di compattezza standard e Gegenpressing nella norma.";
+    {
+      if (lenH > 0 && lenA > 0) {
+        const d = lenH - lenA;
+        const corta = d < 0 ? hName : aName, lunga = d < 0 ? aName : hName;
+        defNarrative += `📏 <strong>Compattezza:</strong> ${f1(lenH)}m ${hName} contro ${f1(lenA)}m ${aName}. `
+          + (Math.abs(d) < 4
+             ? `Distanze fra i reparti simili: nessuno dei due concede più spazio fra le linee.<br>`
+             : `${Cap(artIl(corta))} tiene ${f1(Math.abs(d))}m in meno ${artDel(lunga)}, quindi `
+               + `${artIl(lunga)} lascia più spazio fra le linee da attaccare.<br>`);
+      }
+      if (chokeH > 0 && chokeA > 0) {
+        const d = chokeH - chokeA;
+        const forte = d > 0 ? hName : aName, debole = d > 0 ? aName : hName;
+        const clumsyDeb = d > 0 ? clumsyA : clumsyH;
+        defNarrative += `🌪️ <strong>Riaggressione:</strong> Choke Index ${f2(chokeH)} contro ${f2(chokeA)}. `
+          + (Math.abs(d) < 0.3
+             ? `Si riaggrediscono a intensità simile.<br>`
+             : `${Cap(artIl(forte))} recupera più in fretta, e ${artIl(debole)} perde ${f1(clumsyDeb)} palloni a partita `
+               + `fra controlli sbagliati e dribbling subiti: `
+               + (clumsyDeb > 15 ? `è l'accoppiamento che può rompere la partita.<br>` : `ma li gestisce con pulizia.<br>`));
+      }
+      if (defNarrative === "") defNarrative = `Tracking non disponibile per almeno una delle due squadre: compattezza e riaggressione non confrontabili.`;
+    }
     safeHtml('defensive-dialogue', defNarrative);
 
     safeTxt('tr-x-h', nd(dH,'avg_x', f1(avgX_H) + "m")); safeTxt('tr-x-a', nd(dA,'avg_x', f1(avgX_A) + "m"));
@@ -2076,7 +2124,7 @@ async function avviaScanner() {
     let timingHtml = ''; const maxT = Math.max(...Object.values(bHs), ...Object.values(bHc), ...Object.values(bAs), ...Object.values(bAc), 1);
     Object.keys(bHs).forEach(k => {
       let wHs = Math.max((bHs[k]/maxT)*100, 3); let wHc = Math.max((bHc[k]/maxT)*100, 3); let wAs = Math.max((bAs[k]/maxT)*100, 3); let wAc = Math.max((bAc[k]/maxT)*100, 3);
-      timingHtml += `<tr><td style="font-weight:bold;color:var(--dim)">${k}</td><td style="border-left:1px solid #eee"><div class="bucket-bar bg-hf" style="width:${wHs}%">${bHs[k]}</div></td><td><div class="bucket-bar bg-hc" style="width:${wHc}%">${bHc[k]}</div></td><td style="border-left:1px solid #eee"><div class="bucket-bar bg-af" style="width:${wAs}%">${bAs[k]}</div></td><td><div class="bucket-bar bg-ac" style="width:${wAc}%">${bAc[k]}</div></td></tr>`;
+      timingHtml += `<tr><td style="font-weight:bold;color:var(--dim)">${k}</td><td style="border-left:1px solid var(--line)"><div class="bucket-bar bg-hf" style="width:${wHs}%">${bHs[k]}</div></td><td><div class="bucket-bar bg-hc" style="width:${wHc}%">${bHc[k]}</div></td><td style="border-left:1px solid var(--line)"><div class="bucket-bar bg-af" style="width:${wAs}%">${bAs[k]}</div></td><td><div class="bucket-bar bg-ac" style="width:${wAc}%">${bAc[k]}</div></td></tr>`;
     });
     safeHtml('timing-body', timingHtml); safeTxt('surv-30', pct(probGoal30)); safeTxt('surv-45', pct(probGoalHT));
 
@@ -2086,19 +2134,36 @@ async function avviaScanner() {
     safeHtml('row-form-ar', `<td>${aName} (Trasf)</td><td>${formA_disp}</td><td>${formH_disp.split(' ')[0]}</td><td style="color:var(--red)">Solo Trasf</td><td>${statsVsFormA_role ? statsVsFormA_role.count : 0}</td><td style="font-weight:bold;color:var(--red)">${statsVsFormA_role ? f2(statsVsFormA_role.pts) : 'N/D'}</td>`);
 
     safeTxt('knn-title-h', `🏠 ${hName} in casa vs simili a ${aName}`); safeHtml('knn-res-h', `Rendimento Storico: <strong>${f2(knn_H.pts_per_game)} Pts/Match</strong>`);
-    let klistH = '';
-    knn_H.topMatches.forEach(m => {
-      let esito = m.info.gf > m.info.ga ? 'V' : (m.info.gf < m.info.ga ? 'S' : 'P'); let col = esito === 'V' ? 'var(--green)' : (esito === 'S' ? 'var(--red)' : '#f57c00');
-      klistH += `<div style="border-bottom:1px solid #eee;padding:6px 0;font-size:11px;"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>${m.info.date} vs <strong>${m.info.oppName}</strong></span><span style="color:${col};font-weight:bold">${m.info.gf}-${m.info.ga}</span></div><div style="font-size:9.5px;color:var(--dim);line-height:1.4">Poss: <b>${m.oppPoss.toFixed(0)}%</b> | NPxG: <b>${f2(m.oppXG)}</b> | Alt.Dif.: <b>${f1(m.oppDefX)}m</b><br>PPDA: <b>${f1(m.oppPPDA)}</b> | Tilt: <b>${f1(m.oppTilt)}%</b></div></div>`;
-    });
+    const _knnRow = (m, i, tgt) => {
+      const esito = m.info.gf > m.info.ga ? 'V' : (m.info.gf < m.info.ga ? 'S' : 'P');
+      const col = esito === 'V' ? 'var(--green)' : (esito === 'S' ? 'var(--red)' : 'var(--orange)');
+      const sim = Math.round(100 * Math.exp(-(m.dist * m.dist) / 2));
+      const cmp = (val, ref, unit, dec) => {
+        if (ref == null || !isFinite(ref) || ref === 0) return `<b>${dec ? f1(val) : val.toFixed(0)}${unit}</b>`;
+        const d = val - ref;
+        const c = Math.abs(d) < Math.abs(ref) * 0.08 ? 'var(--ok)' : 'var(--dim)';
+        return `<b>${dec ? f1(val) : val.toFixed(0)}${unit}</b><span style="color:${c};font-size:9px"> (${d>=0?'+':''}${dec?f1(d):d.toFixed(0)})</span>`;
+      };
+      return `<div style="border-bottom:1px solid var(--line);padding:7px 0;font-size:11px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+          <span><span style="color:var(--dim);font-family:monospace">${i+1}.</span> ${m.info.date} vs <strong>${m.info.oppName}</strong></span>
+          <span><span style="font-size:9.5px;color:var(--accent)">somiglianza ${sim}%</span>
+                <span style="color:${col};font-weight:bold;margin-left:8px">${m.info.gf}-${m.info.ga}</span></span>
+        </div>
+        <div style="font-size:9.5px;color:var(--dim);line-height:1.5">
+          Poss ${cmp(m.oppPoss, tgt.poss, '%', false)} &middot; NPxG ${cmp(m.oppXG, tgt.npxg, '', true)} &middot; Alt.Dif. ${cmp(m.oppDefX, tgt.avg_def_x, 'm', true)}<br>
+          PPDA ${cmp(m.oppPPDA, tgt.ppda, '', true)} &middot; Tilt ${cmp(m.oppTilt, tgt.field_tilt, '%', true)}
+        </div></div>`;
+    };
+
+    let klistH = knn_H.topMatches.map((m, i) => _knnRow(m, i, knn_H.targetInfo || {})).join('');
     safeHtml('knn-list-h', klistH);
+    safeHtml('knn-legend', `Ordinate dalla più simile alla meno simile. La somiglianza è il peso del kernel sulle `
+      + `5 dimensioni mostrate; fra parentesi lo scarto rispetto a chi si affronta oggi, `
+      + `<span style="color:var(--ok)">in verde</span> quando è sotto l'8%.`);
 
     safeTxt('knn-title-a', `✈️ ${aName} in trasferta vs simili a ${hName}`); safeHtml('knn-res-a', `Rendimento Storico: <strong>${f2(knn_A.pts_per_game)} Pts/Match</strong>`);
-    let klistA = '';
-    knn_A.topMatches.forEach(m => {
-      let esito = m.info.gf > m.info.ga ? 'V' : (m.info.gf < m.info.ga ? 'S' : 'P'); let col = esito === 'V' ? 'var(--green)' : (esito === 'S' ? 'var(--red)' : '#f57c00');
-      klistA += `<div style="border-bottom:1px solid #eee;padding:6px 0;font-size:11px;"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>${m.info.date} vs <strong>${m.info.oppName}</strong></span><span style="color:${col};font-weight:bold">${m.info.gf}-${m.info.ga}</span></div><div style="font-size:9.5px;color:var(--dim);line-height:1.4">Poss: <b>${m.oppPoss.toFixed(0)}%</b> | NPxG: <b>${f2(m.oppXG)}</b> | Alt.Dif.: <b>${f1(m.oppDefX)}m</b><br>PPDA: <b>${f1(m.oppPPDA)}</b> | Tilt: <b>${f1(m.oppTilt)}%</b></div></div>`;
-    });
+    let klistA = knn_A.topMatches.map((m, i) => _knnRow(m, i, knn_A.targetInfo || {})).join('');
     safeHtml('knn-list-a', klistA);
 
     safeTxt('mk-h2-ov', pct(mk_ov.dist[7]+mk_ov.dist[8]+mk_ov.dist[9]+mk_ov.dist[10])); safeTxt('mk-h2-ro', pct(mk_ro.dist[7]+mk_ro.dist[8]+mk_ro.dist[9]+mk_ro.dist[10]));
