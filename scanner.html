@@ -155,7 +155,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b3</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b4</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -954,6 +954,48 @@ async function fetchMatchRaw(id) {
 
 window.__fetchMatchRaw = (typeof fetchMatchRaw !== 'undefined') ? fetchMatchRaw : null;
 
+const ADV_SPEC = [
+  ['xt',              m => m.possession_value?.xt_total,                'volume'],
+  ['vaep',            m => m.possession_value?.vaep_total,              'additivo'],
+  ['vaep_off',        m => m.possession_value?.vaep_offensive,          'volume'],
+  ['vaep_def',        m => m.possession_value?.vaep_defensive,          'additivo'],
+  ['pv',              m => m.possession_value?.pv_total,                'additivo'],
+  ['pv_off',          m => m.possession_value?.pv_offensive,            'volume'],
+  ['pv_def',          m => m.possession_value?.pv_defensive,            'additivo'],
+
+  ['passes',          m => m.passing?.passes,                           'volume'],
+  ['key_passes',      m => m.passing?.key_passes,                       'volume'],
+  ['switches',        m => m.passing?.switches,                         'volume'],
+  ['prog_pass_dist',  m => m.passing?.progressive_pass_distance,        'volume'],
+  ['assists',         m => m.passing?.assists,                          'volume'],
+
+  ['carries',         m => m.carrying?.carries,                         'volume'],
+  ['carry_dist',      m => m.carrying?.carry_distance,                  'volume'],
+  ['carries_f3',      m => m.carrying?.carries_into_final_third,        'volume'],
+  ['take_ons',        m => m.carrying?.take_ons,                        'volume'],
+  ['prog_carry_dist', m => m.carrying?.progressive_carry_distance,      'volume'],
+
+  ['chances_created', m => m.creation?.chances_created,                 'volume'],
+  ['second_assists',  m => m.creation?.second_assists,                  'volume'],
+  ['sca_live',        m => m.creation?.sca_breakdown?.pass_live,        'volume'],
+  ['sca_dead',        m => m.creation?.sca_breakdown?.pass_dead,        'volume'],
+  ['sca_takeon',      m => m.creation?.sca_breakdown?.take_on,          'volume'],
+  ['sca_shot',        m => m.creation?.sca_breakdown?.shot,             'volume'],
+  ['sca_foul',        m => m.creation?.sca_breakdown?.foul_drawn,       'volume'],
+  ['sca_def',         m => m.creation?.sca_breakdown?.defensive,        'volume'],
+
+  ['tackles',         m => m.defending?.tackles,                        'volume'],
+  ['interceptions',   m => m.defending?.interceptions,                  'volume'],
+  ['blocks',          m => m.defending?.blocks,                         'volume'],
+  ['clearances',      m => m.defending?.clearances,                     'volume'],
+  ['duels_won',       m => m.defending?.duels_won,                      'volume'],
+  ['aerials',         m => m.defending?.aerials,                        'volume'],
+  ['challenges',      m => m.defending?.challenges,                     'volume'],
+  ['ppda_num',        m => m.defending?.opponent_passes,                'volume'],
+  ['ppda_den',        m => m.defending?.defensive_actions,              'volume']
+];
+const ADV_KEYS = ADV_SPEC.map(x => x[0]);
+
 async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) {
   logConsole(`Filtro lo storico per ${teamName}...`);
   logConsole("    -> Limite richiesto: " + limit + " partite complessive");
@@ -999,6 +1041,8 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
     let opp_ppda=null, opp_field_tilt=null, opp_direct_speed=null, opp_seq_time=null, opp_avg_x=null, opp_avg_def_x=null, opp_cp_regains=null, opp_rec_time=null;
 
     let advHasMe = false;
+    const advX = {};
+    for (const k of ADV_KEYS) { advX[k] = null; advX[k + '_ag'] = null; }
     if (advRes && advRes.data && advRes.data.teams) {
         const myAdv = advRes.data.teams.find(t => t.team.id === teamId); const oppAdv = advRes.data.teams.find(t => t.team.id !== teamId);
         advHasMe = !!myAdv;
@@ -1036,6 +1080,10 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
           gca_ag = oppAdv.creation?.gca ?? null; sca_ag = oppAdv.creation?.sca ?? null; xag_ag = oppAdv.creation?.xag ?? null;
           prog_passes_ag = oppAdv.passing?.progressive_passes ?? null; passes_box_ag = oppAdv.passing?.passes_into_box ?? null;
           carries_box_ag = oppAdv.carrying?.carries_into_box ?? null; prog_carries_ag = oppAdv.carrying?.progressive_carries ?? null;
+        }
+        for (const [k, get] of ADV_SPEC) {
+          try { advX[k]        = myAdv  ? (get(myAdv)  ?? null) : null; } catch (e) { advX[k] = null; }
+          try { advX[k + '_ag'] = oppAdv ? (get(oppAdv) ?? null) : null; } catch (e) { advX[k + '_ag'] = null; }
         }
     }
 
@@ -1139,6 +1187,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
       opp_ppda, opp_field_tilt, opp_direct_speed, opp_seq_time, opp_avg_x, opp_avg_def_x, opp_cp_regains, opp_rec_time,
       gca, sca, xag, prog_passes, passes_box, carries_box, prog_carries,
       gca_ag, sca_ag, xag_ag, prog_passes_ag, passes_box_ag, carries_box_ag, prog_carries_ag,
+      ...advX,
       red_cards, goal_timings_scored, goal_timings_conceded, scorers, rawPresent
     };
   }
@@ -1150,6 +1199,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
       gca:[], sca:[], xag:[], prog_passes:[], passes_box:[], carries_box:[], prog_carries:[],
       gca_ag:[], sca_ag:[], xag_ag:[], prog_passes_ag:[], passes_box_ag:[], carries_box_ag:[], prog_carries_ag:[], red_cards:[], dates:[] },
       matchInfo: [], streak: [], historyForElo: [], all_timings_scored: [], all_timings_conceded: [], all_scorers: [], win_pts: 0 };
+    for (const k of ADV_KEYS) { out.vals[k] = []; out.vals[k + '_ag'] = []; }
 
     for(let i=0; i<matchList.length; i++) {
       let det = matchDetails[matchList[i].id]; if(!det) continue;
@@ -1164,7 +1214,8 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
 
       const OPT = ['ppda','field_tilt','direct_speed','seq_time','avg_x','f3_entries','tch_box','avg_def_x','cp_regains','rec_time','xg_sp','xgot','bc','bcm','xg_shot','cross','drib','thru','aer','misc','disp','opp_ppda','opp_field_tilt','opp_direct_speed','opp_seq_time','opp_avg_x','opp_avg_def_x','opp_cp_regains','opp_rec_time',
                    'gca','sca','xag','prog_passes','passes_box','carries_box','prog_carries',
-                   'gca_ag','sca_ag','xag_ag','prog_passes_ag','passes_box_ag','carries_box_ag','prog_carries_ag'];
+                   'gca_ag','sca_ag','xag_ag','prog_passes_ag','passes_box_ag','carries_box_ag','prog_carries_ag']
+                  .concat(ADV_KEYS).concat(ADV_KEYS.map(k => k + '_ag'));
       OPT.forEach(kk => { const v = det[kk]; out.vals[kk].push((v === undefined || v === null || isNaN(v)) ? null : v); });
 
       out.all_timings_scored = out.all_timings_scored.concat(det.goal_timings_scored); out.all_timings_conceded = out.all_timings_conceded.concat(det.goal_timings_conceded); out.all_scorers = out.all_scorers.concat(det.scorers);
@@ -1188,6 +1239,8 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
                                 xgot:'xgot_ag',tch_box:'tch_box_ag',
                                 gca:'gca_ag',sca:'sca_ag',xag:'xag_ag',prog_passes:'prog_passes_ag',
                                 passes_box:'passes_box_ag',carries_box:'carries_box_ag',prog_carries:'prog_carries_ag'};
+        for (const k of ADV_KEYS) pair[k] = k + '_ag';
+        for (const k in ORPHAN_PAIRS) pair[k] = ORPHAN_PAIRS[k];
         for (const k in pair) {
           const a=(out.vals[k]||[]).filter(v=>v!=null&&isFinite(v));
           const c=(out.vals[pair[k]]||[]).filter(v=>v!=null&&isFinite(v));
@@ -1213,6 +1266,15 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
       carries_box: calcFeatures(out.vals.carries_box, out.vals.dates, targetTimeMs), carries_box_ag: calcFeatures(out.vals.carries_box_ag, out.vals.dates, targetTimeMs),
       prog_carries: calcFeatures(out.vals.prog_carries, out.vals.dates, targetTimeMs), prog_carries_ag: calcFeatures(out.vals.prog_carries_ag, out.vals.dates, targetTimeMs)
     };
+    for (const k of ADV_KEYS) {
+      out.features[k]         = calcFeatures(out.vals[k],          out.vals.dates, targetTimeMs);
+      out.features[k + '_ag'] = calcFeatures(out.vals[k + '_ag'],  out.vals.dates, targetTimeMs);
+    }
+    for (const k in ORPHAN_PAIRS) {
+      const ag = ORPHAN_PAIRS[k];
+      if (!out.features[k])  out.features[k]  = calcFeatures(out.vals[k],  out.vals.dates, targetTimeMs);
+      if (!out.features[ag]) out.features[ag] = calcFeatures(out.vals[ag], out.vals.dates, targetTimeMs);
+    }
     out.n = out.vals.gf.length;
 
     out.coverage = {}; Object.keys(out.vals).forEach(k => { const a = out.vals[k]; if(Array.isArray(a)) out.coverage[k] = out.n ? _nValid(a) / out.n : 0; });
@@ -1454,7 +1516,7 @@ function renderVerdetti(mk) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b3';
+window.__SCANNER_BUILD = '0905-b4';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -1502,11 +1564,29 @@ const STAT_PAIRS = {
   prog_carries: 'prog_carries_ag',
 };
 
+const ORPHAN_PAIRS = {
+  ppda: 'opp_ppda',
+  field_tilt: 'opp_field_tilt',
+  direct_speed: 'opp_direct_speed',
+  seq_time: 'opp_seq_time',
+  avg_x: 'opp_avg_x',
+  avg_def_x: 'opp_avg_def_x',
+  cp_regains: 'opp_cp_regains',
+  rec_time: 'opp_rec_time'
+};
+for (const k of ADV_KEYS) STAT_PAIRS[k] = k + '_ag';
+Object.assign(STAT_PAIRS, ORPHAN_PAIRS);
+
+const STAT_TYPE = { avg_x: 'additivo', avg_def_x: 'additivo' };
+for (const [k, , t] of ADV_SPEC) if (t && t !== 'volume') STAT_TYPE[k] = t;
+
 function predictStat(att, dif, feat, scope, kOverride) {
   const sc = scope || 'role';
+  const add = STAT_TYPE[feat] === 'additivo';
   const gv = (t, f) => {
     const x = t && t[sc] && t[sc].features && t[sc].features[f];
-    return (x && x.decay > 0) ? x.decay : null;
+    if (!x || !isFinite(x.decay)) return null;
+    return add ? x.decay : (x.decay > 0 ? x.decay : null);
   };
   const mine = gv(att, feat);
   if (mine == null) return null;
@@ -1516,12 +1596,18 @@ function predictStat(att, dif, feat, scope, kOverride) {
 
   const bA = (att[sc] && att[sc].features && att[sc].features._base) ? att[sc].features._base[feat] : null;
   const bD = (dif[sc] && dif[sc].features && dif[sc].features._base) ? dif[sc].features._base[feat] : null;
-  const pool = [bA, bD].filter(v => v != null && isFinite(v) && v > 0);
+  const pool = [bA, bD].filter(v => v != null && isFinite(v) && (add || v > 0));
   if (!pool.length) return mine;
   const lg = pool.reduce((s, v) => s + v, 0) / pool.length;
-  if (!(lg > 0)) return mine;
+  if (!add && !(lg > 0)) return mine;
 
   const k = (typeof kOverride === 'number' && isFinite(kOverride)) ? kOverride : statShrinkFor(feat);
+
+  if (add) {
+    const outP = lg + k * ((mine - lg) + (conc - lg));
+    return isFinite(outP) ? outP : mine;
+  }
+
   const sh = r => 1 + k * (r - 1);
   const out = lg * sh(mine / lg) * sh(conc / lg);
   return (isFinite(out) && out >= 0) ? out : mine;
@@ -1820,7 +1906,9 @@ async function avviaScanner() {
 
     const _statKeys = ['gf','npxg','xg','xgot','sot','cor','yel','fouls','poss','tch_box','ppda','field_tilt',
 
-                       'gca','sca','xag','prog_passes','passes_box','carries_box','prog_carries'];
+                       'gca','sca','xag','prog_passes','passes_box','carries_box','prog_carries',
+                       'ppda','avg_x','avg_def_x','cp_regains','rec_time','seq_time','direct_speed']
+                      .concat(ADV_KEYS);
 
     window.__PRED_DEBUG = (function(){
       try {

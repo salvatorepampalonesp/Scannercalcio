@@ -162,7 +162,7 @@ select{cursor:pointer}
   <div class="topbar">
     <div class="brand">
       <h1>Comparatore V9.7</h1>
-      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b3</span>
+      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b4</span>
       <span class="badge" id="engine-badge">motore non caricato</span>
     </div>
     <span class="badge">previsioni vs realtà</span>
@@ -673,7 +673,7 @@ async function loadEngineFromText(text, fileName) {
     <p><code>${fileName}</code> — clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
 
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b3';
+  const _bComp = '0905-b4';
   const _el = document.getElementById('engine-build');
   if (_el) {
     if (!_bScan) {
@@ -1213,7 +1213,26 @@ async function cmpRunMatch(match, limit, render) {
   actA.gf = match.score_away; actA.ga = match.score_home;
 
   let predExtraH = null, predExtraA = null;
-  if (R._homeId && R._awayId && R._targetTimeMs) {
+
+  // Dal motore 0905-b4 lo Scanner aggrega e prevede anche VAEP/xT/PV, con lo stesso
+  // modello attacco x difesa di tutte le altre e sui 30 match che ha gia' in mano.
+  // Ri-aggregarle qui costava fino a 30 fetch in piu' per partita e produceva un
+  // secondo predittore con scope e baseline diversi. Se il motore le espone si usano
+  // le sue; il vecchio percorso resta come fallback per i motori precedenti.
+  const _engineHas = (side) => {
+    const ps = R.predStats && R.predStats[side];
+    if (!ps) return false;
+    return CMP_ADV_KEYS.some(([k]) => ps[k] != null && isFinite(ps[k]));
+  };
+  if (_engineHas('H') && _engineHas('A')) {
+    const grab = (side) => {
+      const ps = R.predStats[side]; const o = { _method: 'motore', _nSampled: null };
+      for (const [k] of CMP_ADV_KEYS) o[k] = (ps[k] != null && isFinite(ps[k])) ? ps[k] : null;
+      return o;
+    };
+    predExtraH = grab('H'); predExtraA = grab('A');
+    cmpLog('   → Metriche avanzate: previste dal motore (nessun fetch aggiuntivo)');
+  } else if (R._homeId && R._awayId && R._targetTimeMs) {
 
     const cache = globalThis.globalLeagueMatchesCache || [];
     const targetMs = R._targetTimeMs;
@@ -1406,6 +1425,46 @@ const CMP_DC_SHRINK_TABLE = {
   prog_passes: 0.67, passes_box: 0.63, carries_box: 0.62, prog_carries: 0.59
 };
 
+// Speculare a ADV_SPEC nello Scanner (motore 0905-b4): stesse chiavi, stesso ordine.
+// Serve a tirare fuori i valori REALI delle 34 metriche nuove, cosi' il CSV puo'
+// confrontarle con le previste e dire se il modello moltiplicativo le azzecca.
+const CMP_NEW_SPEC = [
+  ['xt',              m => m.possession_value?.xt_total],
+  ['vaep',            m => m.possession_value?.vaep_total],
+  ['vaep_off',        m => m.possession_value?.vaep_offensive],
+  ['vaep_def',        m => m.possession_value?.vaep_defensive],
+  ['pv',              m => m.possession_value?.pv_total],
+  ['pv_off',          m => m.possession_value?.pv_offensive],
+  ['pv_def',          m => m.possession_value?.pv_defensive],
+  ['passes',          m => m.passing?.passes],
+  ['key_passes',      m => m.passing?.key_passes],
+  ['switches',        m => m.passing?.switches],
+  ['prog_pass_dist',  m => m.passing?.progressive_pass_distance],
+  ['assists',         m => m.passing?.assists],
+  ['carries',         m => m.carrying?.carries],
+  ['carry_dist',      m => m.carrying?.carry_distance],
+  ['carries_f3',      m => m.carrying?.carries_into_final_third],
+  ['take_ons',        m => m.carrying?.take_ons],
+  ['prog_carry_dist', m => m.carrying?.progressive_carry_distance],
+  ['chances_created', m => m.creation?.chances_created],
+  ['second_assists',  m => m.creation?.second_assists],
+  ['sca_live',        m => m.creation?.sca_breakdown?.pass_live],
+  ['sca_dead',        m => m.creation?.sca_breakdown?.pass_dead],
+  ['sca_takeon',      m => m.creation?.sca_breakdown?.take_on],
+  ['sca_shot',        m => m.creation?.sca_breakdown?.shot],
+  ['sca_foul',        m => m.creation?.sca_breakdown?.foul_drawn],
+  ['sca_def',         m => m.creation?.sca_breakdown?.defensive],
+  ['tackles',         m => m.defending?.tackles],
+  ['interceptions',   m => m.defending?.interceptions],
+  ['blocks',          m => m.defending?.blocks],
+  ['clearances',      m => m.defending?.clearances],
+  ['duels_won',       m => m.defending?.duels_won],
+  ['aerials',         m => m.defending?.aerials],
+  ['challenges',      m => m.defending?.challenges],
+  ['ppda_num',        m => m.defending?.opponent_passes],
+  ['ppda_den',        m => m.defending?.defensive_actions]
+];
+
 const CMP_ADV_KEYS = [
   ['vaep_off',    m => m.possession_value?.vaep_offensive],
   ['vaep_def',    m => m.possession_value?.vaep_defensive],
@@ -1530,6 +1589,12 @@ function cmpExtractReal(sData, advData, teamId, isH) {
     out.gca      = cr.gca;
     out.xag      = cr.xag;
     out.sca      = cr.sca;
+
+    out._new = {};
+    for (const [k, get] of CMP_NEW_SPEC) {
+      try { const v = get(myA); out._new[k] = (v == null || isNaN(v)) ? null : v; }
+      catch (e) { out._new[k] = null; }
+    }
 
     const pa = myA.passing || {};
     out.prog_passes   = pa.progressive_passes;
@@ -1825,6 +1890,11 @@ function cmpBuildResult(match, R, actH, actA) {
       H: R._predExtraH || null,
       A: R._predExtraA || null
     },
+    // 34 metriche nuove del motore 0905-b4: previste (da __PRED_STATS) e reali
+    newAdv: {
+      predH: (R.predStats && R.predStats.H) || null, predA: (R.predStats && R.predStats.A) || null,
+      realH: actH._new || null, realA: actA._new || null
+    },
 
     ah: (R.ahData || []).map(x => ({ h: x.h, home: x.pHome, push: x.pRefund, away: x.pAway })),
     mg: R.mgTot || null,
@@ -1879,6 +1949,7 @@ function cmpExportCSV() {
   rows.push(`shrinkage per metrica sui rapporti (k da 0.25 a 0.67, default ${CMP_DC_SHRINK}); non media semplice.` + pad);
   rows.push('Sezione A/B SHRINKAGE: stessa partita ricalcolata con piu\' valori di SHRINK_K.' + pad);
   rows.push('Sezione A/B CORREZIONE RESIDUALE: stessa partita con piu\' valori di alpha (ricostruiti, senza rilanciare il motore).' + pad);
+  rows.push('Sezioni METRICHE 0905-b4: le 34 metriche aggiunte al motore, previste col modello moltiplicativo e reali.' + pad);
   rows.push('');
 
   const dateRow = ['DATA'];
@@ -2148,6 +2219,38 @@ function cmpExportCSV() {
       rows.push(r.join(';'));
     }
   }
+
+  // Le 34 metriche aggiunte al motore nel 0905-b4: previste col modello moltiplicativo
+  // e valore reale della partita. Servono a due cose: vedere se il modello le azzecca
+  // (scarto sistematico = shrinkage da ritarare) e screenarle come predittori dei
+  // mercati gol, che e' il motivo per cui sono state aggiunte.
+  rows.push('');
+  rows.push('--- METRICHE 0905-b4 — CASA (Prev + Reale + Scarto) ---' + ';;;;'.repeat(M.length));
+  const NEWK = ['xt','vaep','vaep_off','vaep_def','pv','pv_off','pv_def',
+    'passes','key_passes','switches','prog_pass_dist','assists',
+    'carries','carry_dist','carries_f3','take_ons','prog_carry_dist',
+    'chances_created','second_assists','sca_live','sca_dead','sca_takeon','sca_shot','sca_foul','sca_def',
+    'tackles','interceptions','blocks','clearances','duels_won','aerials','challenges','ppda_num','ppda_den'];
+  const _n3 = v => (v==null||isNaN(v)) ? 'N/D' : Number(v).toFixed(3).replace('.',',');
+  const _sc3 = (p,r) => (p==null||r==null||isNaN(p)||isNaN(r)) ? '' : ((r-p>=0?'+':'')+(r-p).toFixed(3).replace('.',','));
+  const emitNew = (side) => {
+    const pk = side==='H' ? 'predH' : 'predA', rk = side==='H' ? 'realH' : 'realA';
+    NEWK.forEach(k => {
+      const r = [k];
+      M.forEach(m => {
+        const p = m.newAdv && m.newAdv[pk] ? m.newAdv[pk][k] : null;
+        const v = m.newAdv && m.newAdv[rk] ? m.newAdv[rk][k] : null;
+        r.push(_n3(p), '', _n3(v), _sc3(p, v));
+      });
+      rows.push(r.join(';'));
+    });
+  };
+  rows.push(['Nome Casa'].concat(...M.map(m => [m.tgt.hName, '', '', ''])).join(';'));
+  emitNew('H');
+  rows.push('');
+  rows.push('--- METRICHE 0905-b4 — TRASFERTA (Prev + Reale + Scarto) ---' + ';;;;'.repeat(M.length));
+  rows.push(['Nome Trasferta'].concat(...M.map(m => [m.tgt.aName, '', '', ''])).join(';'));
+  emitNew('A');
 
   rows.push('');
   rows.push('--- CORREZIONE RESIDUALE (metriche di creazione dopo il DC) ---' + ';;;;'.repeat(M.length));
