@@ -24,7 +24,7 @@ tutti attraverso `fetchMatchRaw` (che li mette in `RAW_CACHE`).
 Sezione di consegna: dice a che punto siamo, così una sessione nuova non
 ricomincia da capo. Aggiornala quando cambia qualcosa di sostanziale.
 
-**Build corrente: `0905-b20`.** Scanner e Comparatore devono coincidere, e sul
+**Build corrente: `0905-b21`.** Scanner e Comparatore devono coincidere, e sul
 Comparatore il badge sotto la dropzone deve uscire **verde** dopo aver trascinato
 lo Scanner. Il branch di lavoro è `claude/scanner-stat-optimization-sgs62u`.
 
@@ -77,6 +77,7 @@ stessa informazione meglio.
 | `b18` | **la lega non arrivava mai al motore nei backtest**: media gol e rho erano fissi. Tutte le tarature vanno riviste |
 | `b19` | **audit sistematico**: sette fallback morti, due tabelle di costanti divergenti, una metrica che non era di squadra |
 | `b20` | l'**Ordered Logit contava la casa due volte** (bias +6.8 sull'`1`): soglie ristimate e peso a 0. Ensemble riscritto a due blocchi, ruolo e completo, con `ENS_SCOPE_W` |
+| `b21` | **il completo batte il ruolo sull'1X2**, monotono in tre leghe su tre, `z = -3.96`: `ENS_SCOPE_W` a 1. E l'etichetta di lega del CSV veniva dalla dropdown, non dalla partita |
 
 Le tre build finali hanno una storia sola e va letta in *La baseline di coppia*:
 tre tentativi svuotati dallo stesso malinteso.
@@ -103,12 +104,16 @@ se un giro non mostra differenze sull'Elo, è il comportamento atteso.
 
 ### La prossima cosa da fare, in ordine di rapporto valore/rischio
 
-0. **Un backtest `b20` su più leghe, e decide `ENS_SCOPE_W`.** È la cosa con il
-   miglior rapporto valore/fatica in coda: il CSV ora esporta il blocco RUOLO e il
-   blocco COMPLETO separati, quindi **un solo giro** dice se conviene 0, 0.5 o 1 —
-   senza rilanciare il motore. Vedi *Ruolo o completo*. Serve più di una lega:
-   sull'1X2 il ruolo vince in tutte e cinque, sull'Over 2.5 il confronto
-   disponibile è contaminato dal bug del `b18`.
+0. ~~Un backtest `b20` che decida `ENS_SCOPE_W`~~ — **fatto, ed è 1**: il completo
+   batte il ruolo sull'1X2 in tutte e tre le leghe, `z = -3.96`. Vedi *Ruolo o
+   completo*.
+0-bis. **Il `rho` come causa del muro dell'Over/Under.** È la cosa più promettente
+   in coda, e per una volta è falsificabile con i dati che abbiamo: in Premier la
+   base di lega è **+10.4%** sopra il vero e l'Over 2.5 esce comunque **-6.6 punti**
+   troppo basso, quindi la causa non è il livello ma la **forma** della
+   distribuzione. Esportare `pOv` ricalcolato a `rho = 0` accanto a quello vero e
+   confrontare: due righe nel CSV, nessun rischio. Vedi *Il paradosso della
+   Premier*.
 1. **Rifare il backtest col `b18` su tutte e cinque le leghe.** Solo la Serie A è
    stata rifatta (`d644c70c`, 378 partite): media gol 1.365/1.183 invece di
    1.500/1.200, rho `-0.043` invece di `-0.11`, su 949 partite di lega vere. Ha
@@ -552,6 +557,18 @@ a `scanner.html` al commit `cd51a69`, prima della ripulitura.
   e cercarne la causa è confronto multiplo, e il calcio offre un aneddoto
   plausibile per qualunque ipotesi. Ci sono cascato io nel `b14`. Vedi *Il modello
   non fallisce in una lega più che in un'altra*.
+- **Un valore preso dal DOM è una lettura di un istante, non un dato dell'entità
+  che stai descrivendo.** `cmpBuildResult` scriveva la lega di ogni partita leggendo
+  il testo selezionato in `#cmp-league` *in quel momento*; `cmpUpdateLeagues()` lo
+  svuota a `'-- --'` a ogni cambio di paese, e in un archivio multi-lega il 59-88%
+  delle righe usciva con la lega sbagliata. Se un valore appartiene a un'entità
+  (partita, lega, stagione), va letto da quell'entità. È la seconda volta in tre
+  build che il DOM è la causa (la prima è `sel-league` senza `<option>`, `b18`).
+- **Una chiave di raggruppamento va verificata contro qualcosa di indipendente.**
+  Un'etichetta sbagliata non rompe niente: sposta le conclusioni, in silenzio. Per
+  la lega bastano i nomi delle squadre — tre righe di codice che hanno trovato il
+  bug qui sopra e confermato che i 25 CSV precedenti erano puliti. **Ogni CSV nuovo
+  va passato da lì prima di analizzarlo per lega.**
 - **Una correzione espressa come *rapporto* non è trasportabile su un'altra
   baseline.** `goalsSotCorrection` torna una `scale` calcolata contro il totale che
   le passi; il `b19` applicava la scala del ruolo **anche** ai lambda completi, che
@@ -1225,7 +1242,7 @@ Va detto con onestà quanto vale: `-0.0013` di logloss con `z = -2.03`, e una le
 su cinque che va nell'altro verso. È al bordo del rumore. Non è il miglioramento
 che i sei mercati aspettano — è pulizia.
 
-## Ruolo o completo: la domanda giusta, senza ancora la risposta
+## Ruolo o completo: la domanda giusta, e la risposta è «completo» (per l'1X2)
 
 L'altra ipotesi — *«magari è la divisione per ruolo che ci frega»* — è ragionevole:
 con una finestra di 15 partite lo scope `role` ne lascia ~7, e la media di 7 ha
@@ -1269,11 +1286,130 @@ core     = (1 - ENS_SCOPE_W)·RUOLO + ENS_SCOPE_W·COMPLETO
 finale   = (1 - ENS_W.ol)·core + ENS_W.ol·probsOL
 ```
 
-`ENS_SCOPE_W` **parte da 0**, cioè il comportamento di prima: non si spedisce un
-valore che nessuno ha misurato. Il CSV esporta `DCover 1/X/2`, `MKover 1/X/2`,
-`DCover GG`, `DCover Over 2.5` e i quattro lambda dei due ambiti, così **un solo
-backtest ricostruisce ogni valore fra 0 e 1** senza rilanciare il motore — lo stesso
-schema di `GOALS_SOT_W`.
+Nel `b20` `ENS_SCOPE_W` partiva da 0 — il comportamento di prima — perché nessuno
+l'aveva ancora misurata. Il CSV esporta `DCover 1/X/2`, `MKover 1/X/2`, `DCover GG`,
+`DCover Over 2.5` e i quattro lambda dei due ambiti, così **un solo backtest
+ricostruisce ogni valore fra 0 e 1** senza rilanciare il motore — lo stesso schema di
+`GOALS_SOT_W`. Il backtest è arrivato subito dopo, e ha risposto: vedi qui sotto.
+
+### La risposta: il completo vince, ed è il primo guadagno sopra il rumore
+
+Backtest `b20` su **1133 partite** (Serie A, Premier, LaLiga 2025/26), con i due
+blocchi esportati separati.
+
+| `ENS_SCOPE_W` | logloss | pick | LaLiga | Premier | Serie A |
+|---|---|---|---|---|---|
+| **0.00** (solo ruolo) | 1.0113 | 50.9% | 0.9899 | 1.0324 | 1.0114 |
+| 0.25 | 1.0101 | 51.1% | 0.9894 | 1.0309 | 1.0099 |
+| 0.50 | 1.0090 | 51.1% | 0.9891 | 1.0294 | 1.0085 |
+| 0.75 | 1.0080 | 51.1% | 0.9888 | 1.0280 | 1.0071 |
+| **1.00** (solo completo) | **1.0071** | **51.4%** | 0.9886 | 1.0267 | 1.0059 |
+
+Monotono fino al bordo **in tutte e tre le leghe**, senza eccezioni. Sulla
+differenza appaiata: `z = -4.28` a 0.50, `z = -3.96` a 1.00. La scelta fuori
+campione (`s` cercato su due leghe, misurato sulla terza) prende **1.0 in tutti e
+tre i fold**, e l'aggregato passa da 1.0113 a 1.0071.
+
+Per scala: la ritaratura dei pesi del `b20` valeva `-0.0013` con `z = -2.03`, e la
+correzione dell'Ordered Logit `-0.0001`. Questo vale **`-0.0042` con `z = -3.96`**.
+È tre volte più grande e molto più solido. **`ENS_SCOPE_W` va a 1 nel `b21`.**
+
+L'intuizione dietro era giusta: con una finestra di 15 partite lo scope `role` ne
+lascia ~7, e quello che compra — la differenza casa/trasferta *della singola
+squadra* — vale meno del rumore che aggiunge. Il vantaggio casa vero sta già in
+`LG.avgH`/`LG.avgA`, che sono di lega e stimati su ~1000 partite.
+
+**Ma vale solo per l'1X2.** Sui mercati gol il confronto non ha un vincitore:
+
+| | Over 2.5 bias | Over 2.5 AUC | GG bias | GG AUC |
+|---|---|---|---|---|
+| ruolo, LaLiga / Premier / Serie A | −1.5 / −6.6 / −2.0 | 0.573 / 0.513 / 0.522 | −5.8 / −4.7 / +2.8 | 0.514 / 0.535 / 0.553 |
+| completo | −2.1 / −8.8 / −3.2 | 0.595 / 0.517 / 0.506 | −6.5 / −6.7 / +1.6 | 0.543 / 0.532 / 0.532 |
+
+Il completo ordina meglio in due leghe su tre ma **peggiora la calibrazione
+ovunque**. Quindi `dcMat` resta `dcRole`: l'1X2 passa al completo, i gol no. La
+divisione è deliberata ed è scritta nel commento della costante, perché è il tipo
+di asimmetria che qualcuno "sistema" in buona fede fra sei mesi.
+
+### Il paradosso della Premier, e cosa dice sul muro dell'Over/Under
+
+Nello stesso file c'è un fatto che non torna e che vale più di questa build:
+
+| lega | base di lega usata | gol reali 25/26 | scarto | bias Over 2.5 |
+|---|---|---|---|---|
+| LaLiga | 2.637 | 2.698 | −2.3% | −1.5 |
+| **Premier** | **3.041** | **2.754** | **+10.4%** | **−6.6** |
+| Serie A | 2.548 | 2.426 | +5.0% | −2.0 |
+
+In Premier il motore parte da una base di lega **del 10% più alta** del vero, e
+nonostante questo l'Over 2.5 esce **6.6 punti troppo basso**. Un errore di
+*livello* non può produrre questo: se il livello fosse la causa, una base troppo
+alta darebbe Over troppo alti.
+
+Quindi fra `LG.avg*` e la probabilità finale c'è qualcosa che **stringe la
+distribuzione**. Il candidato naturale è `rho`: nel Dixon-Coles un `rho` negativo
+gonfia 0-0 e 1-1 senza toccare il lambda, e toglie massa proprio sopra le 2.5. È la
+prima ipotesi sul muro dell'Over/Under che sia **falsificabile con i dati già in
+mano** — basta esportare `probsRole.pOv` ricalcolato a `rho = 0` e confrontare.
+
+Nota di metodo, valida anche altrove: la base di lega è la media di **tre stagioni
+senza peso di recenza**, e le leghe si spostano parecchio (la Premier è passata da
+~3.2 a ~2.75 in tre anni). `computeLeagueParams` sta rispondendo alla domanda
+sbagliata: non «quanti gol fa questa lega», ma «quanti ne fa **adesso**».
+
+### L'etichetta di lega letta dal DOM: 59-88% delle righe sbagliate
+
+Trovato controllando i numeri per lega di questo stesso backtest, e va raccontato
+perché è la classe di bug più pericolosa che ci sia: **non rompe niente, sposta le
+conclusioni**.
+
+`cmpBuildResult` scriveva la lega così:
+
+```js
+const _lgSel = document.getElementById('cmp-league');
+const _lgName = _lgSel.selectedOptions[0].text;   // <- la dropdown ADESSO
+const ids = { league: _lgName, ... };
+```
+
+cioè il testo **attualmente selezionato nella dropdown**, non la lega della
+partita. Finché si lavora su una lega sola coincidono. Ma `cmpUpdateLeagues()`
+svuota il menu a `'-- --'` a ogni cambio di paese, e in un archivio multi-lega
+l'etichetta finiva su partite di un'altra lega. Nei tre export del 06/09:
+
+```
+confini VERI (dai nomi delle squadre):   378 -> Premier,  756 -> LaLiga
+confini della colonna LEGA:               84 -> '-- --',   88 -> Premier,  381 -> LaLiga
+righe con etichetta sbagliata: 669 su 1133 (59%), e 88% nei file da 756
+```
+
+Partite di Serie A etichettate «Premier League», partite di Premier etichettate
+«LaLiga». **Tutti i CSV precedenti al 06/09 sono puliti** (verificato riconoscendo
+la lega dai nomi delle squadre su ognuno dei 25 file: zero errori), quindi le
+misure delle build da `b11` a `b20` reggono — ma questo è un caso, non una
+garanzia.
+
+Corretto risolvendo il nome **dall'id della partita**, con `cmpLeagues` che è la
+lista completa e copre anche le leghe di un altro paese:
+
+```js
+const _lgById = cmpLeagueName(match.league_id || cmpCurrentLeagueId);
+league: _lgById || _lgName          // la dropdown solo come ultima rete
+```
+
+E, perché non ricapiti in silenzio, l'export ora **dichiara la composizione del
+file** nel log (`Serie A 378 · Premier League 378 · LaLiga 377`) e segnala ogni id
+di lega che non ha trovato un nome.
+
+**La trappola generale**: *un valore preso dal DOM è una lettura fatta a un certo
+istante, non un dato della cosa che stai descrivendo.* Se il valore appartiene a
+un'entità (una partita, una lega, una stagione), va letto da quell'entità. Il DOM
+è stato già la causa del bug del `b18` (`sel-league` senza `<option>`) e ora di
+questo: due volte lo stesso errore di categoria in tre build.
+
+**Come accorgersene senza fortuna**: quando un file raggruppa per una chiave, la
+chiave va **verificata contro qualcosa di indipendente**. Qui i nomi delle squadre
+davano la lega senza bisogno della colonna, e il controllo è tre righe di codice.
+Ogni CSV nuovo va passato da lì prima di analizzarlo per lega.
 
 ### Un bug trovato mentre si guardava lì
 
@@ -1914,13 +2050,13 @@ Costanti dell'ensemble introdotte nel `b20`, con la loro classificazione:
 |---|---|---|---|
 | `ENS_W.dc` / `.mk` | 0.70 / 0.30 | stimata | griglia scelta su quattro leghe, misurata sulla quinta; modale in 4 fold su 5 |
 | `ENS_W.ol` | 0.00 | stimata | stessa griglia; l'OL esce a 0 in 4 fold su 5 |
-| `ENS_SCOPE_W` | 0 | **non stimata, dichiarata tale** | è il comportamento precedente; il CSV la ricostruisce da 0 a 1 |
+| `ENS_SCOPE_W` | 1 | stimata (`b21`) | sweep su 1133 partite, monotono in 3 leghe su 3, `z = -3.96`; scelta fuori campione 1.0 in 3 fold su 3 |
 | `OL_BETA` / `T1` / `T2` | 2.056 / −0.475 / +0.671 | stimata | massima verosimiglianza su 1743 partite, validata leave-one-league-out |
 
-`ENS_SCOPE_W = 0` è l'unica delle quattro che **non** ha una misura dietro, ed è
-per questo che vale zero: spedire un valore diverso vorrebbe dire cambiare il
-comportamento del motore sulla base di un'intuizione. Sta lì per essere misurata,
-non per essere creduta.
+Nel `b20` `ENS_SCOPE_W` era l'unica delle quattro senza una misura dietro, ed è per
+questo che valeva zero: spedire un valore diverso sarebbe stato cambiare il motore
+sulla base di un'intuizione. Un backtest dopo la misura c'era, ed è passata a 1. È il
+ciclo giusto — esporre, misurare, decidere — e ha impiegato una build.
 
 **La regola.** Per ogni costante nel motore deve valere una di queste tre:
 1. **e' stimata dai dati** e c'e' scritto su quale campione;
