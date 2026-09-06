@@ -162,7 +162,7 @@ select{cursor:pointer}
   <div class="topbar">
     <div class="brand">
       <h1>Comparatore V9.7</h1>
-      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b13</span>
+      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b17</span>
       <span class="badge" id="engine-badge">motore non caricato</span>
     </div>
     <span class="badge">previsioni vs realtà</span>
@@ -575,6 +575,7 @@ async function loadEngineFromText(text, fileName) {
         residDebug: (typeof window.__RESID_DEBUG !== 'undefined') ? window.__RESID_DEBUG : null,
         goalsDebug: (typeof window.__GOALS_DEBUG !== 'undefined') ? window.__GOALS_DEBUG : null,
         eloDebug: (typeof window.__ELO_DEBUG !== 'undefined') ? window.__ELO_DEBUG : null,
+        unitDebug: (typeof window.__UNIT_DEBUG !== 'undefined') ? window.__UNIT_DEBUG : null,
         probsKnn:    (typeof probsKnn    !== 'undefined') ? probsKnn    : null,
         mk_ro:       (typeof mk_ro       !== 'undefined') ? mk_ro       : null,
         m1: (typeof m1!=='undefined')?m1:null, mX: (typeof mX!=='undefined')?mX:null, m2: (typeof m2!=='undefined')?m2:null,
@@ -675,7 +676,7 @@ async function loadEngineFromText(text, fileName) {
     <p><code>${fileName}</code> — clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
 
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b13';
+  const _bComp = '0905-b17';
   const _el = document.getElementById('engine-build');
   if (_el) {
     if (!_bScan) {
@@ -1875,6 +1876,7 @@ function cmpBuildResult(match, R, actH, actA) {
     residDebug: R.residDebug || null,
     goalsDebug: R.goalsDebug || null,
     eloDebug: R.eloDebug || null,
+    unitDebug: R.unitDebug || null,
     predStats: R.predStats || null,
     goalsMarket: gm,
     realTotals: { cor: (actH.cor!=null&&actA.cor!=null)?actH.cor+actA.cor:null,
@@ -2069,7 +2071,12 @@ function cmpExportCSV() {
     ['Rif. lega corner', m => { const a = m.R.advRole||m.R.advOver; return [a&&a.lgRefCor!=null?_num(a.lgRefCor):'N/D', '-', '', '']; }],
     ['Rif. lega tiri porta', m => { const a = m.R.advRole||m.R.advOver; return [a&&a.lgRefSot!=null?_num(a.lgRefSot):'N/D', '-', '', '']; }],
     ['Rif. lega gialli', m => { const a = m.R.advRole||m.R.advOver; return [a&&a.lgRefYel!=null?_num(a.lgRefYel):'N/D', '-', '', '']; }],
-    ['Gol attesi di lega', m => { const a = m.R.advRole||m.R.advOver; return [a&&a.lgGoals!=null?_num(a.lgGoals):'N/D', '-', '', '']; }]
+    ['Gol attesi di lega', m => { const a = m.R.advRole||m.R.advOver; return [a&&a.lgGoals!=null?_num(a.lgGoals):'N/D', '-', '', '']; }],
+    ['Gialli prima dello squilibrio', m => { const a = m.R.advRole||m.R.advOver; return [a&&a.yelRaw!=null?_num(a.yelRaw):'N/D', '-', '', '']; }],
+    ['Gialli: aggiustamento', m => { const a = m.R.advRole||m.R.advOver; return [a&&a.yelAdj!=null?_num(a.yelAdj):'N/D', '-', '', '']; }],
+    ['Gialli: squilibrio Elo', m => { const a = m.R.advRole||m.R.advOver; return [a&&a.yelMismatch!=null?_num(a.yelMismatch):'N/D', '-', '', '']; }],
+    ['Gialli: squilibrio medio di lega', m => { const a = m.R.advRole||m.R.advOver; return [a&&a.yelMeanPair!=null?_num(a.yelMeanPair):'N/D', '-', '', '']; }],
+    ['Gialli: aggiustamento al cap', m => { const a = m.R.advRole||m.R.advOver; return [a?(a.yelCapped?'SI':'no'):'N/D', '-', '', '']; }]
   ];
   const lineMkts = [];
   [['Corner','linesCor','cor'], ['Tiri porta','linesSot','sot'], ['Gialli','linesYel','yel']].forEach(([nome, campo, real]) => {
@@ -2287,16 +2294,16 @@ function cmpExportCSV() {
   rows.push('--- LAMBDA DAI TIRI IN PORTA (seconda stima, mediata col Dixon-Coles) ---' + ';;;;'.repeat(M.length));
   const _g4 = (v) => (v == null || isNaN(v)) ? 'N/D' : String((+v).toFixed(4)).replace('.', ',');
   const gRows = [
-    ['applicata',               d => d ? (d.applied ? 'SI' : 'no') : 'N/D'],
-    ['peso w',                  d => d && d.w != null ? _g4(d.w) : 'N/D'],
-    ['SoT per gol usato',       d => d && d.spg != null ? _g4(d.spg) : 'N/D'],
-    ['SoT previsti casa',       d => d ? _g4(d.sotH) : 'N/D'],
-    ['SoT previsti trasferta',  d => d ? _g4(d.sotA) : 'N/D'],
-    ['sum_sot',                 d => d ? _g4(d.sumSot) : 'N/D'],
-    ['lambda dai tiri',         d => d ? _g4(d.lamSot) : 'N/D'],
-    ['lambda Dixon-Coles',      d => d ? _g4(d.lamDC) : 'N/D'],
-    ['scala applicata',         d => d ? _g4(d.scale) : 'N/D'],
-    ['ha toccato il cap',       d => d ? (d.capped ? 'SI' : 'no') : 'N/D']
+    ['Tiri: applicata',         d => d ? (d.applied ? 'SI' : 'no') : 'N/D'],
+    ['Tiri: peso w',            d => d && d.w != null ? _g4(d.w) : 'N/D'],
+    ['Tiri: SoT per gol',       d => d && d.spg != null ? _g4(d.spg) : 'N/D'],
+    ['Tiri: SoT previsti casa',  d => d ? _g4(d.sotH) : 'N/D'],
+    ['Tiri: SoT prev. trasferta',d => d ? _g4(d.sotA) : 'N/D'],
+    ['Tiri: sum_sot',            d => d ? _g4(d.sumSot) : 'N/D'],
+    ['Tiri: lambda dai tiri',    d => d ? _g4(d.lamSot) : 'N/D'],
+    ['Tiri: lambda Dixon-Coles', d => d ? _g4(d.lamDC) : 'N/D'],
+    ['Tiri: scala applicata',    d => d ? _g4(d.scale) : 'N/D'],
+    ['Tiri: ha toccato il cap', d => d ? (d.capped ? 'SI' : 'no') : 'N/D']
   ];
   gRows.forEach(([lbl, fn]) => {
     const r = [lbl];
@@ -2304,15 +2311,36 @@ function cmpExportCSV() {
     rows.push(r.join(';'));
   });
   rows.push('');
+  rows.push('--- UNITA DEL LAMBDA (attacco/difesa: NPxG contro media gol) ---' + ';;;;'.repeat(M.length));
+  const uRows = [
+    ['Unita: correzione attiva', d => d ? (d.on ? 'SI' : 'no') : 'N/D'],
+    ['Unita: peso',              d => d && d.w != null ? _g4(d.w) : 'N/D'],
+    ['Unita: NPxG di coppia',    d => d && d.baseNpxg != null ? _g4(d.baseNpxg) : 'N/D'],
+    ['Unita: media gol casa',    d => d && d.lgH != null ? _g4(d.lgH) : 'N/D'],
+    ['Unita: media gol trasf.',  d => d && d.lgA != null ? _g4(d.lgA) : 'N/D'],
+    ['Unita: attacco casa',      d => d && d.attH != null ? _g4(d.attH) : 'N/D'],
+    ['Unita: difesa trasferta',  d => d && d.defA != null ? _g4(d.defA) : 'N/D'],
+    ['Unita: attacco trasferta', d => d && d.attA != null ? _g4(d.attA) : 'N/D'],
+    ['Unita: difesa casa',       d => d && d.defH != null ? _g4(d.defH) : 'N/D'],
+    ['Unita: rigori casa',       d => d && d.pxH != null ? _g4(d.pxH) : 'N/D'],
+    ['Unita: rigori trasferta',  d => d && d.pxA != null ? _g4(d.pxA) : 'N/D']
+  ];
+  uRows.forEach(([lbl, fn]) => {
+    const r = [lbl];
+    M.forEach(m => r.push(fn(m.unitDebug), '', '', ''));
+    rows.push(r.join(';'));
+  });
+
+  rows.push('');
   rows.push('--- INCLINAZIONE DEI LAMBDA DALL ELO (1X2, totale gol invariato) ---' + ';;;;'.repeat(M.length));
   const eRows = [
-    ['applicata',            d => d ? (d.applied ? 'SI' : 'no') : 'N/D'],
-    ['peso w',               d => d && d.w != null ? _g4(d.w) : 'N/D'],
-    ['log-odds del modello', d => d && d.lgModel != null ? _g4(d.lgModel) : 'N/D'],
-    ['log-odds dell Elo',    d => d && d.lgElo != null ? _g4(d.lgElo) : 'N/D'],
-    ['log-odds bersaglio',   d => d && d.lgTarget != null ? _g4(d.lgTarget) : 'N/D'],
-    ['inclinazione',         d => d ? _g4(d.tilt) : 'N/D'],
-    ['ha toccato il cap',    d => d ? (d.capped ? 'SI' : 'no') : 'N/D']
+    ['Elo: applicata',       d => d ? (d.applied ? 'SI' : 'no') : 'N/D'],
+    ['Elo: peso w',          d => d && d.w != null ? _g4(d.w) : 'N/D'],
+    ['Elo: log-odds modello',d => d && d.lgModel != null ? _g4(d.lgModel) : 'N/D'],
+    ['Elo: log-odds Elo',    d => d && d.lgElo != null ? _g4(d.lgElo) : 'N/D'],
+    ['Elo: log-odds bersaglio',d => d && d.lgTarget != null ? _g4(d.lgTarget) : 'N/D'],
+    ['Elo: inclinazione',    d => d ? _g4(d.tilt) : 'N/D'],
+    ['Elo: ha toccato il cap', d => d ? (d.capped ? 'SI' : 'no') : 'N/D']
   ];
   eRows.forEach(([lbl, fn]) => {
     const r = [lbl];

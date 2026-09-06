@@ -155,7 +155,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b13</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b17</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -1504,7 +1504,7 @@ function renderVerdetti(mk) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b13';
+window.__SCANNER_BUILD = '0905-b17';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -1652,11 +1652,48 @@ function applyResidualCorrection(probs, att, dif) {
 // il riferimento DEVE restare costante dentro la lega: _base e' una media di coppia,
 // usarla come ancoraggio svuota la correzione (AGENTS.md, La baseline di coppia)
 window.MARKET_SHRINK_K = window.MARKET_SHRINK_K || { cor: 0.07, sot: 0.30, yel: 0.10, fouls: 0.15 };
-window.MARKET_BASE_SHRINK = window.MARKET_BASE_SHRINK || { cor: 0.50, sot: 0.75, yel: 0.75, fouls: 1.00 };
+window.MARKET_BASE_SHRINK = window.MARKET_BASE_SHRINK || { cor: 0.50, sot: 0.55, yel: 0.75, fouls: 1.00 };
 window.MARKET_PER_GOAL = window.MARKET_PER_GOAL || { cor: 3.61, sot: 3.20, yel: 1.48, fouls: null };
 const MARKET_LINES = { cor: [8.5, 9.5, 10.5, 11.5], sot: [6.5, 7.5, 8.5, 9.5], yel: [3.5, 4.5, 5.5] };
 
-window.ELO_1X2_W = (typeof window.ELO_1X2_W === 'number') ? window.ELO_1X2_W : 0.50;
+// le partite squilibrate hanno meno cartellini: -0.0035 gialli per punto Elo di
+// scarto, stesso effetto in cinque leghe (AGENTS.md, Lo squilibrio e i cartellini)
+window.CARDS_ELO_B = (typeof window.CARDS_ELO_B === 'number') ? window.CARDS_ELO_B : -0.0035;
+
+// attacco e difesa nascono come NPxG / media GOL di lega: unita diverse, e lo
+// scarto entra due volte perche lambda = base x attacco x difesa. Il termine
+// rigori e lo shrinkage compensano per meta, per caso. GOALS_UNIT_FIX normalizza
+// sugli NPxG e toglie il rattoppo. SPENTA finche un backtest non la conferma
+// (AGENTS.md, Il disallineamento di unita nel lambda)
+window.GOALS_UNIT_FIX = (typeof window.GOALS_UNIT_FIX === 'number') ? window.GOALS_UNIT_FIX : 0;
+const CARDS_ELO_CAP = 0.30;
+
+function cardsMismatchAdj(lam, eloDiff, meanPair) {
+  const out = { lam: lam, adj: 0, capped: false, mismatch: null, meanPair: meanPair, applied: false };
+  const b = window.CARDS_ELO_B;
+  if (!(lam > 0) || !isFinite(b) || b === 0) return out;
+  if (eloDiff == null || !isFinite(eloDiff) || !(meanPair > 0)) return out;
+  const mm = Math.abs(eloDiff);
+  const raw = b * (mm - meanPair);
+  const cap = CARDS_ELO_CAP * lam;
+  const adj = Math.max(-cap, Math.min(cap, raw));
+  const v = lam + adj;
+  if (!isFinite(v) || v <= 0.3) return out;
+  out.lam = v; out.adj = adj; out.capped = Math.abs(raw) > cap;
+  out.mismatch = mm; out.applied = true;
+  return out;
+}
+
+function meanPairEloGap(table) {
+  const v = table ? Object.values(table).filter(x => typeof x === 'number' && isFinite(x)) : [];
+  if (v.length < 6) return null;
+  let s = 0, n = 0;
+  for (let i = 0; i < v.length; i++)
+    for (let j = i + 1; j < v.length; j++) { s += Math.abs(v[i] - v[j]); n++; }
+  return n > 0 ? s / n : null;
+}
+
+window.ELO_1X2_W = (typeof window.ELO_1X2_W === 'number') ? window.ELO_1X2_W : 0.75;
 const ELO_TILT_MAX = 0.60;
 
 // inclina il rapporto casa/trasferta dei lambda tenendo FISSO il totale, cosi' i mercati
@@ -1781,10 +1818,22 @@ async function avviaScanner() {
     let lamH_over = LG.avgH * attH_o * defA_o * (1 + penH) + pxH;
     let lamA_over = LG.avgA * attA_o * defH_o * (1 + penA) + pxA;
 
-    const attH_r = shrink((dec(dH,'role','npxg') ?? LG.avgH) / LG.avgH, nHr), defA_r = shrink((dec(dA,'role','npxga') ?? LG.avgH) / LG.avgH, nAr);
-    const attA_r = shrink((dec(dA,'role','npxg') ?? LG.avgA) / LG.avgA, nAr), defH_r = shrink((dec(dH,'role','npxga') ?? LG.avgA) / LG.avgA, nHr);
-    let lamH_role = LG.avgH * attH_r * defA_r * (1 + penH) + pxH;
-    let lamA_role = LG.avgA * attA_r * defH_r * (1 + penA) + pxA;
+    const _baseN = (() => {
+      const b = [dH, dA].map(t => (t.role && t.role.features && t.role.features._base) ? t.role.features._base.npxg : null)
+                        .filter(v => v != null && isFinite(v) && v > 0);
+      return b.length ? b.reduce((a, v) => a + v, 0) / b.length : null;
+    })();
+    const _uf = window.GOALS_UNIT_FIX;
+    const _useUnit = (_uf > 0) && (_baseN > 0);
+    const _dH_r = _useUnit ? _baseN : LG.avgH, _dA_r = _useUnit ? _baseN : LG.avgA;
+    const attH_r = shrink((dec(dH,'role','npxg') ?? _dH_r) / _dH_r, nHr), defA_r = shrink((dec(dA,'role','npxga') ?? _dH_r) / _dH_r, nAr);
+    const attA_r = shrink((dec(dA,'role','npxg') ?? _dA_r) / _dA_r, nAr), defH_r = shrink((dec(dH,'role','npxga') ?? _dA_r) / _dA_r, nHr);
+    const _pxH = _useUnit ? (1 - _uf) * pxH : pxH, _pxA = _useUnit ? (1 - _uf) * pxA : pxA;
+    let lamH_role = LG.avgH * attH_r * defA_r * (1 + penH) + _pxH;
+    let lamA_role = LG.avgA * attA_r * defH_r * (1 + penA) + _pxA;
+    window.__UNIT_DEBUG = { on: _useUnit, w: _uf, baseNpxg: _baseN,
+                            lgH: LG.avgH, lgA: LG.avgA, attH: attH_r, defA: defA_r,
+                            attA: attA_r, defH: defH_r, pxH: _pxH, pxA: _pxA };
 
     const _lk = window.SHRINK_LAM_K;
     const wSH = nHr / (nHr + _lk), wSA = nAr / (nAr + _lk);
@@ -1848,7 +1897,10 @@ async function avviaScanner() {
       };
       const cH = getF(dH,'cor'), cA = getF(dA,'cor'); const lCor = lamOf('cor');
       const sH = getF(dH,'sot'), sA = getF(dA,'sot'); const lSot = lamOf('sot');
-      const yH = getF(dH,'yel'), yA = getF(dA,'yel'); const lYel = lamOf('yel');
+      const yH = getF(dH,'yel'), yA = getF(dA,'yel');
+      const _yelRaw = lamOf('yel');
+      const _CM = cardsMismatchAdj(_yelRaw, _eloDiff, meanPairEloGap(ELO && ELO.table));
+      const lYel = _CM.lam;
       const lFls = lamOf('fouls');
       const rH = getF(dH,'red_cards'), rA = getF(dA,'red_cards');
 
@@ -1868,6 +1920,8 @@ async function avviaScanner() {
       const lgRefYel = (lgGoals > 0) ? window.MARKET_PER_GOAL.yel * lgGoals : null;
       return { lCor, cH, cA, lSot, sH, sA, lYel, yH, yA, lFls, scope,
                baseCor, baseSot, baseYel, lgRefCor, lgRefSot, lgRefYel, lgGoals,
+               yelRaw: _yelRaw, yelAdj: _CM.adj, yelMismatch: _CM.mismatch,
+               yelMeanPair: _CM.meanPair, yelCapped: _CM.capped,
                linesCor, linesSot, linesYel, pOv9c, pOv8s, pOv3y, pRed, kCor, kSot, kYel };
     };
     const advRole = calcAdv(true); const advOver = calcAdv(false);
