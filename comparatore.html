@@ -162,7 +162,7 @@ select{cursor:pointer}
   <div class="topbar">
     <div class="brand">
       <h1>Comparatore V9.7</h1>
-      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b19</span>
+      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b20</span>
       <span class="badge" id="engine-badge">motore non caricato</span>
     </div>
     <span class="badge">previsioni vs realtà</span>
@@ -579,6 +579,13 @@ async function loadEngineFromText(text, fileName) {
         unitDebug: (typeof window.__UNIT_DEBUG !== 'undefined') ? window.__UNIT_DEBUG : null,
         probsKnn:    (typeof probsKnn    !== 'undefined') ? probsKnn    : null,
         mk_ro:       (typeof mk_ro       !== 'undefined') ? mk_ro       : null,
+        /* blocco COMPLETO: gli stessi due modelli su lambda di tutte le partite.
+           Servono al CSV per ricostruire ENS_SCOPE_W da 0 a 1 senza rilanciare il motore. */
+        probsOver:   (typeof probsOver   !== 'undefined') ? probsOver   : null,
+        mk_ov:       (typeof mk_ov       !== 'undefined') ? mk_ov       : null,
+        lamHover:    (typeof lamH_over   !== 'undefined') ? lamH_over   : null,
+        lamAover:    (typeof lamA_over   !== 'undefined') ? lamA_over   : null,
+        ensDebug:    (typeof window.__ENS_DEBUG !== 'undefined') ? window.__ENS_DEBUG : null,
         m1: (typeof m1!=='undefined')?m1:null, mX: (typeof mX!=='undefined')?mX:null, m2: (typeof m2!=='undefined')?m2:null,
         confidence:  (typeof confidence  !== 'undefined') ? confidence  : null,
         sampleFactor:(typeof sampleFactor!== 'undefined') ? sampleFactor: null,
@@ -677,7 +684,7 @@ async function loadEngineFromText(text, fileName) {
     <p><code>${fileName}</code> — clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
 
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b19';
+  const _bComp = '0905-b20';
   const _el = document.getElementById('engine-build');
   if (_el) {
     if (!_bScan) {
@@ -2134,12 +2141,21 @@ function cmpExportCSV() {
   });
 
   rows.push('');
-  rows.push('--- 1X2 PER MODELLO (DC / KNN / OL / Markov) ---' + ';;;;'.repeat(M.length));
+  rows.push('--- 1X2 PER MODELLO (DC / KNN / OL / Markov, ruolo e completo) ---' + ';;;;'.repeat(M.length));
   const mdl = [
     ['DC 1', m=>[fmt(m.R.probsRole?.p1),'','','']], ['DC X', m=>[fmt(m.R.probsRole?.pX),'','','']], ['DC 2', m=>[fmt(m.R.probsRole?.p2),'','','']],
     ['KNN 1', m=>[fmt(m.R.probsKnn?.p1),'','','']], ['KNN X', m=>[fmt(m.R.probsKnn?.pX),'','','']], ['KNN 2', m=>[fmt(m.R.probsKnn?.p2),'','','']],
     ['OL 1', m=>[fmt(m.R.probsOL?.p1),'','','']], ['OL X', m=>[fmt(m.R.probsOL?.pX),'','','']], ['OL 2', m=>[fmt(m.R.probsOL?.p2),'','','']],
     ['Markov 1', m=>[fmt(m.R.mk_ro?.p1),'','','']], ['Markov X', m=>[fmt(m.R.mk_ro?.pX),'','','']], ['Markov 2', m=>[fmt(m.R.mk_ro?.p2),'','','']],
+    ['DCover 1', m=>[fmt(m.R.probsOver?.p1),'','','']], ['DCover X', m=>[fmt(m.R.probsOver?.pX),'','','']], ['DCover 2', m=>[fmt(m.R.probsOver?.p2),'','','']],
+    ['MKover 1', m=>[fmt(m.R.mk_ov?.p1),'','','']], ['MKover X', m=>[fmt(m.R.mk_ov?.pX),'','','']], ['MKover 2', m=>[fmt(m.R.mk_ov?.p2),'','','']],
+    ['DCover GG', m=>[fmt(m.R.probsOver?.pGG),'','','']], ['DCover Over 2.5', m=>[fmt(m.R.probsOver?.pOv),'','','']],
+    ['Ambito: lambda casa (ruolo)', m=>[m.R.lamH!=null?(+m.R.lamH).toFixed(3):'-','','','']],
+    ['Ambito: lambda trasf. (ruolo)', m=>[m.R.lamA!=null?(+m.R.lamA).toFixed(3):'-','','','']],
+    ['Ambito: lambda casa (completo)', m=>[m.R.lamHover!=null?(+m.R.lamHover).toFixed(3):'-','','','']],
+    ['Ambito: lambda trasf. (completo)', m=>[m.R.lamAover!=null?(+m.R.lamAover).toFixed(3):'-','','','']],
+    ['Ambito: peso del completo (ENS_SCOPE_W)', m=>[m.R.ensDebug?.scopeW!=null?m.R.ensDebug.scopeW:'-','','','']],
+    ['Ambito: peso DC / Markov / OL', m=>[m.R.ensDebug?.w?`${m.R.ensDebug.w.dc}/${m.R.ensDebug.w.mk}/${m.R.ensDebug.w.ol}`:'-','','','']],
     ['Confidence Globale', m=>[m.R.confidence!=null?m.R.confidence:'-','','','']]
   ];
   mdl.forEach(([lbl, fn]) => { const r=[lbl]; M.forEach(m=>r.push(...fn(m))); rows.push(r.join(';')); });

@@ -24,11 +24,16 @@ tutti attraverso `fetchMatchRaw` (che li mette in `RAW_CACHE`).
 Sezione di consegna: dice a che punto siamo, così una sessione nuova non
 ricomincia da capo. Aggiornala quando cambia qualcosa di sostanziale.
 
-**Build corrente: `0905-b19`.** Scanner e Comparatore devono coincidere, e sul
+**Build corrente: `0905-b20`.** Scanner e Comparatore devono coincidere, e sul
 Comparatore il badge sotto la dropzone deve uscire **verde** dopo aver trascinato
-lo Scanner. Il branch di lavoro è `claude/scanner-stat-optimization-sgs62u`;
-`main` è indietro (fermo al merge della PR #1, cioè al `0905-b2`), quindi
-**scaricare i file dal branch, non da `main`**.
+lo Scanner. Il branch di lavoro è `claude/scanner-stat-optimization-sgs62u`.
+
+**Sul «N commit behind»:** GitHub conta i *merge commit* delle PR, che stanno su
+`main` e non sul branch. Il contenuto è lo stesso: dopo ogni merge
+`git diff origin/main -- scanner.html comparatore.html AGENTS.md` è vuoto e
+`git rev-list --left-right --count origin/main...<branch>` dà `N 0` — lo zero a
+destra vuol dire che il branch non ha niente che `main` non abbia. Non c'è niente
+da recuperare: i file dei due rami sono byte per byte identici.
 
 ### Dove siamo
 
@@ -71,6 +76,7 @@ stessa informazione meglio.
 | `b17` | trovato un **disallineamento di unità** nel lambda: attacco e difesa sono NPxG divisi per la media **gol**. Correzione pronta ma spenta |
 | `b18` | **la lega non arrivava mai al motore nei backtest**: media gol e rho erano fissi. Tutte le tarature vanno riviste |
 | `b19` | **audit sistematico**: sette fallback morti, due tabelle di costanti divergenti, una metrica che non era di squadra |
+| `b20` | l'**Ordered Logit contava la casa due volte** (bias +6.8 sull'`1`): soglie ristimate e peso a 0. Ensemble riscritto a due blocchi, ruolo e completo, con `ENS_SCOPE_W` |
 
 Le tre build finali hanno una storia sola e va letta in *La baseline di coppia*:
 tre tentativi svuotati dallo stesso malinteso.
@@ -97,11 +103,20 @@ se un giro non mostra differenze sull'Elo, è il comportamento atteso.
 
 ### La prossima cosa da fare, in ordine di rapporto valore/rischio
 
-1. **Rifare il backtest col `b18` e ricontrollare tutto.** Ogni misura fino al
-   `b17` è stata presa con media gol e rho fissi — vedi *La lega che non arrivava
-   mai*. Prima cosa da guardare nel CSV nuovo: `Unita: partite di lega usate` deve
-   essere alto, non 0. Poi rimisurare il livello dell'Over 2.5 e il pareggio, che
-   potrebbero essersi sistemati da soli.
+0. **Un backtest `b20` su più leghe, e decide `ENS_SCOPE_W`.** È la cosa con il
+   miglior rapporto valore/fatica in coda: il CSV ora esporta il blocco RUOLO e il
+   blocco COMPLETO separati, quindi **un solo giro** dice se conviene 0, 0.5 o 1 —
+   senza rilanciare il motore. Vedi *Ruolo o completo*. Serve più di una lega:
+   sull'1X2 il ruolo vince in tutte e cinque, sull'Over 2.5 il confronto
+   disponibile è contaminato dal bug del `b18`.
+1. **Rifare il backtest col `b18` su tutte e cinque le leghe.** Solo la Serie A è
+   stata rifatta (`d644c70c`, 378 partite): media gol 1.365/1.183 invece di
+   1.500/1.200, rho `-0.043` invece di `-0.11`, su 949 partite di lega vere. Ha
+   spostato poco (bias λ `-2.5% -> -1.7%`, Over 2.5 `-2.2 -> -2.0`), ma **le altre
+   quattro leghe hanno ancora tutte le misure prese con la lega congelata**, e i
+   loro totali reali sono molto diversi (Bundesliga 3.25, Serie A 2.43): lì il bug
+   mordeva molto di più. Prima cosa da guardare nel CSV nuovo:
+   `Unita: partite di lega usate` deve essere alto, non 0.
 2. **Solo dopo, provare `GOALS_UNIT_FIX`.** La diagnosi del `b17` è sospetta:
    con la base bloccata a 2.70 il deficit della Bundesliga si spiega meglio così
    che col rapporto NPxG/gol. Vedi *Il disallineamento di unità nel lambda*.
@@ -537,6 +552,25 @@ a `scanner.html` al commit `cd51a69`, prima della ripulitura.
   e cercarne la causa è confronto multiplo, e il calcio offre un aneddoto
   plausibile per qualunque ipotesi. Ci sono cascato io nel `b14`. Vedi *Il modello
   non fallisce in una lega più che in un'altra*.
+- **Una correzione espressa come *rapporto* non è trasportabile su un'altra
+  baseline.** `goalsSotCorrection` torna una `scale` calcolata contro il totale che
+  le passi; il `b19` applicava la scala del ruolo **anche** ai lambda completi, che
+  quindi venivano tirati verso il totale del ruolo invece che verso i tiri. Se una
+  funzione torna un rapporto, il denominatore fa parte del risultato. È la stessa
+  forma di errore della `_base` di coppia, ricomparsa due build dopo in un punto
+  diverso. Corretta nel `b20` con un `_GCo` proprio.
+- **Il vantaggio del campo si conta due volte con una facilità sorprendente.** È la
+  trappola numero 1 di questo elenco, corretta anni fa nel modello di ruolo, e nel
+  `b20` è stata ritrovata **identica** dentro l'Ordered Logit: la variabile usava lo
+  scope `role` (che il vantaggio casa già ce l'ha, +0.196 di media) e le soglie
+  erano centrate a `-0.250` (che glielo ridà). Regola: ogni volta che un modello
+  usa numeri di ruolo, chiedersi se ha *anche* un termine casa esplicito, e
+  misurare la media della variabile — se non è centrata su zero, la costante che la
+  accompagna non può essere simmetrica. Vedi *L'ensemble 1X2*.
+- **Un componente con peso 0 va comunque tenuto giusto.** L'Ordered Logit del
+  `b20` non entra più nel risultato, ma resta a schermo e nel mega-prompt: lasciarlo
+  con le vecchie soglie voleva dire mostrare 52% di `1` dove la verità è 45%. Il
+  peso zero toglie l'effetto sul conto, non la responsabilità sul numero.
 - **Le etichette di riga del CSV devono essere uniche.** Tre sezioni diverse
   usavano `applicata`, due `peso w` e due `ha toccato il cap`: un parser che
   cerca per etichetta prende la prima e legge la sezione sbagliata **senza
@@ -1108,6 +1142,161 @@ sono numeri ragionevoli per il calcio: non hanno fatto scattare nessun allarme p
 sedici build. Un fallback deve essere **osservabile** — o esporre quante
 osservazioni l'hanno prodotto, o essere abbastanza assurdo da non passare
 inosservato.
+
+## L'ensemble 1X2: l'Ordered Logit contava il vantaggio casa due volte
+
+Domanda posta al `b20`: *e se togliessimo l'Ordered Logit? E se il problema fosse
+la divisione per ruolo?* Sono due domande diverse e hanno due risposte diverse.
+
+### Il difetto: la casa contata due volte
+
+L'Ordered Logit del motore è un modello ordinale su una sola variabile:
+
+```
+x   = olH - olA           con olH = 0.7·NPxG(casa, ruolo) + 0.3·NPxGA(trasferta, ruolo)
+y   = beta · x
+p2  = sig(T1 - y)         pX = sig(T2 - y) - p2         p1 = 1 - sig(T2 - y)
+```
+
+`NPxG` è preso con lo scope **ruolo**: per la squadra di casa i suoi numeri *in
+casa*, per l'ospite i suoi *in trasferta*. Quindi `x` **contiene già** il vantaggio
+del campo. Misurato invertendo le probabilità esportate da 1743 backtest:
+
+```
+x = olH - olA   media +0.1955   sd 0.2914   (5°-95° da -0.260 a +0.679)
+```
+
+Ma le soglie erano `T1 = -0.850, T2 = +0.350`, cioè una banda di pareggio centrata a
+**-0.250**: anche a parità di `x` il modello dava la casa favorita. Le due cose
+spingono nello stesso verso e il vantaggio casa finiva **contato due volte**.
+
+Si vedeva nei backtest, e in tutte e cinque le leghe:
+
+| | bias su `1` | logloss | pick |
+|---|---|---|---|
+| Dixon-Coles | +1.6 | 1.0098 | 51.4% |
+| Markov | +1.1 | 1.0091 | 51.5% |
+| **Ordered Logit** | **+6.8** | **1.0397** | **48.1%** |
+| ensemble `b19` (0.6/0.3/0.1) | +0.3 | 1.0115 | 51.5% |
+
+Il bias sull'`1` era positivo in tutte e cinque (+7.4 Bundesliga, +1.4 LaLiga,
++7.4 Ligue 1, +8.3 Premier, +9.7 Serie A) — non è rumore di una lega.
+
+### La correzione, e come è stata validata
+
+Le probabilità dell'OL sono invertibili esattamente (`p1` e `p2` danno due stime di
+`y` che concordano allo 0.0016 mediano, cioè alla quantizzazione del CSV), quindi
+`x` si recupera e i parametri si ristimano per massima verosimiglianza:
+
+```
+beta 1.950 -> 2.056     T1 -0.850 -> -0.475     T2 +0.350 -> +0.671
+centro della banda di pareggio: -0.250 -> +0.098
+```
+
+Ora le soglie **sottraggono** un po' di vantaggio casa, perché `x` ne fornisce già
+in eccesso. Validato **fuori campione** (si stima su quattro leghe, si misura sulla
+quinta): bias sull'`1` da **+6.8 a -0.1**, logloss da **1.0397 a 1.0270**, pick da
+**48.1% a 49.9%**. Migliora in quattro leghe su cinque; peggiora in LaLiga, dove il
+bias era già solo +1.4 perché il vantaggio casa spagnolo è più piccolo.
+
+### Ma sull'ensemble non cambia niente, ed è questa la notizia
+
+| | logloss ensemble | pick |
+|---|---|---|
+| `b19` | 1.0115 | 51.5% |
+| solo OL ristimato | **1.0114** | 51.9% |
+| solo pesi ripesati | **1.0102** | 51.3% |
+| tutti e due | 1.0103 | 51.5% |
+
+Sistemare l'OL sposta l'ensemble di **0.0001**. Il motivo è che l'OL è guidato
+dallo *stesso* NPxG del Dixon-Coles: aggiustarlo lo rende un modello migliore da
+solo, non un componente più utile.
+
+La scelta dei pesi fatta **fuori campione** (griglia cercata su quattro leghe,
+misurata sulla quinta) mette l'Ordered Logit a **0.00** in quattro fold su cinque,
+e a 0.10 nel quinto; il peso di Markov sale a 0.30. Quindi il `b20` spedisce
+`ENS_W = { dc: 0.70, mk: 0.30, ol: 0.00 }`.
+
+**L'OL resta calcolato e mostrato** (la card dei modelli e il mega-prompt lo
+citano) ma **con le soglie giuste**, perché un componente a schermo che dice 52%
+di `1` dove la verità è 45% è una bugia anche se non entra nel conto.
+
+Va detto con onestà quanto vale: `-0.0013` di logloss con `z = -2.03`, e una lega
+su cinque che va nell'altro verso. È al bordo del rumore. Non è il miglioramento
+che i sei mercati aspettano — è pulizia.
+
+## Ruolo o completo: la domanda giusta, senza ancora la risposta
+
+L'altra ipotesi — *«magari è la divisione per ruolo che ci frega»* — è ragionevole:
+con una finestra di 15 partite lo scope `role` ne lascia ~7, e la media di 7 ha
+il 40% di errore standard in più di quella di 15. In cambio compra la differenza
+casa/trasferta **della singola squadra**, che la letteratura dice essere quasi
+tutta rumore (il vantaggio casa vero è già in `LG.avgH`/`LG.avgA`).
+
+### Quello che i dati di oggi possono dire
+
+Il CSV non esportava il blocco completo, ma esportava l'**A/B su `SHRINK_K`**: `k`
+alto tira i rapporti attacco/difesa verso 1, cioè crede **meno** ai numeri del
+ruolo. È il più vicino che i dati esistenti hanno alla domanda.
+
+| `SHRINK_K` | logloss 1X2 | pick | Brier Over 2.5 |
+|---|---|---|---|
+| 4 | **1.0115** | **51.5%** | 0.2469 |
+| 12 | 1.0137 | 51.1% | 0.2463 |
+| 28 | 1.0161 | 50.5% | 0.2462 |
+
+Sull'**1X2 il ruolo si guadagna il posto**: credergli meno peggiora, in modo
+monotono, **in tutte e cinque le leghe**. Sull'**Over 2.5** va nell'altro verso, ma
+il segnale non regge il test: `z = -1.57` e `-1.08` sulla differenza appaiata, e il
+guadagno viene quasi tutto dalla Premier. Peggio: quei backtest sono **pre-`b18`**,
+con la media di lega congelata a 1.50/1.20, quindi «tirare verso la media» tirava
+verso 2.70 — giusto per caso in Serie A (bias `-2.2 -> +1.5`) e sbagliato in
+Bundesliga (`-8.7 -> -9.0`). **Quel confronto è contaminato e non va usato.**
+
+Storia coerente, ma non ancora dimostrata: il ruolo serve dove conta
+l'**asimmetria** (1X2), e disturba dove conta solo il **totale** (Over/Under).
+
+### Come il `b20` la chiude in un backtest solo
+
+Il motore calcolava già `probsOver` e `mk_ov` — Dixon-Coles e Markov sui lambda di
+*tutte* le partite — e li mostrava a schermo senza usarli. Ora l'ensemble è scritto
+come due blocchi identici per forma:
+
+```
+RUOLO    = 0.70·probsRole + 0.30·mk_ro
+COMPLETO = 0.70·probsOver + 0.30·mk_ov
+core     = (1 - ENS_SCOPE_W)·RUOLO + ENS_SCOPE_W·COMPLETO
+finale   = (1 - ENS_W.ol)·core + ENS_W.ol·probsOL
+```
+
+`ENS_SCOPE_W` **parte da 0**, cioè il comportamento di prima: non si spedisce un
+valore che nessuno ha misurato. Il CSV esporta `DCover 1/X/2`, `MKover 1/X/2`,
+`DCover GG`, `DCover Over 2.5` e i quattro lambda dei due ambiti, così **un solo
+backtest ricostruisce ogni valore fra 0 e 1** senza rilanciare il motore — lo stesso
+schema di `GOALS_SOT_W`.
+
+### Un bug trovato mentre si guardava lì
+
+`goalsSotCorrection` restituisce una **scala**, cioè un rapporto contro il *proprio*
+totale. La scala calcolata sul totale del ruolo veniva applicata **anche** ai lambda
+completi:
+
+```js
+const _GC = goalsSotCorrection(dH, dA, lamH_role + lamA_role);
+lamH_role *= _GC.scale;  lamA_role *= _GC.scale;
+lamH_over *= _GC.scale;  lamA_over *= _GC.scale;   // <- sbagliato
+```
+
+Invece di portare i lambda completi verso la stima dai tiri, li portava verso il
+totale **del ruolo**. Finché il blocco completo restava fuori dall'ensemble era solo
+un numero storto a schermo; ora che può entrarci, è un difetto vero. Corretto con un
+`_GCo` calcolato su `lamH_over + lamA_over`.
+
+**Trappola generale**: una correzione espressa come *rapporto contro una baseline*
+non è trasportabile su una baseline diversa. Se `f(lam)` torna `scale`, applicare
+`scale` a un `lam'` diverso non è un'approssimazione, è un'altra cosa. È lo stesso
+errore di forma della `_base` di coppia (vedi *La baseline di coppia*), scoperto due
+build più tardi in un punto diverso.
 
 ## I sei mercati che contano: dove siamo davvero
 
@@ -1709,6 +1898,30 @@ cercando la risposta a questa domanda:
   coppia*. Il rischio non è solo nei numeri messi a mano, è anche nei **nomi** che
   li descrivono male.
 
+**Il `b20` aggiunge un quarto caso, e va nominato: la costante stimata sui dati
+che poi si scopre non servire.** `OL_BETA`, `OL_T1`, `OL_T2` erano di tipo 1 —
+stimate per massima verosimiglianza, con il campione scritto nel commento — e
+nonostante questo erano **sbagliate**, perché la variabile su cui erano state
+stimate non era più quella su cui giravano (lo scope della feature era diventato
+`role`). Una stima invecchia quando cambia ciò che sta a monte. Regola aggiuntiva:
+accanto al campione va scritta anche **la forma della variabile** su cui la stima
+è stata fatta, e ogni volta che si tocca quella variabile la stima va rifatta o
+almeno ricontrollata sul bias medio.
+
+Costanti dell'ensemble introdotte nel `b20`, con la loro classificazione:
+
+| costante | valore | tipo | come è stata scelta |
+|---|---|---|---|
+| `ENS_W.dc` / `.mk` | 0.70 / 0.30 | stimata | griglia scelta su quattro leghe, misurata sulla quinta; modale in 4 fold su 5 |
+| `ENS_W.ol` | 0.00 | stimata | stessa griglia; l'OL esce a 0 in 4 fold su 5 |
+| `ENS_SCOPE_W` | 0 | **non stimata, dichiarata tale** | è il comportamento precedente; il CSV la ricostruisce da 0 a 1 |
+| `OL_BETA` / `T1` / `T2` | 2.056 / −0.475 / +0.671 | stimata | massima verosimiglianza su 1743 partite, validata leave-one-league-out |
+
+`ENS_SCOPE_W = 0` è l'unica delle quattro che **non** ha una misura dietro, ed è
+per questo che vale zero: spedire un valore diverso vorrebbe dire cambiare il
+comportamento del motore sulla base di un'intuizione. Sta lì per essere misurata,
+non per essere creduta.
+
 **La regola.** Per ogni costante nel motore deve valere una di queste tre:
 1. **e' stimata dai dati** e c'e' scritto su quale campione;
 2. **e' un a priori dichiarato** che si spegne quando i dati bastano;
@@ -1719,6 +1932,34 @@ cambia facendola variare del ±50%. Il rischio non e' che la matematica smetta d
 funzionare — continua a girare benissimo — ma che ogni costante non stimata sia
 un parametro nascosto, e che i parametri nascosti **interagiscano** senza che
 nessuno se ne accorga.
+
+## Leggere il log del Comparatore: quattro messaggi che sembrano bug e non lo sono
+
+Ricorrono negli screenshot, quindi vale la pena averli scritti una volta.
+
+- **`⚠️ data fuori dallo storico caricato (2023-08-19 → 2026-05-24)`** e
+  **`Nessuna partita per <data>`**. Sono lo stesso fatto: la data chiesta non è
+  coperta dall'archivio scaricato. Le stagioni le sceglie la dropdown del
+  Comparatore, e l'API non ha ancora le partite della stagione in corso; il
+  messaggio è il guardrail che funziona, non un errore. La variante «nessuna
+  partita il *g* — si gioca il *g±n*» dice invece che la data è dentro l'archivio
+  ma è un turno di sosta.
+- **`Il V9.7 non ha esposto _V97_probs`**. L'hook viene iniettato **dopo**
+  `const confidence = Math.round(...)`. Se `avviaScanner` esce prima di quella
+  riga, l'oggetto non nasce. Il caso di gran lunga più comune è il guardrail
+  `dH.overall.n === 0 || dA.overall.n === 0` («Storico insufficiente»): tipico di
+  una **neopromossa** nelle prime giornate, che nell'archivio di lega non ha
+  partite precedenti alla data target. Non è un bug del contratto: è il motore che
+  rifiuta di prevedere senza storico, e il batch che lo riporta.
+- **`⚠️ RISERVA: le metriche avanzate NON vengono dal motore ma da cmpDcPredict`**
+  seguito da **`Estratti da 0/0 match storici`**. Il primo dice che
+  `R.predStats` era vuoto per almeno una delle due squadre, quindi il Comparatore
+  è passato al proprio predittore; il secondo che anche quello non ha trovato
+  partite utilizzabili. Nei backtest riusciti la riga giusta è
+  `→ Metriche avanzate: previste dal motore`, e nel CSV
+  `Origine metriche avanzate` deve dire `motore` su **tutte** le partite: se dice
+  `riserva-*`, quelle righe sono state prodotte con un secondo modello e non
+  vanno confrontate con le altre. **Controllarlo prima di analizzare un CSV.**
 
 ## Il contratto Scanner ↔ Comparatore
 
