@@ -2448,7 +2448,7 @@ function cmpExportCSV() {
     ['Unita: media gol casa (emivita 106)',   d => d && d.lgHdec != null ? _g4(d.lgHdec) : 'N/D'],
     ['Unita: media gol trasf. (emivita 106)', d => d && d.lgAdec != null ? _g4(d.lgAdec) : 'N/D'],
     ['Unita: rho stimato',       d => d && d.rho != null ? _g4(d.rho) : 'N/D'],
-    ['Origine metriche avanzate', () => [cmpPredSource || 'N/D', '-', '', '']],
+    ['Origine metriche avanzate', () => cmpPredSource || 'N/D'],
     ['Unita: attacco casa',      d => d && d.attH != null ? _g4(d.attH) : 'N/D'],
     ['Unita: difesa trasferta',  d => d && d.defA != null ? _g4(d.defA) : 'N/D'],
     ['Unita: attacco trasferta', d => d && d.attA != null ? _g4(d.attA) : 'N/D'],
