@@ -72,7 +72,7 @@ memoria del progetto, non la sua verità corrente. → *L'audit del documento*.
 Sezione di consegna: dice a che punto siamo, così una sessione nuova non
 ricomincia da capo. Aggiornala quando cambia qualcosa di sostanziale.
 
-**Build corrente: `0905-b24`.** Scanner e Comparatore devono coincidere, e sul
+**Build corrente: `0905-b25`.** Scanner e Comparatore devono coincidere, e sul
 Comparatore il badge sotto la dropzone deve uscire **verde** dopo aver trascinato
 lo Scanner. Il branch di lavoro è `claude/controlla-agents-md-bugs-2dnlmj`.
 
@@ -140,6 +140,7 @@ sovradispersione — scagionati con i dati in mano.
 | `b22` | **`rho` e la sovradispersione scagionati**, il disallineamento di unità è già compensato: il muro dell'Over/Under è tutto nel **livello** del lambda, e la base di lega è una media piatta di tre stagioni. `aerials` era corretto solo nello Scanner |
 | `b23` | **audit del documento contro il sorgente**: quattro punti in cui AGENTS.md descriveva un motore diverso da quello che gira, il più grosso è che lo scope `role` **è** un sottoinsieme di `overall` (8 partite su 15). Esposto `ROLE_SCOPE_INDEPENDENT`, fermo a 0; via il codice morto |
 | `b24` | **il taglio temporale non si fida più dell'orario**: con un `time_utc` senza `Z` e un browser in un fuso avanti, la partita da prevedere entrava nel proprio storico (l'`1` da 0.528 a 0.557). Ora il confronto è sulla **data in forma di stringa**, in AND col timestamp: `_isPast` |
+| `b25` | l'A/B del campione di ruolo diventa un **interruttore** nel Comparatore invece di una riga di console: si fa anche da telefono. Motore invariato |
 
 Le tre build finali hanno una storia sola e va letta in *La baseline di coppia*:
 tre tentativi svuotati dallo stesso malinteso.
@@ -1433,11 +1434,27 @@ prodotto quel file.
 (`ENS_SCOPE_W`, `GOALS_SOT_W`, `ELO_1X2_W`, `LEAGUE_HALFLIFE_DAYS`) si spazzano
 tutte con **un** backtest, perché il CSV esporta i pezzi da cui si ricompone ogni
 valore. Questa no: cambia **quali partite si scaricano**, quindi non si ricostruisce
-da niente. Servono **due giri sullo stesso periodo**, con
-`window.ROLE_SCOPE_INDEPENDENT = 1` da console prima del secondo batch. Il secondo
-costa circa il **50% di chiamate in più** (`fetchSet` passa da ~15 a ~22 partite per
-squadra), mitigato dal fatto che in un batch la `RAW_CACHE` è condivisa fra tutte le
-partite della lega.
+da niente. Servono **due giri sullo stesso periodo**.
+
+Dal `b25` il secondo giro non richiede la console: c'è una **casella nel Comparatore**,
+sopra «Avvia analisi», che accende `ROLE_SCOPE_INDEPENDENT`. Si ricorda fra i
+ricaricamenti (`localStorage`), aggiunge `_ruoloIndip` al nome del file esportato e il
+CSV registra comunque lo stato nella riga `Scope: ruolo indipendente`, quindi i due file
+non si possono confondere nemmeno a distanza di giorni. È nata perché il Comparatore si
+usa **anche da telefono**, dove una riga di console non è una richiesta ragionevole: se
+una manopola serve a chi fa girare i backtest, va dove lui la può toccare.
+
+Due cose che rendono il confronto valido:
+
+- **Stesso intervallo, non simile.** Il confronto è **appaiato** partita per partita, e
+  la varianza della differenza è molto più bassa di quella dei due livelli separati: è
+  così che `ENS_SCOPE_W` è uscito a `z = −3.96` su tre leghe. Con intervalli diversi lo
+  stesso effetto sparisce nel rumore. Meglio una stagione sola fatta due volte che
+  quattro fatte una volta.
+- **Non ricaricare la pagina fra i due giri.** La `RAW_CACHE` si svuota solo al cambio
+  di **lega** dentro lo sweep: restando nella stessa sessione il secondo giro trova già
+  dentro tutte le partite del primo e paga solo quelle nuove, molto meno del 50% teorico
+  in più.
 
 Quando il numero arriva, va scritto qui col campione, lo `z` e i fold, come per
 tutte le altre.
