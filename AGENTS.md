@@ -40,6 +40,9 @@ cui si è già risposto, con i numeri. Le tre porte d'ingresso:
 - **«Il backtest sta barando?»** → *Il Comparatore stampa come lo Scanner*: il taglio
   temporale misurato invece che letto, su tutte e due le strade da cui un risultato
   può rientrare, col controllo di potenza.
+- **«Ho quattro CSV di Serie A, cosa ci leggo?»** → *Quattro backtest veri di Serie A*:
+  si sovrappongono, `/advanced` è vuoto su quelle stagioni, e le probabilità escono
+  sotto-disperse di un terzo.
 
 **Le sei cose che più facilmente fanno perdere una giornata**, se non le sai:
 
@@ -69,7 +72,7 @@ memoria del progetto, non la sua verità corrente. → *L'audit del documento*.
 Sezione di consegna: dice a che punto siamo, così una sessione nuova non
 ricomincia da capo. Aggiornala quando cambia qualcosa di sostanziale.
 
-**Build corrente: `0905-b24`.** Scanner e Comparatore devono coincidere, e sul
+**Build corrente: `0905-b25`.** Scanner e Comparatore devono coincidere, e sul
 Comparatore il badge sotto la dropzone deve uscire **verde** dopo aver trascinato
 lo Scanner. Il branch di lavoro è `claude/controlla-agents-md-bugs-2dnlmj`.
 
@@ -137,6 +140,7 @@ sovradispersione — scagionati con i dati in mano.
 | `b22` | **`rho` e la sovradispersione scagionati**, il disallineamento di unità è già compensato: il muro dell'Over/Under è tutto nel **livello** del lambda, e la base di lega è una media piatta di tre stagioni. `aerials` era corretto solo nello Scanner |
 | `b23` | **audit del documento contro il sorgente**: quattro punti in cui AGENTS.md descriveva un motore diverso da quello che gira, il più grosso è che lo scope `role` **è** un sottoinsieme di `overall` (8 partite su 15). Esposto `ROLE_SCOPE_INDEPENDENT`, fermo a 0; via il codice morto |
 | `b24` | **il taglio temporale non si fida più dell'orario**: con un `time_utc` senza `Z` e un browser in un fuso avanti, la partita da prevedere entrava nel proprio storico (l'`1` da 0.528 a 0.557). Ora il confronto è sulla **data in forma di stringa**, in AND col timestamp: `_isPast` |
+| `b25` | l'A/B del campione di ruolo diventa un **interruttore** nel Comparatore invece di una riga di console: si fa anche da telefono. Motore invariato |
 
 Le tre build finali hanno una storia sola e va letta in *La baseline di coppia*:
 tre tentativi svuotati dallo stesso malinteso.
@@ -1430,11 +1434,27 @@ prodotto quel file.
 (`ENS_SCOPE_W`, `GOALS_SOT_W`, `ELO_1X2_W`, `LEAGUE_HALFLIFE_DAYS`) si spazzano
 tutte con **un** backtest, perché il CSV esporta i pezzi da cui si ricompone ogni
 valore. Questa no: cambia **quali partite si scaricano**, quindi non si ricostruisce
-da niente. Servono **due giri sullo stesso periodo**, con
-`window.ROLE_SCOPE_INDEPENDENT = 1` da console prima del secondo batch. Il secondo
-costa circa il **50% di chiamate in più** (`fetchSet` passa da ~15 a ~22 partite per
-squadra), mitigato dal fatto che in un batch la `RAW_CACHE` è condivisa fra tutte le
-partite della lega.
+da niente. Servono **due giri sullo stesso periodo**.
+
+Dal `b25` il secondo giro non richiede la console: c'è una **casella nel Comparatore**,
+sopra «Avvia analisi», che accende `ROLE_SCOPE_INDEPENDENT`. Si ricorda fra i
+ricaricamenti (`localStorage`), aggiunge `_ruoloIndip` al nome del file esportato e il
+CSV registra comunque lo stato nella riga `Scope: ruolo indipendente`, quindi i due file
+non si possono confondere nemmeno a distanza di giorni. È nata perché il Comparatore si
+usa **anche da telefono**, dove una riga di console non è una richiesta ragionevole: se
+una manopola serve a chi fa girare i backtest, va dove lui la può toccare.
+
+Due cose che rendono il confronto valido:
+
+- **Stesso intervallo, non simile.** Il confronto è **appaiato** partita per partita, e
+  la varianza della differenza è molto più bassa di quella dei due livelli separati: è
+  così che `ENS_SCOPE_W` è uscito a `z = −3.96` su tre leghe. Con intervalli diversi lo
+  stesso effetto sparisce nel rumore. Meglio una stagione sola fatta due volte che
+  quattro fatte una volta.
+- **Non ricaricare la pagina fra i due giri.** La `RAW_CACHE` si svuota solo al cambio
+  di **lega** dentro lo sweep: restando nella stessa sessione il secondo giro trova già
+  dentro tutte le partite del primo e paga solo quelle nuove, molto meno del 50% teorico
+  in più.
 
 Quando il numero arriva, va scritto qui col campione, lo `z` e i fold, come per
 tutte le altre.
@@ -1628,6 +1648,103 @@ di lega sono strutturali — ma è anche **esattamente** l'ingresso del problema
 `LEAGUE_HALFLIFE_DAYS`: quella media piatta su tre stagioni è piatta proprio perché
 qui non c'è né finestra né decadimento. Vedi *La base di lega risponde alla domanda
 sbagliata*.
+
+## Quattro backtest veri di Serie A: cosa dicono, e cosa non possono dire
+
+1504 partite distinte di Serie A dal 2021/22 al 2024/25, esportate col `b24` in quattro
+file. Prima lezione, prima ancora dei numeri: **i quattro file si sovrappongono quasi
+tutti**. Sommarli darebbe 3326 partite, ma gli `ID PARTITA` distinti sono **1504** — uno
+è sottoinsieme dell'altro. Con l'`ID PARTITA` in prima colonna la deduplica costa tre
+righe, e senza si conta la stessa partita fino a tre volte.
+
+### `/advanced` è vuoto su queste stagioni, e va saputo prima di leggere qualunque cosa
+
+`Origine metriche avanzate` dice **`riserva-*` sul 100% delle righe di tutti e quattro i
+file**, cioè il controllo I fallisce dappertutto. La causa non è il Comparatore: è che
+per queste stagioni PitchAPI **non restituisce `/advanced`**. VAEP, xT, PV, GCA, xAG,
+SCA, passaggi progressivi, passaggi e conduzioni in area sono `N/D` al **100%**, sia
+previsti sia reali. Il motore non può prevederle, quindi `_engineHas` è falso e il
+Comparatore ripiega su `cmpDcPredict`, che non trova niente nemmeno lui.
+
+Cosa **resta valido** in questi file, e non è poco: tutto quello che passa da `/stats`.
+Attacco e difesa, media gol di lega, `rho`, i lambda, l'1X2, i mercati gol e i tre
+mercati sui numeri sono riempiti al 100%, con valori sensati (media gol 1.42/1.16, non
+il fallback 1.50/1.20). Il `npxg` cade sul fallback di `/stats` e in ultima istanza
+sull'xG, quindi il motore gira — ma **gira su un ingresso diverso** da quello con cui
+sono state tarate le costanti di questo documento. Le sezioni delle metriche avanzate,
+invece, sono da buttare.
+
+**Da qui in poi, la regola operativa**: prima di leggere un CSV, guardare
+`Origine metriche avanzate`. Se dice `riserva-*`, le sezioni *NUOVE METRICHE* e
+*METRICHE 0905-b4* non si leggono, e il resto sì.
+
+### Il campione di ruolo, misurato in produzione
+
+Il `b23` aveva stimato «con `limit = 15` restano 8 partite» su dati sintetici. Questi
+file girano con `limite richiesto = 30`, e dicono:
+
+| | valore |
+|---|---|
+| partite complessive (`nHo`) | mediana **30** — il limite si raggiunge |
+| partite di ruolo (`nHr`) | mediana **14**, massimo 16 |
+| peso `wS = n/(n+3)` | mediana **0.824** (sarebbe 0.909 a 30) |
+| partite con meno di 5 di ruolo | **10.4%** |
+| partite con **zero** di ruolo | **1.2%**, e lì `wS = 0`: il lambda di ruolo collassa *interamente* sulla media di lega |
+
+Cioè esattamente la metà del limite richiesto, come previsto, ma su dati veri e su un
+limite diverso. Vale la pena tenerlo: la relazione è `nHr ≈ limit/2`, quindi **alzare
+`history-limit` alza il campione di ruolo solo a metà velocità**.
+
+### Le probabilità sono sotto-disperse, e questa volta il segno è opposto a prima
+
+È il risultato più forte dei quattro file, ed è quello che merita un backtest di
+risposta. Regredendo `reale ~ previsto` su **tutti e tre gli esiti** (4512 coppie, non
+solo il pick, così non c'è selezione sul massimo):
+
+```
+hit_reale = -11.18 + 1.335 x prob      SE della pendenza 0.056  →  +5.95 sigma da 1
+la retta nel motore:  6.26 + 0.880 x prob
+```
+
+Pendenza **maggiore di 1** vuol dire probabilità **sotto**-disperse: il modello è più
+bravo di quanto dica. E regge stagione per stagione, monotona e sempre dallo stesso
+lato:
+
+| stagione | pendenza | SE | sigma da 1 |
+|---|---|---|---|
+| 2021/22 | 1.244 | 0.119 | +2.04 |
+| 2022/23 | 1.335 | 0.114 | +2.95 |
+| 2023/24 | 1.376 | 0.111 | +3.39 |
+| 2024/25 | 1.376 | 0.108 | +3.47 |
+
+A fasce si vede la forma classica: sotto il 25% previsto il modello **sovra**stima
+(−4.8 punti), sopra il 45% **sotto**stima (+7.1 e +7.5). Il bias medio invece è
+**zero** (`1` +0.4, `X` +0.5, `2` −0.9): il modello è giusto in media e timido agli
+estremi.
+
+**Quel bias medio nullo è anche la prova che non è leakage**, ed è il motivo per cui
+vale la pena guardarlo: una partita che rientra nel proprio storico gonfia il livello,
+non solo la dispersione. Qui il livello è a posto e si muove solo la pendenza — è
+troppo shrinkage, non informazione rubata.
+
+**Ma non toccare le rette della confidence con questo numero.** Il documento dice
+altrove che rifittarle «non serve», con pendenze **sotto** 1 su altri campioni: qui il
+segno è opposto. Prima di dare la colpa a una delle due misure, notare che questi
+quattro file girano in una configurazione diversa da quella di riferimento —
+`history-limit` **30** invece di 15, e soprattutto **senza `/advanced`**, quindi con
+l'xG al posto degli NPxG. Non è la stessa macchina. La lettura onesta è: *in questo
+regime* le probabilità sono sotto-disperse di un terzo, e le due cose da provare, in
+ordine, sono `ROLE_SCOPE_INDEPENDENT` (che è proprio un rubinetto dello shrinkage, e
+questi file dicono che ne chiude metà) e `SHRINK_LAM_K`.
+
+### Il resto dei numeri, per memoria
+
+Pick azzeccato **52.1%** su 1504 partite contro il ~40.7% del «gioca sempre in casa».
+Over 2.5 per stagione (mai aggregato, i base rate vanno dal 45.2% al 55.1%): AUC
+**0.598 / 0.585 / 0.561 / 0.573** — sopra la forchetta 0.51–0.57 registrata altrove in
+questo documento, ma di nuovo: altra configurazione, altra lega, non confrontabile
+direttamente. La media prevista dell'Over sta **sotto** il reale in tre stagioni su
+quattro, che è il solito livello del lambda troppo basso.
 
 ## La lega che non arrivava mai: il bug che invalida le tarature
 
@@ -3229,7 +3346,15 @@ E due controlli che vanno fatti sul **CSV appena arrivato**, prima di analizzarl
   Qualunque misura per lega su un file non controllato è aria.
 - **I. `Origine metriche avanzate` dice `motore` su tutte le partite?** Se su qualcuna
   dice `riserva-*`, quelle righe vengono da un secondo predittore con scope e baseline
-  diversi e **non sono confrontabili** con le altre.
+  diversi e **non sono confrontabili** con le altre. Sui quattro export di Serie A
+  2021–2025 dice `riserva-*` sul **100%** delle righe, e la causa non è il Comparatore:
+  PitchAPI non serve `/advanced` per quelle stagioni. Quando succede, le sezioni *NUOVE
+  METRICHE* e *METRICHE 0905-b4* sono `N/D` da cima a fondo e vanno saltate — **il resto
+  del file resta valido**. Vedi *Quattro backtest veri di Serie A*.
+- **I-bis. Gli `ID PARTITA` sono unici, e i file che stai unendo non si sovrappongono?**
+  Quattro export consecutivi dello stesso archivio possono essere l'uno sottoinsieme
+  dell'altro: sommandoli si contano le stesse partite fino a tre volte. Deduplica sempre
+  per `ID PARTITA` prima di contare.
 
 Per B, C e D il CSV va letto sapendo che **ogni partita occupa 4 colonne**
 (Previsto, Confidence, Reale, Esito) e che le sezioni CASA e TRASFERTA ripetono le

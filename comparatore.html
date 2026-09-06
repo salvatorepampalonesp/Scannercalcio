@@ -162,7 +162,7 @@ select{cursor:pointer}
   <div class="topbar">
     <div class="brand">
       <h1>Comparatore V9.7</h1>
-      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b24</span>
+      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b25</span>
       <span class="badge" id="engine-badge">motore non caricato</span>
     </div>
     <span class="badge">previsioni vs realtà</span>
@@ -308,6 +308,15 @@ select{cursor:pointer}
         <div style="display:flex;align-items:flex-end">
           <button class="btn btn-go btn-full" id="cmp-btn-run" onclick="cmpRun()">Avvia analisi</button>
         </div>
+      </div>
+
+      <div style="margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--panel2)">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin:0">
+          <input type="checkbox" id="cmp-role-indep" onchange="cmpApplyScopeFlag(true)"
+                 style="width:20px;height:20px;flex:0 0 auto;margin:0">
+          <span style="font-weight:600">Campione di ruolo indipendente <span style="font-weight:400;opacity:.75">(A/B)</span></span>
+        </label>
+        <div class="note" style="margin:6px 0 0 30px" id="cmp-role-indep-hint"></div>
       </div>
 
       <div class="prog" id="cmp-progress"></div>
@@ -697,7 +706,7 @@ async function loadEngineFromText(text, fileName) {
     <p><code>${fileName}</code> — clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
 
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b24';
+  const _bComp = '0905-b25';
   const _el = document.getElementById('engine-build');
   if (_el) {
     if (!_bScan) {
@@ -1229,8 +1238,31 @@ async function cmpCaricaDatabase() {
   }
 }
 
+// L'A/B del campione di ruolo si fa in due giri sullo stesso intervallo, e il secondo
+// vuole ROLE_SCOPE_INDEPENDENT a 1. Da telefono non c'e' una console: e' un interruttore.
+// Lo stato si ricorda fra i ricaricamenti, finisce nel nome del file esportato e il CSV
+// lo registra comunque nella riga "Scope: ruolo indipendente".
+function cmpApplyScopeFlag(fromUser) {
+  const el = document.getElementById('cmp-role-indep');
+  const on = !!(el && el.checked);
+  window.ROLE_SCOPE_INDEPENDENT = on ? 1 : 0;
+  try { localStorage.setItem('cmp_role_indep', on ? '1' : '0'); } catch (e) {}
+  const hint = document.getElementById('cmp-role-indep-hint');
+  if (hint) {
+    hint.innerHTML = on
+      ? 'ON — il ruolo usa le ultime N giocate in casa/trasferta. E\' il <b>secondo</b> giro dell\'A/B: stesso intervallo del primo, altrimenti il confronto non vale.'
+      : 'OFF — comportamento di sempre: il ruolo e\' quello che sta dentro le ultime N complessive (circa la meta\'). E\' il <b>primo</b> giro dell\'A/B.';
+  }
+  if (fromUser && typeof cmpLog === 'function') {
+    cmpLog(on ? '🔀 Campione di ruolo INDIPENDENTE: questo giro e\' il B dell\'A/B. Usa lo stesso intervallo del giro A.'
+              : '🔀 Campione di ruolo a sottoinsieme (default): questo giro e\' l\'A dell\'A/B.');
+  }
+  return on;
+}
+
 async function cmpRunMatch(match, limit, render) {
   const mId = match.id;
+  cmpApplyScopeFlag(false);
 
   const setSel = (id, valId, valName) => {
     const el = document.getElementById(id);
@@ -2448,7 +2480,7 @@ function cmpExportCSV() {
     ['Unita: media gol casa (emivita 106)',   d => d && d.lgHdec != null ? _g4(d.lgHdec) : 'N/D'],
     ['Unita: media gol trasf. (emivita 106)', d => d && d.lgAdec != null ? _g4(d.lgAdec) : 'N/D'],
     ['Unita: rho stimato',       d => d && d.rho != null ? _g4(d.rho) : 'N/D'],
-    ['Origine metriche avanzate', () => [cmpPredSource || 'N/D', '-', '', '']],
+    ['Origine metriche avanzate', () => cmpPredSource || 'N/D'],
     ['Unita: attacco casa',      d => d && d.attH != null ? _g4(d.attH) : 'N/D'],
     ['Unita: difesa trasferta',  d => d && d.defA != null ? _g4(d.defA) : 'N/D'],
     ['Unita: attacco trasferta', d => d && d.attA != null ? _g4(d.attA) : 'N/D'],
@@ -2607,7 +2639,9 @@ function cmpExportCSV() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = cmpBatchExportFilename || `Backtest_V97_${new Date().toISOString().split('T')[0]}.csv`;
+  const _sfx = (window.ROLE_SCOPE_INDEPENDENT ? '_ruoloIndip' : '');
+  const _base = cmpBatchExportFilename || `Backtest_V97_${new Date().toISOString().split('T')[0]}.csv`;
+  a.download = _sfx ? _base.replace(/\.csv$/i, _sfx + '.csv') : _base;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -2674,6 +2708,13 @@ function cmpRefreshMatches(){
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
+  // prima del return qui sotto: l'interruttore va ripristinato anche senza motore salvato
+  try {
+    const el = document.getElementById('cmp-role-indep');
+    if (el) el.checked = localStorage.getItem('cmp_role_indep') === '1';
+  } catch (e) {}
+  cmpApplyScopeFlag(false);
+
   const saved = localStorage.getItem('cmp_engine_html');
   if (!saved) return;
   try {
