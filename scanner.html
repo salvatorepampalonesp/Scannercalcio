@@ -155,7 +155,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b17</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b19</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -812,7 +812,8 @@ function computeLeagueParams(leagueId, targetTimeMs) {
     if (m.league_id !== leagueId || m.status !== 'finished' || !m.time_utc) continue;
     if (new Date(m.time_utc).getTime() >= targetTimeMs) continue;
     if (seen.has(m.id)) continue; seen.add(m.id);
-    gh += (m.score_home ?? 0); ga += (m.score_away ?? 0); n++;
+    if (m.score_home == null || m.score_away == null) continue;
+    gh += m.score_home; ga += m.score_away; n++;
   }
   if (n < 30) return { avgH: 1.50, avgA: 1.20, n };
   return { avgH: gh / n, avgA: ga / n, n };
@@ -824,7 +825,8 @@ function estimateRho(leagueId, targetTimeMs, LG) {
     if (m.league_id !== leagueId || m.status !== 'finished' || !m.time_utc) continue;
     if (new Date(m.time_utc).getTime() >= targetTimeMs) continue;
     if (seen.has(m.id)) continue; seen.add(m.id);
-    const k = `${m.score_home ?? 0}-${m.score_away ?? 0}`; if (obs[k] !== undefined) obs[k]++; n++;
+    if (m.score_home == null || m.score_away == null) continue;
+    const k = `${m.score_home}-${m.score_away}`; if (obs[k] !== undefined) obs[k]++; n++;
   }
   if (n < 100) return -0.11;
   let best = -0.11, bestErr = Infinity;
@@ -975,7 +977,7 @@ const ADV_SPEC = [
   ['blocks',          m => m.defending?.blocks,                         'volume'],
   ['clearances',      m => m.defending?.clearances,                     'volume'],
   ['duels_won',       m => m.defending?.duels_won,                      'volume'],
-  ['aerials',         m => m.defending?.aerials,                        'volume'],
+  ['aerials',         m => m.defending?.aerials_won ?? m.duels?.aerials_won,  'volume'],
   ['challenges',      m => m.defending?.challenges,                     'volume'],
   ['ppda_num',        m => m.defending?.opponent_passes,                'volume'],
   ['ppda_den',        m => m.defending?.defensive_actions,              'volume']
@@ -1025,7 +1027,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
     let gca=null, sca=null, xag=null, prog_passes=null, passes_box=null, carries_box=null, prog_carries=null;
     let gca_ag=null, sca_ag=null, xag_ag=null, prog_passes_ag=null, passes_box_ag=null, carries_box_ag=null, prog_carries_ag=null;
     let xg_sp_ag=null;
-    let opp_ppda=null, opp_field_tilt=null, opp_direct_speed=null, opp_seq_time=null, opp_avg_x=null, opp_avg_def_x=null, opp_cp_regains=null, opp_rec_time=null;
+    let opp_ppda=null, opp_field_tilt=null, opp_direct_speed=null, opp_seq_time=null, opp_avg_x=null, opp_avg_def_x=null, opp_cp_regains=null, opp_rec_time=null, opp_f3_entries=null;
 
     let advHasMe = false;
     const advX = {};
@@ -1063,6 +1065,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
           opp_avg_def_x = oppAdv.defending?.avg_defensive_action_x ?? oppAdv.positioning?.avg_defensive_action_x ?? null;
           opp_cp_regains = oppAdv.defending?.counterpress_regains_5s ?? oppAdv.pressing?.counterpress_regains_5s ?? null;
           opp_rec_time = oppAdv.defending?.ball_recovery_time ?? oppAdv.tempo?.ball_recovery_time ?? null;
+          opp_f3_entries = oppAdv.territory?.final_third_entries ?? oppAdv.attacking?.final_third_entries ?? null;
 
           gca_ag = oppAdv.creation?.gca ?? null; sca_ag = oppAdv.creation?.sca ?? null; xag_ag = oppAdv.creation?.xag ?? null;
           prog_passes_ag = oppAdv.passing?.progressive_passes ?? null; passes_box_ag = oppAdv.passing?.passes_into_box ?? null;
@@ -1117,15 +1120,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
     const zeroIf = (v, ok) => isNil(v) ? (ok ? 0 : null) : v;
     const keepNull = v => isNil(v) ? null : v;
 
-    const _rawSnap = { bc, bcm, xg_sp, xgot, cross, drib, thru, aer, misc, disp, f3_entries, tch_box, cp_regains };
-    const rawPresent = {}; Object.keys(_rawSnap).forEach(k => rawPresent[k] = !isNil(_rawSnap[k]));
 
-    bc = zeroIf(bc, anyOk); bcm = zeroIf(bcm, anyOk); xg_sp = zeroIf(xg_sp, anyOk);
-    xgot = zeroIf(xgot, anyOk);
-    cross = zeroIf(cross, anyOk); drib = zeroIf(drib, anyOk); thru = zeroIf(thru, anyOk); aer = zeroIf(aer, anyOk);
-    misc = zeroIf(misc, anyOk); disp = zeroIf(disp, anyOk);
-    f3_entries = zeroIf(f3_entries, advOk); tch_box = zeroIf(tch_box, anyOk); cp_regains = zeroIf(cp_regains, advOk);
-    opp_cp_regains = zeroIf(opp_cp_regains, advOk);
 
     ppda = keepNull(ppda); field_tilt = keepNull(field_tilt); direct_speed = keepNull(direct_speed);
     seq_time = keepNull(seq_time); avg_x = keepNull(avg_x); avg_def_x = keepNull(avg_def_x);
@@ -1146,6 +1141,19 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
     if (aer === null && d) aer = extractSafeStat(d, ['aerials_won', 'aerial_duels_won', 'duelli aerei'], isH);
     if (misc === null && d) misc = extractSafeStat(d, ['miscontrols', 'bad_controls', 'errori'], isH);
     if (disp === null && d) disp = extractSafeStat(d, ['dispossessed', 'perse'], isH);
+
+    // la copertura si misura DOPO i fallback: e' "abbiamo il valore", non "l'ha dato /advanced"
+    const _rawSnap = { bc, bcm, xg_sp, xgot, cross, drib, thru, aer, misc, disp, f3_entries, tch_box, cp_regains };
+    const rawPresent = {}; Object.keys(_rawSnap).forEach(k => rawPresent[k] = !isNil(_rawSnap[k]));
+
+    // i fallback su /stats sopra devono poter vedere il null: azzerare prima li
+    // rendeva codice morto (AGENTS.md, I fallback che non scattavano mai)
+    bc = zeroIf(bc, anyOk); bcm = zeroIf(bcm, anyOk); xg_sp = zeroIf(xg_sp, anyOk);
+    xgot = zeroIf(xgot, anyOk);
+    cross = zeroIf(cross, anyOk); drib = zeroIf(drib, anyOk); thru = zeroIf(thru, anyOk); aer = zeroIf(aer, anyOk);
+    misc = zeroIf(misc, anyOk); disp = zeroIf(disp, anyOk);
+    f3_entries = zeroIf(f3_entries, advOk); tch_box = zeroIf(tch_box, anyOk); cp_regains = zeroIf(cp_regains, advOk);
+    opp_cp_regains = zeroIf(opp_cp_regains, advOk); opp_f3_entries = zeroIf(opp_f3_entries, advOk);
 
     let red_cards = 0; let goal_timings_scored = []; let goal_timings_conceded = []; let scorers = [];
     if(eventsRes) {
@@ -1172,7 +1180,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
       yel: zeroIf(extractSafeStat(d, ['yellow_cards', 'yellowcards', 'gialli'], isH), statsOk), yel_ag: zeroIf(extractSafeStat(d, ['yellow_cards', 'yellowcards', 'gialli'], !isH), statsOk),
       fouls: zeroIf(extractSafeStat(d, ['fouls', 'falli'], isH), statsOk), fouls_ag: zeroIf(extractSafeStat(d, ['fouls', 'falli'], !isH), statsOk),
       ppda, field_tilt, direct_speed, seq_time, avg_x, f3_entries, tch_box, avg_def_x, cp_regains, rec_time, npxg, xg_sp, xgot, bc, bcm, xg_shot, cross, drib, thru, aer, misc, disp,
-      opp_ppda, opp_field_tilt, opp_direct_speed, opp_seq_time, opp_avg_x, opp_avg_def_x, opp_cp_regains, opp_rec_time,
+      opp_ppda, opp_field_tilt, opp_direct_speed, opp_seq_time, opp_avg_x, opp_avg_def_x, opp_cp_regains, opp_rec_time, opp_f3_entries,
       gca, sca, xag, prog_passes, passes_box, carries_box, prog_carries,
       gca_ag, sca_ag, xag_ag, prog_passes_ag, passes_box_ag, carries_box_ag, prog_carries_ag, xg_sp_ag,
       ...advX,
@@ -1183,7 +1191,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
   function buildStats(matchList) {
     let out = { n: matchList.length, vals: { poss_ag: [], xgot_ag: [], tch_box_ag: [], gf:[], ga:[], xg:[], xga:[], npxg:[], npxga:[], sot:[], sot_ag:[], cor:[], cor_ag:[], yel:[], yel_ag:[], fouls:[], fouls_ag:[], poss:[], moduli:[],
       ppda:[], field_tilt:[], direct_speed:[], seq_time:[], avg_x:[], f3_entries:[], tch_box:[], avg_def_x:[], cp_regains:[], rec_time:[], xg_sp:[], xgot:[], bc:[], bcm:[], xg_shot:[], cross:[], drib:[], thru:[], aer:[], misc:[], disp:[],
-      opp_ppda:[], opp_field_tilt:[], opp_direct_speed:[], opp_seq_time:[], opp_avg_x:[], opp_avg_def_x:[], opp_cp_regains:[], opp_rec_time:[],
+      opp_ppda:[], opp_field_tilt:[], opp_direct_speed:[], opp_seq_time:[], opp_avg_x:[], opp_avg_def_x:[], opp_cp_regains:[], opp_rec_time:[], opp_f3_entries:[],
       gca:[], sca:[], xag:[], prog_passes:[], passes_box:[], carries_box:[], prog_carries:[],
       gca_ag:[], sca_ag:[], xag_ag:[], prog_passes_ag:[], passes_box_ag:[], carries_box_ag:[], prog_carries_ag:[], xg_sp_ag:[], red_cards:[], dates:[] },
       matchInfo: [], streak: [], historyForElo: [], all_timings_scored: [], all_timings_conceded: [], all_scorers: [], win_pts: 0 };
@@ -1200,7 +1208,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
       out.vals.yel.push(det.yel); out.vals.yel_ag.push(det.yel_ag); out.vals.fouls.push(det.fouls); out.vals.fouls_ag.push(det.fouls_ag); out.vals.poss.push(det.poss); out.vals.poss_ag.push(det.poss_ag); out.vals.xgot_ag.push(det.xgot_ag); out.vals.tch_box_ag.push(det.tchbox_ag); out.vals.moduli.push(det.modulo);
       out.vals.red_cards.push(det.red_cards); out.vals.dates.push(det.dateStrUtc);
 
-      const OPT = ['ppda','field_tilt','direct_speed','seq_time','avg_x','f3_entries','tch_box','avg_def_x','cp_regains','rec_time','xg_sp','xgot','bc','bcm','xg_shot','cross','drib','thru','aer','misc','disp','opp_ppda','opp_field_tilt','opp_direct_speed','opp_seq_time','opp_avg_x','opp_avg_def_x','opp_cp_regains','opp_rec_time',
+      const OPT = ['ppda','field_tilt','direct_speed','seq_time','avg_x','f3_entries','tch_box','avg_def_x','cp_regains','rec_time','xg_sp','xgot','bc','bcm','xg_shot','cross','drib','thru','aer','misc','disp','opp_ppda','opp_field_tilt','opp_direct_speed','opp_seq_time','opp_avg_x','opp_avg_def_x','opp_cp_regains','opp_rec_time','opp_f3_entries',
                    'gca','sca','xag','prog_passes','passes_box','carries_box','prog_carries',
                    'gca_ag','sca_ag','xag_ag','prog_passes_ag','passes_box_ag','carries_box_ag','prog_carries_ag','xg_sp_ag']
                   .concat(ADV_KEYS).concat(ADV_KEYS.map(k => k + '_ag'));
@@ -1504,12 +1512,15 @@ function renderVerdetti(mk) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b17';
+window.__SCANNER_BUILD = '0905-b19';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
 const STAT_SHRINK_LEGACY = 0.35;
 // k ALTO = MENO shrinkage: sh(r)=1+k(r-1). Taratura e provenienza dei valori in AGENTS.md.
+// 'aerials' legge aerials_WON: defending.aerials e' il numero di duelli della
+// partita, identico per le due squadre, quindi non ha segnale di squadra
+// (AGENTS.md, Le metriche che non erano di squadra). Il suo k va ritarato.
 window.STAT_SHRINK_TABLE = window.STAT_SHRINK_TABLE || {
   npxg: 0.54, xg: 0.50, poss: 0.76, sot: 0.50, cor: 0.40, yel: 0.23, fouls: 0.48,
   xgot: 0.46, tch_box: 0.61, ppda: 0.35, field_tilt: 0.41, avg_def_x: 0.10, f3_entries: 0.29,
@@ -1563,6 +1574,7 @@ const ORPHAN_PAIRS = {
   avg_def_x: 'opp_avg_def_x',
   cp_regains: 'opp_cp_regains',
   rec_time: 'opp_rec_time',
+  f3_entries: 'opp_f3_entries',
   xg_sp: 'xg_sp_ag'
 };
 for (const k of ADV_KEYS) STAT_PAIRS[k] = k + '_ag';
@@ -1832,7 +1844,8 @@ async function avviaScanner() {
     let lamH_role = LG.avgH * attH_r * defA_r * (1 + penH) + _pxH;
     let lamA_role = LG.avgA * attA_r * defH_r * (1 + penA) + _pxA;
     window.__UNIT_DEBUG = { on: _useUnit, w: _uf, baseNpxg: _baseN,
-                            lgH: LG.avgH, lgA: LG.avgA, attH: attH_r, defA: defA_r,
+                            lgH: LG.avgH, lgA: LG.avgA, lgN: LG.n, rho: RHO,
+                            attH: attH_r, defA: defA_r,
                             attA: attA_r, defH: defH_r, pxH: _pxH, pxA: _pxA };
 
     const _lk = window.SHRINK_LAM_K;
