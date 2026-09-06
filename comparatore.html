@@ -162,7 +162,7 @@ select{cursor:pointer}
   <div class="topbar">
     <div class="brand">
       <h1>Comparatore V9.7</h1>
-      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b21</span>
+      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b22</span>
       <span class="badge" id="engine-badge">motore non caricato</span>
     </div>
     <span class="badge">previsioni vs realtà</span>
@@ -684,7 +684,7 @@ async function loadEngineFromText(text, fileName) {
     <p><code>${fileName}</code> — clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
 
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b21';
+  const _bComp = '0905-b22';
   const _el = document.getElementById('engine-build');
   if (_el) {
     if (!_bScan) {
@@ -1510,7 +1510,10 @@ const CMP_NEW_SPEC = [
   ['blocks',          m => m.defending?.blocks],
   ['clearances',      m => m.defending?.clearances],
   ['duels_won',       m => m.defending?.duels_won],
-  ['aerials',         m => m.defending?.aerials],
+  // deve leggere aerials_WON come il motore (b19): defending.aerials e' il numero di
+  // duelli DELLA PARTITA, uguale per le due squadre. Restando su .aerials il CSV
+  // confrontava una previsione di squadra con una quantita' di partita.
+  ['aerials',         m => m.defending?.aerials_won ?? m.duels?.aerials_won],
   ['challenges',      m => m.defending?.challenges],
   ['ppda_num',        m => m.defending?.opponent_passes],
   ['ppda_den',        m => m.defending?.defensive_actions]
@@ -2402,6 +2405,11 @@ function cmpExportCSV() {
     ['Unita: media gol casa',    d => d && d.lgH != null ? _g4(d.lgH) : 'N/D'],
     ['Unita: media gol trasf.',  d => d && d.lgA != null ? _g4(d.lgA) : 'N/D'],
     ['Unita: partite di lega usate', d => d && d.lgN != null ? String(d.lgN) : 'N/D'],
+    ['Unita: emivita della media di lega (giorni)', d => d && d.lgHL != null ? String(d.lgHL) : 'N/D'],
+    ['Unita: media gol casa (piatta)',   d => d && d.lgHflat != null ? _g4(d.lgHflat) : 'N/D'],
+    ['Unita: media gol trasf. (piatta)', d => d && d.lgAflat != null ? _g4(d.lgAflat) : 'N/D'],
+    ['Unita: media gol casa (emivita 106)',   d => d && d.lgHdec != null ? _g4(d.lgHdec) : 'N/D'],
+    ['Unita: media gol trasf. (emivita 106)', d => d && d.lgAdec != null ? _g4(d.lgAdec) : 'N/D'],
     ['Unita: rho stimato',       d => d && d.rho != null ? _g4(d.rho) : 'N/D'],
     ['Origine metriche avanzate', () => [cmpPredSource || 'N/D', '-', '', '']],
     ['Unita: attacco casa',      d => d && d.attH != null ? _g4(d.attH) : 'N/D'],
