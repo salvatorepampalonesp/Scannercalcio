@@ -66,9 +66,9 @@ memoria del progetto, non la sua verità corrente. → *L'audit del documento*.
 Sezione di consegna: dice a che punto siamo, così una sessione nuova non
 ricomincia da capo. Aggiornala quando cambia qualcosa di sostanziale.
 
-**Build corrente: `0905-b22`.** Scanner e Comparatore devono coincidere, e sul
+**Build corrente: `0905-b23`.** Scanner e Comparatore devono coincidere, e sul
 Comparatore il badge sotto la dropzone deve uscire **verde** dopo aver trascinato
-lo Scanner. Il branch di lavoro è `claude/scanner-stat-optimization-sgs62u`.
+lo Scanner. Il branch di lavoro è `claude/controlla-agents-md-bugs-2dnlmj`.
 
 **Sul «N commit behind»:** GitHub conta i *merge commit* delle PR, che stanno su
 `main` e non sul branch. Il contenuto è lo stesso: dopo ogni merge
@@ -132,6 +132,7 @@ sovradispersione — scagionati con i dati in mano.
 | `b20` | l'**Ordered Logit contava la casa due volte** (bias +6.8 sull'`1`): soglie ristimate e peso a 0. Ensemble riscritto a due blocchi, ruolo e completo, con `ENS_SCOPE_W` |
 | `b21` | **il completo batte il ruolo sull'1X2**, monotono in tre leghe su tre, `z = -3.96`: `ENS_SCOPE_W` a 1. E l'etichetta di lega del CSV veniva dalla dropdown, non dalla partita |
 | `b22` | **`rho` e la sovradispersione scagionati**, il disallineamento di unità è già compensato: il muro dell'Over/Under è tutto nel **livello** del lambda, e la base di lega è una media piatta di tre stagioni. `aerials` era corretto solo nello Scanner |
+| `b23` | **audit del documento contro il sorgente**: quattro punti in cui AGENTS.md descriveva un motore diverso da quello che gira, il più grosso è che lo scope `role` **è** un sottoinsieme di `overall` (8 partite su 15). Esposto `ROLE_SCOPE_INDEPENDENT`, fermo a 0; via il codice morto |
 
 Le tre build finali hanno una storia sola e va letta in *La baseline di coppia*:
 tre tentativi svuotati dallo stesso malinteso.
@@ -224,22 +225,18 @@ se un giro non mostra differenze sull'Elo, è il comportamento atteso.
    previsto/reale a zero su 1133 partite. Il fix additivo che le ha rese
    calcolabili era giusto, ma quello che si vede è rumore.
 
-13. **Decidere che fare del campione di ruolo.** Oggi `role` è un sottoinsieme di
-   `overall` (8 partite su 15), mentre questo documento ha sostenuto per parecchie
-   build che i due insiemi fossero indipendenti. Non è un refuso da correggere di
-   getto: renderli indipendenti sposta lo shrinkage dei lambda di ruolo dal 27% al
-   17% e invalida ogni costante tarata finora. Strada canonica: esporre
-   `ROLE_SCOPE_INDEPENDENT` a 0, esportare `role.n` nel CSV, un backtest decide.
-   Vedi *Il campione di ruolo è un sottoinsieme*.
+13. **Misurare `ROLE_SCOPE_INDEPENDENT`.** È la cosa più grossa rimasta, ed è
+   l'unica in coda che vale su *tutti* i mercati insieme invece che su uno. Oggi
+   `role` è un sottoinsieme di `overall` — 8 partite su 15 — e il `b23` ha esposto
+   la costante che lo rende indipendente, ferma a 0. **Non si ricostruisce dal
+   CSV**, perché cambia quali partite si scaricano: servono due giri sullo stesso
+   periodo, `window.ROLE_SCOPE_INDEPENDENT = 1` prima del batch nel secondo. Il
+   CSV esporta la sezione *AMPIEZZA DEL CAMPIONE DI RUOLO* per riconoscere quale
+   dei due si sta leggendo. Vedi *Il campione di ruolo è un sottoinsieme*.
 14. **Portare `RESID_GAMMA` a 0.360** (o rimisurarlo) prima di rileggere la sezione
    *A/B CORREZIONE RESIDUALE* del CSV: nel codice è ancora 0.678, cioè la scala che
    il `b5` ha dichiarato sbagliata. Non sposta probabilità (`RESID_ALPHA = 0`),
    sposta la diagnostica che dovrebbe dire se riaccendere la correzione.
-15. **Ripulire il codice morto trovato dall'audit del documento**: otto variabili
-   riempite dal payload `/advanced` e mai usate, `getTopScorersPlain`, `xgSpH`/
-   `xgSpA`, `predH`/`predA`, `roleLimit`, `nMinRole`, `STAT_SHRINK`, e la seconda
-   copia di `_calibConf1X2` nel Comparatore. Zero effetto sui numeri, quindi va
-   fatto con la verifica per confronto di AST (vedi *Come validare*).
 
 Già fatte e da non riaprire: togliere il KNN dall'ensemble (`b7`), `sum_sot`
 nell'Over/Under (`b9`, riformulato nel `b12`), tarare i `k` di mercato (`b12`).
@@ -354,10 +351,9 @@ già stato guardato nel codice e quello che è ancora un sospetto.
   motore le raccoglie e le mostra, ma nessun backtest le ha mai viste. Aggiungerle
   al CSV costa poche righe e sarebbe il primo passo per sapere se valgono qualcosa.
   **Attenzione**: questa voce elencava anche `pass_acc`, `ht` e `xg_op`, e per
-  quelle era falsa. Non sono «fuori dal CSV», sono **fuori da tutto**: vengono
-  lette dal payload `/advanced` in una variabile locale che non entra mai in
-  `matchDetails`. Vedi *Otto variabili che leggono il payload e non arrivano da
-  nessuna parte*.
+  quelle era falsa — non erano «fuori dal CSV», erano fuori da tutto. Nel `b23`
+  sono state tolte dal sorgente insieme alle altre cinque variabili morte. Vedi
+  *Otto variabili che leggevano il payload*.
 - **Il `k` di `aerials` e la sua riga nella Progressione Storica**: il `k = 0.54` è
   tarato sulla quantità *condivisa* di prima del `b19`, e la riga `t = +2.4` misurava
   un volume di partita. Ora che il CSV esporta il valore giusto (`b22`) si possono
@@ -395,7 +391,9 @@ per la squadra di casa, in trasferta per l'ospite. **`role` è un sottoinsieme d
 `roleMatches = overallMatches.filter(...)`, e con il default `limit = 15`
 restano **8 partite** per parte (misurato, non stimato). Questo documento ha
 sostenuto il contrario per parecchie build — vedi *Il campione di ruolo è un
-sottoinsieme, e il documento diceva di no*. I lambda
+sottoinsieme, e il documento diceva di no*. Dal `b23` c'è
+`window.ROLE_SCOPE_INDEPENDENT`: a 1 il ruolo diventa le ultime `limit` giocate
+nel ruolo, ma è **ferma a 0** finché un A/B non parla. I lambda
 di ruolo normalizzano ogni statistica sul baseline della propria sede
 (`LG.avgH` o `LG.avgA`), ed è per questo che **non va aggiunto nessun
 moltiplicatore di vantaggio campo sopra**: ci sarebbe due volte.
@@ -1295,14 +1293,15 @@ resto sia a posto:
   `seq_time`, `xg_shot`): il motore le prevede, nessun
   backtest le ha mai viste. Scoperto nel `b22` contando cosa finisce davvero nel CSV
   (43 metriche) contro cosa il motore calcola. `pass_acc`, `ht` e `xg_op` stavano in
-  questo elenco per errore: non le prevede nessuno, vedi la sezione qui sotto.
+  questo elenco per errore — non le prevedeva nessuno — e nel `b23` sono uscite dal
+  sorgente.
 - **Il comportamento con dati parziali dell'API**: cosa succede se `/advanced`
   manca per metà delle partite di una squadra, ora che i fallback funzionano.
 
 Ognuno di questi è una classe che, se contiene un errore, l'audit fatto finora
 non lo vedrebbe.
 
-## L'audit del documento: quattro cose che AGENTS.md diceva e il codice smentisce
+## L'audit del documento (`b23`): quattro cose che AGENTS.md diceva e il codice smentisce
 
 Gli audit del `b19` e del `b22` hanno guardato il codice contro se stesso. Questo
 ha guardato il **documento contro il codice**, voce per voce, ed è una classe di
@@ -1310,6 +1309,12 @@ errore che nessuno dei controlli precedenti poteva trovare: un file che descrive
 un motore diverso da quello che gira non rompe niente, manda fuori strada chi lo
 legge. Le quattro trovate qui sotto sono state corrette nel testo dove comparivano;
 questa sezione tiene il conto di cosa è stato verificato e come.
+
+**Cosa il `b23` ha cambiato nel codice**, in una riga: niente che sposti un numero.
+È uscito il codice morto, è entrata `ROLE_SCOPE_INDEPENDENT` a 0 con la sua
+diagnostica nel CSV, e `_calibConf1X2` è tornata a essere una sola. Verificato
+facendo girare `b22` e `b23` fianco a fianco sullo stesso campionato sintetico:
+identici su tutto tranne la diagnostica nuova.
 
 **Cosa è stato ricontrollato, e ha retto.** Non è aria: sono i controlli del `b19`
 e del `b22` rifatti sul sorgente di oggi.
@@ -1375,54 +1380,76 @@ di «`roleLimit=20`» e «`roleLimit=12`» come di una configurazione. Quella ve
 non è mai arrivata nel v9.7 di questo repository.
 
 **Cosa cambia nei conti, se qualcuno «lo sistema».** Non è una riga cosmetica:
-`nHr` e `nAr` entrano in due shrinkage.
+`nHr` e `nAr` entrano in due shrinkage. I due valori a destra sono **misurati**,
+facendo girare il motore con la costante a 1, non calcolati a mano:
 
-| | con `role` sottoinsieme (oggi) | con `role` indipendente |
+| | `role` sottoinsieme (default) | `role` indipendente |
 |---|---|---|
 | partite di ruolo a `limit = 15` | 8 | 15 |
-| `wS = n/(n+SHRINK_LAM_K)` con `k = 3` | 0.73 | 0.83 |
-| `shrink(x, n, SHRINK_K)` con `k = 4` | 0.67 | 0.79 |
+| `wS = n/(n+SHRINK_LAM_K)` con `k = 3` | 0.727 | 0.833 |
+| contrazione dei lambda di ruolo verso la media di lega | **27%** | **17%** |
 
-Cioè oggi i lambda di ruolo sono tirati verso la media di lega del **27%**, e
-sarebbero tirati del 17%. Ogni costante tarata finora — `SHRINK_LAM_K`, le tre
-`MARKET_*`, il `sampleFactor` dei narrativi — è stata scelta su un campione di
-ruolo di ~8 partite. **Non toccare la riga senza un backtest**: è una modifica al
-motore travestita da correzione di un refuso, ed è esattamente la forma che il
-punto 2 di *Le costanti messe a mano* chiama «una stima invecchia quando cambia
-ciò che sta a monte».
+Ogni costante tarata finora — `SHRINK_LAM_K`, le tre `MARKET_*`, il
+`sampleFactor` dei narrativi — è stata scelta su un campione di ruolo di ~8
+partite. **Non toccare la riga senza un backtest**: è una modifica al motore
+travestita da correzione di un refuso, ed è esattamente la forma che il punto 2 di
+*Le costanti messe a mano* chiama «una stima invecchia quando cambia ciò che sta a
+monte».
 
-Se e quando si vuole misurare, la strada è quella canonica: esporre
-`window.ROLE_SCOPE_INDEPENDENT` con default 0 (comportamento di oggi), esportare
-`dH.role.n` e `dA.role.n` nel CSV, e far decidere un backtest. Va messo in conto
-che a 1 il `fetchSet` cresce da ~15 a ~22 partite per squadra, cioè **il 50% di
-chiamate in più**.
+### Come misurarla (`b23`)
 
-### Otto variabili che leggono il payload e non arrivano da nessuna parte
+La costante è esposta:
 
-In `aggregaTeam`, dentro il ramo `if (myAdv)`, otto variabili vengono riempite dal
-payload `/advanced` e poi **non entrano in `matchDetails`**: `pass_acc`, `ht`,
-`pps`, `build_att`, `dir_att`, `centr`, `box_entries`, `xg_op`. Non finiscono in
-`out.vals`, non passano da `calcFeatures`, non compaiono a schermo, non stanno nel
-CSV. Sono lette e buttate.
+```js
+window.ROLE_SCOPE_INDEPENDENT = 0;   // 0 = sottoinsieme (com'e' sempre stato)
+```
 
-Non fanno danno — costano un accesso a un oggetto già in memoria — ma tre di loro
-(`pass_acc`, `ht`, `xg_op`) erano elencate in questo documento fra le «metriche che
-il motore prevede e mostra, ma che nessun backtest ha mai visto». Non è vero: il
-motore non le prevede affatto. Chi fosse partito da quella riga per aggiungerle al
-CSV avrebbe cercato per mezz'ora una previsione che non esiste.
+e il CSV ha la sezione **`AMPIEZZA DEL CAMPIONE DI RUOLO`** con `indep`, il
+limite richiesto, `nHo`/`nAo`, `nHr`/`nAr`, `SHRINK_LAM_K`, `wSH`/`wSA` e
+`SHRINK_K`: dieci righe che dicono a colpo d'occhio quale dei due regimi ha
+prodotto quel file.
 
-Insieme a queste, il linter segnala morti anche `getTopScorersPlain` (mai chiamata,
-nemmeno da un `onclick`), `xgSpH`/`xgSpA` (soppiantate da `_xgSpFallback`),
-`predH`/`predA`, `nMinRole`, `STAT_SHRINK` e la già citata `roleLimit`. `lamH_mix`
-e `lamA_mix` sembrano morte al linter ma **non lo sono**: le legge l'hook del
-Comparatore, che è testo iniettato e il linter non vede.
+**Questa costante rompe il punto 3 della forma canonica, e va detto.** Le altre
+(`ENS_SCOPE_W`, `GOALS_SOT_W`, `ELO_1X2_W`, `LEAGUE_HALFLIFE_DAYS`) si spazzano
+tutte con **un** backtest, perché il CSV esporta i pezzi da cui si ricompone ogni
+valore. Questa no: cambia **quali partite si scaricano**, quindi non si ricostruisce
+da niente. Servono **due giri sullo stesso periodo**, con
+`window.ROLE_SCOPE_INDEPENDENT = 1` da console prima del secondo batch. Il secondo
+costa circa il **50% di chiamate in più** (`fetchSet` passa da ~15 a ~22 partite per
+squadra), mitigato dal fatto che in un batch la `RAW_CACHE` è condivisa fra tutte le
+partite della lega.
+
+Quando il numero arriva, va scritto qui col campione, lo `z` e i fold, come per
+tutte le altre.
+
+### Otto variabili che leggevano il payload e non arrivavano da nessuna parte
+
+*Rimosse nel `b23`.* In `aggregaTeam`, dentro il ramo `if (myAdv)`, otto variabili
+venivano riempite dal payload `/advanced` e poi **non entravano in `matchDetails`**:
+`pass_acc`, `ht`, `pps`, `build_att`, `dir_att`, `centr`, `box_entries`, `xg_op`.
+Non finivano in `out.vals`, non passavano da `calcFeatures`, non comparivano a
+schermo, non stavano nel CSV. Lette e buttate.
+
+Non facevano danno — costavano un accesso a un oggetto già in memoria — ma tre di
+loro (`pass_acc`, `ht`, `xg_op`) erano elencate in questo documento fra le «metriche
+che il motore prevede e mostra, ma che nessun backtest ha mai visto». Non era vero:
+il motore non le prevedeva affatto. Chi fosse partito da quella riga per aggiungerle
+al CSV avrebbe cercato per mezz'ora una previsione che non esiste.
+
+Rimosse insieme a loro: `getTopScorersPlain` (mai chiamata, nemmeno da un
+`onclick`), `xgSpH`/`xgSpA` (soppiantate da `_xgSpFallback`), `pred`/`predH`/
+`predA`, `nMinRole`, `STAT_SHRINK` e `roleLimit`. **`lamH_mix` e `lamA_mix`
+sembrano morte al linter e non lo sono**: le legge l'hook del Comparatore, che è
+testo iniettato e il linter non vede. Prima di cancellare qualcosa che il controllo
+K segnala, cercarlo anche nell'hook e negli `onclick` dei due `.html`.
 
 ### Due copie della stessa riga, di nuovo
 
-`_calibConf1X2` è scritta **due volte, identica**, in `comparatore.html`. Oggi
-coincidono; è la forma esatta del caso `CMP_DC_SHRINK_TABLE` descritto in
-*Trappole*, e la prossima ritaratura delle rette della confidence ne aggiornerà
-una sola. Vale la stessa cura: una sola verità, letta da `window.*` del motore.
+*Corretto nel `b23`.* `_calibConf1X2` era scritta **due volte, identica**, in due
+funzioni diverse di `comparatore.html`: la forma esatta del caso
+`CMP_DC_SHRINK_TABLE` descritto in *Trappole*, e la prossima ritaratura delle rette
+della confidence ne avrebbe aggiornata una sola. Ora è una sola definizione a
+livello di modulo, accanto a `CMP_HALF_LIFE_DAYS`.
 
 ### `aer` e `aerials` sono ormai la stessa cosa
 
@@ -2617,6 +2644,7 @@ Costanti dell'ensemble introdotte nel `b20`, con la loro classificazione:
 | `LEAGUE_HALFLIFE_DAYS` | 0 | **non stimata, dichiarata tale** (`b22`) | 0 = media piatta, comportamento di sempre; il CSV esporta piatta e decaduta fianco a fianco |
 | `GOALS_UNIT_FIX` | 0 | **spenta per misura** (`b22`) | il denominatore correla 0.77–0.87 col lambda e il livello sfonderebbe del 30%: non accendere finché `_baseN` non è sostituita da una media NPxG di lega |
 | `OL_BETA` / `T1` / `T2` | 2.056 / −0.475 / +0.671 | stimata | massima verosimiglianza su 1743 partite, validata leave-one-league-out |
+| `ROLE_SCOPE_INDEPENDENT` | 0 | **non stimata, dichiarata tale** (`b23`) | 0 = ruolo sottoinsieme, comportamento di sempre; l'unica in coda che **non** si ricostruisce dal CSV, servono due giri |
 
 Nel `b20` `ENS_SCOPE_W` era l'unica senza una misura dietro, ed è per questo che
 valeva zero: spedire un valore diverso sarebbe stato cambiare il motore sulla base di
@@ -2710,8 +2738,9 @@ Scanner: ne legge il testo, lo modifica con delle regex e lo esegue con
    citarla testualmente altrove nel file: la regex prenderebbe la citazione.
    Tutto ciò che l'hook deve leggere va prodotto **prima** di quella riga:
    `__PRED_STATS`, `__PRED_DEBUG`, `__RESID_DEBUG`, `__GOALS_DEBUG`, `__ELO_DEBUG`,
-   `__UNIT_DEBUG`, `__ENS_DEBUG`, `m1/mX/m2`, `probsRole`, `probsOver`, `probsOL`,
-   `mk_ro`, `mk_ov`, `dcMat`, `lamH_mix/lamA_mix`, `lamH_over/lamA_over`.
+   `__UNIT_DEBUG`, `__ENS_DEBUG`, `__SCOPE_DEBUG`, `m1/mX/m2`, `probsRole`,
+   `probsOver`, `probsOL`, `mk_ro`, `mk_ov`, `dcMat`, `lamH_mix/lamA_mix`,
+   `lamH_over/lamA_over`.
    Una variabile dichiarata **dopo** l'hook viene letta con `typeof` e finisce a
    `null` senza errori: il CSV mostra una colonna di `N/D` che nessuno guarda. Il
    controllo F in *Come validare* lo trova.
@@ -2784,7 +2813,8 @@ l'emivita da una parte, cambiala dall'altra.
 **Le costanti calibrate portano la loro provenienza qui dentro, non nel codice.**
 I file non hanno commenti (vedi *Stile*), quindi `OL_BETA/OL_T1/OL_T2`, le rette
 della confidence, `RESID_GAMMA`, `STAT_SHRINK_TABLE`, le tre tabelle `MARKET_*`,
-`SOT_PER_GOAL`, `GOALS_SOT_W`, `ENS_W`, `ENS_SCOPE_W` e `LEAGUE_HALFLIFE_DAYS`
+`SOT_PER_GOAL`, `GOALS_SOT_W`, `ENS_W`, `ENS_SCOPE_W`, `LEAGUE_HALFLIFE_DAYS` e
+`ROLE_SCOPE_INDEPENDENT`
 devono dire **in AGENTS.md** su quante partite sono state stimate e con che metodo.
 Se ne cambi una, aggiorna la sezione che la descrive; se ne aggiungi una, scrivila da
 qualche parte prima di committare.
@@ -2955,9 +2985,10 @@ girano sul solo sorgente, quindi si possono fare a ogni commit senza un backtest
   Una chiave non esposta non dà errore: dà una colonna di `N/D` che nessuno guarda.
   Oggi: 60 esposte, 17 lette, zero orfane.
 - **G. Etichette di riga del CSV duplicate.** Solo quelle che finiscono davvero in
-  prima colonna (`mdl`, `uRows`, `statList`, `rowMkt`), **non** le tabelle di lookup:
-  quelle condividono le chiavi per costruzione e segnalarle è un falso allarme del
-  controllo. Oggi: 55 etichette, zero duplicati.
+  prima colonna (`mdl`, `uRows`, `scRows`, `statList`, `rowMkt`), **non** le tabelle
+  di lookup: quelle condividono le chiavi per costruzione e segnalarle è un falso
+  allarme del controllo. Al `b23`: 91 etichette, zero duplicati. Il numero cresce a
+  ogni sezione nuova — è il conto che conta, non il valore assoluto.
 
 **I due controlli aggiunti dall'audit del documento**, che girano sul solo sorgente:
 
@@ -3063,6 +3094,17 @@ console.log(norm(get("prima.html"))===norm(get("dopo.html")));
 Stesso motivo per cui va usato un parser e non un regex quando si tocca il
 testo del JS: `//` compare dentro gli URL, `/*` dentro le stringhe, e i regex
 letterali del Comparatore (`/(const\s+confidence...)/`) verrebbero massacrati.
+
+**Il confronto di AST serve solo se il diff è davvero puro.** Nel `b23` non lo era —
+la pulizia del codice morto viaggiava insieme a una costante nuova — e in quel caso
+la verifica giusta è più forte, non più debole: **far girare le due build a
+confronto** col giro completo senza rete descritto sopra, stesso seme e stessa
+partita, e diffare gli oggetti che escono (`m1/mX/m2`, i quattro lambda, `probsOL`,
+`advRole`, `__ENS_DEBUG`, `__ELO_DEBUG`, `__GOALS_DEBUG`, `__UNIT_DEBUG`). Se
+l'unica differenza è la diagnostica nuova, la modifica non sposta un numero — ed è
+quello che si vuole poter dire, non «compila». Il `b23` è stato spedito con questo
+confronto: `0905-b22` contro `0905-b23` a costante spenta, identici su tutto tranne
+`__SCOPE_DEBUG`.
 
 Il giro completo (una partita vera) richiede rete verso PitchAPI: se non ce
 l'hai, **dillo** invece di dichiarare verificato quello che non lo è.

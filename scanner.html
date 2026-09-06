@@ -155,7 +155,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b22</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b23</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -631,13 +631,6 @@ function getTopScorers(scorersArray) {
   const sorted = Object.keys(counts).sort((a,b) => counts[b] - counts[a]);
   return sorted.slice(0, 3).map(s => `${s} (${counts[s]} gol)`).join(', ');
 }
-function getTopScorersPlain(scorersArray) {
-  if(!scorersArray || !scorersArray.length) return "Nessuno";
-  const counts = {}; scorersArray.forEach(s => { counts[s] = (counts[s]||0)+1; });
-  const sorted = Object.keys(counts).sort((a,b) => counts[b] - counts[a]);
-  return sorted.slice(0, 3).map(s => `${s} (${counts[s]})`).join(', ');
-}
-
 function _mean(arr) { if(!arr || !Array.isArray(arr)) return 0; const valid = arr.filter(v => v != null && !isNaN(v)); if (!valid.length) return 0; return valid.reduce((s,v) => s+v, 0) / valid.length; }
 
 function _stddev(arr) { if(!arr || !Array.isArray(arr)) return 0; const valid = arr.filter(v => v != null && !isNaN(v)); if (valid.length < 2) return 0; const m = _mean(valid); return Math.sqrt(valid.reduce((s,v) => s+(v-m)*(v-m), 0) / (valid.length - 1)); }
@@ -964,6 +957,17 @@ async function fetchMatchRaw(id) {
 
 window.__fetchMatchRaw = (typeof fetchMatchRaw !== 'undefined') ? fetchMatchRaw : null;
 
+// Il campione di ruolo e' un SOTTOINSIEME delle ultime `limit` complessive: con
+// limit=15 restano 8 partite, misurate. A 1 diventa indipendente, cioe' le ultime
+// `limit` giocate nel ruolo, che e' quello che AGENTS.md ha descritto per parecchie
+// build senza che fosse vero. Resta a 0 perche' accenderlo NON e' una correzione di
+// refuso: porta nHr/nAr da 8 a 15, quindi lo shrinkage dei lambda di ruolo dal 27%
+// al 17%, e ogni costante tarata finora (SHRINK_LAM_K, le tre MARKET_*) e' stata
+// scelta sulle 8. Serve un A/B a due giri - non si ricostruisce dal CSV, perche'
+// cambia QUALI partite si scaricano - e costa circa il 50% di chiamate in piu'.
+// (AGENTS.md, Il campione di ruolo e' un sottoinsieme)
+window.ROLE_SCOPE_INDEPENDENT = (typeof window.ROLE_SCOPE_INDEPENDENT === 'number') ? window.ROLE_SCOPE_INDEPENDENT : 0;
+
 const ADV_SPEC = [
   ['xt',              m => m.possession_value?.xt_total,                'volume'],
   ['vaep',            m => m.possession_value?.vaep_total,              'additivo'],
@@ -1019,10 +1023,13 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
   const uniqueIdsSet = new Set(); past = past.filter(m => { if(!uniqueIdsSet.has(m.id)) { uniqueIdsSet.add(m.id); return true; } return false; });
   past.sort((a,b) => new Date(b.time_utc) - new Date(a.time_utc));
 
+  const inRole = m => (m.home_team.id === teamId) === isHomeTeamUI;
   let overallMatches = past.slice(0, limit);
-  let roleMatches = overallMatches.filter(m => (m.home_team.id === teamId) === isHomeTeamUI);
-  const roleLimit = roleMatches.length;
-  logConsole("    -> Effettive: " + overallMatches.length + " complessive, di cui " + roleMatches.length + " in " + (isHomeTeamUI ? "casa" : "trasferta"));
+  let roleMatches = window.ROLE_SCOPE_INDEPENDENT
+    ? past.filter(inRole).slice(0, limit)
+    : overallMatches.filter(inRole);
+  logConsole("    -> Effettive: " + overallMatches.length + " complessive, di cui " + roleMatches.length + " in " + (isHomeTeamUI ? "casa" : "trasferta")
+             + (window.ROLE_SCOPE_INDEPENDENT ? " (ruolo indipendente)" : " (ruolo sottoinsieme)"));
   const fetchSet = []; const fseen = new Set();
   [...overallMatches, ...roleMatches].forEach(m => { if(!fseen.has(m.id)) { fseen.add(m.id); fetchSet.push(m); } });
   let matchDetails = {};
@@ -1039,8 +1046,8 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
     let modulo = 'N/D', oppModulo = 'N/D';
     if (lineupsRes && lineupsRes.data) { modulo = lineupsRes.data[isH ? 'home' : 'away']?.formation || 'N/D'; oppModulo = lineupsRes.data[isH ? 'away' : 'home']?.formation || 'N/D'; }
 
-    let ppda=null, field_tilt=null, direct_speed=null, pass_acc=null, ht=null, seq_time=null, pps=null, build_att=null, dir_att=null, avg_x=null, f3_entries=null, box_entries=null, tch_box=null, centr=null;
-    let avg_def_x=null, cp_regains=null, rec_time=null, npxg=null, xg_op=null, xg_sp=null, xgot=null, bc=null, bcm=null, xg_shot=null;
+    let ppda=null, field_tilt=null, direct_speed=null, seq_time=null, avg_x=null, f3_entries=null, tch_box=null;
+    let avg_def_x=null, cp_regains=null, rec_time=null, npxg=null, xg_sp=null, xgot=null, bc=null, bcm=null, xg_shot=null;
     let cross=null, drib=null, thru=null, aer=null, misc=null, disp=null;
 
     let gca=null, sca=null, xag=null, prog_passes=null, passes_box=null, carries_box=null, prog_carries=null;
@@ -1055,15 +1062,14 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
         const myAdv = advRes.data.teams.find(t => t.team.id === teamId); const oppAdv = advRes.data.teams.find(t => t.team.id !== teamId);
         advHasMe = !!myAdv;
         if (myAdv) {
-          ppda = myAdv.defending?.ppda; field_tilt = myAdv.territory?.field_tilt; direct_speed = myAdv.tempo?.direct_speed; pass_acc = myAdv.passing?.pass_accuracy;
-          ht = myAdv.defending?.high_turnovers; seq_time = myAdv.tempo?.sequence_time; pps = myAdv.passing?.passes_per_sequence || myAdv.tempo?.passes_per_sequence;
-          build_att = myAdv.creation?.buildup_attacks || myAdv.attacking?.buildup_attacks; dir_att = myAdv.creation?.direct_attacks || myAdv.attacking?.direct_attacks;
-          centr = myAdv.passing?.centralization || myAdv.network?.centralization; avg_x = myAdv.territory?.avg_action_x || myAdv.positioning?.avg_action_x;
-          f3_entries = myAdv.territory?.final_third_entries || myAdv.attacking?.final_third_entries; box_entries = myAdv.territory?.box_entries || myAdv.attacking?.box_entries;
+          ppda = myAdv.defending?.ppda; field_tilt = myAdv.territory?.field_tilt; direct_speed = myAdv.tempo?.direct_speed;
+          seq_time = myAdv.tempo?.sequence_time;
+          avg_x = myAdv.territory?.avg_action_x || myAdv.positioning?.avg_action_x;
+          f3_entries = myAdv.territory?.final_third_entries || myAdv.attacking?.final_third_entries;
           tch_box = myAdv.attacking?.touches_in_opp_box ?? myAdv.attacking?.touches_opp_box ?? myAdv.territory?.touches_in_opp_box ?? myAdv.territory?.touches_opp_box ?? null;
           avg_def_x = myAdv.defending?.avg_defensive_action_x ?? myAdv.positioning?.avg_defensive_action_x ?? null;
           cp_regains = myAdv.defending?.counterpress_regains_5s ?? myAdv.pressing?.counterpress_regains_5s ?? null; rec_time = myAdv.defending?.ball_recovery_time ?? myAdv.tempo?.ball_recovery_time ?? null;
-          npxg = myAdv.creation?.npxg ?? myAdv.attacking?.npxg ?? null; xg_op = myAdv.creation?.expected_goals_open_play ?? myAdv.attacking?.expected_goals_open_play ?? null;
+          npxg = myAdv.creation?.npxg ?? myAdv.attacking?.npxg ?? null;
           xg_sp = myAdv.creation?.expected_goals_set_play ?? myAdv.attacking?.expected_goals_set_play ?? null; xgot = myAdv.creation?.expected_goals_on_target ?? myAdv.attacking?.expected_goals_on_target ?? null;
           bc = myAdv.creation?.big_chances ?? myAdv.attacking?.big_chances ?? null; bcm = myAdv.creation?.big_chances_missed ?? myAdv.attacking?.big_chances_missed ?? null;
           xg_shot = myAdv.creation?.xg_per_shot ?? myAdv.attacking?.xg_per_shot ?? null;
@@ -1531,7 +1537,7 @@ function renderVerdetti(mk) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b22';
+window.__SCANNER_BUILD = '0905-b23';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -1555,7 +1561,6 @@ window.STAT_SHRINK_TABLE = window.STAT_SHRINK_TABLE || {
   aerials: 0.54, challenges: 0.14, ppda_num: 0.53, ppda_den: 0.29
 };
 
-const STAT_SHRINK = STAT_SHRINK_DEFAULT;
 function statShrinkFor(feat) {
   const t = window.STAT_SHRINK_TABLE || {};
   const k = t[feat];
@@ -1858,9 +1863,6 @@ async function avviaScanner() {
     const shrink = (x, n, k = window.SHRINK_K) => (n > 0 && isFinite(x) && x > 0) ? (n * x + k) / (n + k) : 1;
     const dec = (team, scope, feat) => { const f = team[scope].features[feat]; return (f && f.decay > 0) ? f.decay : null; };
 
-    const pred = (att, dif, feat, scope) => predictStat(att, dif, feat, scope || 'role');
-    const predH = (feat, scope) => pred(dH, dA, feat, scope);
-    const predA = (feat, scope) => pred(dA, dH, feat, scope);
     const nHr = dH.role.n, nAr = dA.role.n, nHo = dH.overall.n, nAo = dA.overall.n;
     const mu = (LG.avgH + LG.avgA) / 2;
 
@@ -1892,6 +1894,9 @@ async function avviaScanner() {
 
     const _lk = window.SHRINK_LAM_K;
     const wSH = nHr / (nHr + _lk), wSA = nAr / (nAr + _lk);
+    window.__SCOPE_DEBUG = { indep: window.ROLE_SCOPE_INDEPENDENT, limit,
+                             nHr, nAr, nHo, nAo, lamK: _lk, wSH, wSA,
+                             shrinkK: window.SHRINK_K };
     lamH_role = wSH * lamH_role + (1 - wSH) * LG.avgH; lamA_role = wSA * lamA_role + (1 - wSA) * LG.avgA;
     if(!isFinite(lamH_over) || lamH_over < 0.15) lamH_over = LG.avgH; if(!isFinite(lamA_over) || lamA_over < 0.15) lamA_over = LG.avgA;
 
@@ -2005,7 +2010,6 @@ async function avviaScanner() {
     const npxgH_ro = safeDecay(dH, 'npxg'); const npxgA_ro = safeDecay(dA, 'npxg');
     const xgotH = _mean(dH.overall.vals.xgot) || 0; const xgotA = _mean(dA.overall.vals.xgot) || 0;
     const xgShotH = _mean(dH.overall.vals.xg_shot) || 0; const xgShotA = _mean(dA.overall.vals.xg_shot) || 0;
-    const xgSpH = _mean(dH.overall.vals.xg_sp) || 0; const xgSpA = _mean(dA.overall.vals.xg_sp) || 0;
 
     const _xgSpFallback = (team) => {
       const cov = (team.overall.coverage || {});
@@ -2166,7 +2170,6 @@ async function avviaScanner() {
     const _calibConf1X2 = (p) => Math.max(0, Math.min(100, 6.26 + 0.880 * (p * 100)));
     const _calibConfBin = (p) => Math.max(0, Math.min(100, -5.06 + 1.091 * (p * 100)));
 
-    const nMinRole = Math.min(dH.role.n, dA.role.n);
 
 
 
