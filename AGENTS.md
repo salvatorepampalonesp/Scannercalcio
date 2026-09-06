@@ -24,7 +24,7 @@ tutti attraverso `fetchMatchRaw` (che li mette in `RAW_CACHE`).
 Sezione di consegna: dice a che punto siamo, così una sessione nuova non
 ricomincia da capo. Aggiornala quando cambia qualcosa di sostanziale.
 
-**Build corrente: `0905-b18`.** Scanner e Comparatore devono coincidere, e sul
+**Build corrente: `0905-b19`.** Scanner e Comparatore devono coincidere, e sul
 Comparatore il badge sotto la dropzone deve uscire **verde** dopo aver trascinato
 lo Scanner. Il branch di lavoro è `claude/scanner-stat-optimization-sgs62u`;
 `main` è indietro (fermo al merge della PR #1, cioè al `0905-b2`), quindi
@@ -70,6 +70,7 @@ stessa informazione meglio.
 | `b16` | **lo squilibrio della partita prevede i cartellini**: AUC 0.562 → 0.593, a costo zero |
 | `b17` | trovato un **disallineamento di unità** nel lambda: attacco e difesa sono NPxG divisi per la media **gol**. Correzione pronta ma spenta |
 | `b18` | **la lega non arrivava mai al motore nei backtest**: media gol e rho erano fissi. Tutte le tarature vanno riviste |
+| `b19` | **audit sistematico**: sette fallback morti, due tabelle di costanti divergenti, una metrica che non era di squadra |
 
 Le tre build finali hanno una storia sola e va letta in *La baseline di coppia*:
 tre tentativi svuotati dallo stesso malinteso.
@@ -500,6 +501,19 @@ a `scanner.html` al commit `cd51a69`, prima della ripulitura.
   mercati statistici la dispersione di troppo veniva dalla baseline (sd 0.81) e
   non dal termine attacco/difesa (sd 0.11), ma la pendenza da sola non lo diceva:
   abbassare `k` è stato un giro a vuoto. Guardare le sd delle componenti prima.
+- **Non normalizzare un valore prima di aver provato tutte le sue fonti.**
+  `zeroIf` girava prima dei fallback su `/stats` e li rendeva codice morto per
+  sette metriche. Regola: prima si tenta ogni fonte, poi si decide cosa fare del
+  mancante. Un `if (x === null)` dopo un `x = zeroIf(x, ...)` non scatta mai.
+- **Due copie della stessa costante divergono, sempre.** `CMP_DC_SHRINK_TABLE`
+  era rimasta ai valori pre-`b5` mentre lo Scanner era stato ritarato. Se una
+  costante deve esistere in entrambi i file, il Comparatore la legge da
+  `window.*` del motore e tiene la propria solo come rete, dicendolo nel log.
+- **Una metrica condivisa fra le due squadre non è una metrica di squadra.**
+  `defending.aerials` (duelli aerei della partita) era identico per casa e
+  trasferta nel 100% dei casi: `predictStat` contava due volte la stessa cosa.
+  Controllo da rifare su ogni metrica nuova: il valore reale di casa e quello di
+  trasferta sono mai identici?
 - **Un valore di ripiego plausibile è più pericoloso di un errore.** `avgH 1.50 /
   avgA 1.20` sono numeri ragionevoli per il calcio, e per sedici build hanno
   nascosto che la lega non arrivava mai al motore nei backtest. Ogni fallback deve
@@ -847,6 +861,111 @@ cap a 0.60: il paracadute non ha mai morso.
   essere ridondante o peggio. Va misurato: serve esportarla nel CSV, oggi non c'è.
 - **L'HFA stimato varia molto fra leghe**: LaLiga 78, Premier 49, Serie A 47. È
   plausibile, ma non è mai stato verificato contro il vantaggio campo reale.
+
+## L'audit sistematico del `b19`: cosa è stato controllato e cosa è saltato fuori
+
+Fatto prima di lanciare altri backtest, su richiesta di non lasciare niente al
+caso. Tutti i controlli sono **script rieseguibili** nello scratchpad, non
+letture a occhio.
+
+### Cosa è stato controllato
+
+| controllo | come | esito |
+|---|---|---|
+| campi API letti contro lo schema | incrocio col PDF di PitchAPI | il PDF è un estratto: inconcludente da solo |
+| i 31 getter di `ADV_SPEC` | percorso `gruppo.campo` contro lo schema | **puliti** (i 5 segnalati erano annidati più a fondo) |
+| copertura di ogni riga del CSV | 316 righe numeriche su 1133 partite | 27 segnalate, 23 costanti **attese** |
+| scala previsto/reale, 137 metriche | rapporto delle medie | **3 rotte**, vedi sotto |
+| scambio casa/trasferta | il previsto di casa correla di più col reale di casa o di trasferta? | **zero scambi** su 43 metriche |
+| metriche non di squadra | reale identico fra casa e trasferta | **1 trovata**, vedi sotto |
+| fallback irraggiungibili | variabile azzerata prima del suo `=== null` | **7 su 10 morti** |
+| costanti duplicate nei due file | confronto tabella per tabella | **10 valori divergenti** |
+| azzeramenti silenziosi `?? 0` / `|| 0` | 42 occorrenze passate in rassegna | 1 rischio reale sui punteggi |
+
+### 1. I fallback che non scattavano mai
+
+`aggregaTeam` azzerava i valori mancanti **prima** di provare le fonti
+alternative:
+
+```js
+drib = zeroIf(drib, anyOk);                               // riga 1125: null -> 0
+...
+if (drib === null && d) drib = extractSafeStat(d, ...);   // riga 1144: mai vero
+```
+
+`zeroIf(v, ok)` trasforma `null` in `0` quando almeno una delle due chiamate è
+andata a buon fine. Dopo quella riga `v === null` è **sempre falso**, quindi i
+sette fallback su `/stats` (`xg_sp`, `cross`, `drib`, `thru`, `aer`, `misc`,
+`disp`) erano codice morto. Quando `/advanced` non portava il campo, la media
+storica della squadra veniva diluita con degli zeri.
+
+Si vedeva nei dati e nessuno l'aveva letto: nel CSV il **previsto** stava allo
+**0.63–0.64** del reale su esattamente quelle metriche —
+
+| | previsto | reale | rapporto |
+|---|---|---|---|
+| Dribbling | 4.52 | 7.18 | 0.63 |
+| Controlli sbagliati | 10.00 | 15.61 | 0.64 |
+| Palle perse | 5.34 | 8.31 | 0.64 |
+
+— perché il Comparatore, che non ha lo `zeroIf`, leggeva il valore giusto mentre
+lo Scanner leggeva zero. **Corretto spostando `zeroIf` dopo i fallback**, e
+insieme `_rawSnap`, così la card della copertura dice «abbiamo il valore» invece
+di «l'ha dato `/advanced`».
+
+### 2. La doppia verità sullo shrinkage
+
+`CMP_DC_SHRINK_TABLE` nel Comparatore aveva **10 valori su 10 diversi** da
+`STAT_SHRINK_TABLE` dello Scanner: erano i valori pre-`b5`, mai aggiornati dopo
+la ritaratura su 1133 partite (`gca` 0.53 contro 0.31, `vaep_off` 0.55 contro
+0.23, `xt` 0.63 contro 0.40…).
+
+Vive in `cmpDcPredict`, che è un **percorso di riserva**: si accende solo se
+l'hook non espone `__PRED_STATS`. Dal `b4` non dovrebbe mai succedere, ma se
+succedesse il CSV conterrebbe previsioni fatte con costanti di due anni fa e
+**nessuno se ne accorgerebbe**. Ora `cmpDcPredict` usa la tabella del motore
+quando c'è, il percorso di riserva si annuncia nel log, e il CSV esporta
+`Origine metriche avanzate` (`motore` / `riserva-k-motore` / `riserva-k-locali`).
+
+### 3. Le metriche che non erano di squadra
+
+`aerials` aveva il **valore reale identico fra casa e trasferta nel 100% delle
+partite**: `defending.aerials` è il numero di duelli aerei *della partita*, una
+quantità condivisa. `predictStat` ci calcolava sopra `mine` e `conc` che erano lo
+stesso numero, cioè `lg · sh(r)²` sulla stessa cosa contata due volte.
+
+Corretto in `defending.aerials_won`, che è una metrica di squadra vera. **Due
+cose diventano da rifare:** il suo `k` (0.54, tarato sulla quantità condivisa) e
+la riga `aerials t=+2.4` nella sezione della Progressione Storica, che misurava
+un volume di partita e non una forma di squadra.
+
+### 4. I punteggi nulli
+
+`computeLeagueParams` ed `estimateRho` facevano `m.score_home ?? 0`: una partita
+marcata `finished` senza punteggio veniva contata come **0-0**, abbassando la
+media di lega. Ora quelle partite si saltano.
+
+### Cosa è risultato sano
+
+- **Nessuno scambio casa/trasferta** in 43 metriche: il previsto di casa correla
+  sempre di più col reale di casa. La sola eccezione apparente era `aerials`, ed
+  era il sintomo del punto 3.
+- **`ADV_SPEC` è pulito**: tutti i percorsi `gruppo.campo` esistono.
+- **L'emivita del decadimento è 106 in entrambi i file.**
+- Le 23 righe costanti nel CSV sono tutte attese (i `k`, i pesi, `alpha` a zero
+  perché la correzione residuale è spenta, la baseline del possesso a 50).
+
+### Cosa resta scoperto, e va detto
+
+- **`cross`, `thru`, `aer` non sono esportati dal Comparatore**, quindi nessun
+  backtest li ha mai verificati. Alimentano solo la card dello stile d'attacco e
+  il prompt.
+- Il rapporto previsto/reale di `vaep` (0.87) e `pv` (0.88) resta sotto 1 senza
+  una spiegazione trovata: sono le due metriche di tipo `additivo`, e vanno
+  guardate quando si riprende in mano quel tipo.
+- Il PDF di PitchAPI in `scratchpad/pitch.txt` è un **estratto parziale**: non
+  elenca tutte le chiavi, quindi «non nello schema» non vuol dire «non esiste».
+  L'unico controllo che vale è la copertura reale nei CSV.
 
 ## La lega che non arrivava mai: il bug che invalida le tarature
 
@@ -1291,7 +1410,8 @@ metriche: **+0.014** contro +0.73 della media lunga, cioè niente. Ma **12 metri
 su 47 hanno |t| > 2** dove il caso ne darebbe 2.4, e i segni non sono casuali:
 
 - **persistono**: `prog_carries` t=+3.5, `switches` +2.9, `prog_carry_dist` +2.7,
-  `tackles` +2.7, `ppda_den` +2.5, `carries_box` +2.4, `aerials` +2.4,
+  `tackles` +2.7, `ppda_den` +2.5, `carries_box` +2.4, `aerials` +2.4 (**da rifare**: allora leggeva i duelli di partita, non quelli
+  vinti dalla squadra),
   `f3_entries` +2.2, `carry_dist` +2.0. Sono tutti **volumi strutturali**: quello
   che si sposta quando cambia il modulo, e resta spostato.
 - **si invertono**: `sca` t=−2.2, `sca_live` −2.1, `sca_shot` −2.0. Sono metriche
@@ -1720,6 +1840,30 @@ python3 -m http.server 8204 &
 # Controlla anche che ogni id scritto da safeTxt/safeHtml esista nel DOM: una
 # card riscritta lascia facilmente scritture verso id che non ci sono più.
 ```
+
+**I quattro controlli dell'audit** (`b19`), da rifare quando si tocca l'estrazione
+o si aggiunge una metrica. Girano sul sorgente o sul CSV di un backtest, e ognuno
+ha trovato un bug vero:
+
+- **A. Fallback irraggiungibili.** Cerca ogni variabile assegnata con
+  `zeroIf(...)` o `keepNull(...)` e poi testata con `=== null` a una riga
+  successiva: quel test non può mai essere vero. Ha trovato **7 fallback morti su
+  10**.
+- **B. Scala previsto/reale.** Per ogni metrica del CSV, `media(previsto) /
+  media(reale)`. Lontano da 1.00 significa che stiamo confrontando due cose
+  diverse. Ha trovato **0.63 su Dribbling, Controlli sbagliati e Palle perse**.
+- **C. Scambio casa/trasferta.** Il previsto di casa correla di più col reale di
+  casa (giusto) o con quello di trasferta (scambio)? **43 metriche controllate,
+  zero scambi.**
+- **D. Metriche non di squadra.** Il valore reale di casa e quello di trasferta
+  sono identici? Se sì, la metrica è una quantità della partita e `predictStat` la
+  conta due volte. Ha trovato **`aerials`**.
+
+Per B, C e D il CSV va letto sapendo che **ogni partita occupa 4 colonne**
+(Previsto, Confidence, Reale, Esito) e che le sezioni CASA e TRASFERTA ripetono le
+stesse etichette: la seconda occorrenza è la trasferta. Attenzione anche alle
+etichette ripetute fra sezioni diverse (vedi *Trappole*): cercare per etichetta
+senza specificare quale occorrenza legge la sezione sbagliata in silenzio.
 
 **Oltre al minimo**, quando tocchi il motore vale la pena di:
 

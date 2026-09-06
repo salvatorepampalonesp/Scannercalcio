@@ -162,7 +162,7 @@ select{cursor:pointer}
   <div class="topbar">
     <div class="brand">
       <h1>Comparatore V9.7</h1>
-      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b18</span>
+      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b19</span>
       <span class="badge" id="engine-badge">motore non caricato</span>
     </div>
     <span class="badge">previsioni vs realtà</span>
@@ -435,6 +435,7 @@ let engineReady = false;
 const CMP_K_LIST = [4, 12, 28];
 
 let cmpCurrentLeagueId = '';
+let cmpPredSource = '';
 
 const CMP_LEAGUES_FALLBACK = [{"id":"l_3hvsne","name":"2. Bundesliga","country_code":"GER","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_4MPd7x","name":"A-League","country_code":"AUS","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_1XsMdH","name":"Allsvenskan","country_code":"SWE","seasons":["2021","2022","2023","2024","2025","2026"]},{"id":"l_3zsMpo","name":"Bundesliga","country_code":"AUT","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_1Isor4","name":"Bundesliga","country_code":"GER","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_1pQOHK","name":"Challenger Pro League","country_code":"BEL","seasons":["2025/2026","2026/2027"]},{"id":"l_0bfbkO","name":"Champions League","country_code":"INT-2","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_4DWyTT","name":"Championship","country_code":"ENG","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_2WZ2tt","name":"Conference League","country_code":"INT-2","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_214sqK","name":"Ekstraklasa","country_code":"POL","seasons":["2025/2026","2026/2027"]},{"id":"l_0uqFK8","name":"Eliteserien","country_code":"NOR","seasons":["2021","2022","2023","2024","2025","2026"]},{"id":"l_4H43wr","name":"Eredivisie","country_code":"NED","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_38d9HA","name":"Europa League","country_code":"INT-2","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_2L6d1F","name":"First Division A","country_code":"BEL","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_1qpFVw","name":"Indian Super League","country_code":"IND","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_2ApGa4","name":"J. League","country_code":"JPN","seasons":["2022","2023","2024","2025","2026"]},{"id":"l_2EKrnc","name":"K League 1","country_code":"KOR","seasons":["2022","2023","2024","2025","2026"]},{"id":"l_0ErfuF","name":"LaLiga","country_code":"ESP","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_3kyHLd","name":"LaLiga2","country_code":"ESP","seasons":["2025/2026","2026/2027"]},{"id":"l_0ahLw8","name":"League One","country_code":"ENG","seasons":["2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_1W6idJ","name":"League Two","country_code":"ENG","seasons":["2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_3v84VE","name":"Liga MX","country_code":"MEX","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_4QexZg","name":"Liga Portugal","country_code":"POR","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_45VZuL","name":"Liga Profesional","country_code":"ARG","seasons":["2023","2024","2025","2026"]},{"id":"l_3FJFUl","name":"Ligue 1","country_code":"FRA","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_0275VP","name":"Ligue 2","country_code":"FRA","seasons":["2025/2026","2026/2027"]},{"id":"l_0eg6C9","name":"MLS","country_code":"USA","seasons":["2021","2022","2023","2024","2025","2026"]},{"id":"l_2Mh0jT","name":"Premier League","country_code":"RUS","seasons":["2025/2026","2026/2027"]},{"id":"l_46aZMC","name":"Premier League","country_code":"EGY","seasons":["2025/2026","2026/2027"]},{"id":"l_4WFCIZ","name":"Premier League","country_code":"ENG","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_1Kknkl","name":"Premier Soccer League","country_code":"RSA","seasons":["2025/2026","2026/2027"]},{"id":"l_1LMdEO","name":"Premiership","country_code":"SCO","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_0Lpz1f","name":"Saudi Pro League","country_code":"KSA","seasons":["2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_0ALvwF","name":"Serie A","country_code":"ITA","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_1D8Xrl","name":"Serie A","country_code":"BRA","seasons":["2023","2024","2025","2026"]},{"id":"l_0jy5yE","name":"Serie B","country_code":"ITA","seasons":["2025/2026","2026/2027"]},{"id":"l_4d6Bwl","name":"Super League","country_code":"SUI","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_3xwVF2","name":"Super League 1","country_code":"GRE","seasons":["2024/2025","2025/2026","2026/2027"]},{"id":"l_0S1uaf","name":"Super Lig","country_code":"TUR","seasons":["2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_49Zmno","name":"Superligaen","country_code":"DEN","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_3hW1NO","name":"Thai League 1","country_code":"THA","seasons":["2025/2026"]},{"id":"l_1XLtP0","name":"World Cup","country_code":"INT","seasons":["2022","2026"]}];
 
@@ -676,7 +677,7 @@ async function loadEngineFromText(text, fileName) {
     <p><code>${fileName}</code> — clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
 
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b18';
+  const _bComp = '0905-b19';
   const _el = document.getElementById('engine-build');
   if (_el) {
     if (!_bScan) {
@@ -1260,6 +1261,7 @@ async function cmpRunMatch(match, limit, render) {
       return o;
     };
     predExtraH = grab('H'); predExtraA = grab('A');
+    cmpPredSource = 'motore';
     cmpLog('   → Metriche avanzate: previste dal motore (nessun fetch aggiuntivo)');
   } else if (R._homeId && R._awayId && R._targetTimeMs) {
 
@@ -1290,6 +1292,8 @@ async function cmpRunMatch(match, limit, render) {
 
       const dcp = cmpDcPredict(aggH, aggA);
       predExtraH = dcp.H; predExtraA = dcp.A;
+      cmpPredSource = (typeof window !== 'undefined' && window.STAT_SHRINK_TABLE) ? 'riserva-k-motore' : 'riserva-k-locali';
+      cmpLog(`   ⚠️ RISERVA: le metriche avanzate NON vengono dal motore ma da cmpDcPredict (${cmpPredSource}).`);
       cmpLog(`   → Estratti da ${predExtraH?._nSampled||0}/${predExtraA?._nSampled||0} match storici`);
     } catch(e) {
       cmpLog(`   ⚠️ Errore aggregazione extra: ${e.message}`);
@@ -1554,7 +1558,11 @@ function cmpDcPredict(aggH, aggA) {
   if (!aggH || !aggA) return { H: null, A: null };
   const H = {}, A = {};
   for (const [key] of CMP_ADV_KEYS) {
-    const k = (typeof CMP_DC_SHRINK_TABLE[key] === 'number') ? CMP_DC_SHRINK_TABLE[key] : CMP_DC_SHRINK;
+    // una sola verita': se il motore e' in memoria si usa la SUA tabella, non la copia
+    // locale, che restava indietro a ogni ritaratura (AGENTS.md, La doppia verita')
+    const engT = (typeof window !== 'undefined' && window.STAT_SHRINK_TABLE) ? window.STAT_SHRINK_TABLE : null;
+    const k = (engT && typeof engT[key] === 'number') ? engT[key]
+            : ((typeof CMP_DC_SHRINK_TABLE[key] === 'number') ? CMP_DC_SHRINK_TABLE[key] : CMP_DC_SHRINK);
     const pH = aggH._prod[key], cH = aggH._conc[key];
     const pA = aggA._prod[key], cA = aggA._conc[key];
     const vals = [pH, cH, pA, cA].filter(v => v != null && isFinite(v));
@@ -2346,6 +2354,7 @@ function cmpExportCSV() {
     ['Unita: media gol trasf.',  d => d && d.lgA != null ? _g4(d.lgA) : 'N/D'],
     ['Unita: partite di lega usate', d => d && d.lgN != null ? String(d.lgN) : 'N/D'],
     ['Unita: rho stimato',       d => d && d.rho != null ? _g4(d.rho) : 'N/D'],
+    ['Origine metriche avanzate', () => [cmpPredSource || 'N/D', '-', '', '']],
     ['Unita: attacco casa',      d => d && d.attH != null ? _g4(d.attH) : 'N/D'],
     ['Unita: difesa trasferta',  d => d && d.defA != null ? _g4(d.defA) : 'N/D'],
     ['Unita: attacco trasferta', d => d && d.attA != null ? _g4(d.attA) : 'N/D'],

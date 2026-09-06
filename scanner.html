@@ -155,7 +155,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b18</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b19</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -812,7 +812,8 @@ function computeLeagueParams(leagueId, targetTimeMs) {
     if (m.league_id !== leagueId || m.status !== 'finished' || !m.time_utc) continue;
     if (new Date(m.time_utc).getTime() >= targetTimeMs) continue;
     if (seen.has(m.id)) continue; seen.add(m.id);
-    gh += (m.score_home ?? 0); ga += (m.score_away ?? 0); n++;
+    if (m.score_home == null || m.score_away == null) continue;
+    gh += m.score_home; ga += m.score_away; n++;
   }
   if (n < 30) return { avgH: 1.50, avgA: 1.20, n };
   return { avgH: gh / n, avgA: ga / n, n };
@@ -824,7 +825,8 @@ function estimateRho(leagueId, targetTimeMs, LG) {
     if (m.league_id !== leagueId || m.status !== 'finished' || !m.time_utc) continue;
     if (new Date(m.time_utc).getTime() >= targetTimeMs) continue;
     if (seen.has(m.id)) continue; seen.add(m.id);
-    const k = `${m.score_home ?? 0}-${m.score_away ?? 0}`; if (obs[k] !== undefined) obs[k]++; n++;
+    if (m.score_home == null || m.score_away == null) continue;
+    const k = `${m.score_home}-${m.score_away}`; if (obs[k] !== undefined) obs[k]++; n++;
   }
   if (n < 100) return -0.11;
   let best = -0.11, bestErr = Infinity;
@@ -975,7 +977,7 @@ const ADV_SPEC = [
   ['blocks',          m => m.defending?.blocks,                         'volume'],
   ['clearances',      m => m.defending?.clearances,                     'volume'],
   ['duels_won',       m => m.defending?.duels_won,                      'volume'],
-  ['aerials',         m => m.defending?.aerials,                        'volume'],
+  ['aerials',         m => m.defending?.aerials_won ?? m.duels?.aerials_won,  'volume'],
   ['challenges',      m => m.defending?.challenges,                     'volume'],
   ['ppda_num',        m => m.defending?.opponent_passes,                'volume'],
   ['ppda_den',        m => m.defending?.defensive_actions,              'volume']
@@ -1117,15 +1119,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
     const zeroIf = (v, ok) => isNil(v) ? (ok ? 0 : null) : v;
     const keepNull = v => isNil(v) ? null : v;
 
-    const _rawSnap = { bc, bcm, xg_sp, xgot, cross, drib, thru, aer, misc, disp, f3_entries, tch_box, cp_regains };
-    const rawPresent = {}; Object.keys(_rawSnap).forEach(k => rawPresent[k] = !isNil(_rawSnap[k]));
 
-    bc = zeroIf(bc, anyOk); bcm = zeroIf(bcm, anyOk); xg_sp = zeroIf(xg_sp, anyOk);
-    xgot = zeroIf(xgot, anyOk);
-    cross = zeroIf(cross, anyOk); drib = zeroIf(drib, anyOk); thru = zeroIf(thru, anyOk); aer = zeroIf(aer, anyOk);
-    misc = zeroIf(misc, anyOk); disp = zeroIf(disp, anyOk);
-    f3_entries = zeroIf(f3_entries, advOk); tch_box = zeroIf(tch_box, anyOk); cp_regains = zeroIf(cp_regains, advOk);
-    opp_cp_regains = zeroIf(opp_cp_regains, advOk);
 
     ppda = keepNull(ppda); field_tilt = keepNull(field_tilt); direct_speed = keepNull(direct_speed);
     seq_time = keepNull(seq_time); avg_x = keepNull(avg_x); avg_def_x = keepNull(avg_def_x);
@@ -1146,6 +1140,19 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
     if (aer === null && d) aer = extractSafeStat(d, ['aerials_won', 'aerial_duels_won', 'duelli aerei'], isH);
     if (misc === null && d) misc = extractSafeStat(d, ['miscontrols', 'bad_controls', 'errori'], isH);
     if (disp === null && d) disp = extractSafeStat(d, ['dispossessed', 'perse'], isH);
+
+    // la copertura si misura DOPO i fallback: e' "abbiamo il valore", non "l'ha dato /advanced"
+    const _rawSnap = { bc, bcm, xg_sp, xgot, cross, drib, thru, aer, misc, disp, f3_entries, tch_box, cp_regains };
+    const rawPresent = {}; Object.keys(_rawSnap).forEach(k => rawPresent[k] = !isNil(_rawSnap[k]));
+
+    // i fallback su /stats sopra devono poter vedere il null: azzerare prima li
+    // rendeva codice morto (AGENTS.md, I fallback che non scattavano mai)
+    bc = zeroIf(bc, anyOk); bcm = zeroIf(bcm, anyOk); xg_sp = zeroIf(xg_sp, anyOk);
+    xgot = zeroIf(xgot, anyOk);
+    cross = zeroIf(cross, anyOk); drib = zeroIf(drib, anyOk); thru = zeroIf(thru, anyOk); aer = zeroIf(aer, anyOk);
+    misc = zeroIf(misc, anyOk); disp = zeroIf(disp, anyOk);
+    f3_entries = zeroIf(f3_entries, advOk); tch_box = zeroIf(tch_box, anyOk); cp_regains = zeroIf(cp_regains, advOk);
+    opp_cp_regains = zeroIf(opp_cp_regains, advOk);
 
     let red_cards = 0; let goal_timings_scored = []; let goal_timings_conceded = []; let scorers = [];
     if(eventsRes) {
@@ -1504,12 +1511,15 @@ function renderVerdetti(mk) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b18';
+window.__SCANNER_BUILD = '0905-b19';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
 const STAT_SHRINK_LEGACY = 0.35;
 // k ALTO = MENO shrinkage: sh(r)=1+k(r-1). Taratura e provenienza dei valori in AGENTS.md.
+// 'aerials' legge aerials_WON: defending.aerials e' il numero di duelli della
+// partita, identico per le due squadre, quindi non ha segnale di squadra
+// (AGENTS.md, Le metriche che non erano di squadra). Il suo k va ritarato.
 window.STAT_SHRINK_TABLE = window.STAT_SHRINK_TABLE || {
   npxg: 0.54, xg: 0.50, poss: 0.76, sot: 0.50, cor: 0.40, yel: 0.23, fouls: 0.48,
   xgot: 0.46, tch_box: 0.61, ppda: 0.35, field_tilt: 0.41, avg_def_x: 0.10, f3_entries: 0.29,
