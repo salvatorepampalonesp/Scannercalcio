@@ -1027,7 +1027,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
     let gca=null, sca=null, xag=null, prog_passes=null, passes_box=null, carries_box=null, prog_carries=null;
     let gca_ag=null, sca_ag=null, xag_ag=null, prog_passes_ag=null, passes_box_ag=null, carries_box_ag=null, prog_carries_ag=null;
     let xg_sp_ag=null;
-    let opp_ppda=null, opp_field_tilt=null, opp_direct_speed=null, opp_seq_time=null, opp_avg_x=null, opp_avg_def_x=null, opp_cp_regains=null, opp_rec_time=null;
+    let opp_ppda=null, opp_field_tilt=null, opp_direct_speed=null, opp_seq_time=null, opp_avg_x=null, opp_avg_def_x=null, opp_cp_regains=null, opp_rec_time=null, opp_f3_entries=null;
 
     let advHasMe = false;
     const advX = {};
@@ -1065,6 +1065,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
           opp_avg_def_x = oppAdv.defending?.avg_defensive_action_x ?? oppAdv.positioning?.avg_defensive_action_x ?? null;
           opp_cp_regains = oppAdv.defending?.counterpress_regains_5s ?? oppAdv.pressing?.counterpress_regains_5s ?? null;
           opp_rec_time = oppAdv.defending?.ball_recovery_time ?? oppAdv.tempo?.ball_recovery_time ?? null;
+          opp_f3_entries = oppAdv.territory?.final_third_entries ?? oppAdv.attacking?.final_third_entries ?? null;
 
           gca_ag = oppAdv.creation?.gca ?? null; sca_ag = oppAdv.creation?.sca ?? null; xag_ag = oppAdv.creation?.xag ?? null;
           prog_passes_ag = oppAdv.passing?.progressive_passes ?? null; passes_box_ag = oppAdv.passing?.passes_into_box ?? null;
@@ -1152,7 +1153,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
     cross = zeroIf(cross, anyOk); drib = zeroIf(drib, anyOk); thru = zeroIf(thru, anyOk); aer = zeroIf(aer, anyOk);
     misc = zeroIf(misc, anyOk); disp = zeroIf(disp, anyOk);
     f3_entries = zeroIf(f3_entries, advOk); tch_box = zeroIf(tch_box, anyOk); cp_regains = zeroIf(cp_regains, advOk);
-    opp_cp_regains = zeroIf(opp_cp_regains, advOk);
+    opp_cp_regains = zeroIf(opp_cp_regains, advOk); opp_f3_entries = zeroIf(opp_f3_entries, advOk);
 
     let red_cards = 0; let goal_timings_scored = []; let goal_timings_conceded = []; let scorers = [];
     if(eventsRes) {
@@ -1179,7 +1180,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
       yel: zeroIf(extractSafeStat(d, ['yellow_cards', 'yellowcards', 'gialli'], isH), statsOk), yel_ag: zeroIf(extractSafeStat(d, ['yellow_cards', 'yellowcards', 'gialli'], !isH), statsOk),
       fouls: zeroIf(extractSafeStat(d, ['fouls', 'falli'], isH), statsOk), fouls_ag: zeroIf(extractSafeStat(d, ['fouls', 'falli'], !isH), statsOk),
       ppda, field_tilt, direct_speed, seq_time, avg_x, f3_entries, tch_box, avg_def_x, cp_regains, rec_time, npxg, xg_sp, xgot, bc, bcm, xg_shot, cross, drib, thru, aer, misc, disp,
-      opp_ppda, opp_field_tilt, opp_direct_speed, opp_seq_time, opp_avg_x, opp_avg_def_x, opp_cp_regains, opp_rec_time,
+      opp_ppda, opp_field_tilt, opp_direct_speed, opp_seq_time, opp_avg_x, opp_avg_def_x, opp_cp_regains, opp_rec_time, opp_f3_entries,
       gca, sca, xag, prog_passes, passes_box, carries_box, prog_carries,
       gca_ag, sca_ag, xag_ag, prog_passes_ag, passes_box_ag, carries_box_ag, prog_carries_ag, xg_sp_ag,
       ...advX,
@@ -1190,7 +1191,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
   function buildStats(matchList) {
     let out = { n: matchList.length, vals: { poss_ag: [], xgot_ag: [], tch_box_ag: [], gf:[], ga:[], xg:[], xga:[], npxg:[], npxga:[], sot:[], sot_ag:[], cor:[], cor_ag:[], yel:[], yel_ag:[], fouls:[], fouls_ag:[], poss:[], moduli:[],
       ppda:[], field_tilt:[], direct_speed:[], seq_time:[], avg_x:[], f3_entries:[], tch_box:[], avg_def_x:[], cp_regains:[], rec_time:[], xg_sp:[], xgot:[], bc:[], bcm:[], xg_shot:[], cross:[], drib:[], thru:[], aer:[], misc:[], disp:[],
-      opp_ppda:[], opp_field_tilt:[], opp_direct_speed:[], opp_seq_time:[], opp_avg_x:[], opp_avg_def_x:[], opp_cp_regains:[], opp_rec_time:[],
+      opp_ppda:[], opp_field_tilt:[], opp_direct_speed:[], opp_seq_time:[], opp_avg_x:[], opp_avg_def_x:[], opp_cp_regains:[], opp_rec_time:[], opp_f3_entries:[],
       gca:[], sca:[], xag:[], prog_passes:[], passes_box:[], carries_box:[], prog_carries:[],
       gca_ag:[], sca_ag:[], xag_ag:[], prog_passes_ag:[], passes_box_ag:[], carries_box_ag:[], prog_carries_ag:[], xg_sp_ag:[], red_cards:[], dates:[] },
       matchInfo: [], streak: [], historyForElo: [], all_timings_scored: [], all_timings_conceded: [], all_scorers: [], win_pts: 0 };
@@ -1207,7 +1208,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
       out.vals.yel.push(det.yel); out.vals.yel_ag.push(det.yel_ag); out.vals.fouls.push(det.fouls); out.vals.fouls_ag.push(det.fouls_ag); out.vals.poss.push(det.poss); out.vals.poss_ag.push(det.poss_ag); out.vals.xgot_ag.push(det.xgot_ag); out.vals.tch_box_ag.push(det.tchbox_ag); out.vals.moduli.push(det.modulo);
       out.vals.red_cards.push(det.red_cards); out.vals.dates.push(det.dateStrUtc);
 
-      const OPT = ['ppda','field_tilt','direct_speed','seq_time','avg_x','f3_entries','tch_box','avg_def_x','cp_regains','rec_time','xg_sp','xgot','bc','bcm','xg_shot','cross','drib','thru','aer','misc','disp','opp_ppda','opp_field_tilt','opp_direct_speed','opp_seq_time','opp_avg_x','opp_avg_def_x','opp_cp_regains','opp_rec_time',
+      const OPT = ['ppda','field_tilt','direct_speed','seq_time','avg_x','f3_entries','tch_box','avg_def_x','cp_regains','rec_time','xg_sp','xgot','bc','bcm','xg_shot','cross','drib','thru','aer','misc','disp','opp_ppda','opp_field_tilt','opp_direct_speed','opp_seq_time','opp_avg_x','opp_avg_def_x','opp_cp_regains','opp_rec_time','opp_f3_entries',
                    'gca','sca','xag','prog_passes','passes_box','carries_box','prog_carries',
                    'gca_ag','sca_ag','xag_ag','prog_passes_ag','passes_box_ag','carries_box_ag','prog_carries_ag','xg_sp_ag']
                   .concat(ADV_KEYS).concat(ADV_KEYS.map(k => k + '_ag'));
@@ -1573,6 +1574,7 @@ const ORPHAN_PAIRS = {
   avg_def_x: 'opp_avg_def_x',
   cp_regains: 'opp_cp_regains',
   rec_time: 'opp_rec_time',
+  f3_entries: 'opp_f3_entries',
   xg_sp: 'xg_sp_ag'
 };
 for (const k of ADV_KEYS) STAT_PAIRS[k] = k + '_ag';

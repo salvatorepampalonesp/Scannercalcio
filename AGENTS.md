@@ -501,6 +501,15 @@ a `scanner.html` al commit `cd51a69`, prima della ripulitura.
   mercati statistici la dispersione di troppo veniva dalla baseline (sd 0.81) e
   non dal termine attacco/difesa (sd 0.11), ma la pendenza da sola non lo diceva:
   abbassare `k` è stato un giro a vuoto. Guardare le sd delle componenti prima.
+- **Il CSV scrive le probabilità a un decimale.** Qualunque controllo che
+  confronti un verdetto con una soglia (la giocabilità a 55%) sbaglia sui casi al
+  confine, e ogni Brier o AUC calcolato su quelle colonne porta ±0.05 punti di
+  quantizzazione. Non è un errore del motore: è il limite del file.
+- **Una metrica senza «concesso» non entra in `STAT_PAIRS`**, quindi
+  `predictStat` le restituisce la sola media di squadra e il suo `k` tarato non
+  viene mai usato — in silenzio. Era il caso di `f3_entries`. Dopo aver aggiunto
+  una metrica, controllare a runtime che `Object.keys(STAT_PAIRS)` la contenga e
+  che ogni voce di `STAT_SHRINK_TABLE` corrisponda a una coppia.
 - **Non normalizzare un valore prima di aver provato tutte le sue fonti.**
   `zeroIf` girava prima dei fallback su `/stats` e li rendeva codice morto per
   sette metriche. Regola: prima si tenta ogni fonte, poi si decide cosa fare del
@@ -966,6 +975,66 @@ media di lega. Ora quelle partite si saltano.
 - Il PDF di PitchAPI in `scratchpad/pitch.txt` è un **estratto parziale**: non
   elenca tutte le chiavi, quindi «non nello schema» non vuol dire «non esiste».
   L'unico controllo che vale è la copertura reale nei CSV.
+
+### Il secondo giro, e cosa resta davvero scoperto
+
+Alla domanda «sei sicuro che non ce ne siano altri?» la risposta onesta è **no**.
+Un audit copre le *classi* di errore che sa cercare. Ecco cosa è stato aggiunto
+al secondo giro e, soprattutto, cosa **non** è stato controllato.
+
+**Controllato al secondo giro, e risultato sano:**
+
+- **Fuga di dati dal futuro.** Ogni ciclo su liste di partite nei due file: tutti
+  hanno il taglio `< targetTimeMs` entro le righe adiacenti. Nessuna fuga.
+- **Ordinamento della serie Elo.** `series[t].unshift(...)` mette il più recente
+  in testa, e `calcTrend` fa `slice(0,5)` meno `slice(5,15)`: coerente.
+- **Allineamento del CSV.** Ogni riga dati ha `1 + 4·N` colonne, nessun campo
+  contiene il separatore. Le tre righe di larghezza diversa sono intestazioni.
+- **Tipi delle metriche.** Le quattro `additivo` sono esattamente le coordinate e
+  i valori con segno (`avg_x`, `avg_def_x`, `vaep`, `pv`).
+- **`ADV_SPEC`**: nessuna chiave duplicata, nessuna coppia di metriche che legge
+  lo stesso campo.
+- **`statShrinkFor`** torna sempre un `k` in `(0,1]`, e il default su una chiave
+  inventata è 0.50.
+- **La verità di riferimento.** I 1743 verdetti di ogni mercato ricalcolati dal
+  punteggio: **corretti**. I 26 apparenti disaccordi stanno tutti esattamente a
+  `p = 55,0%`, cioè al confine della soglia di giocabilità: il CSV scrive le
+  probabilità a **un decimale**, quindi «55,0%» può essere un 54,96% che il
+  motore giustamente non considera giocabile. Errore del controllo, non del
+  motore — ma va saputo che **ogni analisi fatta su quelle colonne ha ±0.05 punti
+  di quantizzazione**.
+
+**Trovato al secondo giro:** `f3_entries` aveva un `k` tarato (0.29) che non
+veniva mai usato, perché la metrica non aveva un «concesso» e quindi non era in
+`STAT_PAIRS`: `predictStat` restituiva la sola media della squadra, senza il
+termine avversario. Aggiunto `opp_f3_entries` seguendo il pattern delle altre
+otto metriche orfane. Le coppie passano da 57 a 58.
+
+**Sette metriche non hanno un `k` tarato** e usano il default 0.50: `gf`,
+`direct_speed`, `seq_time`, `avg_x`, `cp_regains`, `rec_time`, `xg_sp`. Non è un
+errore, ma non è nemmeno una scelta: nessuno le ha mai misurate.
+
+### Cosa NON è stato controllato
+
+Detto esplicitamente, perché un elenco di controlli superati fa credere che il
+resto sia a posto:
+
+- **L'Ordered Logit e Markov** nei loro parametri: verificati solo negli
+  invarianti (le probabilità sommano a 1, la simmetria). `OL_BETA` e le soglie
+  vengono da una stima su 1903 partite che nessuno ha rifatto.
+- **Le rette di calibrazione della confidence**, stimate su 6824 partite in un
+  contesto che non conosciamo.
+- **Il percorso di rendering della UI** oltre alla presenza degli id: nessuno ha
+  verificato che ogni numero a schermo sia quello che il motore ha calcolato.
+- **Il mega-prompt**, che è testo generato e non è mai stato riletto contro i
+  valori che cita.
+- **I casi numerici estremi**: lambda molto alti o molto bassi, squadre con
+  pochissime partite, leghe con meno di 30 partite in archivio.
+- **Il comportamento con dati parziali dell'API**: cosa succede se `/advanced`
+  manca per metà delle partite di una squadra, ora che i fallback funzionano.
+
+Ognuno di questi è una classe che, se contiene un errore, l'audit fatto finora
+non lo vedrebbe.
 
 ## La lega che non arrivava mai: il bug che invalida le tarature
 
