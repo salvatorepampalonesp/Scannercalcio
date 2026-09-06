@@ -162,7 +162,7 @@ select{cursor:pointer}
   <div class="topbar">
     <div class="brand">
       <h1>Comparatore V9.7</h1>
-      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b25</span>
+      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b26</span>
       <span class="badge" id="engine-badge">motore non caricato</span>
     </div>
     <span class="badge">previsioni vs realtà</span>
@@ -706,7 +706,7 @@ async function loadEngineFromText(text, fileName) {
     <p><code>${fileName}</code> — clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
 
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b25';
+  const _bComp = '0905-b26';
   const _el = document.getElementById('engine-build');
   if (_el) {
     if (!_bScan) {
@@ -2064,6 +2064,18 @@ function cmpSvuota() {
   cmpLog('Archivio svuotato: lo storico della lega resta caricato.');
 }
 
+// Quante partite salvate stanno in ciascun regime del campione di ruolo. Serve al nome
+// del file e all'intestazione: senza, un export accumulato non dice cosa contiene.
+function cmpScopeMix() {
+  let si = 0, no = 0;
+  for (const m of (cmpSavedMatches || [])) {
+    const d = m && m.scopeDebug;
+    if (!d) continue;
+    if (d.indep) si++; else no++;
+  }
+  return { si, no };
+}
+
 function cmpExportCSV() {
   if (!cmpSavedMatches.length) return alert("Nessun match salvato");
   const M = cmpSavedMatches;
@@ -2092,6 +2104,15 @@ function cmpExportCSV() {
   rows.push('=== BACKTEST SCANNER V9.7 ===' + pad);
   rows.push(`Generato il;${nowStr}` + ';;;'.repeat(M.length));
   rows.push(`Partite nel file;${M.length}` + ';;;'.repeat(M.length));
+  {
+    const mix = cmpScopeMix();
+    if (mix.si && mix.no) {
+      rows.push(`ATTENZIONE: il file contiene DUE regimi del campione di ruolo — ${mix.no} righe a sottoinsieme e ${mix.si} indipendenti.` + ';;;'.repeat(M.length));
+      rows.push(`Sono le due meta' di un A/B: separale sulla riga "Scope: ruolo indipendente" prima di qualunque conto, o conterai ogni partita due volte.` + ';;;'.repeat(M.length));
+    } else if (mix.si) {
+      rows.push(`Campione di ruolo INDIPENDENTE su tutte le ${mix.si} righe (ROLE_SCOPE_INDEPENDENT = 1).` + ';;;'.repeat(M.length));
+    }
+  }
   rows.push('' );
   rows.push('COME SI LEGGE:' + pad);
   rows.push('Ogni partita occupa 4 colonne: Previsto | Confidence | Reale | Esito.' + pad);
@@ -2639,7 +2660,12 @@ function cmpExportCSV() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  const _sfx = (window.ROLE_SCOPE_INDEPENDENT ? '_ruoloIndip' : '');
+  // Il suffisso descrive cosa c'e' DENTRO il file, non com'e' l'interruttore in questo
+  // istante: cmpSavedMatches si accumula fra un giro e l'altro, quindi un export puo'
+  // contenere tutti e due i regimi. Etichettarlo col flag corrente e' una bugia, ed e'
+  // successo (AGENTS.md, L'A/B del campione di ruolo: la risposta e' no).
+  const _mix = cmpScopeMix();
+  const _sfx = _mix.si && _mix.no ? '_AB' : (_mix.si ? '_ruoloIndip' : '');
   const _base = cmpBatchExportFilename || `Backtest_V97_${new Date().toISOString().split('T')[0]}.csv`;
   a.download = _sfx ? _base.replace(/\.csv$/i, _sfx + '.csv') : _base;
   a.click();

@@ -43,6 +43,8 @@ cui si è già risposto, con i numeri. Le tre porte d'ingresso:
 - **«Ho quattro CSV di Serie A, cosa ci leggo?»** → *Quattro backtest veri di Serie A*:
   si sovrappongono, `/advanced` è vuoto su quelle stagioni, e le probabilità escono
   sotto-disperse di un terzo.
+- **«Perché la stessa partita compare due volte nel CSV?»** → *L'A/B del campione di
+  ruolo*: gli export si accumulano, e le due righe sono i due regimi.
 
 **Le sei cose che più facilmente fanno perdere una giornata**, se non le sai:
 
@@ -72,7 +74,7 @@ memoria del progetto, non la sua verità corrente. → *L'audit del documento*.
 Sezione di consegna: dice a che punto siamo, così una sessione nuova non
 ricomincia da capo. Aggiornala quando cambia qualcosa di sostanziale.
 
-**Build corrente: `0905-b25`.** Scanner e Comparatore devono coincidere, e sul
+**Build corrente: `0905-b26`.** Scanner e Comparatore devono coincidere, e sul
 Comparatore il badge sotto la dropzone deve uscire **verde** dopo aver trascinato
 lo Scanner. Il branch di lavoro è `claude/controlla-agents-md-bugs-2dnlmj`.
 
@@ -141,6 +143,7 @@ sovradispersione — scagionati con i dati in mano.
 | `b23` | **audit del documento contro il sorgente**: quattro punti in cui AGENTS.md descriveva un motore diverso da quello che gira, il più grosso è che lo scope `role` **è** un sottoinsieme di `overall` (8 partite su 15). Esposto `ROLE_SCOPE_INDEPENDENT`, fermo a 0; via il codice morto |
 | `b24` | **il taglio temporale non si fida più dell'orario**: con un `time_utc` senza `Z` e un browser in un fuso avanti, la partita da prevedere entrava nel proprio storico (l'`1` da 0.528 a 0.557). Ora il confronto è sulla **data in forma di stringa**, in AND col timestamp: `_isPast` |
 | `b25` | l'A/B del campione di ruolo diventa un **interruttore** nel Comparatore invece di una riga di console: si fa anche da telefono. Motore invariato |
+| `b26` | **l'A/B è stato fatto e la risposta è no**: raddoppiare il campione di ruolo vale `0.0002` di logloss. `ROLE_SCOPE_INDEPENDENT` resta 0. Il nome del file esportato ora descrive cosa contiene invece del flag corrente |
 
 Le tre build finali hanno una storia sola e va letta in *La baseline di coppia*:
 tre tentativi svuotati dallo stesso malinteso.
@@ -233,14 +236,14 @@ se un giro non mostra differenze sull'Elo, è il comportamento atteso.
    previsto/reale a zero su 1133 partite. Il fix additivo che le ha rese
    calcolabili era giusto, ma quello che si vede è rumore.
 
-13. **Misurare `ROLE_SCOPE_INDEPENDENT`.** È la cosa più grossa rimasta, ed è
-   l'unica in coda che vale su *tutti* i mercati insieme invece che su uno. Oggi
-   `role` è un sottoinsieme di `overall` — 8 partite su 15 — e il `b23` ha esposto
-   la costante che lo rende indipendente, ferma a 0. **Non si ricostruisce dal
-   CSV**, perché cambia quali partite si scaricano: servono due giri sullo stesso
-   periodo, `window.ROLE_SCOPE_INDEPENDENT = 1` prima del batch nel secondo. Il
-   CSV esporta la sezione *AMPIEZZA DEL CAMPIONE DI RUOLO* per riconoscere quale
-   dei due si sta leggendo. Vedi *Il campione di ruolo è un sottoinsieme*.
+13. ~~**Misurare `ROLE_SCOPE_INDEPENDENT`**~~ — **fatto, e la risposta è no.** L'A/B
+   appaiato su 1133 partite e tre leghe dice `0.0002` di logloss: resta a 0. Vedi
+   *L'A/B del campione di ruolo*. Ne esce una domanda nuova e più grossa, il punto 16.
+16. **Capire perché le probabilità sono sotto-disperse.** Due campioni indipendenti
+   danno pendenza **1.27** e **1.34** dove la retta a schermo ne usa 0.880, cioè spinge
+   dalla parte sbagliata. Il campione di ruolo è stato escluso come causa (punto 13).
+   Restano `SHRINK_K`, `SHRINK_LAM_K` e la media dell'ensemble, che comprime per
+   costruzione. Vedi *L'A/B del campione di ruolo*.
 14. **Portare `RESID_GAMMA` a 0.360** (o rimisurarlo) prima di rileggere la sezione
    *A/B CORREZIONE RESIDUALE* del CSV: nel codice è ancora 0.678, cioè la scala che
    il `b5` ha dichiarato sbagliata. Non sposta probabilità (`RESID_ALPHA = 0`),
@@ -775,6 +778,14 @@ a `scanner.html` al commit `cd51a69`, prima della ripulitura.
 - **Non leggere mai l'AUC dei mercati gol aggregata fra leghe.** Con base rate
   diversi (Premier 55.1% di Over 2.5, Serie A 45.7%) l'aggregato dava 0.531 dove
   dentro ogni lega era 0.495 e 0.500, cioè caso puro. Sempre per lega.
+- **Un'etichetta va presa dai dati che descrive, non dallo stato del momento.** Terza
+  volta: la lega letta dalla dropdown (`b21`), il `sel-league` senza `<option>` (`b18`),
+  e nel `b25` il suffisso `_ruoloIndip` nel nome del file, preso dall'interruttore
+  all'istante dell'export mentre il file conteneva **tutti e due** i regimi (gli export
+  si accumulano). Ogni volta l'errore non rompe niente: sposta le conclusioni in
+  silenzio. La domanda da farsi prima di scrivere un'etichetta è sempre la stessa:
+  *questo valore appartiene alla cosa che sto etichettando, o al momento in cui la sto
+  guardando?*
 - **Un taglio temporale dedotto da un orario è forte quanto il formato dell'orario.**
   `new Date("2025-04-30T00:00:00")` — senza `Z` — è ora **locale**, e in un fuso avanti
   rispetto a UTC finisce *prima* di mezzanotte UTC: la partita da prevedere entra nel
@@ -1745,6 +1756,94 @@ Over 2.5 per stagione (mai aggregato, i base rate vanno dal 45.2% al 55.1%): AUC
 questo documento, ma di nuovo: altra configurazione, altra lega, non confrontabile
 direttamente. La media prevista dell'Over sta **sotto** il reale in tre stagioni su
 quattro, che è il solito livello del lambda troppo basso.
+
+## L'A/B del campione di ruolo: la risposta è no, e apre una domanda più grossa
+
+Fatto sul serio, appaiato, su **1133 partite di tre leghe** (Serie A, Premier, LaLiga,
+2025/26) con `/advanced` **pieno**. Ogni partita compare due volte, una per regime.
+
+Il campione di ruolo si comporta come previsto: mediana **15 → 26** partite, e il peso
+`wS` da **0.833 a 0.897**. Cioè il rubinetto si apre davvero. Solo che a valle non
+succede niente.
+
+| | n | logloss A | logloss B | A−B | z |
+|---|---|---|---|---|---|
+| **tutte** | 1133 | 1.0071 | 1.0069 | +0.0002 | +1.85 |
+| LaLiga | 377 | 0.9887 | 0.9885 | +0.0002 | +1.62 |
+| Premier | 378 | 1.0267 | 1.0265 | +0.0002 | +0.96 |
+| Serie A | 378 | 1.0059 | 1.0058 | +0.0001 | +0.75 |
+
+Pick azzeccato **51.5% in entrambi**, alla prima cifra decimale. E sui mercati che la
+matrice di ruolo la usano davvero, **i segni si ribaltano**: Over 1.5 `−0.52`, Over 2.5
+`−0.56`, Over 3.5 `+2.32`, Goal/NoGoal `−1.97`; corner `−0.18`, tiri `−0.82`, gialli
+`+1.49`. Su otto test due sfiorano i 2 sigma in direzioni **opposte**, che è quello che
+il caso produce da solo. La regola di questo documento — *il segno deve reggere
+ovunque* — dice archiviare, e archiviamo: **`ROLE_SCOPE_INDEPENDENT` resta 0.**
+
+Per calibrare quanto è piccolo: `ENS_SCOPE_W` valeva `0.0042` con `z = −3.96`, e la
+ritaratura dei pesi dell'ensemble `0.0013`, già definita qui «al bordo del rumore».
+Questo vale `0.0002`, cioè **un quinto di quello che era già stato giudicato niente**.
+
+**Perché era prevedibile, col senno di poi.** `ENS_SCOPE_W = 1` significa che l'1X2 esce
+dai lambda **completi**: il blocco di ruolo pesa zero. Il campione di ruolo entra
+nell'1X2 solo di straforo, attraverso `goalsSotCorrection`, che stima i tiri in porta
+con `predictStat(..., 'role')` e poi riscala *entrambe* le coppie di lambda. Quel
+`+0.0002` è tutto lì. La lezione da tenere: **prima di misurare un grado di libertà,
+scrivere per quale strada arriva al numero che si guarda.** Qui la strada era quasi
+chiusa da un'altra costante decisa due build prima, e bastava rileggerla.
+
+### La domanda che resta aperta, e che questo A/B ha reso più netta
+
+Avevo ipotizzato che il campione di ruolo dimezzato spiegasse la **sotto-dispersione**
+delle probabilità. **Falsificata**: il campione raddoppia e la calibrazione non si
+muove.
+
+Ma la sotto-dispersione è confermata, e ora su due campioni indipendenti che non
+condividono né stagione, né leghe, né disponibilità di `/advanced`:
+
+| campione | n | pendenza | SE | sigma da 1 |
+|---|---|---|---|---|
+| Serie A 2021–2025, senza `/advanced` | 1504 | 1.335 | 0.056 | +5.95 |
+| Tre leghe 2025/26, con `/advanced` | 1133 | **1.268** | 0.065 | **+4.15** |
+
+Le due stime distano `0.067` con SE combinato `0.086`: **è lo stesso effetto**, e non
+era un artefatto dei dati mancanti. Il segno regge in tutte e sei le combinazioni
+lega-campione. A fasce: sotto il 30% previsto il modello sovrastima di ~2 punti, sopra
+il 50% **sottostima di +9**.
+
+La retta a schermo usa pendenza **0.880**, cioè comprime ancora: a 60% mostra 59 dove
+il vero è 69. **Non l'ho cambiata**, e la ragione va scritta perché è la parte
+interessante: questo documento riporta altrove che rifittarla «non serve», con pendenze
+**sotto** 1 su 756 e 6824 partite. Delle due l'una, e prima di dare la colpa a una delle
+due misure conviene notare che quelle rette sono state stimate **prima** dell'Elo che
+inclina i lambda (`b13`), prima dell'ensemble riscritto (`b20`) e prima di
+`ENS_SCOPE_W` (`b21`). È esattamente il caso che questo documento chiama *una stima
+invecchia quando cambia ciò che sta a monte*: il campione era giusto, la macchina sotto
+non è più quella. Prima di toccare un numero che l'utente legge, serve una lega in più —
+o accorgersi che i vecchi fit non sono confrontabili e rifarli daccapo.
+
+### Il «duplicato»: non è un errore, ed è colpa di un'etichetta
+
+I sette file arrivati insieme si contengono a vicenda: `cmpSavedMatches` **si accumula**
+fra un giro e l'altro, quindi ogni export contiene tutto quello che c'era prima più il
+giro nuovo. Da qui i conteggi che sono multipli tondi di una giornata di campionato
+(378, 756, 1134, 1512, 2266) e le partite che compaiono due volte nello stesso file.
+
+Le due righe di una stessa partita **non sono un doppione**: sono le due metà dell'A/B,
+`Scope: ruolo indipendente` a `no` e a `SI`. Il file più grande è l'esperimento completo.
+
+Quello che invece era sbagliato è il **nome**: il suffisso `_ruoloIndip` veniva
+dall'interruttore *al momento dell'export*, non da cosa c'era dentro, quindi file che
+contenevano tutti e due i regimi uscivano etichettati come se fossero solo il secondo
+giro. Corretto nel `b26`: adesso il suffisso lo decide il contenuto (`_ruoloIndip` se
+tutte le righe sono indipendenti, **`_AB`** se sono mescolate, niente se sono tutte di
+default), e l'intestazione del CSV scrive quante righe stanno in ciascun regime con
+l'avvertenza di separarle prima di contare. La riga per partita resta comunque la fonte
+di verità.
+
+È la stessa forma della trappola dell'etichetta di lega letta dal DOM: **un'etichetta
+presa da uno stato del momento invece che dai dati che descrive.** Terza volta in questo
+repository.
 
 ## La lega che non arrivava mai: il bug che invalida le tarature
 
@@ -3351,10 +3450,13 @@ E due controlli che vanno fatti sul **CSV appena arrivato**, prima di analizzarl
   PitchAPI non serve `/advanced` per quelle stagioni. Quando succede, le sezioni *NUOVE
   METRICHE* e *METRICHE 0905-b4* sono `N/D` da cima a fondo e vanno saltate — **il resto
   del file resta valido**. Vedi *Quattro backtest veri di Serie A*.
-- **I-bis. Gli `ID PARTITA` sono unici, e i file che stai unendo non si sovrappongono?**
-  Quattro export consecutivi dello stesso archivio possono essere l'uno sottoinsieme
-  dell'altro: sommandoli si contano le stesse partite fino a tre volte. Deduplica sempre
-  per `ID PARTITA` prima di contare.
+- **I-bis. Gli `ID PARTITA` sono unici, dentro il file e fra i file?** `cmpSavedMatches`
+  **si accumula** fra un giro e l'altro, quindi export consecutivi sono l'uno
+  sottoinsieme dell'altro (conteggi che sono multipli tondi di una giornata: 378, 756,
+  1134… sono il segnale) e **dentro** un singolo file la stessa partita può comparire
+  due volte. Se compare due volte, guarda `Scope: ruolo indipendente`: se le due righe
+  hanno regimi diversi non è un doppione, è un A/B e va separato; se ce l'hanno uguale
+  allora sì, è lo stesso giro ripetuto. Deduplica sempre prima di contare.
 
 Per B, C e D il CSV va letto sapendo che **ogni partita occupa 4 colonne**
 (Previsto, Confidence, Reale, Esito) e che le sezioni CASA e TRASFERTA ripetono le
