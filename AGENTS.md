@@ -45,6 +45,8 @@ cui si è già risposto, con i numeri. Le tre porte d'ingresso:
   sotto-disperse di un terzo.
 - **«Perché la stessa partita compare due volte nel CSV?»** → *L'A/B del campione di
   ruolo*: gli export si accumulano, e le due righe sono i due regimi.
+- **«Come aumento la probabilità?»** → *La mappa onesta*: tre cose diverse sotto la
+  stessa parola, e solo una ha margine oggi.
 
 **Le sei cose che più facilmente fanno perdere una giornata**, se non le sai:
 
@@ -87,10 +89,34 @@ da recuperare: i file dei due rami sono byte per byte identici.
 
 ### Dove siamo
 
-L'**1X2 funziona**: 51.4% di pick azzeccati sulle 1133 partite del `b21` contro il
-~43% del «gioca sempre in casa», e la fascia ≥60% rende il 71–78%. L'ensemble è
-`Dixon-Coles 70% + Markov 30%` su lambda stimati su **tutte** le partite di una
-squadra; l'Ordered Logit è calcolato e mostrato ma ha **peso 0**.
+**La cosa più importante da sapere, al `b26`: il modello è già più bravo di quanto
+dichiara, e il guadagno disponibile subito non è nel modello ma nell'etichetta.**
+
+L'**1X2 funziona**: ~51–52% di pick azzeccati contro il ~41–43% del «gioca sempre in
+casa». L'ensemble è `Dixon-Coles 70% + Markov 30%` su lambda stimati su **tutte** le
+partite di una squadra; l'Ordered Logit è calcolato e mostrato ma ha **peso 0**.
+
+Ma il numero che conta per chi usa lo Scanner non è la media: è **quanto rende la
+fascia alta**. Misurato su due campioni che non condividono né stagioni, né leghe, né
+disponibilità di `/advanced`:
+
+| soglia sul pick | 2025/26, tre leghe | Serie A 2021–25 | quota di partite |
+|---|---|---|---|
+| ≥ 45% | 59.1% | 60.8% | ~52% |
+| ≥ 50% | **66.2%** | **63.6%** | ~32% |
+| ≥ 55% | 69.8% | 68.3% | ~18% |
+| ≥ 60% | **73.6%** | **74.0%** | ~9% |
+| ≥ 65% | 87.7% | 78.9% | ~4% |
+
+Le due colonne coincidono a ogni soglia, e alla soglia del 50% il segno regge in tutte
+e tre le leghe (LaLiga 70.3%, Serie A 67.0%, Premier 59.5%). **Una partita su tre esce
+già oggi con una probabilità reale attorno ai due terzi, e una su undici attorno al
+75%.**
+
+Il problema è che **lo Scanner non lo dice**: la retta della confidence usa pendenza
+`0.880`, cioè comprime, e a 60% mostra 59 dove il vero è ~74. Vedi *L'A/B del campione
+di ruolo* per le due stime della pendenza (1.268 e 1.335, entrambe oltre 4 sigma) e
+perché non è ancora stata cambiata.
 
 I **mercati gol** restano il muro, ma dal `b22` si sa di che è fatto, e sono due cose
 distinte che vanno tenute separate:
@@ -1844,6 +1870,73 @@ di verità.
 È la stessa forma della trappola dell'etichetta di lega letta dal DOM: **un'etichetta
 presa da uno stato del momento invece che dai dati che descrive.** Terza volta in questo
 repository.
+
+## «Come aumento la probabilità?» — la mappa onesta, al `b26`
+
+Domanda dell'utente, e merita una risposta secca invece di un elenco di idee. Ci sono
+**tre cose diverse** che si confondono sotto quella parola, e solo una delle tre ha oggi
+un margine disponibile.
+
+### 1. Rendere il modello più bravo — fermo, e per buone ragioni
+
+Il pick azzeccato sta a ~51–52% e **non si è mosso in venti build**. Non per pigrizia:
+l'elenco in *Cosa è già stato provato* conta una quindicina di idee misurate e chiuse,
+e la serie `b23`–`b26` ne ha aggiunta un'altra (`ROLE_SCOPE_INDEPENDENT`, `0.0002` di
+logloss). Le due strade non ancora esaurite restano:
+
+- **L'endpoint `/shots`**, il candidato più serio per la forma della distribuzione dei
+  gol, mai provato perché costa una chiamata in più per partita;
+- **l'arbitro e la classifica sui cartellini**, dove il `b16` ha già mostrato che lo
+  squilibrio vale 30 punti base di AUC a costo zero.
+
+Tutto il resto della coda vale millesimi. **Aspettarsi che il 52% diventi 56% ritoccando
+una costante è, coi dati in mano, irrealistico.**
+
+### 2. Sapere QUALI partite sono affidabili — qui c'è il margine, ed è grosso
+
+Questa è la parte che l'utente vuole davvero, e la risposta è che **esiste già e non è
+esposta**. Il modello produce una fascia alta che rende molto più della sua media, e
+**due campioni indipendenti la confermano soglia per soglia** (tabella in *Dove siamo*):
+una partita su tre ha probabilità reale ~65%, una su undici ~74%.
+
+Non è «più accuratezza»: è la stessa accuratezza, **selezionata**. E oggi lo Scanner la
+nasconde, perché la retta della confidence ha pendenza `0.880` e comprime proprio dove
+servirebbe espandere.
+
+**È il guadagno migliore disponibile: costa zero chiamate, zero modelli nuovi, e non
+tocca il motore.** L'unica ragione per cui non è già stato fatto è che questo documento
+riporta altrove pendenze *sotto* 1 su campioni più vecchi (0.686 su 756 partite, 0.880
+su 6824) — segno opposto. Prima di riscrivere un numero che l'utente legge e su cui
+decide, va risolta quella contraddizione, e la spiegazione più probabile è che quelle
+stime **precedano** l'Elo che inclina i lambda (`b13`), l'ensemble riscritto (`b20`) e
+`ENS_SCOPE_W` (`b21`): stime invecchiate, non misure sbagliate.
+
+**Come chiuderla, in ordine di costo:**
+
+1. **Rifare i vecchi fit sul motore di oggi.** Se i 6824 match di allora sono ancora
+   disponibili, ribacktestarli col `b26` e rimisurare la pendenza. Se viene sopra 1,
+   la contraddizione sparisce e la retta si cambia.
+2. **Se non sono disponibili, una quarta e quinta lega** sul motore attuale. Con cinque
+   leghe concordi la stima vecchia è archiviata per anzianità.
+3. **Poi, e solo poi**, sostituire le due rette — o meglio, sostituirle con la
+   **tabella empirica per fascia** invece che con una retta: le soglie sono quello che
+   l'utente guarda, e una tabella non estrapola dove non ci sono dati.
+
+### 3. Prevedere meglio i gol — il muro, e resta muro
+
+AUC dell'Over 2.5 fra 0.51 e 0.60 a seconda del campione, e nessuna feature provata l'ha
+spostata. Il `b22` ha chiuso tre ipotesi (`rho`, sovradispersione, forma) e ne ha
+lasciata una sola, `LEAGUE_HALFLIFE_DAYS`. Qui **non c'è margine a breve**, e chi cerca
+valore dovrebbe guardare i mercati sui numeri, che discriminano meglio dei gol e nessuno
+li guarda.
+
+### La regola che tiene insieme le tre
+
+Le prime venti build hanno cercato accuratezza. Il dato del `b26` dice che **la
+selezione vale più dell'accuratezza**: passare dal giocare tutto al giocare il terzo
+superiore porta il rendimento da 52% a 66% senza toccare una riga del modello. Prima di
+aggiungere una feature, chiedersi se il segnale che si sta cercando non sia già dentro
+l'output, solo mal etichettato.
 
 ## La lega che non arrivava mai: il bug che invalida le tarature
 
