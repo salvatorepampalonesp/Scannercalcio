@@ -162,7 +162,7 @@ select{cursor:pointer}
   <div class="topbar">
     <div class="brand">
       <h1>Comparatore V9.7</h1>
-      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b23</span>
+      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b24</span>
       <span class="badge" id="engine-badge">motore non caricato</span>
     </div>
     <span class="badge">previsioni vs realtà</span>
@@ -642,7 +642,7 @@ async function loadEngineFromText(text, fileName) {
     'computeLeagueParams','multigoal','asianHandicapMat','negBinCDF','negBinK','poisson',
     'expectedPoints','loadLegheJson','fetchMatchRaw',
 
-    'predictStat'];
+    'predictStat','_isPast'];
   let exposer = '\n;(function(){\n';
   exposeNames.forEach(n => {
     exposer += `  try { if (typeof ${n} !== 'undefined') window[${JSON.stringify(n)}] = ${n}; } catch(e){}\n`;
@@ -697,7 +697,7 @@ async function loadEngineFromText(text, fileName) {
     <p><code>${fileName}</code> — clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
 
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b23';
+  const _bComp = '0905-b24';
   const _el = document.getElementById('engine-build');
   if (_el) {
     if (!_bScan) {
@@ -1178,6 +1178,20 @@ async function cmpCaricaDatabase() {
     globalThis.globalLeagueMatchesCache = allMatches;
     cmpAllMatches = allMatches;
 
+    // Un time_utc senza Z (o senza offset) viene letto come ora LOCALE: in un fuso avanti
+    // rispetto a UTC le partite del giorno bersaglio scivolano prima del taglio. Il motore
+    // adesso taglia anche sulla data, quindi non passa piu' niente, ma se il formato e'
+    // questo va saputo perche' ogni altro conto sull'orario e' sospetto.
+    {
+      const _sospette = allMatches.filter(m => typeof m.time_utc === 'string'
+        && m.time_utc.length > 10 && !/(Z|[+-]\d{2}:?\d{2})$/.test(m.time_utc));
+      if (_sospette.length) {
+        cmpLog(`   \u26a0\ufe0f ${_sospette.length}/${allMatches.length} partite hanno time_utc senza fuso `
+             + `(es. "${_sospette[0].time_utc}"): l'ora viene letta come LOCALE. Il taglio temporale `
+             + `regge lo stesso perche' e' anche sulla data, ma non fidarti dell'orario per altro.`);
+      }
+    }
+
     cmpMatchesOfTheDay = allMatches.filter(m =>
       m.status === 'finished' && m.time_utc && m.time_utc.startsWith(targetDate)
     );
@@ -1299,6 +1313,13 @@ async function cmpRunMatch(match, limit, render) {
     const cache = globalThis.globalLeagueMatchesCache || [];
     const targetMs = R._targetTimeMs;
     const minMs = targetMs - (500 * 86400000);
+    // stesso taglio del motore, e per lo stesso motivo: l'orario di time_utc puo' non
+    // essere affidabile, la data si' (AGENTS.md, L'orario non e' affidabile)
+    const _tDayC = new Date(targetMs).toISOString().slice(0, 10);
+    const _pastC = (tu) => (typeof globalThis._isPast === 'function')
+      ? globalThis._isPast(tu, targetMs, _tDayC)
+      : (typeof tu === 'string' && tu.length >= 10 && tu.slice(0, 10) < _tDayC
+         && isFinite(new Date(tu).getTime()) && new Date(tu).getTime() < targetMs);
     const buildPast = (teamId) => {
       const seen = new Set();
       return cache
@@ -1306,7 +1327,7 @@ async function cmpRunMatch(match, limit, render) {
                      && (m.home_team.id === teamId || m.away_team.id === teamId))
         .filter(m => {
           const t = new Date(m.time_utc).getTime();
-          return t < targetMs && t > minMs && !seen.has(m.id) && seen.add(m.id);
+          return _pastC(m.time_utc) && t > minMs && !seen.has(m.id) && seen.add(m.id);
         })
         .sort((a, b) => new Date(b.time_utc) - new Date(a.time_utc))
         .slice(0, R._limit || 15)

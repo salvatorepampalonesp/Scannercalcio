@@ -69,7 +69,7 @@ memoria del progetto, non la sua verità corrente. → *L'audit del documento*.
 Sezione di consegna: dice a che punto siamo, così una sessione nuova non
 ricomincia da capo. Aggiornala quando cambia qualcosa di sostanziale.
 
-**Build corrente: `0905-b23`.** Scanner e Comparatore devono coincidere, e sul
+**Build corrente: `0905-b24`.** Scanner e Comparatore devono coincidere, e sul
 Comparatore il badge sotto la dropzone deve uscire **verde** dopo aver trascinato
 lo Scanner. Il branch di lavoro è `claude/controlla-agents-md-bugs-2dnlmj`.
 
@@ -136,6 +136,7 @@ sovradispersione — scagionati con i dati in mano.
 | `b21` | **il completo batte il ruolo sull'1X2**, monotono in tre leghe su tre, `z = -3.96`: `ENS_SCOPE_W` a 1. E l'etichetta di lega del CSV veniva dalla dropdown, non dalla partita |
 | `b22` | **`rho` e la sovradispersione scagionati**, il disallineamento di unità è già compensato: il muro dell'Over/Under è tutto nel **livello** del lambda, e la base di lega è una media piatta di tre stagioni. `aerials` era corretto solo nello Scanner |
 | `b23` | **audit del documento contro il sorgente**: quattro punti in cui AGENTS.md descriveva un motore diverso da quello che gira, il più grosso è che lo scope `role` **è** un sottoinsieme di `overall` (8 partite su 15). Esposto `ROLE_SCOPE_INDEPENDENT`, fermo a 0; via il codice morto |
+| `b24` | **il taglio temporale non si fida più dell'orario**: con un `time_utc` senza `Z` e un browser in un fuso avanti, la partita da prevedere entrava nel proprio storico (l'`1` da 0.528 a 0.557). Ora il confronto è sulla **data in forma di stringa**, in AND col timestamp: `_isPast` |
 
 Le tre build finali hanno una storia sola e va letta in *La baseline di coppia*:
 tre tentativi svuotati dallo stesso malinteso.
@@ -770,6 +771,19 @@ a `scanner.html` al commit `cd51a69`, prima della ripulitura.
 - **Non leggere mai l'AUC dei mercati gol aggregata fra leghe.** Con base rate
   diversi (Premier 55.1% di Over 2.5, Serie A 45.7%) l'aggregato dava 0.531 dove
   dentro ogni lega era 0.495 e 0.500, cioè caso puro. Sempre per lega.
+- **Un taglio temporale dedotto da un orario è forte quanto il formato dell'orario.**
+  `new Date("2025-04-30T00:00:00")` — senza `Z` — è ora **locale**, e in un fuso avanti
+  rispetto a UTC finisce *prima* di mezzanotte UTC: la partita da prevedere entra nel
+  proprio storico. Non su tutti i fusi, non su tutti i formati, quindi invisibile finché
+  qualcuno non lo cerca apposta. Su date ISO l'ordine **lessicografico è quello
+  cronologico**: confrontare `slice(0,10)` è immune sia al fuso sia al formato, e su dati
+  ben formati dà lo stesso risultato del timestamp — quindi si mettono in AND e non si
+  perde niente. Vedi *L'orario non è affidabile*.
+- **«Verificato» vale solo per i dati con cui hai verificato.** Il `b23` ha dichiarato
+  chiuso il leakage con sei prove e due controlli di potenza, tutte su `time_utc` con la
+  `Z`. Il difetto stava nel formato che non avevo generato. Quando un test genera i
+  propri dati, la domanda da farsi non è «passa?» ma **«quali input non ho messo?»** —
+  e per un campo che arriva da un'API esterna, il formato è il primo.
 - **Anche un elenco di trappole corrette è una costante non stimata.** Il punto 6
   qui sopra dava per risolto un difetto che nel `scanner.html` di questo repository
   non è mai stato risolto, e lo descriveva con il numero giusto («con 15 restavano
@@ -1529,24 +1543,72 @@ identici di fila si spiegano altrettanto bene con «non c'è leakage» e con «i
 test non tocca niente». Regola generale: **un test che verifica un'assenza deve
 sempre portarsi dietro il caso in cui la presenza si vede.**
 
-### Perché partire da `x-1` peggiorerebbe le cose
+### L'orario non è affidabile, e il `b23` aveva dato il via libera troppo presto
 
-L'idea di far cominciare la ricerca dal giorno prima è ragionevole a occhio, ma i
-numeri dicono che non serve e costa: il giorno `x` è **già** escluso per intero, e
-spostare il taglio a `x-1` butterebbe via una giornata di storia legittima — partite
-davvero giocate prima — senza comprare nessuna sicurezza in più.
+**Tutto quello scritto qui sopra vale solo se `time_utc` porta la `Z`.** È
+l'assunzione che avevo dato per buona senza verificarla, ed è sbagliata: è arrivata da
+fuori, come domanda — *l'orario non sarà mica discriminante, per una partita finita?* —
+e i numeri le hanno dato ragione.
 
-Vale la pena dire dove sta il margine vero, che è nella direzione **opposta**. Il
-taglio è a mezzanotte UTC, non al **calcio d'inizio della partita bersaglio**: quindi
+`new Date("2025-04-30T00:00:00")`, cioè **senza** la `Z`, non è mezzanotte UTC: JavaScript
+lo legge come ora **locale**. In un browser a Europe/Rome diventa `2025-04-29T22:00Z`,
+che sta **due ore prima** del taglio. Quindi con quel formato:
+
+| `time_utc` | browser | `t < targetMs`? |
+|---|---|---|
+| `2025-04-30T18:00:00.000Z` | qualunque | no, escluso ✓ |
+| `2025-04-30T00:00:00Z` | qualunque | no, escluso ✓ |
+| `2025-04-30T18:00:00` | Europe/Rome | no, escluso ✓ |
+| **`2025-04-30T01:00:00`** | Europe/Rome | **sì — entra** |
+| **`2025-04-30T00:00:00`** | Europe/Rome | **sì — entra** |
+
+E «entra» qui vuol dire la cosa peggiore che possa succedere: rifatto il test di sopra
+con quel formato, drogare **la partita bersaglio** sposta l'`1` da **0.5276 a 0.5570**
+sul payload e altrettanto sul punteggio. Il modello vedeva il risultato che doveva
+prevedere. Non su tutti i fusi (in un fuso *indietro* rispetto a UTC il difetto non si
+manifesta) e non su tutti i formati — ed è proprio questo che lo rendeva invisibile:
+funziona benissimo finché non funziona.
+
+**La correzione (`b24`): il taglio non si fida più dell'orario.** Il confronto vero è
+fra le **date in forma di stringa** — `m.time_utc.slice(0,10) < giorno_bersaglio` — che
+non dipende né dal fuso né dal formato dell'ora, perché su date ISO l'ordine
+lessicografico *è* l'ordine cronologico. Il controllo sul timestamp resta, in **AND**:
+su dati ben formati i due coincidono, quindi non si perde niente, e su dati storti
+basta che uno dei due dica no.
+
+È in `_isPast(timeUtc, targetTimeMs, targetDay)`, usata da tutti e cinque i filtri del
+motore (`aggregaTeam`, i due cicli di `buildGlobalElo`, `computeLeagueParams`,
+`estimateRho`) e, attraverso `exposeNames`, anche dal Comparatore, che ricostruisce lo
+storico per conto proprio e prima aveva una copia della stessa condizione.
+
+Misurato dopo:
+
+- su dati **malformati** (senza `Z`, browser a Europe/Rome) drogare la partita
+  bersaglio non sposta più niente, e il controllo di potenza scatta ancora;
+- su dati **ben formati** `b23` e `b24` danno numeri **identici** — probabilità,
+  quattro lambda, Ordered Logit, Markov, mercati sui numeri. La correzione non cambia
+  il modello, chiude solo una porta.
+
+Il Comparatore adesso lo dice anche a voce: se qualche partita ha `time_utc` senza fuso,
+al caricamento del database scrive quante sono e con che aspetto. Il taglio regge lo
+stesso, ma **ogni altro conto che usi l'orario di quelle righe è sospetto**.
+
+### E allora partire da `x-1` serve o no?
+
+No — ma per una ragione diversa da quella che avrei dato prima del `b24`.
+
+L'istinto («non fidarti del giorno `x`, comincia da `x-1`») era **giusto**: individuava
+esattamente il punto debole. La cura giusta però non è arretrare il taglio di un giorno,
+che butterebbe via una giornata di storia legittima; è **smettere di dedurre il giorno
+dall'orario**, che è quello che il `b24` fa. A quel punto il giorno `x` è escluso per
+intero e per costruzione, qualunque cosa contenga il campo dell'ora.
+
+Il margine che resta è nella direzione **opposta**, e va detto perché è controintuitivo:
+il taglio è a mezzanotte, non al **calcio d'inizio della partita bersaglio**, quindi
 l'anticipo delle 12:30 dello stesso turno viene scartato anche se si è giocato sei ore
-prima. È una perdita, non un rischio. Tagliare a `matchTime` vero invece che a
-`T00:00` darebbe **più** informazione restando pulito — ma cambia cosa vede il modello,
-quindi è una modifica al motore e vuole un backtest, non una riga.
-
-C'è anche un caso di frontiera che sembra un problema e non lo è: una partita il cui
-turno locale è `x` ma il cui `time_utc` cade su `x-1` (fischio d'inizio all'una di
-notte in un fuso avanti rispetto a UTC) **viene inclusa**. È corretto: resta comunque
-precedente al calcio d'inizio del bersaglio in tempo reale.
+prima. È una perdita di informazione, non un rischio. Tagliare al calcio d'inizio vero
+darebbe **più** dati restando pulito — ma richiede un `time_utc` di cui fidarsi, che è
+precisamente quello che non abbiamo, quindi oggi non si può fare.
 
 ### L'asimmetria delle finestre, che è deliberata e va saputa
 
@@ -2836,9 +2898,11 @@ Scanner: ne legge il testo, lo modifica con delle regex e lo esegue con
    `markovFlow`, `probsFromMatrix`, `estimateRho`, `calculateRho`,
    `getSimilarMatches`, `computeLeagueParams`, `multigoal`,
    `asianHandicapMat`, `negBinCDF`, `negBinK`, `poisson`, `expectedPoints`,
-   `loadLegheJson`, `fetchMatchRaw`, `predictStat`.
-   Sono **ventuno**, e ventuno sono le voci di `exposeNames`. Il **contenuto** è
-   libero, i **nomi** no.
+   `loadLegheJson`, `fetchMatchRaw`, `predictStat`, `_isPast`.
+   Sono **ventidue**, e ventidue sono le voci di `exposeNames`. Il **contenuto** è
+   libero, i **nomi** no. `_isPast` è entrata nel `b24`: il Comparatore ricostruisce lo
+   storico per conto proprio e deve tagliare **con la stessa funzione** del motore, non
+   con una copia della condizione — è la solita regola delle due copie che divergono.
 
 3. **Il punto di aggancio dell'hook** è la riga della confidence, trovata con
    `/(const\s+confidence\s*=\s*Math\.round\([^;]*;)/`. Non riscriverla e non
@@ -3147,6 +3211,11 @@ senza rete descritto qui sopra:
 5. **Poi rifarlo su una partita del giorno prima**, e verificare che lì la previsione
    **cambi**. Senza questo passo il test non ha potere: sei «identici» di fila si
    spiegano ugualmente bene con «non c'è leakage» e con «non sto toccando niente».
+6. **E rifare tutto con `time_utc` senza `Z`, in un browser a Europe/Rome**
+   (`newContext({ timezoneId: 'Europe/Rome' })`). È il passo che il `b23` non aveva
+   fatto, ed è quello che nel `b24` ha trovato il difetto vero. Regola generale: quando
+   il test genera i propri dati, elencare i **formati** che l'API potrebbe restituire e
+   passarli tutti, non solo quello comodo.
 
 Vale come regola oltre a questo caso: *un test che verifica un'assenza deve sempre
 portarsi dietro il caso in cui la presenza si vede.* Esito al `b23` in *Il Comparatore

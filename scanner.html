@@ -155,7 +155,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b23</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b24</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -635,6 +635,23 @@ function _mean(arr) { if(!arr || !Array.isArray(arr)) return 0; const valid = ar
 
 function _stddev(arr) { if(!arr || !Array.isArray(arr)) return 0; const valid = arr.filter(v => v != null && !isNaN(v)); if (valid.length < 2) return 0; const m = _mean(valid); return Math.sqrt(valid.reduce((s,v) => s+(v-m)*(v-m), 0) / (valid.length - 1)); }
 function _nValid(arr) { return (arr||[]).filter(v => v != null && !isNaN(v)).length; }
+// IL TAGLIO TEMPORALE NON SI FIDA DELL'ORARIO. Se time_utc arriva senza la Z (o senza
+// offset) new Date() lo legge come ora LOCALE: in un fuso avanti rispetto a UTC una
+// partita del giorno bersaglio scivola PRIMA di mezzanotte UTC e la partita da
+// prevedere entra nel proprio storico. Misurato: con time_utc a 'X-T00:00:00' e browser
+// a Europe/Rome, drogare la partita bersaglio spostava l'1 da 0.528 a 0.557.
+// Il confronto fra date in forma di STRINGA non dipende ne' dal fuso ne' dal formato
+// dell'ora, e su dati ben formati coincide col confronto sui timestamp: per questo
+// valgono tutte e due in AND. (AGENTS.md, L'orario non e' affidabile)
+function _dayUTC(ms) { const d = new Date(ms); return isFinite(d.getTime()) ? d.toISOString().slice(0, 10) : null; }
+function _isPast(timeUtc, targetTimeMs, targetDay) {
+  if (typeof timeUtc !== 'string' || timeUtc.length < 10) return false;
+  const day = targetDay || _dayUTC(targetTimeMs);
+  if (day === null || timeUtc.slice(0, 10) >= day) return false;
+  const t = new Date(timeUtc).getTime();
+  return isFinite(t) && t < targetTimeMs;
+}
+
 function _timeDecayDates(vals, dates, targetTimeMs, halfLifeDays = 106) {
   if(!vals || !Array.isArray(vals)) return 0;
   const xi = Math.LN2 / halfLifeDays; let wSum = 0; let wTot = 0;
@@ -728,6 +745,7 @@ function markovFlow(lH, lA) {
 }
 
 function buildGlobalElo(targetTimeMs) {
+  const _tDay = _dayUTC(targetTimeMs);
 
   const _chosenLeagueId = (typeof document !== 'undefined' && document.getElementById('sel-league'))
     ? document.getElementById('sel-league').value : null;
@@ -736,7 +754,7 @@ function buildGlobalElo(targetTimeMs) {
   for (const m of globalLeagueMatchesCache) {
     if (m.status !== 'finished' || !m.time_utc) continue;
     if (_chosenLeagueId && m.league_id !== _chosenLeagueId) continue;
-    if (new Date(m.time_utc).getTime() >= targetTimeMs) continue;
+    if (!_isPast(m.time_utc, targetTimeMs, _tDay)) continue;
     if (_seenHFA.has(m.id)) continue; _seenHFA.add(m.id);
     const gh = m.score_home ?? 0, ga = m.score_away ?? 0;
     if (gh > ga) _h_w++; else if (gh < ga) _a_w++;
@@ -760,7 +778,7 @@ function buildGlobalElo(targetTimeMs) {
   const ms = globalLeagueMatchesCache
     .filter(m => m.status === 'finished' && m.time_utc && m.home_team && m.away_team
                  && (!_chosenLeagueId || m.league_id === _chosenLeagueId)
-                 && new Date(m.time_utc).getTime() < targetTimeMs)
+                 && _isPast(m.time_utc, targetTimeMs, _tDay))
     .sort((a, b) => new Date(a.time_utc) - new Date(b.time_utc));
 
   for (const m of ms) {
@@ -815,11 +833,12 @@ window.LEAGUE_HALFLIFE_DAYS = (typeof window.LEAGUE_HALFLIFE_DAYS === 'number') 
 
 function computeLeagueParams(leagueId, targetTimeMs, halfLifeDays) {
   const hl = (halfLifeDays === undefined) ? window.LEAGUE_HALFLIFE_DAYS : halfLifeDays;
+  const _tDay = _dayUTC(targetTimeMs);
   const seen = new Set(); let gh = 0, ga = 0, w = 0, n = 0;
   for (const m of globalLeagueMatchesCache) {
     if (m.league_id !== leagueId || m.status !== 'finished' || !m.time_utc) continue;
+    if (!_isPast(m.time_utc, targetTimeMs, _tDay)) continue;
     const t = new Date(m.time_utc).getTime();
-    if (!isFinite(t) || t >= targetTimeMs) continue;
     if (seen.has(m.id)) continue; seen.add(m.id);
     if (m.score_home == null || m.score_away == null) continue;
     const wt = (hl > 0) ? Math.pow(0.5, (targetTimeMs - t) / (hl * 86400000)) : 1;
@@ -832,10 +851,11 @@ function computeLeagueParams(leagueId, targetTimeMs, halfLifeDays) {
 }
 
 function estimateRho(leagueId, targetTimeMs, LG) {
+  const _tDay = _dayUTC(targetTimeMs);
   const seen = new Set(); const obs = {'0-0':0,'1-0':0,'0-1':0,'1-1':0}; let n = 0;
   for (const m of globalLeagueMatchesCache) {
     if (m.league_id !== leagueId || m.status !== 'finished' || !m.time_utc) continue;
-    if (new Date(m.time_utc).getTime() >= targetTimeMs) continue;
+    if (!_isPast(m.time_utc, targetTimeMs, _tDay)) continue;
     if (seen.has(m.id)) continue; seen.add(m.id);
     if (m.score_home == null || m.score_away == null) continue;
     const k = `${m.score_home}-${m.score_away}`; if (obs[k] !== undefined) obs[k]++; n++;
@@ -1011,6 +1031,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
   logConsole(`Filtro lo storico per ${teamName}...`);
   logConsole("    -> Limite richiesto: " + limit + " partite complessive");
   const targetTimeMs = new Date(matchTimeStr).getTime(); const minTimeMs = targetTimeMs - (500 * 24 * 60 * 60 * 1000);
+  const _tDay = _dayUTC(targetTimeMs);
 
   const _chosenLeagueId = (typeof document !== 'undefined' && document.getElementById('sel-league'))
     ? document.getElementById('sel-league').value : null;
@@ -1018,7 +1039,8 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
   let past = globalLeagueMatchesCache.filter(m => {
     if(m.status !== 'finished') return false; if(m.home_team.id !== teamId && m.away_team.id !== teamId) return false;
     if(_chosenLeagueId && m.league_id !== _chosenLeagueId) return false;
-    if(!m.time_utc) return false; const t = new Date(m.time_utc).getTime(); return t < targetTimeMs && t > minTimeMs;
+    if(!m.time_utc) return false; const t = new Date(m.time_utc).getTime();
+    return _isPast(m.time_utc, targetTimeMs, _tDay) && t > minTimeMs;
   });
   const uniqueIdsSet = new Set(); past = past.filter(m => { if(!uniqueIdsSet.has(m.id)) { uniqueIdsSet.add(m.id); return true; } return false; });
   past.sort((a,b) => new Date(b.time_utc) - new Date(a.time_utc));
@@ -1537,7 +1559,7 @@ function renderVerdetti(mk) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b23';
+window.__SCANNER_BUILD = '0905-b24';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
