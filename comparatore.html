@@ -162,7 +162,7 @@ select{cursor:pointer}
   <div class="topbar">
     <div class="brand">
       <h1>Comparatore V9.7</h1>
-      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b20</span>
+      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b22</span>
       <span class="badge" id="engine-badge">motore non caricato</span>
     </div>
     <span class="badge">previsioni vs realtà</span>
@@ -684,7 +684,7 @@ async function loadEngineFromText(text, fileName) {
     <p><code>${fileName}</code> — clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
 
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b20';
+  const _bComp = '0905-b22';
   const _el = document.getElementById('engine-build');
   if (_el) {
     if (!_bScan) {
@@ -729,6 +729,17 @@ async function cmpLoadLeghe() {
   }
   const countries = [...new Set(cmpLeagues.map(l => l.country_code))].sort();
   countries.forEach(c => cSel.add(new Option(c, c)));
+}
+
+// Risolve il nome della lega dal suo id, indipendentemente da cosa e' selezionato ora.
+// cmpLeagues e' la lista completa scaricata all'avvio (o il fallback), quindi copre
+// anche le leghe di un paese diverso da quello attualmente scelto nella dropdown.
+const cmpLeagueNameMisses = new Set();
+function cmpLeagueName(id) {
+  if (id == null || id === '') return '';
+  const s = String(id);
+  const hit = (cmpLeagues || []).find(l => String(l.id) === s);
+  return hit ? hit.name : '';
 }
 
 function cmpUpdateLeagues() {
@@ -1499,7 +1510,10 @@ const CMP_NEW_SPEC = [
   ['blocks',          m => m.defending?.blocks],
   ['clearances',      m => m.defending?.clearances],
   ['duels_won',       m => m.defending?.duels_won],
-  ['aerials',         m => m.defending?.aerials],
+  // deve leggere aerials_WON come il motore (b19): defending.aerials e' il numero di
+  // duelli DELLA PARTITA, uguale per le due squadre. Restando su .aerials il CSV
+  // confrontava una previsione di squadra con una quantita' di partita.
+  ['aerials',         m => m.defending?.aerials_won ?? m.duels?.aerials_won],
   ['challenges',      m => m.defending?.challenges],
   ['ppda_num',        m => m.defending?.opponent_passes],
   ['ppda_den',        m => m.defending?.defensive_actions]
@@ -1888,13 +1902,20 @@ function cmpBuildResult(match, R, actH, actA) {
     : Math.max(0, Math.min(100, Math.round(6.26 + 0.880 * (p * 100))));
   const _conf = (p) => _calibConf1X2(p);
 
+  // La lega va presa DALLA PARTITA, non dalla dropdown: cmpUpdateLeagues() la svuota a
+  // '-- --' a ogni cambio di paese, e in un archivio multi-lega l'etichetta finiva su
+  // partite di un'altra lega. Nei tre export del 06/09 il 59-88% delle righe aveva la
+  // lega sbagliata (AGENTS.md, "L'etichetta di lega letta dal DOM").
   const _lgSel = document.getElementById('cmp-league');
   const _lgName = (_lgSel && _lgSel.selectedOptions && _lgSel.selectedOptions[0])
     ? _lgSel.selectedOptions[0].text : '';
+  const _lgId = match.league_id || cmpCurrentLeagueId || '';
+  const _lgById = cmpLeagueName(_lgId);
+  if (!_lgById && _lgId) cmpLeagueNameMisses.add(String(_lgId));
   const ids = {
     matchId:  match.id || '',
-    leagueId: match.league_id || cmpCurrentLeagueId || '',
-    league:   _lgName,
+    leagueId: _lgId,
+    league:   _lgById || _lgName,
     country:  document.getElementById('cmp-country').value || '',
     season:   match._season || document.getElementById('cmp-season').value || '',
     homeId:   match.home_team?.id || '',
@@ -1978,6 +1999,21 @@ function cmpExportCSV() {
   if (!cmpSavedMatches.length) return alert("Nessun match salvato");
   const M = cmpSavedMatches;
   const rows = [];
+
+  // L'etichetta di lega e' la chiave con cui ogni analisi divide il campione: se sbaglia,
+  // ogni misura per lega e' sbagliata e nessuno se ne accorge. Qui si dice a voce alta
+  // com'e' composto il file, e si segnala ogni id che non ha trovato un nome.
+  {
+    const perLega = {};
+    M.forEach(m => { const k = m.ids?.league || '(vuota)'; perLega[k] = (perLega[k] || 0) + 1; });
+    cmpLog(`📊 Composizione del file: ` +
+      Object.entries(perLega).map(([k, v]) => `${k} ${v}`).join(' · '));
+    if (perLega['(vuota)'] || perLega['-- --'])
+      cmpLog(`   ⚠️ ${(perLega['(vuota)']||0) + (perLega['-- --']||0)} partite senza nome di lega.`);
+    if (cmpLeagueNameMisses.size)
+      cmpLog(`   ⚠️ id di lega senza nome in cmpLeagues: ${[...cmpLeagueNameMisses].join(', ')}` +
+             ` — per quelle partite l'etichetta viene dalla dropdown e puo' essere sbagliata.`);
+  }
 
   const fmt = v => v==null||isNaN(v) ? 'N/D' : (v*100).toFixed(1).replace('.',',')+'%';
   const num = v => v==null||isNaN(v) ? 'N/D' : v.toFixed(2).replace('.',',');
@@ -2369,6 +2405,11 @@ function cmpExportCSV() {
     ['Unita: media gol casa',    d => d && d.lgH != null ? _g4(d.lgH) : 'N/D'],
     ['Unita: media gol trasf.',  d => d && d.lgA != null ? _g4(d.lgA) : 'N/D'],
     ['Unita: partite di lega usate', d => d && d.lgN != null ? String(d.lgN) : 'N/D'],
+    ['Unita: emivita della media di lega (giorni)', d => d && d.lgHL != null ? String(d.lgHL) : 'N/D'],
+    ['Unita: media gol casa (piatta)',   d => d && d.lgHflat != null ? _g4(d.lgHflat) : 'N/D'],
+    ['Unita: media gol trasf. (piatta)', d => d && d.lgAflat != null ? _g4(d.lgAflat) : 'N/D'],
+    ['Unita: media gol casa (emivita 106)',   d => d && d.lgHdec != null ? _g4(d.lgHdec) : 'N/D'],
+    ['Unita: media gol trasf. (emivita 106)', d => d && d.lgAdec != null ? _g4(d.lgAdec) : 'N/D'],
     ['Unita: rho stimato',       d => d && d.rho != null ? _g4(d.rho) : 'N/D'],
     ['Origine metriche avanzate', () => [cmpPredSource || 'N/D', '-', '', '']],
     ['Unita: attacco casa',      d => d && d.attH != null ? _g4(d.attH) : 'N/D'],

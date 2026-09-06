@@ -155,7 +155,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b20</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b22</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -193,7 +193,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
 
     <div class="card" style="border-top:3px solid var(--accent); background:var(--panel); box-shadow:none">
       <div class="section-title" style="color:var(--txt); font-size:16px">👑 MASTER ENSEMBLE: La Sentenza Algoritmica</div>
-      <p style="font-size:11px;color:var(--dim);margin-bottom:15px">Sintesi pesata dei motori (Dixon-Coles su NPxG 70%, Markov 30%; l'Ordered Logit e' calcolato e mostrato ma ha peso 0) e calcolo delle True Odds. Tutti i mercati derivano dalla stessa matrice Dixon-Coles.</p>
+      <p style="font-size:11px;color:var(--dim);margin-bottom:15px">Sintesi pesata dei motori (Dixon-Coles su NPxG 70%, Markov 30%, su lambda stimati su TUTTE le partite; l'Ordered Logit e' calcolato e mostrato ma ha peso 0) e calcolo delle True Odds. I mercati gol restano sulla matrice di ruolo (casa/trasferta).</p>
       
       <div class="grid-3" style="margin-bottom:15px">
         <div style="text-align:center; background:var(--panel2); padding:15px; border-radius:8px; border:2px solid var(--blue)">
@@ -323,9 +323,11 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
                 <table class="table-ui" style="margin-bottom:0; font-size:11px">
                   <tr><th>Modello</th><th>1</th><th>X</th><th>2</th></tr>
                   <tr><td>Dixon-Coles (Ruolo)</td><td id="mdl-dc-1">--</td><td id="mdl-dc-x">--</td><td id="mdl-dc-2">--</td></tr>
+                  <tr><td>Dixon-Coles (Completo)</td><td id="mdl-dco-1">--</td><td id="mdl-dco-x">--</td><td id="mdl-dco-2">--</td></tr>
                   <tr><td>KNN Storico</td><td id="mdl-knn-1">--</td><td id="mdl-knn-x">--</td><td id="mdl-knn-2">--</td></tr>
                   <tr style="background:rgba(79,140,255,.10)"><td><b>Ordered Logit</b></td><td id="mdl-ol-1">--</td><td id="mdl-ol-x">--</td><td id="mdl-ol-2">--</td></tr>
-                  <tr><td>Markov (Score-flow)</td><td id="mdl-mk-1">--</td><td id="mdl-mk-x">--</td><td id="mdl-mk-2">--</td></tr>
+                  <tr><td>Markov (Ruolo)</td><td id="mdl-mk-1">--</td><td id="mdl-mk-x">--</td><td id="mdl-mk-2">--</td></tr>
+                  <tr><td>Markov (Completo)</td><td id="mdl-mko-1">--</td><td id="mdl-mko-x">--</td><td id="mdl-mko-2">--</td></tr>
                   <tr style="background:rgba(79,140,255,.10);font-weight:bold"><td>Ensemble</td><td id="mdl-ens-1" style="color:var(--purple)">--</td><td id="mdl-ens-x" style="color:var(--purple)">--</td><td id="mdl-ens-2" style="color:var(--purple)">--</td></tr>
                   <tr style="background:rgba(245,158,11,.10)"><td style="font-size:9px;color:var(--dim)">Confidence per esito</td>
                     <td id="conf-p1" style="font-weight:bold;font-size:11px">--</td>
@@ -806,17 +808,34 @@ function buildGlobalElo(targetTimeMs) {
   return { table, series, _hfa: HFA_ELO, _nHfa: _n_hfa };
 }
 
-function computeLeagueParams(leagueId, targetTimeMs) {
-  const seen = new Set(); let gh = 0, ga = 0, n = 0;
+// Emivita in giorni per la media gol di lega. A 0 la media e' piatta su tutte le
+// stagioni caricate, com'e' sempre stata. Non e' un dettaglio: lamH vale
+// LG.avgH * (npxg_H/LG.avgH) * (npxga_A/LG.avgH), cioe' e' INVERSAMENTE proporzionale
+// alla base, quindi una base troppo alta abbassa il lambda. Misurato sul b21:
+// la Premier usa 3.041 gol di base contro i 2.754 veri del 2025/26 (+10.4%, perche' e'
+// la media piatta di tre stagioni e la lega e' passata da ~3.28 a ~2.75), e il suo
+// lambda esce il 5.0% sotto il vero. Il resto del motore decade con emivita 106 giorni:
+// questa media e' l'unica stima che risponde a "quanti gol fa questa lega" invece di
+// "quanti ne fa adesso". Resta a 0 finche' un backtest non la misura: il CSV esporta la
+// versione piatta e quella decaduta fianco a fianco.
+window.LEAGUE_HALFLIFE_DAYS = (typeof window.LEAGUE_HALFLIFE_DAYS === 'number') ? window.LEAGUE_HALFLIFE_DAYS : 0;
+
+function computeLeagueParams(leagueId, targetTimeMs, halfLifeDays) {
+  const hl = (halfLifeDays === undefined) ? window.LEAGUE_HALFLIFE_DAYS : halfLifeDays;
+  const seen = new Set(); let gh = 0, ga = 0, w = 0, n = 0;
   for (const m of globalLeagueMatchesCache) {
     if (m.league_id !== leagueId || m.status !== 'finished' || !m.time_utc) continue;
-    if (new Date(m.time_utc).getTime() >= targetTimeMs) continue;
+    const t = new Date(m.time_utc).getTime();
+    if (!isFinite(t) || t >= targetTimeMs) continue;
     if (seen.has(m.id)) continue; seen.add(m.id);
     if (m.score_home == null || m.score_away == null) continue;
-    gh += m.score_home; ga += m.score_away; n++;
+    const wt = (hl > 0) ? Math.pow(0.5, (targetTimeMs - t) / (hl * 86400000)) : 1;
+    gh += m.score_home * wt; ga += m.score_away * wt; w += wt; n++;
   }
-  if (n < 30) return { avgH: 1.50, avgA: 1.20, n };
-  return { avgH: gh / n, avgA: ga / n, n };
+  // il minimo resta sul CONTEGGIO, non sul peso: e' il campione che dice se ci si puo'
+  // fidare, e con l'emivita accesa il peso totale sarebbe sempre piccolo.
+  if (n < 30 || !(w > 0)) return { avgH: 1.50, avgA: 1.20, n, hl };
+  return { avgH: gh / w, avgA: ga / w, n, hl };
 }
 
 function estimateRho(leagueId, targetTimeMs, LG) {
@@ -1512,7 +1531,7 @@ function renderVerdetti(mk) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b20';
+window.__SCANNER_BUILD = '0905-b22';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -1767,9 +1786,13 @@ const GOALS_SOT_CAP = 0.20;
 // e' guidato dallo stesso NPxG del Dixon-Coles e non porta informazione in piu'.
 window.ENS_W = window.ENS_W || { dc: 0.70, mk: 0.30, ol: 0.00 };
 // Peso del blocco COMPLETO (lambda su tutte le partite) contro il blocco RUOLO
-// (lambda separati casa/trasferta). 0 = solo ruolo, com'era fino al b19. NON e' ancora
-// misurato: il CSV esporta i due blocchi separati perche' un backtest lo decida.
-window.ENS_SCOPE_W = (typeof window.ENS_SCOPE_W === 'number') ? window.ENS_SCOPE_W : 0;
+// (lambda separati casa/trasferta). Misurato sul backtest b20 di 1133 partite:
+// il completo vince in modo monotono da 0 a 1 in TUTTE E TRE le leghe, logloss
+// 1.0113 -> 1.0071 (z = -3.96 sulla differenza appaiata), pick 50.9% -> 51.4%,
+// e la scelta fuori campione prende 1.0 in tutti e tre i fold.
+// Vale SOLO per l'1X2: i mercati gol restano sulla matrice di ruolo (dcMat = dcRole),
+// dove il confronto non ha un vincitore (vedi AGENTS.md, "Ruolo o completo").
+window.ENS_SCOPE_W = (typeof window.ENS_SCOPE_W === 'number') ? window.ENS_SCOPE_W : 1;
 window.SOT_PER_GOAL = (typeof window.SOT_PER_GOAL === 'number') ? window.SOT_PER_GOAL : 3.25;
 window.GOALS_SOT_W  = (typeof window.GOALS_SOT_W  === 'number') ? window.GOALS_SOT_W  : 0.50;
 
@@ -1823,6 +1846,10 @@ async function avviaScanner() {
     const penH = Math.max(-0.08, Math.min(0.08, trendH / 1200)); const penA = Math.max(-0.08, Math.min(0.08, trendA / 1200));
 
     const LG = computeLeagueParams(lId, targetMs); const RHO = estimateRho(lId, targetMs, LG);
+    // le due alternative, calcolate ma NON usate: servono al CSV per misurare se conviene
+    // far decadere la media di lega senza dover rilanciare il motore.
+    const _LGflat = computeLeagueParams(lId, targetMs, 0);
+    const _LGdec  = computeLeagueParams(lId, targetMs, 106);
     logConsole(`Lega: media gol casa ${LG.avgH.toFixed(2)} / trasferta ${LG.avgA.toFixed(2)} su ${LG.n} match | rho=${RHO.toFixed(3)}`);
 
     const pxH = Math.max(0, _mean(dH.overall.vals.xg) - _mean(dH.overall.vals.npxg));
@@ -1857,6 +1884,9 @@ async function avviaScanner() {
     let lamA_role = LG.avgA * attA_r * defH_r * (1 + penA) + _pxA;
     window.__UNIT_DEBUG = { on: _useUnit, w: _uf, baseNpxg: _baseN,
                             lgH: LG.avgH, lgA: LG.avgA, lgN: LG.n, rho: RHO,
+                            lgHL: LG.hl,
+                            lgHflat: _LGflat.avgH, lgAflat: _LGflat.avgA,
+                            lgHdec: _LGdec.avgH,  lgAdec: _LGdec.avgA,
                             attH: attH_r, defA: defA_r,
                             attA: attA_r, defH: defH_r, pxH: _pxH, pxA: _pxA };
 
@@ -2206,6 +2236,8 @@ async function avviaScanner() {
     safeTxt('mdl-knn-1', pct(probsKnn.p1)); safeTxt('mdl-knn-x', pct(probsKnn.pX)); safeTxt('mdl-knn-2', pct(probsKnn.p2));
     safeTxt('mdl-ol-1', pct(probsOL.p1)); safeTxt('mdl-ol-x', pct(probsOL.pX)); safeTxt('mdl-ol-2', pct(probsOL.p2));
     safeTxt('mdl-mk-1', pct(mk_ro.p1)); safeTxt('mdl-mk-x', pct(mk_ro.pX)); safeTxt('mdl-mk-2', pct(mk_ro.p2));
+    safeTxt('mdl-dco-1', pct(probsOver.p1)); safeTxt('mdl-dco-x', pct(probsOver.pX)); safeTxt('mdl-dco-2', pct(probsOver.p2));
+    safeTxt('mdl-mko-1', pct(mk_ov.p1)); safeTxt('mdl-mko-x', pct(mk_ov.pX)); safeTxt('mdl-mko-2', pct(mk_ov.p2));
     safeTxt('mdl-ens-1', pct(m1)); safeTxt('mdl-ens-x', pct(mX)); safeTxt('mdl-ens-2', pct(m2));
 
     const _confMarket = (probs, isBin) => {
@@ -2479,7 +2511,9 @@ async function avviaScanner() {
 2. SCOMPOSIZIONE MODELLI
 - Dixon-Coles Puro (Ruolo NPxG) [nell'ensemble, peso ${_wPct(_share(_EW.dc)*(1-_sW))}]: 1 (${pct(probsRole.p1)}) | X (${pct(probsRole.pX)}) | 2 (${pct(probsRole.p2)})
 - Ordered Logit [nell'ensemble, peso ${_wPct(wOL)}]: 1 (${pct(probsOL.p1)}) | X (${pct(probsOL.pX)}) | 2 (${pct(probsOL.p2)})
-- Markov [nell'ensemble, peso ${_wPct(_share(_EW.mk)*(1-_sW))}]: 1 (${pct(mk_ro.p1)}) | X (${pct(mk_ro.pX)}) | 2 (${pct(mk_ro.p2)})
+- Markov (Ruolo) [nell'ensemble, peso ${_wPct(_share(_EW.mk)*(1-_sW))}]: 1 (${pct(mk_ro.p1)}) | X (${pct(mk_ro.pX)}) | 2 (${pct(mk_ro.p2)})
+- Dixon-Coles Completo (NPxG su tutte le partite) [nell'ensemble, peso ${_wPct(_share(_EW.dc)*_sW)}]: 1 (${pct(probsOver.p1)}) | X (${pct(probsOver.pX)}) | 2 (${pct(probsOver.p2)})
+- Markov Completo [nell'ensemble, peso ${_wPct(_share(_EW.mk)*_sW)}]: 1 (${pct(mk_ov.p1)}) | X (${pct(mk_ov.pX)}) | 2 (${pct(mk_ov.p2)})
 - KNN 11D Puro (Tattica) [FUORI dall'ensemble, solo riferimento tattico]: 1 (${pct(probsKnn.p1)}) | X (${pct(probsKnn.pX)}) | 2 (${pct(probsKnn.p2)})
 - Correzione residuale: ${(window.__RESID_DEBUG && window.__RESID_DEBUG.applied) ? ('attiva su ' + window.__RESID_DEBUG.available.join('/') + ', spostamento ' + (window.__RESID_DEBUG.delta >= 0 ? '+' : '') + window.__RESID_DEBUG.delta.toFixed(3) + ' in log-odds verso ' + (window.__RESID_DEBUG.delta >= 0 ? 'la casa' : 'la trasferta')) : ((window.__RESID_DEBUG && window.__RESID_DEBUG.sig != null) ? ('spenta (alpha 0); segnale misurato ' + window.__RESID_DEBUG.sig.toFixed(3) + ' vs edge ' + window.__RESID_DEBUG.edge.toFixed(3)) : 'non calcolabile (metriche di creazione assenti)')}
 
