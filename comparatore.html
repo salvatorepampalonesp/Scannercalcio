@@ -162,7 +162,7 @@ select{cursor:pointer}
   <div class="topbar">
     <div class="brand">
       <h1>Comparatore V9.7</h1>
-      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b17</span>
+      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b18</span>
       <span class="badge" id="engine-badge">motore non caricato</span>
     </div>
     <span class="badge">previsioni vs realtà</span>
@@ -676,7 +676,7 @@ async function loadEngineFromText(text, fileName) {
     <p><code>${fileName}</code> — clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
 
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b17';
+  const _bComp = '0905-b18';
   const _el = document.getElementById('engine-build');
   if (_el) {
     if (!_bScan) {
@@ -1078,11 +1078,33 @@ async function cmpCaricaDatabase() {
       if (v97Key) v97Key.value = key;
     }
 
-    const setV = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+    // una <select> senza <option> corrispondente ignora l'assegnazione e resta a "":
+    // il motore riceveva lega vuota, computeLeagueParams scartava tutto e ripiegava
+    // sul fallback 1.50/1.20 per OGNI lega (AGENTS.md, La lega che non arrivava mai)
+    const setV = (id, val) => {
+      const el = document.getElementById(id); if (!el) return;
+      if (el.tagName === 'SELECT' && val != null && val !== '' &&
+          !Array.from(el.options).some(o => o.value === val)) {
+        el.add(new Option(String(val), String(val)));
+      }
+      el.value = val;
+      if (String(el.value) !== String(val)) {
+        cmpLog(`   \u274c IMPOSTAZIONE FALLITA su #${id}: voluto "${val}", ottenuto "${el.value}"`);
+      }
+    };
     setV('sel-league', lId);
     setV('sel-country', cCode);
     setV('sel-season', season);
     setV('target-date', targetDate);
+    {
+      const chk = document.getElementById('sel-league');
+      if (!chk || chk.value !== lId) {
+        cmpLog(`   \u274c La lega non e arrivata al motore: media gol e rho ripiegherebbero sui valori fissi. Batch interrotto.`);
+        document.getElementById('cmp-btn-carica').disabled = false;
+        return alert('La lega non e stata impostata sul motore. Batch interrotto: i risultati non sarebbero validi.');
+      }
+      cmpLog(`   \u2705 Lega passata al motore: ${chk.value}`);
+    }
 
     cmpLog(`⏳ Costruzione database (3 stagioni)...`);
     document.getElementById('cmp-btn-carica').disabled = true;
@@ -1171,7 +1193,11 @@ async function cmpRunMatch(match, limit, render) {
   setSel('sel-home', match.home_team.id, match.home_team.name);
   setSel('sel-away', match.away_team.id, match.away_team.name);
   const lim = document.getElementById('history-limit'); if (lim) lim.value = limit;
-  const lg = document.getElementById('sel-league'); if (lg && !lg.value) lg.value = cmpCurrentLeagueId;
+  const lg = document.getElementById('sel-league');
+  if (lg && !lg.value && cmpCurrentLeagueId) {
+    if (!Array.from(lg.options).some(o => o.value === cmpCurrentLeagueId)) lg.add(new Option(cmpCurrentLeagueId, cmpCurrentLeagueId));
+    lg.value = cmpCurrentLeagueId;
+  }
 
   window.SHRINK_LAM_K = 3;
 
@@ -2318,6 +2344,8 @@ function cmpExportCSV() {
     ['Unita: NPxG di coppia',    d => d && d.baseNpxg != null ? _g4(d.baseNpxg) : 'N/D'],
     ['Unita: media gol casa',    d => d && d.lgH != null ? _g4(d.lgH) : 'N/D'],
     ['Unita: media gol trasf.',  d => d && d.lgA != null ? _g4(d.lgA) : 'N/D'],
+    ['Unita: partite di lega usate', d => d && d.lgN != null ? String(d.lgN) : 'N/D'],
+    ['Unita: rho stimato',       d => d && d.rho != null ? _g4(d.rho) : 'N/D'],
     ['Unita: attacco casa',      d => d && d.attH != null ? _g4(d.attH) : 'N/D'],
     ['Unita: difesa trasferta',  d => d && d.defA != null ? _g4(d.defA) : 'N/D'],
     ['Unita: attacco trasferta', d => d && d.attA != null ? _g4(d.attA) : 'N/D'],

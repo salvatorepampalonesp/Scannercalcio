@@ -24,7 +24,7 @@ tutti attraverso `fetchMatchRaw` (che li mette in `RAW_CACHE`).
 Sezione di consegna: dice a che punto siamo, così una sessione nuova non
 ricomincia da capo. Aggiornala quando cambia qualcosa di sostanziale.
 
-**Build corrente: `0905-b17`.** Scanner e Comparatore devono coincidere, e sul
+**Build corrente: `0905-b18`.** Scanner e Comparatore devono coincidere, e sul
 Comparatore il badge sotto la dropzone deve uscire **verde** dopo aver trascinato
 lo Scanner. Il branch di lavoro è `claude/scanner-stat-optimization-sgs62u`;
 `main` è indietro (fermo al merge della PR #1, cioè al `0905-b2`), quindi
@@ -69,6 +69,7 @@ stessa informazione meglio.
 | `b15` | le differenze fra leghe erano rumore; la pendenza dei mercati va misurata **dentro** la lega |
 | `b16` | **lo squilibrio della partita prevede i cartellini**: AUC 0.562 → 0.593, a costo zero |
 | `b17` | trovato un **disallineamento di unità** nel lambda: attacco e difesa sono NPxG divisi per la media **gol**. Correzione pronta ma spenta |
+| `b18` | **la lega non arrivava mai al motore nei backtest**: media gol e rho erano fissi. Tutte le tarature vanno riviste |
 
 Le tre build finali hanno una storia sola e va letta in *La baseline di coppia*:
 tre tentativi svuotati dallo stesso malinteso.
@@ -95,42 +96,46 @@ se un giro non mostra differenze sull'Elo, è il comportamento atteso.
 
 ### La prossima cosa da fare, in ordine di rapporto valore/rischio
 
-1. **Provare `GOALS_UNIT_FIX` col prossimo backtest.** È la cosa più grossa
-   trovata finora sui mercati che contano davvero, ed è già cablata e strumentata:
-   basta un giro con 0 / 0.25 / 0.50 / 0.75 / 1.0. Vedi *Il disallineamento di
-   unità nel lambda*.
-2. **Continuare sui cartellini.** Il `b16` ha preso il primo pezzo (lo squilibrio,
+1. **Rifare il backtest col `b18` e ricontrollare tutto.** Ogni misura fino al
+   `b17` è stata presa con media gol e rho fissi — vedi *La lega che non arrivava
+   mai*. Prima cosa da guardare nel CSV nuovo: `Unita: partite di lega usate` deve
+   essere alto, non 0. Poi rimisurare il livello dell'Over 2.5 e il pareggio, che
+   potrebbero essersi sistemati da soli.
+2. **Solo dopo, provare `GOALS_UNIT_FIX`.** La diagnosi del `b17` è sospetta:
+   con la base bloccata a 2.70 il deficit della Bundesliga si spiega meglio così
+   che col rapporto NPxG/gol. Vedi *Il disallineamento di unità nel lambda*.
+3. **Continuare sui cartellini.** Il `b16` ha preso il primo pezzo (lo squilibrio,
    AUC 0.562 → 0.593). Restano: l'**arbitro** — `/v1/matches/{id}` lo espone e il
    nome è già in `globalLeagueMatchesCache`, ma i cartellini delle sue partite
    passate no, quindi servirebbero ~15 chiamate in più per profilarlo; la
    **posizione in classifica** (calcolabile a costo zero dai punteggi già in
    cache); e lo stesso effetto squilibrio sui **tiri in porta**, oggi a 2.8 sigma
    con una lega discorde.
-3. ~~Capire la Premier sui tiri in porta~~ — **era rumore**: test di omogeneità
+4. ~~Capire la Premier sui tiri in porta~~ — **era rumore**: test di omogeneità
    sulle pendenze p = 0.12, con errori standard di 0.27–0.33 su ~300 partite.
    Nessuna lega è diversa dalle altre su nessuno dei tre mercati statistici.
-4. ~~Capire perché il Dixon-Coles è cieco sull'Over in Premier e Serie A~~ —
+5. ~~Capire perché il Dixon-Coles è cieco sull'Over in Premier e Serie A~~ —
    **domanda mal posta**, le cinque leghe sono indistinguibili (p = 0.19). Vedi
    *Il modello non fallisce in una lega più che in un'altra*. La domanda giusta
    resta quella di sempre: il lambda correla **+0.087** col totale dei gol, e
    nessuna feature provata lo alza. È il muro dell'Over/Under, punto.
-5. **Verificare la pendenza dell'Elo** (`penH`/`penA`, ±8% sui lambda): non è mai
+6. **Verificare la pendenza dell'Elo** (`penH`/`penA`, ±8% sui lambda): non è mai
    stata misurata, e ora che il livello entra dall'inclinazione potrebbe essere
    ridondante. Serve esportarla nel CSV.
-6. **`GOALS_SOT_W` e `ELO_1X2_W` alla sesta lega.** Il backtest dice 0.50, ma 0.75 e 1.00 sono
+7. **`GOALS_SOT_W` e `ELO_1X2_W` alla sesta lega.** Il backtest dice 0.50, ma 0.75 e 1.00 sono
    migliori di un margine non distinguibile (±0.030 di errore standard). Il CSV
    ricostruisce tutti i pesi senza rilanciare il motore: basta un'altra lega.
-7. **L'endpoint `/shots`.** Il candidato più serio per la forma della
+8. **L'endpoint `/shots`.** Il candidato più serio per la forma della
    distribuzione dei gol, con la ragione spiegata in *Il muro dell'Over/Under*.
    Costa una chiamata in più per partita.
-8. **Un ancoraggio di lega per i falli**, che oggi non ce l'hanno (il rapporto coi
+9. **Un ancoraggio di lega per i falli**, che oggi non ce l'hanno (il rapporto coi
    gol varia del 28% fra leghe, quindi `MARKET_PER_GOAL.fouls = null`).
-9. **La tab «racconto»**: mostrare uno scenario invece di una distribuzione. Idea
+10. **La tab «racconto»**: mostrare uno scenario invece di una distribuzione. Idea
    arrivata da fuori, già misurata e in parte bocciata — vedi *Lo scenario
    singolo*. La parte che sopravvive è la card dei risultati esatti.
-10. **Ricontrollare `avg_def_x`**: pendenza 0.06, la previsione è quasi scorrelata
+11. **Ricontrollare `avg_def_x`**: pendenza 0.06, la previsione è quasi scorrelata
    dal reale. O è un problema di forma del modello, o la metrica va tolta.
-11. **Togliere `vaep_def`, `pv_def`, `sca_def`** dalle feature: correlazione
+12. **Togliere `vaep_def`, `pv_def`, `sca_def`** dalle feature: correlazione
    previsto/reale a zero su 1133 partite. Il fix additivo che le ha rese
    calcolabili era giusto, ma quello che si vede è rumore.
 
@@ -495,6 +500,14 @@ a `scanner.html` al commit `cd51a69`, prima della ripulitura.
   mercati statistici la dispersione di troppo veniva dalla baseline (sd 0.81) e
   non dal termine attacco/difesa (sd 0.11), ma la pendenza da sola non lo diceva:
   abbassare `k` è stato un giro a vuoto. Guardare le sd delle componenti prima.
+- **Un valore di ripiego plausibile è più pericoloso di un errore.** `avgH 1.50 /
+  avgA 1.20` sono numeri ragionevoli per il calcio, e per sedici build hanno
+  nascosto che la lega non arrivava mai al motore nei backtest. Ogni fallback deve
+  esporre **su quante osservazioni** è stato prodotto. Vedi *La lega che non
+  arrivava mai*.
+- **Assegnare un valore a una `<select>` senza l'`<option>` corrispondente non fa
+  niente**, e non solleva errori: `el.value` resta `""`. Se il codice passa
+  configurazione via DOM, va verificato che sia attecchita.
 - **Prima di spiegare una differenza fra leghe, misurare se esiste.** Con una
   stagione a lega l'errore standard di una correlazione è ~0.053: due leghe
   possono distare 0.15 per puro caso. Prendere il minimo di cinque stime rumorose
@@ -835,6 +848,79 @@ cap a 0.60: il paracadute non ha mai morso.
 - **L'HFA stimato varia molto fra leghe**: LaLiga 78, Premier 49, Serie A 47. È
   plausibile, ma non è mai stato verificato contro il vantaggio campo reale.
 
+## La lega che non arrivava mai: il bug che invalida le tarature
+
+**Leggere prima di fidarsi di qualunque costante di questo repository.**
+
+Trovato nel `b18` guardando la diagnostica del `b17`: `LG.avgH` valeva **1.500** e
+`LG.avgA` **1.200** in tutte e 1133 le partite del backtest, **in ogni lega**. Non
+sono medie: sono i valori di ripiego scritti in `computeLeagueParams`.
+
+### Il meccanismo
+
+Il Comparatore passa la lega al motore così:
+
+```js
+const setV = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+setV('sel-league', lId);
+```
+
+ma il suo `<select id="sel-league">` **non ha nessuna `<option>`**. Assegnare un
+valore a una `<select>` che non contiene quell'opzione è un no-op silenzioso: il
+DOM lascia `value` a `""`. Quindi nel motore `lId === ''`, e:
+
+| funzione | guardia | effetto con lega vuota |
+|---|---|---|
+| `computeLeagueParams` | `m.league_id !== leagueId → continue` | scarta tutto, `n = 0`, **ripiega su avgH 1.50 / avgA 1.20** |
+| `estimateRho` | idem | scarta tutto, **ripiega su rho −0.11** |
+| `buildGlobalElo` | `if (_chosenLeagueId && ...)` | la guardia **si spegne**, l'Elo usa tutta la cache e funziona |
+
+Quell'`&&` è la ragione per cui l'Elo era l'unica cosa che batteva il modello: era
+l'unico pezzo che riceveva i dati veri.
+
+**Lo Scanner in produzione non ha il problema**: popola le sue `<option>` con
+`lSel.add(new Option(l.name, l.id))`, quindi `lId` è un id vero e le medie di lega
+si calcolano. Il bug era **solo nel banco di prova** — che è quasi peggio, perché
+significa che ogni costante è stata tarata contro un modello azzoppato.
+
+### Cosa invalida
+
+Ogni backtest fino al `b17` compreso ha misurato un motore con **2.70 gol a
+partita e rho −0.11 fissi per tutte le leghe**. Vanno quindi riviste, in ordine di
+esposizione:
+
+- **La diagnosi del `b17` sul disallineamento di unità.** `attH = npxg / LG.avgH`
+  con `LG.avgH` bloccato a 1.50: il deficit del lambda in Bundesliga (−8.8%, la
+  lega da 3.25 gol) si spiega molto meglio con la base a 2.70 che col rapporto
+  NPxG/gol. **La sezione va riletta come sospetta**, e `GOALS_UNIT_FIX` non va
+  acceso finché non si rimisura con la lega vera.
+- **Il livello dell'Over 2.5** (−3.8 punti) e la sovrastima del pareggio: stessa
+  causa probabile.
+- **`SOT_PER_GOAL`, `MARKET_PER_GOAL`**, che sono ancorati a `LG.avgH + LG.avgA`:
+  tarati contro un ancoraggio sbagliato.
+- **`MARKET_SHRINK_K`, `MARKET_BASE_SHRINK`, `GOALS_SOT_W`, `CARDS_ELO_B`**:
+  tarati su previsioni che partivano da una base sbagliata.
+
+Meno esposte, perché costruite su quantità che il bug non toccava: **`ELO_1X2_W`**
+(l'Elo riceveva i dati giusti) e **`STAT_SHRINK_TABLE`** (`predictStat` usa
+`_base`, non `LG`).
+
+### La correzione
+
+`setV` ora crea l'`<option>` mancante prima di assegnare, verifica che il valore
+sia attecchito e **ferma il batch** se la lega non arriva al motore, invece di
+produrre 1743 righe di risultati silenziosamente sbagliati. Il CSV esporta anche
+`Unita: partite di lega usate` (`LG.n`) e `Unita: rho stimato`: se `LG.n` è 0, il
+motore sta ripiegando e si vede a colpo d'occhio.
+
+### La lezione
+
+Un valore di ripiego **plausibile** è più pericoloso di un errore. 1.50 e 1.20
+sono numeri ragionevoli per il calcio: non hanno fatto scattare nessun allarme per
+sedici build. Un fallback deve essere **osservabile** — o esporre quante
+osservazioni l'hanno prodotto, o essere abbastanza assurdo da non passare
+inosservato.
+
 ## I sei mercati che contano: dove siamo davvero
 
 Audit su 1743 partite e cinque leghe (`b17`). Sono i mercati su cui si scommette
@@ -859,6 +945,11 @@ ordinamento ma di **taratura**, e si porta dietro anche il pareggio
 (sovrastimato di 1.6, coerente con lambda troppo bassi).
 
 ## Il disallineamento di unità nel lambda
+
+> **Sezione sospetta.** Tutte le misure qui sotto vengono da backtest in cui
+> `LG.avgH`/`LG.avgA` erano bloccati a 1.50/1.20 — vedi *La lega che non arrivava
+> mai*. Il meccanismo descritto è reale, ma **la sua importanza è probabilmente
+> sovrastimata**: va rimisurato col `b18`.
 
 Il lambda nasce così:
 

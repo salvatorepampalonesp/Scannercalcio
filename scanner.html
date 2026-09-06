@@ -155,7 +155,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b17</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b18</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -1504,7 +1504,7 @@ function renderVerdetti(mk) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b17';
+window.__SCANNER_BUILD = '0905-b18';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -1832,7 +1832,8 @@ async function avviaScanner() {
     let lamH_role = LG.avgH * attH_r * defA_r * (1 + penH) + _pxH;
     let lamA_role = LG.avgA * attA_r * defH_r * (1 + penA) + _pxA;
     window.__UNIT_DEBUG = { on: _useUnit, w: _uf, baseNpxg: _baseN,
-                            lgH: LG.avgH, lgA: LG.avgA, attH: attH_r, defA: defA_r,
+                            lgH: LG.avgH, lgA: LG.avgA, lgN: LG.n, rho: RHO,
+                            attH: attH_r, defA: defA_r,
                             attA: attA_r, defH: defH_r, pxH: _pxH, pxA: _pxA };
 
     const _lk = window.SHRINK_LAM_K;
