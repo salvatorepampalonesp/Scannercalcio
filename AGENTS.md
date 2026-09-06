@@ -37,6 +37,9 @@ cui si è già risposto, con i numeri. Le tre porte d'ingresso:
 - **«Questo file dice il vero?»** → *L'audit del documento*: cosa è stato
   ricontrollato contro il sorgente, e i quattro punti in cui il testo era rimasto
   indietro.
+- **«Il backtest sta barando?»** → *Il Comparatore stampa come lo Scanner*: il taglio
+  temporale misurato invece che letto, su tutte e due le strade da cui un risultato
+  può rientrare, col controllo di potenza.
 
 **Le sei cose che più facilmente fanno perdere una giornata**, se non le sai:
 
@@ -1459,6 +1462,110 @@ per la card a schermo, legge **gli stessi due campi nello stesso ordine**. Prima
 del `b19` erano due quantità diverse (duelli della partita contro duelli vinti);
 ora sono lo stesso numero sotto due chiavi. Non è un bug, ma quando si rifarà il
 `k` di `aerials` conviene togliere il doppione invece di ritarare due volte.
+
+## Il Comparatore stampa come lo Scanner, e la partita bersaglio non rientra
+
+Due domande poste insieme, e conviene tenerle separate perché si controllano in modi
+diversi. Entrambe sono state chiuse **misurando**, non leggendo i filtri: la seconda
+in particolare è una di quelle dove leggere il codice e crederci è come non aver
+controllato.
+
+### 1. Gli stessi numeri
+
+**Sì, coincidono — bit per bit.** Non è ovvio, perché il Comparatore non chiama il
+motore come lo chiamerebbe un utente: gli mette la lega nel DOM, forza
+`SHRINK_LAM_K`, e soprattutto gira `avviaScanner()` **tre volte** dentro un ciclo su
+`CMP_K_LIST = [4, 12, 28]` per riempire la sezione *A/B SHRINKAGE*. Quello che finisce
+nel CSV è il **primo giro**, e `CMP_K_LIST[0]` è `4`, cioè il `SHRINK_K` di default
+dello Scanner. Se qualcuno riordina quella lista, il CSV smette di essere confrontabile
+con quello che l'utente vede a schermo. Dal `b23` il Comparatore lo dice: subito dopo
+l'iniezione confronta `CMP_K_LIST[0]` col `SHRINK_K` che il motore appena caricato
+espone, e scrive nel log `CMP_K_LIST[0] = 4 = SHRINK_K del motore` oppure un avviso
+arancione. È un guardrail nel senso del *tipo 3*: se scatta, non è più un guardrail.
+
+Le altre tre cose che devono coincidere, e coincidono:
+
+| | Scanner | Comparatore |
+|---|---|---|
+| stagioni caricate in `globalLeagueMatchesCache` | 3 (`s1`, `s2`, `s3` dalla dropdown) | 3, stessa derivazione, stesso endpoint |
+| `history-limit` | 15 | `cmp-history-limit`, 15, ricopiato nel DOM del motore |
+| `SHRINK_LAM_K` | 3 (default) | 3, assegnato esplicitamente |
+
+Verificato facendo girare le due sequenze sullo stesso campionato sintetico e
+diffando l'oggetto intero: `m1/mX/m2`, la confidence, i quattro lambda, `probsRole`,
+`probsOver`, l'Ordered Logit, il Markov e i lambda dei mercati sui numeri. **Zero
+differenze.**
+
+### 2. Nessun leakage, e il controllo ha potere
+
+Il taglio è `T00:00:00Z` del giorno della partita, e **tutti** i filtri temporali del
+motore sono stretti nella direzione giusta: `aggregaTeam` (`t < targetTimeMs`),
+`buildGlobalElo` (due cicli), `computeLeagueParams`, `estimateRho`, e lato Comparatore
+`cmpAggregateExtraMetrics`. `getSimilarMatches` riceve `targetTimeMs` ma non lo usa —
+non serve, perché legge solo `vals` già filtrati.
+
+Ma il punto è che **il risultato di una partita entra nel motore da due strade
+diverse**, e controllarne una sola non dimostra niente:
+
+- il **payload** (`/stats`, `/advanced`) → `aggregaTeam` → le feature;
+- il **punteggio** (`m.score_home` / `m.score_away`, che stanno sull'oggetto partita e
+  non nella `RAW_CACHE`) → `computeLeagueParams`, `estimateRho`, `buildGlobalElo`, e da
+  lì l'inclinazione dall'Elo e i cartellini.
+
+Il test le droga separatamente e verifica che la previsione non si muova di un bit:
+
+| cosa viene drogato | esito |
+|---|---|
+| payload della partita bersaglio (9 xG, 25 tiri in porta, 90% di possesso, 15 GCA) | previsione **identica** |
+| payload di un'altra partita dello **stesso giorno** | previsione **identica** |
+| **punteggio** della partita bersaglio, portato a 9-0 | previsione **identica** |
+| **punteggio** di un'altra partita dello stesso giorno | previsione **identica** |
+| payload di una partita del **giorno prima** | previsione **cambia** (0.5276 → 0.5846) |
+| **punteggio** di una partita del giorno prima | previsione **cambia** (0.5276 → 0.5354) |
+
+Le ultime due righe sono la parte che rende il test una misura invece di un
+rassicurante nulla di fatto: sono il **controllo di potenza**. Senza di loro, sei
+identici di fila si spiegano altrettanto bene con «non c'è leakage» e con «il mio
+test non tocca niente». Regola generale: **un test che verifica un'assenza deve
+sempre portarsi dietro il caso in cui la presenza si vede.**
+
+### Perché partire da `x-1` peggiorerebbe le cose
+
+L'idea di far cominciare la ricerca dal giorno prima è ragionevole a occhio, ma i
+numeri dicono che non serve e costa: il giorno `x` è **già** escluso per intero, e
+spostare il taglio a `x-1` butterebbe via una giornata di storia legittima — partite
+davvero giocate prima — senza comprare nessuna sicurezza in più.
+
+Vale la pena dire dove sta il margine vero, che è nella direzione **opposta**. Il
+taglio è a mezzanotte UTC, non al **calcio d'inizio della partita bersaglio**: quindi
+l'anticipo delle 12:30 dello stesso turno viene scartato anche se si è giocato sei ore
+prima. È una perdita, non un rischio. Tagliare a `matchTime` vero invece che a
+`T00:00` darebbe **più** informazione restando pulito — ma cambia cosa vede il modello,
+quindi è una modifica al motore e vuole un backtest, non una riga.
+
+C'è anche un caso di frontiera che sembra un problema e non lo è: una partita il cui
+turno locale è `x` ma il cui `time_utc` cade su `x-1` (fischio d'inizio all'una di
+notte in un fuso avanti rispetto a UTC) **viene inclusa**. È corretto: resta comunque
+precedente al calcio d'inizio del bersaglio in tempo reale.
+
+### L'asimmetria delle finestre, che è deliberata e va saputa
+
+Cercando il leakage è saltata fuori una cosa che non era scritta da nessuna parte:
+
+| chi | finestra |
+|---|---|
+| `aggregaTeam` | `targetMs − 500 giorni < t < targetMs` |
+| `buildGlobalElo` | `t < targetMs`, **nessun limite inferiore** |
+| `computeLeagueParams` | `t < targetMs`, **nessun limite inferiore** |
+| `estimateRho` | `t < targetMs`, **nessun limite inferiore** |
+
+Cioè la **forma di una squadra** guarda indietro 500 giorni (~1.4 stagioni, quindi la
+terza stagione caricata la vede appena), mentre **media gol di lega, rho ed Elo**
+mangiano tutte e tre le stagioni intere. Ha un senso — la forma è recente, i parametri
+di lega sono strutturali — ma è anche **esattamente** l'ingresso del problema aperto su
+`LEAGUE_HALFLIFE_DAYS`: quella media piatta su tre stagioni è piatta proprio perché
+qui non c'è né finestra né decadimento. Vedi *La base di lega risponde alla domanda
+sbagliata*.
 
 ## La lega che non arrivava mai: il bug che invalida le tarature
 
@@ -3022,6 +3129,28 @@ breve, perché ha due trabocchetti che costano un'ora:
    per ogni partita, che è quello che `fetchMatchRaw` legge per primo.
 4. Poi `setV` su `sel-league`/`sel-home`/`sel-away`, `avviaScanner()`, e si guardano
    `_V97_probs`, i `__*_DEBUG` e ogni nodo con `id` in cerca di `NaN`/`undefined`.
+
+**Il controllo L — leakage, col suo controllo di potenza.** Va rifatto ogni volta che
+si tocca un filtro temporale o si aggiunge una fonte di dati. Gira sul giro completo
+senza rete descritto qui sopra:
+
+1. Nel campionato sintetico, mettere una partita bersaglio in una data nota, più
+   un'altra squadra che gioca **lo stesso giorno** e una che gioca **il giorno prima**.
+2. Far girare il motore e salvare la previsione.
+3. Rifarlo drogando, **una strada per volta**, la partita bersaglio: prima il
+   **payload** nella `RAW_CACHE`, poi il **punteggio** sull'oggetto partita. Sono due
+   percorsi diversi — il payload entra da `aggregaTeam`, il punteggio da
+   `computeLeagueParams`/`estimateRho`/`buildGlobalElo` — e drogarne uno solo non
+   dimostra niente sull'altro.
+4. La previsione deve restare **identica bit per bit**. Confrontare l'oggetto intero,
+   non solo `m1`.
+5. **Poi rifarlo su una partita del giorno prima**, e verificare che lì la previsione
+   **cambi**. Senza questo passo il test non ha potere: sei «identici» di fila si
+   spiegano ugualmente bene con «non c'è leakage» e con «non sto toccando niente».
+
+Vale come regola oltre a questo caso: *un test che verifica un'assenza deve sempre
+portarsi dietro il caso in cui la presenza si vede.* Esito al `b23` in *Il Comparatore
+stampa come lo Scanner*.
 
 E due controlli che vanno fatti sul **CSV appena arrivato**, prima di analizzarlo:
 

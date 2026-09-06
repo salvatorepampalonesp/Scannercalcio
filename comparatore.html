@@ -669,6 +669,18 @@ async function loadEngineFromText(text, fileName) {
 
   cmpLog(`✅ Tutte le ${required.length} funzioni chiave esposte.`);
 
+  // Il CSV riporta il PRIMO giro del ciclo su CMP_K_LIST: se quel k non e' il default
+  // del motore, le colonne del file non sono piu' quelle che l'utente vede a schermo,
+  // e senza questa riga non lo direbbe nessuno (AGENTS.md, Il Comparatore stampa come
+  // lo Scanner).
+  window.__ENGINE_SHRINK_K = (typeof window.SHRINK_K === 'number') ? window.SHRINK_K : null;
+  if (window.__ENGINE_SHRINK_K != null && CMP_K_LIST[0] !== window.__ENGINE_SHRINK_K) {
+    cmpLog(`   \u26a0\ufe0f CMP_K_LIST[0] e' ${CMP_K_LIST[0]} ma il motore ha SHRINK_K ${window.__ENGINE_SHRINK_K}: `
+         + `il CSV NON corrispondera' ai numeri dello Scanner. Rimetti ${window.__ENGINE_SHRINK_K} in testa alla lista.`);
+  } else if (window.__ENGINE_SHRINK_K != null) {
+    cmpLog(`   \u2705 CMP_K_LIST[0] = ${CMP_K_LIST[0]} = SHRINK_K del motore: il CSV coincide con lo Scanner.`);
+  }
+
   if (typeof window.__SCANNER_BUILD === 'string') {
     cmpLog('   motore build ' + window.__SCANNER_BUILD);
   } else {
