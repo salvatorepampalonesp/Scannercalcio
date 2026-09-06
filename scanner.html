@@ -155,7 +155,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b19</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b20</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -193,7 +193,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
 
     <div class="card" style="border-top:3px solid var(--accent); background:var(--panel); box-shadow:none">
       <div class="section-title" style="color:var(--txt); font-size:16px">👑 MASTER ENSEMBLE: La Sentenza Algoritmica</div>
-      <p style="font-size:11px;color:var(--dim);margin-bottom:15px">Sintesi pesata dei motori (Dixon-Coles su NPxG 60%, Ordered Logit 30%, Markov 10%) e calcolo delle True Odds. Tutti i mercati derivano dalla stessa matrice Dixon-Coles.</p>
+      <p style="font-size:11px;color:var(--dim);margin-bottom:15px">Sintesi pesata dei motori (Dixon-Coles su NPxG 70%, Markov 30%; l'Ordered Logit e' calcolato e mostrato ma ha peso 0) e calcolo delle True Odds. Tutti i mercati derivano dalla stessa matrice Dixon-Coles.</p>
       
       <div class="grid-3" style="margin-bottom:15px">
         <div style="text-align:center; background:var(--panel2); padding:15px; border-radius:8px; border:2px solid var(--blue)">
@@ -1512,7 +1512,7 @@ function renderVerdetti(mk) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b19';
+window.__SCANNER_BUILD = '0905-b20';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -1758,6 +1758,18 @@ function eloTiltLambdas(lamH, lamA, eloDiff, hfa, rho) {
 }
 
 const GOALS_SOT_CAP = 0.20;
+// PESI DELL'ENSEMBLE 1X2.
+// Scelti fuori campione: per ogni lega la griglia e' stata cercata sulle ALTRE quattro e
+// misurata su quella tenuta fuori. In quattro fold su cinque la scelta e' DC 0.70 /
+// Markov 0.30 / Ordered Logit 0.00; nel quinto e' 0.60/0.30/0.10 con l'OL a 0.10.
+// Logloss aggregata fuori campione: 1.0115 (con 0.6/0.3/0.1 e OL a 0.30) -> 1.0102.
+// L'Ordered Logit resta calcolato e mostrato, ma con peso 0 non entra nel risultato:
+// e' guidato dallo stesso NPxG del Dixon-Coles e non porta informazione in piu'.
+window.ENS_W = window.ENS_W || { dc: 0.70, mk: 0.30, ol: 0.00 };
+// Peso del blocco COMPLETO (lambda su tutte le partite) contro il blocco RUOLO
+// (lambda separati casa/trasferta). 0 = solo ruolo, com'era fino al b19. NON e' ancora
+// misurato: il CSV esporta i due blocchi separati perche' un backtest lo decida.
+window.ENS_SCOPE_W = (typeof window.ENS_SCOPE_W === 'number') ? window.ENS_SCOPE_W : 0;
 window.SOT_PER_GOAL = (typeof window.SOT_PER_GOAL === 'number') ? window.SOT_PER_GOAL : 3.25;
 window.GOALS_SOT_W  = (typeof window.GOALS_SOT_W  === 'number') ? window.GOALS_SOT_W  : 0.50;
 
@@ -1857,7 +1869,12 @@ async function avviaScanner() {
     window.__GOALS_DEBUG = _GC;
     if (_GC.applied && isFinite(_GC.scale) && _GC.scale > 0) {
       lamH_role *= _GC.scale; lamA_role *= _GC.scale;
-      lamH_over *= _GC.scale; lamA_over *= _GC.scale;
+    }
+    // La scala e' un rapporto contro il PROPRIO totale: applicare quella del ruolo ai
+    // lambda completi li portava verso il totale del ruolo invece che verso i tiri.
+    const _GCo = goalsSotCorrection(dH, dA, lamH_over + lamA_over);
+    if (_GCo.applied && isFinite(_GCo.scale) && _GCo.scale > 0) {
+      lamH_over *= _GCo.scale; lamA_over *= _GCo.scale;
     }
     if(!isFinite(lamH_role) || lamH_role < 0.15) lamH_role = lamH_over; if(!isFinite(lamA_role) || lamA_role < 0.15) lamA_role = lamA_over;
 
@@ -2043,8 +2060,14 @@ async function avviaScanner() {
     if(!isFinite(knn_lamA) || knn_lamA < 0.15) knn_lamA = lamA_role;
     const probsKnn = probsFromMatrix(calcDCMatrix(knn_lamH, knn_lamA, RHO));
 
-    // stimati per massima verosimiglianza su 1903 partite, validati su 816 (AGENTS.md)
-    const OL_BETA = 1.950, OL_T1 = -0.850, OL_T2 = 0.350;
+    // Ristimati sul campione 2023-2026 (1743 partite, cinque leghe) invertendo le
+    // probabilita' esportate dal backtest e rifacendo la massima verosimiglianza.
+    // I vecchi valori (1.950 / -0.850 / +0.350) contavano il vantaggio casa DUE volte:
+    // la banda di pareggio era centrata a -0.250 mentre olH-olA vale gia' +0.196 in media,
+    // perche' _olNpxg usa lo scope 'role'. Risultato: +6.8 punti di bias sull'1.
+    // Validato fuori campione (si stima su quattro leghe, si misura sulla quinta):
+    // bias sull'1 da +6.8 a -0.1, logloss da 1.0397 a 1.0270, pick da 48.1% a 49.9%.
+    const OL_BETA = 2.056, OL_T1 = -0.475, OL_T2 = 0.671;
     const _sig = (z) => 1 / (1 + Math.exp(-Math.max(-30, Math.min(30, z))));
 
     const _olStrength = (att, oppDef) => 0.7 * att + 0.3 * oppDef;
@@ -2067,11 +2090,40 @@ async function avviaScanner() {
     const mk_ov = markovFlow(lamH_over, lamA_over); const mk_ro = markovFlow(lamH_role, lamA_role);
 
 
-    const wOL = 0.30, wMk = 0.10; const wDc = 1 - wOL - wMk;
+    // ENSEMBLE. Due blocchi identici per forma, diversi solo per l'ambito dei lambda:
+    //   RUOLO    = Dixon-Coles e Markov sulle partite in casa / in trasferta
+    //   COMPLETO = gli stessi due sulle partite di tutte e due gli ambiti
+    // ENS_SCOPE_W e' il peso del blocco COMPLETO. A 0 il motore fa esattamente quello
+    // che faceva prima; il CSV esporta i due blocchi separati, cosi' un solo backtest
+    // ricostruisce ogni valore fra 0 e 1 senza rilanciare il motore.
+    const _EW = window.ENS_W;
+    const _sW = Math.max(0, Math.min(1, window.ENS_SCOPE_W));
+    const _blend = (dc, mk) => {
+      const t = _EW.dc + _EW.mk;
+      return t > 0 ? { p1: (dc.p1*_EW.dc + mk.p1*_EW.mk)/t,
+                       pX: (dc.pX*_EW.dc + mk.pX*_EW.mk)/t,
+                       p2: (dc.p2*_EW.dc + mk.p2*_EW.mk)/t }
+                   : { p1: dc.p1, pX: dc.pX, p2: dc.p2 };
+    };
+    const _ensRole = _blend(probsRole, mk_ro);
+    const _ensOver = _blend(probsOver, mk_ov);
+    const _core = { p1: (1-_sW)*_ensRole.p1 + _sW*_ensOver.p1,
+                    pX: (1-_sW)*_ensRole.pX + _sW*_ensOver.pX,
+                    p2: (1-_sW)*_ensRole.p2 + _sW*_ensOver.p2 };
+    const wOL = Math.max(0, Math.min(1, _EW.ol));
 
-    let m1_raw = (probsRole.p1 * wDc) + (probsOL.p1 * wOL) + (mk_ro.p1 * wMk);
-    let mX_raw = (probsRole.pX * wDc) + (probsOL.pX * wOL) + (mk_ro.pX * wMk);
-    let m2_raw = (probsRole.p2 * wDc) + (probsOL.p2 * wOL) + (mk_ro.p2 * wMk);
+    let m1_raw = (_core.p1 * (1-wOL)) + (probsOL.p1 * wOL);
+    let mX_raw = (_core.pX * (1-wOL)) + (probsOL.pX * wOL);
+    let m2_raw = (_core.p2 * (1-wOL)) + (probsOL.p2 * wOL);
+    window.__ENS_DEBUG = { w: _EW, scopeW: _sW, role: _ensRole, over: _ensOver };
+    // quota effettiva sul risultato finale: il blocco DC+Markov e' gia' normalizzato a 1,
+    // quindi la sua quota totale e' (1 - wOL) e va ripartita fra dc e mk.
+    const _wSum = _EW.dc + _EW.mk;
+    const _share = (x) => (_wSum > 0 ? x / _wSum : 0) * (1 - wOL);
+    const _wPct = (x) => Math.round(100 * x) + '%';
+    const _ensLabel = (_sW > 0)
+      ? `Dixon-Coles ${_wPct(_share(_EW.dc))} + Markov ${_wPct(_share(_EW.mk))}, di cui ${Math.round(100*_sW)}% su lambda di tutte le partite e ${Math.round(100*(1-_sW))}% su lambda casa/trasferta` + (wOL > 0 ? ` + Ordered Logit ${_wPct(wOL)}` : '')
+      : `Dixon-Coles ${_wPct(_share(_EW.dc))} + Markov ${_wPct(_share(_EW.mk))} su lambda casa/trasferta` + (wOL > 0 ? ` + Ordered Logit ${_wPct(wOL)}` : '');
     const m_tot = m1_raw + mX_raw + m2_raw;
     const _ens1 = m_tot > 0 ? m1_raw / m_tot : 0.33, _ensX = m_tot > 0 ? mX_raw / m_tot : 0.33, _ens2 = m_tot > 0 ? m2_raw / m_tot : 0.33;
 
@@ -2418,16 +2470,16 @@ async function avviaScanner() {
     let p = `SEI UN DATA SCIENTIST ESPERTO DI CALCIO. Partita: ${hName} vs ${aName} (Simulazione al ${dateInput}).
 
 1. THE MASTER ENSEMBLE E QUOTE REALI (Modello NPxG)
-- Probabilità (Dixon-Coles 60% + Ordered Logit 30% + Markov 10%, poi correzione residuale sulle metriche di creazione): 1 (${pct(m1)}) | X (${pct(mX)}) | 2 (${pct(m2)})
+- Probabilità (${_ensLabel}, poi correzione residuale sulle metriche di creazione): 1 (${pct(m1)}) | X (${pct(mX)}) | 2 (${pct(m2)})
 - Fair Odds Ensemble: 1 @${oddM1} | X @${oddMX} | 2 @${oddM2}   (Dixon-Coles puro: 1 @${odd1} | X @${oddX} | 2 @${odd2})
 - Affidabilita' campionaria: ${dH.role.n} match casa per ${hName}, ${dA.role.n} match trasferta per ${aName}. Vicini KNN efficaci: ${f1(knn_H.nEff)} / ${f1(knn_A.nEff)}
 - Confidence Score: ${confidence}/100
 - Hidden Value / Blood Scent: ${hiddenValueMsgClean}
 
 2. SCOMPOSIZIONE MODELLI
-- Dixon-Coles Puro (Ruolo NPxG) [nell'ensemble, peso 60%]: 1 (${pct(probsRole.p1)}) | X (${pct(probsRole.pX)}) | 2 (${pct(probsRole.p2)})
-- Ordered Logit [nell'ensemble, peso 30%]: 1 (${pct(probsOL.p1)}) | X (${pct(probsOL.pX)}) | 2 (${pct(probsOL.p2)})
-- Markov [nell'ensemble, peso 10%]: 1 (${pct(mk_ro.p1)}) | X (${pct(mk_ro.pX)}) | 2 (${pct(mk_ro.p2)})
+- Dixon-Coles Puro (Ruolo NPxG) [nell'ensemble, peso ${_wPct(_share(_EW.dc)*(1-_sW))}]: 1 (${pct(probsRole.p1)}) | X (${pct(probsRole.pX)}) | 2 (${pct(probsRole.p2)})
+- Ordered Logit [nell'ensemble, peso ${_wPct(wOL)}]: 1 (${pct(probsOL.p1)}) | X (${pct(probsOL.pX)}) | 2 (${pct(probsOL.p2)})
+- Markov [nell'ensemble, peso ${_wPct(_share(_EW.mk)*(1-_sW))}]: 1 (${pct(mk_ro.p1)}) | X (${pct(mk_ro.pX)}) | 2 (${pct(mk_ro.p2)})
 - KNN 11D Puro (Tattica) [FUORI dall'ensemble, solo riferimento tattico]: 1 (${pct(probsKnn.p1)}) | X (${pct(probsKnn.pX)}) | 2 (${pct(probsKnn.p2)})
 - Correzione residuale: ${(window.__RESID_DEBUG && window.__RESID_DEBUG.applied) ? ('attiva su ' + window.__RESID_DEBUG.available.join('/') + ', spostamento ' + (window.__RESID_DEBUG.delta >= 0 ? '+' : '') + window.__RESID_DEBUG.delta.toFixed(3) + ' in log-odds verso ' + (window.__RESID_DEBUG.delta >= 0 ? 'la casa' : 'la trasferta')) : ((window.__RESID_DEBUG && window.__RESID_DEBUG.sig != null) ? ('spenta (alpha 0); segnale misurato ' + window.__RESID_DEBUG.sig.toFixed(3) + ' vs edge ' + window.__RESID_DEBUG.edge.toFixed(3)) : 'non calcolabile (metriche di creazione assenti)')}
 
