@@ -34,8 +34,14 @@ cui si è già risposto, con i numeri. Le tre porte d'ingresso:
   (controlli H e I, da fare **prima** di analizzare), *Trappole* (l'AUC dei mercati gol
   non si legge aggregata, il CSV ha una cifra decimale), *Leggere il log del
   Comparatore*.
+- **«Questo file dice il vero?»** → *L'audit del documento*: cosa è stato
+  ricontrollato contro il sorgente, e i quattro punti in cui il testo era rimasto
+  indietro.
+- **«Il backtest sta barando?»** → *Il Comparatore stampa come lo Scanner*: il taglio
+  temporale misurato invece che letto, su tutte e due le strade da cui un risultato
+  può rientrare, col controllo di potenza.
 
-**Le cinque cose che più facilmente fanno perdere una giornata**, se non le sai:
+**Le sei cose che più facilmente fanno perdere una giornata**, se non le sai:
 
 1. `_base` **non** è una media di lega: è una media della **coppia**, e correla 0.84
    col numeratore. → *La baseline di coppia*.
@@ -47,15 +53,25 @@ cui si è già risposto, con i numeri. Le tre porte d'ingresso:
    una direzione, scrivi la formula. → *Il paradosso della Premier*.
 5. In `predictStat` **`k` alto = MENO shrinkage**; in `SHRINK_K` e `SHRINK_LAM_K`
    è l'opposto. → *Convenzioni del motore*.
+6. Lo scope `role` è un **sottoinsieme** di `overall`: con `limit = 15` sono 8
+   partite, non 15. Ogni costante è tarata su quelle 8. → *Il campione di ruolo è
+   un sottoinsieme*.
+
+**E una regola sul documento stesso.** Le sezioni qui sotto sono state scritte
+lungo ventidue build, e un audit voce-per-voce contro il sorgente ha trovato quattro
+punti in cui il testo descriveva un motore diverso da quello che gira — uno dei
+quali stava proprio nell'elenco delle trappole *già corrette*. Prima di fondare una
+misura su una frase di questo file, **verificala nel sorgente**: qui c'è la
+memoria del progetto, non la sua verità corrente. → *L'audit del documento*.
 
 ## Stato del lavoro, e da dove ripartire
 
 Sezione di consegna: dice a che punto siamo, così una sessione nuova non
 ricomincia da capo. Aggiornala quando cambia qualcosa di sostanziale.
 
-**Build corrente: `0905-b22`.** Scanner e Comparatore devono coincidere, e sul
+**Build corrente: `0905-b24`.** Scanner e Comparatore devono coincidere, e sul
 Comparatore il badge sotto la dropzone deve uscire **verde** dopo aver trascinato
-lo Scanner. Il branch di lavoro è `claude/scanner-stat-optimization-sgs62u`.
+lo Scanner. Il branch di lavoro è `claude/controlla-agents-md-bugs-2dnlmj`.
 
 **Sul «N commit behind»:** GitHub conta i *merge commit* delle PR, che stanno su
 `main` e non sul branch. Il contenuto è lo stesso: dopo ogni merge
@@ -119,6 +135,8 @@ sovradispersione — scagionati con i dati in mano.
 | `b20` | l'**Ordered Logit contava la casa due volte** (bias +6.8 sull'`1`): soglie ristimate e peso a 0. Ensemble riscritto a due blocchi, ruolo e completo, con `ENS_SCOPE_W` |
 | `b21` | **il completo batte il ruolo sull'1X2**, monotono in tre leghe su tre, `z = -3.96`: `ENS_SCOPE_W` a 1. E l'etichetta di lega del CSV veniva dalla dropdown, non dalla partita |
 | `b22` | **`rho` e la sovradispersione scagionati**, il disallineamento di unità è già compensato: il muro dell'Over/Under è tutto nel **livello** del lambda, e la base di lega è una media piatta di tre stagioni. `aerials` era corretto solo nello Scanner |
+| `b23` | **audit del documento contro il sorgente**: quattro punti in cui AGENTS.md descriveva un motore diverso da quello che gira, il più grosso è che lo scope `role` **è** un sottoinsieme di `overall` (8 partite su 15). Esposto `ROLE_SCOPE_INDEPENDENT`, fermo a 0; via il codice morto |
+| `b24` | **il taglio temporale non si fida più dell'orario**: con un `time_utc` senza `Z` e un browser in un fuso avanti, la partita da prevedere entrava nel proprio storico (l'`1` da 0.528 a 0.557). Ora il confronto è sulla **data in forma di stringa**, in AND col timestamp: `_isPast` |
 
 Le tre build finali hanno una storia sola e va letta in *La baseline di coppia*:
 tre tentativi svuotati dallo stesso malinteso.
@@ -211,6 +229,19 @@ se un giro non mostra differenze sull'Elo, è il comportamento atteso.
    previsto/reale a zero su 1133 partite. Il fix additivo che le ha rese
    calcolabili era giusto, ma quello che si vede è rumore.
 
+13. **Misurare `ROLE_SCOPE_INDEPENDENT`.** È la cosa più grossa rimasta, ed è
+   l'unica in coda che vale su *tutti* i mercati insieme invece che su uno. Oggi
+   `role` è un sottoinsieme di `overall` — 8 partite su 15 — e il `b23` ha esposto
+   la costante che lo rende indipendente, ferma a 0. **Non si ricostruisce dal
+   CSV**, perché cambia quali partite si scaricano: servono due giri sullo stesso
+   periodo, `window.ROLE_SCOPE_INDEPENDENT = 1` prima del batch nel secondo. Il
+   CSV esporta la sezione *AMPIEZZA DEL CAMPIONE DI RUOLO* per riconoscere quale
+   dei due si sta leggendo. Vedi *Il campione di ruolo è un sottoinsieme*.
+14. **Portare `RESID_GAMMA` a 0.360** (o rimisurarlo) prima di rileggere la sezione
+   *A/B CORREZIONE RESIDUALE* del CSV: nel codice è ancora 0.678, cioè la scala che
+   il `b5` ha dichiarato sbagliata. Non sposta probabilità (`RESID_ALPHA = 0`),
+   sposta la diagnostica che dovrebbe dire se riaccendere la correzione.
+
 Già fatte e da non riaprire: togliere il KNN dall'ensemble (`b7`), `sum_sot`
 nell'Over/Under (`b9`, riformulato nel `b12`), tarare i `k` di mercato (`b12`).
 
@@ -245,12 +276,12 @@ già stato guardato nel codice e quello che è ancora un sospetto.
   gol nel campione la forma diventa uniforme. È legittimo ma il nome promette
   molto più di quanto faccia.
 - **L'Elo è strutturalmente sano.** HFA stimato dalle vittorie reali
-  (`400·log10(wr_casa/wr_trasferta)`, limitato fra 30 e 100), K adattivo (30
-  sotto le 15 partite, poi 20), moltiplicatore per scarto di gol, cronologico e
-  a somma zero. Il **salto data** regredisce verso 1500 quando passano più di 60
-  giorni, con forza `min(0.9, 0.3 × ceil(anni_di_pausa))`. Funziona, ma è una
-  funzione a gradini: una pausa di 61 giorni e una di 11 mesi ricevono la stessa
-  regressione del 30%, e a 1.01 anni si salta di colpo al 60%. Da smussare.
+  (`400·log10(wr_casa/wr_trasferta)`, limitato fra 30 e 100, e solo con almeno 50
+  partite in archivio), K adattivo (30 sotto le 15 partite, poi 20),
+  moltiplicatore per scarto di gol, cronologico e a somma zero. Il **salto data**
+  era una funzione a gradini ed è stato smussato nel `b9`: oggi è
+  `0.9·(1 − exp(−(giorni − 45)/110))`, verificato nel sorgente. Vedi *Il salto
+  data dell'Elo*.
 
 ### Sistemato (b6 → b8)
 
@@ -320,10 +351,13 @@ già stato guardato nel codice e quello che è ancora un sospetto.
   interni** restano però non verificati.
 - **Probabili formazioni**: PitchAPI espone `/lineups` anche in versione prevista.
   Da valutare dopo il resto.
-- **Le otto metriche fuori dal CSV** (`cross`, `thru`, `aer`, `pass_acc`, `ht`,
-  `seq_time`, `xg_op`, `xg_shot`): il motore le prevede e le mostra, nessun backtest
-  le ha mai viste. Aggiungerle al CSV costa poche righe e sarebbe il primo passo per
-  sapere se valgono qualcosa.
+- **Le metriche fuori dal CSV**: `cross`, `thru`, `aer`, `seq_time` e `xg_shot` il
+  motore le raccoglie e le mostra, ma nessun backtest le ha mai viste. Aggiungerle
+  al CSV costa poche righe e sarebbe il primo passo per sapere se valgono qualcosa.
+  **Attenzione**: questa voce elencava anche `pass_acc`, `ht` e `xg_op`, e per
+  quelle era falsa — non erano «fuori dal CSV», erano fuori da tutto. Nel `b23`
+  sono state tolte dal sorgente insieme alle altre cinque variabili morte. Vedi
+  *Otto variabili che leggevano il payload*.
 - **Il `k` di `aerials` e la sua riga nella Progressione Storica**: il `k = 0.54` è
   tarato sulla quantità *condivisa* di prima del `b19`, e la riga `t = +2.4` misurava
   un volume di partita. Ora che il CSV esporta il valore giusto (`b22`) si possono
@@ -355,8 +389,15 @@ binomiale negativa: sono conteggi diversi dai gol e non escono dallo stesso
 processo. Vedi *I mercati sui numeri*.
 
 **Due scope.** `overall` sono le ultime N partite di qualunque tipo, `role`
-sono le ultime N **in casa** per la squadra di casa e **in trasferta** per
-l'ospite. Sono insiemi indipendenti, non uno sottoinsieme dell'altro. I lambda
+sono quelle **fra queste** che la squadra ha giocato nel proprio ruolo — in casa
+per la squadra di casa, in trasferta per l'ospite. **`role` è un sottoinsieme di
+`overall`, non un insieme indipendente**: in codice è
+`roleMatches = overallMatches.filter(...)`, e con il default `limit = 15`
+restano **8 partite** per parte (misurato, non stimato). Questo documento ha
+sostenuto il contrario per parecchie build — vedi *Il campione di ruolo è un
+sottoinsieme, e il documento diceva di no*. Dal `b23` c'è
+`window.ROLE_SCOPE_INDEPENDENT`: a 1 il ruolo diventa le ultime `limit` giocate
+nel ruolo, ma è **ferma a 0** finché un A/B non parla. I lambda
 di ruolo normalizzano ogni statistica sul baseline della propria sede
 (`LG.avgH` o `LG.avgA`), ed è per questo che **non va aggiunto nessun
 moltiplicatore di vantaggio campo sopra**: ci sarebbe due volte.
@@ -483,15 +524,21 @@ molto su diverse metriche (`gca` era a 0.75, la pendenza dice 0.31).
 | gol e tiri | `npxg` 0.54 · `xg` 0.50 · `sot` 0.50 · `xgot` 0.46 · `cor` 0.40 |
 | possesso e territorio | `poss` 0.76 · `tch_box` 0.61 · `field_tilt` 0.41 · `ppda` 0.35 · `f3_entries` 0.29 · `avg_def_x` 0.10 |
 | creazione | `sca` 0.34 · `sca_live` 0.41 · `gca` 0.31 · `xag` 0.24 · `chances_created` 0.39 · `key_passes` 0.39 |
-| breakdown SCA | `sca_dead` 0.18 · `sca_takeon` 0.16 · `sca_foul` 0.11 · `sca_shot` 0.10 · `sca_def` 0.10 |
+| breakdown SCA | `sca_dead` 0.18 · `sca_takeon` 0.16 · `sca_foul` 0.11 · `sca_shot` 0.10 |
 | passaggi | `passes` 0.54 · `prog_passes` 0.47 · `passes_box` 0.44 · `prog_pass_dist` 0.36 · `switches` 0.28 · `assists` 0.16 · `second_assists` 0.17 |
 | conduzioni | `carries` 0.49 · `prog_carry_dist` 0.50 · `carry_dist` 0.48 · `prog_carries` 0.48 · `carries_f3` 0.38 · `take_ons` 0.37 · `carries_box` 0.55 |
 | difesa | `aerials` 0.54 · `ppda_num` 0.53 · `ppda_den` 0.29 · `clearances` 0.30 · `tackles` 0.23 · `interceptions` 0.23 · `duels_won` 0.22 · `blocks` 0.20 · `challenges` 0.14 · `yel` 0.23 · `fouls` 0.48 |
-| possession value | `xt` 0.40 · `vaep_off` 0.23 · `pv_off` 0.21 · `vaep` 0.18 · `pv` 0.15 · `vaep_def` 0.10 · `pv_def` 0.10 |
+| possession value | `xt` 0.40 · `vaep_off` 0.23 · `pv_off` 0.21 · `vaep` 0.18 · `pv` 0.15 |
 | default | 0.50 |
 
+Sono **51 voci**, e 51 sono le chiavi di `STAT_SHRINK_TABLE` nel codice: i valori
+qui sopra coincidono con quelli del sorgente cifra per cifra (ricontrollato). Le
+tre voci `vaep_def`, `pv_def` e `sca_def` che questa tabella ha elencato fino
+all'audit del documento **non ci sono più dal `b7`**, quando le metriche sono
+uscite da `ADV_SPEC`: se le rimetti, rimetti anche il loro `k`.
+
 Leghe discordi (pendenze con spread > 0.35, valore tenuto prudente): `fouls`,
-`vaep_off`, `pv_off`, `assists`, `sca_def`.
+`vaep_off`, `pv_off`, `assists`.
 
 **`avg_def_x` ha pendenza 0.06**, cioè la previsione non ha praticamente
 relazione col valore reale. È a `k` 0.10 e non va usata come feature finché non
@@ -519,10 +566,17 @@ Il getter viene applicato due volte allo stesso payload, a `myAdv` e a `oppAdv`:
 È il secondo fattore del modello moltiplicativo, e costa zero chiamate perché
 `/advanced` contiene già entrambe le squadre.
 
-Il Comparatore ha la tabella speculare `CMP_NEW_SPEC`, **stesse chiavi, stesso
-ordine**, che serve a estrarre i valori reali per il CSV. Se aggiungi una riga
-in `ADV_SPEC`, aggiungila anche lì (e in `NEWK` dell'export), altrimenti la
-metrica viene prevista ma mai verificata.
+Il Comparatore ha la tabella speculare `CMP_NEW_SPEC`, che serve a estrarre i
+valori reali per il CSV. Se aggiungi una riga in `ADV_SPEC`, aggiungila anche lì
+(e in `NEWK` dell'export), altrimenti la metrica viene prevista ma mai verificata.
+
+**Quante sono, oggi**: `ADV_SPEC` ha **31 voci**, `CMP_NEW_SPEC` ne ha **34** —
+le tre in più sono `vaep_def`, `pv_def` e `sca_def`, uscite da `ADV_SPEC` nel `b7`
+ma tenute nel Comparatore perché il CSV continui a esportarne il valore reale.
+Sulle 31 condivise i due getter leggono lo **stesso campo, nello stesso ordine**
+(controllo E, rifatto: zero divergenze). Il «34 metriche nuove» che si legge nella
+cronologia e nel commento sopra `CMP_NEW_SPEC` è il conto del `b4`, non quello di
+oggi.
 
 Otto metriche erano raccolte da sempre ma non passavano da `calcFeatures`
 (`ppda`, `field_tilt`, `direct_speed`, `seq_time`, `avg_x`, `avg_def_x`,
@@ -540,8 +594,15 @@ semplice. Ora sono in `ORPHAN_PAIRS`, che le aggancia ai rispettivi `opp_*`.
     **negativi per definizione** (misurano il rischio di subire). Il rapporto
     `mio/lg` fra due negativi ha segno invertito e il prodotto è privo di senso;
     peggio, i guardiani storici `decay > 0` e `v > 0` li scartavano in silenzio
-    e `predictStat` tornava `null`. `vaep`, `pv`, `vaep_def`, `pv_def` sono
-    additive, e i guardiani per queste sono su `isFinite`, non sul segno.
+    e `predictStat` tornava `null`. I guardiani per le additive sono su
+    `isFinite`, non sul segno.
+
+    Oggi `STAT_TYPE` contiene **quattro** voci e non sei: `avg_x`, `avg_def_x`,
+    `vaep`, `pv`. `vaep_def` e `pv_def` sono uscite da `ADV_SPEC` nel `b7`, quindi
+    il motore non le prevede più — ma il predittore di riserva del Comparatore
+    (`cmpDcPredict`) le tiene in `CMP_ADV_KEYS` e le tratta ancora con la **forma
+    moltiplicativa**. Su quelle righe (`Origine metriche avanzate = riserva-*`) il
+    numero non vale niente per lo stesso motivo scritto qui sopra.
   - **coordinate**, non volumi. `avg_x` e `avg_def_x` sono metri sul campo: un
     prodotto di rapporti su una coordinata non ha dimensioni sensate.
 
@@ -594,7 +655,10 @@ reintrodurre modificando in buona fede.
 5. **`avg_3/5/10` che pescavano match più vecchi** per riempire i buchi. I
    valori mancanti si saltano, non si sostituiscono.
 6. **Campione di ruolo come sottoinsieme** degli ultimi N complessivi: con 15
-   restavano ~7 gare. Ora i due insiemi sono indipendenti.
+   restavano ~7 gare. **Questa voce era falsa e va letta al contrario**: nel
+   `scanner.html` di oggi il ruolo *è* ancora un sottoinsieme, e con `limit = 15`
+   restano 8 partite. Vedi *Il campione di ruolo è un sottoinsieme, e il documento
+   diceva di no*.
 7. **Profilo tattico dell'avversario per il KNN preso dal generale** invece che
    dal suo ruolo.
 8. **1X2 in Poisson puro senza rho** mentre i risultati esatti usavano
@@ -707,6 +771,26 @@ a `scanner.html` al commit `cd51a69`, prima della ripulitura.
 - **Non leggere mai l'AUC dei mercati gol aggregata fra leghe.** Con base rate
   diversi (Premier 55.1% di Over 2.5, Serie A 45.7%) l'aggregato dava 0.531 dove
   dentro ogni lega era 0.495 e 0.500, cioè caso puro. Sempre per lega.
+- **Un taglio temporale dedotto da un orario è forte quanto il formato dell'orario.**
+  `new Date("2025-04-30T00:00:00")` — senza `Z` — è ora **locale**, e in un fuso avanti
+  rispetto a UTC finisce *prima* di mezzanotte UTC: la partita da prevedere entra nel
+  proprio storico. Non su tutti i fusi, non su tutti i formati, quindi invisibile finché
+  qualcuno non lo cerca apposta. Su date ISO l'ordine **lessicografico è quello
+  cronologico**: confrontare `slice(0,10)` è immune sia al fuso sia al formato, e su dati
+  ben formati dà lo stesso risultato del timestamp — quindi si mettono in AND e non si
+  perde niente. Vedi *L'orario non è affidabile*.
+- **«Verificato» vale solo per i dati con cui hai verificato.** Il `b23` ha dichiarato
+  chiuso il leakage con sei prove e due controlli di potenza, tutte su `time_utc` con la
+  `Z`. Il difetto stava nel formato che non avevo generato. Quando un test genera i
+  propri dati, la domanda da farsi non è «passa?» ma **«quali input non ho messo?»** —
+  e per un campo che arriva da un'API esterna, il formato è il primo.
+- **Anche un elenco di trappole corrette è una costante non stimata.** Il punto 6
+  qui sopra dava per risolto un difetto che nel `scanner.html` di questo repository
+  non è mai stato risolto, e lo descriveva con il numero giusto («con 15 restavano
+  ~7 gare», sono 8). Una voce del genere non fa danno da sola: fa danno perché
+  chiude la domanda. La regola è la stessa delle costanti — **accanto a «corretto»
+  va scritto dove guardare nel sorgente per riverificarlo**, altrimenti fra sei
+  build nessuno sa più se è vero. Vedi *L'audit del documento*.
 
 ## Cosa è già stato provato, e come è andata
 
@@ -1222,15 +1306,328 @@ resto sia a posto:
   valori che cita.
 - **I casi numerici estremi**: lambda molto alti o molto bassi, squadre con
   pochissime partite, leghe con meno di 30 partite in archivio.
-- **Le otto metriche che il Comparatore non esporta** (`cross`, `thru`, `aer`,
-  `pass_acc`, `ht`, `seq_time`, `xg_op`, `xg_shot`): il motore le prevede, nessun
+- **Le cinque metriche che il Comparatore non esporta** (`cross`, `thru`, `aer`,
+  `seq_time`, `xg_shot`): il motore le prevede, nessun
   backtest le ha mai viste. Scoperto nel `b22` contando cosa finisce davvero nel CSV
-  (43 metriche) contro cosa il motore calcola.
+  (43 metriche) contro cosa il motore calcola. `pass_acc`, `ht` e `xg_op` stavano in
+  questo elenco per errore — non le prevedeva nessuno — e nel `b23` sono uscite dal
+  sorgente.
 - **Il comportamento con dati parziali dell'API**: cosa succede se `/advanced`
   manca per metà delle partite di una squadra, ora che i fallback funzionano.
 
 Ognuno di questi è una classe che, se contiene un errore, l'audit fatto finora
 non lo vedrebbe.
+
+## L'audit del documento (`b23`): quattro cose che AGENTS.md diceva e il codice smentisce
+
+Gli audit del `b19` e del `b22` hanno guardato il codice contro se stesso. Questo
+ha guardato il **documento contro il codice**, voce per voce, ed è una classe di
+errore che nessuno dei controlli precedenti poteva trovare: un file che descrive
+un motore diverso da quello che gira non rompe niente, manda fuori strada chi lo
+legge. Le quattro trovate qui sotto sono state corrette nel testo dove comparivano;
+questa sezione tiene il conto di cosa è stato verificato e come.
+
+**Cosa il `b23` ha cambiato nel codice**, in una riga: niente che sposti un numero.
+È uscito il codice morto, è entrata `ROLE_SCOPE_INDEPENDENT` a 0 con la sua
+diagnostica nel CSV, e `_calibConf1X2` è tornata a essere una sola. Verificato
+facendo girare `b22` e `b23` fianco a fianco sullo stesso campionato sintetico:
+identici su tutto tranne la diagnostica nuova.
+
+**Cosa è stato ricontrollato, e ha retto.** Non è aria: sono i controlli del `b19`
+e del `b22` rifatti sul sorgente di oggi.
+
+| controllo | esito |
+|---|---|
+| sintassi dei due file (`node --check` sul JS estratto) | OK |
+| i cinque agganci testuali del Comparatore | 5 su 5 fanno presa |
+| build allineate (`__SCANNER_BUILD`, `_bComp`, i due badge `#build-ver`) | tutte `0905-b22` |
+| i nomi cercati da `exposeNames` esistono nel motore | 21 su 21 |
+| **A** — fallback irraggiungibili (`zeroIf`/`keepNull` poi `=== null`) | zero |
+| **E** — `ADV_SPEC` contro `CMP_NEW_SPEC` e `CMP_ADV_KEYS` | 31 chiavi comuni, stesso campo, stesso ordine |
+| **F** — ogni chiave letta dal CSV è esposta dall'hook | zero orfane |
+| **G** — etichette di riga del CSV duplicate | 81 etichette, zero duplicati |
+| ogni id scritto da `safeTxt`/`safeHtml` esiste nel DOM | zero mancanti |
+| le costanti del motore contro quelle scritte qui | tutte coincidono (vedi sotto) |
+| invarianti dei mercati, ricalcolati fuori dal motore | tutti veri (vedi sotto) |
+| `predictStat` su tutte e 58 le coppie di `STAT_PAIRS` | mai `null`, mai non finito |
+| giro completo del motore su dati sintetici, in Chromium | zero errori, zero `NaN` a schermo |
+
+Le costanti verificate una per una contro il sorgente: `ENS_W` 0.70/0.30/0.00,
+`ENS_SCOPE_W` 1, `SHRINK_K` 4, `SHRINK_LAM_K` 3, `RESID_ALPHA` 0,
+`GOALS_UNIT_FIX` 0, `LEAGUE_HALFLIFE_DAYS` 0, `ELO_1X2_W` 0.75, `GOALS_SOT_W`
+0.50, `SOT_PER_GOAL` 3.25, `GOALS_SOT_CAP` 0.20, `OL_BETA/T1/T2`
+2.056/−0.475/+0.671, `CARDS_ELO_B` −0.0035 con cap 0.30, le tre tabelle `MARKET_*`,
+le due rette della confidence, l'emivita 106 in tutti e due i file, e le 51 voci di
+`STAT_SHRINK_TABLE`. **Una sola non torna**: `RESID_GAMMA`, che nel codice è ancora
+0.678 mentre il `b5` aveva misurato 0.360 (vedi *Il caso della correzione
+residuale*).
+
+Gli invarianti, ricalcolati fuori dal motore su quattro coppie di lambda: la
+matrice somma a 1; `p1+pX+p2` fa 1; l'handicap asiatico somma a 1 su tutte le
+tredici linee da −1.5 a +1.5, è monotono, e AH −0.5 coincide con `p1` e AH +0.5
+con `p1+pX` fino all'ultima cifra; le fasce multigol disgiunte sommano a 1; le
+probabilità Over decrescono al salire della linea; il Markov somma a 1 e dista al
+massimo 0.018 dal Dixon-Coles.
+
+### Il campione di ruolo è un sottoinsieme, e il documento diceva di no
+
+La più grossa, e vale la pena capire perché è sopravvissuta tanto.
+
+Il codice fa questo, e lo ha sempre fatto in tutta la storia del repository (è così
+già nel primo `Add files via upload`):
+
+```js
+let overallMatches = past.slice(0, limit);
+let roleMatches = overallMatches.filter(m => (m.home_team.id === teamId) === isHomeTeamUI);
+const roleLimit = roleMatches.length;   // dichiarata e mai usata
+```
+
+Cioè `role` è **quello che c'è dentro le ultime `limit` partite**, non le ultime
+`limit` in casa. Misurato facendo girare il motore su un campionato sintetico da 18
+squadre: con `limit = 15`, `dH.role.n = 8` e `dA.role.n = 8`.
+
+AGENTS.md sosteneva il contrario in **due punti**, e uno dei due era la trappola
+numero 6 dell'elenco *Trappole già corrette*, che descriveva esattamente questo
+comportamento («con 15 restavano ~7 gare») dandolo per **corretto**. Entrambi
+riscritti.
+
+`roleLimit`, assegnata e mai letta, è la traccia di una versione in cui il ruolo
+aveva un limite proprio: nel file pre-ripulitura ci sono due commenti che parlano
+di «`roleLimit=20`» e «`roleLimit=12`» come di una configurazione. Quella versione
+non è mai arrivata nel v9.7 di questo repository.
+
+**Cosa cambia nei conti, se qualcuno «lo sistema».** Non è una riga cosmetica:
+`nHr` e `nAr` entrano in due shrinkage. I due valori a destra sono **misurati**,
+facendo girare il motore con la costante a 1, non calcolati a mano:
+
+| | `role` sottoinsieme (default) | `role` indipendente |
+|---|---|---|
+| partite di ruolo a `limit = 15` | 8 | 15 |
+| `wS = n/(n+SHRINK_LAM_K)` con `k = 3` | 0.727 | 0.833 |
+| contrazione dei lambda di ruolo verso la media di lega | **27%** | **17%** |
+
+Ogni costante tarata finora — `SHRINK_LAM_K`, le tre `MARKET_*`, il
+`sampleFactor` dei narrativi — è stata scelta su un campione di ruolo di ~8
+partite. **Non toccare la riga senza un backtest**: è una modifica al motore
+travestita da correzione di un refuso, ed è esattamente la forma che il punto 2 di
+*Le costanti messe a mano* chiama «una stima invecchia quando cambia ciò che sta a
+monte».
+
+### Come misurarla (`b23`)
+
+La costante è esposta:
+
+```js
+window.ROLE_SCOPE_INDEPENDENT = 0;   // 0 = sottoinsieme (com'e' sempre stato)
+```
+
+e il CSV ha la sezione **`AMPIEZZA DEL CAMPIONE DI RUOLO`** con `indep`, il
+limite richiesto, `nHo`/`nAo`, `nHr`/`nAr`, `SHRINK_LAM_K`, `wSH`/`wSA` e
+`SHRINK_K`: dieci righe che dicono a colpo d'occhio quale dei due regimi ha
+prodotto quel file.
+
+**Questa costante rompe il punto 3 della forma canonica, e va detto.** Le altre
+(`ENS_SCOPE_W`, `GOALS_SOT_W`, `ELO_1X2_W`, `LEAGUE_HALFLIFE_DAYS`) si spazzano
+tutte con **un** backtest, perché il CSV esporta i pezzi da cui si ricompone ogni
+valore. Questa no: cambia **quali partite si scaricano**, quindi non si ricostruisce
+da niente. Servono **due giri sullo stesso periodo**, con
+`window.ROLE_SCOPE_INDEPENDENT = 1` da console prima del secondo batch. Il secondo
+costa circa il **50% di chiamate in più** (`fetchSet` passa da ~15 a ~22 partite per
+squadra), mitigato dal fatto che in un batch la `RAW_CACHE` è condivisa fra tutte le
+partite della lega.
+
+Quando il numero arriva, va scritto qui col campione, lo `z` e i fold, come per
+tutte le altre.
+
+### Otto variabili che leggevano il payload e non arrivavano da nessuna parte
+
+*Rimosse nel `b23`.* In `aggregaTeam`, dentro il ramo `if (myAdv)`, otto variabili
+venivano riempite dal payload `/advanced` e poi **non entravano in `matchDetails`**:
+`pass_acc`, `ht`, `pps`, `build_att`, `dir_att`, `centr`, `box_entries`, `xg_op`.
+Non finivano in `out.vals`, non passavano da `calcFeatures`, non comparivano a
+schermo, non stavano nel CSV. Lette e buttate.
+
+Non facevano danno — costavano un accesso a un oggetto già in memoria — ma tre di
+loro (`pass_acc`, `ht`, `xg_op`) erano elencate in questo documento fra le «metriche
+che il motore prevede e mostra, ma che nessun backtest ha mai visto». Non era vero:
+il motore non le prevedeva affatto. Chi fosse partito da quella riga per aggiungerle
+al CSV avrebbe cercato per mezz'ora una previsione che non esiste.
+
+Rimosse insieme a loro: `getTopScorersPlain` (mai chiamata, nemmeno da un
+`onclick`), `xgSpH`/`xgSpA` (soppiantate da `_xgSpFallback`), `pred`/`predH`/
+`predA`, `nMinRole`, `STAT_SHRINK` e `roleLimit`. **`lamH_mix` e `lamA_mix`
+sembrano morte al linter e non lo sono**: le legge l'hook del Comparatore, che è
+testo iniettato e il linter non vede. Prima di cancellare qualcosa che il controllo
+K segnala, cercarlo anche nell'hook e negli `onclick` dei due `.html`.
+
+### Due copie della stessa riga, di nuovo
+
+*Corretto nel `b23`.* `_calibConf1X2` era scritta **due volte, identica**, in due
+funzioni diverse di `comparatore.html`: la forma esatta del caso
+`CMP_DC_SHRINK_TABLE` descritto in *Trappole*, e la prossima ritaratura delle rette
+della confidence ne avrebbe aggiornata una sola. Ora è una sola definizione a
+livello di modulo, accanto a `CMP_HALF_LIFE_DAYS`.
+
+### `aer` e `aerials` sono ormai la stessa cosa
+
+Dopo la correzione del `b19`, `ADV_SPEC.aerials` legge
+`defending.aerials_won ?? duels.aerials_won`. La variabile `aer`, raccolta a parte
+per la card a schermo, legge **gli stessi due campi nello stesso ordine**. Prima
+del `b19` erano due quantità diverse (duelli della partita contro duelli vinti);
+ora sono lo stesso numero sotto due chiavi. Non è un bug, ma quando si rifarà il
+`k` di `aerials` conviene togliere il doppione invece di ritarare due volte.
+
+## Il Comparatore stampa come lo Scanner, e la partita bersaglio non rientra
+
+Due domande poste insieme, e conviene tenerle separate perché si controllano in modi
+diversi. Entrambe sono state chiuse **misurando**, non leggendo i filtri: la seconda
+in particolare è una di quelle dove leggere il codice e crederci è come non aver
+controllato.
+
+### 1. Gli stessi numeri
+
+**Sì, coincidono — bit per bit.** Non è ovvio, perché il Comparatore non chiama il
+motore come lo chiamerebbe un utente: gli mette la lega nel DOM, forza
+`SHRINK_LAM_K`, e soprattutto gira `avviaScanner()` **tre volte** dentro un ciclo su
+`CMP_K_LIST = [4, 12, 28]` per riempire la sezione *A/B SHRINKAGE*. Quello che finisce
+nel CSV è il **primo giro**, e `CMP_K_LIST[0]` è `4`, cioè il `SHRINK_K` di default
+dello Scanner. Se qualcuno riordina quella lista, il CSV smette di essere confrontabile
+con quello che l'utente vede a schermo. Dal `b23` il Comparatore lo dice: subito dopo
+l'iniezione confronta `CMP_K_LIST[0]` col `SHRINK_K` che il motore appena caricato
+espone, e scrive nel log `CMP_K_LIST[0] = 4 = SHRINK_K del motore` oppure un avviso
+arancione. È un guardrail nel senso del *tipo 3*: se scatta, non è più un guardrail.
+
+Le altre tre cose che devono coincidere, e coincidono:
+
+| | Scanner | Comparatore |
+|---|---|---|
+| stagioni caricate in `globalLeagueMatchesCache` | 3 (`s1`, `s2`, `s3` dalla dropdown) | 3, stessa derivazione, stesso endpoint |
+| `history-limit` | 15 | `cmp-history-limit`, 15, ricopiato nel DOM del motore |
+| `SHRINK_LAM_K` | 3 (default) | 3, assegnato esplicitamente |
+
+Verificato facendo girare le due sequenze sullo stesso campionato sintetico e
+diffando l'oggetto intero: `m1/mX/m2`, la confidence, i quattro lambda, `probsRole`,
+`probsOver`, l'Ordered Logit, il Markov e i lambda dei mercati sui numeri. **Zero
+differenze.**
+
+### 2. Nessun leakage, e il controllo ha potere
+
+Il taglio è `T00:00:00Z` del giorno della partita, e **tutti** i filtri temporali del
+motore sono stretti nella direzione giusta: `aggregaTeam` (`t < targetTimeMs`),
+`buildGlobalElo` (due cicli), `computeLeagueParams`, `estimateRho`, e lato Comparatore
+`cmpAggregateExtraMetrics`. `getSimilarMatches` riceve `targetTimeMs` ma non lo usa —
+non serve, perché legge solo `vals` già filtrati.
+
+Ma il punto è che **il risultato di una partita entra nel motore da due strade
+diverse**, e controllarne una sola non dimostra niente:
+
+- il **payload** (`/stats`, `/advanced`) → `aggregaTeam` → le feature;
+- il **punteggio** (`m.score_home` / `m.score_away`, che stanno sull'oggetto partita e
+  non nella `RAW_CACHE`) → `computeLeagueParams`, `estimateRho`, `buildGlobalElo`, e da
+  lì l'inclinazione dall'Elo e i cartellini.
+
+Il test le droga separatamente e verifica che la previsione non si muova di un bit:
+
+| cosa viene drogato | esito |
+|---|---|
+| payload della partita bersaglio (9 xG, 25 tiri in porta, 90% di possesso, 15 GCA) | previsione **identica** |
+| payload di un'altra partita dello **stesso giorno** | previsione **identica** |
+| **punteggio** della partita bersaglio, portato a 9-0 | previsione **identica** |
+| **punteggio** di un'altra partita dello stesso giorno | previsione **identica** |
+| payload di una partita del **giorno prima** | previsione **cambia** (0.5276 → 0.5846) |
+| **punteggio** di una partita del giorno prima | previsione **cambia** (0.5276 → 0.5354) |
+
+Le ultime due righe sono la parte che rende il test una misura invece di un
+rassicurante nulla di fatto: sono il **controllo di potenza**. Senza di loro, sei
+identici di fila si spiegano altrettanto bene con «non c'è leakage» e con «il mio
+test non tocca niente». Regola generale: **un test che verifica un'assenza deve
+sempre portarsi dietro il caso in cui la presenza si vede.**
+
+### L'orario non è affidabile, e il `b23` aveva dato il via libera troppo presto
+
+**Tutto quello scritto qui sopra vale solo se `time_utc` porta la `Z`.** È
+l'assunzione che avevo dato per buona senza verificarla, ed è sbagliata: è arrivata da
+fuori, come domanda — *l'orario non sarà mica discriminante, per una partita finita?* —
+e i numeri le hanno dato ragione.
+
+`new Date("2025-04-30T00:00:00")`, cioè **senza** la `Z`, non è mezzanotte UTC: JavaScript
+lo legge come ora **locale**. In un browser a Europe/Rome diventa `2025-04-29T22:00Z`,
+che sta **due ore prima** del taglio. Quindi con quel formato:
+
+| `time_utc` | browser | `t < targetMs`? |
+|---|---|---|
+| `2025-04-30T18:00:00.000Z` | qualunque | no, escluso ✓ |
+| `2025-04-30T00:00:00Z` | qualunque | no, escluso ✓ |
+| `2025-04-30T18:00:00` | Europe/Rome | no, escluso ✓ |
+| **`2025-04-30T01:00:00`** | Europe/Rome | **sì — entra** |
+| **`2025-04-30T00:00:00`** | Europe/Rome | **sì — entra** |
+
+E «entra» qui vuol dire la cosa peggiore che possa succedere: rifatto il test di sopra
+con quel formato, drogare **la partita bersaglio** sposta l'`1` da **0.5276 a 0.5570**
+sul payload e altrettanto sul punteggio. Il modello vedeva il risultato che doveva
+prevedere. Non su tutti i fusi (in un fuso *indietro* rispetto a UTC il difetto non si
+manifesta) e non su tutti i formati — ed è proprio questo che lo rendeva invisibile:
+funziona benissimo finché non funziona.
+
+**La correzione (`b24`): il taglio non si fida più dell'orario.** Il confronto vero è
+fra le **date in forma di stringa** — `m.time_utc.slice(0,10) < giorno_bersaglio` — che
+non dipende né dal fuso né dal formato dell'ora, perché su date ISO l'ordine
+lessicografico *è* l'ordine cronologico. Il controllo sul timestamp resta, in **AND**:
+su dati ben formati i due coincidono, quindi non si perde niente, e su dati storti
+basta che uno dei due dica no.
+
+È in `_isPast(timeUtc, targetTimeMs, targetDay)`, usata da tutti e cinque i filtri del
+motore (`aggregaTeam`, i due cicli di `buildGlobalElo`, `computeLeagueParams`,
+`estimateRho`) e, attraverso `exposeNames`, anche dal Comparatore, che ricostruisce lo
+storico per conto proprio e prima aveva una copia della stessa condizione.
+
+Misurato dopo:
+
+- su dati **malformati** (senza `Z`, browser a Europe/Rome) drogare la partita
+  bersaglio non sposta più niente, e il controllo di potenza scatta ancora;
+- su dati **ben formati** `b23` e `b24` danno numeri **identici** — probabilità,
+  quattro lambda, Ordered Logit, Markov, mercati sui numeri. La correzione non cambia
+  il modello, chiude solo una porta.
+
+Il Comparatore adesso lo dice anche a voce: se qualche partita ha `time_utc` senza fuso,
+al caricamento del database scrive quante sono e con che aspetto. Il taglio regge lo
+stesso, ma **ogni altro conto che usi l'orario di quelle righe è sospetto**.
+
+### E allora partire da `x-1` serve o no?
+
+No — ma per una ragione diversa da quella che avrei dato prima del `b24`.
+
+L'istinto («non fidarti del giorno `x`, comincia da `x-1`») era **giusto**: individuava
+esattamente il punto debole. La cura giusta però non è arretrare il taglio di un giorno,
+che butterebbe via una giornata di storia legittima; è **smettere di dedurre il giorno
+dall'orario**, che è quello che il `b24` fa. A quel punto il giorno `x` è escluso per
+intero e per costruzione, qualunque cosa contenga il campo dell'ora.
+
+Il margine che resta è nella direzione **opposta**, e va detto perché è controintuitivo:
+il taglio è a mezzanotte, non al **calcio d'inizio della partita bersaglio**, quindi
+l'anticipo delle 12:30 dello stesso turno viene scartato anche se si è giocato sei ore
+prima. È una perdita di informazione, non un rischio. Tagliare al calcio d'inizio vero
+darebbe **più** dati restando pulito — ma richiede un `time_utc` di cui fidarsi, che è
+precisamente quello che non abbiamo, quindi oggi non si può fare.
+
+### L'asimmetria delle finestre, che è deliberata e va saputa
+
+Cercando il leakage è saltata fuori una cosa che non era scritta da nessuna parte:
+
+| chi | finestra |
+|---|---|
+| `aggregaTeam` | `targetMs − 500 giorni < t < targetMs` |
+| `buildGlobalElo` | `t < targetMs`, **nessun limite inferiore** |
+| `computeLeagueParams` | `t < targetMs`, **nessun limite inferiore** |
+| `estimateRho` | `t < targetMs`, **nessun limite inferiore** |
+
+Cioè la **forma di una squadra** guarda indietro 500 giorni (~1.4 stagioni, quindi la
+terza stagione caricata la vede appena), mentre **media gol di lega, rho ed Elo**
+mangiano tutte e tre le stagioni intere. Ha un senso — la forma è recente, i parametri
+di lega sono strutturali — ma è anche **esattamente** l'ingresso del problema aperto su
+`LEAGUE_HALFLIFE_DAYS`: quella media piatta su tre stagioni è piatta proprio perché
+qui non c'è né finestra né decadimento. Vedi *La base di lega risponde alla domanda
+sbagliata*.
 
 ## La lega che non arrivava mai: il bug che invalida le tarature
 
@@ -2416,6 +2813,7 @@ Costanti dell'ensemble introdotte nel `b20`, con la loro classificazione:
 | `LEAGUE_HALFLIFE_DAYS` | 0 | **non stimata, dichiarata tale** (`b22`) | 0 = media piatta, comportamento di sempre; il CSV esporta piatta e decaduta fianco a fianco |
 | `GOALS_UNIT_FIX` | 0 | **spenta per misura** (`b22`) | il denominatore correla 0.77–0.87 col lambda e il livello sfonderebbe del 30%: non accendere finché `_baseN` non è sostituita da una media NPxG di lega |
 | `OL_BETA` / `T1` / `T2` | 2.056 / −0.475 / +0.671 | stimata | massima verosimiglianza su 1743 partite, validata leave-one-league-out |
+| `ROLE_SCOPE_INDEPENDENT` | 0 | **non stimata, dichiarata tale** (`b23`) | 0 = ruolo sottoinsieme, comportamento di sempre; l'unica in coda che **non** si ricostruisce dal CSV, servono due giri |
 
 Nel `b20` `ENS_SCOPE_W` era l'unica senza una misura dietro, ed è per questo che
 valeva zero: spedire un valore diverso sarebbe stato cambiare il motore sulla base di
@@ -2500,16 +2898,20 @@ Scanner: ne legge il testo, lo modifica con delle regex e lo esegue con
    `markovFlow`, `probsFromMatrix`, `estimateRho`, `calculateRho`,
    `getSimilarMatches`, `computeLeagueParams`, `multigoal`,
    `asianHandicapMat`, `negBinCDF`, `negBinK`, `poisson`, `expectedPoints`,
-   `loadLegheJson`, `fetchMatchRaw`, `predictStat`, `leagueStatBaseline`.
-   Il **contenuto** è libero, i **nomi** no.
+   `loadLegheJson`, `fetchMatchRaw`, `predictStat`, `_isPast`.
+   Sono **ventidue**, e ventidue sono le voci di `exposeNames`. Il **contenuto** è
+   libero, i **nomi** no. `_isPast` è entrata nel `b24`: il Comparatore ricostruisce lo
+   storico per conto proprio e deve tagliare **con la stessa funzione** del motore, non
+   con una copia della condizione — è la solita regola delle due copie che divergono.
 
 3. **Il punto di aggancio dell'hook** è la riga della confidence, trovata con
    `/(const\s+confidence\s*=\s*Math\.round\([^;]*;)/`. Non riscriverla e non
    citarla testualmente altrove nel file: la regex prenderebbe la citazione.
    Tutto ciò che l'hook deve leggere va prodotto **prima** di quella riga:
    `__PRED_STATS`, `__PRED_DEBUG`, `__RESID_DEBUG`, `__GOALS_DEBUG`, `__ELO_DEBUG`,
-   `__UNIT_DEBUG`, `__ENS_DEBUG`, `m1/mX/m2`, `probsRole`, `probsOver`, `probsOL`,
-   `mk_ro`, `mk_ov`, `dcMat`, `lamH_mix/lamA_mix`, `lamH_over/lamA_over`.
+   `__UNIT_DEBUG`, `__ENS_DEBUG`, `__SCOPE_DEBUG`, `m1/mX/m2`, `probsRole`,
+   `probsOver`, `probsOL`, `mk_ro`, `mk_ov`, `dcMat`, `lamH_mix/lamA_mix`,
+   `lamH_over/lamA_over`.
    Una variabile dichiarata **dopo** l'hook viene letta con `typeof` e finisce a
    `null` senza errori: il CSV mostra una colonna di `N/D` che nessuno guarda. Il
    controllo F in *Come validare* lo trova.
@@ -2582,7 +2984,8 @@ l'emivita da una parte, cambiala dall'altra.
 **Le costanti calibrate portano la loro provenienza qui dentro, non nel codice.**
 I file non hanno commenti (vedi *Stile*), quindi `OL_BETA/OL_T1/OL_T2`, le rette
 della confidence, `RESID_GAMMA`, `STAT_SHRINK_TABLE`, le tre tabelle `MARKET_*`,
-`SOT_PER_GOAL`, `GOALS_SOT_W`, `ENS_W`, `ENS_SCOPE_W` e `LEAGUE_HALFLIFE_DAYS`
+`SOT_PER_GOAL`, `GOALS_SOT_W`, `ENS_W`, `ENS_SCOPE_W`, `LEAGUE_HALFLIFE_DAYS` e
+`ROLE_SCOPE_INDEPENDENT`
 devono dire **in AGENTS.md** su quante partite sono state stimate e con che metodo.
 Se ne cambi una, aggiorna la sezione che la descrive; se ne aggiungi una, scrivila da
 qualche parte prima di committare.
@@ -2672,6 +3075,15 @@ nessun alpha. Il guadagno che si vedeva con GAMMA 0.678 era edge residuo
 rimasto dentro il residuo per errore di scala: affilamento mascherato, non
 informazione nuova. Non riaprirla senza un'idea diversa.
 
+**Ma nel codice `RESID_GAMMA` è ancora 0.678**, non 0.360: la misura è stata
+scritta qui e non è mai stata riportata nel motore. Con `RESID_ALPHA = 0` non
+sposta nessuna probabilità, però `sig`, `edge` e `resid` finiscono nel CSV — cioè
+la sezione *A/B CORREZIONE RESIDUALE*, l'unica cosa che direbbe quando riaccendere
+la correzione, è calcolata con la scala che questo stesso documento dichiara
+sbagliata. È la regola *un componente con peso 0 va comunque tenuto giusto*
+applicata a una diagnostica invece che a un numero a schermo. Prima di rileggere
+quella sezione del CSV, portare `RESID_GAMMA` a 0.360 (o rimisurarlo).
+
 ## Come validare una modifica
 
 Non c'è una suite. Questo è il minimo prima di committare:
@@ -2702,7 +3114,8 @@ for(const [n,re] of t) console.log((re.test(js)?"OK  ":"KO  ")+n);
 python3 -m http.server 8204 &
 # poi Playwright (Chromium è preinstallato in /opt/pw-browsers/chromium):
 # apri http://127.0.0.1:8204/scanner.html e raccogli pageerror + console error.
-# L'unico 404 atteso è leghe.json, che non sta nel repository.
+# leghe.json STA nel repository (git ls-files lo elenca): servito da li' non da 404,
+# e a fine giro le tre pagine devono uscire con zero errori e zero richieste fallite.
 # Controlla anche che ogni id scritto da safeTxt/safeHtml esista nel DOM: una
 # card riscritta lascia facilmente scritture verso id che non ci sono più.
 ```
@@ -2743,9 +3156,70 @@ girano sul solo sorgente, quindi si possono fare a ogni commit senza un backtest
   Una chiave non esposta non dà errore: dà una colonna di `N/D` che nessuno guarda.
   Oggi: 60 esposte, 17 lette, zero orfane.
 - **G. Etichette di riga del CSV duplicate.** Solo quelle che finiscono davvero in
-  prima colonna (`mdl`, `uRows`, `statList`, `rowMkt`), **non** le tabelle di lookup:
-  quelle condividono le chiavi per costruzione e segnalarle è un falso allarme del
-  controllo. Oggi: 55 etichette, zero duplicati.
+  prima colonna (`mdl`, `uRows`, `scRows`, `statList`, `rowMkt`), **non** le tabelle
+  di lookup: quelle condividono le chiavi per costruzione e segnalarle è un falso
+  allarme del controllo. Al `b23`: 91 etichette, zero duplicati. Il numero cresce a
+  ogni sezione nuova — è il conto che conta, non il valore assoluto.
+
+**I due controlli aggiunti dall'audit del documento**, che girano sul solo sorgente:
+
+- **J. Le costanti scritte qui esistono, con quel valore, nel motore.** Estrarre i
+  `window.*` dello Scanner e la tabella `STAT_SHRINK_TABLE`, e confrontarli con i
+  numeri di questo file. Ha trovato `RESID_GAMMA` (0.678 nel codice, 0.360 misurato
+  qui) e tre voci di `STAT_SHRINK_TABLE` rimaste in tabella dopo che le metriche
+  erano uscite da `ADV_SPEC`. Vale anche al contrario: un nome citato nel contratto
+  che nel motore non esiste (`leagueStatBaseline`).
+- **K. Variabili assegnate e mai lette.** Un `eslint` con `no-unused-vars` e
+  `no-undef` sul JS estratto. Ha trovato otto variabili riempite dal payload
+  `/advanced` e buttate, e una funzione mai chiamata. **Due avvertenze**: le
+  funzioni chiamate da un `onclick` nell'HTML risultano non usate (contarne le
+  occorrenze nei due `.html` prima di crederci), e `lamH_mix`/`lamA_mix` risultano
+  non usate ma le legge l'hook iniettato, che il linter non vede.
+
+**Il giro completo senza rete.** Il motore si può far girare per intero su dati
+finti, in Chromium, senza toccare PitchAPI: è il controllo che ha misurato
+`role.n = 8` e che avrebbe intercettato qualunque `NaN` a schermo. La ricetta, in
+breve, perché ha due trabocchetti che costano un'ora:
+
+1. Aprire **`comparatore.html`** (ha già gli id DOM ombra che il motore si aspetta),
+   leggere `scanner.html` via `fetch`, applicare **le stesse regex del Comparatore**
+   e iniettare con `new Function`.
+2. Popolare `window.globalLeagueMatchesCache` con un campionato sintetico. Funziona
+   **solo** dopo la patch della cache: `globalLeagueMatchesCache` è dichiarata `let`,
+   quindi non è una proprietà di `window` e assegnarla da fuori non arriva al motore.
+3. **Non provare a sostituire `fetchMatchRaw` da fuori**: le dichiarazioni di
+   funzione dentro `new Function` sono riassegnabili solo *da dentro*. Si alimenta il
+   motore precaricando `window.__RAW_CACHE[id] = [stats, lineups, advanced, events]`
+   per ogni partita, che è quello che `fetchMatchRaw` legge per primo.
+4. Poi `setV` su `sel-league`/`sel-home`/`sel-away`, `avviaScanner()`, e si guardano
+   `_V97_probs`, i `__*_DEBUG` e ogni nodo con `id` in cerca di `NaN`/`undefined`.
+
+**Il controllo L — leakage, col suo controllo di potenza.** Va rifatto ogni volta che
+si tocca un filtro temporale o si aggiunge una fonte di dati. Gira sul giro completo
+senza rete descritto qui sopra:
+
+1. Nel campionato sintetico, mettere una partita bersaglio in una data nota, più
+   un'altra squadra che gioca **lo stesso giorno** e una che gioca **il giorno prima**.
+2. Far girare il motore e salvare la previsione.
+3. Rifarlo drogando, **una strada per volta**, la partita bersaglio: prima il
+   **payload** nella `RAW_CACHE`, poi il **punteggio** sull'oggetto partita. Sono due
+   percorsi diversi — il payload entra da `aggregaTeam`, il punteggio da
+   `computeLeagueParams`/`estimateRho`/`buildGlobalElo` — e drogarne uno solo non
+   dimostra niente sull'altro.
+4. La previsione deve restare **identica bit per bit**. Confrontare l'oggetto intero,
+   non solo `m1`.
+5. **Poi rifarlo su una partita del giorno prima**, e verificare che lì la previsione
+   **cambi**. Senza questo passo il test non ha potere: sei «identici» di fila si
+   spiegano ugualmente bene con «non c'è leakage» e con «non sto toccando niente».
+6. **E rifare tutto con `time_utc` senza `Z`, in un browser a Europe/Rome**
+   (`newContext({ timezoneId: 'Europe/Rome' })`). È il passo che il `b23` non aveva
+   fatto, ed è quello che nel `b24` ha trovato il difetto vero. Regola generale: quando
+   il test genera i propri dati, elencare i **formati** che l'API potrebbe restituire e
+   passarli tutti, non solo quello comodo.
+
+Vale come regola oltre a questo caso: *un test che verifica un'assenza deve sempre
+portarsi dietro il caso in cui la presenza si vede.* Esito al `b23` in *Il Comparatore
+stampa come lo Scanner*.
 
 E due controlli che vanno fatti sul **CSV appena arrivato**, prima di analizzarlo:
 
@@ -2818,6 +3292,17 @@ console.log(norm(get("prima.html"))===norm(get("dopo.html")));
 Stesso motivo per cui va usato un parser e non un regex quando si tocca il
 testo del JS: `//` compare dentro gli URL, `/*` dentro le stringhe, e i regex
 letterali del Comparatore (`/(const\s+confidence...)/`) verrebbero massacrati.
+
+**Il confronto di AST serve solo se il diff è davvero puro.** Nel `b23` non lo era —
+la pulizia del codice morto viaggiava insieme a una costante nuova — e in quel caso
+la verifica giusta è più forte, non più debole: **far girare le due build a
+confronto** col giro completo senza rete descritto sopra, stesso seme e stessa
+partita, e diffare gli oggetti che escono (`m1/mX/m2`, i quattro lambda, `probsOL`,
+`advRole`, `__ENS_DEBUG`, `__ELO_DEBUG`, `__GOALS_DEBUG`, `__UNIT_DEBUG`). Se
+l'unica differenza è la diagnostica nuova, la modifica non sposta un numero — ed è
+quello che si vuole poter dire, non «compila». Il `b23` è stato spedito con questo
+confronto: `0905-b22` contro `0905-b23` a costante spenta, identici su tutto tranne
+`__SCOPE_DEBUG`.
 
 Il giro completo (una partita vera) richiede rete verso PitchAPI: se non ce
 l'hai, **dillo** invece di dichiarare verificato quello che non lo è.

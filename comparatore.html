@@ -162,7 +162,7 @@ select{cursor:pointer}
   <div class="topbar">
     <div class="brand">
       <h1>Comparatore V9.7</h1>
-      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b22</span>
+      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b24</span>
       <span class="badge" id="engine-badge">motore non caricato</span>
     </div>
     <span class="badge">previsioni vs realtà</span>
@@ -586,6 +586,7 @@ async function loadEngineFromText(text, fileName) {
         lamHover:    (typeof lamH_over   !== 'undefined') ? lamH_over   : null,
         lamAover:    (typeof lamA_over   !== 'undefined') ? lamA_over   : null,
         ensDebug:    (typeof window.__ENS_DEBUG !== 'undefined') ? window.__ENS_DEBUG : null,
+        scopeDebug:  (typeof window.__SCOPE_DEBUG !== 'undefined') ? window.__SCOPE_DEBUG : null,
         m1: (typeof m1!=='undefined')?m1:null, mX: (typeof mX!=='undefined')?mX:null, m2: (typeof m2!=='undefined')?m2:null,
         confidence:  (typeof confidence  !== 'undefined') ? confidence  : null,
         sampleFactor:(typeof sampleFactor!== 'undefined') ? sampleFactor: null,
@@ -641,7 +642,7 @@ async function loadEngineFromText(text, fileName) {
     'computeLeagueParams','multigoal','asianHandicapMat','negBinCDF','negBinK','poisson',
     'expectedPoints','loadLegheJson','fetchMatchRaw',
 
-    'predictStat'];
+    'predictStat','_isPast'];
   let exposer = '\n;(function(){\n';
   exposeNames.forEach(n => {
     exposer += `  try { if (typeof ${n} !== 'undefined') window[${JSON.stringify(n)}] = ${n}; } catch(e){}\n`;
@@ -668,6 +669,18 @@ async function loadEngineFromText(text, fileName) {
 
   cmpLog(`✅ Tutte le ${required.length} funzioni chiave esposte.`);
 
+  // Il CSV riporta il PRIMO giro del ciclo su CMP_K_LIST: se quel k non e' il default
+  // del motore, le colonne del file non sono piu' quelle che l'utente vede a schermo,
+  // e senza questa riga non lo direbbe nessuno (AGENTS.md, Il Comparatore stampa come
+  // lo Scanner).
+  window.__ENGINE_SHRINK_K = (typeof window.SHRINK_K === 'number') ? window.SHRINK_K : null;
+  if (window.__ENGINE_SHRINK_K != null && CMP_K_LIST[0] !== window.__ENGINE_SHRINK_K) {
+    cmpLog(`   \u26a0\ufe0f CMP_K_LIST[0] e' ${CMP_K_LIST[0]} ma il motore ha SHRINK_K ${window.__ENGINE_SHRINK_K}: `
+         + `il CSV NON corrispondera' ai numeri dello Scanner. Rimetti ${window.__ENGINE_SHRINK_K} in testa alla lista.`);
+  } else if (window.__ENGINE_SHRINK_K != null) {
+    cmpLog(`   \u2705 CMP_K_LIST[0] = ${CMP_K_LIST[0]} = SHRINK_K del motore: il CSV coincide con lo Scanner.`);
+  }
+
   if (typeof window.__SCANNER_BUILD === 'string') {
     cmpLog('   motore build ' + window.__SCANNER_BUILD);
   } else {
@@ -684,7 +697,7 @@ async function loadEngineFromText(text, fileName) {
     <p><code>${fileName}</code> — clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
 
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b22';
+  const _bComp = '0905-b24';
   const _el = document.getElementById('engine-build');
   if (_el) {
     if (!_bScan) {
@@ -1165,6 +1178,20 @@ async function cmpCaricaDatabase() {
     globalThis.globalLeagueMatchesCache = allMatches;
     cmpAllMatches = allMatches;
 
+    // Un time_utc senza Z (o senza offset) viene letto come ora LOCALE: in un fuso avanti
+    // rispetto a UTC le partite del giorno bersaglio scivolano prima del taglio. Il motore
+    // adesso taglia anche sulla data, quindi non passa piu' niente, ma se il formato e'
+    // questo va saputo perche' ogni altro conto sull'orario e' sospetto.
+    {
+      const _sospette = allMatches.filter(m => typeof m.time_utc === 'string'
+        && m.time_utc.length > 10 && !/(Z|[+-]\d{2}:?\d{2})$/.test(m.time_utc));
+      if (_sospette.length) {
+        cmpLog(`   \u26a0\ufe0f ${_sospette.length}/${allMatches.length} partite hanno time_utc senza fuso `
+             + `(es. "${_sospette[0].time_utc}"): l'ora viene letta come LOCALE. Il taglio temporale `
+             + `regge lo stesso perche' e' anche sulla data, ma non fidarti dell'orario per altro.`);
+      }
+    }
+
     cmpMatchesOfTheDay = allMatches.filter(m =>
       m.status === 'finished' && m.time_utc && m.time_utc.startsWith(targetDate)
     );
@@ -1286,6 +1313,13 @@ async function cmpRunMatch(match, limit, render) {
     const cache = globalThis.globalLeagueMatchesCache || [];
     const targetMs = R._targetTimeMs;
     const minMs = targetMs - (500 * 86400000);
+    // stesso taglio del motore, e per lo stesso motivo: l'orario di time_utc puo' non
+    // essere affidabile, la data si' (AGENTS.md, L'orario non e' affidabile)
+    const _tDayC = new Date(targetMs).toISOString().slice(0, 10);
+    const _pastC = (tu) => (typeof globalThis._isPast === 'function')
+      ? globalThis._isPast(tu, targetMs, _tDayC)
+      : (typeof tu === 'string' && tu.length >= 10 && tu.slice(0, 10) < _tDayC
+         && isFinite(new Date(tu).getTime()) && new Date(tu).getTime() < targetMs);
     const buildPast = (teamId) => {
       const seen = new Set();
       return cache
@@ -1293,7 +1327,7 @@ async function cmpRunMatch(match, limit, render) {
                      && (m.home_team.id === teamId || m.away_team.id === teamId))
         .filter(m => {
           const t = new Date(m.time_utc).getTime();
-          return t < targetMs && t > minMs && !seen.has(m.id) && seen.add(m.id);
+          return _pastC(m.time_utc) && t > minMs && !seen.has(m.id) && seen.add(m.id);
         })
         .sort((a, b) => new Date(b.time_utc) - new Date(a.time_utc))
         .slice(0, R._limit || 15)
@@ -1450,6 +1484,12 @@ async function cmpEseguiTutte() {  if (!cmpMatchesOfTheDay.length) return alert(
 }
 
 const CMP_HALF_LIFE_DAYS = 106;
+
+// Una sola copia: era scritta identica in due funzioni, ed e' la forma esatta del caso
+// CMP_DC_SHRINK_TABLE (AGENTS.md, Due copie della stessa costante divergono, sempre).
+// Le rette stanno in AGENTS.md, sezione La confidence.
+const _calibConf1X2 = (p) => (p == null || !isFinite(p)) ? null
+  : Math.max(0, Math.min(100, Math.round(6.26 + 0.880 * (p * 100))));
 const CMP_LN2 = Math.log(2);
 
 function cmpTimeDecayWeighted(vals, times, targetMs) {
@@ -1768,8 +1808,6 @@ function cmpRender(match, R, actH, actA) {
     return `<span style="background:${col};color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold">${v}</span>`;
   };
 
-  const _calibConf1X2 = (p) => (p == null || !isFinite(p)) ? null
-    : Math.max(0, Math.min(100, Math.round(6.26 + 0.880 * (p * 100))));
   const _conf = (p) => _calibConf1X2(p);
   const c1 = _conf(R.m1);
   const cX = _conf(R.mX);
@@ -1898,8 +1936,6 @@ function cmpBuildResult(match, R, actH, actA) {
   const prevH = cmpExtractPrev(R.dH, 'H', R.predStats);
   const prevA = cmpExtractPrev(R.dA, 'A', R.predStats);
 
-  const _calibConf1X2 = (p) => (p == null || !isFinite(p)) ? null
-    : Math.max(0, Math.min(100, Math.round(6.26 + 0.880 * (p * 100))));
   const _conf = (p) => _calibConf1X2(p);
 
   // La lega va presa DALLA PARTITA, non dalla dropdown: cmpUpdateLeagues() la svuota a
@@ -1939,6 +1975,7 @@ function cmpBuildResult(match, R, actH, actA) {
     goalsDebug: R.goalsDebug || null,
     eloDebug: R.eloDebug || null,
     unitDebug: R.unitDebug || null,
+    scopeDebug: R.scopeDebug || null,
     predStats: R.predStats || null,
     goalsMarket: gm,
     realTotals: { cor: (actH.cor!=null&&actA.cor!=null)?actH.cor+actA.cor:null,
@@ -2422,6 +2459,26 @@ function cmpExportCSV() {
   uRows.forEach(([lbl, fn]) => {
     const r = [lbl];
     M.forEach(m => r.push(fn(m.unitDebug), '', '', ''));
+    rows.push(r.join(';'));
+  });
+
+  rows.push('');
+  rows.push('--- AMPIEZZA DEL CAMPIONE DI RUOLO (ROLE_SCOPE_INDEPENDENT) ---' + ';;;;'.repeat(M.length));
+  const scRows = [
+    ['Scope: ruolo indipendente', d => d ? (d.indep ? 'SI' : 'no') : 'N/D'],
+    ['Scope: limite richiesto',   d => d && d.limit != null ? String(d.limit) : 'N/D'],
+    ['Scope: partite complessive casa',  d => d && d.nHo != null ? String(d.nHo) : 'N/D'],
+    ['Scope: partite complessive trasf.',d => d && d.nAo != null ? String(d.nAo) : 'N/D'],
+    ['Scope: partite di ruolo casa',     d => d && d.nHr != null ? String(d.nHr) : 'N/D'],
+    ['Scope: partite di ruolo trasf.',   d => d && d.nAr != null ? String(d.nAr) : 'N/D'],
+    ['Scope: SHRINK_LAM_K',       d => d && d.lamK != null ? _g4(d.lamK) : 'N/D'],
+    ['Scope: peso lambda casa',   d => d && d.wSH != null ? _g4(d.wSH) : 'N/D'],
+    ['Scope: peso lambda trasf.', d => d && d.wSA != null ? _g4(d.wSA) : 'N/D'],
+    ['Scope: SHRINK_K',           d => d && d.shrinkK != null ? _g4(d.shrinkK) : 'N/D']
+  ];
+  scRows.forEach(([lbl, fn]) => {
+    const r = [lbl];
+    M.forEach(m => r.push(fn(m.scopeDebug), '', '', ''));
     rows.push(r.join(';'));
   });
 
