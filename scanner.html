@@ -83,7 +83,12 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
 .btn-full{width:100%}
 
 /* ---------- tabelle ---------- */
-.tbl-scroll{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tbl-scroll{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+/* Un figlio di grid/flex ha min-width:auto, quindi cresce fino al contenuto e porta
+   fuori schermo anche una tabella che sa scorrere. Serve azzerarlo o su un telefono
+   la pagina scorre di lato. */
+.grid-2>*,.grid-3>*,.grid-4>*{min-width:0}
+.card{overflow-wrap:anywhere}
 .table-ui{width:100%;border-collapse:collapse;font-size:13px}
 .table-ui th{
   background:var(--panel2);color:var(--dim);font-weight:600;font-size:11px;
@@ -130,6 +135,13 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
   .table-ui{min-width:520px;font-size:12px !important}
   .table-ui th,.table-ui td{padding:8px 9px !important}
 
+  /* ECCEZIONE: le tabelle di confronto devono entrare nello schermo. Se per leggere
+     la seconda colonna devi trascinare, il confronto non lo fai. */
+  .table-ui.table-compact{min-width:0 !important;font-size:11px !important}
+  .table-compact th,.table-compact td{padding:7px 4px !important}
+  .table-compact th:first-child,.table-compact td:first-child{padding-left:2px !important}
+  .table-compact .n-badge{display:block;margin-top:1px}
+
   /* nessun testo sotto gli 11px: sullo scanner ce n'era a 9px */
   [style*="font-size:9px"],[style*="font-size: 9px"],
   [style*="font-size:10px"],[style*="font-size: 10px"]{font-size:11px !important}
@@ -145,6 +157,13 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
   .btn{width:100%;padding:12px 14px}
   .btn-sm{width:auto}
 }
+/* etichetta d'ambito: da quali partite vengono i numeri di questa card */
+.scope{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.06em;
+  padding:2px 7px;border-radius:99px;border:1px solid var(--line);
+  color:var(--dim);background:var(--panel2);margin-left:8px;vertical-align:middle}
+.scope-gen{border-color:#6b7280;color:#9ca3af}
+.scope-ruolo{border-color:#4f8cff;color:#4f8cff}
+.scope-mix{border-color:#f59e0b;color:#f59e0b}
 </style>
 </head>
 <body>
@@ -155,7 +174,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b25</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b28</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -187,12 +206,12 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
   <div id="dashboard-area" style="display:none">
     <div style="text-align:center; margin-bottom:20px; padding:15px; background:var(--card); border-radius:12px; box-shadow:none">
       <h2 id="ui-title" style="font-size:26px;color:var(--text); letter-spacing:-0.5px">Home vs Away</h2>
-      <div id="ui-streak" style="margin:10px 0; display:flex; justify-content:center; gap:20px; align-items:center;"></div>
+      <div id="ui-streak" style="margin:10px 0; display:flex; justify-content:center; gap:12px; align-items:center; flex-wrap:wrap"></div>
       <p id="ui-subtitle" style="font-size:12px;color:var(--sub)">Motore: V9.7 - Analisi Integrale su NPxG, Qualita' e Tracking Data</p>
     </div>
 
     <div class="card" style="border-top:3px solid var(--accent); background:var(--panel); box-shadow:none">
-      <div class="section-title" style="color:var(--txt); font-size:16px">👑 MASTER ENSEMBLE: La Sentenza Algoritmica</div>
+      <div class="section-title" style="color:var(--txt); font-size:16px">Ensemble &mdash; il numero del modello</div>
       <p style="font-size:11px;color:var(--dim);margin-bottom:15px">Sintesi pesata dei motori (Dixon-Coles su NPxG 70%, Markov 30%, su lambda stimati su TUTTE le partite; l'Ordered Logit e' calcolato e mostrato ma ha peso 0) e calcolo delle True Odds. I mercati gol restano sulla matrice di ruolo (casa/trasferta).</p>
       
       <div class="grid-3" style="margin-bottom:15px">
@@ -216,24 +235,44 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <div class="grid-2">
         
         <div style="background:var(--panel2); border-radius:8px; padding:12px; border:1px solid var(--line);">
-          <div style="font-size:11px;font-weight:bold;color:var(--dim);margin-bottom:5px">Alert: Smart Money & Blood Scent</div>
+          <div style="font-size:11px;font-weight:bold;color:var(--dim);margin-bottom:5px">Scarti fuori soglia fra le due squadre</div>
           <div id="hidden-value-msg" style="font-size:12px; line-height:1.4; color:var(--txt);">--</div>
         </div>
       </div>
     </div>
 
+  <div class="card" id="card-ambiti" style="border-top:3px solid var(--blue)">
+    <div class="section-title" style="color:var(--blue)">Le due letture della partita &mdash; ruolo e generale a confronto</div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:10px;line-height:1.5">
+      Stessa partita, due campioni. <b>RUOLO</b> = solo le partite in casa della squadra di casa e in trasferta
+      dell'ospite: pi&ugrave; aderente al contesto, ma sono circa <b>met&agrave;</b> delle partite.
+      <b>GENERALE</b> = tutte le 30. Dove le due colonne divergono molto, il modello sta poggiando su pochi dati:
+      la colonna <b>n</b> dice quanti.
+    </div>
+    <div class="tbl-scroll"><table class="table-ui table-compact">
+      <thead><tr>
+        <th style="text-align:left">Cosa</th>
+        <th style="color:var(--blue)">RUOLO</th>
+        <th style="color:var(--dim)">GENERALE</th>
+        <th>Usato</th>
+      </tr></thead>
+      <tbody id="ambiti-body"></tbody>
+    </table></div>
+  </div>
+
   <div class="card" id="card-verdetti" style="border-top:3px solid var(--accent2)">
     <div class="section-title" style="color:#0f766e">&#127919; Tabellone Scommesse &mdash; cosa &egrave; giocabile</div>
     <div style="font-size:11px;color:var(--dim);margin-bottom:10px">
-      Le soglie vengono dai backtest su oltre 5.000 partite reali, non da una stima del modello su s&eacute; stesso.
-      Per ogni mercato trovi la probabilit&agrave; calcolata, il verdetto e il tasso di successo osservato in quella fascia.
-      <b>NON GIOCARE</b> significa che l&igrave; il modello si &egrave; dimostrato mal calibrato: la sua probabilit&agrave; non va creduta.
+      Hit misurati sul backtest, non stimati dal modello su s&eacute; stesso. Campione: <b>2.963 partite</b>
+      in due gruppi indipendenti che concordano &mdash; Serie A + Premier + LaLiga 2025/26, e Serie A 2021&ndash;2025.
+      La colonna <b>Hit storico</b> dice quante volte quel mercato &egrave; uscito quando la probabilit&agrave; era sopra la soglia;
+      accanto, su quanti casi &egrave; misurato. <b>NON GIOCARE</b> = misurato e non regge.
     </div>
     <div id="league-note"></div>
-    <div class="tbl-scroll"><table class="table-ui">
+    <div class="tbl-scroll"><table class="table-ui table-compact">
       <thead><tr>
-        <th style="text-align:left">Mercato</th><th>Prob.</th><th>Verdetto</th>
-        <th>Hit storico</th><th style="text-align:left">Perch&eacute;</th>
+        <th style="text-align:left">Mercato</th><th>Prob.</th>
+        <th style="text-align:left">Verdetto &middot; hit misurato</th>
       </tr></thead>
       <tbody id="verdetti-body"></tbody>
     </table></div>
@@ -243,8 +282,16 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
 
     
   <div style="margin:28px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--accent)"><span style="font-size:11px;font-weight:800;letter-spacing:.09em;color:var(--accent)">PERCH&Eacute; &mdash; LE STATISTICHE CHE PRODUCONO QUEI NUMERI</span></div>
+  <div style="font-size:11px;color:var(--dim);margin:-4px 0 14px;line-height:1.6;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px 12px">
+    <b>Da quali partite viene ogni numero.</b> Ogni card porta un'etichetta:
+    <span class="scope scope-gen" style="margin-left:0">GENERALE &middot; 30 partite</span> = le ultime 30 di ciascuna squadra, di qualunque tipo &mdash;
+    <span class="scope scope-ruolo" style="margin-left:0">RUOLO &middot; casa/trasferta</span> = solo le partite in casa della squadra di casa e in trasferta dell'ospite &mdash;
+    <span class="scope scope-mix" style="margin-left:0">RUOLO + GENERALE</span> = la card mostra tutte e due.<br>
+    Non &egrave; un dettaglio: il <b>ruolo</b> &egrave; un sottoinsieme del generale (circa met&agrave; delle partite), quindi &egrave;
+    pi&ugrave; aderente al contesto ma poggia su meno dati. Le card senza etichetta sono ingressi o diagnostica.
+  </div>
 <div class="card" style="border-top: 4px solid var(--orange); background:var(--panel2)">
-      <div class="section-title" style="color:var(--orange)">🎯 Qualità del Tiro, Cinismo & Palle Inattive</div>
+      <div class="section-title" style="color:var(--orange)">🎯 Qualità del Tiro, Cinismo & Palle Inattive<span class="scope scope-gen">GENERALE &middot; 30 partite</span></div>
       <p style="font-size:10px;color:var(--dim);margin-bottom:10px">Misura la letalità (xG per Tiro / xGOT) vs i gol attesi (NPxG) e le grandi occasioni da rete.</p>
       <table class="table-ui" style="background:transparent; margin-bottom:10px">
           <tr><th>Squadra</th><th>NPxG vs Qualità Tiro</th><th>Dipendenza P.Inattiva</th><th>Big Chances (C / S)</th></tr>
@@ -256,7 +303,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
 
     <div class="grid-2">
       <div class="card" style="border-top: 4px solid #d32f2f; background:var(--panel2)">
-        <div class="section-title" style="color:#d32f2f">🛡️ Fase di Non-Possesso & Gegenpressing</div>
+        <div class="section-title" style="color:#d32f2f">🛡️ Fase di Non-Possesso & Gegenpressing<span class="scope scope-gen">GENERALE &middot; 30 partite</span></div>
         <p style="font-size:10px;color:var(--dim);margin-bottom:10px">Misura la compattezza e l'aggressività difensiva.</p>
         <table class="table-ui" style="background:transparent">
             <tr><th>Squadra</th><th>Altezza Dif.</th><th>Lunghezza Sq.</th><th>Recuperi &lt;5s</th><th>Choke Index</th></tr>
@@ -267,7 +314,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       </div>
 
       <div class="card" style="border-top:3px solid var(--accent2); background:var(--panel)">
-        <div class="section-title" style="color:#009688">🧭 Funnel Offensivo (Flusso e Penetrazione)</div>
+        <div class="section-title" style="color:#009688">🧭 Funnel Offensivo (Flusso e Penetrazione)<span class="scope scope-gen">GENERALE &middot; 30 partite</span></div>
         <p style="font-size:10px;color:var(--dim);margin-bottom:10px">Misura quanto è sterile il possesso e la capacità di entrare in area.</p>
         <div class="grid-3" style="margin-bottom:10px">
             <div class="tdi-box"><div style="font-size:10px; color:var(--dim)">Baricentro Casa</div><div id="tr-x-h" style="font-size:18px; color:var(--blue)">--m</div></div>
@@ -285,7 +332,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
 
     <div class="grid-2">
         <div class="card" style="border-top: 4px solid var(--blue);">
-          <div class="section-title" style="color:var(--blue)">💰 1X2 Probabilità e Modelli (Base NPxG)</div>
+          <div class="section-title" style="color:var(--blue)">💰 1X2 Probabilità e Modelli (Base NPxG)<span class="scope scope-mix">RUOLO + GENERALE</span></div>
       <div style="font-size:11px;color:var(--dim);margin:4px 0 10px">La confidence sta qui e non in cima di proposito: va letta <b>dopo</b> le statistiche che la producono. &Egrave; una probabilit&agrave; di indovinare, non un voto di stile.</div>
       <div style="background:var(--panel2); border-radius:8px; padding:12px; border:1px solid var(--line);">
           <div style="font-size:11px;font-weight:bold;color:var(--dim);margin-bottom:8px">Confidence Score (Probabilità Calibrata)</div>
@@ -296,28 +343,44 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
             </div>
           </div>
           <div style="font-size:9px; color:var(--dim); margin-top:5px">
-            <b>Si legge come probabilità di indovinare.</b> Confidence 64 = ~64% di azzeccare.
-            Calibrata su 6824 partite reali (Europa+MLS+Turchia).
+            Calibrata su 6824 partite (Europa+MLS+Turchia), <b>con un motore precedente</b>.
+            Rimisurata sul b26 su 2.963 partite risulta <b>prudente</b>: nella fascia alta il modello
+            azzecca pi&ugrave; di quanto dichiari. Il numero qui sotto va quindi letto come un <i>minimo</i>.
           </div>
           <div style="font-size:9px; color:var(--dim); margin-top:6px; background:var(--panel2); border-radius:6px; padding:6px 8px; line-height:1.5">
-            <b>Come usarla:</b> <span style="color:var(--green)">≥60 = fascia buona</span> (64,7% hit reale, capita nel 12% delle partite) ·
-            <span style="color:var(--orange)">50-59 = incerta</span> ·
-            <span style="color:var(--red)">&lt;50 = sotto il coin-flip</span>.<br>
-            Oltre 70 succede solo nel 2,2% dei casi (1 partita su 45) e non migliora l'hit rispetto a 65: alzare troppo l'asticella toglie occasioni senza aggiungere precisione.
+            <b>Come usarla &mdash; resa misurata del pick, non dichiarata:</b><br>
+            <span style="color:var(--green)">pick &ge;60% &rarr; azzecca il <b>74%</b></span> (1 partita su 11) ·
+            <span style="color:var(--green)">&ge;55% &rarr; <b>69%</b></span> (1 su 5) ·
+            <span style="color:var(--orange)">&ge;50% &rarr; <b>65%</b></span> (1 su 3) ·
+            <span style="color:var(--red)">&lt;45% &rarr; sotto il coin-flip</span>.<br>
+            Le due met&agrave; del campione danno gli stessi numeri a ogni soglia. Sopra il 65% la stima
+            balla: pochi casi, intervallo largo.
           </div>
         </div>
 
+              <div style="font-size:11px;color:var(--dim);margin:2px 0 8px;line-height:1.5">
+                Due letture della stessa partita. <b>GENERALE</b> = tutte le 30 partite di ciascuna squadra.
+                <b>RUOLO</b> = solo le partite in casa della squadra di casa e in trasferta dell'ospite.
+                La spunta <span style="color:var(--green);font-weight:800">&#10003;</span> segna, riga per riga,
+                <b>quale delle due il motore usa davvero</b> per il verdetto: sull'1X2 e le doppie chance
+                &egrave; il generale, sui mercati gol &egrave; il ruolo. Sono due scelte separate, decise da
+                due backtest diversi.
+              </div>
               <table class="table-ui" style="margin-bottom:0">
-                <tr><th>Mercato</th><th style="color:var(--dim)">GENERALE</th><th style="color:var(--blue)">SOLO RUOLO</th></tr>
-                <tr><td>1</td><td id="p1-over">--%</td><td id="p1-role" class="td-highlight">--%</td></tr>
-                <tr><td>X</td><td id="px-over">--%</td><td id="px-role" class="td-highlight">--%</td></tr>
-                <tr><td>2</td><td id="p2-over">--%</td><td id="p2-role" class="td-highlight">--%</td></tr>
-                <tr style="background:rgba(255,255,255,.03)"><td>1X</td><td id="p1x-over">--%</td><td id="p1x-role" class="td-highlight">--%</td></tr>
-                <tr style="background:rgba(255,255,255,.03)"><td>X2</td><td id="px2-over">--%</td><td id="px2-role" class="td-highlight">--%</td></tr>
-                <tr style="background:rgba(255,255,255,.03)"><td>12</td><td id="p12-over">--%</td><td id="p12-role" class="td-highlight">--%</td></tr>
-                <tr><td>Goal (GG)</td><td id="gg-over" style="color:var(--green)">--%</td><td id="gg-role" style="color:var(--green); font-weight:bold">--%</td></tr>
-                <tr><td>Over 2.5</td><td id="ov-over" style="color:var(--orange)">--%</td><td id="ov-role" style="color:var(--orange); font-weight:bold">--%</td></tr>
+                <tr><th>Mercato</th><th style="color:var(--dim)">GENERALE<br><span style="font-weight:400;font-size:9px">30 partite</span></th><th style="color:var(--blue)">RUOLO<br><span style="font-weight:400;font-size:9px">casa / trasferta</span></th></tr>
+                <tr><td>1</td><td id="p1-over" class="td-highlight">--% <span style="color:var(--green)">&#10003;</span></td><td id="p1-role">--%</td></tr>
+                <tr><td>X</td><td id="px-over" class="td-highlight">--% <span style="color:var(--green)">&#10003;</span></td><td id="px-role">--%</td></tr>
+                <tr><td>2</td><td id="p2-over" class="td-highlight">--% <span style="color:var(--green)">&#10003;</span></td><td id="p2-role">--%</td></tr>
+                <tr style="background:rgba(255,255,255,.03)"><td>1X</td><td id="p1x-over" class="td-highlight">--% <span style="color:var(--green)">&#10003;</span></td><td id="p1x-role">--%</td></tr>
+                <tr style="background:rgba(255,255,255,.03)"><td>X2</td><td id="px2-over" class="td-highlight">--% <span style="color:var(--green)">&#10003;</span></td><td id="px2-role">--%</td></tr>
+                <tr style="background:rgba(255,255,255,.03)"><td>12</td><td id="p12-over" class="td-highlight">--% <span style="color:var(--green)">&#10003;</span></td><td id="p12-role">--%</td></tr>
+                <tr><td>Goal (GG)</td><td id="gg-over" style="color:var(--green)">--%</td><td id="gg-role" class="td-highlight" style="color:var(--green)">--% <span style="color:var(--green)">&#10003;</span></td></tr>
+                <tr><td>Over 2.5</td><td id="ov-over" style="color:var(--orange)">--%</td><td id="ov-role" class="td-highlight" style="color:var(--orange)">--% <span style="color:var(--green)">&#10003;</span></td></tr>
               </table>
+              <div style="font-size:9px;color:var(--dim);margin-top:6px">
+                Sono Dixon-Coles puro. Il numero finale del verdetto sta in cima ed &egrave; l'ensemble
+                (Dixon-Coles 70% + Markov 30%), quindi non coincide con nessuna delle due colonne.
+              </div>
               <div style="background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:10px; margin-top:15px">
                 <div style="font-size:11px;font-weight:bold;color:var(--dim);margin-bottom:6px">🎯 1X2 per Modello (con confidence specifico)</div>
                 <table class="table-ui" style="margin-bottom:0; font-size:11px">
@@ -364,7 +427,8 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
                 <div style="font-size:9px; color:var(--dim); margin-top:4px">Ciascun mercato ha il suo confidence — le doppie chance possono essere piu' robuste degli esiti singoli, i mercati gol dipendono dalla varianza totale.</div>
               </div>
               <div style="background:rgba(79,140,255,.10); border-radius:8px; padding:15px; display:flex; flex-direction:column; justify-content:center; margin-top:15px">
-                  <div style="font-size:12px; font-weight:bold; text-align:center; color:var(--blue); margin-bottom:15px">QUOTE REALI (FAIR ODDS) SUL RUOLO</div>
+                  <div style="font-size:12px; font-weight:bold; text-align:center; color:var(--blue); margin-bottom:3px">QUOTE IMPLICITE &mdash; DIXON-COLES DI RUOLO</div>
+                  <div style="font-size:9px; color:var(--dim); text-align:center; margin-bottom:12px">Non sono le quote del verdetto: quelle stanno in cima e vengono dall'ensemble sul generale.</div>
                   <div class="grid-3">
                       <div class="odds-box"><div style="font-size:10px; color:var(--dim)">Quota 1</div><div class="odds-val" id="odd-1">--</div></div>
                       <div class="odds-box"><div style="font-size:10px; color:var(--dim)">Quota X</div><div class="odds-val" id="odd-x" style="color:var(--dim)">--</div></div>
@@ -376,7 +440,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
         
   <div style="margin:28px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--line)"><span style="font-size:11px;font-weight:800;letter-spacing:.09em;color:var(--dim)">APPROFONDIMENTO &mdash; DETTAGLIO E DIAGNOSTICA</span></div>
 <div class="card" style="border-top: 4px solid #fbc02d; background:var(--panel2)">
-            <div class="section-title" style="color:#fbc02d">⚖️ Punti Attesi dagli xG (con test di significativita')</div>
+            <div class="section-title" style="color:#fbc02d">⚖️ Punti Attesi dagli xG (con test di significativita')<span class="scope scope-gen">GENERALE &middot; 30 partite</span></div>
             <p style="font-size:10px;color:var(--dim);margin-bottom:10px">Punti reali vs punti attesi simulando ogni partita dagli xG. Lo scarto viene giudicato solo se supera l'errore standard: sotto quella soglia e' rumore, non fortuna.</p>
             <table class="table-ui" style="background:transparent">
                 <tr><th>Squadra</th><th>Punti/Match Reali</th><th>Punti/Match Attesi</th><th>Diagnosi</th></tr>
@@ -392,7 +456,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
     </div>
 
     <div class="card" style="border-top: 4px solid var(--purple);">
-      <div class="section-title" style="color:var(--purple)">📈 Progressione Storica: dove la forma recente conta davvero</div>
+      <div class="section-title" style="color:var(--purple)">📈 Progressione Storica: dove la forma recente conta davvero<span class="scope scope-gen">GENERALE &middot; 30 partite</span></div>
       <div style="font-size:9px; color:var(--dim); margin-bottom:8px">Su 1133 partite di tre leghe, per quasi tutte le metriche la media lunga prevede la partita successiva meglio delle ultime 3 o 5. Qui restano solo le sei in cui uno scostamento recente si e' dimostrato persistente: sono volumi strutturali, quelli che si muovono quando cambia il modulo. Su NPxG, tiri, corner e possesso la colonna «ultime 3» sarebbe solo rumore, per questo non ci sono piu'.</div>
       <div style="margin-bottom:5px; font-weight:bold; color:var(--blue); font-size:12px" id="prog-h-name">Casa</div>
       <table class="table-ui" id="table-prog-h"></table>
@@ -402,7 +466,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
 
     <div class="grid-2">
         <div class="card" style="border-top: 4px solid #e91e63;">
-          <div class="section-title" style="color:#e91e63">⏱️ Distribuzione Gol (Fatti e Subiti)</div>
+          <div class="section-title" style="color:#e91e63">⏱️ Distribuzione Gol (Fatti e Subiti)<span class="scope scope-gen">GENERALE &middot; 30 partite</span></div>
           <table class="table-ui" style="margin-bottom:0; text-align:left;">
             <tr>
               <th>Fascia</th>
@@ -420,7 +484,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
           </table>
         </div>
         <div class="card" style="border-top:3px solid var(--purple); background:var(--panel)">
-          <div class="section-title" style="color:#9c27b0">⏳ Analisi di Sopravvivenza (Goal Timing)</div>
+          <div class="section-title" style="color:#9c27b0">⏳ Analisi di Sopravvivenza (Goal Timing)<span class="scope scope-ruolo">RUOLO &middot; casa/trasferta</span></div>
           <p style="font-size:10px; color:var(--dim); margin-bottom:15px">Modello Esponenziale calcolato sull'intensità di gioco.</p>
           <div style="background:var(--panel2); border-radius:8px; padding:12px; margin-bottom:10px; border:1px solid var(--line)">
               <div style="font-size:11px; font-weight:bold; color:var(--dim)">Probabilità 1° Gol prima del 30:00'</div>
@@ -434,7 +498,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
     </div>
 
     <div class="card" style="border-top: 4px solid #607d8b;">
-      <div class="section-title" style="color:#607d8b">🎯 Risultati Esatti, Handicap e Multigol (dalla matrice Dixon-Coles)</div>
+      <div class="section-title" style="color:#607d8b">🎯 Risultati Esatti, Handicap e Multigol (dalla matrice Dixon-Coles)<span class="scope scope-ruolo">RUOLO &middot; casa/trasferta</span></div>
       <div class="grid-2">
           <div>
             <div style="font-size:11px; font-weight:bold; margin-bottom:5px; color:var(--dim)">Top 6 Risultati Esatti</div>
@@ -454,7 +518,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
 
     <div class="grid-2">
       <div class="card" style="border-top: 4px solid var(--orange);">
-        <div class="section-title" style="color:var(--orange)">📐 Alta Varianza e Disciplina</div>
+        <div class="section-title" style="color:var(--orange)">📐 Alta Varianza e Disciplina<span class="scope scope-mix">RUOLO + GENERALE</span></div>
         <div class="tbl-scroll"><table class="table-ui">
           <tr><th>Atteso sulla partita</th><th style="color:var(--dim)">GENERALE</th><th style="color:var(--orange)">SOLO RUOLO</th></tr>
           <tr><td>Corner (tot)</td><td id="cor-tot-over">--</td><td id="cor-tot-role" class="td-highlight">--</td></tr>
@@ -469,7 +533,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       </div>
 
       <div class="card" style="border-top: 4px solid #5a5a8a;">
-        <div class="section-title" style="color:#5a5a8a">🔬 Analisi Incrociata: Z-Score ed Efficienza</div>
+        <div class="section-title" style="color:#5a5a8a">🔬 Analisi Incrociata: Z-Score ed Efficienza<span class="scope scope-mix">RUOLO + GENERALE</span></div>
         <div class="tbl-scroll"><table class="table-ui">
           <tr><th>Parametro (Z-Score)</th><th style="color:var(--dim)">GENERALE</th><th style="color:var(--blue)">SOLO RUOLO</th></tr>
           <tr><td>NPxG Attesi Casa</td><td id="z-xg-h-ov">--</td><td id="z-xg-h-ro" class="td-highlight">--</td></tr>
@@ -508,7 +572,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
 
     <div class="grid-2">
       <div class="card" style="border-top: 4px solid #1565c0;">
-        <div class="section-title" style="color:#1565c0">⛓️ Asymmetric Markov Chain</div>
+        <div class="section-title" style="color:#1565c0">⛓️ Asymmetric Markov Chain<span class="scope scope-mix">RUOLO + GENERALE</span></div>
         <div class="tbl-scroll"><table class="table-ui">
           <tr><th>Stato Finale</th><th style="color:var(--dim)">GENERALE</th><th style="color:var(--blue)">SOLO RUOLO</th></tr>
           <tr><td>Vittoria netta Casa (+2)</td><td id="mk-h2-ov">--%</td><td id="mk-h2-ro" class="td-highlight">--%</td></tr>
@@ -520,7 +584,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       </div>
 
       <div class="card" style="border-top: 4px solid #3f51b5;">
-        <div class="section-title" style="color:#3f51b5">♟️ ELO Rating e Trend Penalty</div>
+        <div class="section-title" style="color:#3f51b5">♟️ ELO Rating e Trend Penalty<span class="scope scope-gen">GENERALE &middot; 30 partite</span></div>
         <table class="table-ui" style="margin-top:20px">
           <tr><th>Squadra</th><th style="color:var(--dim)">ELO ATTUALE</th><th style="color:var(--orange)">TREND (Ult 5 vs Prec 10)</th></tr>
           <tr><td style="color:var(--blue); font-weight:bold" id="elo-name-h">Casa</td><td id="elo-h-ov" style="font-size:16px; font-weight:bold">--</td><td id="elo-h-tr" style="font-size:14px; font-weight:bold">--</td></tr>
@@ -532,7 +596,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
     <div class="card" style="border-top: 4px solid var(--text);">
       <div class="section-title" style="color:var(--text)">🤖 MEGA-PROMPT per Claude AI</div>
       <button class="btn btn-dark" style="margin-bottom:10px" onclick="copiaPrompt()">📋 Copia Mega-Prompt</button>
-      <textarea id="ai-prompt" readonly></textarea>
+      <textarea id="ai-prompt" readonly rows="18" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;line-height:1.45;white-space:pre;overflow:auto"></textarea>
     </div>
     
     <div class="card" style="border-top:4px solid #455a64">
@@ -625,6 +689,22 @@ function getMostFrequentWithPct(arr) {
   }
   return `${maxVal} (${Math.round((maxCount/valid.length)*100)}%)`;
 }
+// Su un telefono in verticale la pagina non deve mai scorrere di lato: le tabelle
+// larghe scorrono DENTRO il proprio riquadro. Nel markup meta' non erano dentro
+// .tbl-scroll, e con min-width 520px spingevano il body oltre lo schermo.
+function wrapTables() {
+  document.querySelectorAll('table.table-ui').forEach(t => {
+    if (t.parentElement && t.parentElement.classList.contains('tbl-scroll')) return;
+    const box = document.createElement('div');
+    box.className = 'tbl-scroll';
+    t.parentNode.insertBefore(box, t);
+    box.appendChild(t);
+  });
+}
+if (typeof document !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', wrapTables);
+}
+
 function getTopScorers(scorersArray) {
   if(!scorersArray || !scorersArray.length) return "<span style='color:var(--dim)'>Nessun marcatore in archivio</span>";
   const counts = {}; scorersArray.forEach(s => { counts[s] = (counts[s]||0)+1; });
@@ -1521,45 +1601,58 @@ function renderLeagueNote() {
 }
 
 function renderVerdetti(mk) {
+  // Hit rimisurati sul b26 su DUE campioni indipendenti che concordano: 1459 partite
+  // (Serie A + Premier + LaLiga 2025/26, con /advanced) e 1504 (Serie A 2021-2025, senza).
+  // Fra parentesi il numero di casi su cui l'hit e' misurato: sotto il centinaio la
+  // stima balla, e va detto invece che nascosto. (AGENTS.md, La mappa onesta)
   const R = [
-    ['1 (Casa)',      mk.p1,  [[0.65,'FORTE','83%',"quando e' convinto ha ragione piu' di quanto dichiari"],
-                               [0.55,'GIOCABILE','64%',"calibrato: il mercato piu' affidabile del sistema"]], null],
-    ['X (Pareggio)',  mk.pX,  [], "non e' mai stato scelto sopra il 55% in 1134 partite: nessun campione"],
-    ['2 (Trasferta)', mk.p2,  [[0.60,'GIOCABILE','66%','calibrato ma raro']], null],
-    ['1X',            mk.p1X, [[0.65,'GIOCABILE','75%',"solido; sotto il 65% e' leggermente sovrastimato"]], null],
-    ['X2',            mk.pX2, [[0.65,'FORTE','74%',"sottostimato su tutti i batch: e' valore vero"],
-                               [0.60,'GIOCABILE','72%','sottostimato di circa 3 punti']], null],
-    ['12',            mk.p12, [[0.70,'GIOCABILE','74%',"il piu' stabile: stesso hit a ogni soglia"]], null],
-    ['Over 2.5',      mk.pOv, [[0.55,'MARGINALE','56%',"probabilita' sottostimata di 3.6pp ma discrimina poco"]], null],
-    ['Under 2.5',     mk.pUn, [], 'gap -9pp: sopra il 65% il tasso reale scende al 54%'],
-    ['Goal (GG)',     mk.pGG, [], "la probabilita' non porta segnale: test di calibrazione fallito"],
-    ['NoGoal',        mk.pNG, [], 'gap -12pp: sopra il 60% il tasso reale scende al 47%']
+    ['1 (Casa)',      mk.p1,  [[0.65,'FORTE','83%','107 casi'],
+                               [0.55,'GIOCABILE','70%','436 casi']], null],
+    ['X (Pari)',      mk.pX,  [], "mai sopra il 55% in 2963 partite: nessun campione su cui misurare"],
+    ['2 (Trasf.)',    mk.p2,  [[0.60,'GIOCABILE','67%','42 casi: stima incerta']], null],
+    ['1X',            mk.p1X, [[0.65,'GIOCABILE','80%','1855 casi']], null],
+    ['X2',            mk.pX2, [[0.65,'FORTE','78%','1001 casi'],
+                               [0.60,'GIOCABILE','73%','1439 casi']], null],
+    ['12',            mk.p12, [[0.70,'GIOCABILE','74%','2698 casi']], null],
+    ['Over 2.5',      mk.pOv, [[0.55,'GIOCABILE','63%','354 casi']], null],
+    ['Under 2.5',     mk.pUn, [[0.65,'MARGINALE','63%','65 casi: stima incerta']], null],
+    ['Goal (GG)',     mk.pGG, [[0.60,'MARGINALE','67%','89 casi: stima incerta'],
+                               [0.55,'MARGINALE','59%','420 casi']], null],
+    ['NoGoal',        mk.pNG, [], 'rimisurato su 2637 partite: sopra il 55% rende 52%, sopra il 60% rende 50%']
   ];
+  // '--' non e' un divieto, e' assenza di verdetto: grigio, non rosso come NON GIOCARE
   const col = v => v === 'FORTE' ? '#0f766e' : v === 'GIOCABILE' ? '#2d7d32'
-                 : v === 'MARGINALE' ? '#f57c00' : '#c62828';
-  let html = '';
+                 : v === 'MARGINALE' ? '#f57c00' : v === 'NON GIOCARE' ? '#c62828' : '#4b5563';
+  let html = '', righe = [];
   for (const [nome, p, regole, blocco] of R) {
     if (p == null || isNaN(p)) continue;
-    let verdetto = '--', hit = '--', perche = '';
+    let verdetto = 'FUORI SOGLIA', hit = '--', perche = '';
     if (blocco) { verdetto = 'NON GIOCARE'; perche = blocco; }
     else {
       for (const [soglia, v, h, w] of regole) if (p >= soglia) { verdetto = v; hit = h; perche = w; break; }
-      if (verdetto === '--') perche = 'sotto la soglia minima validata sui backtest';
+      if (verdetto === 'FUORI SOGLIA') perche = 'la probabilita\' non arriva alla soglia minima validata: nessun verdetto';
     }
     const ok = verdetto === 'FORTE' || verdetto === 'GIOCABILE';
+    righe.push(`- ${nome}: ${(p*100).toFixed(1)}% -> ${verdetto}`
+               + (hit !== '--' ? ` (hit misurato ${hit} su ${perche})` : ` (${perche})`));
     html += '<tr' + (ok ? ' style="background:rgba(34,197,94,.10)"' : '') + '>'
-          + '<td style="text-align:left;font-weight:bold">' + nome + '</td>'
-          + '<td style="font-weight:bold">' + (p * 100).toFixed(1) + '%</td>'
-          + '<td><span style="background:' + col(verdetto) + ';color:#fff;padding:2px 8px;'
-          + 'border-radius:4px;font-size:10px;font-weight:bold;white-space:nowrap">' + verdetto + '</span></td>'
-          + '<td>' + hit + '</td>'
-          + '<td style="text-align:left;font-size:11px;color:var(--dim)">' + perche + '</td></tr>';
+          + '<td style="text-align:left;font-weight:bold;white-space:nowrap">' + nome + '</td>'
+          + '<td style="font-weight:bold;white-space:nowrap">' + (p * 100).toFixed(1) + '%</td>'
+          + '<td style="text-align:left">'
+          +   '<span style="background:' + col(verdetto) + ';color:#fff;padding:2px 8px;'
+          +   'border-radius:4px;font-size:10px;font-weight:bold;white-space:nowrap">' + verdetto + '</span>'
+          +   (hit !== '--'
+               ? '<div style="font-size:11px;margin-top:3px"><b>' + hit + '</b>'
+                 + ' <span style="color:var(--dim)">su ' + perche + '</span></div>'
+               : '<div style="font-size:10px;color:var(--dim);margin-top:3px">' + perche + '</div>')
+          + '</td></tr>';
   }
   safeHtml('verdetti-body', html);
+  window.__VERDETTI_TXT = righe.join('\n');
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b25';
+window.__SCANNER_BUILD = '0905-b28';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -2234,17 +2327,17 @@ async function avviaScanner() {
 
     let hiddenValueMsg = ""; let hiddenValueMsgClean = "";
     if (chokeH > 1.2 && clumsyA > 15) {
-        hiddenValueMsg = `🩸 <strong>BLOOD SCENT ALERT:</strong> Il Gegenpressing ${artDel(hName)} scontrerà la goffaggine in disimpegno dell'${aName} (${f1(clumsyA)} perse). Goleada in transizione possibile.`;
-        hiddenValueMsgClean = `BLOOD SCENT ALERT: Gegenpressing ${hName} vs Goffaggine ${aName}. Rischio imbarcata.`;
+        hiddenValueMsg = `<strong>Accoppiamento pressing / palle perse.</strong> ${Cap(artIl(hName))} riaggredisce con Choke Index ${f2(chokeH)}, ${artIl(aName)} perde ${f1(clumsyA)} palloni a partita fra controlli sbagliati e dribbling subiti. Le due cose si incrociano; quanto valga in gol non è misurato.`;
+        hiddenValueMsgClean = `Pressing ${hName} (choke ${f2(chokeH)}) contro ${f1(clumsyA)} palle perse ${aName}.`;
     } else if (chokeA > 1.2 && clumsyH > 15) {
-        hiddenValueMsg = `🩸 <strong>BLOOD SCENT ALERT:</strong> Il Gegenpressing ${artDel(aName)} scontrerà la goffaggine in disimpegno del ${hName} (${f1(clumsyH)} perse). Colpaccio esterno in transizione probabile.`;
-        hiddenValueMsgClean = `BLOOD SCENT ALERT: Gegenpressing ${aName} vs Goffaggine ${hName}. Rischio imbarcata.`;
+        hiddenValueMsg = `<strong>Accoppiamento pressing / palle perse.</strong> ${Cap(artIl(aName))} riaggredisce con Choke Index ${f2(chokeA)}, ${artIl(hName)} perde ${f1(clumsyH)} palloni a partita fra controlli sbagliati e dribbling subiti. Le due cose si incrociano; quanto valga in gol non è misurato.`;
+        hiddenValueMsgClean = `Pressing ${aName} (choke ${f2(chokeA)}) contro ${f1(clumsyH)} palle perse ${hName}.`;
     } else if (pytH.diff < -0.05 && tdiDelta > 10 && bcmH > 1.5 && trendH > -10) {
-        hiddenValueMsg = `🚨 <strong>SMART MONEY:</strong> ${Cap(artIl(hName))} domina, sbaglia un'enormità di gol fatti (${f1(bcmH)} Big Chances sprecate a partita) e ha Pitagora negativo. Esplosione offensiva certa per regressione.`;
-        hiddenValueMsgClean = `SMART MONEY DETECTED sul ${hName} (Dominio tattico, Underperformance e troppe Big Chances sprecate).`;
+        hiddenValueMsg = `<strong>Dominio senza resa.</strong> ${Cap(artIl(hName))} ha ${f1(bcmH)} Big Chances sprecate a partita e punti sotto gli xG (${pytH.diff>0?'+':''}${f1(pytH.diff)} su ${pytH.n}, z=${f2(pytH.z)}). Uno scarto del genere in media rientra, ma non c'è una data: il modello non lo usa per prevedere.`;
+        hiddenValueMsgClean = `${hName}: ${f1(bcmH)} Big Chances sprecate e ${f1(pytH.diff)} punti sotto gli xG (z=${f2(pytH.z)}).`;
     } else {
-        hiddenValueMsg = `✅ Nessun segnale estremo. Flusso, qualità dei tiri e Gegenpressing sono bilanciati.`;
-        hiddenValueMsgClean = `Nessun segnale di Hidden Value.`;
+        hiddenValueMsg = `Nessuno scarto sopra soglia fra le due squadre su flusso, qualità dei tiri e riaggressione.`;
+        hiddenValueMsgClean = `Nessuno scarto sopra soglia.`;
     }
 
     document.getElementById('setup-card').style.display = 'none'; document.getElementById('dashboard-area').style.display = 'block';
@@ -2253,7 +2346,7 @@ async function avviaScanner() {
     const covOf = (team, key) => ((team.overall.coverage||{})[key]||0);
     const nd = (team, key, txt) => covOf(team, key) > 0 ? txt : 'N/D';
     const renderStreak = (arr) => arr.map(s => { let bg = s==='V' ? 'var(--green)' : (s==='S' ? 'var(--red)' : '#f57c00'); return `<span style="display:inline-block;width:18px;height:18px;line-height:18px;text-align:center;border-radius:50%;background:${bg};color:white;font-size:10px;font-weight:bold;margin:0 2px">${s}</span>`; }).join('');
-    safeHtml('ui-streak', `<div style="display:flex; align-items:center; gap:5px"><span style="font-size:11px;font-weight:bold;color:var(--blue)">${hName}</span> ${renderStreak(dH.overall.streak.slice().reverse())}</div><div style="font-size:12px;color:var(--dim)">vs</div><div style="display:flex; align-items:center; gap:5px">${renderStreak(dA.overall.streak.slice().reverse())} <span style="font-size:11px;font-weight:bold;color:var(--red)">${aName}</span></div>`);
+    safeHtml('ui-streak', `<div style="display:flex; align-items:center; gap:5px; min-width:0"><span style="font-size:11px;font-weight:bold;color:var(--blue);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${hName}</span> ${renderStreak(dH.overall.streak.slice().reverse())}</div><div style="font-size:12px;color:var(--dim)">vs</div><div style="display:flex; align-items:center; gap:5px; min-width:0">${renderStreak(dA.overall.streak.slice().reverse())} <span style="font-size:11px;font-weight:bold;color:var(--red);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${aName}</span></div>`);
 
     safeTxt('master-1', pct(m1)); safeTxt('master-x', pct(mX)); safeTxt('master-2', pct(m2));
 
@@ -2320,21 +2413,25 @@ async function avviaScanner() {
 
     let strSniperH = covOf(dH,'xgot') > 0 ? f2(xgotH) : (covOf(dH,'xg_shot') > 0 ? `${f2(xgShotH)} (xG/Tiro)` : "N/D");
     let strSniperA = covOf(dA,'xgot') > 0 ? f2(xgotA) : (covOf(dA,'xg_shot') > 0 ? `${f2(xgShotA)} (xG/Tiro)` : "N/D");
-    safeTxt('l-xgot-h', f2(npxgH_ro) + " vs " + strSniperH); safeTxt('l-xgot-a', f2(npxgA_ro) + " vs " + strSniperA);
+    // Le due meta' di questo confronto devono venire dallo STESSO ambito: xgot e' una media
+    // sulle 30 partite, quindi accanto ci va l'NPxG sulle stesse 30 e non npxg_ro, che e'
+    // una previsione di ruolo per QUESTA partita (AGENTS.md, L'ambito di ogni box).
+    const npxgH_gen = _mean(dH.overall.vals.npxg) || 0, npxgA_gen = _mean(dA.overall.vals.npxg) || 0;
+    safeTxt('l-xgot-h', f2(npxgH_gen) + " vs " + strSniperH); safeTxt('l-xgot-a', f2(npxgA_gen) + " vs " + strSniperA);
     safeTxt('l-set-h', setPctH != null ? f1(setPctH) + "%" : 'N/D'); safeTxt('l-set-a', setPctA != null ? f1(setPctA) + "%" : 'N/D');
     safeTxt('l-bc-h', nd(dH,'bc', f1(bcH) + " / " + f1(bcmH))); safeTxt('l-bc-a', nd(dA,'bc', f1(bcA) + " / " + f1(bcmA)));
 
     const _spConcH = _mean(dH.overall.vals.xg_sp_ag), _spConcA = _mean(dA.overall.vals.xg_sp_ag);
     let lethNarrative = "";
     {
-      const snipH = (xgotH > 0) ? xgotH - npxgH_ro : null;
-      const snipA = (xgotA > 0) ? xgotA - npxgA_ro : null;
+      const snipH = (xgotH > 0) ? xgotH - npxgH_gen : null;
+      const snipA = (xgotA > 0) ? xgotA - npxgA_gen : null;
       if (snipH != null && snipA != null && Math.abs(snipH - snipA) > 0.15) {
         const megH = snipH > snipA;
         lethNarrative += `🔪 <strong>Cecchini:</strong> ${Cap(artIl(megH ? hName : aName))} tira meglio di quanto crei `
           + `(xGOT − NPxG ${(megH?snipH:snipA)>=0?'+':''}${f2(megH?snipH:snipA)}), `
-          + `${artIl(megH ? aName : hName)} sta a ${(megH?snipA:snipH)>=0?'+':''}${f2(megH?snipA:snipH)}: `
-          + `a parità di occasioni segna di più ${artIl(megH ? hName : aName)}.<br>`;
+          + `${artIl(megH ? aName : hName)} sta a ${(megH?snipA:snipH)>=0?'+':''}${f2(megH?snipA:snipH)}. `
+          + `Scarto ${f2(Math.abs(snipH-snipA))} xG a partita.<br>`;
       }
       if (bcmH > 1.2 || bcmA > 1.2) {
         const pegg = bcmH >= bcmA;
@@ -2348,8 +2445,8 @@ async function avviaScanner() {
         lethNarrative += `🚩 <strong>Palle inattive:</strong> ${Cap(artIl(dip?hName:aName))} ci ricava il `
           + `${f1(dip?setPctH:setPctA)}% dei propri pericoli, ${artIl(dip?aName:hName)} il ${f1(dip?setPctA:setPctH)}%. `
           + (conc > 0
-             ? `E ${artIl(dip?aName:hName)} ne concede ${f2(conc)} xG a partita: `
-               + (conc > 0.35 ? `accoppiamento favorevole.` : `difende bene sui piazzati.`)
+             ? `${Cap(artIl(dip?aName:hName))} ne concede ${f2(conc)} xG a partita`
+               + (conc > 0.35 ? `, sopra la media.` : `, sotto la media.`)
              : `Dato sul concesso non disponibile.`)
           + `<br>`;
       }
@@ -2367,9 +2464,8 @@ async function avviaScanner() {
         const corta = d < 0 ? hName : aName, lunga = d < 0 ? aName : hName;
         defNarrative += `📏 <strong>Compattezza:</strong> ${f1(lenH)}m ${hName} contro ${f1(lenA)}m ${aName}. `
           + (Math.abs(d) < 4
-             ? `Distanze fra i reparti simili: nessuno dei due concede più spazio fra le linee.<br>`
-             : `${Cap(artIl(corta))} tiene ${f1(Math.abs(d))}m in meno ${artDel(lunga)}, quindi `
-               + `${artIl(lunga)} lascia più spazio fra le linee da attaccare.<br>`);
+             ? `Scarto sotto i 4m: distanze fra i reparti simili.<br>`
+             : `${Cap(artIl(corta))} tiene ${f1(Math.abs(d))}m in meno ${artDel(lunga)}.<br>`);
       }
       if (chokeH > 0 && chokeA > 0) {
         const d = chokeH - chokeA;
@@ -2379,8 +2475,8 @@ async function avviaScanner() {
           + (Math.abs(d) < 0.3
              ? `Si riaggrediscono a intensità simile.<br>`
              : `${Cap(artIl(forte))} recupera più in fretta, e ${artIl(debole)} perde ${f1(clumsyDeb)} palloni a partita `
-               + `fra controlli sbagliati e dribbling subiti: `
-               + (clumsyDeb > 15 ? `è l'accoppiamento che può rompere la partita.<br>` : `ma li gestisce con pulizia.<br>`));
+               + `fra controlli sbagliati e dribbling subiti`
+               + (clumsyDeb > 15 ? `, sopra la soglia dei 15.<br>` : `, sotto la soglia dei 15.<br>`));
       }
       if (defNarrative === "") defNarrative = `Tracking non disponibile per almeno una delle due squadre: compattezza e riaggressione non confrontabili.`;
     }
@@ -2391,8 +2487,8 @@ async function avviaScanner() {
     safeTxt('tr-f3-h', nd(dH,'f3_entries', String(Math.round(f3H)))); safeTxt('tr-box-h', nd(dH,'tch_box', String(Math.round(tbH)))); safeTxt('tr-pen-h', (covOf(dH,'f3_entries') > 0 && covOf(dH,'tch_box') > 0) ? f1(penRateH) + "%" : "N/D");
     safeTxt('tr-f3-a', nd(dA,'f3_entries', String(Math.round(f3A)))); safeTxt('tr-box-a', nd(dA,'tch_box', String(Math.round(tbA)))); safeTxt('tr-pen-a', (covOf(dA,'f3_entries') > 0 && covOf(dA,'tch_box') > 0) ? f1(penRateA) + "%" : "N/D");
     let tactNarrative = "";
-    if(penRateH > 0 || penRateA > 0) tactNarrative += `Indice di penetrazione: ${hName} ${f1(penRateH)}% vs ${aName} ${f1(penRateA)}%. ` + (penRateH > penRateA + 5 ? `${Cap(artIl(hName))} converte molto meglio il possesso avanzato in tocchi in area.` : (penRateA > penRateH + 5 ? `L'${aName} e' piu' incisivo nell'ultimo passaggio.` : `Rifinitura di efficacia simile.`)) + `<br>`;
-    if(avgX_H > 0 && avgX_A > 0) tactNarrative += `Baricentri a ${f1(avgX_H)}m e ${f1(avgX_A)}m: ` + (avgX_H - avgX_A > 6 ? `campo sbilanciato nella meta' ${artDel(aName)}.` : (avgX_A - avgX_H > 6 ? `sara' il ${hName} a difendere piu' basso.` : `sfida territorialmente equilibrata.`)) + `<br>`;
+    if(penRateH > 0 || penRateA > 0) tactNarrative += `Indice di penetrazione: ${hName} ${f1(penRateH)}% contro ${aName} ${f1(penRateA)}%. ` + (Math.abs(penRateH-penRateA) > 5 ? `Scarto ${f1(Math.abs(penRateH-penRateA))} punti.` : `Scarto sotto i 5 punti.`) + `<br>`;
+    if(avgX_H > 0 && avgX_A > 0) tactNarrative += `Baricentri a ${f1(avgX_H)}m e ${f1(avgX_A)}m, scarto ${f1(Math.abs(avgX_H-avgX_A))}m` + (Math.abs(avgX_H-avgX_A) > 6 ? `.` : `: sotto la soglia dei 6m.`) + `<br>`;
     if(crossH + crossA > 0) tactNarrative += `Vie d'attacco (cross/dribbling/filtranti) — ${hName}: ${f1(crossH)}/${f1(dribH)}/${f1(thruH)} · ${aName}: ${f1(crossA)}/${f1(dribA)}/${f1(thruA)}.`;
     if(tactNarrative === "") tactNarrative = "Dati di tracking non disponibili per questo confronto.";
     safeHtml('tactical-dialogue', tactNarrative);
@@ -2403,11 +2499,56 @@ async function avviaScanner() {
     safeTxt('pyt-act-a', pytA.n ? f2(pytA.ppgAct) : '--'); safeTxt('pyt-exp-a', pytA.n ? f2(pytA.ppgExp) : '--'); safeTxt('pyt-diag-a', pytCell(pytA));
     safeHtml('ts-h', getTopScorers(dH.overall.all_scorers)); safeHtml('ts-a', getTopScorers(dA.overall.all_scorers));
 
-    safeTxt('p1-over', pct(probsOver.p1)); safeTxt('p1-role', pct(probsRole.p1)); safeTxt('px-over', pct(probsOver.pX)); safeTxt('px-role', pct(probsRole.pX));
-    safeTxt('p2-over', pct(probsOver.p2)); safeTxt('p2-role', pct(probsRole.p2)); safeTxt('p1x-over', pct(probsOver.p1+probsOver.pX)); safeTxt('p1x-role', pct(probsRole.p1+probsRole.pX));
-    safeTxt('px2-over', pct(probsOver.p2+probsOver.pX)); safeTxt('px2-role', pct(probsRole.p2+probsRole.pX)); safeTxt('p12-over', pct(probsOver.p1+probsOver.p2)); safeTxt('p12-role', pct(probsRole.p1+probsRole.p2));
-    safeTxt('gg-over', pct(probsOver.pGG)); safeTxt('gg-role', pct(probsRole.pGG)); safeTxt('ov-over', pct(probsOver.pOv)); safeTxt('ov-role', pct(probsRole.pOv));
+    // La spunta segue l'ambito che il motore usa DAVVERO: ENS_SCOPE_W decide l'1X2 (oggi 1,
+    // cioe' generale), mentre i mercati gol escono da dcMat = dcRole. Se una delle due
+    // costanti cambia, qui va cambiata la spunta (AGENTS.md, Come funziona il motore).
+    const _usaGen1X2 = window.ENS_SCOPE_W >= 0.5;
+    const _ck = ' <span style="color:var(--green);font-weight:800">\u2713</span>';
+    const _cella = (id, p, usata) => safeHtml(id, pct(p) + (usata ? _ck : ''));
+    _cella('p1-over',  probsOver.p1, _usaGen1X2);            _cella('p1-role',  probsRole.p1, !_usaGen1X2);
+    _cella('px-over',  probsOver.pX, _usaGen1X2);            _cella('px-role',  probsRole.pX, !_usaGen1X2);
+    _cella('p2-over',  probsOver.p2, _usaGen1X2);            _cella('p2-role',  probsRole.p2, !_usaGen1X2);
+    _cella('p1x-over', probsOver.p1+probsOver.pX, _usaGen1X2); _cella('p1x-role', probsRole.p1+probsRole.pX, !_usaGen1X2);
+    _cella('px2-over', probsOver.p2+probsOver.pX, _usaGen1X2); _cella('px2-role', probsRole.p2+probsRole.pX, !_usaGen1X2);
+    _cella('p12-over', probsOver.p1+probsOver.p2, _usaGen1X2); _cella('p12-role', probsRole.p1+probsRole.p2, !_usaGen1X2);
+    _cella('gg-over',  probsOver.pGG, false);                _cella('gg-role',  probsRole.pGG, true);
+    _cella('ov-over',  probsOver.pOv, false);                _cella('ov-role',  probsRole.pOv, true);
     document.getElementById('odd-1').textContent = odd1; document.getElementById('odd-x').textContent = oddX; document.getElementById('odd-2').textContent = odd2;
+
+    // Le due letture affiancate, con la numerosita' accanto: e' il modo per accorgersi che
+    // il ruolo poggia su meta' dei dati (AGENTS.md, Il campione di ruolo e' un sottoinsieme).
+    {
+      const nHrX = dH.role.n, nArX = dA.role.n, nHoX = dH.overall.n, nAoX = dA.overall.n;
+      const nPair = (a, b) => (a === b) ? String(a) : `${a}/${b}`;
+      const _lamRo = lamH_role + lamA_role, _lamOv = lamH_over + lamA_over;
+      const RUO = '<span style="font-size:9px;font-weight:800;color:var(--blue)">RUOLO</span>';
+      const GEN = '<span style="font-size:9px;font-weight:800;color:var(--dim)">GEN</span>';
+      const BOTH = '<span style="font-size:9px;color:var(--dim)">tutti e due</span>';
+      const righe = [
+        ['Vittoria casa (1)',   pct(probsRole.p1),  pct(probsOver.p1),  GEN],
+        ['Pareggio (X)',        pct(probsRole.pX),  pct(probsOver.pX),  GEN],
+        ['Vittoria trasf. (2)', pct(probsRole.p2),  pct(probsOver.p2),  GEN],
+        ['Goal (GG)',           pct(probsRole.pGG), pct(probsOver.pGG), RUO],
+        ['Over 2.5',            pct(probsRole.pOv), pct(probsOver.pOv), RUO],
+        ['Gol attesi (tot)',    f2(_lamRo),         f2(_lamOv),         RUO],
+        ['Corner attesi',       f1(advRole.lCor),   f1(advOver.lCor),   BOTH],
+        ['Tiri in porta',       f1(advRole.lSot),   f1(advOver.lSot),   BOTH],
+        ['Gialli attesi',       f1(advRole.lYel),   f1(advOver.lYel),   BOTH]
+      ];
+      const scarso = Math.min(nHrX, nArX) < 6;
+      const nR = '<span class="n-badge" style="font-size:9px;color:' + (scarso ? 'var(--red)' : 'var(--dim)')
+               + ';font-weight:400"> n=' + nPair(nHrX,nArX) + '</span>';
+      const nO = '<span class="n-badge" style="font-size:9px;color:var(--dim);font-weight:400"> n=' + nPair(nHoX,nAoX) + '</span>';
+      safeHtml('ambiti-body', righe.map(([k,vr,vo,chi]) =>
+        '<tr><td style="text-align:left;font-weight:bold">' + k + '</td>'
+        + '<td style="color:var(--blue);font-weight:bold;white-space:nowrap">' + vr + nR + '</td>'
+        + '<td style="white-space:nowrap">' + vo + nO + '</td>'
+        + '<td>' + chi + '</td></tr>').join('')
+        + (scarso
+           ? '<tr><td colspan="4" style="text-align:left;font-size:10px;color:var(--red);padding-top:6px">'
+             + 'Meno di 6 partite di ruolo per almeno una squadra: la colonna RUOLO e\' quasi tutta media di lega.</td></tr>'
+           : ''));
+    }
 
     safeHtml('exact-scores', topScoresHtml);
     let ahHtml = `<tr><th>Handicap (su ${hName})</th><th>1 (Casa Copre)</th><th>Rimborso</th><th>2 (Trasf Copre)</th></tr>`;
@@ -2524,14 +2665,59 @@ async function avviaScanner() {
     });
     safeHtml('table-coverage', covHtml);
 
+    // Le stats avanzate previste per questa partita, raggruppate per quanto reggono al
+    // backtest: la pendenza reale~previsto e' la sola cosa che dice se un numero e'
+    // interpretabile (AGENTS.md, Il mega-prompt).
+    const _statBlocco = (() => {
+      const PS = window.__PRED_STATS || { H:{}, A:{} };
+      const GRUPPI = [
+        ['Reggono bene (pendenza 0.80-1.07)', [
+          ['passes','Passaggi'], ['carries','Conduzioni'], ['prog_passes','Passaggi progressivi'],
+          ['prog_carries','Conduzioni progressive'], ['passes_box','Passaggi in area'],
+          ['carries_box','Conduzioni in area'], ['carries_f3','Conduzioni ultimo terzo'],
+          ['sca','SCA'], ['xt','xT'], ['key_passes','Key passes'],
+          ['chances_created','Occasioni create'], ['take_ons','Dribbling tentati'],
+          ['aerials','Duelli aerei vinti'], ['clearances','Respinte']]],
+        ['Tengono a meta\' (0.40-0.70)', [
+          ['xag','xAG'], ['gca','GCA'], ['tackles','Contrasti'],
+          ['interceptions','Intercetti'], ['duels_won','Duelli vinti'], ['ppda','PPDA']]]
+      ];
+      const f = v => (v == null || !isFinite(v)) ? 'N/D' : (Math.abs(v) >= 100 ? v.toFixed(0) : v.toFixed(2));
+      let out = '';
+      for (const [titolo, righe] of GRUPPI) {
+        const dentro = righe.filter(([k]) => PS.H[k] != null || PS.A[k] != null);
+        if (!dentro.length) continue;
+        out += '  ' + titolo + ':\n';
+        for (const [k, lab] of dentro) {
+          out += `    ${lab}: ${hName} ${f(PS.H[k])} | ${aName} ${f(PS.A[k])}\n`;
+        }
+      }
+      return out || '  (metriche avanzate non disponibili per questa partita)';
+    })();
+
     let p = `SEI UN DATA SCIENTIST ESPERTO DI CALCIO. Partita: ${hName} vs ${aName} (Simulazione al ${dateInput}).
 
-1. THE MASTER ENSEMBLE E QUOTE REALI (Modello NPxG)
-- Probabilità (${_ensLabel}, poi correzione residuale sulle metriche di creazione): 1 (${pct(m1)}) | X (${pct(mX)}) | 2 (${pct(m2)})
+AMBITO DEI NUMERI. Ogni riga dice da quali partite viene. RUOLO = solo le gare in casa
+${artDel(hName)} e in trasferta ${artDel(aName)} (${dH.role.n} e ${dA.role.n} partite).
+GENERALE = le ultime ${dH.overall.n} e ${dA.overall.n} di qualunque tipo. Sono due campioni diversi:
+non mescolarli in una stessa frase senza dirlo.
+
+1. IL VERDETTO DEL MODELLO
+- 1X2 ENSEMBLE, quello che conta (${_ensLabel}):
+    1 ${pct(m1)} | X ${pct(mX)} | 2 ${pct(m2)}
+- Le stesse tre, lette sui due campioni separati:
+    RUOLO     (${dH.role.n} casa / ${dA.role.n} trasferta):  1 ${pct(probsRole.p1)} | X ${pct(probsRole.pX)} | 2 ${pct(probsRole.p2)}
+    GENERALE  (${dH.overall.n} / ${dA.overall.n} partite):   1 ${pct(probsOver.p1)} | X ${pct(probsOver.pX)} | 2 ${pct(probsOver.p2)}
+    Sull'1X2 l'ensemble segue il GENERALE. Se le due righe divergono di piu' di 5 punti,
+    dillo: vuol dire che in casa/trasferta la squadra rende diversamente dalla sua media.
 - Fair Odds Ensemble: 1 @${oddM1} | X @${oddMX} | 2 @${oddM2}   (Dixon-Coles puro: 1 @${odd1} | X @${oddX} | 2 @${odd2})
 - Affidabilita' campionaria: ${dH.role.n} match casa per ${hName}, ${dA.role.n} match trasferta per ${aName}. Vicini KNN efficaci: ${f1(knn_H.nEff)} / ${f1(knn_A.nEff)}
 - Confidence Score: ${confidence}/100
-- Hidden Value / Blood Scent: ${hiddenValueMsgClean}
+- Scarti fuori soglia: ${hiddenValueMsgClean}
+
+1-bis. TABELLONE GIOCABILITA' — verdetti gia' decisi da 2963 partite di backtest.
+Sono la parte piu' affidabile di questo prompt: NON ridiscuterli e non riclassificarli.
+${window.__VERDETTI_TXT || '(non disponibile)'}
 
 2. SCOMPOSIZIONE MODELLI
 - Dixon-Coles Puro (Ruolo NPxG) [nell'ensemble, peso ${_wPct(_share(_EW.dc)*(1-_sW))}]: 1 (${pct(probsRole.p1)}) | X (${pct(probsRole.pX)}) | 2 (${pct(probsRole.p2)})
@@ -2542,8 +2728,8 @@ async function avviaScanner() {
 - KNN 11D Puro (Tattica) [FUORI dall'ensemble, solo riferimento tattico]: 1 (${pct(probsKnn.p1)}) | X (${pct(probsKnn.pX)}) | 2 (${pct(probsKnn.p2)})
 - Correzione residuale: ${(window.__RESID_DEBUG && window.__RESID_DEBUG.applied) ? ('attiva su ' + window.__RESID_DEBUG.available.join('/') + ', spostamento ' + (window.__RESID_DEBUG.delta >= 0 ? '+' : '') + window.__RESID_DEBUG.delta.toFixed(3) + ' in log-odds verso ' + (window.__RESID_DEBUG.delta >= 0 ? 'la casa' : 'la trasferta')) : ((window.__RESID_DEBUG && window.__RESID_DEBUG.sig != null) ? ('spenta (alpha 0); segnale misurato ' + window.__RESID_DEBUG.sig.toFixed(3) + ' vs edge ' + window.__RESID_DEBUG.edge.toFixed(3)) : 'non calcolabile (metriche di creazione assenti)')}
 
-3. QUALITA' E CINISMO (The Sniper Box)
-- NPxG vs xGOT (Indice Cecchino): ${hName} ${f2(npxgH_ro)} vs ${xgotH > 0 ? f2(xgotH) : (xgShotH > 0 ? f2(xgShotH) + " (xG/Tiro)" : "N/D")} | ${aName} ${f2(npxgA_ro)} vs ${xgotA > 0 ? f2(xgotA) : (xgShotA > 0 ? f2(xgShotA) + " (xG/Tiro)" : "N/D")}
+3. QUALITA' E CINISMO — tutti i numeri di questa sezione sono [GENERALE]
+- NPxG vs xGOT [GENERALE, stessi campioni per i due numeri]: ${hName} ${f2(npxgH_gen)} vs ${xgotH > 0 ? f2(xgotH) : (xgShotH > 0 ? f2(xgShotH) + " (xG/Tiro)" : "N/D")} | ${aName} ${f2(npxgA_gen)} vs ${xgotA > 0 ? f2(xgotA) : (xgShotA > 0 ? f2(xgShotA) + " (xG/Tiro)" : "N/D")}
 - Big Chances (Create/Sprecate): ${hName} ${f1(bcH)}/${f1(bcmH)} | ${aName} ${f1(bcA)}/${f1(bcmA)}
 - Dipendenza da Palla Inattiva: ${hName} ${setPctH > 0 ? f1(setPctH) : "0"}% | ${aName} ${setPctA > 0 ? f1(setPctA) : "0"}%
 - Efficienza Goal vs xG: ${hName} ${f2(effH_ro)} | ${aName} ${f2(effA_ro)}
@@ -2553,55 +2739,87 @@ async function avviaScanner() {
 - ${hName}: Pts/Match Reali ${f2(pytH.ppgAct)} | Pts/Match Attesi ${f2(pytH.ppgExp)}. Diagnosi: ${pytH.msg}
 - ${aName}: Pts/Match Reali ${f2(pytA.ppgAct)} | Pts/Match Attesi ${f2(pytA.ppgExp)}. Diagnosi: ${pytA.msg}
 
-5. MATRICE DIFENSIVA E GEGENPRESSING
+5. MATRICE DIFENSIVA E RIAGGRESSIONE — tutti [GENERALE]
 - Altezza Linea Difensiva: ${hName} ${defX_H > 0 ? f1(defX_H) + "m" : "N/D"} | ${aName} ${defX_A > 0 ? f1(defX_A) + "m" : "N/D"}
 - Lunghezza Squadra: ${hName} ${lenH > 0 ? f1(lenH) + "m" : "N/D"} | ${aName} ${lenA > 0 ? f1(lenA) + "m" : "N/D"}
 - Choke Index (Gegenpressing): ${hName} ${chokeH > 0 ? f2(chokeH) : "N/D"} | ${aName} ${chokeA > 0 ? f2(chokeA) : "N/D"}
-- Goffaggine in disimpegno (Palle perse): ${hName} ${f1(clumsyH)} | ${aName} ${f1(clumsyA)}
+- Palle perse (controlli sbagliati + dribbling subiti): ${hName} ${f1(clumsyH)} | ${aName} ${f1(clumsyA)}
 
-6. MATRICE DI STILE E FUNNEL OFFENSIVO
+6. STILE E FUNNEL OFFENSIVO — tutti [GENERALE]
 - Baricentro Offensivo Medio: ${hName} ${avgX_H > 0 ? f1(avgX_H) + "m" : "N/D"} | ${aName} ${avgX_A > 0 ? f1(avgX_A) + "m" : "N/D"}
 - Indice Penetrazione (Tocchi Area / Ingressi Trequarti): ${hName} ${f3H > 0 ? f1(penRateH) : "0"}% | ${aName} ${f3A > 0 ? f1(penRateA) : "0"}%
 - Stile d'Attacco (Cross/Dribbling/Filtranti a partita): ${hName} (${f1(crossH)} / ${f1(dribH)} / ${f1(thruH)}) | ${aName} (${f1(crossA)} / ${f1(dribA)} / ${f1(thruA)})
 - Duelli Aerei vinti: ${hName} ${f1(aerH)} | ${aName} ${f1(aerA)}
 - Moduli Base: ${hName} usa ${formH_disp} (${statsVsFormH_role ? f2(statsVsFormH_role.pts) : 'N/D'} pts vs simili). ${aName} usa ${formA_disp} (${statsVsFormA_role ? f2(statsVsFormA_role.pts) : 'N/D'} pts vs simili).
 
-7. KNN MATCH STORICI (11 Dimensioni Tattiche, kernel pesato)
+7. PARTITE SIMILI (KNN 11 dimensioni tattiche) — [RUOLO]
 - ${hName} in casa vs simili a ${aName} (Rendimento: ${f2(knn_H.pts_per_game)} Pts/Match):
   ${knn_H.topMatches.slice(0,2).map(m => `* vs ${m.info.oppName}: Finita ${m.info.gf}-${m.info.ga} (Poss: ${m.oppPoss.toFixed(0)}%, NPxG: ${f2(m.oppXG)}, Tilt: ${f1(m.oppTilt)}%, DifX: ${f1(m.oppDefX)}m)`).join('\n  ')}
 - ${aName} in trasferta vs simili a ${hName} (Rendimento: ${f2(knn_A.pts_per_game)} Pts/Match):
   ${knn_A.topMatches.slice(0,2).map(m => `* vs ${m.info.oppName}: Finita ${m.info.gf}-${m.info.ga} (Poss: ${m.oppPoss.toFixed(0)}%, NPxG: ${f2(m.oppXG)}, Tilt: ${f1(m.oppTilt)}%, DifX: ${f1(m.oppDefX)}m)`).join('\n  ')}
 
-8. TIMING E ALTA VARIANZA
+8. TIMING E MERCATI SUI NUMERI — il timing e' [GENERALE], i mercati sono dati nei due ambiti
 - Goal Fatti / Subiti ${hName}: 1-15' (${bHs['1-15']}F/${bHc['1-15']}S), 76-90' (${bHs['76-90+']}F/${bHc['76-90+']}S)
 - Goal Fatti / Subiti ${aName}: 1-15' (${bAs['1-15']}F/${bAc['1-15']}S), 76-90' (${bAs['76-90+']}F/${bAc['76-90+']}S)
-- P(Goal < 30'): ${pct(probGoal30)} | Corner Attesi: ${f1(advRole.lCor)} | Gialli Attesi: ${f1(advRole.lYel)}
+- P(Goal < 30'): ${pct(probGoal30)} [RUOLO]
+- Corner attesi:   RUOLO ${f1(advRole.lCor)} | GENERALE ${f1(advOver.lCor)}
+- Tiri in porta:   RUOLO ${f1(advRole.lSot)} | GENERALE ${f1(advOver.lSot)}
+- Gialli attesi:   RUOLO ${f1(advRole.lYel)} | GENERALE ${f1(advOver.lYel)}
+
+9. STATISTICHE AVANZATE PREVISTE PER QUESTA PARTITA [ambito RUOLO]
+Modello: media di lega x (quanto produce la squadra / lega) x (quanto concede l'avversario / lega).
+Non sono medie storiche: sono la previsione per questa specifica sfida.
+${_statBlocco}
+
+AFFIDABILITA' DI QUESTE PREVISIONI, misurata su 2266 osservazioni squadra-partita
+(tre leghe 2025/26). La colonna «pendenza» e' il coefficiente di reale ~ previsto:
+1.00 = lo scostamento previsto si realizza per intero; 0.50 = si realizza a meta'.
+Il LIVELLO invece e' giusto quasi ovunque (previsto/reale mediano 0.99, tutte entro il 15%).
+- Pendenza mediana su 41 metriche: 0.61. Quindi, in generale, quando questa sezione
+  prevede uno scarto fra le due squadre, il reale ne mostra circa i due terzi.
+- Reggono bene (pendenza >= 0.80): passaggi, conduzioni e distanze percorse, SCA,
+  passaggi/conduzioni progressive e in area, xT, key passes, occasioni create, duelli aerei.
+- Tengono a meta' (0.40-0.70): xAG, GCA, contrasti, intercetti, duelli vinti, PPDA.
+- NON usarle, il previsto non dice quasi niente sul reale (pendenza < 0.40): VAEP e PV
+  (totali e offensivi), assist, secondi assist, SCA da tiro/fallo/dribbling, blocchi.
+  Se le citi, dichiara che sono inaffidabili.
 
 ISTRUZIONI:
 Produci le seguenti sezioni in quest\'ordine:
 
 ## LETTURA DEI CALCOLI
-Sintetizza in 4-5 righe lo scontro tattico incrociando Matrice Difensiva (Gegenpressing, altezza linea, compattezza), Cinismo (xGOT vs NPxG, Big Chances sprecate) e Funnel Offensivo (baricentri, penetrazione). Se Blood Scent o Smart Money e\' attivo, spiega il meccanismo tattico.
+Massimo 5 righe. Incrocia Matrice Difensiva (altezza linea, compattezza, riaggressione),
+Cinismo (xGOT contro NPxG, Big Chances sprecate) e Funnel Offensivo (baricentri,
+penetrazione). Cita il numero e lo scarto ogni volta che affermi qualcosa. Se lo scarto
+fra le due squadre e' piccolo, dillo: "si equivalgono" e' una risposta legittima.
 
-## VALUTAZIONE MERCATI (sii diretto, usa i numeri sotto)
+## STATISTICHE AVANZATE
+Prendi la sezione 9 e di' cosa dice sul come si affronteranno: chi costruisce di piu',
+chi arriva in area, chi domina i duelli. Usa **solo** le metriche del gruppo «reggono
+bene»; quelle del gruppo «a meta'» citale dicendo che valgono meno; quelle inaffidabili
+non usarle proprio. Massimo 4 righe.
+Prima di dire che una squadra e' superiore su una metrica, ricordati la pendenza: uno
+scarto previsto del 30% nel reale vale circa il 20%. Se dopo lo sconto lo scarto e'
+piccolo, la risposta e' "si equivalgono".
 
-Mercati base:
-- 1 (${hName} vince): Ensemble ${pct(m1)} | Ruolo DC ${pct(probsRole.p1)} → [ALTO/MEDIO/BASSO] Motivo in 1 frase.
-- X (Pareggio): Ensemble ${pct(mX)} | Ruolo DC ${pct(probsRole.pX)} → [ALTO/MEDIO/BASSO] Motivo in 1 frase.
-- 2 (${aName} vince): Ensemble ${pct(m2)} | Ruolo DC ${pct(probsRole.p2)} → [ALTO/MEDIO/BASSO] Motivo in 1 frase.
+## MERCATI
+Per ogni riga del tabellone qui sopra, una frase sola che dica **perché** le statistiche
+di questa partita portano a quel numero. Il verdetto e l'hit li ha gia' decisi il
+backtest: non riclassificarli, non aggiungere ALTO/MEDIO/BASSO tuoi, non proporre
+mercati che il tabellone non elenca.
 
-Doppie chance:
-- 1X: ${pct(probsRole.p1 + probsRole.pX)} → [ALTO/MEDIO/BASSO] Motivo in 1 frase.
-- X2: ${pct(probsRole.pX + probsRole.p2)} → [ALTO/MEDIO/BASSO] Motivo in 1 frase.
-- 12: ${pct(probsRole.p1 + probsRole.p2)} → [ALTO/MEDIO/BASSO] Motivo in 1 frase.
+Dove il verdetto e' FUORI SOGLIA, scrivi in mezza riga cosa manca perche' quel mercato
+diventi giocabile (quale statistica dovrebbe muoversi e in che verso).
 
-Gol/Over-Under:
-- Goal (GG): ${pct(probsRole.pGG)} → [ALTO/MEDIO/BASSO] Cita NPxG, efficienza tiri e difese.
-- NoGoal (NG): ${pct(1 - probsRole.pGG)} → [ALTO/MEDIO/BASSO] Motivo in 1 frase.
-- Over 2.5: ${pct(probsRole.pOv)} → [ALTO/MEDIO/BASSO] Cita ritmo, timing gol per fascia e NPxG totali.
-- Under 2.5: ${pct(1 - probsRole.pOv)} → [ALTO/MEDIO/BASSO] Motivo in 1 frase.`;
+## COSA NON FARE
+- Non pronosticare un risultato esatto e non usare "certo", "sicuro", "esplosione", "goleada".
+- Non trasformare uno scarto statistico in una previsione di esito: il modello azzecca
+  il pick nel ~52% dei casi, e la fascia alta arriva al 74%. Niente di piu'.
+- Non mescolare RUOLO e GENERALE in una stessa frase senza dire quale stai usando.
+- Se un dato e' N/D, dillo invece di aggirarlo.`;
 
     document.getElementById('ai-prompt').value = p;
+    wrapTables();
 
   } catch(e) {
     console.error(e);

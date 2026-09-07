@@ -43,6 +43,10 @@ cui si è già risposto, con i numeri. Le tre porte d'ingresso:
 - **«Ho quattro CSV di Serie A, cosa ci leggo?»** → *Quattro backtest veri di Serie A*:
   si sovrappongono, `/advanced` è vuoto su quelle stagioni, e le probabilità escono
   sotto-disperse di un terzo.
+- **«Perché la stessa partita compare due volte nel CSV?»** → *L'A/B del campione di
+  ruolo*: gli export si accumulano, e le due righe sono i due regimi.
+- **«Come aumento la probabilità?»** → *La mappa onesta*: tre cose diverse sotto la
+  stessa parola, e solo una ha margine oggi.
 
 **Le sei cose che più facilmente fanno perdere una giornata**, se non le sai:
 
@@ -72,7 +76,7 @@ memoria del progetto, non la sua verità corrente. → *L'audit del documento*.
 Sezione di consegna: dice a che punto siamo, così una sessione nuova non
 ricomincia da capo. Aggiornala quando cambia qualcosa di sostanziale.
 
-**Build corrente: `0905-b25`.** Scanner e Comparatore devono coincidere, e sul
+**Build corrente: `0905-b28`.** Scanner e Comparatore devono coincidere, e sul
 Comparatore il badge sotto la dropzone deve uscire **verde** dopo aver trascinato
 lo Scanner. Il branch di lavoro è `claude/controlla-agents-md-bugs-2dnlmj`.
 
@@ -85,10 +89,34 @@ da recuperare: i file dei due rami sono byte per byte identici.
 
 ### Dove siamo
 
-L'**1X2 funziona**: 51.4% di pick azzeccati sulle 1133 partite del `b21` contro il
-~43% del «gioca sempre in casa», e la fascia ≥60% rende il 71–78%. L'ensemble è
-`Dixon-Coles 70% + Markov 30%` su lambda stimati su **tutte** le partite di una
-squadra; l'Ordered Logit è calcolato e mostrato ma ha **peso 0**.
+**La cosa più importante da sapere, al `b26`: il modello è già più bravo di quanto
+dichiara, e il guadagno disponibile subito non è nel modello ma nell'etichetta.**
+
+L'**1X2 funziona**: ~51–52% di pick azzeccati contro il ~41–43% del «gioca sempre in
+casa». L'ensemble è `Dixon-Coles 70% + Markov 30%` su lambda stimati su **tutte** le
+partite di una squadra; l'Ordered Logit è calcolato e mostrato ma ha **peso 0**.
+
+Ma il numero che conta per chi usa lo Scanner non è la media: è **quanto rende la
+fascia alta**. Misurato su due campioni che non condividono né stagioni, né leghe, né
+disponibilità di `/advanced`:
+
+| soglia sul pick | 2025/26, tre leghe | Serie A 2021–25 | quota di partite |
+|---|---|---|---|
+| ≥ 45% | 59.1% | 60.8% | ~52% |
+| ≥ 50% | **66.2%** | **63.6%** | ~32% |
+| ≥ 55% | 69.8% | 68.3% | ~18% |
+| ≥ 60% | **73.6%** | **74.0%** | ~9% |
+| ≥ 65% | 87.7% | 78.9% | ~4% |
+
+Le due colonne coincidono a ogni soglia, e alla soglia del 50% il segno regge in tutte
+e tre le leghe (LaLiga 70.3%, Serie A 67.0%, Premier 59.5%). **Una partita su tre esce
+già oggi con una probabilità reale attorno ai due terzi, e una su undici attorno al
+75%.**
+
+Il problema è che **lo Scanner non lo dice**: la retta della confidence usa pendenza
+`0.880`, cioè comprime, e a 60% mostra 59 dove il vero è ~74. Vedi *L'A/B del campione
+di ruolo* per le due stime della pendenza (1.268 e 1.335, entrambe oltre 4 sigma) e
+perché non è ancora stata cambiata.
 
 I **mercati gol** restano il muro, ma dal `b22` si sa di che è fatto, e sono due cose
 distinte che vanno tenute separate:
@@ -141,6 +169,9 @@ sovradispersione — scagionati con i dati in mano.
 | `b23` | **audit del documento contro il sorgente**: quattro punti in cui AGENTS.md descriveva un motore diverso da quello che gira, il più grosso è che lo scope `role` **è** un sottoinsieme di `overall` (8 partite su 15). Esposto `ROLE_SCOPE_INDEPENDENT`, fermo a 0; via il codice morto |
 | `b24` | **il taglio temporale non si fida più dell'orario**: con un `time_utc` senza `Z` e un browser in un fuso avanti, la partita da prevedere entrava nel proprio storico (l'`1` da 0.528 a 0.557). Ora il confronto è sulla **data in forma di stringa**, in AND col timestamp: `_isPast` |
 | `b25` | l'A/B del campione di ruolo diventa un **interruttore** nel Comparatore invece di una riga di console: si fa anche da telefono. Motore invariato |
+| `b26` | **l'A/B è stato fatto e la risposta è no**: raddoppiare il campione di ruolo vale `0.0002` di logloss. `ROLE_SCOPE_INDEPENDENT` resta 0. Il nome del file esportato ora descrive cosa contiene invece del flag corrente |
+| `b27` | **la UI dice quale ambito usa e quanto rende davvero**: la card 1X2 evidenziava il ruolo dove il motore usa il generale, la letalità confrontava una previsione con una media, i tabelloni citavano hit vecchi. Etichetta d'ambito su ogni card, box di confronto ruolo/generale, narrative asciugate. Motore invariato |
+| `b28` | **telefono in verticale come caso principale**: la pagina scorreva di lato di 218px. Tabelle che scorrono dentro il proprio riquadro, tabellone a tre colonne, `min-width:0` sui figli di griglia. Il prompt porta le stats avanzate con la loro affidabilità misurata, e separa ruolo da generale. Motore invariato |
 
 Le tre build finali hanno una storia sola e va letta in *La baseline di coppia*:
 tre tentativi svuotati dallo stesso malinteso.
@@ -233,14 +264,14 @@ se un giro non mostra differenze sull'Elo, è il comportamento atteso.
    previsto/reale a zero su 1133 partite. Il fix additivo che le ha rese
    calcolabili era giusto, ma quello che si vede è rumore.
 
-13. **Misurare `ROLE_SCOPE_INDEPENDENT`.** È la cosa più grossa rimasta, ed è
-   l'unica in coda che vale su *tutti* i mercati insieme invece che su uno. Oggi
-   `role` è un sottoinsieme di `overall` — 8 partite su 15 — e il `b23` ha esposto
-   la costante che lo rende indipendente, ferma a 0. **Non si ricostruisce dal
-   CSV**, perché cambia quali partite si scaricano: servono due giri sullo stesso
-   periodo, `window.ROLE_SCOPE_INDEPENDENT = 1` prima del batch nel secondo. Il
-   CSV esporta la sezione *AMPIEZZA DEL CAMPIONE DI RUOLO* per riconoscere quale
-   dei due si sta leggendo. Vedi *Il campione di ruolo è un sottoinsieme*.
+13. ~~**Misurare `ROLE_SCOPE_INDEPENDENT`**~~ — **fatto, e la risposta è no.** L'A/B
+   appaiato su 1133 partite e tre leghe dice `0.0002` di logloss: resta a 0. Vedi
+   *L'A/B del campione di ruolo*. Ne esce una domanda nuova e più grossa, il punto 16.
+16. **Capire perché le probabilità sono sotto-disperse.** Due campioni indipendenti
+   danno pendenza **1.27** e **1.34** dove la retta a schermo ne usa 0.880, cioè spinge
+   dalla parte sbagliata. Il campione di ruolo è stato escluso come causa (punto 13).
+   Restano `SHRINK_K`, `SHRINK_LAM_K` e la media dell'ensemble, che comprime per
+   costruzione. Vedi *L'A/B del campione di ruolo*.
 14. **Portare `RESID_GAMMA` a 0.360** (o rimisurarlo) prima di rileggere la sezione
    *A/B CORREZIONE RESIDUALE* del CSV: nel codice è ancora 0.678, cioè la scala che
    il `b5` ha dichiarato sbagliata. Non sposta probabilità (`RESID_ALPHA = 0`),
@@ -775,6 +806,14 @@ a `scanner.html` al commit `cd51a69`, prima della ripulitura.
 - **Non leggere mai l'AUC dei mercati gol aggregata fra leghe.** Con base rate
   diversi (Premier 55.1% di Over 2.5, Serie A 45.7%) l'aggregato dava 0.531 dove
   dentro ogni lega era 0.495 e 0.500, cioè caso puro. Sempre per lega.
+- **Un'etichetta va presa dai dati che descrive, non dallo stato del momento.** Terza
+  volta: la lega letta dalla dropdown (`b21`), il `sel-league` senza `<option>` (`b18`),
+  e nel `b25` il suffisso `_ruoloIndip` nel nome del file, preso dall'interruttore
+  all'istante dell'export mentre il file conteneva **tutti e due** i regimi (gli export
+  si accumulano). Ogni volta l'errore non rompe niente: sposta le conclusioni in
+  silenzio. La domanda da farsi prima di scrivere un'etichetta è sempre la stessa:
+  *questo valore appartiene alla cosa che sto etichettando, o al momento in cui la sto
+  guardando?*
 - **Un taglio temporale dedotto da un orario è forte quanto il formato dell'orario.**
   `new Date("2025-04-30T00:00:00")` — senza `Z` — è ora **locale**, e in un fuso avanti
   rispetto a UTC finisce *prima* di mezzanotte UTC: la partita da prevedere entra nel
@@ -1745,6 +1784,303 @@ Over 2.5 per stagione (mai aggregato, i base rate vanno dal 45.2% al 55.1%): AUC
 questo documento, ma di nuovo: altra configurazione, altra lega, non confrontabile
 direttamente. La media prevista dell'Over sta **sotto** il reale in tre stagioni su
 quattro, che è il solito livello del lambda troppo basso.
+
+## L'A/B del campione di ruolo: la risposta è no, e apre una domanda più grossa
+
+Fatto sul serio, appaiato, su **1133 partite di tre leghe** (Serie A, Premier, LaLiga,
+2025/26) con `/advanced` **pieno**. Ogni partita compare due volte, una per regime.
+
+Il campione di ruolo si comporta come previsto: mediana **15 → 26** partite, e il peso
+`wS` da **0.833 a 0.897**. Cioè il rubinetto si apre davvero. Solo che a valle non
+succede niente.
+
+| | n | logloss A | logloss B | A−B | z |
+|---|---|---|---|---|---|
+| **tutte** | 1133 | 1.0071 | 1.0069 | +0.0002 | +1.85 |
+| LaLiga | 377 | 0.9887 | 0.9885 | +0.0002 | +1.62 |
+| Premier | 378 | 1.0267 | 1.0265 | +0.0002 | +0.96 |
+| Serie A | 378 | 1.0059 | 1.0058 | +0.0001 | +0.75 |
+
+Pick azzeccato **51.5% in entrambi**, alla prima cifra decimale. E sui mercati che la
+matrice di ruolo la usano davvero, **i segni si ribaltano**: Over 1.5 `−0.52`, Over 2.5
+`−0.56`, Over 3.5 `+2.32`, Goal/NoGoal `−1.97`; corner `−0.18`, tiri `−0.82`, gialli
+`+1.49`. Su otto test due sfiorano i 2 sigma in direzioni **opposte**, che è quello che
+il caso produce da solo. La regola di questo documento — *il segno deve reggere
+ovunque* — dice archiviare, e archiviamo: **`ROLE_SCOPE_INDEPENDENT` resta 0.**
+
+Per calibrare quanto è piccolo: `ENS_SCOPE_W` valeva `0.0042` con `z = −3.96`, e la
+ritaratura dei pesi dell'ensemble `0.0013`, già definita qui «al bordo del rumore».
+Questo vale `0.0002`, cioè **un quinto di quello che era già stato giudicato niente**.
+
+**Perché era prevedibile, col senno di poi.** `ENS_SCOPE_W = 1` significa che l'1X2 esce
+dai lambda **completi**: il blocco di ruolo pesa zero. Il campione di ruolo entra
+nell'1X2 solo di straforo, attraverso `goalsSotCorrection`, che stima i tiri in porta
+con `predictStat(..., 'role')` e poi riscala *entrambe* le coppie di lambda. Quel
+`+0.0002` è tutto lì. La lezione da tenere: **prima di misurare un grado di libertà,
+scrivere per quale strada arriva al numero che si guarda.** Qui la strada era quasi
+chiusa da un'altra costante decisa due build prima, e bastava rileggerla.
+
+### La domanda che resta aperta, e che questo A/B ha reso più netta
+
+Avevo ipotizzato che il campione di ruolo dimezzato spiegasse la **sotto-dispersione**
+delle probabilità. **Falsificata**: il campione raddoppia e la calibrazione non si
+muove.
+
+Ma la sotto-dispersione è confermata, e ora su due campioni indipendenti che non
+condividono né stagione, né leghe, né disponibilità di `/advanced`:
+
+| campione | n | pendenza | SE | sigma da 1 |
+|---|---|---|---|---|
+| Serie A 2021–2025, senza `/advanced` | 1504 | 1.335 | 0.056 | +5.95 |
+| Tre leghe 2025/26, con `/advanced` | 1133 | **1.268** | 0.065 | **+4.15** |
+
+Le due stime distano `0.067` con SE combinato `0.086`: **è lo stesso effetto**, e non
+era un artefatto dei dati mancanti. Il segno regge in tutte e sei le combinazioni
+lega-campione. A fasce: sotto il 30% previsto il modello sovrastima di ~2 punti, sopra
+il 50% **sottostima di +9**.
+
+La retta a schermo usa pendenza **0.880**, cioè comprime ancora: a 60% mostra 59 dove
+il vero è 69. **Non l'ho cambiata**, e la ragione va scritta perché è la parte
+interessante: questo documento riporta altrove che rifittarla «non serve», con pendenze
+**sotto** 1 su 756 e 6824 partite. Delle due l'una, e prima di dare la colpa a una delle
+due misure conviene notare che quelle rette sono state stimate **prima** dell'Elo che
+inclina i lambda (`b13`), prima dell'ensemble riscritto (`b20`) e prima di
+`ENS_SCOPE_W` (`b21`). È esattamente il caso che questo documento chiama *una stima
+invecchia quando cambia ciò che sta a monte*: il campione era giusto, la macchina sotto
+non è più quella. Prima di toccare un numero che l'utente legge, serve una lega in più —
+o accorgersi che i vecchi fit non sono confrontabili e rifarli daccapo.
+
+### Il «duplicato»: non è un errore, ed è colpa di un'etichetta
+
+I sette file arrivati insieme si contengono a vicenda: `cmpSavedMatches` **si accumula**
+fra un giro e l'altro, quindi ogni export contiene tutto quello che c'era prima più il
+giro nuovo. Da qui i conteggi che sono multipli tondi di una giornata di campionato
+(378, 756, 1134, 1512, 2266) e le partite che compaiono due volte nello stesso file.
+
+Le due righe di una stessa partita **non sono un doppione**: sono le due metà dell'A/B,
+`Scope: ruolo indipendente` a `no` e a `SI`. Il file più grande è l'esperimento completo.
+
+Quello che invece era sbagliato è il **nome**: il suffisso `_ruoloIndip` veniva
+dall'interruttore *al momento dell'export*, non da cosa c'era dentro, quindi file che
+contenevano tutti e due i regimi uscivano etichettati come se fossero solo il secondo
+giro. Corretto nel `b26`: adesso il suffisso lo decide il contenuto (`_ruoloIndip` se
+tutte le righe sono indipendenti, **`_AB`** se sono mescolate, niente se sono tutte di
+default), e l'intestazione del CSV scrive quante righe stanno in ciascun regime con
+l'avvertenza di separarle prima di contare. La riga per partita resta comunque la fonte
+di verità.
+
+È la stessa forma della trappola dell'etichetta di lega letta dal DOM: **un'etichetta
+presa da uno stato del momento invece che dai dati che descrive.** Terza volta in questo
+repository.
+
+## «Come aumento la probabilità?» — la mappa onesta, al `b26`
+
+Domanda dell'utente, e merita una risposta secca invece di un elenco di idee. Ci sono
+**tre cose diverse** che si confondono sotto quella parola, e solo una delle tre ha oggi
+un margine disponibile.
+
+### 1. Rendere il modello più bravo — fermo, e per buone ragioni
+
+Il pick azzeccato sta a ~51–52% e **non si è mosso in venti build**. Non per pigrizia:
+l'elenco in *Cosa è già stato provato* conta una quindicina di idee misurate e chiuse,
+e la serie `b23`–`b26` ne ha aggiunta un'altra (`ROLE_SCOPE_INDEPENDENT`, `0.0002` di
+logloss). Le due strade non ancora esaurite restano:
+
+- **L'endpoint `/shots`**, il candidato più serio per la forma della distribuzione dei
+  gol, mai provato perché costa una chiamata in più per partita;
+- **l'arbitro e la classifica sui cartellini**, dove il `b16` ha già mostrato che lo
+  squilibrio vale 30 punti base di AUC a costo zero.
+
+Tutto il resto della coda vale millesimi. **Aspettarsi che il 52% diventi 56% ritoccando
+una costante è, coi dati in mano, irrealistico.**
+
+### 2. Sapere QUALI partite sono affidabili — qui c'è il margine, ed è grosso
+
+Questa è la parte che l'utente vuole davvero, e la risposta è che **esiste già e non è
+esposta**. Il modello produce una fascia alta che rende molto più della sua media, e
+**due campioni indipendenti la confermano soglia per soglia** (tabella in *Dove siamo*):
+una partita su tre ha probabilità reale ~65%, una su undici ~74%.
+
+Non è «più accuratezza»: è la stessa accuratezza, **selezionata**. E oggi lo Scanner la
+nasconde, perché la retta della confidence ha pendenza `0.880` e comprime proprio dove
+servirebbe espandere.
+
+**È il guadagno migliore disponibile: costa zero chiamate, zero modelli nuovi, e non
+tocca il motore.** L'unica ragione per cui non è già stato fatto è che questo documento
+riporta altrove pendenze *sotto* 1 su campioni più vecchi (0.686 su 756 partite, 0.880
+su 6824) — segno opposto. Prima di riscrivere un numero che l'utente legge e su cui
+decide, va risolta quella contraddizione, e la spiegazione più probabile è che quelle
+stime **precedano** l'Elo che inclina i lambda (`b13`), l'ensemble riscritto (`b20`) e
+`ENS_SCOPE_W` (`b21`): stime invecchiate, non misure sbagliate.
+
+**Come chiuderla, in ordine di costo:**
+
+1. **Rifare i vecchi fit sul motore di oggi.** Se i 6824 match di allora sono ancora
+   disponibili, ribacktestarli col `b26` e rimisurare la pendenza. Se viene sopra 1,
+   la contraddizione sparisce e la retta si cambia.
+2. **Se non sono disponibili, una quarta e quinta lega** sul motore attuale. Con cinque
+   leghe concordi la stima vecchia è archiviata per anzianità.
+3. **Poi, e solo poi**, sostituire le due rette — o meglio, sostituirle con la
+   **tabella empirica per fascia** invece che con una retta: le soglie sono quello che
+   l'utente guarda, e una tabella non estrapola dove non ci sono dati.
+
+### 3. Prevedere meglio i gol — il muro, e resta muro
+
+AUC dell'Over 2.5 fra 0.51 e 0.60 a seconda del campione, e nessuna feature provata l'ha
+spostata. Il `b22` ha chiuso tre ipotesi (`rho`, sovradispersione, forma) e ne ha
+lasciata una sola, `LEAGUE_HALFLIFE_DAYS`. Qui **non c'è margine a breve**, e chi cerca
+valore dovrebbe guardare i mercati sui numeri, che discriminano meglio dei gol e nessuno
+li guarda.
+
+### La regola che tiene insieme le tre
+
+Le prime venti build hanno cercato accuratezza. Il dato del `b26` dice che **la
+selezione vale più dell'accuratezza**: passare dal giocare tutto al giocare il terzo
+superiore porta il rendimento da 52% a 66% senza toccare una riga del modello. Prima di
+aggiungere una feature, chiedersi se il segnale che si sta cercando non sia già dentro
+l'output, solo mal etichettato.
+
+## La revisione della UI del `b27`: tre cose che il modello faceva bene e lo schermo diceva male
+
+Nessuna riga di motore toccata: i numeri sono identici prima e dopo. Cambia **cosa lo
+schermo afferma su quei numeri**, ed erano tre affermazioni sbagliate.
+
+### 1. La card 1X2 evidenziava la colonna che il motore non usa
+
+La tabella mostra `probsOver` (generale) e `probsRole` (ruolo) affiancate, e marcava
+**SOLO RUOLO** con `td-highlight`, cioè come colonna primaria. Ma `ENS_SCOPE_W = 1`
+dal `b21`: l'1X2 esce dai lambda **completi**, e il blocco di ruolo pesa zero. Per
+tre build lo schermo ha indicato come principale la colonna che l'ensemble ignora.
+
+Il caso è più insidioso di un refuso perché la risposta giusta **cambia riga per riga**:
+sull'1X2 e le doppie chance conta il generale (`ENS_SCOPE_W`), sui mercati gol conta il
+ruolo (`dcMat = dcRole`). Ora la spunta `✓` è calcolata da `window.ENS_SCOPE_W`, non
+scritta a mano: se un backtest domani riporta la costante a 0, la spunta si sposta da
+sola.
+
+### 2. La letalità confrontava una previsione con una media
+
+La cella «NPxG vs Qualità Tiro» affiancava `npxgH_ro` — una previsione **di ruolo, per
+questa partita, corretta per l'avversario** — a `xgotH`, che è la **media semplice
+sulle ultime 30**. Due oggetti diversi con lo stesso trattino in mezzo, e la narrativa
+dei «cecchini» calcolava la differenza fra i due. Ora entrambi vengono dalle stesse 30
+partite.
+
+Regola generale, e vale oltre questa card: **due numeri affiancati da un `vs` devono
+venire dallo stesso campione.** Se non ci vengono, il confronto non misura quello che
+sembra.
+
+### 3. Gli hit del tabellone erano vecchi, e sbagliati per difetto
+
+Rimisurati sui due campioni indipendenti (2963 partite). Il tabellone **sottostimava
+quasi ovunque**, coerentemente con la sotto-dispersione:
+
+| mercato | soglia | diceva | misurato | casi |
+|---|---|---|---|---|
+| 1 | ≥65% | 83% | 83% | 107 |
+| 1 | ≥55% | 64% | **70%** | 436 |
+| 1X | ≥65% | 75% | **80%** | 1855 |
+| X2 | ≥65% | 74% | **78%** | 1001 |
+| 12 | ≥70% | 74% | 74% | 2698 |
+| Over 2.5 | ≥55% | 56% | **63%** | 354 |
+
+Due voci erano bloccate su una motivazione che i dati non reggono. **GG** era
+«NON GIOCARE, la probabilità non porta segnale»: rimisurato su 2637 partite gli scarti
+di calibrazione a fasce stanno fra `+5.4` e `−0.5`, cioè piccoli, e sopra il 60% rende
+il 67% su 89 casi. Declassato a MARGINALE con la numerosità scritta accanto.
+**NoGoal** invece il blocco lo merita, e ora lo dice col numero giusto: sopra il 55%
+rende 52%, sopra il 60% rende 50%.
+
+Ogni riga porta adesso **su quanti casi** l'hit è misurato. Sotto il centinaio la stima
+balla, e nasconderlo è peggio che scriverlo.
+
+### L'ambito di ogni box, che prima non era scritto da nessuna parte
+
+Quasi tutte le card della sezione *PERCHÉ* usano `_mean(team.overall.vals.*)`, cioè la
+media semplice sulle 30 partite — non decaduta, non di ruolo. Non era detto da nessuna
+parte, e conviveva con card che invece usano il ruolo. Ora ogni card porta
+un'etichetta (`GENERALE · 30 partite`, `RUOLO · casa/trasferta`, o entrambe) e in cima
+alla sezione c'è la legenda.
+
+Ed è stato aggiunto un **box di confronto** che mette le due letture una accanto
+all'altra con la **numerosità** di ciascuna: è il posto dove si vede a occhio che il
+ruolo poggia su metà dei dati, e diventa rosso sotto le 6 partite di ruolo, dove il
+lambda di ruolo è ormai quasi tutto media di lega.
+
+### Il mega-prompt, che era la cosa messa peggio
+
+Era in coda da sei build («da rifare quando le statistiche giuste saranno decise»), e
+guardarlo renderizzato ha mostrato che il problema non era lo stile.
+
+**Diceva una cosa falsa.** L'intestazione annunciava «poi correzione residuale sulle
+metriche di creazione», ma `RESID_ALPHA = 0` dal `b3`. La sezione 2 dello stesso prompt
+diceva correttamente «Correzione residuale: spenta»: il prompt si contraddiceva da solo,
+a otto righe di distanza.
+
+**Dava numeri diversi dallo schermo.** Le doppie chance nelle istruzioni uscivano da
+`probsRole` mentre l'1X2 usciva dall'ensemble: l'`1X` risultava `71.2%` nel prompt e
+`75.6%` nel tabellone, per lo stesso mercato nella stessa pagina. Idem la Sniper Box,
+rimasta su `npxg_ro` dopo che la card era passata alla media generale. Ora tutto viene
+dallo stesso posto, e c'è un controllo che verifica che `ensemble 1+X` coincida col
+tabellone.
+
+**Ma il difetto vero era un altro: buttava via l'informazione migliore che ha.** Chiedeva
+al modello di classificare ogni mercato `[ALTO/MEDIO/BASSO]` ragionando sulla prosa,
+mentre lo Scanner ha i verdetti misurati su 2963 partite due card più su. Un LLM che
+rideduce a occhio quello che un backtest ha già deciso è la definizione di rumore
+aggiunto. Adesso il prompt **porta il tabellone** e dice esplicitamente di non
+ridiscuterlo: il compito che resta è spiegare *perché* le statistiche di questa partita
+portano lì, che è l'unica cosa che il backtest non sa fare.
+
+Aggiunta una sezione **COSA NON FARE**, che vieta i risultati esatti, le parole
+«certo/sicuro/esplosione/goleada», e il mescolare ruolo e generale nella stessa frase.
+Con dentro il limite vero, scritto: *il modello azzecca il pick nel ~52% dei casi, e la
+fascia alta arriva al 74%. Niente di più.*
+
+Dettaglio non cosmetico: la `textarea` era alta **due righe** su 4.600 caratteri, quindi
+nessuno ha mai riletto ciò che copiava — ed è probabilmente il motivo per cui la frase
+falsa è sopravvissuta sei build. Ora è alta 18 righe, a spaziatura fissa.
+
+### Il telefono in verticale è il caso principale, non un ripiego
+
+Detto dall'utente e verificato subito: a 390px la pagina **scorreva di lato di 218px**.
+Non una tabella: la pagina intera, quindi ogni card andava letta trascinando.
+
+Tre cause, in ordine di quanto pesavano:
+
+1. **Metà delle tabelle non era dentro `.tbl-scroll`.** Il CSS mobile dà
+   `min-width:520px` alle tabelle proprio perché scorrano invece di schiacciarsi, ma
+   quelle senza contenitore scorrevole spingevano il `body`. Risolto una volta sola in
+   JS con `wrapTables()`, che avvolge ogni `table.table-ui` al caricamento e a fine
+   analisi: meglio di venti modifiche al markup che il prossimo dimentica.
+2. **`min-width:auto` sui figli di griglia.** Anche una tabella dentro `.tbl-scroll`
+   allargava la pagina, perché un figlio di grid/flex cresce fino al contenuto se non
+   gli si azzera `min-width`. È il difetto CSS che sembra un bug del browser e non lo è.
+3. Il nome squadra nella striscia dei risultati, senza `ellipsis`.
+
+**Ma azzerare lo scroll non basta.** Con `min-width:520px` le tabelle stanno *dentro* la
+loro scatola e scorrono lì — accettabile per una tabella di consultazione, inutile per
+una di **confronto**: se per leggere la seconda colonna devi trascinare, il confronto
+non lo fai. Da qui la classe `table-compact`, che toglie il `min-width` alle due tabelle
+dove le colonne vanno viste insieme (ruolo-vs-generale e tabellone) e le fa entrare nei
+390px.
+
+Il tabellone è passato da cinque colonne a **tre**: mercato, probabilità, e una terza che
+impila verdetto, hit e numerosità. A cinque colonne su un telefono la nota finiva fuori
+schermo e `51.4%` andava a capo fra il numero e il segno di percentuale.
+
+**La regola che ne esce**, e vale per ogni card nuova: *una tabella di consultazione può
+scorrere, una di confronto no.* E il controllo è meccanico — `document.body.scrollWidth`
+meno la larghezza dello schermo deve fare **0** a 390px.
+
+### Le narrative
+
+Erano scritte per convincere: «Goleada in transizione possibile», «Esplosione offensiva
+certa per regressione», «è l'accoppiamento che può rompere la partita». Su un modello
+che azzecca il 52% dei pick, un avverbio come *certa* è una promessa che i numeri non
+coprono. Riscritte per riportare lo scarto misurato e fermarsi lì — «Scarto 8.1 punti»,
+«sopra la soglia dei 15» — e i due segnali estremi dicono adesso cosa hanno osservato,
+non cosa succederà. Anche il mega-prompt chiede di attenersi agli scarti misurati.
 
 ## La lega che non arrivava mai: il bug che invalida le tarature
 
@@ -3351,10 +3687,13 @@ E due controlli che vanno fatti sul **CSV appena arrivato**, prima di analizzarl
   PitchAPI non serve `/advanced` per quelle stagioni. Quando succede, le sezioni *NUOVE
   METRICHE* e *METRICHE 0905-b4* sono `N/D` da cima a fondo e vanno saltate — **il resto
   del file resta valido**. Vedi *Quattro backtest veri di Serie A*.
-- **I-bis. Gli `ID PARTITA` sono unici, e i file che stai unendo non si sovrappongono?**
-  Quattro export consecutivi dello stesso archivio possono essere l'uno sottoinsieme
-  dell'altro: sommandoli si contano le stesse partite fino a tre volte. Deduplica sempre
-  per `ID PARTITA` prima di contare.
+- **I-bis. Gli `ID PARTITA` sono unici, dentro il file e fra i file?** `cmpSavedMatches`
+  **si accumula** fra un giro e l'altro, quindi export consecutivi sono l'uno
+  sottoinsieme dell'altro (conteggi che sono multipli tondi di una giornata: 378, 756,
+  1134… sono il segnale) e **dentro** un singolo file la stessa partita può comparire
+  due volte. Se compare due volte, guarda `Scope: ruolo indipendente`: se le due righe
+  hanno regimi diversi non è un doppione, è un A/B e va separato; se ce l'hanno uguale
+  allora sì, è lo stesso giro ripetuto. Deduplica sempre prima di contare.
 
 Per B, C e D il CSV va letto sapendo che **ogni partita occupa 4 colonne**
 (Previsto, Confidence, Reale, Esito) e che le sezioni CASA e TRASFERTA ripetono le
