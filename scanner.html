@@ -584,7 +584,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
     <div class="card" style="border-top: 4px solid var(--text);">
       <div class="section-title" style="color:var(--text)">🤖 MEGA-PROMPT per Claude AI</div>
       <button class="btn btn-dark" style="margin-bottom:10px" onclick="copiaPrompt()">📋 Copia Mega-Prompt</button>
-      <textarea id="ai-prompt" readonly></textarea>
+      <textarea id="ai-prompt" readonly rows="18" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;line-height:1.45;white-space:pre;overflow:auto"></textarea>
     </div>
     
     <div class="card" style="border-top:4px solid #455a64">
@@ -1595,7 +1595,7 @@ function renderVerdetti(mk) {
   // '--' non e' un divieto, e' assenza di verdetto: grigio, non rosso come NON GIOCARE
   const col = v => v === 'FORTE' ? '#0f766e' : v === 'GIOCABILE' ? '#2d7d32'
                  : v === 'MARGINALE' ? '#f57c00' : v === 'NON GIOCARE' ? '#c62828' : '#4b5563';
-  let html = '';
+  let html = '', righe = [];
   for (const [nome, p, regole, blocco] of R) {
     if (p == null || isNaN(p)) continue;
     let verdetto = 'FUORI SOGLIA', hit = '--', perche = '';
@@ -1605,6 +1605,8 @@ function renderVerdetti(mk) {
       if (verdetto === 'FUORI SOGLIA') perche = 'la probabilita\' non arriva alla soglia minima validata: nessun verdetto';
     }
     const ok = verdetto === 'FORTE' || verdetto === 'GIOCABILE';
+    righe.push(`- ${nome}: ${(p*100).toFixed(1)}% -> ${verdetto}`
+               + (hit !== '--' ? ` (hit misurato ${hit} su ${perche})` : ` (${perche})`));
     html += '<tr' + (ok ? ' style="background:rgba(34,197,94,.10)"' : '') + '>'
           + '<td style="text-align:left;font-weight:bold">' + nome + '</td>'
           + '<td style="font-weight:bold">' + (p * 100).toFixed(1) + '%</td>'
@@ -1614,6 +1616,7 @@ function renderVerdetti(mk) {
           + '<td style="text-align:left;font-size:11px;color:var(--dim)">' + perche + '</td></tr>';
   }
   safeHtml('verdetti-body', html);
+  window.__VERDETTI_TXT = righe.join('\n');
   renderLeagueNote();
 }
 
@@ -2628,12 +2631,21 @@ async function avviaScanner() {
 
     let p = `SEI UN DATA SCIENTIST ESPERTO DI CALCIO. Partita: ${hName} vs ${aName} (Simulazione al ${dateInput}).
 
-1. ENSEMBLE E QUOTE IMPLICITE (Modello NPxG)
-- Probabilità (${_ensLabel}, poi correzione residuale sulle metriche di creazione): 1 (${pct(m1)}) | X (${pct(mX)}) | 2 (${pct(m2)})
+AMBITO DEI NUMERI. Ogni riga dice da quali partite viene. RUOLO = solo le gare in casa
+${artDel(hName)} e in trasferta ${artDel(aName)} (${dH.role.n} e ${dA.role.n} partite).
+GENERALE = le ultime ${dH.overall.n} e ${dA.overall.n} di qualunque tipo. Sono due campioni diversi:
+non mescolarli in una stessa frase senza dirlo.
+
+1. IL VERDETTO DEL MODELLO
+- Probabilità 1X2 (${_ensLabel}): 1 (${pct(m1)}) | X (${pct(mX)}) | 2 (${pct(m2)})   [GENERALE]
 - Fair Odds Ensemble: 1 @${oddM1} | X @${oddMX} | 2 @${oddM2}   (Dixon-Coles puro: 1 @${odd1} | X @${oddX} | 2 @${odd2})
 - Affidabilita' campionaria: ${dH.role.n} match casa per ${hName}, ${dA.role.n} match trasferta per ${aName}. Vicini KNN efficaci: ${f1(knn_H.nEff)} / ${f1(knn_A.nEff)}
 - Confidence Score: ${confidence}/100
 - Scarti fuori soglia: ${hiddenValueMsgClean}
+
+1-bis. TABELLONE GIOCABILITA' — verdetti gia' decisi da 2963 partite di backtest.
+Sono la parte piu' affidabile di questo prompt: NON ridiscuterli e non riclassificarli.
+${window.__VERDETTI_TXT || '(non disponibile)'}
 
 2. SCOMPOSIZIONE MODELLI
 - Dixon-Coles Puro (Ruolo NPxG) [nell'ensemble, peso ${_wPct(_share(_EW.dc)*(1-_sW))}]: 1 (${pct(probsRole.p1)}) | X (${pct(probsRole.pX)}) | 2 (${pct(probsRole.p2)})
@@ -2645,7 +2657,7 @@ async function avviaScanner() {
 - Correzione residuale: ${(window.__RESID_DEBUG && window.__RESID_DEBUG.applied) ? ('attiva su ' + window.__RESID_DEBUG.available.join('/') + ', spostamento ' + (window.__RESID_DEBUG.delta >= 0 ? '+' : '') + window.__RESID_DEBUG.delta.toFixed(3) + ' in log-odds verso ' + (window.__RESID_DEBUG.delta >= 0 ? 'la casa' : 'la trasferta')) : ((window.__RESID_DEBUG && window.__RESID_DEBUG.sig != null) ? ('spenta (alpha 0); segnale misurato ' + window.__RESID_DEBUG.sig.toFixed(3) + ' vs edge ' + window.__RESID_DEBUG.edge.toFixed(3)) : 'non calcolabile (metriche di creazione assenti)')}
 
 3. QUALITA' E CINISMO (The Sniper Box)
-- NPxG vs xGOT (Indice Cecchino): ${hName} ${f2(npxgH_ro)} vs ${xgotH > 0 ? f2(xgotH) : (xgShotH > 0 ? f2(xgShotH) + " (xG/Tiro)" : "N/D")} | ${aName} ${f2(npxgA_ro)} vs ${xgotA > 0 ? f2(xgotA) : (xgShotA > 0 ? f2(xgShotA) + " (xG/Tiro)" : "N/D")}
+- NPxG vs xGOT [GENERALE, stessi campioni per i due numeri]: ${hName} ${f2(npxgH_gen)} vs ${xgotH > 0 ? f2(xgotH) : (xgShotH > 0 ? f2(xgShotH) + " (xG/Tiro)" : "N/D")} | ${aName} ${f2(npxgA_gen)} vs ${xgotA > 0 ? f2(xgotA) : (xgShotA > 0 ? f2(xgShotA) + " (xG/Tiro)" : "N/D")}
 - Big Chances (Create/Sprecate): ${hName} ${f1(bcH)}/${f1(bcmH)} | ${aName} ${f1(bcA)}/${f1(bcmA)}
 - Dipendenza da Palla Inattiva: ${hName} ${setPctH > 0 ? f1(setPctH) : "0"}% | ${aName} ${setPctA > 0 ? f1(setPctA) : "0"}%
 - Efficienza Goal vs xG: ${hName} ${f2(effH_ro)} | ${aName} ${f2(effA_ro)}
@@ -2683,25 +2695,26 @@ ISTRUZIONI:
 Produci le seguenti sezioni in quest\'ordine:
 
 ## LETTURA DEI CALCOLI
-Sintetizza in 4-5 righe lo scontro tattico incrociando Matrice Difensiva (Gegenpressing, altezza linea, compattezza), Cinismo (xGOT vs NPxG, Big Chances sprecate) e Funnel Offensivo (baricentri, penetrazione). Attieniti agli scarti misurati: non dedurre esiti che i numeri non sostengono.
+Massimo 5 righe. Incrocia Matrice Difensiva (altezza linea, compattezza, riaggressione),
+Cinismo (xGOT contro NPxG, Big Chances sprecate) e Funnel Offensivo (baricentri,
+penetrazione). Cita il numero e lo scarto ogni volta che affermi qualcosa. Se lo scarto
+fra le due squadre e' piccolo, dillo: "si equivalgono" e' una risposta legittima.
 
-## VALUTAZIONE MERCATI (sii diretto, usa i numeri sotto)
+## MERCATI
+Per ogni riga del tabellone qui sopra, una frase sola che dica **perché** le statistiche
+di questa partita portano a quel numero. Il verdetto e l'hit li ha gia' decisi il
+backtest: non riclassificarli, non aggiungere ALTO/MEDIO/BASSO tuoi, non proporre
+mercati che il tabellone non elenca.
 
-Mercati base:
-- 1 (${hName} vince): Ensemble ${pct(m1)} | Ruolo DC ${pct(probsRole.p1)} → [ALTO/MEDIO/BASSO] Motivo in 1 frase.
-- X (Pareggio): Ensemble ${pct(mX)} | Ruolo DC ${pct(probsRole.pX)} → [ALTO/MEDIO/BASSO] Motivo in 1 frase.
-- 2 (${aName} vince): Ensemble ${pct(m2)} | Ruolo DC ${pct(probsRole.p2)} → [ALTO/MEDIO/BASSO] Motivo in 1 frase.
+Dove il verdetto e' FUORI SOGLIA, scrivi in mezza riga cosa manca perche' quel mercato
+diventi giocabile (quale statistica dovrebbe muoversi e in che verso).
 
-Doppie chance:
-- 1X: ${pct(probsRole.p1 + probsRole.pX)} → [ALTO/MEDIO/BASSO] Motivo in 1 frase.
-- X2: ${pct(probsRole.pX + probsRole.p2)} → [ALTO/MEDIO/BASSO] Motivo in 1 frase.
-- 12: ${pct(probsRole.p1 + probsRole.p2)} → [ALTO/MEDIO/BASSO] Motivo in 1 frase.
-
-Gol/Over-Under:
-- Goal (GG): ${pct(probsRole.pGG)} → [ALTO/MEDIO/BASSO] Cita NPxG, efficienza tiri e difese.
-- NoGoal (NG): ${pct(1 - probsRole.pGG)} → [ALTO/MEDIO/BASSO] Motivo in 1 frase.
-- Over 2.5: ${pct(probsRole.pOv)} → [ALTO/MEDIO/BASSO] Cita ritmo, timing gol per fascia e NPxG totali.
-- Under 2.5: ${pct(1 - probsRole.pOv)} → [ALTO/MEDIO/BASSO] Motivo in 1 frase.`;
+## COSA NON FARE
+- Non pronosticare un risultato esatto e non usare "certo", "sicuro", "esplosione", "goleada".
+- Non trasformare uno scarto statistico in una previsione di esito: il modello azzecca
+  il pick nel ~52% dei casi, e la fascia alta arriva al 74%. Niente di piu'.
+- Non mescolare RUOLO e GENERALE in una stessa frase senza dire quale stai usando.
+- Se un dato e' N/D, dillo invece di aggirarlo.`;
 
     document.getElementById('ai-prompt').value = p;
 

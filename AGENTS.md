@@ -2006,6 +2006,40 @@ all'altra con la **numerosità** di ciascuna: è il posto dove si vede a occhio 
 ruolo poggia su metà dei dati, e diventa rosso sotto le 6 partite di ruolo, dove il
 lambda di ruolo è ormai quasi tutto media di lega.
 
+### Il mega-prompt, che era la cosa messa peggio
+
+Era in coda da sei build («da rifare quando le statistiche giuste saranno decise»), e
+guardarlo renderizzato ha mostrato che il problema non era lo stile.
+
+**Diceva una cosa falsa.** L'intestazione annunciava «poi correzione residuale sulle
+metriche di creazione», ma `RESID_ALPHA = 0` dal `b3`. La sezione 2 dello stesso prompt
+diceva correttamente «Correzione residuale: spenta»: il prompt si contraddiceva da solo,
+a otto righe di distanza.
+
+**Dava numeri diversi dallo schermo.** Le doppie chance nelle istruzioni uscivano da
+`probsRole` mentre l'1X2 usciva dall'ensemble: l'`1X` risultava `71.2%` nel prompt e
+`75.6%` nel tabellone, per lo stesso mercato nella stessa pagina. Idem la Sniper Box,
+rimasta su `npxg_ro` dopo che la card era passata alla media generale. Ora tutto viene
+dallo stesso posto, e c'è un controllo che verifica che `ensemble 1+X` coincida col
+tabellone.
+
+**Ma il difetto vero era un altro: buttava via l'informazione migliore che ha.** Chiedeva
+al modello di classificare ogni mercato `[ALTO/MEDIO/BASSO]` ragionando sulla prosa,
+mentre lo Scanner ha i verdetti misurati su 2963 partite due card più su. Un LLM che
+rideduce a occhio quello che un backtest ha già deciso è la definizione di rumore
+aggiunto. Adesso il prompt **porta il tabellone** e dice esplicitamente di non
+ridiscuterlo: il compito che resta è spiegare *perché* le statistiche di questa partita
+portano lì, che è l'unica cosa che il backtest non sa fare.
+
+Aggiunta una sezione **COSA NON FARE**, che vieta i risultati esatti, le parole
+«certo/sicuro/esplosione/goleada», e il mescolare ruolo e generale nella stessa frase.
+Con dentro il limite vero, scritto: *il modello azzecca il pick nel ~52% dei casi, e la
+fascia alta arriva al 74%. Niente di più.*
+
+Dettaglio non cosmetico: la `textarea` era alta **due righe** su 4.600 caratteri, quindi
+nessuno ha mai riletto ciò che copiava — ed è probabilmente il motivo per cui la frase
+falsa è sopravvissuta sei build. Ora è alta 18 righe, a spaziatura fissa.
+
 ### Le narrative
 
 Erano scritte per convincere: «Goleada in transizione possibile», «Esplosione offensiva
