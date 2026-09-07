@@ -76,7 +76,7 @@ memoria del progetto, non la sua verità corrente. → *L'audit del documento*.
 Sezione di consegna: dice a che punto siamo, così una sessione nuova non
 ricomincia da capo. Aggiornala quando cambia qualcosa di sostanziale.
 
-**Build corrente: `0905-b27`.** Scanner e Comparatore devono coincidere, e sul
+**Build corrente: `0905-b28`.** Scanner e Comparatore devono coincidere, e sul
 Comparatore il badge sotto la dropzone deve uscire **verde** dopo aver trascinato
 lo Scanner. Il branch di lavoro è `claude/controlla-agents-md-bugs-2dnlmj`.
 
@@ -171,6 +171,7 @@ sovradispersione — scagionati con i dati in mano.
 | `b25` | l'A/B del campione di ruolo diventa un **interruttore** nel Comparatore invece di una riga di console: si fa anche da telefono. Motore invariato |
 | `b26` | **l'A/B è stato fatto e la risposta è no**: raddoppiare il campione di ruolo vale `0.0002` di logloss. `ROLE_SCOPE_INDEPENDENT` resta 0. Il nome del file esportato ora descrive cosa contiene invece del flag corrente |
 | `b27` | **la UI dice quale ambito usa e quanto rende davvero**: la card 1X2 evidenziava il ruolo dove il motore usa il generale, la letalità confrontava una previsione con una media, i tabelloni citavano hit vecchi. Etichetta d'ambito su ogni card, box di confronto ruolo/generale, narrative asciugate. Motore invariato |
+| `b28` | **telefono in verticale come caso principale**: la pagina scorreva di lato di 218px. Tabelle che scorrono dentro il proprio riquadro, tabellone a tre colonne, `min-width:0` sui figli di griglia. Il prompt porta le stats avanzate con la loro affidabilità misurata, e separa ruolo da generale. Motore invariato |
 
 Le tre build finali hanno una storia sola e va letta in *La baseline di coppia*:
 tre tentativi svuotati dallo stesso malinteso.
@@ -2039,6 +2040,38 @@ fascia alta arriva al 74%. Niente di più.*
 Dettaglio non cosmetico: la `textarea` era alta **due righe** su 4.600 caratteri, quindi
 nessuno ha mai riletto ciò che copiava — ed è probabilmente il motivo per cui la frase
 falsa è sopravvissuta sei build. Ora è alta 18 righe, a spaziatura fissa.
+
+### Il telefono in verticale è il caso principale, non un ripiego
+
+Detto dall'utente e verificato subito: a 390px la pagina **scorreva di lato di 218px**.
+Non una tabella: la pagina intera, quindi ogni card andava letta trascinando.
+
+Tre cause, in ordine di quanto pesavano:
+
+1. **Metà delle tabelle non era dentro `.tbl-scroll`.** Il CSS mobile dà
+   `min-width:520px` alle tabelle proprio perché scorrano invece di schiacciarsi, ma
+   quelle senza contenitore scorrevole spingevano il `body`. Risolto una volta sola in
+   JS con `wrapTables()`, che avvolge ogni `table.table-ui` al caricamento e a fine
+   analisi: meglio di venti modifiche al markup che il prossimo dimentica.
+2. **`min-width:auto` sui figli di griglia.** Anche una tabella dentro `.tbl-scroll`
+   allargava la pagina, perché un figlio di grid/flex cresce fino al contenuto se non
+   gli si azzera `min-width`. È il difetto CSS che sembra un bug del browser e non lo è.
+3. Il nome squadra nella striscia dei risultati, senza `ellipsis`.
+
+**Ma azzerare lo scroll non basta.** Con `min-width:520px` le tabelle stanno *dentro* la
+loro scatola e scorrono lì — accettabile per una tabella di consultazione, inutile per
+una di **confronto**: se per leggere la seconda colonna devi trascinare, il confronto
+non lo fai. Da qui la classe `table-compact`, che toglie il `min-width` alle due tabelle
+dove le colonne vanno viste insieme (ruolo-vs-generale e tabellone) e le fa entrare nei
+390px.
+
+Il tabellone è passato da cinque colonne a **tre**: mercato, probabilità, e una terza che
+impila verdetto, hit e numerosità. A cinque colonne su un telefono la nota finiva fuori
+schermo e `51.4%` andava a capo fra il numero e il segno di percentuale.
+
+**La regola che ne esce**, e vale per ogni card nuova: *una tabella di consultazione può
+scorrere, una di confronto no.* E il controllo è meccanico — `document.body.scrollWidth`
+meno la larghezza dello schermo deve fare **0** a 390px.
 
 ### Le narrative
 
