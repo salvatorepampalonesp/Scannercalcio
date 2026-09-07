@@ -76,7 +76,7 @@ memoria del progetto, non la sua verità corrente. → *L'audit del documento*.
 Sezione di consegna: dice a che punto siamo, così una sessione nuova non
 ricomincia da capo. Aggiornala quando cambia qualcosa di sostanziale.
 
-**Build corrente: `0905-b26`.** Scanner e Comparatore devono coincidere, e sul
+**Build corrente: `0905-b27`.** Scanner e Comparatore devono coincidere, e sul
 Comparatore il badge sotto la dropzone deve uscire **verde** dopo aver trascinato
 lo Scanner. Il branch di lavoro è `claude/controlla-agents-md-bugs-2dnlmj`.
 
@@ -170,6 +170,7 @@ sovradispersione — scagionati con i dati in mano.
 | `b24` | **il taglio temporale non si fida più dell'orario**: con un `time_utc` senza `Z` e un browser in un fuso avanti, la partita da prevedere entrava nel proprio storico (l'`1` da 0.528 a 0.557). Ora il confronto è sulla **data in forma di stringa**, in AND col timestamp: `_isPast` |
 | `b25` | l'A/B del campione di ruolo diventa un **interruttore** nel Comparatore invece di una riga di console: si fa anche da telefono. Motore invariato |
 | `b26` | **l'A/B è stato fatto e la risposta è no**: raddoppiare il campione di ruolo vale `0.0002` di logloss. `ROLE_SCOPE_INDEPENDENT` resta 0. Il nome del file esportato ora descrive cosa contiene invece del flag corrente |
+| `b27` | **la UI dice quale ambito usa e quanto rende davvero**: la card 1X2 evidenziava il ruolo dove il motore usa il generale, la letalità confrontava una previsione con una media, i tabelloni citavano hit vecchi. Etichetta d'ambito su ogni card, box di confronto ruolo/generale, narrative asciugate. Motore invariato |
 
 Le tre build finali hanno una storia sola e va letta in *La baseline di coppia*:
 tre tentativi svuotati dallo stesso malinteso.
@@ -1937,6 +1938,82 @@ selezione vale più dell'accuratezza**: passare dal giocare tutto al giocare il 
 superiore porta il rendimento da 52% a 66% senza toccare una riga del modello. Prima di
 aggiungere una feature, chiedersi se il segnale che si sta cercando non sia già dentro
 l'output, solo mal etichettato.
+
+## La revisione della UI del `b27`: tre cose che il modello faceva bene e lo schermo diceva male
+
+Nessuna riga di motore toccata: i numeri sono identici prima e dopo. Cambia **cosa lo
+schermo afferma su quei numeri**, ed erano tre affermazioni sbagliate.
+
+### 1. La card 1X2 evidenziava la colonna che il motore non usa
+
+La tabella mostra `probsOver` (generale) e `probsRole` (ruolo) affiancate, e marcava
+**SOLO RUOLO** con `td-highlight`, cioè come colonna primaria. Ma `ENS_SCOPE_W = 1`
+dal `b21`: l'1X2 esce dai lambda **completi**, e il blocco di ruolo pesa zero. Per
+tre build lo schermo ha indicato come principale la colonna che l'ensemble ignora.
+
+Il caso è più insidioso di un refuso perché la risposta giusta **cambia riga per riga**:
+sull'1X2 e le doppie chance conta il generale (`ENS_SCOPE_W`), sui mercati gol conta il
+ruolo (`dcMat = dcRole`). Ora la spunta `✓` è calcolata da `window.ENS_SCOPE_W`, non
+scritta a mano: se un backtest domani riporta la costante a 0, la spunta si sposta da
+sola.
+
+### 2. La letalità confrontava una previsione con una media
+
+La cella «NPxG vs Qualità Tiro» affiancava `npxgH_ro` — una previsione **di ruolo, per
+questa partita, corretta per l'avversario** — a `xgotH`, che è la **media semplice
+sulle ultime 30**. Due oggetti diversi con lo stesso trattino in mezzo, e la narrativa
+dei «cecchini» calcolava la differenza fra i due. Ora entrambi vengono dalle stesse 30
+partite.
+
+Regola generale, e vale oltre questa card: **due numeri affiancati da un `vs` devono
+venire dallo stesso campione.** Se non ci vengono, il confronto non misura quello che
+sembra.
+
+### 3. Gli hit del tabellone erano vecchi, e sbagliati per difetto
+
+Rimisurati sui due campioni indipendenti (2963 partite). Il tabellone **sottostimava
+quasi ovunque**, coerentemente con la sotto-dispersione:
+
+| mercato | soglia | diceva | misurato | casi |
+|---|---|---|---|---|
+| 1 | ≥65% | 83% | 83% | 107 |
+| 1 | ≥55% | 64% | **70%** | 436 |
+| 1X | ≥65% | 75% | **80%** | 1855 |
+| X2 | ≥65% | 74% | **78%** | 1001 |
+| 12 | ≥70% | 74% | 74% | 2698 |
+| Over 2.5 | ≥55% | 56% | **63%** | 354 |
+
+Due voci erano bloccate su una motivazione che i dati non reggono. **GG** era
+«NON GIOCARE, la probabilità non porta segnale»: rimisurato su 2637 partite gli scarti
+di calibrazione a fasce stanno fra `+5.4` e `−0.5`, cioè piccoli, e sopra il 60% rende
+il 67% su 89 casi. Declassato a MARGINALE con la numerosità scritta accanto.
+**NoGoal** invece il blocco lo merita, e ora lo dice col numero giusto: sopra il 55%
+rende 52%, sopra il 60% rende 50%.
+
+Ogni riga porta adesso **su quanti casi** l'hit è misurato. Sotto il centinaio la stima
+balla, e nasconderlo è peggio che scriverlo.
+
+### L'ambito di ogni box, che prima non era scritto da nessuna parte
+
+Quasi tutte le card della sezione *PERCHÉ* usano `_mean(team.overall.vals.*)`, cioè la
+media semplice sulle 30 partite — non decaduta, non di ruolo. Non era detto da nessuna
+parte, e conviveva con card che invece usano il ruolo. Ora ogni card porta
+un'etichetta (`GENERALE · 30 partite`, `RUOLO · casa/trasferta`, o entrambe) e in cima
+alla sezione c'è la legenda.
+
+Ed è stato aggiunto un **box di confronto** che mette le due letture una accanto
+all'altra con la **numerosità** di ciascuna: è il posto dove si vede a occhio che il
+ruolo poggia su metà dei dati, e diventa rosso sotto le 6 partite di ruolo, dove il
+lambda di ruolo è ormai quasi tutto media di lega.
+
+### Le narrative
+
+Erano scritte per convincere: «Goleada in transizione possibile», «Esplosione offensiva
+certa per regressione», «è l'accoppiamento che può rompere la partita». Su un modello
+che azzecca il 52% dei pick, un avverbio come *certa* è una promessa che i numeri non
+coprono. Riscritte per riportare lo scarto misurato e fermarsi lì — «Scarto 8.1 punti»,
+«sopra la soglia dei 15» — e i due segnali estremi dicono adesso cosa hanno osservato,
+non cosa succederà. Anche il mega-prompt chiede di attenersi agli scarti misurati.
 
 ## La lega che non arrivava mai: il bug che invalida le tarature
 
