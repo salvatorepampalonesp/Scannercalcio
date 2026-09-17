@@ -174,7 +174,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b28</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b29</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -204,6 +204,11 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
   </div>
 
   <div id="dashboard-area" style="display:none">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+      <button class="btn btn-green" id="btn-nuova" onclick="nuovaPartita()"
+              style="flex:1 1 200px;padding:12px;font-size:14px">&#8592; Cambia partita</button>
+      <div id="cache-info" style="flex:1 1 160px;font-size:10px;color:var(--dim);line-height:1.4"></div>
+    </div>
     <div style="text-align:center; margin-bottom:20px; padding:15px; background:var(--card); border-radius:12px; box-shadow:none">
       <h2 id="ui-title" style="font-size:26px;color:var(--text); letter-spacing:-0.5px">Home vs Away</h2>
       <div id="ui-streak" style="margin:10px 0; display:flex; justify-content:center; gap:12px; align-items:center; flex-wrap:wrap"></div>
@@ -692,6 +697,34 @@ function getMostFrequentWithPct(arr) {
 // Su un telefono in verticale la pagina non deve mai scorrere di lato: le tabelle
 // larghe scorrono DENTRO il proprio riquadro. Nel markup meta' non erano dentro
 // .tbl-scroll, e con min-width 520px spingevano il body oltre lo schermo.
+// Cambiare partita non deve costare un ricaricamento. La pagina torna al setup
+// tenendo in memoria il database di lega (globalLeagueMatchesCache) e soprattutto la
+// RAW_CACHE: le squadre gia' analizzate non si riscaricano. Un ricaricamento invece
+// butta tutto, ed e' il motivo per cui la seconda partita sembrava lunga quanto la prima.
+function aggiornaCacheInfo() {
+  const el = document.getElementById('cache-info');
+  if (!el) return;
+  const nRaw = Object.keys(RAW_CACHE || {}).length;
+  const nLega = (globalLeagueMatchesCache || []).length;
+  el.innerHTML = nRaw
+    ? `In memoria: <b>${nLega}</b> partite di lega e <b>${nRaw}</b> gia' scaricate.<br>`
+      + `Una squadra gia' vista non si riscarica. <b>Non ricaricare la pagina</b>: perderesti tutto.`
+    : `In memoria: <b>${nLega}</b> partite di lega.`;
+}
+
+function nuovaPartita() {
+  document.getElementById('dashboard-area').style.display = 'none';
+  document.getElementById('setup-card').style.display = 'block';
+  document.getElementById('matchup-builder').style.display = 'block';
+  const c = document.getElementById('console-loader');
+  if (c) { c.innerHTML = ''; c.style.display = 'none'; }
+  const b = document.getElementById('btn-avvia');
+  if (b) { b.disabled = false; b.innerHTML = '\ud83d\ude80 2. ESTRAI DATI E SIMULA MODELLI'; }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  const sh = document.getElementById('sel-home');
+  if (sh) try { sh.focus({ preventScroll: true }); } catch (e) {}
+}
+
 function wrapTables() {
   document.querySelectorAll('table.table-ui').forEach(t => {
     if (t.parentElement && t.parentElement.classList.contains('tbl-scroll')) return;
@@ -982,10 +1015,61 @@ async function apiCall(endpoint, silent = false) {
   } catch(e) { return null; }
 }
 
+// Il database di lega sono tre chiamate e ~300 KB: sta in localStorage, cosi' un
+// ricaricamento non lo riscarica. Scade dopo un giorno perche' le partite nuove
+// arrivano, e la chiave include lega+stagione per non mescolare archivi diversi.
+const DB_TTL_MS = 24 * 60 * 60 * 1000;
+const dbKey = (lId, season) => 'scanner_db_' + lId + '_' + season;
+
+function salvaDbLega(lId, season, matches) {
+  try {
+    localStorage.setItem(dbKey(lId, season), JSON.stringify({ t: Date.now(), m: matches }));
+  } catch (e) {
+    logConsole("   (database non memorizzato: spazio del browser esaurito)");
+  }
+}
+
+function leggiDbLega(lId, season) {
+  try {
+    const raw = localStorage.getItem(dbKey(lId, season));
+    if (!raw) return null;
+    const o = JSON.parse(raw);
+    if (!o || !Array.isArray(o.m) || !o.m.length) return null;
+    if (Date.now() - (o.t || 0) > DB_TTL_MS) return null;
+    return o;
+  } catch (e) { return null; }
+}
+
+function mostraRoster(lId) {
+  const baseMatches = globalLeagueMatchesCache.filter(m => m.league_id === lId);
+  const teamsMap = new Map();
+  baseMatches.forEach(m => { if(m.home_team?.id) teamsMap.set(m.home_team.id, m.home_team.name); if(m.away_team?.id) teamsMap.set(m.away_team.id, m.away_team.name); });
+  const teams = Array.from(teamsMap.entries()).map(([id, name]) => ({id, name})).sort((a,b) => a.name.localeCompare(b.name));
+  const selH = document.getElementById('sel-home'); const selA = document.getElementById('sel-away');
+  selH.innerHTML = '<option value="">-- Seleziona Casa --</option>'; selA.innerHTML = '<option value="">-- Seleziona Trasferta --</option>';
+  teams.forEach(t => { selH.add(new Option(t.name, t.id)); selA.add(new Option(t.name, t.id)); });
+  document.getElementById('matchup-builder').style.display = 'block';
+  return teams.length;
+}
+
 async function caricaSquadreLega() {
   try {
     const cCode = document.getElementById('sel-country').value; const lId = document.getElementById('sel-league').value; const season = document.getElementById('sel-season').value;
     if(!cCode || !lId || !season) return alert("Seleziona Paese, Lega e Stagione prima di caricare il database.");
+
+    const _cached = leggiDbLega(lId, season);
+    if (_cached) {
+      document.getElementById('console-loader').innerHTML = '';
+      globalLeagueMatchesCache = _cached.m;
+      const n = mostraRoster(lId);
+      const ore = Math.round((Date.now() - _cached.t) / 3600000);
+      logConsole(`\u267b\ufe0f Database ripreso dalla memoria del browser: ${_cached.m.length} partite, scaricate ${ore < 1 ? 'meno di un\'ora' : ore + ' ore'} fa.`);
+      logConsole(`\u2705 Roster pronto: ${n} squadre. Nessuna chiamata all'API.`);
+      logConsole(`   Per riscaricarlo da capo, premi di nuovo fra ${Math.max(1, 24 - ore)} ore o svuota i dati del sito.`);
+      document.getElementById("btn-carica").disabled = false;
+      aggiornaCacheInfo();
+      return;
+    }
     document.getElementById('console-loader').innerHTML = ''; logConsole(`⏳ Costruzione Database Storico per la Lega...`); document.getElementById("btn-carica").disabled = true;
 
     let s1, s2, s3;
@@ -1012,15 +1096,11 @@ async function caricaSquadreLega() {
     }
     if(allMatches.length === 0) { document.getElementById("btn-carica").disabled = false; return alert("Nessun match trovato."); }
     globalLeagueMatchesCache = allMatches;
+    salvaDbLega(lId, season, allMatches);
 
-    const baseMatches = allMatches.filter(m => m.league_id === lId); const teamsMap = new Map();
-    baseMatches.forEach(m => { if(m.home_team?.id) teamsMap.set(m.home_team.id, m.home_team.name); if(m.away_team?.id) teamsMap.set(m.away_team.id, m.away_team.name); });
-    const teams = Array.from(teamsMap.entries()).map(([id, name]) => ({id, name})).sort((a,b) => a.name.localeCompare(b.name));
-    const selH = document.getElementById('sel-home'); const selA = document.getElementById('sel-away');
-    selH.innerHTML = '<option value="">-- Seleziona Casa --</option>'; selA.innerHTML = '<option value="">-- Seleziona Trasferta --</option>';
-    teams.forEach(t => { selH.add(new Option(t.name, t.id)); selA.add(new Option(t.name, t.id)); });
-
-    logConsole(`✅ Roster Pronto: Trovate ${teams.length} squadre.`); document.getElementById('matchup-builder').style.display = 'block'; document.getElementById("btn-carica").disabled = false;
+    const nTeams = mostraRoster(lId);
+    logConsole(`✅ Roster Pronto: Trovate ${nTeams} squadre.`); document.getElementById("btn-carica").disabled = false;
+    aggiornaCacheInfo();
   } catch(e) { alert("Errore caricamento database: " + e.message); document.getElementById("btn-carica").disabled = false; }
 }
 
@@ -1652,7 +1732,7 @@ function renderVerdetti(mk) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b28';
+window.__SCANNER_BUILD = '0905-b29';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -2820,6 +2900,7 @@ diventi giocabile (quale statistica dovrebbe muoversi e in che verso).
 
     document.getElementById('ai-prompt').value = p;
     wrapTables();
+    aggiornaCacheInfo();
 
   } catch(e) {
     console.error(e);

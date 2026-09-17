@@ -76,7 +76,7 @@ memoria del progetto, non la sua verità corrente. → *L'audit del documento*.
 Sezione di consegna: dice a che punto siamo, così una sessione nuova non
 ricomincia da capo. Aggiornala quando cambia qualcosa di sostanziale.
 
-**Build corrente: `0905-b28`.** Scanner e Comparatore devono coincidere, e sul
+**Build corrente: `0905-b29`.** Scanner e Comparatore devono coincidere, e sul
 Comparatore il badge sotto la dropzone deve uscire **verde** dopo aver trascinato
 lo Scanner. Il branch di lavoro è `claude/controlla-agents-md-bugs-2dnlmj`.
 
@@ -172,6 +172,7 @@ sovradispersione — scagionati con i dati in mano.
 | `b26` | **l'A/B è stato fatto e la risposta è no**: raddoppiare il campione di ruolo vale `0.0002` di logloss. `ROLE_SCOPE_INDEPENDENT` resta 0. Il nome del file esportato ora descrive cosa contiene invece del flag corrente |
 | `b27` | **la UI dice quale ambito usa e quanto rende davvero**: la card 1X2 evidenziava il ruolo dove il motore usa il generale, la letalità confrontava una previsione con una media, i tabelloni citavano hit vecchi. Etichetta d'ambito su ogni card, box di confronto ruolo/generale, narrative asciugate. Motore invariato |
 | `b28` | **telefono in verticale come caso principale**: la pagina scorreva di lato di 218px. Tabelle che scorrono dentro il proprio riquadro, tabellone a tre colonne, `min-width:0` sui figli di griglia. Il prompt porta le stats avanzate con la loro affidabilità misurata, e separa ruolo da generale. Motore invariato |
+| `b29` | **cambiare partita non costa più un ricaricamento**: la card di setup veniva nascosta e mai più mostrata, quindi l'unica via era `F5` — che buttava `RAW_CACHE`. Bottone «Cambia partita», e il database di lega in `localStorage`. Seconda partita: da 239 chiamate a 108, terza a **0**. Motore invariato |
 
 Le tre build finali hanno una storia sola e va letta in *La baseline di coppia*:
 tre tentativi svuotati dallo stesso malinteso.
@@ -2040,6 +2041,48 @@ fascia alta arriva al 74%. Niente di più.*
 Dettaglio non cosmetico: la `textarea` era alta **due righe** su 4.600 caratteri, quindi
 nessuno ha mai riletto ciò che copiava — ed è probabilmente il motivo per cui la frase
 falsa è sopravvissuta sei build. Ora è alta 18 righe, a spaziatura fissa.
+
+### Cambiare partita costava un ricaricamento, e il ricaricamento costava tutto
+
+Segnalato dall'utente: «ogni volta che voglio fare un'altra partita devo ricaricare
+tutto». Guardando il codice il difetto è di una riga sola, in `avviaScanner`:
+
+```js
+document.getElementById('setup-card').style.display = 'none';
+```
+
+La card di setup viene nascosta e **non viene mai più mostrata**. Non esisteva alcun
+percorso di ritorno: l'unico modo di cambiare partita era `F5`. E lì sta il costo vero,
+perché un ricaricamento non butta solo la schermata — butta `RAW_CACHE`, cioè i payload
+`/stats`, `/lineups`, `/advanced` e `/events` di tutte le partite già scaricate.
+
+**Quanto costava, misurato** su un campionato sintetico da 18 squadre, contando le
+chiamate uscenti:
+
+| | chiamate |
+|---|---|
+| prima partita (database di lega + le due squadre) | 239 |
+| seconda partita, **una** squadra già vista | **108** |
+| terza partita, **entrambe** già viste | **0** |
+
+Ricaricando, ognuna di quelle righe tornava a 239. Il lavoro c'era già tutto in memoria:
+mancava il bottone.
+
+**Due correzioni, di livello diverso.** `nuovaPartita()` rimette la card di setup e
+nasconde il cruscotto senza toccare né `globalLeagueMatchesCache` né `RAW_CACHE` — è
+quella che fa risparmiare di più. In più il database di lega (tre chiamate, ~470 KB)
+finisce in `localStorage` con chiave `lega+stagione` e scadenza a 24 ore, così anche chi
+ricarica davvero non rifà quelle tre. La `RAW_CACHE` invece **non** è persistita: sono
+decine di MB, e localStorage non è il posto.
+
+Il riquadro accanto al bottone dice cosa c'è in memoria e avverte di non ricaricare: è
+l'unica difesa contro il gesto che cancella il lavoro, e finché il costo era invisibile
+nessuno sapeva di pagarlo.
+
+Nota di metodo: la ripresa dal `localStorage` doveva ricostruire il roster, che era
+codice già scritto dentro `caricaSquadreLega`. Estratto in `mostraRoster()` e chiamato
+da tutte e due i percorsi, invece di copiarlo — è la trappola delle due copie, e qui si
+presentava come una tentazione da sei righe.
 
 ### Il telefono in verticale è il caso principale, non un ripiego
 
