@@ -162,7 +162,7 @@ select{cursor:pointer}
   <div class="topbar">
     <div class="brand">
       <h1>Comparatore V9.7</h1>
-      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b30</span>
+      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b31</span>
       <span class="badge" id="engine-badge">motore non caricato</span>
     </div>
     <span class="badge">previsioni vs realtà</span>
@@ -317,6 +317,16 @@ select{cursor:pointer}
           <span style="font-weight:600">Campione di ruolo indipendente <span style="font-weight:400;opacity:.75">(A/B)</span></span>
         </label>
         <div class="note" style="margin:6px 0 0 30px" id="cmp-role-indep-hint"></div>
+      </div>
+
+      <div style="margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--panel2)">
+        <label style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0">
+          <span style="font-weight:600;flex:1 1 auto;min-width:0">Scala dell'Elo <span style="font-weight:400;opacity:.75">(<code>ELO_SCALE</code>)</span></span>
+          <input type="number" id="cmp-elo-scale" step="0.05" min="0" max="3" inputmode="decimal"
+                 onchange="cmpApplyEloScale(true)"
+                 style="width:92px;flex:0 0 auto;padding:8px;font-size:16px;text-align:center">
+        </label>
+        <div class="note" style="margin:6px 0 0 0" id="cmp-elo-scale-hint"></div>
       </div>
 
       <div class="prog" id="cmp-progress"></div>
@@ -585,6 +595,11 @@ async function loadEngineFromText(text, fileName) {
         residDebug: (typeof window.__RESID_DEBUG !== 'undefined') ? window.__RESID_DEBUG : null,
         goalsDebug: (typeof window.__GOALS_DEBUG !== 'undefined') ? window.__GOALS_DEBUG : null,
         eloDebug: (typeof window.__ELO_DEBUG !== 'undefined') ? window.__ELO_DEBUG : null,
+        /* Con ENS_SCOPE_W = 1 l'1X2 nasce dai lambda COMPLETI: e' QUESTO il tilt che
+           decide 1/X/2. __ELO_DEBUG e' quello di ruolo, che decide i mercati gol.
+           Fino al b30 il CSV ricostruiva il peso w dal ruolo, cioe' da un percorso
+           che l'1X2 non prende (AGENTS.md, Il peso dell'Elo si misurava sul ramo sbagliato). */
+        eloDebugOver: (typeof window.__ELO_DEBUG_OVER !== 'undefined') ? window.__ELO_DEBUG_OVER : null,
         unitDebug: (typeof window.__UNIT_DEBUG !== 'undefined') ? window.__UNIT_DEBUG : null,
         probsKnn:    (typeof probsKnn    !== 'undefined') ? probsKnn    : null,
         mk_ro:       (typeof mk_ro       !== 'undefined') ? mk_ro       : null,
@@ -706,7 +721,7 @@ async function loadEngineFromText(text, fileName) {
     <p><code>${fileName}</code> — clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
 
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b30';
+  const _bComp = '0905-b31';
   const _el = document.getElementById('engine-build');
   if (_el) {
     if (!_bScan) {
@@ -1260,9 +1275,37 @@ function cmpApplyScopeFlag(fromUser) {
   return on;
 }
 
+// LA SCALA DELL'ELO. Per confrontare due scale NON serve rilanciare: il CSV ricostruisce
+// da solo S = 0.75 ... 1.60 nella sezione "A/B SCALA DELL ELO", perche' lgElo e' lineare
+// in S e la differenza di rating e l'HFA sono nel debug. Questo campo serve per l'altra
+// cosa: far girare l'intero motore a una scala diversa, cosi' si vedono anche i mercati
+// che dipendono dallo squilibrio (GG, handicap, risultati esatti), che la ricostruzione
+// non puo' dare. Default 1.25, il valore misurato nel b30.
+function cmpApplyEloScale(fromUser) {
+  const el = document.getElementById('cmp-elo-scale');
+  let v = el ? parseFloat(el.value) : NaN;
+  if (!isFinite(v) || v < 0) v = 1.25;
+  v = Math.max(0, Math.min(3, v));
+  if (el) el.value = v;
+  window.ELO_SCALE = v;
+  try { localStorage.setItem('cmp_elo_scale', String(v)); } catch (e) {}
+  const hint = document.getElementById('cmp-elo-scale-hint');
+  if (hint) {
+    hint.innerHTML = Math.abs(v - 1.25) < 1e-9
+      ? 'Valore misurato nel <b>b30</b> (pendenza 1.235 su tre leghe, scelto fra 1.20 e 1.35 in sette fold su sette). A <b>1.00</b> il motore torna alla scala Elo canonica, cioe\' al comportamento fino al b29.'
+      : (Math.abs(v - 1) < 1e-9
+        ? 'A 1.00 la differenza di rating entra grezza: e\' il motore fino al <b>b29</b>. Utile come giro A dell\'A/B.'
+        : 'Scala fuori dai valori noti. Il CSV ricostruisce comunque 0.75\u20131.60 da solo: rilancia solo se ti servono i mercati che dipendono dallo squilibrio.');
+  }
+  if (fromUser && typeof cmpLog === 'function')
+    cmpLog('\u2696\ufe0f ELO_SCALE = ' + v.toFixed(2) + (Math.abs(v - 1.25) < 1e-9 ? ' (default b30)' : ''));
+  return v;
+}
+
 async function cmpRunMatch(match, limit, render) {
   const mId = match.id;
   cmpApplyScopeFlag(false);
+  cmpApplyEloScale(false);
 
   const setSel = (id, valId, valName) => {
     const el = document.getElementById(id);
@@ -2006,6 +2049,7 @@ function cmpBuildResult(match, R, actH, actA) {
     residDebug: R.residDebug || null,
     goalsDebug: R.goalsDebug || null,
     eloDebug: R.eloDebug || null,
+    eloDebugOver: R.eloDebugOver || null,
     unitDebug: R.unitDebug || null,
     scopeDebug: R.scopeDebug || null,
     predStats: R.predStats || null,
@@ -2076,6 +2120,17 @@ function cmpScopeMix() {
   return { si, no };
 }
 
+// Le scale effettivamente presenti nel file. Stesso principio di cmpScopeMix: chi legge
+// deve sapere cosa contiene il file, non com'era l'interruttore al momento dell'export.
+function cmpScaleMix() {
+  const set = new Set();
+  for (const m of (cmpSavedMatches || [])) {
+    const d = (m && (m.eloDebugOver || m.eloDebug)) || null;
+    if (d && typeof d.scale === 'number' && isFinite(d.scale)) set.add(+d.scale.toFixed(4));
+  }
+  return [...set].sort((a, b) => a - b);
+}
+
 function cmpExportCSV() {
   if (!cmpSavedMatches.length) return alert("Nessun match salvato");
   const M = cmpSavedMatches;
@@ -2111,6 +2166,12 @@ function cmpExportCSV() {
       rows.push(`Sono le due meta' di un A/B: separale sulla riga "Scope: ruolo indipendente" prima di qualunque conto, o conterai ogni partita due volte.` + ';;;'.repeat(M.length));
     } else if (mix.si) {
       rows.push(`Campione di ruolo INDIPENDENTE su tutte le ${mix.si} righe (ROLE_SCOPE_INDEPENDENT = 1).` + ';;;'.repeat(M.length));
+    }
+    const sc = cmpScaleMix();
+    if (sc.length > 1) {
+      rows.push(`ATTENZIONE: il file contiene PIU' scale dell'Elo — ${sc.join(' e ')}. Separale sulla riga "Elo: scala ELO_SCALE [completo]" prima di contare.` + ';;;'.repeat(M.length));
+    } else if (sc.length === 1) {
+      rows.push(`Scala dell'Elo: ELO_SCALE = ${String(sc[0]).replace('.', ',')}${sc[0] === 1.25 ? ' (default b30)' : (sc[0] === 1 ? ' (scala canonica, comportamento fino al b29)' : '')}.` + ';;;'.repeat(M.length));
     }
   }
   rows.push('' );
@@ -2556,21 +2617,67 @@ function cmpExportCSV() {
     ['Elo: ha toccato il cap', d => d ? (d.capped ? 'SI' : 'no') : 'N/D']
   ];
   eRows.forEach(([lbl, fn]) => {
-    const r = [lbl];
+    const r = [lbl + ' [ruolo \u2192 mercati gol]'];
     M.forEach(m => r.push(fn(m.eloDebug), '', '', ''));
     rows.push(r.join(';'));
   });
+  // Lo stesso, sul ramo COMPLETO: e' quello da cui esce l'1X2 (ENS_SCOPE_W = 1).
+  const _over = m => m.eloDebugOver || null;
+  eRows.forEach(([lbl, fn]) => {
+    const r = [lbl + ' [completo \u2192 1X2]'];
+    M.forEach(m => r.push(fn(_over(m)), '', '', ''));
+    rows.push(r.join(';'));
+  });
+  if (M.length && !M[0].eloDebugOver) {
+    rows.push(['\u26a0\ufe0f Il motore caricato non espone __ELO_DEBUG_OVER: le righe [completo] sono vuote e gli A/B qui sotto non valgono. Serve uno Scanner b30 o successivo.']
+      .concat(Array(M.length * 4).fill('')).join(';'));
+  }
+
+  // ── Gli A/B qui sotto girano TUTTI sul ramo completo, perche' e' quello che decide
+  // l'1X2. Fino al b30 giravano sul ramo di ruolo e potevano indicare il verso opposto:
+  // su una partita di prova w=0 dava 42.9% dal ruolo e 64.5% dal completo.
+  const _pc = lg => (lg == null || !isFinite(lg)) ? 'N/D'
+    : (100 / (1 + Math.exp(-lg))).toFixed(1).replace('.', ',') + '%';
+  const _esito = m => (m.tgt && m.tgt.sH != null)
+    ? (m.tgt.sH > m.tgt.sA ? '1' : (m.tgt.sH < m.tgt.sA ? '2' : 'pari (escluso)')) : 'N/D';
+
   rows.push('');
-  rows.push('--- A/B PESO DELL ELO (log-odds casa-vs-trasferta, ricostruiti) ---' + ';;;;'.repeat(M.length));
+  rows.push('--- A/B PESO DELL ELO (1 contro 2, pari esclusi; ricostruito, motore non rilanciato) ---' + ';;;;'.repeat(M.length));
+  rows.push(['esito reale 1 contro 2'].concat(M.flatMap(m => [_esito(m), '', '', ''])).join(';'));
+  const _usato = (v, ref) => (ref != null && Math.abs(v - ref) < 1e-9) ? ' <-- usato' : '';
   [0, 0.25, 0.5, 0.75, 1.0].forEach(w => {
-    const r = ['w=' + w.toFixed(2) + ' · log-odds'];
+    const r = ['w=' + w.toFixed(2)];
     M.forEach(m => {
-      const d = m.eloDebug;
+      const d = _over(m);
       if (!d || d.lgModel == null || d.lgElo == null) { r.push('N/D', '', '', ''); return; }
-      r.push(_g4((1 - w) * d.lgModel + w * d.lgElo), '', '', '');
+      r.push(_pc((1 - w) * d.lgModel + w * d.lgElo) + _usato(w, d.w), '', '', '');
     });
     rows.push(r.join(';'));
   });
+
+  // ── A/B DELLA SCALA. lgElo = (S*differenzaElo + HFA)/173.7178, quindi una scala
+  // diversa si ricostruisce esattamente senza rilanciare niente: servono solo la
+  // differenza di rating e l'HFA, che il b30 mette dentro il debug.
+  rows.push('');
+  rows.push('--- A/B SCALA DELL ELO (ELO_SCALE, 1 contro 2, pari esclusi; ricostruito) ---' + ';;;;'.repeat(M.length));
+  rows.push(['esito reale 1 contro 2'].concat(M.flatMap(m => [_esito(m), '', '', ''])).join(';'));
+  rows.push(['NOTA: questa ricostruzione e\' invariante alla scala con cui il giro e\' stato fatto '
+    + '(lgModel si calcola PRIMA dell\'inclinazione), quindi un giro solo basta per tutte le S. '
+    + 'Rilanciare a una scala diversa serve solo per i mercati che dipendono dallo squilibrio: GG, handicap, risultati esatti.']
+    .concat(Array(M.length * 4).fill('')).join(';'));
+  [0.75, 1.00, 1.10, 1.25, 1.40, 1.60].forEach(S => {
+    const r = ['S=' + S.toFixed(2)];
+    M.forEach(m => {
+      const d = _over(m);
+      if (!d || d.lgModel == null || d.eloDiff == null || d.hfa == null || d.w == null) { r.push('N/D', '', '', ''); return; }
+      const lgElo = (S * d.eloDiff + d.hfa) / 173.7178;
+      r.push(_pc((1 - d.w) * d.lgModel + d.w * lgElo) + _usato(S, d.scale), '', '', '');
+    });
+    rows.push(r.join(';'));
+  });
+  rows.push(['differenza Elo (H-A)'].concat(M.flatMap(m => {
+    const d = _over(m); return [d && d.eloDiff != null ? String(Math.round(d.eloDiff)) : 'N/D', '', '', ''];
+  })).join(';'));
 
   rows.push('');
   rows.push('--- A/B PESO DEI TIRI IN PORTA (scala sui lambda, ricostruita) ---' + ';;;;'.repeat(M.length));
@@ -2674,7 +2781,10 @@ function cmpExportCSV() {
   // contenere tutti e due i regimi. Etichettarlo col flag corrente e' una bugia, ed e'
   // successo (AGENTS.md, L'A/B del campione di ruolo: la risposta e' no).
   const _mix = cmpScopeMix();
-  const _sfx = _mix.si && _mix.no ? '_AB' : (_mix.si ? '_ruoloIndip' : '');
+  let _sfx = _mix.si && _mix.no ? '_AB' : (_mix.si ? '_ruoloIndip' : '');
+  const _sc = cmpScaleMix();
+  if (_sc.length > 1) _sfx += '_scaleMISTE';
+  else if (_sc.length === 1 && _sc[0] !== 1.25) _sfx += '_S' + String(_sc[0]).replace('.', '');
   const _base = cmpBatchExportFilename || `Backtest_V97_${new Date().toISOString().split('T')[0]}.csv`;
   a.download = _sfx ? _base.replace(/\.csv$/i, _sfx + '.csv') : _base;
   a.click();
@@ -2749,6 +2859,12 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (el) el.checked = localStorage.getItem('cmp_role_indep') === '1';
   } catch (e) {}
   cmpApplyScopeFlag(false);
+  try {
+    const es = document.getElementById('cmp-elo-scale');
+    const sv = parseFloat(localStorage.getItem('cmp_elo_scale'));
+    if (es) es.value = isFinite(sv) ? sv : 1.25;
+  } catch (e) {}
+  cmpApplyEloScale(false);
 
   const saved = localStorage.getItem('cmp_engine_html');
   if (!saved) return;

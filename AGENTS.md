@@ -176,6 +176,8 @@ sovradispersione — scagionati con i dati in mano.
 
 | `b30` | **l'Elo era tarato su una scala che non è la sua**: la differenza di rating va moltiplicata per **1.25** prima di diventare quota (pendenza di calibrazione 1.235, `z = 3.13`, e la scelta fuori campione prende 1.20–1.35 in **sette fold su sette**). E la curva dello stacco saturava troppo presto per distinguere due mesi da otto: `ELO_GAP_TAU` da 110 a **360**. Logloss 1-contro-2 da 0.5836 a 0.5743, `z` appaiato **−3.54**, sei fold su sette migliorano. La card mostra cosa l'Elo fa ai lambda |
 
+| `b31` | **il peso dell'Elo si misurava sul ramo sbagliato**: il CSV registrava il tilt di *ruolo*, ma dal `b21` l'1X2 esce dai lambda *completi*. Le due ricostruzioni di `w` vanno in **direzioni opposte** (a `w = 0`: 42.9% dal ruolo, 64.5% dal completo). Ora il Comparatore registra tutti e due i rami, ricostruisce `w` e `ELO_SCALE` da quello giusto, e la scala si può spazzare **senza rilanciare** |
+
 Le tre build finali hanno una storia sola e va letta in *La baseline di coppia*:
 tre tentativi svuotati dallo stesso malinteso.
 
@@ -1191,6 +1193,13 @@ Brier 0.6194 → 0.6107, logloss 1.0317 → 1.0202.
 `window.ELO_1X2_W` è esposto e il CSV ricostruisce w = 0 / 0.25 / 0.5 / 0.75 / 1.0
 dai soli log-odds, senza rilanciare il motore.
 
+> **Attenzione a questa misura.** Fino al `b31` quella ricostruzione girava sul tilt di
+> **ruolo**, mentre dal `b21` l'1X2 esce dai lambda **completi**: le due curve vanno in
+> direzioni opposte. I numeri del `b14` qui sopra sono stati ottenuti **prima** del
+> `b21`, quando il ramo registrato era ancora quello giusto — ma qualunque
+> ri-taratura di `w` fatta da un CSV fra il `b21` e il `b30` è da buttare. Vedi
+> *Il peso dell'Elo si misurava sul ramo sbagliato*.
+
 **In produzione** l'inclinazione si applica al 100% delle partite, ha mediana
 −0.001, 5°–95° percentile −0.103 / +0.109 e massimo assoluto **0.215** contro un
 cap a 0.60: il paracadute non ha mai morso.
@@ -1367,6 +1376,79 @@ chiudere.
 partite post-stacco 0.5068 → 0.5124. Con τ = 360 l'incoerenza vale comunque 9 punti
 percentuali su una pausa estiva, cioè quasi niente. Resta così, e resta scritto qui
 perché è il genere di cosa che qualcuno «sistema» tre volte.
+
+## Il peso dell'Elo si misurava sul ramo sbagliato (`b31`)
+
+Nato da una domanda diretta: *«hai aggiornato il Comparatore per farci controllare la
+differenza di Elo quindi?»*. La risposta onesta era **no**: il `b30` aveva aggiunto
+tredici righe al Comparatore, tutte di **registrazione** e nessuna di **controllo**.
+Il file diceva *con quale* scala era stato prodotto, ma non dava modo di confrontarne
+due. Guardando come rimediare è saltato fuori un bug più vecchio.
+
+### Le due ricostruzioni vanno in direzioni opposte
+
+L'hook registrava `window.__ELO_DEBUG`, che è il tilt applicato ai lambda **di ruolo**.
+Ma `ENS_SCOPE_W = 1` dal `b21`: l'1X2 nasce dai lambda **completi**, e quindi dal tilt
+`__ELO_DEBUG_OVER`, che non veniva registrato affatto. I due tilt condividono `lgElo`
+(stessa differenza di rating, stesso HFA) ma hanno **`lgModel` diverso**, perché
+partono da lambda diversi. Misurato su una partita di prova:
+
+| peso `w` | ricostruito dal **ruolo** (quello che il CSV usava) | ricostruito dal **completo** (quello che decide l'1X2) |
+|---|---|---|
+| 0 | 42.9% | **64.5%** |
+| 0.5 | 48.7% | 59.6% |
+| 1 | 54.5% | 54.5% |
+
+Coincidono **solo** a `w = 1`, dove il termine del modello sparisce e resta il solo
+Elo. Ovunque altro il CSV mostrava una curva che sale mentre quella vera scende.
+
+**Quando si è rotto.** `ELO_1X2_W = 0.75` è stato scelto nel `b14`; `ENS_SCOPE_W` è
+andato a 1 nel `b21`. La sezione A/B non è stata toccata, e da lì in poi ha
+ricostruito un percorso che l'1X2 non prende più. È il caso da manuale di
+*una stima invecchia quando cambia ciò che sta a monte*, con l'aggravante che qui non
+è invecchiata la **stima**: è invecchiato lo **strumento che serviva a rifarla**.
+
+La regola che ne esce, e che vale oltre questo caso: **quando una costante decide da
+quale ramo passa il calcolo, ogni strumento di misura a valle va riletto quel giorno
+stesso.** `ENS_SCOPE_W` ha spostato l'1X2 da un ramo all'altro e nessuno è andato a
+guardare cosa leggeva il CSV.
+
+### Cosa fa ora il Comparatore
+
+- L'hook registra **tutti e due** i tilt (`eloDebug` = ruolo, `eloDebugOver` =
+  completo), e ogni riga dell'inclinazione compare due volte, etichettata
+  `[ruolo → mercati gol]` e `[completo → 1X2]`. Se il motore caricato è più vecchio
+  del `b30` e non espone `__ELO_DEBUG_OVER`, il CSV lo **dice in chiaro** invece di
+  stampare colonne vuote.
+- L'A/B del peso `w` gira sul ramo completo, ed esce in **percentuali** invece che in
+  log-odds, con accanto l'**esito reale** (1 / 2 / pari escluso): si contano i colpi
+  senza aprire una calcolatrice.
+- Nuovo **A/B della scala**, `S = 0.75 … 1.60`. E qui c'è la parte utile: `lgModel` si
+  calcola **prima** dell'inclinazione, quindi non dipende da `S`. La ricostruzione è
+  perciò **esattamente invariante** al valore con cui il giro è stato fatto — **un giro
+  solo dà tutte le scale**. Verificato: due giri, uno a 1.25 e uno a 1.00, producono
+  colonne A/B identiche, e in ciascuna il valore ricostruito alla scala usata coincide
+  con quello che il motore ha davvero prodotto (65.5% e 65.0%).
+- Un campo `ELO_SCALE` nel pannello, con lo stato che sopravvive al ricaricamento,
+  perché rilanciare *serve ancora* per i mercati che dipendono dallo squilibrio (GG,
+  handicap, risultati esatti), che la ricostruzione non può dare.
+
+### Il marcatore va nella cella, non nell'etichetta di riga
+
+Prima versione: `S=1.25 (attuale)` nell'etichetta. Sbagliato per lo stesso motivo per
+cui lo era il suffisso `_ruoloIndip` nel nome del file — `cmpSavedMatches` **accumula**
+giri fatti con valori diversi, quindi l'etichetta di riga mentirebbe su tutte le
+colonne tranne quelle dell'ultimo giro. Ora il marcatore `<-- usato` sta **dentro la
+cella**, confrontato con lo `scale` di *quella* partita. Stessa cosa per l'intestazione
+(«il file contiene PIÙ scale dell'Elo») e per il suffisso del nome file
+(`_scaleMISTE`, oppure `_S1` quando tutto il file è a scala canonica).
+
+**Terza volta che questo errore si presenta** in forme diverse: etichetta di lega presa
+dalla dropdown invece che dalla partita (`b21`), suffisso del file preso dal flag
+corrente invece che dal contenuto (`b26`), e ora questo. La forma è sempre la stessa:
+**descrivere un dato con lo stato di un interruttore letto in un momento diverso da
+quando il dato è stato prodotto.** Se un'etichetta descrive delle righe, va calcolata
+**dalle righe**.
 
 ## L'audit sistematico del `b19`: cosa è stato controllato e cosa è saltato fuori
 
@@ -3881,6 +3963,14 @@ girano sul solo sorgente, quindi si possono fare a ogni commit senza un backtest
   `lamH0 + lamA0` deve essere identico **al bit** a `lamH + lamA`. È l'invariante su
   cui poggia tutta la separazione fra mercati 1X2 e mercati gol: se salta, Over/Under
   si muove quando non dovrebbe e nessuna card lo direbbe.
+
+- **O. Gli strumenti di misura leggono il ramo che il motore usa davvero (`b31`).**
+  Ogni volta che si tocca una costante che **sceglie un ramo** (`ENS_SCOPE_W` in
+  testa), rileggere quel giorno stesso cosa registra l'hook del Comparatore e da cosa
+  ricostruiscono le sezioni A/B. Il controllo automatico è: far girare una partita e
+  confrontare `__ELO_DEBUG.lgModel` con `__ELO_DEBUG_OVER.lgModel`; se `ENS_SCOPE_W`
+  è 1, la sezione A/B del peso deve usare il **secondo**. Ha trovato dieci build di
+  ricostruzioni sul ramo sbagliato.
 
 **Il giro completo senza rete.** Il motore si può far girare per intero su dati
 finti, in Chromium, senza toccare PitchAPI: è il controllo che ha misurato
