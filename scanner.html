@@ -174,7 +174,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b29</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b30</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -590,11 +590,13 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
 
       <div class="card" style="border-top: 4px solid #3f51b5;">
         <div class="section-title" style="color:#3f51b5">♟️ ELO Rating e Trend Penalty<span class="scope scope-gen">GENERALE &middot; 30 partite</span></div>
-        <table class="table-ui" style="margin-top:20px">
-          <tr><th>Squadra</th><th style="color:var(--dim)">ELO ATTUALE</th><th style="color:var(--orange)">TREND (Ult 5 vs Prec 10)</th></tr>
+        <table class="table-ui table-compact" style="margin-top:20px">
+          <tr><th>Squadra</th><th style="color:var(--dim)">ELO</th><th style="color:var(--orange)">TREND</th></tr>
           <tr><td style="color:var(--blue); font-weight:bold" id="elo-name-h">Casa</td><td id="elo-h-ov" style="font-size:16px; font-weight:bold">--</td><td id="elo-h-tr" style="font-size:14px; font-weight:bold">--</td></tr>
           <tr><td style="color:var(--red); font-weight:bold" id="elo-name-a">Trasferta</td><td id="elo-a-ov" style="font-size:16px; font-weight:bold">--</td><td id="elo-a-tr" style="font-size:14px; font-weight:bold">--</td></tr>
         </table>
+        <div style="font-size:11px;color:var(--dim);margin-top:6px">TREND = media degli ultimi 5 rating meno la media dei 10 precedenti.</div>
+        <div id="elo-uso" style="margin-top:14px"></div>
       </div>
     </div>
 
@@ -857,6 +859,10 @@ function markovFlow(lH, lA) {
   return { p1, pX, p2, dist };
 }
 
+window.ELO_GAP_THRESHOLD = (typeof window.ELO_GAP_THRESHOLD === 'number') ? window.ELO_GAP_THRESHOLD : 45;
+window.ELO_GAP_TAU       = (typeof window.ELO_GAP_TAU       === 'number') ? window.ELO_GAP_TAU       : 360;
+window.ELO_GAP_ASY       = (typeof window.ELO_GAP_ASY       === 'number') ? window.ELO_GAP_ASY       : 0.9;
+
 function buildGlobalElo(targetTimeMs) {
   const _tDay = _dayUTC(targetTimeMs);
 
@@ -879,8 +885,19 @@ function buildGlobalElo(targetTimeMs) {
     HFA_ELO = Math.max(30, Math.min(100, Math.round(400 * Math.log10(wr_h / wr_a))));
   }
 
-  const GAP_THRESHOLD_DAYS = 45;
-  const ELO_GAP_TAU = (typeof window.ELO_GAP_TAU === 'number') ? window.ELO_GAP_TAU : 110;
+  // LA CURVA DELLO STACCO. Misurata nel b30 su 1882 partite di Serie A (cinque
+  // stagioni, quattro pause estive) piu' Premier e Liga 2025/26. Il tau passa da 110
+  // a 360 perche' a 110 la curva satura troppo presto per distinguere i regimi:
+  //    stacco      vecchia (110)   nuova (360)
+  //    2 mesi  83g     26.3%          9.0%
+  //    8 mesi 240g     74.7%         37.6%
+  //    2 anni 826g     89.9%         79.7%
+  // I dati dicono che la pausa estiva non costa quasi nulla (la logloss cala in modo
+  // monotono fino a tau infinito), ma oltre 360 il guadagno e' 0.0005: il ramo lungo
+  // si tiene gratis, e serve per chi torna dalla B dopo una o due stagioni, dove i
+  // dati sono tre eventi e non possono decidere niente. Vedi AGENTS.md, 'Lo stacco'.
+  const GAP_THRESHOLD_DAYS = window.ELO_GAP_THRESHOLD, ELO_GAP_TAU = window.ELO_GAP_TAU,
+        ELO_GAP_ASY = window.ELO_GAP_ASY;
 
   const K_LOW = 30;
   const K_HIGH = 20;
@@ -907,7 +924,7 @@ function buildGlobalElo(targetTimeMs) {
         const gapMs = matchMs - lastMatchTime[teamId];
         const gapDays = gapMs / 86400000;
         if (gapDays > GAP_THRESHOLD_DAYS) {
-          const strength = 0.9 * (1 - Math.exp(-(gapDays - GAP_THRESHOLD_DAYS) / ELO_GAP_TAU));
+          const strength = ELO_GAP_ASY * (1 - Math.exp(-(gapDays - GAP_THRESHOLD_DAYS) / ELO_GAP_TAU));
           table[teamId] = (1 - strength) * table[teamId] + strength * 1500;
         }
       }
@@ -929,7 +946,8 @@ function buildGlobalElo(targetTimeMs) {
     lastMatchTime[h] = matchMs; lastMatchTime[a] = matchMs;
     series[h].unshift(Math.round(table[h])); series[a].unshift(Math.round(table[a]));
   }
-  return { table, series, _hfa: HFA_ELO, _nHfa: _n_hfa };
+  return { table, series, _hfa: HFA_ELO, _nHfa: _n_hfa, lastPlayed: lastMatchTime,
+           _gap: { thr: GAP_THRESHOLD_DAYS, tau: ELO_GAP_TAU, asy: ELO_GAP_ASY } };
 }
 
 // Emivita in giorni per la media gol di lega. A 0 la media e' piatta su tutte le
@@ -1732,7 +1750,7 @@ function renderVerdetti(mk) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b29';
+window.__SCANNER_BUILD = '0905-b30';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -1925,13 +1943,22 @@ function meanPairEloGap(table) {
 }
 
 window.ELO_1X2_W = (typeof window.ELO_1X2_W === 'number') ? window.ELO_1X2_W : 0.75;
+// LA SCALA. 173.7178 = 400/ln(10) e' la definizione della scala Elo, ma il nostro
+// rating NON vive su quella scala: e' una stima online con K limitato (30/20), che
+// SOTTO-disperde. Misurato nel b30 su tre leghe: la pendenza di calibrazione della
+// differenza Elo e' 1.235 (se 0.075, z=3.13 contro 1), cioe' le differenze sono un
+// quarto piu' piccole del vero. La scelta fuori campione prende 1.20-1.35 in SETTE
+// fold su sette. L'HFA NON va scalato: viene da 400*log10(wr_casa/wr_fuori), che e'
+// gia' un log-odds misurato, non un rating. Vedi AGENTS.md, 'La scala dell'Elo'.
+window.ELO_SCALE = (typeof window.ELO_SCALE === 'number') ? window.ELO_SCALE : 1.25;
 const ELO_TILT_MAX = 0.60;
 
 // inclina il rapporto casa/trasferta dei lambda tenendo FISSO il totale, cosi' i mercati
 // gol non si muovono e la matrice resta una sola (AGENTS.md, L'Elo nell'1X2)
 function eloTiltLambdas(lamH, lamA, eloDiff, hfa, rho) {
-  const dbg = { w: window.ELO_1X2_W, applied: false, lgModel: null, lgElo: null, lgTarget: null,
-                tilt: 0, capped: false, lamH: lamH, lamA: lamA };
+  const dbg = { w: window.ELO_1X2_W, scale: window.ELO_SCALE, applied: false,
+                lgModel: null, lgElo: null, lgTarget: null, eloDiff: eloDiff, hfa: hfa,
+                tilt: 0, capped: false, lamH: lamH, lamA: lamA, lamH0: lamH, lamA0: lamA };
   const w = window.ELO_1X2_W;
   if (!(w > 0) || eloDiff == null || !isFinite(eloDiff)) return dbg;
   if (!(lamH > 0) || !(lamA > 0)) return dbg;
@@ -1946,7 +1973,7 @@ function eloTiltLambdas(lamH, lamA, eloDiff, hfa, rho) {
   };
   const lgModel = balance(lamH, lamA);
   if (lgModel == null || !isFinite(lgModel)) return dbg;
-  const lgElo = (eloDiff + (isFinite(hfa) ? hfa : 65)) / 173.7178;
+  const lgElo = (window.ELO_SCALE * eloDiff + (isFinite(hfa) ? hfa : 65)) / 173.7178;
   const lgTarget = (1 - w) * lgModel + w * lgElo;
   dbg.lgModel = lgModel; dbg.lgElo = lgElo; dbg.lgTarget = lgTarget;
   if (Math.abs(lgTarget - lgModel) < 1e-4) { dbg.applied = true; return dbg; }
@@ -2113,6 +2140,9 @@ async function avviaScanner() {
     window.__ELO_DEBUG = _ET;
     if (_ET.applied && _ET.lamH > 0 && _ET.lamA > 0) { lamH_role = _ET.lamH; lamA_role = _ET.lamA; }
     const _ETo = eloTiltLambdas(lamH_over, lamA_over, _eloDiff, ELO._hfa, RHO);
+    // con ENS_SCOPE_W = 1 l'1X2 nasce dai lambda COMPLETI, quindi e' QUESTO il tilt
+    // che decide 1/X/2; __ELO_DEBUG resta quello di ruolo, che decide i mercati gol.
+    window.__ELO_DEBUG_OVER = _ETo;
     if (_ETo.applied && _ETo.lamH > 0 && _ETo.lamA > 0) { lamH_over = _ETo.lamH; lamA_over = _ETo.lamA; }
 
     const dcOver = calcDCMatrix(lamH_over, lamA_over, RHO); const dcRole = calcDCMatrix(lamH_role, lamA_role, RHO);
@@ -2734,6 +2764,57 @@ async function avviaScanner() {
     safeTxt('mk-a1-ov', pct(mk_ov.dist[4])); safeTxt('mk-a1-ro', pct(mk_ro.dist[4])); safeTxt('mk-a2-ov', pct(mk_ov.dist[3]+mk_ov.dist[2]+mk_ov.dist[1]+mk_ov.dist[0])); safeTxt('mk-a2-ro', pct(mk_ro.dist[3]+mk_ro.dist[2]+mk_ro.dist[1]+mk_ro.dist[0]));
     safeTxt('elo-name-h', hName); safeTxt('elo-name-a', aName); safeTxt('elo-h-ov', eloH_ov); safeTxt('elo-h-tr', (trendH > 0 ? "+" : "") + Math.round(trendH)); if(trendH < -20) document.getElementById('elo-h-tr').style.color = "var(--red)";
     safeTxt('elo-a-ov', eloA_ov); safeTxt('elo-a-tr', (trendA > 0 ? "+" : "") + Math.round(trendA)); if(trendA < -20) document.getElementById('elo-a-tr').style.color = "var(--red)";
+
+    // COME L'ELO ENTRA NEI LAMBDA. Era la parte piu' importante del motore e non si
+    // vedeva da nessuna parte: si leggeva il rating e non cosa il rating faceva.
+    (function renderUsoElo() {
+      const E = window.__ELO_DEBUG_OVER;
+      const box = document.getElementById('elo-uso');
+      if (!box) return;
+      if (!E || !E.applied) {
+        box.innerHTML = `<div style="font-size:12px;color:var(--dim)">L'Elo non sta inclinando i lambda `
+          + `(peso ${E ? f2(E.w) : '?'}): l'1X2 esce dal solo modello.</div>`;
+        return;
+      }
+      const pOf = lg => (100 / (1 + Math.exp(-lg)));
+      const riga = (k, v, nota) => `<div style="display:flex;justify-content:space-between;gap:10px;`
+        + `padding:5px 0;border-bottom:1px solid var(--border)">`
+        + `<span style="color:var(--dim);font-size:12px">${k}</span>`
+        + `<span style="font-weight:700;font-size:12px;text-align:right">${v}`
+        + (nota ? `<span style="display:block;font-weight:400;color:var(--dim);font-size:11px">${nota}</span>` : '')
+        + `</span></div>`;
+      const dEff = Math.round(E.scale * E.eloDiff);
+      // lo stacco: quanto tempo e' passato dall'ultima partita di ciascuna, e quanto
+      // la curva ha tolto al rating per quello
+      const G = ELO._gap || { thr: 45, tau: 360, asy: 0.9 };
+      const gapOf = id => {
+        const lp = ELO.lastPlayed && ELO.lastPlayed[id];
+        if (!lp || !isFinite(targetMs)) return null;
+        const d = (targetMs - lp) / 86400000;
+        const st = d > G.thr ? G.asy * (1 - Math.exp(-(d - G.thr) / G.tau)) : 0;
+        return { d, st };
+      };
+      const gH = gapOf(hId), gA = gapOf(aId);
+      const gTxt = g => g === null ? 'N/D'
+        : (g.d < 1 ? '<1 g' : Math.round(g.d) + ' g') + (g.st > 0 ? ` &rarr; &minus;${(100 * g.st).toFixed(0)}%` : '');
+      const lungo = (gH && gH.st > 0.02) || (gA && gA.st > 0.02);
+
+      box.innerHTML =
+        `<div style="font-size:11px;font-weight:800;letter-spacing:.4px;color:#3f51b5;margin-bottom:6px">`
+        + `COME L'ELO ENTRA NEI LAMBDA</div>`
+        + riga('Differenza di rating', (E.eloDiff > 0 ? '+' : '') + Math.round(E.eloDiff))
+        + riga('Scala tarata', '&times;' + f2(E.scale), (dEff > 0 ? '+' : '') + dEff + ' punti effettivi')
+        + riga('Vantaggio campo', '+' + Math.round(E.hfa), 'misurato su ' + (ELO._nHfa || 0) + ' partite')
+        + riga('1 contro 2 &mdash; solo Elo', f1(pOf(E.lgElo)) + '%')
+        + riga('1 contro 2 &mdash; solo modello', f1(pOf(E.lgModel)) + '%')
+        + riga('1 contro 2 &mdash; usato', f1(pOf(E.lgTarget)) + '%', 'peso Elo ' + f2(E.w) + (E.capped ? ' &middot; inclinazione al massimo' : ''))
+        + riga('Lambda inclinati', f2(E.lamH0) + '&ndash;' + f2(E.lamA0) + ' &rarr; ' + f2(E.lamH) + '&ndash;' + f2(E.lamA),
+               'totale ' + f2(E.lamH0 + E.lamA0) + ' invariato')
+        + riga('Stacco dall\'ultima partita', gTxt(gH) + ' &middot; ' + gTxt(gA), lungo ? 'rating regredito verso 1500' : 'nessuna regressione')
+        + `<div style="font-size:11px;color:var(--dim);margin-top:8px;line-height:1.5">`
+        + `L'Elo sposta il rapporto casa/trasferta <strong>lasciando fermo il totale dei gol</strong>: `
+        + `1X2 e handicap si muovono, Over/Under e Goal/NoGoal no.</div>`;
+    })();
     safeHtml('table-log-home', dH.logHtml); safeHtml('table-log-away', dA.logHtml);
 
     const COV_LIST = [['npxg','NPxG','rapporto'],['xg','xG','rapporto'],['poss','Possesso','rapporto'],['xgot','xGOT','conteggio'],['bc','Big Chances','conteggio'],['bcm','Big Chances sprecate','conteggio'],['xg_sp','xG palle inattive','conteggio'],['ppda','PPDA','rapporto'],['field_tilt','Field Tilt','rapporto'],['avg_x','Baricentro offensivo','rapporto'],['avg_def_x','Altezza difensiva','rapporto'],['rec_time','Tempo di recupero','rapporto'],['cp_regains','Recuperi &lt;5s','conteggio'],['tch_box','Tocchi in area','conteggio'],['f3_entries','Ingressi trequarti','conteggio'],['cross','Cross','conteggio'],['drib','Dribbling riusciti','conteggio'],['thru','Filtranti','conteggio'],['misc','Controlli sbagliati','conteggio'],['disp','Palle perse','conteggio']];
@@ -2814,8 +2895,23 @@ ${window.__VERDETTI_TXT || '(non disponibile)'}
 - Dipendenza da Palla Inattiva: ${hName} ${setPctH > 0 ? f1(setPctH) : "0"}% | ${aName} ${setPctA > 0 ? f1(setPctA) : "0"}%
 - Efficienza Goal vs xG: ${hName} ${f2(effH_ro)} | ${aName} ${f2(effA_ro)}
 
-4. EXPECTATION PITAGORICA E ELO
-- ELO Trend: ${hName} ${Math.round(trendH)} | ${aName} ${Math.round(trendA)}
+4. EXPECTATION PITAGORICA E ELO — [GENERALE]
+- ELO: ${hName} ${eloH_ov} | ${aName} ${eloA_ov} (differenza ${(_eloDiff>0?'+':'')}${_eloDiff ?? 'N/D'}), vantaggio campo di lega +${Math.round(ELO._hfa)} su ${ELO._nHfa} partite
+- ELO Trend (ult 5 contro le 10 prima): ${hName} ${Math.round(trendH)} | ${aName} ${Math.round(trendA)}
+${(function(){
+  const E = window.__ELO_DEBUG_OVER;
+  if (!E || !E.applied) return '- L\'Elo NON sta inclinando i lambda: l\'1X2 esce dal solo modello.';
+  const pOf = lg => (100/(1+Math.exp(-lg))).toFixed(1);
+  const G = ELO._gap || {thr:45,tau:360,asy:0.9};
+  const gp = id => { const lp = ELO.lastPlayed && ELO.lastPlayed[id];
+    if (!lp || !isFinite(targetMs)) return 'N/D';
+    const d = (targetMs-lp)/86400000, st = d>G.thr ? G.asy*(1-Math.exp(-(d-G.thr)/G.tau)) : 0;
+    return Math.round(d)+'g' + (st>0 ? ' (rating regredito del '+(100*st).toFixed(0)+'% verso 1500)' : ''); };
+  return `- Su 1 contro 2 (pari esclusi) l'Elo da solo dice ${pOf(E.lgElo)}%, il modello ${pOf(E.lgModel)}%, e si usa ${pOf(E.lgTarget)}% (peso Elo ${f2(E.w)}).`
+    + `\n- La differenza di rating e' moltiplicata per ${f2(E.scale)} prima di diventare quota: il nostro Elo e' una stima online con K limitato e sotto-disperde (misurato, pendenza 1.24 su tre leghe).`
+    + `\n- L'inclinazione sposta i lambda da ${f2(E.lamH0)}-${f2(E.lamA0)} a ${f2(E.lamH)}-${f2(E.lamA)} TENENDO FERMO il totale: 1X2 e handicap cambiano, Over/Under e Goal/NoGoal no.${E.capped?' Inclinazione arrivata al tetto.':''}`
+    + `\n- Stacco dall'ultima partita giocata: ${hName} ${gp(hId)}, ${aName} ${gp(aId)}.`;
+})()}
 - ${hName}: Pts/Match Reali ${f2(pytH.ppgAct)} | Pts/Match Attesi ${f2(pytH.ppgExp)}. Diagnosi: ${pytH.msg}
 - ${aName}: Pts/Match Reali ${f2(pytA.ppgAct)} | Pts/Match Attesi ${f2(pytA.ppgExp)}. Diagnosi: ${pytA.msg}
 
