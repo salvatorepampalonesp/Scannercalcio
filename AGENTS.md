@@ -76,7 +76,7 @@ memoria del progetto, non la sua verità corrente. → *L'audit del documento*.
 Sezione di consegna: dice a che punto siamo, così una sessione nuova non
 ricomincia da capo. Aggiornala quando cambia qualcosa di sostanziale.
 
-**Build corrente: `0905-b28`.** Scanner e Comparatore devono coincidere, e sul
+**Build corrente: `0905-b29`.** Scanner e Comparatore devono coincidere, e sul
 Comparatore il badge sotto la dropzone deve uscire **verde** dopo aver trascinato
 lo Scanner. Il branch di lavoro è `claude/controlla-agents-md-bugs-2dnlmj`.
 
@@ -172,11 +172,16 @@ sovradispersione — scagionati con i dati in mano.
 | `b26` | **l'A/B è stato fatto e la risposta è no**: raddoppiare il campione di ruolo vale `0.0002` di logloss. `ROLE_SCOPE_INDEPENDENT` resta 0. Il nome del file esportato ora descrive cosa contiene invece del flag corrente |
 | `b27` | **la UI dice quale ambito usa e quanto rende davvero**: la card 1X2 evidenziava il ruolo dove il motore usa il generale, la letalità confrontava una previsione con una media, i tabelloni citavano hit vecchi. Etichetta d'ambito su ogni card, box di confronto ruolo/generale, narrative asciugate. Motore invariato |
 | `b28` | **telefono in verticale come caso principale**: la pagina scorreva di lato di 218px. Tabelle che scorrono dentro il proprio riquadro, tabellone a tre colonne, `min-width:0` sui figli di griglia. Il prompt porta le stats avanzate con la loro affidabilità misurata, e separa ruolo da generale. Motore invariato |
+| `b29` | **cambiare partita non costa più un ricaricamento**: la card di setup veniva nascosta e mai più mostrata, quindi l'unica via era `F5` — che buttava `RAW_CACHE`. Bottone «Cambia partita», e il database di lega in `localStorage`. Seconda partita: da 239 chiamate a 108, terza a **0**. Motore invariato |
+
+| `b30` | **l'Elo era tarato su una scala che non è la sua**: la differenza di rating va moltiplicata per **1.25** prima di diventare quota (pendenza di calibrazione 1.235, `z = 3.13`, e la scelta fuori campione prende 1.20–1.35 in **sette fold su sette**). E la curva dello stacco saturava troppo presto per distinguere due mesi da otto: `ELO_GAP_TAU` da 110 a **360**. Logloss 1-contro-2 da 0.5836 a 0.5743, `z` appaiato **−3.54**, sei fold su sette migliorano. La card mostra cosa l'Elo fa ai lambda |
+
+| `b31` | **il peso dell'Elo si misurava sul ramo sbagliato**: il CSV registrava il tilt di *ruolo*, ma dal `b21` l'1X2 esce dai lambda *completi*. Le due ricostruzioni di `w` vanno in **direzioni opposte** (a `w = 0`: 42.9% dal ruolo, 64.5% dal completo). Ora il Comparatore registra tutti e due i rami, ricostruisce `w` e `ELO_SCALE` da quello giusto, e la scala si può spazzare **senza rilanciare** |
 
 Le tre build finali hanno una storia sola e va letta in *La baseline di coppia*:
 tre tentativi svuotati dallo stesso malinteso.
 
-### Il salto data dell'Elo (`b9`, e non è più stato toccato)
+### Il salto data dell'Elo (`b9`, **ritoccato nel `b30`**)
 
 Era una funzione a gradini, `min(0.9, 0.3*ceil(giorni/365))`: 61 giorni e 11 mesi
 ricevevano la stessa regressione del 30%, e a 1.01 anni si saltava al 60%. Ora è
@@ -194,7 +199,17 @@ l'assenza dalla lega. Attenzione: `buildGlobalElo` filtra per `_chosenLeagueId`,
 quindi una neopromossa non ha un Elo vecchio da regredire, parte da 1500.
 
 Nei backtest di una sola stagione questa modifica è **invisibile per costruzione**:
-se un giro non mostra differenze sull'Elo, è il comportamento atteso.
+se un giro non mostra differenze sull'Elo, è il comportamento atteso. È anche il
+motivo per cui la curva è rimasta 21 build senza una misura: serviva un campione
+**multi-stagione**, e non c'era.
+
+**Aggiornato nel `b30`.** La costante 110 era scelta per riprodurre il valore che la
+vecchia funzione a gradini usava a 90 giorni — cioè tarata su se stessa, mai contro i
+dati. Misurata su cinque stagioni di Serie A (quattro pause estive), è **troppo
+aggressiva**: τ sale a **360**, la pausa estiva passa da 26.3% a 9.0% e la curva
+torna a distinguere due mesi (9%) da otto (38%) da due anni (80%). I tre parametri
+sono ora manopole (`ELO_GAP_THRESHOLD`, `ELO_GAP_TAU`, `ELO_GAP_ASY`). Vedi
+*La scala dell'Elo, e la curva dello stacco*.
 
 ### La prossima cosa da fare, in ordine di rapporto valore/rischio
 
@@ -247,6 +262,11 @@ se un giro non mostra differenze sull'Elo, è il comportamento atteso.
 6. **Verificare la pendenza dell'Elo** (`penH`/`penA`, ±8% sui lambda): non è mai
    stata misurata, e ora che il livello entra dall'inclinazione potrebbe essere
    ridondante. Serve esportarla nel CSV.
+7bis. **`ELO_SCALE` e `ELO_1X2_W` vanno rispazzati insieme** (`b30`). `w = 0.75` è
+   stato scelto quando `lgElo` era compresso di un quarto; ora non lo è più. E la
+   Liga da sola dice `S = 1.00` contro l'1.25 del pool: serve la sesta lega, o le
+   stagioni vecchie di Premier e Liga, che oggi non abbiamo.
+
 7. **`GOALS_SOT_W` e `ELO_1X2_W` alla sesta lega.** Il backtest dice 0.50, ma 0.75 e 1.00 sono
    migliori di un margine non distinguibile (±0.030 di errore standard). Il CSV
    ricostruisce tutti i pesi senza rilanciare il motore: basta un'altra lega.
@@ -1119,8 +1139,15 @@ poi `eloTiltLambdas` cerca per bisezione l'inclinazione `t` tale che
 esattamente `lgTarget`. Ventiquattro iterazioni su una matrice 7×7: costo
 trascurabile.
 
-Il 173.72 è `400/ln(10)`, la conversione esatta da punti Elo a log-odds: **non è
-una costante tarata**, è la definizione della scala Elo.
+~~Il 173.72 è `400/ln(10)`, la conversione esatta da punti Elo a log-odds: **non è
+una costante tarata**, è la definizione della scala Elo.~~
+
+**Sbagliato, corretto nel `b30`.** Il 173.72 *è* `400/ln(10)`, ed è davvero la
+definizione della scala Elo. Ma il nostro rating **non vive su quella scala**: è una
+stima online con `K` limitato (30 nelle prime 15 partite, poi 20), che sotto-disperde.
+La conversione giusta si misura, e la misura dice `×1.25`. Vedi *La scala dell'Elo*.
+È la trappola di sempre: *«è una definizione, non una taratura»* vale per la
+grandezza, non per la stima che gli infili dentro.
 
 **Cosa si muove e cosa no.** Il totale dei lambda è identico al bit, quindi
 Over/Under non si sposta di un punto. Si spostano 1X2, doppia chance, handicap
@@ -1166,6 +1193,13 @@ Brier 0.6194 → 0.6107, logloss 1.0317 → 1.0202.
 `window.ELO_1X2_W` è esposto e il CSV ricostruisce w = 0 / 0.25 / 0.5 / 0.75 / 1.0
 dai soli log-odds, senza rilanciare il motore.
 
+> **Attenzione a questa misura.** Fino al `b31` quella ricostruzione girava sul tilt di
+> **ruolo**, mentre dal `b21` l'1X2 esce dai lambda **completi**: le due curve vanno in
+> direzioni opposte. I numeri del `b14` qui sopra sono stati ottenuti **prima** del
+> `b21`, quando il ramo registrato era ancora quello giusto — ma qualunque
+> ri-taratura di `w` fatta da un CSV fra il `b21` e il `b30` è da buttare. Vedi
+> *Il peso dell'Elo si misurava sul ramo sbagliato*.
+
 **In produzione** l'inclinazione si applica al 100% delle partite, ha mediana
 −0.001, 5°–95° percentile −0.103 / +0.109 e massimo assoluto **0.215** contro un
 cap a 0.60: il paracadute non ha mai morso.
@@ -1177,6 +1211,244 @@ cap a 0.60: il paracadute non ha mai morso.
   essere ridondante o peggio. Va misurato: serve esportarla nel CSV, oggi non c'è.
 - **L'HFA stimato varia molto fra leghe**: LaLiga 78, Premier 49, Serie A 47. È
   plausibile, ma non è mai stato verificato contro il vantaggio campo reale.
+
+## La scala dell'Elo, e la curva dello stacco (`b30`)
+
+Nato dalla richiesta: *«vorrei sistemare l'Elo con la giusta progressione del tempo
+di stacco (2 mesi vs 8 tipo), poi capire come usarlo nei nostri lambda»*. Cercando
+la curva è saltato fuori qualcosa di più grosso della curva.
+
+### Il campione, e perché è quello che è
+
+Non c'è la chiave API in sessione, quindi non si scaricano stagioni nuove. Quello
+che c'era sono gli undici CSV di backtest già caricati. Deduplicati sulla terna
+`data|casa|trasferta` danno **2637 partite distinte**, che si spezzano in due:
+
+| campione | partite | squadre | copre |
+|---|---|---|---|
+| Serie A, cinque stagioni | 1882 | 27 | 2021/22 → 2025/26, **quattro pause estive** |
+| Premier 2025/26 | 378 | 20 | una stagione, nessuna pausa dentro |
+| Liga 2025/26 | 377 | 20 | una stagione, nessuna pausa dentro |
+
+La Serie A 2025/26 sta dentro il panel delle tre leghe: si ritrova isolando la
+componente connessa del grafo *«si sono affrontate»* che contiene l'Inter, e
+attaccandola alle quattro stagioni storiche. Senza quel passaggio le pause estive
+sarebbero tre invece di quattro.
+
+### Cosa succede davvero fra due partite della stessa squadra
+
+| stacco | eventi | che cos'è |
+|---|---|---|
+| ≤ 30 giorni | 2908 | la stagione normale |
+| 45–60 giorni | 20 | buchi nel calendario, rinvii |
+| 75–105 giorni | 51 | **la pausa estiva**, mediana 83 giorni |
+| 400+ giorni | 3 | Genoa 455, Cagliari 456, Venezia 826: ritorni dalla B |
+
+Cioè: solo il **2.5%** delle osservazioni-squadra ha uno stacco sopra la soglia dei
+45 giorni, e l'unico regime che si presenta davvero è la pausa estiva. Il regime
+«otto mesi» della domanda **non esiste nei dati**: si passa da tre mesi a più di un
+anno senza niente in mezzo.
+
+### La curva saturava troppo presto per distinguere i due regimi
+
+La vecchia `0.9·(1 − e^{−(g−45)/110})` arriva al 75% già a otto mesi e al 90% a due
+anni. Cioè fra *«ha fatto la pausa estiva»* e *«è stata in Serie B due stagioni»*
+c'erano 15 punti di differenza. Non è una progressione, è un interruttore che scatta
+subito dopo la soglia.
+
+| stacco | vecchia (τ=110) | nuova (τ=360) |
+|---|---|---|
+| in stagione, 30 g | 0% | 0% |
+| 2 mesi, 83 g | **26.3%** | **9.0%** |
+| 8 mesi, 240 g | 74.7% | 37.6% |
+| 1 anno, 365 g | 82.4% | 53.0% |
+| 2 anni, 826 g | 89.9% | 79.7% |
+
+Il τ non è tarato sull'ottimo: **l'ottimo non esiste**, la logloss cala in modo
+monotono fino a τ infinito (cioè fino a spegnere la regressione del tutto). Da 360
+in su il guadagno residuo è **0.0005**, sotto il rumore. Quindi 360 è il punto in cui
+la curva ha smesso di costare, e da lì in poi il ramo lungo si tiene **gratis** —
+e serve, perché su chi torna dalla B i dati sono **tre eventi** e non possono
+decidere niente, mentre l'intuizione che due anni fuori vadano quasi resettati è
+forte. Asintoto fermo a 0.9 per questo.
+
+### Ma il segnale grosso era un altro: la scala
+
+Misurando quanto l'Elo perde invecchiando è saltata fuori una cosa che non c'entra
+con lo stacco. Invecchiando artificialmente il rating (predire la partita al tempo
+`t` col rating fermo a `t − Δ`) e stimando la pendenza `b` di
+
+```
+P(1 | pari esclusi) = logistica( a + b · (Elo_casa − Elo_trasferta)/173.72 )
+```
+
+`b` **non cala** con l'età: 1.250 a zero giorni, 1.243 a sei mesi, 1.201 a un anno.
+Un rating di sei mesi prevede come uno fresco. Ma `b` **non è 1**: è **1.235**
+(se 0.075, `z = 3.13` contro 1) sul pool delle tre leghe. Le differenze di rating
+sono un quarto **più piccole del vero**.
+
+Perché: `173.7178` è `400/ln(10)`, la definizione della scala Elo — ma il nostro
+rating non vive su quella scala. È una stima **online** con `K` limitato (30 nelle
+prime 15 partite, poi 20), e un `K` basso non lascia spargere la tabella abbastanza.
+La conferma è nella griglia su `K`:
+
+| K basso/alto | b | z(b=1) | logloss a b=1 |
+|---|---|---|---|
+| 30/20 (il motore) | 1.235 | 3.13 | 0.5755 |
+| 40/28 | 1.101 | 1.51 | **0.5746** |
+| 50/35 | **1.016** | 0.25 | 0.5759 |
+| 60/40 | 0.960 | −0.68 | 0.5777 |
+| 80/55 | 0.852 | −2.77 | 0.5847 |
+
+Alzare `K` porta `b` a 1 ma peggiora la logloss appena passa 40/28: il rating
+diventa più sparso e più rumoroso insieme. Meglio **non toccare il rating** e tarare
+la conversione, che è l'unica cosa sbagliata. Da qui `ELO_SCALE = 1.25`, applicato
+alla sola differenza di rating — **non all'HFA**, che viene da
+`400·log10(wr_casa/wr_fuori)` ed è già un log-odds misurato, non un rating.
+
+### La verifica fuori campione, sette fold
+
+Per ogni fold (lega × stagione) la griglia è cercata sugli **altri sei** e misurata
+sul tenuto fuori. `S` finisce fra **1.20 e 1.35 in tutti e sette**. Con la
+configurazione finale (`S = 1.25`, `τ = 360`):
+
+| fold | n | motore | nuovo | delta |
+|---|---|---|---|---|
+| Liga 2025/26 | 209 | 0.5981 | 0.6011 | **+0.0030** |
+| Premier 2025/26 | 194 | 0.6242 | 0.6198 | −0.0044 |
+| Serie A 2021/22 | 196 | 0.6089 | 0.6058 | −0.0031 |
+| Serie A 2022/23 | 258 | 0.5852 | 0.5783 | −0.0069 |
+| Serie A 2023/24 | 260 | 0.5515 | 0.5345 | −0.0170 |
+| Serie A 2024/25 | 258 | 0.5515 | 0.5287 | −0.0228 |
+| Serie A 2025/26 | 275 | 0.5846 | 0.5762 | −0.0084 |
+| **aggregato** | **1650** | **0.5836** | **0.5743** | **−0.0092**, `z` appaiato **−3.54** |
+
+**Sei fold su sette migliorano.** Quello che peggiora è la Liga, ed è coerente: la
+Liga da sola dà `b = 0.997`, cioè esattamente 1. La Serie A dà 1.250 (`z = 3.03`),
+la Premier 1.366 ma con se 0.283. Per stagione la Serie A oscilla 1.25 / 1.22 /
+1.40 / 1.45 / 1.04. Quindi: **il segno è solido, il valore no.** `ELO_SCALE` è
+esposto proprio per questo.
+
+### Il guadagno è tutto in calibrazione, zero in accuratezza
+
+Il pick 1-contro-2 va da 70.5% a 70.1% — dentro il rumore, e comunque **non è lì
+che si guadagna**. Una scala non cambia *chi* è favorito, cambia *di quanto*. Il che
+è esattamente quello che serve, vista *La mappa onesta*: il modello non sbaglia il
+favorito, sbaglia la fiducia, e sono le soglie (≥50%, ≥60%) a fare il lavoro.
+
+### Tre cose che questa misura NON dice
+
+1. **Non misura il modello completo.** Misura l'Elo da solo, sulla logloss
+   1-contro-2. Nel motore `lgElo` entra con `w = 0.75` mescolato a `lgModel`: il
+   guadagno vero sull'1X2 sarà **più piccolo** di 0.0092 e va misurato col
+   Comparatore. Nessuno l'ha ancora fatto.
+2. **Non ha potere sullo stacco.** Le partite decisive giocate subito dopo uno
+   stacco > 45 giorni sono **33**. Trentatré. Il punto stimato dice che dopo la
+   pausa l'Elo vale *di più*, non di meno (`b = 1.83`), ma con se 0.644 non vuol
+   dire niente. Il τ a 360 è scelto perché *smette di costare*, non perché la pausa
+   estiva sia stata misurata.
+3. **`ELO_1X2_W = 0.75` è stato tarato con la scala vecchia.** Alzare `S` rende
+   `lgElo` più grande, quindi il `w` ottimo potrebbe essere diverso. Le due
+   manopole sono in parte ridondanti — ma solo in parte: `w` decide *quanto* pesare
+   l'Elo, `S` corregge un errore *dentro* l'Elo, e pesare di più uno stimatore
+   distorto non lo raddrizza. Va rispazzato.
+
+### Una predizione che si può falsificare
+
+Se `lgModel` fosse ben calibrato e `lgElo` fosse compresso di un quarto, con
+`w = 0.75` il bersaglio risulterebbe scalato di `0.25 + 0.75/1.25 = 0.85`, cioè una
+pendenza implicita di **1.18** sull'1X2. Misurata, la pendenza del modello è
+**1.27–1.34** (vedi *La sotto-dispersione*). Quindi il `b30` dovrebbe **spostarne
+un bel pezzo ma non tutto**: se dopo il `b30` la pendenza misurata scende verso
+1.05–1.15, la spiegazione regge; se non si muove, la scala dell'Elo non era la
+causa e il punto 16 della coda resta intero.
+
+### Quello che il motore NON fa, ed è deliberato
+
+`buildGlobalElo` applica la regressione **al momento della partita successiva**, non
+fra l'ultima giocata e la data da prevedere. Cioè: se prevedi la prima di campionato,
+il rating usato è quello di maggio **a piena forza**, e la regressione arriverà solo
+quando quella squadra rientrerà nel ciclo di allenamento. È un'asimmetria vera — si
+regredisce quando si impara e non quando si prevede — e la prima reazione è volerla
+chiudere.
+
+È stata misurata: chiuderla **peggiora**. Globale 0.5743 → 0.5745, e sulle sole
+partite post-stacco 0.5068 → 0.5124. Con τ = 360 l'incoerenza vale comunque 9 punti
+percentuali su una pausa estiva, cioè quasi niente. Resta così, e resta scritto qui
+perché è il genere di cosa che qualcuno «sistema» tre volte.
+
+## Il peso dell'Elo si misurava sul ramo sbagliato (`b31`)
+
+Nato da una domanda diretta: *«hai aggiornato il Comparatore per farci controllare la
+differenza di Elo quindi?»*. La risposta onesta era **no**: il `b30` aveva aggiunto
+tredici righe al Comparatore, tutte di **registrazione** e nessuna di **controllo**.
+Il file diceva *con quale* scala era stato prodotto, ma non dava modo di confrontarne
+due. Guardando come rimediare è saltato fuori un bug più vecchio.
+
+### Le due ricostruzioni vanno in direzioni opposte
+
+L'hook registrava `window.__ELO_DEBUG`, che è il tilt applicato ai lambda **di ruolo**.
+Ma `ENS_SCOPE_W = 1` dal `b21`: l'1X2 nasce dai lambda **completi**, e quindi dal tilt
+`__ELO_DEBUG_OVER`, che non veniva registrato affatto. I due tilt condividono `lgElo`
+(stessa differenza di rating, stesso HFA) ma hanno **`lgModel` diverso**, perché
+partono da lambda diversi. Misurato su una partita di prova:
+
+| peso `w` | ricostruito dal **ruolo** (quello che il CSV usava) | ricostruito dal **completo** (quello che decide l'1X2) |
+|---|---|---|
+| 0 | 42.9% | **64.5%** |
+| 0.5 | 48.7% | 59.6% |
+| 1 | 54.5% | 54.5% |
+
+Coincidono **solo** a `w = 1`, dove il termine del modello sparisce e resta il solo
+Elo. Ovunque altro il CSV mostrava una curva che sale mentre quella vera scende.
+
+**Quando si è rotto.** `ELO_1X2_W = 0.75` è stato scelto nel `b14`; `ENS_SCOPE_W` è
+andato a 1 nel `b21`. La sezione A/B non è stata toccata, e da lì in poi ha
+ricostruito un percorso che l'1X2 non prende più. È il caso da manuale di
+*una stima invecchia quando cambia ciò che sta a monte*, con l'aggravante che qui non
+è invecchiata la **stima**: è invecchiato lo **strumento che serviva a rifarla**.
+
+La regola che ne esce, e che vale oltre questo caso: **quando una costante decide da
+quale ramo passa il calcolo, ogni strumento di misura a valle va riletto quel giorno
+stesso.** `ENS_SCOPE_W` ha spostato l'1X2 da un ramo all'altro e nessuno è andato a
+guardare cosa leggeva il CSV.
+
+### Cosa fa ora il Comparatore
+
+- L'hook registra **tutti e due** i tilt (`eloDebug` = ruolo, `eloDebugOver` =
+  completo), e ogni riga dell'inclinazione compare due volte, etichettata
+  `[ruolo → mercati gol]` e `[completo → 1X2]`. Se il motore caricato è più vecchio
+  del `b30` e non espone `__ELO_DEBUG_OVER`, il CSV lo **dice in chiaro** invece di
+  stampare colonne vuote.
+- L'A/B del peso `w` gira sul ramo completo, ed esce in **percentuali** invece che in
+  log-odds, con accanto l'**esito reale** (1 / 2 / pari escluso): si contano i colpi
+  senza aprire una calcolatrice.
+- Nuovo **A/B della scala**, `S = 0.75 … 1.60`. E qui c'è la parte utile: `lgModel` si
+  calcola **prima** dell'inclinazione, quindi non dipende da `S`. La ricostruzione è
+  perciò **esattamente invariante** al valore con cui il giro è stato fatto — **un giro
+  solo dà tutte le scale**. Verificato: due giri, uno a 1.25 e uno a 1.00, producono
+  colonne A/B identiche, e in ciascuna il valore ricostruito alla scala usata coincide
+  con quello che il motore ha davvero prodotto (65.5% e 65.0%).
+- Un campo `ELO_SCALE` nel pannello, con lo stato che sopravvive al ricaricamento,
+  perché rilanciare *serve ancora* per i mercati che dipendono dallo squilibrio (GG,
+  handicap, risultati esatti), che la ricostruzione non può dare.
+
+### Il marcatore va nella cella, non nell'etichetta di riga
+
+Prima versione: `S=1.25 (attuale)` nell'etichetta. Sbagliato per lo stesso motivo per
+cui lo era il suffisso `_ruoloIndip` nel nome del file — `cmpSavedMatches` **accumula**
+giri fatti con valori diversi, quindi l'etichetta di riga mentirebbe su tutte le
+colonne tranne quelle dell'ultimo giro. Ora il marcatore `<-- usato` sta **dentro la
+cella**, confrontato con lo `scale` di *quella* partita. Stessa cosa per l'intestazione
+(«il file contiene PIÙ scale dell'Elo») e per il suffisso del nome file
+(`_scaleMISTE`, oppure `_S1` quando tutto il file è a scala canonica).
+
+**Terza volta che questo errore si presenta** in forme diverse: etichetta di lega presa
+dalla dropdown invece che dalla partita (`b21`), suffisso del file preso dal flag
+corrente invece che dal contenuto (`b26`), e ora questo. La forma è sempre la stessa:
+**descrivere un dato con lo stato di un interruttore letto in un momento diverso da
+quando il dato è stato prodotto.** Se un'etichetta descrive delle righe, va calcolata
+**dalle righe**.
 
 ## L'audit sistematico del `b19`: cosa è stato controllato e cosa è saltato fuori
 
@@ -1397,7 +1669,8 @@ e del `b22` rifatti sul sorgente di oggi.
 
 Le costanti verificate una per una contro il sorgente: `ENS_W` 0.70/0.30/0.00,
 `ENS_SCOPE_W` 1, `SHRINK_K` 4, `SHRINK_LAM_K` 3, `RESID_ALPHA` 0,
-`GOALS_UNIT_FIX` 0, `LEAGUE_HALFLIFE_DAYS` 0, `ELO_1X2_W` 0.75, `GOALS_SOT_W`
+`GOALS_UNIT_FIX` 0, `LEAGUE_HALFLIFE_DAYS` 0, `ELO_1X2_W` 0.75,
+`ELO_SCALE` 1.25 e `ELO_GAP_THRESHOLD/TAU/ASY` 45/360/0.9 (dal `b30`), `GOALS_SOT_W`
 0.50, `SOT_PER_GOAL` 3.25, `GOALS_SOT_CAP` 0.20, `OL_BETA/T1/T2`
 2.056/−0.475/+0.671, `CARDS_ELO_B` −0.0035 con cap 0.30, le tre tabelle `MARKET_*`,
 le due rette della confidence, l'emivita 106 in tutti e due i file, e le 51 voci di
@@ -1826,6 +2099,14 @@ Avevo ipotizzato che il campione di ruolo dimezzato spiegasse la **sotto-dispers
 delle probabilità. **Falsificata**: il campione raddoppia e la calibrazione non si
 muove.
 
+**Un secondo sospettato è arrivato nel `b30`, con un numero.** La differenza di Elo
+che entra nell'1X2 era compressa di un quarto (pendenza 1.235, `z = 3.13`), ed entra
+con peso 0.75. Se `lgModel` fosse ben calibrato, questo da solo produrrebbe una
+pendenza implicita di **1.18** sull'1X2 contro l'1.27–1.34 misurato qui: gran parte,
+non tutto. Il `b30` la corregge, quindi questo numero **si può falsificare al
+prossimo backtest** — se la pendenza non scende verso 1.05–1.15, la scala dell'Elo
+non era la causa. Vedi *La scala dell'Elo, e la curva dello stacco*.
+
 Ma la sotto-dispersione è confermata, e ora su due campioni indipendenti che non
 condividono né stagione, né leghe, né disponibilità di `/advanced`:
 
@@ -2040,6 +2321,48 @@ fascia alta arriva al 74%. Niente di più.*
 Dettaglio non cosmetico: la `textarea` era alta **due righe** su 4.600 caratteri, quindi
 nessuno ha mai riletto ciò che copiava — ed è probabilmente il motivo per cui la frase
 falsa è sopravvissuta sei build. Ora è alta 18 righe, a spaziatura fissa.
+
+### Cambiare partita costava un ricaricamento, e il ricaricamento costava tutto
+
+Segnalato dall'utente: «ogni volta che voglio fare un'altra partita devo ricaricare
+tutto». Guardando il codice il difetto è di una riga sola, in `avviaScanner`:
+
+```js
+document.getElementById('setup-card').style.display = 'none';
+```
+
+La card di setup viene nascosta e **non viene mai più mostrata**. Non esisteva alcun
+percorso di ritorno: l'unico modo di cambiare partita era `F5`. E lì sta il costo vero,
+perché un ricaricamento non butta solo la schermata — butta `RAW_CACHE`, cioè i payload
+`/stats`, `/lineups`, `/advanced` e `/events` di tutte le partite già scaricate.
+
+**Quanto costava, misurato** su un campionato sintetico da 18 squadre, contando le
+chiamate uscenti:
+
+| | chiamate |
+|---|---|
+| prima partita (database di lega + le due squadre) | 239 |
+| seconda partita, **una** squadra già vista | **108** |
+| terza partita, **entrambe** già viste | **0** |
+
+Ricaricando, ognuna di quelle righe tornava a 239. Il lavoro c'era già tutto in memoria:
+mancava il bottone.
+
+**Due correzioni, di livello diverso.** `nuovaPartita()` rimette la card di setup e
+nasconde il cruscotto senza toccare né `globalLeagueMatchesCache` né `RAW_CACHE` — è
+quella che fa risparmiare di più. In più il database di lega (tre chiamate, ~470 KB)
+finisce in `localStorage` con chiave `lega+stagione` e scadenza a 24 ore, così anche chi
+ricarica davvero non rifà quelle tre. La `RAW_CACHE` invece **non** è persistita: sono
+decine di MB, e localStorage non è il posto.
+
+Il riquadro accanto al bottone dice cosa c'è in memoria e avverte di non ricaricare: è
+l'unica difesa contro il gesto che cancella il lavoro, e finché il costo era invisibile
+nessuno sapeva di pagarlo.
+
+Nota di metodo: la ripresa dal `localStorage` doveva ricostruire il roster, che era
+codice già scritto dentro `caricaSquadreLega`. Estratto in `mostraRoster()` e chiamato
+da tutte e due i percorsi, invece di copiarlo — è la trappola delle due copie, e qui si
+presentava come una tentazione da sei righe.
 
 ### Il telefono in verticale è il caso principale, non un ripiego
 
@@ -3628,6 +3951,26 @@ girano sul solo sorgente, quindi si possono fare a ogni commit senza un backtest
   funzioni chiamate da un `onclick` nell'HTML risultano non usate (contarne le
   occorrenze nei due `.html` prima di crederci), e `lamH_mix`/`lamA_mix` risultano
   non usate ma le legge l'hook iniettato, che il linter non vede.
+
+- **M. La curva dello stacco, coi suoi quattro punti (`b30`).** `buildGlobalElo`
+  restituisce `_gap` con soglia, τ e asintoto: valutare `asy·(1 − e^{−(g−thr)/τ})` a
+  30, 83, 240 e 826 giorni deve dare **0% / 9.0% / 37.6% / 79.7%**. È due righe e
+  intercetta sia una manopola cambiata per sbaglio sia l'errore classico di invertire
+  τ con la soglia. Nello stesso giro conviene controllare che la tabella Elo abbia
+  **media esatta 1500** (l'aggiornamento è a somma zero, e anche la regressione verso
+  1500 la conserva): se la media deriva, qualcosa sta aggiungendo punti dal nulla.
+- **N. L'inclinazione non muove il totale dei gol (`b30`).** Da `__ELO_DEBUG_OVER`,
+  `lamH0 + lamA0` deve essere identico **al bit** a `lamH + lamA`. È l'invariante su
+  cui poggia tutta la separazione fra mercati 1X2 e mercati gol: se salta, Over/Under
+  si muove quando non dovrebbe e nessuna card lo direbbe.
+
+- **O. Gli strumenti di misura leggono il ramo che il motore usa davvero (`b31`).**
+  Ogni volta che si tocca una costante che **sceglie un ramo** (`ENS_SCOPE_W` in
+  testa), rileggere quel giorno stesso cosa registra l'hook del Comparatore e da cosa
+  ricostruiscono le sezioni A/B. Il controllo automatico è: far girare una partita e
+  confrontare `__ELO_DEBUG.lgModel` con `__ELO_DEBUG_OVER.lgModel`; se `ENS_SCOPE_W`
+  è 1, la sezione A/B del peso deve usare il **secondo**. Ha trovato dieci build di
+  ricostruzioni sul ramo sbagliato.
 
 **Il giro completo senza rete.** Il motore si può far girare per intero su dati
 finti, in Chromium, senza toccare PitchAPI: è il controllo che ha misurato
