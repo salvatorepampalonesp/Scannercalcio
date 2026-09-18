@@ -1264,6 +1264,33 @@ subito dopo la soglia.
 | 1 anno, 365 g | 82.4% | 53.0% |
 | 2 anni, 826 g | 89.9% | 79.7% |
 
+### Quante volte scatta davvero: due, non una
+
+`caricaSquadreLega` scarica **tre stagioni** (`s1`, `s2`, `s3`), e `buildGlobalElo` non
+ha limite inferiore: le mangia tutte. Quindi il rating di una squadra che gioca oggi ha
+attraversato **due pause estive**, e le regressioni si **compongono**.
+
+| | per pausa (83 g) | due pause, composto |
+|---|---|---|
+| vecchia curva, τ = 110 | −26.3% | **−45.7%** |
+| nuova curva, τ = 360 | −9.0% | **−17.2%** |
+
+Verificato sul motore, non sulla formula: campionato sintetico di tre stagioni con due
+pause da 90 giorni, e una squadra che vince sempre. Vecchia curva: 30.2% + 30.2% =
+**51.3%** composto, la squadra chiude a **1938**. Nuova: 10.6% + 10.6% = **20%**, chiude
+a **1997**. Sono **59 punti** di rating, che moltiplicati per `ELO_SCALE` valgono
+**0.425 di log-odds** sull'1 contro 2 — non un dettaglio. (Il danno non è pari al
+composto: durante la stagione gli aggiornamenti a `K = 20` ne ripagano una parte. Ma non
+tutta, ed è il punto.)
+
+È questo il numero che conta, e non era scritto da nessuna parte: la curva vecchia
+**lavava via quasi metà** dello scarto dal 1500 di ogni squadra prima ancora che la
+stagione cominciasse. Un'Inter da 1700 partiva la stagione a 1609 invece che a 1667.
+Con `ELO_SCALE` che poi moltiplica quello scarto per 1.25, le due correzioni tirano in
+direzioni opposte sulla stessa quantità — ed è il motivo per cui nella griglia del `b30`
+spegnere la regressione e alzare la scala danno quasi lo stesso guadagno (−0.0065 e
+−0.0066) e messe insieme non lo raddoppiano (−0.0095).
+
 Il τ non è tarato sull'ottimo: **l'ottimo non esiste**, la logloss cala in modo
 monotono fino a τ infinito (cioè fino a spegnere la regressione del tutto). Da 360
 in su il guadagno residuo è **0.0005**, sotto il rumore. Quindi 360 è il punto in cui
@@ -1362,6 +1389,23 @@ pendenza implicita di **1.18** sull'1X2. Misurata, la pendenza del modello è
 un bel pezzo ma non tutto**: se dopo il `b30` la pendenza misurata scende verso
 1.05–1.15, la spiegazione regge; se non si muove, la scala dell'Elo non era la
 causa e il punto 16 della coda resta intero.
+
+### La card diceva «nessuna regressione» e sembrava dire un'altra cosa (`b31`)
+
+Prima versione della card: *«Stacco dall'ultima partita: 1 g · 6 g — nessuna
+regressione»*. Vero ma letto al contrario: sembra dire *«questo rating non è mai stato
+regredito»*, quando dice *«non sto applicando una regressione per l'ultimo tratto»*.
+Le pause passate ci sono eccome, sono due, e sono già dentro il numero.
+
+Sollevato da una domanda dell'utente — *«l'Elo non lo calcola progressivamente con le
+partite?»* — e la risposta è sì: il ciclo è cronologico e la regressione scatta
+**dentro** il ciclo, alla prima partita dopo ogni pausa. `buildGlobalElo` ora restituisce
+`gapLog`, e la card mostra quante pause il rating ha già scontato, quanto in tutto e
+l'ultima da quanto (con il rating prima e dopo), **separandole** dall'ultimo tratto.
+
+La lezione, che è di scrittura e non di codice: **una frase negativa su una card deve
+dire a cosa si riferisce il «no».** «Nessuna regressione» senza soggetto si legge come
+il caso generale, non come il tratto finale.
 
 ### Quello che il motore NON fa, ed è deliberato
 
