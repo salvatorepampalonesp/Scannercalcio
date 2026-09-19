@@ -180,6 +180,8 @@ sovradispersione — scagionati con i dati in mano.
 
 | `b32` | **il clamp sull'HFA mordeva in silenzio**: `Math.max(30, Math.min(100, ...))` e a schermo un `+30` era indistinguibile fra una misura e il pavimento. Il pavimento corrisponde a un rapporto vittorie di 1.1885, cioè **dentro** l'intervallo plausibile della Serie A moderna — e può perfino **ribaltare il segno** (un grezzo di −98 usciva come +30). Ora la card, il prompt e il CSV dicono il grezzo e se il limite ha morso. E la card avvisa quando Elo e modello divergono di 10+ punti, perché lì il verdetto lo decide l'Elo |
 
+| `b33` | **la parità Comparatore↔Scanner rimisurata passando dal vero `cmpRunMatch`**: 16 campi su 16 identici, i lambda all'ultima cifra in virgola mobile. E il leakage rifatto nello scenario peggiore — **tutti gli orari appiattiti a `T00:00:00Z`** — resta chiuso, col controllo di potenza che scatta. Trovato un buco: la guardia sulla lega stava solo nel caricamento del database, quindi una partita fatta girare per altra via ripiegava su 1.50/1.20 **in silenzio**. Ora `cmpRunMatch` la ferma, e all'iniezione il log dice se le manopole sono ai default |
+
 Le tre build finali hanno una storia sola e va letta in *La baseline di coppia*:
 tre tentativi svuotati dallo stesso malinteso.
 
@@ -1565,6 +1567,106 @@ solida del motore, 5 sigma su cinque leghe), ma chi legge ha diritto di saperlo:
 la riga «usato» compare ora un avviso quando le due letture distano 10 punti o più, e
 il prompt dice all'LLM di dichiararlo invece di cercare nelle statistiche una conferma
 che non c'è.
+
+## La parità rimisurata, e il taglio a `x-1` (`b33`)
+
+Due domande poste insieme prima di un giro di backtest: *«mi confermi che i dati del
+Comparatore siano totalmente uguali a quelli dello Scanner?»* e *«l'API non fa
+differenza fra 00:00 e 18:00, quindi il taglio dovrebbe piazzarsi a −1»*.
+
+### 1. La parità, misurata sul percorso vero
+
+Il controllo del `b23` girava su un'iniezione fatta a mano dal test, non sul vero
+`cmpRunMatch`. Rifatto: lo Scanner con `caricaSquadreLega()` + `avviaScanner()` da una
+parte, il Comparatore con `loadEngineFromText()` + `cmpRunMatch()` dall'altra, stesso
+campionato sintetico, e i valori letti **dal DOM dello Scanner** contro quelli del
+risultato del Comparatore.
+
+**16 campi su 16 identici**: `1/X/2`, confidence, GG, Over 2.5, i quattro lambda,
+Elo casa e trasferta, differenza, HFA, inclinazione, corner, tiri in porta, gialli. I
+lambda coincidono fino all'ultima cifra (`1.7813577480959757` su tutti e due i lati),
+e così `__SCOPE_DEBUG` e `__UNIT_DEBUG` voce per voce.
+
+**Ma solo dopo aver tolto tre trappole, e tutte e tre meritano di essere scritte.**
+
+| cosa sembrava | cos'era |
+|---|---|
+| i lambda divergevano dell'1.2% | leggevo `window.__ELO_DEBUG_OVER`, che dopo un giro del Comparatore è l'**ultimo** `k` di `CMP_K_LIST` (28), mentre il risultato e il CSV sono il **primo** (4). Il debug giusto è dentro l'oggetto risultato, non su `window` |
+| l'1X2 divergeva di 3 punti | il test serviva lo stesso elenco di partite a tutte e tre le stagioni, quindi la cache dello Scanner conteneva ogni partita **tre volte** mentre quella del Comparatore una |
+| dopo il punto 2, divergeva ancora | **la lega non arrivava al motore**: `lgN = 0`, `avgH 1.50 / avgA 1.20`, `rho −0.11`. Il bug del `b18`, vivo |
+
+La terza non era del test. `cmpRunMatch` imposta la lega solo `if (cmpCurrentLeagueId)`,
+e la guardia che **ferma il batch** (`b18`) vive nel *caricamento del database*, non
+qui. Una partita fatta girare per un'altra via — un test, uno script, un percorso futuro
+— ripiegava sui valori fissi **senza che niente lo dicesse**. Il motore lo sapeva già
+(`__UNIT_DEBUG.lgN`), nessuno glielo chiedeva.
+
+Ora `cmpRunMatch` controlla `lgN > 0` subito dopo il primo giro e si ferma. La riprova
+immediata: il guardrail ha bocciato **il banco di prova del `b31`**, che girava così da
+due build. Le verifiche strutturali fatte lì (etichette, invarianza della ricostruzione,
+marcatore per colonna) restano valide perché non dipendono dai parametri di lega, ma i
+*numeri* di quegli esempi erano prodotti con la lega ripiegata.
+
+E all'iniezione il log dice ora una riga di verdetto: se `ELO_SCALE` o
+`ROLE_SCOPE_INDEPENDENT` sono diversi dal default del motore, **questo giro non stampa i
+numeri dello Scanner** — è un A/B, va bene, ma va dichiarato. I default si leggono dal
+**sorgente** e non da `window`: le righe del motore sono
+`window.X = (typeof window.X === 'number') ? window.X : <default>`, cioè *preservano* un
+valore già impostato dalle manopole, e leggere `window` dopo l'iniezione avrebbe
+restituito la manopola e detto sempre «ok». Trappola nuova, stessa famiglia di
+*un'etichetta presa dallo stato del momento*.
+
+### 2. L'orario: misurato nello scenario peggiore
+
+La preoccupazione è giusta come istinto e già chiusa nel `b24`, ma la risposta non è
+«fidati»: il filtro legge `timeUtc.slice(0, 10)`, cioè **solo la data**. Fra
+`2025-04-30T00:00:00Z` e `2025-04-30T18:00:00Z` la decisione è identica — entrambe
+escluse — perché il confronto non guarda l'ora. Il giorno bersaglio è escluso **per
+intero**, che è esattamente il «−1» chiesto, applicato al giorno invece che al timestamp.
+
+Rifatto il controllo L con **tutti gli orari dell'archivio appiattiti a `T00:00:00Z`**,
+bersaglio compreso:
+
+| | orari veri | tutti a `T00:00:00Z` |
+|---|---|---|
+| payload della bersaglio drogato | identico | identico |
+| payload di un'altra dello stesso giorno | identico | identico |
+| **payload del giorno prima** [potenza] | **cambia** | **cambia** |
+| punteggio della bersaglio a 9-0 | identico | identico |
+| **punteggio del giorno prima a 9-0** [potenza] | **cambia** | **cambia** |
+
+Sei prove per regime, due strade diverse (payload e punteggio), e il controllo di
+potenza scatta in tutti e due: il test *può* vedere il leakage, e non lo vede.
+
+### 3. E allora spostare il taglio a `x-1` conviene?
+
+**No, e ora si sa quanto costerebbe.** Misurato sulle 1882 partite di Serie A:
+
+- il **77%** delle partite ha almeno una gara di lega il giorno prima;
+- in media si butterebbero **2.18 partite di lega** per previsione, fino a 8.
+
+Ma la parte che conta è un'altra: **le due squadre che si affrontano non possono aver
+giocato il giorno prima**, perché si affrontano il giorno dopo. Quindi il loro storico
+— la cosa che pesa di più — non perderebbe niente. A perderci sarebbero media gol di
+lega, `rho` e l'Elo delle *altre* squadre. Costo piccolo, ma reale.
+
+E il guadagno è **zero per queste leghe**, perché la data UTC non può scivolare:
+
+| lega | fuso | primo calcio d'inizio | ultimo |
+|---|---|---|---|
+| Serie A | UTC+2 | 12:30 → 10:30Z | 20:45 → 18:45Z |
+| Premier | UTC+1 | 12:30 → 11:30Z | 20:00 → 19:00Z |
+| LaLiga | UTC+2 | 14:00 → 12:00Z | 21:00 → 19:00Z |
+
+Per scivolare al giorno **prima** servirebbe un calcio d'inizio prima delle 02:00
+locali; al giorno **dopo**, oltre le 22:00. Nessuna delle tre ci arriva. E se un giorno
+si aggiungesse una lega americana o asiatica, lo scivolamento possibile sarebbe quello
+in **avanti**, che è la direzione sicura: esclude di più, non di meno.
+
+**Quando invece il `x-1` servirebbe davvero**: se l'API cominciasse a restituire la data
+*locale* di una lega a ovest di Greenwich. Il controllo per accorgersene c'è già —
+il Comparatore segnala al caricamento quante partite hanno `time_utc` senza fuso — e va
+guardato ogni volta che si aggiunge un paese.
 
 ## L'audit sistematico del `b19`: cosa è stato controllato e cosa è saltato fuori
 
@@ -4094,6 +4196,18 @@ girano sul solo sorgente, quindi si possono fare a ogni commit senza un backtest
   senza che nessuno lo notasse per tre build), per `ELO_TILT_MAX` e per `GOALS_SOT_CAP`.
   Un limite che morde non è più un limite: è il modello, e va scritto nella riga che
   mostra il numero — «misurato su N partite» accanto a un valore clampato è **falso**.
+
+- **Q. La lega arriva davvero al motore? (`b33`)** `__UNIT_DEBUG.lgN` deve essere > 0
+  a ogni partita. A 0 il motore gira con `avgH 1.50 / avgA 1.20 / rho −0.11` e i numeri
+  **non sono confrontabili** con quelli dello Scanner. `cmpRunMatch` ora si ferma da
+  solo, ma qualunque percorso nuovo che chiami `avviaScanner()` va controllato allo
+  stesso modo: è il bug del `b18` e si ripresenta ogni volta che si entra nel motore da
+  una porta diversa.
+- **R. Il debug su `window` è dell'ultimo giro, non di quello nel CSV (`b33`).**
+  `cmpRunMatch` chiama `avviaScanner()` tre volte (`CMP_K_LIST = [4, 12, 28]`) e i
+  `window.__*_DEBUG` restano quelli di `k = 28`, mentre il risultato e il CSV sono
+  `k = 4`. Per qualunque confronto, leggere il debug **dentro l'oggetto risultato**
+  (`R.eloDebugOver`, `R.scopeDebug`, …), mai da `window`.
 
 **Il giro completo senza rete.** Il motore si può far girare per intero su dati
 finti, in Chromium, senza toccare PitchAPI: è il controllo che ha misurato

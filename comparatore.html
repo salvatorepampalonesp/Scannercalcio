@@ -162,7 +162,7 @@ select{cursor:pointer}
   <div class="topbar">
     <div class="brand">
       <h1>Comparatore V9.7</h1>
-      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b32</span>
+      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b33</span>
       <span class="badge" id="engine-badge">motore non caricato</span>
     </div>
     <span class="badge">previsioni vs realtà</span>
@@ -454,6 +454,7 @@ let engineReady = false;
 const CMP_K_LIST = [4, 12, 28];
 
 let cmpCurrentLeagueId = '';
+let cmpLgWarned = false;
 let cmpPredSource = '';
 
 const CMP_LEAGUES_FALLBACK = [{"id":"l_3hvsne","name":"2. Bundesliga","country_code":"GER","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_4MPd7x","name":"A-League","country_code":"AUS","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_1XsMdH","name":"Allsvenskan","country_code":"SWE","seasons":["2021","2022","2023","2024","2025","2026"]},{"id":"l_3zsMpo","name":"Bundesliga","country_code":"AUT","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_1Isor4","name":"Bundesliga","country_code":"GER","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_1pQOHK","name":"Challenger Pro League","country_code":"BEL","seasons":["2025/2026","2026/2027"]},{"id":"l_0bfbkO","name":"Champions League","country_code":"INT-2","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_4DWyTT","name":"Championship","country_code":"ENG","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_2WZ2tt","name":"Conference League","country_code":"INT-2","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_214sqK","name":"Ekstraklasa","country_code":"POL","seasons":["2025/2026","2026/2027"]},{"id":"l_0uqFK8","name":"Eliteserien","country_code":"NOR","seasons":["2021","2022","2023","2024","2025","2026"]},{"id":"l_4H43wr","name":"Eredivisie","country_code":"NED","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_38d9HA","name":"Europa League","country_code":"INT-2","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_2L6d1F","name":"First Division A","country_code":"BEL","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_1qpFVw","name":"Indian Super League","country_code":"IND","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_2ApGa4","name":"J. League","country_code":"JPN","seasons":["2022","2023","2024","2025","2026"]},{"id":"l_2EKrnc","name":"K League 1","country_code":"KOR","seasons":["2022","2023","2024","2025","2026"]},{"id":"l_0ErfuF","name":"LaLiga","country_code":"ESP","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_3kyHLd","name":"LaLiga2","country_code":"ESP","seasons":["2025/2026","2026/2027"]},{"id":"l_0ahLw8","name":"League One","country_code":"ENG","seasons":["2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_1W6idJ","name":"League Two","country_code":"ENG","seasons":["2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_3v84VE","name":"Liga MX","country_code":"MEX","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_4QexZg","name":"Liga Portugal","country_code":"POR","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_45VZuL","name":"Liga Profesional","country_code":"ARG","seasons":["2023","2024","2025","2026"]},{"id":"l_3FJFUl","name":"Ligue 1","country_code":"FRA","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_0275VP","name":"Ligue 2","country_code":"FRA","seasons":["2025/2026","2026/2027"]},{"id":"l_0eg6C9","name":"MLS","country_code":"USA","seasons":["2021","2022","2023","2024","2025","2026"]},{"id":"l_2Mh0jT","name":"Premier League","country_code":"RUS","seasons":["2025/2026","2026/2027"]},{"id":"l_46aZMC","name":"Premier League","country_code":"EGY","seasons":["2025/2026","2026/2027"]},{"id":"l_4WFCIZ","name":"Premier League","country_code":"ENG","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_1Kknkl","name":"Premier Soccer League","country_code":"RSA","seasons":["2025/2026","2026/2027"]},{"id":"l_1LMdEO","name":"Premiership","country_code":"SCO","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_0Lpz1f","name":"Saudi Pro League","country_code":"KSA","seasons":["2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_0ALvwF","name":"Serie A","country_code":"ITA","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_1D8Xrl","name":"Serie A","country_code":"BRA","seasons":["2023","2024","2025","2026"]},{"id":"l_0jy5yE","name":"Serie B","country_code":"ITA","seasons":["2025/2026","2026/2027"]},{"id":"l_4d6Bwl","name":"Super League","country_code":"SUI","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_3xwVF2","name":"Super League 1","country_code":"GRE","seasons":["2024/2025","2025/2026","2026/2027"]},{"id":"l_0S1uaf","name":"Super Lig","country_code":"TUR","seasons":["2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_49Zmno","name":"Superligaen","country_code":"DEN","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_3hW1NO","name":"Thai League 1","country_code":"THA","seasons":["2025/2026"]},{"id":"l_1XLtP0","name":"World Cup","country_code":"INT","seasons":["2022","2026"]}];
@@ -699,12 +700,42 @@ async function loadEngineFromText(text, fileName) {
   // del motore, le colonne del file non sono piu' quelle che l'utente vede a schermo,
   // e senza questa riga non lo direbbe nessuno (AGENTS.md, Il Comparatore stampa come
   // lo Scanner).
+  // I default del motore vanno letti dal SORGENTE, non da window: le righe del motore
+  // sono nella forma `window.X = (typeof window.X === 'number') ? window.X : <default>`,
+  // cioe' PRESERVANO un valore gia' impostato dalle manopole del Comparatore. Leggere
+  // window dopo l'iniezione restituirebbe la manopola e il confronto direbbe sempre "ok".
+  const _defDa = (nome) => {
+    const m = processedJs.match(new RegExp('window\\.' + nome + '\\s*=[^;]*?:\\s*(-?[0-9.]+)\\s*;'));
+    return m ? parseFloat(m[1]) : null;
+  };
+  window.__ENGINE_ELO_SCALE = _defDa('ELO_SCALE');
+  window.__ENGINE_ROLE_INDEP = _defDa('ROLE_SCOPE_INDEPENDENT') ?? 0;
   window.__ENGINE_SHRINK_K = (typeof window.SHRINK_K === 'number') ? window.SHRINK_K : null;
   if (window.__ENGINE_SHRINK_K != null && CMP_K_LIST[0] !== window.__ENGINE_SHRINK_K) {
     cmpLog(`   \u26a0\ufe0f CMP_K_LIST[0] e' ${CMP_K_LIST[0]} ma il motore ha SHRINK_K ${window.__ENGINE_SHRINK_K}: `
          + `il CSV NON corrispondera' ai numeri dello Scanner. Rimetti ${window.__ENGINE_SHRINK_K} in testa alla lista.`);
   } else if (window.__ENGINE_SHRINK_K != null) {
     cmpLog(`   \u2705 CMP_K_LIST[0] = ${CMP_K_LIST[0]} = SHRINK_K del motore: il CSV coincide con lo Scanner.`);
+  }
+
+  // VERDETTO DI PARITA'. Misurato nel b33: passando dal vero cmpRunMatch, Comparatore e
+  // Scanner danno 16 campi su 16 identici — la maggior parte all'ultima cifra in virgola
+  // mobile — A PATTO che le manopole siano ai default del motore. Sono legittime (servono
+  // agli A/B) ma vanno dichiarate, non scoperte guardando il CSV.
+  {
+    const diff = [];
+    const _s = (typeof window.ELO_SCALE === 'number') ? window.ELO_SCALE : null;
+    const _r = (typeof window.ROLE_SCOPE_INDEPENDENT === 'number') ? window.ROLE_SCOPE_INDEPENDENT : 0;
+    if (_s != null && window.__ENGINE_ELO_SCALE != null && Math.abs(_s - window.__ENGINE_ELO_SCALE) > 1e-9)
+      diff.push(`ELO_SCALE ${_s} invece di ${window.__ENGINE_ELO_SCALE}`);
+    if (_r !== window.__ENGINE_ROLE_INDEP)
+      diff.push(`ROLE_SCOPE_INDEPENDENT ${_r} invece di ${window.__ENGINE_ROLE_INDEP}`);
+    if (diff.length) {
+      cmpLog(`   \u26a0\ufe0f Questo giro NON stampera' i numeri dello Scanner: ${diff.join(', ')}. `
+           + `E' un A/B, va bene — ma non confondere il file con un giro di riferimento.`);
+    } else {
+      cmpLog(`   \u2705 Manopole ai default del motore: questo giro stampa gli stessi numeri dello Scanner.`);
+    }
   }
 
   if (typeof window.__SCANNER_BUILD === 'string') {
@@ -723,7 +754,7 @@ async function loadEngineFromText(text, fileName) {
     <p><code>${fileName}</code> — clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
 
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b32';
+  const _bComp = '0905-b33';
   const _el = document.getElementById('engine-build');
   if (_el) {
     if (!_bScan) {
@@ -1338,6 +1369,19 @@ async function cmpRunMatch(match, limit, render) {
     await globalThis.avviaScanner();
     if (!globalThis._V97_probs) throw new Error("Il V9.7 non ha esposto _V97_probs (hook mancante o storico insufficiente).");
     const S = globalThis._V97_probs;
+    // La lega arriva davvero al motore? La guardia del b18 sta nel caricamento del
+    // database, non qui: una partita fatta girare per altra via ripiegava su
+    // avgH 1.50 / avgA 1.20 / rho -0.11 in silenzio. Il motore lo dice da solo con
+    // __UNIT_DEBUG.lgN, basta guardarlo (AGENTS.md, La lega che non arrivava mai).
+    if (!cmpLgWarned) {
+      const _u = (typeof window.__UNIT_DEBUG === 'object' && window.__UNIT_DEBUG) || null;
+      if (_u && !(_u.lgN > 0)) {
+        cmpLgWarned = true;
+        cmpLog(`   \u274c La lega NON sta arrivando al motore (lgN = 0): media gol e rho sono i valori `
+             + `di ripiego 1.50/1.20 e -0.11, non quelli della lega. I numeri NON coincidono con lo Scanner.`);
+        throw new Error('Lega non arrivata al motore (LG.n = 0): i risultati non sarebbero confrontabili con lo Scanner.');
+      }
+    }
     kRuns[kVal] = { m1: S.m1, mX: S.mX, m2: S.m2, confidence: S.confidence,
                     dc1: S.probsRole?.p1, dcX: S.probsRole?.pX, dc2: S.probsRole?.p2,
                     pOv: S.probsRole?.pOv, pGG: S.probsRole?.pGG };
