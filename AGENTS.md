@@ -184,6 +184,8 @@ sovradispersione — scagionati con i dati in mano.
 
 | `b34` | **l'ultima copia cablata**: `cmpRunMatch` imponeva `SHRINK_LAM_K = 3` scritto a mano, cioè una copia di una costante del motore. Oggi coincideva; alla prima ritaratura avrebbe zittito il cambiamento. Ora si legge dal sorgente iniettato, e il verdetto di parità all'iniezione copre anche `SHRINK_K` e `history-limit` |
 
+| `b35` | **il backtest vero risponde a tre domande in un colpo**. La predizione del `b30` **regge**: sulle stesse 1504 partite la pendenza scende da **1.335 a 1.134**. Il punto 16 è **risolto**: la timidezza residua è nel **modello** (1.443, `z = +4.81`), non nell'Elo (1.092, `z = +1.30`). `ELO_SCALE 1.25` batte 1.00 a `z = 3.92`, `ELO_1X2_W` resta 0.75 (l'ottimo è interno e piatto fra 0.50 e 0.75). E il pavimento dell'HFA **morde sul 27.6%** delle righe: esposta la regola alternativa (shrinkage), ferma sul comportamento di sempre |
+
 Le tre build finali hanno una storia sola e va letta in *La baseline di coppia*:
 tre tentativi svuotati dallo stesso malinteso.
 
@@ -293,11 +295,17 @@ sono ora manopole (`ELO_GAP_THRESHOLD`, `ELO_GAP_TAU`, `ELO_GAP_ASY`). Vedi
 13. ~~**Misurare `ROLE_SCOPE_INDEPENDENT`**~~ — **fatto, e la risposta è no.** L'A/B
    appaiato su 1133 partite e tre leghe dice `0.0002` di logloss: resta a 0. Vedi
    *L'A/B del campione di ruolo*. Ne esce una domanda nuova e più grossa, il punto 16.
-16. **Capire perché le probabilità sono sotto-disperse.** Due campioni indipendenti
-   danno pendenza **1.27** e **1.34** dove la retta a schermo ne usa 0.880, cioè spinge
-   dalla parte sbagliata. Il campione di ruolo è stato escluso come causa (punto 13).
-   Restano `SHRINK_K`, `SHRINK_LAM_K` e la media dell'ensemble, che comprime per
-   costruzione. Vedi *L'A/B del campione di ruolo*.
+16. ~~**Capire perché le probabilità sono sotto-disperse**~~ — **risolto a metà nel
+   `b35`, e ora ha un indirizzo.** La scala dell'Elo era una causa vera: sulle stesse
+   1504 partite la pendenza scende da **1.335 a 1.134**. Quello che resta è **nel
+   modello**, non nell'Elo: a `w = 0` (solo Dixon-Coles + Markov) la pendenza è
+   **1.443** con `z = +4.81`, a `w = 1` (solo Elo) è **1.092** con `z = +1.30`.
+   Restano `SHRINK_K`, `SHRINK_LAM_K` e la media dell'ensemble. **Non alzare
+   `ELO_SCALE` per compensare**: sarebbe prendere il prestito dal conto sbagliato.
+   Vedi *Il backtest vero*.
+16-bis. **La regola dell'HFA: pavimento o shrinkage?** Esposta nel `b35` e ferma sul
+   pavimento. Il CSV la ricostruisce senza rilanciare il motore: **un backtest
+   decide**. Il pavimento morde sul 27.6% delle righe di backtest (mai in produzione).
 14. **Portare `RESID_GAMMA` a 0.360** (o rimisurarlo) prima di rileggere la sezione
    *A/B CORREZIONE RESIDUALE* del CSV: nel codice è ancora 0.678, cioè la scala che
    il `b5` ha dichiarato sbagliata. Non sposta probabilità (`RESID_ALPHA = 0`),
@@ -1705,6 +1713,168 @@ Le prime due sono errori se divergono; le ultime tre sono **scelte legittime** c
 servono agli A/B. La differenza fra le due categorie non sta nel codice, sta nel fatto
 che l'utente le abbia volute — quindi l'unica difesa è **dirlo a voce alta ogni volta**,
 non impedirlo.
+
+## Il backtest vero: quattro file, cinque stagioni, tre risposte (`b35`)
+
+Quattro CSV di Serie A girati col `b34`, `ELO_SCALE` al default. Prima dei numeri, i
+controlli che questo documento impone, **tutti e sei**:
+
+| controllo | esito |
+|---|---|
+| **I-bis** ID PARTITA unici | 4125 righe grezze → **1882 partite distinte**. Gli export si accumulano: sommare avrebbe contato ogni partita **2.2 volte** |
+| **H** colonna `LEGA` | 1882 su 1882 «Serie A», 27 squadre, tutte italiane ✓ |
+| **I** `Origine metriche avanzate` | **1127 `riserva-k-motore`**, 755 `motore`: `/advanced` manca sul 60% delle righe (le tre stagioni vecchie) |
+| **Q** `lgN > 0` | zero righe a 0 ✓ — la lega arriva al motore dappertutto |
+| **P** il clamp dell'HFA | **morde su 520 righe, il 27.6%** — vedi sotto |
+| parità | il log dichiara `ELO_SCALE = 1,25 (default b30)` su tutti e quattro ✓ |
+
+Il campione è cinque stagioni piene: 370 / 378 / 379 / 377 / 378.
+
+### 1. La predizione falsificabile del `b30` regge
+
+Il `b30` aveva scritto: *«se dopo il `b30` la pendenza misurata scende verso 1.05–1.15,
+la spiegazione regge; se non si muove, la scala dell'Elo non era la causa»*. Misurata
+sulle **stesse identiche 1504 partite** (2021/22 → 2024/25) del campione vecchio:
+
+| | pendenza | SE | sigma da 1 |
+|---|---|---|---|
+| prima del `b30` | 1.335 | 0.056 | +5.95 |
+| **dopo** | **1.134** | 0.047 | **+2.82** |
+
+Dentro la banda predetta. Su tutte e cinque le stagioni: **1.125** (`z = +2.95`), e per
+stagione fra 1.09 e 1.17, nessuna sopra 2 sigma da sola.
+
+**E non è un artefatto di `/advanced`**: le righe col motore danno 1.129, quelle di
+riserva 1.122. Era il sospetto sollevato in *Quattro backtest veri di Serie A* («non è
+la stessa macchina»), ed è escluso.
+
+### 2. Il punto 16 è risolto: la timidezza è nel MODELLO, non nell'Elo
+
+La sezione A/B del peso `w` scompone il bersaglio — `w = 0` è il solo modello, `w = 1`
+il solo Elo — e la pendenza di calibrazione su ciascuno dice chi sta sbagliando:
+
+| `w` | pendenza | sigma da 1 | chi parla |
+|---|---|---|---|
+| **0.00** | **1.443** | **+4.81** | **solo Dixon-Coles + Markov** |
+| 0.25 | 1.405 | +4.58 | |
+| 0.50 | 1.319 | +3.85 | |
+| 0.75 | 1.209 | +2.72 | la miscela in uso |
+| **1.00** | **1.092** | **+1.30** | **solo l'Elo, a scala 1.25** |
+
+**L'Elo dopo il `b30` è calibrato entro 1.3 sigma. Il modello è a 4.8.** La domanda
+aperta da dieci build ha una risposta e un indirizzo: `SHRINK_K`, `SHRINK_LAM_K` e la
+media dell'ensemble, che comprime per costruzione. L'Elo esce dalla lista dei
+sospettati.
+
+### 3. `ELO_SCALE` confermata, e la tentazione di alzarla è una trappola
+
+| `S` | logloss | pendenza | contro 1.25 |
+|---|---|---|---|
+| 0.75 | 0.5825 | 1.785 | `z = +5.29` peggio |
+| 1.00 | 0.5719 | 1.442 | **`z = +3.92` peggio** |
+| 1.10 | 0.5689 | 1.339 | `z = +3.42` peggio |
+| **1.25** | **0.5657** | **1.209** | in uso |
+| 1.40 | 0.5639 | 1.101 | `z = −1.91` meglio |
+| 1.60 | 0.5635 | **0.984** | `z = −1.00` meglio |
+
+Il `b30` è confermato sui dati veri: **1.25 batte 1.00 a `z = 3.92`**.
+
+Ma la logloss cala in modo **monotono** fino a 1.60, che questo documento insegna a
+trattare come sospetto («di solito vuol dire che stai solo affilando»). Qui non è
+affilatura — la pendenza attraversa 1 esattamente a 1.60 — **eppure alzarla sarebbe
+comunque la cura sbagliata**, ed è il punto 2 a dirlo: a `S = 1.25` l'Elo è già
+calibrato (1.092), il timido è il modello (1.443). Portare `S` a 1.60 calibrerebbe la
+miscela **sovra-scalando il termine giusto per compensare quello sbagliato**.
+
+È la stessa forma di `GOALS_UNIT_FIX` — *diagnosi giusta, cura sbagliata* — e della
+`_base` di coppia: si aggiusta un numero prendendo il prestito dal conto di un altro.
+**`ELO_SCALE` resta 1.25.** Quando il modello sarà calibrato, `S` andrà rimisurata: a
+quel punto l'ottimo scenderà, non salirà.
+
+### 4. `ELO_1X2_W = 0.75` regge, ed è la prima volta che si può dirlo dal `b21`
+
+Il `b31` aveva scoperto che la ricostruzione girava sul ramo sbagliato, quindi questa è
+la prima misura valida di `w` da dieci build:
+
+| `w` | logloss | contro 0.75 |
+|---|---|---|
+| 0.00 | 0.5740 | `z = +2.03` peggio |
+| 0.25 | 0.5683 | `z = +0.95` |
+| 0.50 | **0.5655** | `z = −0.10` — **indistinguibile** |
+| **0.75** | 0.5657 | in uso |
+| 1.00 | 0.5685 | `z = +2.09` peggio |
+
+Ottimo **interno**, piatto fra 0.50 e 0.75, e i due estremi peggiorano a 2 sigma.
+Il valore scelto nel `b14` regge. Non si tocca.
+
+### 5. Il pavimento dell'HFA morde sul 27.6%, e si sa esattamente quando
+
+Il `b32` aveva esposto il grezzo senza poter sapere se il limite mordesse davvero.
+Adesso sì:
+
+| archivio (`lgN`) | n | il clamp morde |
+|---|---|---|
+| < 100 | 90 | 36.7% (più 44.4% di ripiego) |
+| 100–300 | 203 | **61.6%** |
+| 300–600 | 294 | **90.1%** |
+| 600–900 | 574 | 16.9% |
+| ≥ 900 | 721 | **0%** |
+
+Il pavimento non morde a caso: morde **quando l'archivio è corto**, cioè dove la stima
+è rumorosa. Per stagione: 63.5% nel 2021/22, 75.4% nel 2022/23, **0% dalle altre tre**.
+Il grezzo peggiore è **−43** (26/09/2021, 53 partite in archivio), stampato come +30.
+
+**In produzione non morde mai** — lo Scanner carica tre stagioni e `lgN` sta sopra 900.
+Ma nel *backtest* contamina le prime due stagioni, che sono **748 partite, il 40% del
+campione**, ed è precisamente il campione da cui veniva l'1.335 del `b26`.
+
+**La cura giusta non è un limite diverso, è un'altra procedura.** Un limite duro è un
+paracadute (tipo 3); una stima rumorosa su campione corto vuole lo **shrinkage verso un
+a priori** (tipo 1), `n/(n+k)`, che è quello che il motore fa già ovunque. Sui dati veri:
+
+| regime | HFA oggi (mediana) | con shrinkage `k = 200` |
+|---|---|---|
+| `lgN < 300` | 30 — il pavimento | 46 |
+| 300–900 | 33 | 40 |
+| ≥ 900 | 46 | 49 — **coincidono** |
+
+Cioè lo shrinkage lascia stare il regime pieno e salva quello corto, che è esattamente
+il comportamento voluto.
+
+**Ma cambierebbe 778 righe su 1842 di più di 5 punti**, quindi non si spedisce senza
+misura. Esposte `ELO_HFA_MODE` (`'clamp'`, il comportamento di sempre), `ELO_HFA_PRIOR`
+(65) ed `ELO_HFA_K` (200), e il CSV ha la sezione **`A/B REGOLA DELL HFA`** che
+ricostruisce pavimento, shrinkage e grezzo **senza rilanciare il motore** — funziona per
+la stessa ragione dell'A/B della scala: l'HFA entra in `lgElo` come termine **additivo**
+e `lgModel` non dipende da lui. Forma canonica, punti 1 e 2. Un backtest decide.
+
+### 6. La fascia alta regge, e si è allargata
+
+| soglia | partite | quota | colpi | diceva (Serie A 21–25) |
+|---|---|---|---|---|
+| ≥ 50% | 823 | 44% | 62.0% ±3.3 | 63.6% |
+| ≥ 55% | 559 | **30%** | 65.3% ±3.9 | 68.3% *(su ~18%)* |
+| ≥ 60% | 339 | **18%** | 71.1% ±4.8 | 74.0% *(su ~9%)* |
+| ≥ 65% | 179 | 10% | 74.3% ±6.4 | 78.9% |
+| ≥ 70% | 81 | 4% | 79.0% ±8.9 | — |
+
+I colpi scendono di 2–4 punti **e le partite giocabili raddoppiano**: ≥60% passa dal 9%
+al 18% del calendario. È esattamente quello che fa una de-compressione, ed è un guadagno
+netto — non si perde precisione, si smette di scartare partite che erano già buone. Il
+pick complessivo resta **52.3%** contro il 40.4% del «gioca sempre in casa»: invariato,
+come il `b30` aveva previsto («il guadagno è tutto in calibrazione, zero in accuratezza»).
+
+Alla soglia del 55% il segno regge in tutte e cinque le stagioni (63.1 / 68.1 / 61.9 /
+63.9 / 68.9%).
+
+### Cosa NON dice questo backtest
+
+- **È una lega sola.** La Serie A da sola vorrebbe `S = 1.60`; nel `b30` la Liga da sola
+  diceva `S = 1.00`. La regola di questo documento — *il segno deve reggere ovunque* —
+  vale anche quando il segno piace.
+- **Il 60% delle righe non ha `/advanced`.** Non contamina la pendenza (misurato), ma
+  tutte le sezioni delle metriche avanzate su quelle righe restano da buttare.
+- **Non dice niente sui mercati gol.** Tutto qui sopra è 1X2.
 
 ## L'audit sistematico del `b19`: cosa è stato controllato e cosa è saltato fuori
 

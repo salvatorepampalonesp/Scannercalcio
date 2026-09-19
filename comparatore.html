@@ -162,7 +162,7 @@ select{cursor:pointer}
   <div class="topbar">
     <div class="brand">
       <h1>Comparatore V9.7</h1>
-      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b34</span>
+      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b35</span>
       <span class="badge" id="engine-badge">motore non caricato</span>
     </div>
     <span class="badge">previsioni vs realtà</span>
@@ -632,6 +632,8 @@ async function loadEngineFromText(text, fileName) {
         eloHFA:  (typeof ELO!=='undefined' && ELO && ELO._hfa) ? ELO._hfa : null,
         eloHfaRaw:   (typeof ELO!=='undefined' && ELO) ? (ELO._hfaRaw ?? null) : null,
         eloHfaClamp: (typeof ELO!=='undefined' && ELO) ? (ELO._hfaClamp ?? null) : null,
+        eloHfaShrunk:(typeof ELO!=='undefined' && ELO) ? (ELO._hfaShrunk ?? null) : null,
+        eloNHfa2:    (typeof ELO!=='undefined' && ELO) ? (ELO._nHfa ?? null) : null,
         eloNHFA: (typeof ELO!=='undefined' && ELO && ELO._nHfa) ? ELO._nHfa : null,
         /* ID squadre + timestamp — servono al Comparatore per ricalcolare storico e aggregare metriche extra */
         _homeId:       (typeof hId!=='undefined') ? hId : null,
@@ -736,6 +738,8 @@ async function loadEngineFromText(text, fileName) {
       diff.push(`SHRINK_K ${CMP_K_LIST[0]} invece di ${window.__ENGINE_SHRINK_K_DEF}`);
     if (window.__ENGINE_SHRINK_LAM_K == null)
       diff.push(`SHRINK_LAM_K non trovato nel sorgente: il Comparatore ripiega su 3`);
+    const _hm = (typeof window.ELO_HFA_MODE === 'string') ? window.ELO_HFA_MODE : 'clamp';
+    if (_hm !== 'clamp') diff.push(`ELO_HFA_MODE "${_hm}" invece di "clamp"`);
     const _lim = document.getElementById('cmp-history-limit');
     if (_lim && _lim.value && +_lim.value !== 15)
       diff.push(`history-limit ${_lim.value} invece dei 15 di default dello Scanner`);
@@ -763,7 +767,7 @@ async function loadEngineFromText(text, fileName) {
     <p><code>${fileName}</code> — clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
 
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b34';
+  const _bComp = '0905-b35';
   const _el = document.getElementById('engine-build');
   if (_el) {
     if (!_bScan) {
@@ -2149,6 +2153,8 @@ function cmpBuildResult(match, R, actH, actA) {
       hfa: R.eloHFA != null ? Math.round(R.eloHFA) : null,
       hfaRaw: R.eloHfaRaw != null ? Math.round(R.eloHfaRaw) : null,
       hfaClamp: R.eloHfaClamp || null,
+      hfaShrunk: R.eloHfaShrunk != null ? Math.round(R.eloHfaShrunk) : null,
+      nHfa: R.eloNHfa2 || null,
       nHfa: R.eloNHFA || null
     }
   };
@@ -2750,6 +2756,31 @@ function cmpExportCSV() {
   rows.push(['differenza Elo (H-A)'].concat(M.flatMap(m => {
     const d = _over(m); return [d && d.eloDiff != null ? String(Math.round(d.eloDiff)) : 'N/D', '', '', ''];
   })).join(';'));
+
+  // ── A/B DELLA REGOLA DELL'HFA. Stessa aritmetica dell'A/B della scala: l'HFA entra
+  // in lgElo come termine ADDITIVO e lgModel non dipende da lui, quindi un giro solo
+  // basta a confrontare il pavimento con lo shrinkage (AGENTS.md, controllo P e b35).
+  rows.push('');
+  rows.push('--- A/B REGOLA DELL HFA (1 contro 2, pari esclusi; ricostruito) ---' + ';;;;'.repeat(M.length));
+  rows.push(['esito reale 1 contro 2'].concat(M.flatMap(m => [_esito(m), '', '', ''])).join(';'));
+  const _hfaVar = (m, quale) => {
+    const d = _over(m), e = m.eloData;
+    if (!d || !e || d.lgModel == null || d.eloDiff == null || d.w == null || d.scale == null) return null;
+    const h = quale === 'grezzo' ? e.hfaRaw : (quale === 'shrink' ? e.hfaShrunk : e.hfa);
+    if (h == null) return null;
+    const lgElo = (d.scale * d.eloDiff + h) / 173.7178;
+    return (1 - d.w) * d.lgModel + d.w * lgElo;
+  };
+  [['pavimento [30,100] — in uso', 'usato'], ['shrinkage verso l\'a priori', 'shrink'],
+   ['grezzo, senza nessun limite', 'grezzo']].forEach(([lbl, quale]) => {
+    const r = ['HFA: ' + lbl];
+    M.forEach(m => { const lg = _hfaVar(m, quale); r.push(lg == null ? 'N/D' : _pc(lg), '', '', ''); });
+    rows.push(r.join(';'));
+  });
+  rows.push(['HFA: partite usate per stimarlo']
+    .concat(M.flatMap(m => [(m.eloData && m.eloData.nHfa != null) ? String(m.eloData.nHfa) : 'N/D', '', '', ''])).join(';'));
+  rows.push(['HFA: valore con shrinkage']
+    .concat(M.flatMap(m => [(m.eloData && m.eloData.hfaShrunk != null) ? String(m.eloData.hfaShrunk) : 'N/D', '', '', ''])).join(';'));
 
   rows.push('');
   rows.push('--- A/B PESO DEI TIRI IN PORTA (scala sui lambda, ricostruita) ---' + ';;;;'.repeat(M.length));
