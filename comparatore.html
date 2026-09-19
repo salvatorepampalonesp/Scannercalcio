@@ -162,7 +162,7 @@ select{cursor:pointer}
   <div class="topbar">
     <div class="brand">
       <h1>Comparatore V9.7</h1>
-      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b31</span>
+      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b32</span>
       <span class="badge" id="engine-badge">motore non caricato</span>
     </div>
     <span class="badge">previsioni vs realtà</span>
@@ -629,6 +629,8 @@ async function loadEngineFromText(text, fileName) {
         eloH:    (typeof ELO!=='undefined' && ELO && ELO.table && typeof hId!=='undefined') ? ELO.table[hId] : null,
         eloA:    (typeof ELO!=='undefined' && ELO && ELO.table && typeof aId!=='undefined') ? ELO.table[aId] : null,
         eloHFA:  (typeof ELO!=='undefined' && ELO && ELO._hfa) ? ELO._hfa : null,
+        eloHfaRaw:   (typeof ELO!=='undefined' && ELO) ? (ELO._hfaRaw ?? null) : null,
+        eloHfaClamp: (typeof ELO!=='undefined' && ELO) ? (ELO._hfaClamp ?? null) : null,
         eloNHFA: (typeof ELO!=='undefined' && ELO && ELO._nHfa) ? ELO._nHfa : null,
         /* ID squadre + timestamp — servono al Comparatore per ricalcolare storico e aggregare metriche extra */
         _homeId:       (typeof hId!=='undefined') ? hId : null,
@@ -721,7 +723,7 @@ async function loadEngineFromText(text, fileName) {
     <p><code>${fileName}</code> — clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
 
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b31';
+  const _bComp = '0905-b32';
   const _el = document.getElementById('engine-build');
   if (_el) {
     if (!_bScan) {
@@ -2087,6 +2089,8 @@ function cmpBuildResult(match, R, actH, actA) {
       A: R.eloA != null ? Math.round(R.eloA) : null,
       diff: (R.eloH != null && R.eloA != null) ? Math.round(R.eloH - R.eloA) : null,
       hfa: R.eloHFA != null ? Math.round(R.eloHFA) : null,
+      hfaRaw: R.eloHfaRaw != null ? Math.round(R.eloHfaRaw) : null,
+      hfaClamp: R.eloHfaClamp || null,
       nHfa: R.eloNHFA || null
     }
   };
@@ -2427,6 +2431,16 @@ function cmpExportCSV() {
   });
   rows.push(eloH_r.join(';')); rows.push(eloA_r.join(';'));
   rows.push(eloD_r.join(';')); rows.push(eloHFA_r.join(';'));
+  // Il clamp [30,100] sull'HFA puo' mordere in silenzio: a schermo +30 e' identico
+  // che sia misurato o che sia il pavimento. Qui si distingue (AGENTS.md, controllo P).
+  rows.push(['HFA grezzo (prima del clamp 30-100)']
+    .concat(M.flatMap(m => [m.eloData && m.eloData.hfaRaw != null ? String(m.eloData.hfaRaw) : 'N/D', '', '', ''])).join(';'));
+  const _clampTxt = c => c === 'basso' ? 'SI, tenuto al pavimento di 30'
+    : c === 'alto' ? 'SI, tenuto al tetto di 100'
+    : c === 'ripiego' ? 'no, ma e\' il ripiego: meno di 50 partite in archivio'
+    : 'no, e\' una misura';
+  rows.push(['HFA: il clamp ha morso?']
+    .concat(M.flatMap(m => [_clampTxt(m.eloData && m.eloData.hfaClamp), '', '', ''])).join(';'));
   const _gt = (typeof window.ELO_GAP_THRESHOLD === 'number') ? window.ELO_GAP_THRESHOLD : 45;
   const _ga = (typeof window.ELO_GAP_ASY === 'number') ? window.ELO_GAP_ASY : 0.9;
   const _gtau = (typeof window.ELO_GAP_TAU === 'number') ? window.ELO_GAP_TAU : 360;

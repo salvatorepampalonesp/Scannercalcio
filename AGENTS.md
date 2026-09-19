@@ -178,6 +178,8 @@ sovradispersione — scagionati con i dati in mano.
 
 | `b31` | **il peso dell'Elo si misurava sul ramo sbagliato**: il CSV registrava il tilt di *ruolo*, ma dal `b21` l'1X2 esce dai lambda *completi*. Le due ricostruzioni di `w` vanno in **direzioni opposte** (a `w = 0`: 42.9% dal ruolo, 64.5% dal completo). Ora il Comparatore registra tutti e due i rami, ricostruisce `w` e `ELO_SCALE` da quello giusto, e la scala si può spazzare **senza rilanciare** |
 
+| `b32` | **il clamp sull'HFA mordeva in silenzio**: `Math.max(30, Math.min(100, ...))` e a schermo un `+30` era indistinguibile fra una misura e il pavimento. Il pavimento corrisponde a un rapporto vittorie di 1.1885, cioè **dentro** l'intervallo plausibile della Serie A moderna — e può perfino **ribaltare il segno** (un grezzo di −98 usciva come +30). Ora la card, il prompt e il CSV dicono il grezzo e se il limite ha morso. E la card avvisa quando Elo e modello divergono di 10+ punti, perché lì il verdetto lo decide l'Elo |
+
 Le tre build finali hanno una storia sola e va letta in *La baseline di coppia*:
 tre tentativi svuotati dallo stesso malinteso.
 
@@ -1211,6 +1213,8 @@ cap a 0.60: il paracadute non ha mai morso.
   essere ridondante o peggio. Va misurato: serve esportarla nel CSV, oggi non c'è.
 - **L'HFA stimato varia molto fra leghe**: LaLiga 78, Premier 49, Serie A 47. È
   plausibile, ma non è mai stato verificato contro il vantaggio campo reale.
+  **E dal `b32` si sa che quei numeri vanno riletti**: erano stampati senza dire se il
+  clamp avesse morso. Vedi *Il clamp sull'HFA mordeva in silenzio*.
 
 ## La scala dell'Elo, e la curva dello stacco (`b30`)
 
@@ -1493,6 +1497,74 @@ corrente invece che dal contenuto (`b26`), e ora questo. La forma è sempre la s
 **descrivere un dato con lo stato di un interruttore letto in un momento diverso da
 quando il dato è stato prodotto.** Se un'etichetta descrive delle righe, va calcolata
 **dalle righe**.
+
+## Il clamp sull'HFA mordeva in silenzio (`b32`)
+
+Trovato guardando un giro vero dello Scanner su Roma–Inter. La card diceva
+**«Vantaggio campo +30 · misurato su 800 partite»**, e 30 è *esattamente* il pavimento
+di `Math.max(30, Math.min(100, ...))`.
+
+### Perché è un problema e non una coincidenza
+
+Il pavimento 30 corrisponde a un rapporto vittorie-in-casa / vittorie-fuori di
+**1.1885**:
+
+| rapporto vittorie casa/fuori | HFA grezzo |
+|---|---|
+| 1.15 | 24.3 |
+| **1.1885** | **30.0 — il pavimento** |
+| 1.21 | 33.1 |
+| 1.31 | 46.9 (il valore che questo documento riporta per la Serie A) |
+
+La Serie A moderna sta fra 1.12 e 1.31, cioè **a cavallo del pavimento**. Quindi un
+`+30` a schermo poteva essere una misura vera oppure il limite, e **dalla card non si
+distingueva**: la riga affermava «misurato», che nel secondo caso è falso.
+
+Peggio: il pavimento non limita soltanto, **può ribaltare il segno**. Misurato su un
+campionato sintetico a vantaggio campo negativo, un grezzo di **−98** usciva come
+**+30**. Cioè il motore avrebbe asserito un vantaggio in casa dove i dati dicevano il
+contrario.
+
+È esattamente la regola che questo documento si era già dato per le costanti di
+**tipo 3**: *un guardrail va misurato, non solo scritto; se morde, non è più un
+guardrail, è il modello*. Il clamp sull'HFA era l'unico paracadute del motore di cui
+**non era mai stato misurato se mordesse**, ed entra in `lgElo` come termine additivo
+pieno, accanto alla differenza di rating.
+
+### La riprova più imbarazzante
+
+Il banco di prova sintetico usato per tutti i controlli da tre build stampava
+**«Vantaggio campo +100 · misurato su 715 partite»**. Il grezzo era **144**: il tetto
+mordeva da sempre, in ogni screenshot, e nessuno l'ha notato perché 100 è un numero
+plausibile. **Un valore di ripiego plausibile è più pericoloso di un errore** — la
+stessa lezione de *La lega che non arrivava mai*, terza volta.
+
+### Cosa fa ora
+
+`buildGlobalElo` restituisce `_hfaRaw`, `_hfaClamp` (`'basso'` / `'alto'` /
+`'ripiego'` / `null`), `_hW` e `_aW`. La card sostituisce «misurato su N partite» con
+un avviso arancione quando il limite ha morso, e con «N partite · X vittorie casa
+contro Y» quando non ha morso — così il numero porta con sé da dove viene. Stessa cosa
+nel mega-prompt, dove l'avviso dice all'LLM che *non è una misura, è un limite*. Il CSV
+aggiunge due righe, `HFA grezzo (prima del clamp 30-100)` e `HFA: il clamp ha morso?`.
+
+Verificato in tutti e quattro i regimi su dati sintetici: tetto, pavimento, dentro
+l'intervallo, e archivio sotto le 50 partite.
+
+**Quello che resta da fare**, e che non si può fare senza i dati dell'utente: se su una
+lega vera il clamp morde, il valore giusto non è 30 — è il grezzo, o un limite scelto
+per una ragione. Oggi il 30 non ha nessuna giustificazione scritta da nessuna parte.
+
+### E la card dice quando il verdetto non viene dalle statistiche
+
+Nello stesso giro: Elo da solo **42.3%**, modello da solo **57.8%**, usato **46.2%**.
+Quindici punti di distanza, e con `ELO_1X2_W = 0.75` vince l'Elo — cioè il verdetto
+1X2 di quella partita non veniva dalle statistiche mostrate nelle dieci card sopra, ma
+dal rating di lega. Non è un difetto (è la costante che fa il suo lavoro, ed è la più
+solida del motore, 5 sigma su cinque leghe), ma chi legge ha diritto di saperlo: sotto
+la riga «usato» compare ora un avviso quando le due letture distano 10 punti o più, e
+il prompt dice all'LLM di dichiararlo invece di cercare nelle statistiche una conferma
+che non c'è.
 
 ## L'audit sistematico del `b19`: cosa è stato controllato e cosa è saltato fuori
 
@@ -4015,6 +4087,13 @@ girano sul solo sorgente, quindi si possono fare a ogni commit senza un backtest
   confrontare `__ELO_DEBUG.lgModel` con `__ELO_DEBUG_OVER.lgModel`; se `ENS_SCOPE_W`
   è 1, la sezione A/B del peso deve usare il **secondo**. Ha trovato dieci build di
   ricostruzioni sul ramo sbagliato.
+
+- **P. I paracadute hanno morso? (`b32`)** Per ogni clamp del motore, esporre il valore
+  **grezzo** accanto a quello usato e contare quante volte il limite è scattato. Vale
+  per il clamp `[30,100]` sull'HFA (che ha morso **sempre** nel banco di prova sintetico
+  senza che nessuno lo notasse per tre build), per `ELO_TILT_MAX` e per `GOALS_SOT_CAP`.
+  Un limite che morde non è più un limite: è il modello, e va scritto nella riga che
+  mostra il numero — «misurato su N partite» accanto a un valore clampato è **falso**.
 
 **Il giro completo senza rete.** Il motore si può far girare per intero su dati
 finti, in Chromium, senza toccare PitchAPI: è il controllo che ha misurato

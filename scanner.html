@@ -174,7 +174,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b31</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b32</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -879,10 +879,20 @@ function buildGlobalElo(targetTimeMs) {
     if (gh > ga) _h_w++; else if (gh < ga) _a_w++;
     _n_hfa++;
   }
-  let HFA_ELO = 65;
+  // Il clamp [30,100] e' un paracadute, e un paracadute va MISURATO: il pavimento 30
+  // corrisponde a un rapporto vittorie casa/fuori di 1.1885, che sta dentro l'intervallo
+  // plausibile della Serie A moderna. Quindi un +30 a schermo puo' essere una misura vera
+  // o il clamp che ha morso, e finche' non si espone il grezzo non si distingue.
+  // Vedi AGENTS.md, 'Le costanti messe a mano', tipo 3.
+  let HFA_ELO = 65, _hfaRaw = null, _hfaClamp = null;
   if (_n_hfa >= 50 && _h_w > 0 && _a_w > 0) {
     const wr_h = _h_w / _n_hfa, wr_a = _a_w / _n_hfa;
-    HFA_ELO = Math.max(30, Math.min(100, Math.round(400 * Math.log10(wr_h / wr_a))));
+    _hfaRaw = 400 * Math.log10(wr_h / wr_a);
+    HFA_ELO = Math.max(30, Math.min(100, Math.round(_hfaRaw)));
+    if (Math.round(_hfaRaw) < 30) _hfaClamp = 'basso';
+    else if (Math.round(_hfaRaw) > 100) _hfaClamp = 'alto';
+  } else {
+    _hfaClamp = 'ripiego';
   }
 
   // LA CURVA DELLO STACCO. Misurata nel b30 su 1882 partite di Serie A (cinque
@@ -955,6 +965,7 @@ function buildGlobalElo(targetTimeMs) {
     series[h].unshift(Math.round(table[h])); series[a].unshift(Math.round(table[a]));
   }
   return { table, series, _hfa: HFA_ELO, _nHfa: _n_hfa, lastPlayed: lastMatchTime,
+           _hfaRaw, _hfaClamp, _hW: _h_w, _aW: _a_w,
            gapLog,
            _gap: { thr: GAP_THRESHOLD_DAYS, tau: ELO_GAP_TAU, asy: ELO_GAP_ASY } };
 }
@@ -1759,7 +1770,7 @@ function renderVerdetti(mk) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b31';
+window.__SCANNER_BUILD = '0905-b32';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -2829,10 +2840,25 @@ async function avviaScanner() {
         + `COME L'ELO ENTRA NEI LAMBDA</div>`
         + riga('Differenza di rating', (E.eloDiff > 0 ? '+' : '') + Math.round(E.eloDiff))
         + riga('Scala tarata', '&times;' + f2(E.scale), (dEff > 0 ? '+' : '') + dEff + ' punti effettivi')
-        + riga('Vantaggio campo', '+' + Math.round(E.hfa), 'misurato su ' + (ELO._nHfa || 0) + ' partite')
+        + riga('Vantaggio campo', '+' + Math.round(E.hfa),
+               ELO._hfaClamp === 'basso'
+                 ? '<span style="color:var(--orange)">&#9888; il grezzo &egrave; ' + Math.round(ELO._hfaRaw)
+                   + ', tenuto al pavimento di 30</span>'
+                 : (ELO._hfaClamp === 'alto'
+                   ? '<span style="color:var(--orange)">&#9888; il grezzo &egrave; ' + Math.round(ELO._hfaRaw)
+                     + ', tenuto al tetto di 100</span>'
+                   : (ELO._hfaClamp === 'ripiego'
+                     ? '<span style="color:var(--orange)">&#9888; meno di 50 partite: &egrave; il valore di ripiego, non una misura</span>'
+                     : 'misurato su ' + (ELO._nHfa || 0) + ' partite &middot; ' + (ELO._hW || 0) + ' vittorie casa contro ' + (ELO._aW || 0))))
         + riga('1 contro 2 &mdash; solo Elo', f1(pOf(E.lgElo)) + '%')
         + riga('1 contro 2 &mdash; solo modello', f1(pOf(E.lgModel)) + '%')
         + riga('1 contro 2 &mdash; usato', f1(pOf(E.lgTarget)) + '%', 'peso Elo ' + f2(E.w) + (E.capped ? ' &middot; inclinazione al massimo' : ''))
+        + (Math.abs(pOf(E.lgElo) - pOf(E.lgModel)) >= 10
+           ? `<div style="font-size:11px;color:var(--orange);padding:6px 0 2px;line-height:1.5">`
+             + `&#9888; Elo e modello distano ${f1(Math.abs(pOf(E.lgElo) - pOf(E.lgModel)))} punti, `
+             + `e con peso ${f2(E.w)} <strong>decide l'Elo</strong>. `
+             + `Qui il verdetto 1X2 non viene dalle statistiche di questa partita ma dal rating di lega.</div>`
+           : '')
         + riga('Lambda inclinati', f2(E.lamH0) + '&ndash;' + f2(E.lamA0) + ' &rarr; ' + f2(E.lamH) + '&ndash;' + f2(E.lamA),
                'totale ' + f2(E.lamH0 + E.lamA0) + ' invariato')
         + riga('Pause scontate &middot; ' + hName, assorb(lH), ultima(lH))
@@ -2929,7 +2955,11 @@ ${window.__VERDETTI_TXT || '(non disponibile)'}
 - Efficienza Goal vs xG: ${hName} ${f2(effH_ro)} | ${aName} ${f2(effA_ro)}
 
 4. EXPECTATION PITAGORICA E ELO — [GENERALE]
-- ELO: ${hName} ${eloH_ov} | ${aName} ${eloA_ov} (differenza ${(_eloDiff>0?'+':'')}${_eloDiff ?? 'N/D'}), vantaggio campo di lega +${Math.round(ELO._hfa)} su ${ELO._nHfa} partite
+- ELO: ${hName} ${eloH_ov} | ${aName} ${eloA_ov} (differenza ${(_eloDiff>0?'+':'')}${_eloDiff ?? 'N/D'}), vantaggio campo di lega +${Math.round(ELO._hfa)}${
+  ELO._hfaClamp === 'basso' ? ` (ATTENZIONE: il valore grezzo e' ${Math.round(ELO._hfaRaw)}, tenuto al pavimento di 30 — non e' una misura, e' un limite)`
+  : ELO._hfaClamp === 'alto' ? ` (ATTENZIONE: il valore grezzo e' ${Math.round(ELO._hfaRaw)}, tenuto al tetto di 100 — non e' una misura, e' un limite)`
+  : ELO._hfaClamp === 'ripiego' ? ` (ATTENZIONE: meno di 50 partite in archivio, e' il valore di ripiego)`
+  : ` su ${ELO._nHfa} partite (${ELO._hW} vittorie casa contro ${ELO._aW})`}
 - ELO Trend (ult 5 contro le 10 prima): ${hName} ${Math.round(trendH)} | ${aName} ${Math.round(trendA)}
 ${(function(){
   const E = window.__ELO_DEBUG_OVER;
@@ -2947,7 +2977,9 @@ ${(function(){
     if (!lp || !isFinite(targetMs)) return 'N/D';
     const d = (targetMs-lp)/86400000, st = d>G.thr ? G.asy*(1-Math.exp(-(d-G.thr)/G.tau)) : 0;
     return Math.round(d)+'g' + (st>0 ? ' (rating regredito del '+(100*st).toFixed(0)+'% verso 1500)' : ''); };
+  const _div = Math.abs(+pOf(E.lgElo) - +pOf(E.lgModel));
   return `- Su 1 contro 2 (pari esclusi) l'Elo da solo dice ${pOf(E.lgElo)}%, il modello ${pOf(E.lgModel)}%, e si usa ${pOf(E.lgTarget)}% (peso Elo ${f2(E.w)}).`
+    + (_div >= 10 ? `\n  ATTENZIONE: Elo e modello distano ${_div.toFixed(1)} punti e con quel peso DECIDE L'ELO. Il verdetto 1X2 qui non viene dalle statistiche di questa partita ma dal rating di lega: dillo esplicitamente invece di cercare nelle stats una conferma che non c'e'.` : '')
     + `\n- La differenza di rating e' moltiplicata per ${f2(E.scale)} prima di diventare quota: il nostro Elo e' una stima online con K limitato e sotto-disperde (misurato, pendenza 1.24 su tre leghe).`
     + `\n- L'inclinazione sposta i lambda da ${f2(E.lamH0)}-${f2(E.lamA0)} a ${f2(E.lamH)}-${f2(E.lamA)} TENENDO FERMO il totale: 1X2 e handicap cambiano, Over/Under e Goal/NoGoal no.${E.capped?' Inclinazione arrivata al tetto.':''}`
     + `\n- L'Elo si costruisce partita per partita in ordine di data: ogni pausa e' gia' stata scontata quando la squadra e' rientrata, quindi e' gia' dentro i rating qui sopra.`
