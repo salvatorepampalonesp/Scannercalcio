@@ -182,6 +182,8 @@ sovradispersione — scagionati con i dati in mano.
 
 | `b33` | **la parità Comparatore↔Scanner rimisurata passando dal vero `cmpRunMatch`**: 16 campi su 16 identici, i lambda all'ultima cifra in virgola mobile. E il leakage rifatto nello scenario peggiore — **tutti gli orari appiattiti a `T00:00:00Z`** — resta chiuso, col controllo di potenza che scatta. Trovato un buco: la guardia sulla lega stava solo nel caricamento del database, quindi una partita fatta girare per altra via ripiegava su 1.50/1.20 **in silenzio**. Ora `cmpRunMatch` la ferma, e all'iniezione il log dice se le manopole sono ai default |
 
+| `b34` | **l'ultima copia cablata**: `cmpRunMatch` imponeva `SHRINK_LAM_K = 3` scritto a mano, cioè una copia di una costante del motore. Oggi coincideva; alla prima ritaratura avrebbe zittito il cambiamento. Ora si legge dal sorgente iniettato, e il verdetto di parità all'iniezione copre anche `SHRINK_K` e `history-limit` |
+
 Le tre build finali hanno una storia sola e va letta in *La baseline di coppia*:
 tre tentativi svuotati dallo stesso malinteso.
 
@@ -1607,9 +1609,11 @@ due build. Le verifiche strutturali fatte lì (etichette, invarianza della ricos
 marcatore per colonna) restano valide perché non dipendono dai parametri di lega, ma i
 *numeri* di quegli esempi erano prodotti con la lega ripiegata.
 
-E all'iniezione il log dice ora una riga di verdetto: se `ELO_SCALE` o
-`ROLE_SCOPE_INDEPENDENT` sono diversi dal default del motore, **questo giro non stampa i
-numeri dello Scanner** — è un A/B, va bene, ma va dichiarato. I default si leggono dal
+E all'iniezione il log dice ora una riga di verdetto: se una delle manopole è diversa
+dal default del motore, **questo giro non stampa i numeri dello Scanner** — è un A/B, va
+bene, ma va dichiarato. Verificato nei tre stati: ai default dice verde, con
+`ELO_SCALE` a 1.00 e con il ruolo indipendente acceso dice arancione **nominando la
+manopola**. I default si leggono dal
 **sorgente** e non da `window`: le righe del motore sono
 `window.X = (typeof window.X === 'number') ? window.X : <default>`, cioè *preservano* un
 valore già impostato dalle manopole, e leggere `window` dopo l'iniezione avrebbe
@@ -1667,6 +1671,40 @@ in **avanti**, che è la direzione sicura: esclude di più, non di meno.
 *locale* di una lega a ovest di Greenwich. Il controllo per accorgersene c'è già —
 il Comparatore segnala al caricamento quante partite hanno `time_utc` senza fuso — e va
 guardato ogni volta che si aggiunge un paese.
+
+### L'ultima copia cablata: `SHRINK_LAM_K` (`b34`)
+
+Cercando cos'altro potesse rompere la parità è saltata fuori una riga in `cmpRunMatch`:
+
+```js
+window.SHRINK_LAM_K = 3;          // cablata a mano
+```
+
+È una **copia di una costante del motore** (`scanner.html` la dichiara a 3 nella stessa
+riga in cui dichiara `SHRINK_K` a 4). Oggi i due numeri coincidono, quindi non fa danno
+— ed è precisamente il motivo per cui è sopravvissuta. Ma è la forma esatta di
+`CMP_DC_SHRINK_TABLE`: alla prima ritaratura di `SHRINK_LAM_K` nel motore, il
+Comparatore avrebbe continuato a forzare 3 e **ogni backtest avrebbe misurato il valore
+vecchio senza dirlo**.
+
+Ora si legge dal sorgente iniettato, con il 3 tenuto solo come rete per un motore così
+vecchio da non avere la riga — e se la rete scatta, il verdetto di parità lo dice.
+
+**Le manopole che oggi possono far divergere Comparatore e Scanner**, tutte e cinque
+dichiarate nel log all'iniezione:
+
+| manopola | default del motore | chi la può spostare |
+|---|---|---|
+| `SHRINK_K` | 4 | `CMP_K_LIST[0]`, se qualcuno riordina la lista |
+| `SHRINK_LAM_K` | 3 | letta dal sorgente dal `b34`; prima era cablata |
+| `ELO_SCALE` | 1.25 | il campo nel pannello (`b31`) |
+| `ROLE_SCOPE_INDEPENDENT` | 0 | la casella nel pannello (`b25`) |
+| `history-limit` | 15 | `cmp-history-limit`, ed è la più facile da spostare senza pensarci |
+
+Le prime due sono errori se divergono; le ultime tre sono **scelte legittime** che
+servono agli A/B. La differenza fra le due categorie non sta nel codice, sta nel fatto
+che l'utente le abbia volute — quindi l'unica difesa è **dirlo a voce alta ogni volta**,
+non impedirlo.
 
 ## L'audit sistematico del `b19`: cosa è stato controllato e cosa è saltato fuori
 

@@ -162,7 +162,7 @@ select{cursor:pointer}
   <div class="topbar">
     <div class="brand">
       <h1>Comparatore V9.7</h1>
-      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b33</span>
+      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b34</span>
       <span class="badge" id="engine-badge">motore non caricato</span>
     </div>
     <span class="badge">previsioni vs realtà</span>
@@ -710,6 +710,8 @@ async function loadEngineFromText(text, fileName) {
   };
   window.__ENGINE_ELO_SCALE = _defDa('ELO_SCALE');
   window.__ENGINE_ROLE_INDEP = _defDa('ROLE_SCOPE_INDEPENDENT') ?? 0;
+  window.__ENGINE_SHRINK_LAM_K = _defDa('SHRINK_LAM_K');
+  window.__ENGINE_SHRINK_K_DEF = _defDa('SHRINK_K');
   window.__ENGINE_SHRINK_K = (typeof window.SHRINK_K === 'number') ? window.SHRINK_K : null;
   if (window.__ENGINE_SHRINK_K != null && CMP_K_LIST[0] !== window.__ENGINE_SHRINK_K) {
     cmpLog(`   \u26a0\ufe0f CMP_K_LIST[0] e' ${CMP_K_LIST[0]} ma il motore ha SHRINK_K ${window.__ENGINE_SHRINK_K}: `
@@ -730,6 +732,13 @@ async function loadEngineFromText(text, fileName) {
       diff.push(`ELO_SCALE ${_s} invece di ${window.__ENGINE_ELO_SCALE}`);
     if (_r !== window.__ENGINE_ROLE_INDEP)
       diff.push(`ROLE_SCOPE_INDEPENDENT ${_r} invece di ${window.__ENGINE_ROLE_INDEP}`);
+    if (window.__ENGINE_SHRINK_K_DEF != null && CMP_K_LIST[0] !== window.__ENGINE_SHRINK_K_DEF)
+      diff.push(`SHRINK_K ${CMP_K_LIST[0]} invece di ${window.__ENGINE_SHRINK_K_DEF}`);
+    if (window.__ENGINE_SHRINK_LAM_K == null)
+      diff.push(`SHRINK_LAM_K non trovato nel sorgente: il Comparatore ripiega su 3`);
+    const _lim = document.getElementById('cmp-history-limit');
+    if (_lim && _lim.value && +_lim.value !== 15)
+      diff.push(`history-limit ${_lim.value} invece dei 15 di default dello Scanner`);
     if (diff.length) {
       cmpLog(`   \u26a0\ufe0f Questo giro NON stampera' i numeri dello Scanner: ${diff.join(', ')}. `
            + `E' un A/B, va bene — ma non confondere il file con un giro di riferimento.`);
@@ -754,7 +763,7 @@ async function loadEngineFromText(text, fileName) {
     <p><code>${fileName}</code> — clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
 
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b33';
+  const _bComp = '0905-b34';
   const _el = document.getElementById('engine-build');
   if (_el) {
     if (!_bScan) {
@@ -1353,7 +1362,12 @@ async function cmpRunMatch(match, limit, render) {
     lg.value = cmpCurrentLeagueId;
   }
 
-  window.SHRINK_LAM_K = 3;
+  // NON cablare il 3: e' un default del MOTORE, e una copia qui divergerebbe alla prima
+  // ritaratura senza che nessuno se ne accorga (AGENTS.md, Due copie della stessa
+  // costante divergono, sempre). Si legge dal sorgente iniettato; il 3 resta solo come
+  // rete per un motore cosi' vecchio da non avere la riga.
+  window.SHRINK_LAM_K = (typeof window.__ENGINE_SHRINK_LAM_K === 'number')
+    ? window.__ENGINE_SHRINK_LAM_K : 3;
 
   const td = document.getElementById('target-date');
   if (td && match.time_utc) {
