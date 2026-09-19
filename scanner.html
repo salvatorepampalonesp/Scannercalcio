@@ -174,7 +174,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b35</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b36</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -1789,7 +1789,7 @@ function renderVerdetti(mk) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b35';
+window.__SCANNER_BUILD = '0905-b36';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -2155,9 +2155,15 @@ async function avviaScanner() {
 
     const _lk = window.SHRINK_LAM_K;
     const wSH = nHr / (nHr + _lk), wSA = nAr / (nAr + _lk);
+    // I lambda di ruolo PRIMA della contrazione verso la media di lega: con questi,
+    // wSH/wSA e LG.avgH/avgA si ricostruisce qualunque SHRINK_LAM_K senza rilanciare
+    // il motore (AGENTS.md, forma canonica punto 2). Serve perche' questa costante
+    // NON tocca l'1X2 (ENS_SCOPE_W=1 lo manda sui lambda completi) ma e' la manopola
+    // di livello dei mercati gol, e non e' mai stata misurata.
     window.__SCOPE_DEBUG = { indep: window.ROLE_SCOPE_INDEPENDENT, limit,
                              nHr, nAr, nHo, nAo, lamK: _lk, wSH, wSA,
-                             shrinkK: window.SHRINK_K };
+                             shrinkK: window.SHRINK_K,
+                             lamHrPre: lamH_role, lamArPre: lamA_role };
     lamH_role = wSH * lamH_role + (1 - wSH) * LG.avgH; lamA_role = wSA * lamA_role + (1 - wSA) * LG.avgA;
     if(!isFinite(lamH_over) || lamH_over < 0.15) lamH_over = LG.avgH; if(!isFinite(lamA_over) || lamA_over < 0.15) lamA_over = LG.avgA;
 

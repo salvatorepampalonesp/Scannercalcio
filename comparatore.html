@@ -162,7 +162,7 @@ select{cursor:pointer}
   <div class="topbar">
     <div class="brand">
       <h1>Comparatore V9.7</h1>
-      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b35</span>
+      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b36</span>
       <span class="badge" id="engine-badge">motore non caricato</span>
     </div>
     <span class="badge">previsioni vs realtà</span>
@@ -451,7 +451,13 @@ let cmpLeagues = [];
 let cmpCurrentResult = null;
 let engineReady = false;
 
-const CMP_K_LIST = [4, 12, 28];
+// Il primo valore DEVE restare 4: e' il SHRINK_K del motore, ed e' il giro che finisce
+// nelle colonne principali del CSV (AGENTS.md, Il Comparatore stampa come lo Scanner).
+// Gli altri due erano 12 e 28, cioe' PIU' shrinkage: ma il modello e' sotto-disperso
+// (pendenza 1.443 a w=0), quindi il rimedio sta SOTTO 4 e la vecchia lista non lo
+// vedeva. 12 e 28 sono gia' risposti: logloss monotonamente peggiore, z = 5.01 e 5.40
+// su 1882 partite (AGENTS.md, Le due costanti dello shrinkage).
+const CMP_K_LIST = [4, 2, 1];
 
 let cmpCurrentLeagueId = '';
 let cmpLgWarned = false;
@@ -767,7 +773,7 @@ async function loadEngineFromText(text, fileName) {
     <p><code>${fileName}</code> — clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
 
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b35';
+  const _bComp = '0905-b36';
   const _el = document.getElementById('engine-build');
   if (_el) {
     if (!_bScan) {
@@ -1400,9 +1406,15 @@ async function cmpRunMatch(match, limit, render) {
         throw new Error('Lega non arrivata al motore (LG.n = 0): i risultati non sarebbero confrontabili con lo Scanner.');
       }
     }
+    // lgM e' il log-odds 1-contro-2 del solo modello, PRIMA dell'inclinazione dall'Elo:
+    // e' la quantita' la cui pendenza di calibrazione vale 1.443 (b35). Ricostruirla
+    // dalle probabilita' del CSV significa dividere per (1-w) = 0.25, cioe' moltiplicare
+    // per 4 la quantizzazione a una cifra decimale. Meglio registrarla.
     kRuns[kVal] = { m1: S.m1, mX: S.mX, m2: S.m2, confidence: S.confidence,
                     dc1: S.probsRole?.p1, dcX: S.probsRole?.pX, dc2: S.probsRole?.p2,
-                    pOv: S.probsRole?.pOv, pGG: S.probsRole?.pGG };
+                    pOv: S.probsRole?.pOv, pGG: S.probsRole?.pGG,
+                    lgM: S.eloDebugOver?.lgModel, lgT: S.eloDebugOver?.lgTarget,
+                    lamHo: S.eloDebugOver?.lamH0, lamAo: S.eloDebugOver?.lamA0 };
     if (R === null) R = S;
   }
   R._kRuns = kRuns;
@@ -2220,6 +2232,7 @@ function cmpExportCSV() {
   }
 
   const fmt = v => v==null||isNaN(v) ? 'N/D' : (v*100).toFixed(1).replace('.',',')+'%';
+  const _g4 = (v) => (v == null || isNaN(v)) ? 'N/D' : String((+v).toFixed(4)).replace('.', ',');
   const num = v => v==null||isNaN(v) ? 'N/D' : v.toFixed(2).replace('.',',');
   const pad = ';;;;'.repeat(M.length);
   const nowStr = new Date().toISOString().slice(0,16).replace('T',' ');
@@ -2249,7 +2262,11 @@ function cmpExportCSV() {
   rows.push('Sotto il 45% un esito non previsto che non accade e\' COERENTE, non un errore.' + pad);
   rows.push('Metriche avanzate: previste col modello attacco x difesa avversario x media lega,' + pad);
   rows.push(`shrinkage per metrica sui rapporti (k da 0.25 a 0.67, default ${CMP_DC_SHRINK}); non media semplice.` + pad);
-  rows.push('Sezione A/B SHRINKAGE: stessa partita ricalcolata con piu\' valori di SHRINK_K.' + pad);
+  rows.push('Sezione A/B SHRINKAGE: stessa partita ricalcolata con piu\' valori di SHRINK_K. '
+    + 'I k testati sono 4 (quello del motore, ed e\' il giro delle colonne principali), 2 e 1: '
+    + 'SOTTO il default, perche\' il modello e\' sotto-disperso e il rimedio sta da quella parte. '
+    + 'La riga log-odds modello e\' quella di cui misurare la pendenza; Over 2.5 e Goal/Goal dicono '
+    + 'quanto costa in livello dei mercati gol.' + pad);
   rows.push('Sezione A/B CORREZIONE RESIDUALE: stessa partita con piu\' valori di alpha (ricostruiti, senza rilanciare il motore).' + pad);
   rows.push('Sezioni METRICHE 0905-b4: le 34 metriche aggiunte al motore, previste col modello moltiplicativo e reali.' + pad);
   rows.push('Sezione INCLINAZIONE DALL ELO: l Elo ribilancia casa e trasferta lasciando fermo il totale gol (peso w, e scala ELO_SCALE sulla differenza di rating).\nSezione LAMBDA DAI TIRI: i tiri in porta previsti danno una SECONDA stima del totale gol, mediata col Dixon-Coles (peso w 0.50).' + pad);
@@ -2479,6 +2496,17 @@ function cmpExportCSV() {
       const ro = [`k=${kv} · Over 2.5`];
       M.forEach(m => ro.push(fmt(m.kRuns?.[kv]?.pOv), '', '', ''));
       rows.push(ro.join(';'));
+      const rg = [`k=${kv} · Goal/Goal`];
+      M.forEach(m => rg.push(fmt(m.kRuns?.[kv]?.pGG), '', '', ''));
+      rows.push(rg.join(';'));
+      const rlm = [`k=${kv} · log-odds modello (1 contro 2, pre-Elo)`];
+      M.forEach(m => { const v = m.kRuns?.[kv]?.lgM; rlm.push(v != null ? _g4(v) : 'N/D', '', '', ''); });
+      rows.push(rlm.join(';'));
+      const rlt = [`k=${kv} · totale lambda completi (pre-inclinazione)`];
+      M.forEach(m => { const r0 = m.kRuns?.[kv];
+        const v = (r0 && r0.lamHo != null && r0.lamAo != null) ? (r0.lamHo + r0.lamAo) : null;
+        rlt.push(v != null ? _g4(v) : 'N/D', '', '', ''); });
+      rows.push(rlt.join(';'));
     }
   }
 
@@ -2615,7 +2643,6 @@ function cmpExportCSV() {
 
   rows.push('');
   rows.push('--- LAMBDA DAI TIRI IN PORTA (seconda stima, mediata col Dixon-Coles) ---' + ';;;;'.repeat(M.length));
-  const _g4 = (v) => (v == null || isNaN(v)) ? 'N/D' : String((+v).toFixed(4)).replace('.', ',');
   const gRows = [
     ['Tiri: applicata',         d => d ? (d.applied ? 'SI' : 'no') : 'N/D'],
     ['Tiri: peso w',            d => d && d.w != null ? _g4(d.w) : 'N/D'],
@@ -2674,7 +2701,11 @@ function cmpExportCSV() {
     ['Scope: SHRINK_LAM_K',       d => d && d.lamK != null ? _g4(d.lamK) : 'N/D'],
     ['Scope: peso lambda casa',   d => d && d.wSH != null ? _g4(d.wSH) : 'N/D'],
     ['Scope: peso lambda trasf.', d => d && d.wSA != null ? _g4(d.wSA) : 'N/D'],
-    ['Scope: SHRINK_K',           d => d && d.shrinkK != null ? _g4(d.shrinkK) : 'N/D']
+    ['Scope: SHRINK_K',           d => d && d.shrinkK != null ? _g4(d.shrinkK) : 'N/D'],
+    ['Scope: lambda ruolo casa PRIMA della contrazione',
+                                  d => d && d.lamHrPre != null ? _g4(d.lamHrPre) : 'N/D'],
+    ['Scope: lambda ruolo trasf. PRIMA della contrazione',
+                                  d => d && d.lamArPre != null ? _g4(d.lamArPre) : 'N/D']
   ];
   scRows.forEach(([lbl, fn]) => {
     const r = [lbl];
