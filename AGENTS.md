@@ -194,6 +194,8 @@ sovradispersione — scagionati con i dati in mano.
 
 | `b36` | **le due costanti dello shrinkage, misurate invece che sospettate**. `SHRINK_LAM_K` sull'1X2 vale **0.000 punti** da 0.5 a 40 (80x di escursione): tocca solo i lambda di *ruolo* e `ENS_SCOPE_W = 1` manda l'1X2 su quelli *completi*. E' la manopola di livello dei **mercati gol**, e li' l'Over 2.5 va da 43.6% a 10.5%. `SHRINK_K` l'1X2 lo tocca, ma la sua intera escursione chiude **meno della meta'** della timidezza (a `k = 0`, shrinkage spento, la pendenza resta **1.273**, `z = +3.0`) e la paga in livello dei gol. La media dell'ensemble e' scagionata: **espande** (1.0076), non comprime. `CMP_K_LIST` da `[4, 12, 28]` a **`[4, 2, 1]`**: 12 e 28 sono gia' risposti, il rimedio sta sotto |
 
+| `b37` | **il backtest che chiude lo shrinkage: nessuna delle due si muove.** 1127 partite di Serie A, tre stagioni, export `b36`. `SHRINK_K` sotto 4 migliora l'1X2 (`-0.0016`, `z = -3.03`, scelta fuori campione `k = 1` in 3 fold su 3) ma i mercati gol perdono **+0.0056**: il conto complessivo e' **+0.0040, peggio**. E il guadagno non regge dove i dati sono puliti (`z = -1.35` sulle 567 righe senza clamp dell'HFA). `SHRINK_LAM_K` alzata chiude il livello dei gol e il Brier dell'Over ha un ottimo interno a 5-8, ma il miglior `z` e' `-1.82` e **il segno si ribalta nel 2022/23**. Le due manopole tirano sulla **stessa** carenza in versi opposti, e l'escursione utile di una non paga il conto dell'altra: finche' il disallineamento di unita' non e' corretto alla radice, nessuna delle due e' libera. Nessuna riga di codice cambiata |
+
 Le tre build finali hanno una storia sola e va letta in *La baseline di coppia*:
 tre tentativi svuotati dallo stesso malinteso.
 
@@ -314,14 +316,22 @@ sono ora manopole (`ELO_GAP_THRESHOLD`, `ELO_GAP_TAU`, `ELO_GAP_ASY`). Vedi
    meno della metà del divario. **Non alzare `ELO_SCALE` per compensare**: sarebbe
    prendere il prestito dal conto sbagliato. Vedi *Il backtest vero* e *Le due costanti
    dello shrinkage*.
-16-ter. **Misurare `SHRINK_K` sotto 4.** L'unico pezzo di questo punto che resta
-   aperto, ed è già strumentato: `CMP_K_LIST` è `[4, 2, 1]` dal `b36` e il CSV esporta
-   il **log-odds del modello** a ogni `k`, quindi la pendenza si misura senza
-   ricostruirla. Guardare **insieme** la pendenza e il livello dell'Over: il cambio
-   misurato è di **38 punti di Over per punto di pendenza**, e l'Over è già `-2.6`.
-16-quater. **Misurare `SHRINK_LAM_K` sui mercati gol**, dove è la manopola vera e dove
-   non l'ha mai guardata nessuno. Dal `b36` il CSV esporta i lambda di ruolo **prima**
-   della contrazione, quindi il livello si ricostruisce senza rilanciare il motore.
+16-ter. ~~**Misurare `SHRINK_K` sotto 4**~~ — **fatto, e resta 4.** Sull'1X2 da solo
+   funziona (`-0.0016`, `z = -3.03`, `k = 1` scelto in 3 fold su 3), ma i mercati gol
+   perdono `+0.0056` e il conto complessivo è **+0.0040, peggio**. E il segno non regge
+   sulle righe senza clamp dell'HFA (`z = -1.35`). Vedi *Il backtest che chiude lo
+   shrinkage*.
+16-quater. ~~**Misurare `SHRINK_LAM_K` sui mercati gol**~~ — **fatto, e resta 3.**
+   Alzarla chiude il livello (bias Over da `-2.6` a `-1.2`) e il Brier dell'Over ha un
+   ottimo interno fra 5 e 8, ma il miglior `z` appaiato è `-1.82` e **nel 2022/23 il
+   segno si ribalta**. È però il candidato meglio piazzato per la sesta lega, insieme a
+   `LEAGUE_HALFLIFE_DAYS`, e punta nello **stesso verso**: il livello dei gol è troppo
+   basso.
+16-quinquies. **Non provare `SHRINK_K` giù + `SHRINK_LAM_K` su per compensare.**
+   Misurato di primo ordine: l'intera escursione utile di `SHRINK_LAM_K` (fino a 8,
+   dove il Brier gira) vale 0.9 punti di livello Over contro gli 1.5 che `SHRINK_K` a 1
+   toglie. Le due tirano sulla stessa carenza, e la radice è il disallineamento di
+   unità: serve la media NPxG **di lega**, non una ritaratura.
 16-bis. **La regola dell'HFA: pavimento o shrinkage?** Esposta nel `b35` e ferma sul
    pavimento. Il CSV la ricostruisce senza rilanciare il motore: **un backtest
    decide**. Il pavimento morde sul 27.6% delle righe di backtest (mai in produzione).
@@ -890,6 +900,14 @@ a `scanner.html` al commit `cd51a69`, prima della ripulitura.
   grado di libertà, scrivere per quale strada arriva al numero che si guarda** — e se
   la strada non c'è, `grep` lo dice in un secondo. Vedi *Le due costanti dello
   shrinkage*.
+- **Un'etichetta del CSV può essere abbreviata, non solo duplicata.** Ricostruendo
+  `SHRINK_LAM_K` ho letto la media gol di trasferta da `Unita: media gol trasferta`,
+  che **non esiste**: nel file è `Unita: media gol trasf.`. Il campo usciva `null`, il
+  lambda di trasferta collassava sulla sola contrazione, e l'Over usciva 2.9 punti
+  sotto — plausibile abbastanza da poter essere letto. Nessuna eccezione, nessun
+  avviso. L'ha trovata la **prova di coincidenza**, che è lì apposta: non verifica il
+  motore, verifica **la propria trascrizione**, e va fatta prima di leggere qualunque
+  numero. Vedi *Il backtest che chiude lo shrinkage*, punto 4.
 - **Un banco di prova sintetico risponde alle domande di struttura, non a quelle di
   direzione.** Sul campionato finto abbassare `SHRINK_K` *alza* l'Over 2.5; sulla Serie
   A vera lo *abbassa*, perché lì i NPxG stanno sotto la media gol e la contrazione li
@@ -927,6 +945,8 @@ riga qui sotto costa già un backtest.
 | Ricalibrare le rette della confidence | **non serve** | rifittate su 756 partite danno 16.88 + 0.686·p contro 6.26 + 0.880·p: ai punti che contano (50–60%) coincidono entro un punto |
 | Affilare le probabilità (temperatura) | **non serve** | il Brier peggiora oltre T≈1.1 su 716 partite |
 | Stimare attacco/difesa su **tutta la lega** invece che su 15 partite a squadra | **non serve** | AUC 0.681 contro 0.680 del modello attuale; mescolato 0.688 contro lo 0.690 che l'Elo dà già. Sul totale gol è perfino peggio. Vedi *L'Elo nell'1X2* |
+| Abbassare `SHRINK_K` per de-comprimere l'1X2 | **funziona sull'1X2, non sul conto** | `-0.0016` di logloss 1X2 (`z = -3.03`) contro `+0.0056` sui mercati gol: somma **+0.0040, peggio**. E sulle righe senza clamp dell'HFA il segno non regge (`z = -1.35`). Vedi *Il backtest che chiude lo shrinkage* |
+| Alzare `SHRINK_LAM_K` per il livello dei gol | **non regge ancora** | chiude il bias (Over da `-2.6` a `-1.2`) con ottimo interno del Brier a 5-8, ma il miglior `z` è `-1.82` e nel 2022/23 il segno si ribalta. Candidato per la sesta lega |
 | Individuare le partite che finiranno pari | **non regge** | `pX` ha AUC **0.487** (SE ±0.020) su 1133 partite: nessuna capacità di distinguere. Anche `-\|p1−p2\|` e `-max(p1,p2)` stanno a 0.495–0.498. La calibrazione è giusta in media (27.6% detto contro 25.9% reale) ma piatta a fasce. Vedi *Lo scenario singolo* |
 
 **Le cose che hanno superato la verifica incrociata su più leghe** (in ordine di
@@ -2085,6 +2105,181 @@ contrarre tira in su. **Il sintetico serve a rispondere a domande di struttura**
 un percorso? la costante arriva fin qui?) **e non a domande di direzione**: quelle le
 decide solo il campione vero. Il risultato del punto 1 — `SHRINK_LAM_K` non tocca
 l'1X2 — è di struttura, e per quello il sintetico basta e avanza.
+
+## Il backtest che chiude lo shrinkage: nessuna delle due si muove (`b37`)
+
+Un export `b36` di Serie A, **1127 partite** su tre stagioni (2021/22, 2022/23, 2023/24),
+con la sezione `[4, 2, 1]` e il log-odds del modello per `k`. È il giro che il `b36`
+aveva preparato, e risponde a tutti e due i punti in coda.
+
+| controllo | esito |
+|---|---|
+| **I-bis** ID PARTITA unici | 1127 righe → **1127 partite**, nessun doppione |
+| **H** colonna `LEGA` | 1127 su 1127 «Serie A», 24 squadre ✓ |
+| **I** `Origine metriche avanzate` | **`riserva-k-motore` sul 100%**: `/advanced` non c'è su queste stagioni |
+| **Q** `lgN > 0` | zero righe a 0 ✓ (minimo 10) |
+| **P** il clamp dell'HFA | morde su **520 righe (46%)**, più 40 di ripiego; 64% / 75% / **0%** per stagione |
+| parità | `ELO_SCALE 1,25`, `SHRINK_K 4`, `SHRINK_LAM_K 3`, limite 30, ruolo non indipendente ✓ |
+
+### 1. `SHRINK_K` sotto 4: la teoria del `b36` regge, e il verdetto è no lo stesso
+
+La previsione era che `lgModel` scalasse come `w = n/(n+k)`. Misurata sulla riga che il
+`b36` ha aggiunto — quindi **senza** la ricostruzione che moltiplica per quattro la
+quantizzazione:
+
+| `k` | `w` | sd di `lgModel` | pendenza | SE | σ da 1 | attesa dalla teoria |
+|---|---|---|---|---|---|---|
+| **4** | 0.882 | 0.824 | **1.374** | 0.116 | +3.22 | — (ancora) |
+| 2 | 0.938 | 0.891 | 1.279 | 0.108 | +2.59 | 1.294 |
+| 1 | 0.968 | 0.936 | 1.220 | 0.103 | +2.15 | 1.253 |
+
+Misurato leggermente **meglio** della teoria, e la sd cresce come previsto. Confermata
+anche l'attenuazione del punto 5 del `b36`: sul prodotto finito la pendenza va da
+**1.200 a 1.179**, cioè di `lgModel` che si muove di 0.154 all'1X2 ne arriva 0.021.
+
+E `k = 0` non cambierebbe il quadro: da `k = 1` a `k = 0` la sd cresce del **3.3%**. La
+manopola è finita.
+
+**Sul solo 1X2 abbassarla funziona**, ed è la prima volta che si può dirlo con un
+campione: `-0.00163` di logloss a `k = 1`, `z = -3.03`, monotono, e la scelta fuori
+campione prende `k = 1` in **tutti e tre i fold**. Per scala, è più del doppio della
+ritaratura dei pesi dell'ensemble (`-0.0013`), che era stata adottata.
+
+**Ma non si spedisce, per due ragioni indipendenti.**
+
+**La prima: i mercati gol pagano più di quanto l'1X2 incassi.** Non è solo il livello —
+è la logloss, che è l'arbitro:
+
+| `k` | 1X2 | Over 2.5 | Goal/Goal | **somma** |
+|---|---|---|---|---|
+| 2 | −0.00097 (`z` −3.23) | +0.00118 (`z` +1.91) | +0.00180 (`z` +3.35) | **+0.00201** |
+| 1 | −0.00163 (`z` −3.03) | +0.00240 (`z` +2.30) | +0.00321 (`z` +3.57) | **+0.00399** |
+
+Il bias dell'Over va da `-2.6` a `-4.1`, quello del GG da `-3.8` a `-5.1`, e anche le
+AUC si muovono nel verso sbagliato (Over 0.586 → 0.584, GG 0.550 → 0.547). È il
+meccanismo del `b36` punto 3, ora misurato sul conto completo: **si prende un prestito
+dal conto dei gol per pagare la calibrazione dell'1X2, e il prestito costa più del
+prestito.**
+
+**La seconda: il guadagno sull'1X2 non regge dove i dati sono puliti.**
+
+| | n | delta | `z` |
+|---|---|---|---|
+| 2021/22 (clamp HFA sul 64%) | 370 | −0.00206 | −1.64 |
+| 2022/23 (clamp sul 75%) | 378 | −0.00162 | −2.22 |
+| 2023/24 (clamp sullo **0%**) | 379 | −0.00121 | −1.70 |
+| **solo le righe senza clamp** | **567** | **−0.00080** | **−1.35** |
+
+Nessuna stagione da sola arriva a 2.3 sigma, e sulle 567 righe dove il pavimento
+dell'HFA **non** ha morso il segno non è distinguibile da zero. Lo `z = -3.03`
+aggregato viene in buona parte dalle righe contaminate — le stesse che il `b35` aveva
+già marcato come il 40% da cui veniva l'1.335 del `b26`.
+
+Aggiungi che il pick non si muove (52.3% → 52.4%) e che il miglioramento è **monotono
+fino al bordo senza ottimo interno**, cioè il punto 5 della *Disciplina di
+calibrazione*. **`SHRINK_K` resta 4.**
+
+### 2. `SHRINK_LAM_K` sui mercati gol: ricostruito, e resta 3
+
+Il `b36` aveva esportato i lambda di ruolo **prima** della contrazione proprio per
+questo. La catena si ricostruisce per intero fuori dal motore — contrazione, scala dai
+tiri, inclinazione dall'Elo, matrice Dixon-Coles — e **la prova di coincidenza va fatta
+per prima**:
+
+| | scarto mediano dal CSV | massimo |
+|---|---|---|
+| Over 2.5 | **0.0004 punti** | 0.0504 |
+| Goal/Goal | −0.0001 punti | 0.0509 |
+| totale dei lambda | 0.000000 | 0.000216 |
+
+Cioè la sola quantizzazione a una cifra decimale del file. Da lì la sweep costa zero:
+
+| `SHRINK_LAM_K` | `wS` mediano | bias Over | Brier Over | bias GG | Brier GG | logloss Ov+GG |
+|---|---|---|---|---|---|---|
+| 0.5 | 0.966 | −3.4 | 0.24517 | −4.7 | 0.24970 | +0.00300 (`z` +2.47) |
+| 1 | 0.933 | −3.2 | 0.24500 | −4.5 | 0.24942 | +0.00211 |
+| 2 | 0.875 | −2.9 | 0.24480 | −4.1 | 0.24900 | +0.00085 |
+| **3** | 0.824 | **−2.6** | 0.24469 | **−3.8** | 0.24869 | in uso |
+| 5 | 0.737 | −2.2 | **0.24459** | −3.4 | 0.24823 | −0.00110 (`z` **−1.82**) |
+| 8 | 0.636 | −1.7 | **0.24459** | −2.9 | 0.24781 | −0.00196 (`z` −1.56) |
+| 12 | 0.538 | −1.2 | 0.24468 | −2.4 | 0.24747 | −0.00245 (`z` −1.32) |
+
+**Alzarla chiude il livello**, che è il problema aperto dei mercati gol, e il Brier
+dell'Over ha perfino un **ottimo interno** fra 5 e 8. Ma:
+
+- il miglior `z` appaiato è **−1.82**, sotto la soglia;
+- **il segno non regge**: 2021/22 `−1.14`, 2023/24 `−1.97`, ma 2022/23 **`+0.19`**, cioè
+  dall'altra parte;
+- la scelta fuori campione dà `+0.00103` su uno dei tre fold.
+
+La regola di questo documento è la stessa che ha evitato quattro falsi positivi.
+**`SHRINK_LAM_K` resta 3**, e diventa il candidato meglio piazzato per la sesta lega
+insieme a `LEAGUE_HALFLIFE_DAYS` — che peraltro punta **nello stesso verso**: il
+livello dei gol è troppo basso.
+
+### 3. Le due manopole tirano sulla stessa carenza, in versi opposti
+
+È la cosa nuova che esce da questo giro, e spiega perché nessuna delle due si muove da
+sola. Entrambe agiscono sul deficit di livello che viene dal disallineamento di unità
+(NPxG divisi per la media **gol**, `b22`):
+
+| | bias Over 2.5 |
+|---|---|
+| `SHRINK_K` 4 → 1 (a `SLK = 3`) | −2.6 → **−4.1** (peggiora di 1.5) |
+| `SHRINK_LAM_K` 3 → 8 (a `SK = 4`) | −2.6 → **−1.7** (migliora di 0.9) |
+| `SHRINK_LAM_K` 3 → 12 | −2.6 → −1.2 (ma il Brier dell'Over ha già girato a 8) |
+
+Quindi la tentazione ovvia — *abbassa `SHRINK_K` per l'1X2 e alza `SHRINK_LAM_K` per
+rimettere a posto i gol* — **non torna**: l'intera escursione utile di `SHRINK_LAM_K`
+(fino a 8, dove il Brier gira) vale 0.9 punti contro gli 1.5 che `SHRINK_K` a 1 toglie.
+È una stima di primo ordine — le due si sommano sul livello ma il CSV non esporta i
+lambda pre-contrazione *per ogni* `k`, quindi la combinazione richiede un giro vero — e
+va scritta perché è il prossimo «sistemiamo tutto insieme» che verrà in mente a
+qualcuno.
+
+**La lettura giusta è un'altra**: finché il disallineamento di unità non è corretto alla
+radice, lo shrinkage fa due mestieri e **nessuna delle due manopole è libera**. La
+strada è la media NPxG **di lega** (`b22`), non la ritaratura.
+
+### 4. La prova di coincidenza ha fatto esattamente il suo lavoro
+
+Primo giro della ricostruzione: scarto mediano **−2.87 punti** sull'Over, massimo 28.8.
+Causa: avevo letto la media gol di trasferta dall'etichetta `Unita: media gol
+trasferta`, che **non esiste** — nel CSV è `Unita: media gol trasf.`. Il campo usciva
+`null`, il lambda di trasferta collassava, e i numeri erano plausibili abbastanza da
+poter essere letti.
+
+Senza il controllo di coincidenza avrei pubblicato una sweep di `SHRINK_LAM_K` fatta su
+metà modello. È il motivo per cui questo documento dice di farlo **per primo**: non
+verifica il motore, verifica **la propria trascrizione**, ed è l'unica difesa contro un
+errore che non solleva nessuna eccezione. Stessa famiglia delle etichette duplicate del
+CSV, con una variante nuova: qui l'etichetta non era duplicata, era **abbreviata**.
+
+### 5. Una differenza fra stagioni che non è una differenza
+
+La pendenza di `lgModel` a `k = 4` esce **1.846** nel 2023/24 contro **1.208** e
+**1.206** nelle altre due, e la tentazione di spiegarla è forte. Test di omogeneità
+prima di spiegarla, come impone *Il modello non fallisce in una lega più che in
+un'altra*:
+
+```
+comune 1.351 (SE 0.116),  Q = 5.28 su 2 gradi di liberta',  p = 0.071
+```
+
+Sopra la soglia, quindi **non distinguibili**. L'errore standard di una pendenza su
+~270 partite è **0.19**: tre stime con quel rumore si sparpagliano molto più di quanto
+sembri a occhio. Terza volta che questa trappola si presenta in questo documento, ed è
+la prima in cui il test è stato fatto *prima* di scrivere la spiegazione.
+
+### Cosa NON dice questo backtest
+
+- **Una lega sola, e senza `/advanced`.** Le sezioni delle metriche avanzate sono `N/D`
+  da cima a fondo, e il motore gira con l'xG al posto degli NPxG.
+- **Il 46% delle righe ha il pavimento dell'HFA che morde**, ed è precisamente dove il
+  guadagno di `SHRINK_K` si concentra. Il punto 16-bis (pavimento o shrinkage) va
+  deciso **prima** di riaprire questo.
+- **Non dice niente su `k` fra 4 e 12**: la lista è `[4, 2, 1]`, e il ramo alto era già
+  stato chiuso dal `b35`.
 
 ## L'audit sistematico del `b19`: cosa è stato controllato e cosa è saltato fuori
 
