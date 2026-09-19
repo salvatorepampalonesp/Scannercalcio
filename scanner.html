@@ -174,7 +174,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b36</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b38</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -268,16 +268,19 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
   <div class="card" id="card-verdetti" style="border-top:3px solid var(--accent2)">
     <div class="section-title" style="color:#0f766e">&#127919; Tabellone Scommesse &mdash; cosa &egrave; giocabile</div>
     <div style="font-size:11px;color:var(--dim);margin-bottom:10px">
-      Hit misurati sul backtest, non stimati dal modello su s&eacute; stesso. Campione: <b>2.963 partite</b>
-      in due gruppi indipendenti che concordano &mdash; Serie A + Premier + LaLiga 2025/26, e Serie A 2021&ndash;2025.
-      La colonna <b>Hit storico</b> dice quante volte quel mercato &egrave; uscito quando la probabilit&agrave; era sopra la soglia;
-      accanto, su quanti casi &egrave; misurato. <b>NON GIOCARE</b> = misurato e non regge.
+      Ordinato per <b>scarto dal base rate della lega</b>, non per percentuale. Il base rate &egrave; quanto
+      rende giocare quel mercato <b>sempre, alla cieca</b>, contato sull'archivio di questa lega: un
+      <code>12</code> al 73% non &egrave; una trovata, &egrave; il base rate. Quello che conta &egrave; di quanto lo batte.
+      Misurato su <b>1.882 partite</b> di Serie A, cinque stagioni, solo backtest del motore attuale:
+      con scarto <b>+5&hellip;+10</b> si rende +6 punti sopra il giocarlo sempre, <b>+10&hellip;+20</b> +15 punti,
+      <b>+20 e oltre</b> +25. Il segno regge in tutte e cinque le stagioni.
+      Sotto +5 non c'&egrave; verdetto: il guadagno misurato sta dentro il rumore.
     </div>
     <div id="league-note"></div>
     <div class="tbl-scroll"><table class="table-ui table-compact">
       <thead><tr>
-        <th style="text-align:left">Mercato</th><th>Prob.</th>
-        <th style="text-align:left">Verdetto &middot; hit misurato</th>
+        <th style="text-align:left">Mercato</th><th>Prob. &middot; lega</th>
+        <th style="text-align:left">Scarto &middot; quanto rende</th>
       </tr></thead>
       <tbody id="verdetti-body"></tbody>
     </table></div>
@@ -348,18 +351,21 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
             </div>
           </div>
           <div style="font-size:9px; color:var(--dim); margin-top:5px">
-            Calibrata su 6824 partite (Europa+MLS+Turchia), <b>con un motore precedente</b>.
-            Rimisurata sul b26 su 2.963 partite risulta <b>prudente</b>: nella fascia alta il modello
-            azzecca pi&ugrave; di quanto dichiari. Il numero qui sotto va quindi letto come un <i>minimo</i>.
+            Non &egrave; pi&ugrave; una retta: &egrave; la <b>resa misurata</b> del pick, fascia per fascia, su
+            <b>1.882 partite</b> del motore attuale. La vecchia retta (6.26 + 0.880 &times; p, stimata su un
+            motore precedente) <b>comprimeva</b>: a 62 mostrava 61 dove il vero &egrave; 67.5, a 74 mostrava 71
+            dove il vero &egrave; 79. Il numero qui sotto ora si legge com'&egrave;.
           </div>
           <div style="font-size:9px; color:var(--dim); margin-top:6px; background:var(--panel2); border-radius:6px; padding:6px 8px; line-height:1.5">
-            <b>Come usarla &mdash; resa misurata del pick, non dichiarata:</b><br>
-            <span style="color:var(--green)">pick &ge;60% &rarr; azzecca il <b>74%</b></span> (1 partita su 11) ·
-            <span style="color:var(--green)">&ge;55% &rarr; <b>69%</b></span> (1 su 5) ·
-            <span style="color:var(--orange)">&ge;50% &rarr; <b>65%</b></span> (1 su 3) ·
-            <span style="color:var(--red)">&lt;45% &rarr; sotto il coin-flip</span>.<br>
-            Le due met&agrave; del campione danno gli stessi numeri a ogni soglia. Sopra il 65% la stima
-            balla: pochi casi, intervallo largo.
+            <b>Come usarla &mdash; resa del pick per soglia, rimisurata sul motore di oggi:</b><br>
+            <span style="color:var(--green)">pick &ge;65% &rarr; azzecca il <b>74.3%</b></span> (1 partita su 10) &middot;
+            <span style="color:var(--green)">&ge;60% &rarr; <b>71.1%</b></span> (1 su 5.6) &middot;
+            <span style="color:var(--green)">&ge;55% &rarr; <b>65.3%</b></span> (1 su 3.4) &middot;
+            <span style="color:var(--orange)">&ge;50% &rarr; <b>62.0%</b></span> (1 su 2.3) &middot;
+            <span style="color:var(--red)">&lt;45% &rarr; non selezionare</span>.<br>
+            Su tutte le partite il pick azzecca il <b>52.3%</b> contro il 40.4% del &laquo;gioca sempre in
+            casa&raquo;. Le soglie alte rendono di pi&ugrave; <b>e</b> coprono pi&ugrave; calendario di quanto
+            dicesse la stima vecchia. Una lega sola: l'intervallo a &ge;65% &egrave; &plusmn;6.5 punti.
           </div>
         </div>
 
@@ -403,7 +409,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
                     <td id="conf-p2" style="font-weight:bold;font-size:11px">--</td>
                   </tr>
                 </table>
-                <div style="font-size:9px; color:var(--dim); margin-top:4px">Confidence per esito = probabilita' calibrata di indovinare quell'esito (stesse rette del tabellone: 6.26 + 0.880 x p per l'1X2, -5.06 + 1.091 x p per i mercati binari). Non misura l'accordo fra i modelli: sui backtest quello correlava zero con l'azzeccare.</div>
+                <div style="font-size:9px; color:var(--dim); margin-top:4px">Confidence per esito = probabilita' calibrata di indovinare quell'esito. Sull'1X2 viene da una TABELLA misurata su 1882 partite del motore attuale (la vecchia retta 6.26 + 0.880 x p comprimeva: a 62 mostrava 61 dove il vero e' 67.5); sui mercati binari resta la retta -5.06 + 1.091 x p, rimisurata e giusta entro 2 punti. Non misura l'accordo fra i modelli: sui backtest quello correlava zero con l'azzeccare.</div>
               </div>
               <div style="background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:10px; margin-top:12px">
                 <div style="font-size:11px;font-weight:bold;color:var(--dim);margin-bottom:6px">🎯 Doppie Chance & Gol (con confidence)</div>
@@ -1020,6 +1026,41 @@ function computeLeagueParams(leagueId, targetTimeMs, halfLifeDays) {
   return { avgH: gh / w, avgA: ga / w, n, hl };
 }
 
+// Il base rate della LEGA, contato sul suo stesso archivio e con lo STESSO taglio
+// temporale del resto del motore (_isPast): e' l'unico riferimento onesto per dire
+// quanto un mercato batte il giocarlo alla cieca. Non e' la baseline di coppia e non
+// le somiglia: viene da globalLeagueMatchesCache, come LG e l'Elo, e costa zero
+// chiamate. Serve al tabellone, che prima ordinava per probabilita' grezza e quindi
+// proponeva sempre le doppie chance. Vedi AGENTS.md, Il tabellone ordinava per la
+// colonna sbagliata.
+function leagueBaseRates(leagueId, targetTimeMs) {
+  const _tDay = _dayUTC(targetTimeMs);
+  const seen = new Set(); let n = 0;
+  const c = { h: 0, d: 0, a: 0, gg: 0, o15: 0, o25: 0, o35: 0 };
+  for (const m of globalLeagueMatchesCache) {
+    if (m.league_id !== leagueId || m.status !== 'finished' || !m.time_utc) continue;
+    if (!_isPast(m.time_utc, targetTimeMs, _tDay)) continue;
+    if (seen.has(m.id)) continue; seen.add(m.id);
+    if (m.score_home == null || m.score_away == null) continue;
+    const gh = m.score_home, ga = m.score_away, t = gh + ga;
+    if (gh > ga) c.h++; else if (gh === ga) c.d++; else c.a++;
+    if (gh > 0 && ga > 0) c.gg++;
+    if (t > 1.5) c.o15++; if (t > 2.5) c.o25++; if (t > 3.5) c.o35++;
+    n++;
+  }
+  // Il minimo non e' una taratura: il guadagno del tabellone e' piatto fra 50 e 500
+  // (+18.8 / +19.1 / +18.3 punti). 200 dimezza l'errore peggiore del base rate su
+  // archivio corto (19.6 -> 11.9 punti) e in produzione non morde mai: lo Scanner
+  // carica tre stagioni e qui arrivano 900+ partite.
+  if (n < 200) return { n, ok: false };
+  const f = v => v / n;
+  return { n, ok: true,
+           p1: f(c.h), pX: f(c.d), p2: f(c.a),
+           p1X: f(c.h + c.d), pX2: f(c.d + c.a), p12: f(c.h + c.a),
+           pGG: f(c.gg), pNG: 1 - f(c.gg),
+           pOv15: f(c.o15), pOv: f(c.o25), pUn: 1 - f(c.o25), pOv35: f(c.o35) };
+}
+
 function estimateRho(leagueId, targetTimeMs, LG) {
   const _tDay = _dayUTC(targetTimeMs);
   const seen = new Set(); const obs = {'0-0':0,'1-0':0,'0-1':0,'1-1':0}; let n = 0;
@@ -1568,6 +1609,9 @@ function _shrunkMean(roleArr, overallArr, fallback, k = 5) {
 
 window.SHRINK_K     = (typeof window.SHRINK_K     === 'number') ? window.SHRINK_K     : 4;
 window.SHRINK_LAM_K = (typeof window.SHRINK_LAM_K === 'number') ? window.SHRINK_LAM_K : 3;
+window.CONF_1X2_TABLE = window.CONF_1X2_TABLE ||
+  [[37.6,36.1],[42.5,45.6],[47.3,52.4],[52.4,54.9],[57.3,56.4],[62.4,67.5],[67.0,70.4],[73.8,79.0]];
+window.CONF_1X2_MODE = window.CONF_1X2_MODE || 'tabella';
 
 const KNN_MIN_COVERAGE = 0.6;
 const KNN_DIMS = [
@@ -1737,59 +1781,95 @@ function renderLeagueNote() {
     + '<span style="color:var(--dim)"> Misurato su ' + s.n + ' partite.</span></div>';
 }
 
-function renderVerdetti(mk) {
-  // Hit rimisurati sul b26 su DUE campioni indipendenti che concordano: 1459 partite
-  // (Serie A + Premier + LaLiga 2025/26, con /advanced) e 1504 (Serie A 2021-2025, senza).
-  // Fra parentesi il numero di casi su cui l'hit e' misurato: sotto il centinaio la
-  // stima balla, e va detto invece che nascosto. (AGENTS.md, La mappa onesta)
+// SCARTI misurati su 1882 partite di Serie A, cinque stagioni, SOLO export post-b30
+// (gli altri undici CSV sono un motore diverso). Lo scarto e' la probabilita' meno il
+// base rate DI QUEL mercato NELLA SUA LEGA: quanto batte il giocarlo sempre alla cieca.
+// Il guadagno cresce con lo scarto (+6.3 / +14.1 / +16.0 / +24.6 punti) e resta piatto
+// con la probabilita' grezza (+1.4 / +3.3 / +7.1 / +6.1 / +5.1): e' il motivo per cui
+// il tabellone proponeva sempre 1X / X2 / 12. Il 12 supera la sua vecchia soglia sul
+// 90% delle partite e vale +0.5 punti. Il segno regge in tutte e cinque le stagioni.
+window.EDGE_BANDS = window.EDGE_BANDS ||
+  [[20, 'FORTE',      24.6, 765],
+   [10, 'GIOCABILE',  14.8, 2613],
+   [5,  'MARGINALE',   6.3, 3436]];
+
+function renderVerdetti(mk, base, adv) {
+  const over = (line, lam, k) => 1 - negBinCDF(Math.floor(line), lam, k);
+  const B = base && base.ok ? base : null;
   const R = [
-    ['1 (Casa)',      mk.p1,  [[0.65,'FORTE','83%','107 casi'],
-                               [0.55,'GIOCABILE','70%','436 casi']], null],
-    ['X (Pari)',      mk.pX,  [], "mai sopra il 55% in 2963 partite: nessun campione su cui misurare"],
-    ['2 (Trasf.)',    mk.p2,  [[0.60,'GIOCABILE','67%','42 casi: stima incerta']], null],
-    ['1X',            mk.p1X, [[0.65,'GIOCABILE','80%','1855 casi']], null],
-    ['X2',            mk.pX2, [[0.65,'FORTE','78%','1001 casi'],
-                               [0.60,'GIOCABILE','73%','1439 casi']], null],
-    ['12',            mk.p12, [[0.70,'GIOCABILE','74%','2698 casi']], null],
-    ['Over 2.5',      mk.pOv, [[0.55,'GIOCABILE','63%','354 casi']], null],
-    ['Under 2.5',     mk.pUn, [[0.65,'MARGINALE','63%','65 casi: stima incerta']], null],
-    ['Goal (GG)',     mk.pGG, [[0.60,'MARGINALE','67%','89 casi: stima incerta'],
-                               [0.55,'MARGINALE','59%','420 casi']], null],
-    ['NoGoal',        mk.pNG, [], 'rimisurato su 2637 partite: sopra il 55% rende 52%, sopra il 60% rende 50%']
+    ['1 (Casa)',   mk.p1,  B && B.p1,   'Vittoria casa'],
+    ['X (Pari)',   mk.pX,  B && B.pX,   'Pareggio'],
+    ['2 (Trasf.)', mk.p2,  B && B.p2,   'Vittoria trasferta'],
+    ['1X',         mk.p1X, B && B.p1X,  'Casa o pari'],
+    ['X2',         mk.pX2, B && B.pX2,  'Pari o trasferta'],
+    ['12',         mk.p12, B && B.p12,  'Niente pari'],
+    ['Over 2.5',   mk.pOv, B && B.pOv,  'Piu\' di 2 gol'],
+    ['Under 2.5',  mk.pUn, B && B.pUn,  'Meno di 3 gol'],
+    ['Goal (GG)',  mk.pGG, B && B.pGG,  'Segnano entrambe'],
+    ['NoGoal',     mk.pNG, B && B.pNG,  'Almeno una a secco']
   ];
-  // '--' non e' un divieto, e' assenza di verdetto: grigio, non rosso come NON GIOCARE
-  const col = v => v === 'FORTE' ? '#0f766e' : v === 'GIOCABILE' ? '#2d7d32'
-                 : v === 'MARGINALE' ? '#f57c00' : v === 'NON GIOCARE' ? '#c62828' : '#4b5563';
-  let html = '', righe = [];
-  for (const [nome, p, regole, blocco] of R) {
+  // I mercati sui numeri non erano nel tabellone, e hanno uno scarto >= +10 sul
+  // 13-15% delle partite contro l'1-3% di 12, GG e Over 2.5. Il loro base rate non si
+  // puo' contare nell'archivio di lega (corner e tiri non stanno nella lista partite):
+  // viene dal riferimento ancorato ai gol di lega, che e' l'unica quantita' di lega
+  // che il motore ha per questi conteggi.
+  if (adv) {
+    const NUM = [['Corner Over 9.5', adv.pOv9c, adv.lgRefCor, adv.kCor, 9.5, 'Piu\' di 9 corner'],
+                 ['Tiri porta Over 8.5', adv.pOv8s, adv.lgRefSot, adv.kSot, 8.5, 'Piu\' di 8 tiri in porta'],
+                 ['Gialli Over 3.5', adv.pOv3y, adv.lgRefYel, adv.kYel, 3.5, 'Piu\' di 3 gialli']];
+    for (const [nome, pr, ref, kk, line, desc] of NUM)
+      R.push([nome, pr, (ref > 0 && isFinite(kk)) ? over(line, ref, kk) : null, desc]);
+  }
+
+  const righe = [], voci = [];
+  for (const [nome, p, b, desc] of R) {
     if (p == null || isNaN(p)) continue;
-    let verdetto = 'FUORI SOGLIA', hit = '--', perche = '';
-    if (blocco) { verdetto = 'NON GIOCARE'; perche = blocco; }
-    else {
-      for (const [soglia, v, h, w] of regole) if (p >= soglia) { verdetto = v; hit = h; perche = w; break; }
-      if (verdetto === 'FUORI SOGLIA') perche = 'la probabilita\' non arriva alla soglia minima validata: nessun verdetto';
-    }
-    const ok = verdetto === 'FORTE' || verdetto === 'GIOCABILE';
-    righe.push(`- ${nome}: ${(p*100).toFixed(1)}% -> ${verdetto}`
-               + (hit !== '--' ? ` (hit misurato ${hit} su ${perche})` : ` (${perche})`));
+    const edge = (b == null || isNaN(b)) ? null : (p - b) * 100;
+    let verdetto = 'NESSUN VERDETTO', guad = null, nOss = null;
+    if (edge == null) verdetto = 'BASE DI LEGA ASSENTE';
+    else for (const [soglia, v, g, n] of window.EDGE_BANDS)
+      if (edge >= soglia) { verdetto = v; guad = g; nOss = n; break; }
+    voci.push({ nome, p, b, edge, verdetto, guad, nOss, desc });
+  }
+  // ordinati per scarto: in cima quello che batte di piu' il giocarlo alla cieca,
+  // non quello con la percentuale piu' grossa.
+  voci.sort((x, y) => (y.edge == null ? -1e9 : y.edge) - (x.edge == null ? -1e9 : x.edge));
+
+  const col = v => v === 'FORTE' ? '#0f766e' : v === 'GIOCABILE' ? '#2d7d32'
+                 : v === 'MARGINALE' ? '#f57c00' : '#4b5563';
+  let html = '';
+  for (const v of voci) {
+    const ok = v.verdetto === 'FORTE' || v.verdetto === 'GIOCABILE';
+    const eTxt = v.edge == null ? '--' : (v.edge >= 0 ? '+' : '') + v.edge.toFixed(1);
+    righe.push(`- ${v.nome}: ${(v.p*100).toFixed(1)}% contro un base rate di lega `
+      + `${v.b == null ? 'ignoto' : (v.b*100).toFixed(1) + '%'} -> scarto ${eTxt} -> ${v.verdetto}`
+      + (v.guad != null ? ` (chi gioca con questo scarto rende +${v.guad} punti sopra il giocarlo sempre, misurato su ${v.nOss} proposte)` : ''));
     html += '<tr' + (ok ? ' style="background:rgba(34,197,94,.10)"' : '') + '>'
-          + '<td style="text-align:left;font-weight:bold;white-space:nowrap">' + nome + '</td>'
-          + '<td style="font-weight:bold;white-space:nowrap">' + (p * 100).toFixed(1) + '%</td>'
-          + '<td style="text-align:left">'
-          +   '<span style="background:' + col(verdetto) + ';color:#fff;padding:2px 8px;'
-          +   'border-radius:4px;font-size:10px;font-weight:bold;white-space:nowrap">' + verdetto + '</span>'
-          +   (hit !== '--'
-               ? '<div style="font-size:11px;margin-top:3px"><b>' + hit + '</b>'
-                 + ' <span style="color:var(--dim)">su ' + perche + '</span></div>'
-               : '<div style="font-size:10px;color:var(--dim);margin-top:3px">' + perche + '</div>')
-          + '</td></tr>';
+      + '<td style="text-align:left;font-weight:bold;white-space:nowrap">' + v.nome
+      +   '<div style="font-size:9px;color:var(--dim);font-weight:normal">' + v.desc + '</div></td>'
+      + '<td style="white-space:nowrap"><b>' + (v.p*100).toFixed(1) + '%</b>'
+      +   '<div style="font-size:9px;color:var(--dim)">lega ' + (v.b == null ? '--' : (v.b*100).toFixed(0) + '%') + '</div></td>'
+      + '<td style="text-align:left">'
+      +   '<span style="background:' + col(v.verdetto) + ';color:#fff;padding:2px 8px;'
+      +   'border-radius:4px;font-size:10px;font-weight:bold;white-space:nowrap">'
+      +   (v.edge == null ? v.verdetto : 'scarto ' + eTxt) + '</span>'
+      +   (v.guad != null
+           ? '<div style="font-size:11px;margin-top:3px"><b>' + v.verdetto + '</b> &middot; rende <b>+'
+             + v.guad + '</b> punti sopra il giocarlo sempre'
+             + ' <span style="color:var(--dim)">(' + v.nOss + ' proposte)</span></div>'
+           : '<div style="font-size:10px;color:var(--dim);margin-top:3px">'
+             + (v.edge == null ? 'archivio di lega troppo corto per un base rate'
+                               : 'sotto +5 di scarto il guadagno misurato e\' dentro il rumore')
+             + '</div>')
+      + '</td></tr>';
   }
   safeHtml('verdetti-body', html);
   window.__VERDETTI_TXT = righe.join('\n');
+  window.__VERDETTI = voci;
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b36';
+window.__SCANNER_BUILD = '0905-b38';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -2437,7 +2517,30 @@ async function avviaScanner() {
 
     // rette di calibrazione empiriche su 6824 partite: la confidence e' la probabilita'
     // reale di indovinare, non l'accordo fra i modelli (AGENTS.md)
-    const _calibConf1X2 = (p) => Math.max(0, Math.min(100, 6.26 + 0.880 * (p * 100)));
+    // La retta 6.26 + 0.880p COMPRIME: a 62 mostrava 61 dove il vero misurato e' 67.5,
+    // a 74 mostrava 71 dove il vero e' 79. Era stimata prima dell'Elo che inclina i
+    // lambda (b13), dell'ensemble riscritto (b20) e di ENS_SCOPE_W (b21): campione
+    // giusto, macchina diversa. Sostituita da una TABELLA misurata sul motore di oggi
+    // (1882 partite di Serie A, cinque stagioni, solo export post-b30), che non
+    // estrapola dove non ci sono dati. La retta dei mercati BINARI invece e' stata
+    // rimisurata ed e' giusta: scarti entro 2 punti su 22.600 proposte, resta com'e'.
+    // Vedi AGENTS.md, Il tabellone ordinava per la colonna sbagliata.
+    const _interp = (tab, x) => {
+      if (!tab || tab.length < 2) return null;
+      if (x <= tab[0][0]) return tab[0][1];
+      if (x >= tab[tab.length - 1][0]) return tab[tab.length - 1][1];
+      for (let i = 0; i < tab.length - 1; i++) {
+        const [x0, y0] = tab[i], [x1, y1] = tab[i + 1];
+        if (x >= x0 && x <= x1) return (x1 === x0) ? y0 : y0 + (y1 - y0) * (x - x0) / (x1 - x0);
+      }
+      return tab[tab.length - 1][1];
+    };
+    const _calibConf1X2 = (p) => {
+      const x = p * 100;
+      const v = (window.CONF_1X2_MODE === 'retta') ? (6.26 + 0.880 * x)
+                                                   : _interp(window.CONF_1X2_TABLE, x);
+      return Math.max(0, Math.min(100, v == null ? (6.26 + 0.880 * x) : v));
+    };
     const _calibConfBin = (p) => Math.max(0, Math.min(100, -5.06 + 1.091 * (p * 100)));
 
 
@@ -2551,8 +2654,10 @@ async function avviaScanner() {
     safeHtml('conf-ov', _badgeConf(_confMarket([dcOv], true)));
     safeHtml('conf-un', _badgeConf(_confMarket([dcUn], true)));
 
+    const _LGBASE = leagueBaseRates(lId, targetMs);
+    window.__BASE_DEBUG = _LGBASE;
     renderVerdetti({ p1:m1, pX:mX, p2:m2, p1X:m1+mX, pX2:mX+m2, p12:m1+m2,
-                     pOv:dcOv, pUn:dcUn, pGG:dcGG, pNG:dcNG });
+                     pOv:dcOv, pUn:dcUn, pGG:dcGG, pNG:dcNG }, _LGBASE, advRole);
     const odd1 = probsRole.p1 > 0 ? (1/probsRole.p1).toFixed(2) : "N/A"; const oddX = probsRole.pX > 0 ? (1/probsRole.pX).toFixed(2) : "N/A"; const odd2 = probsRole.p2 > 0 ? (1/probsRole.p2).toFixed(2) : "N/A";
     const oddM1 = m1 > 0 ? (1/m1).toFixed(2) : "N/A"; const oddMX = mX > 0 ? (1/mX).toFixed(2) : "N/A"; const oddM2 = m2 > 0 ? (1/m2).toFixed(2) : "N/A";
     safeTxt('m-odd-1', oddM1); safeTxt('m-odd-x', oddMX); safeTxt('m-odd-2', oddM2);

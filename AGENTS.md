@@ -49,8 +49,11 @@ cui si è già risposto, con i numeri. Le tre porte d'ingresso:
   stessa parola, e solo una ha margine oggi.
 - **«Alzo o abbasso lo shrinkage?»** → *Le due costanti dello shrinkage*: una delle due
   sull'1X2 non fa **niente**, l'altra non basta e costa il livello dei gol.
+- **«Il tabellone propone sempre le stesse cose / la confidence mi sembra bassa»** →
+  *Il tabellone ordinava per la colonna sbagliata*: ordinava per probabilità grezza, che
+  premia l'aritmetica delle doppie chance, e la retta dell'1X2 comprimeva di 8 punti.
 
-**Le sette cose che più facilmente fanno perdere una giornata**, se non le sai:
+**Le otto cose che più facilmente fanno perdere una giornata**, se non le sai:
 
 1. `_base` **non** è una media di lega: è una media della **coppia**, e correla 0.84
    col numeratore. → *La baseline di coppia*.
@@ -69,6 +72,9 @@ cui si è già risposto, con i numeri. Le tre porte d'ingresso:
    ruolo, e `ENS_SCOPE_W = 1` manda l'1X2 su quelli completi. Chi la ritara pensando
    alla calibrazione dell'1X2 sposta i **mercati gol** senza accorgersene. → *Le due
    costanti dello shrinkage*.
+8. Una probabilità alta **non è una proposta**: `12` al 73% è il base rate della lega,
+   e batterlo di 0.5 punti non vale niente. Quello che conta è sempre lo **scarto dal
+   base rate**. → *Il tabellone ordinava per la colonna sbagliata*.
 
 **E una regola sul documento stesso.** Le sezioni qui sotto sono state scritte
 lungo ventidue build, e un audit voce-per-voce contro il sorgente ha trovato quattro
@@ -82,7 +88,7 @@ memoria del progetto, non la sua verità corrente. → *L'audit del documento*.
 Sezione di consegna: dice a che punto siamo, così una sessione nuova non
 ricomincia da capo. Aggiornala quando cambia qualcosa di sostanziale.
 
-**Build corrente: `0905-b36`.** Scanner e Comparatore devono coincidere, e sul
+**Build corrente: `0905-b38`.** Scanner e Comparatore devono coincidere, e sul
 Comparatore il badge sotto la dropzone deve uscire **verde** dopo aver trascinato
 lo Scanner. Il branch di lavoro è `claude/controlla-agents-md-bugs-2dnlmj`.
 
@@ -119,10 +125,11 @@ e tre le leghe (LaLiga 70.3%, Serie A 67.0%, Premier 59.5%). **Una partita su tr
 già oggi con una probabilità reale attorno ai due terzi, e una su undici attorno al
 75%.**
 
-Il problema è che **lo Scanner non lo dice**: la retta della confidence usa pendenza
-`0.880`, cioè comprime, e a 60% mostra 59 dove il vero è ~74. Vedi *L'A/B del campione
-di ruolo* per le due stime della pendenza (1.268 e 1.335, entrambe oltre 4 sigma) e
-perché non è ancora stata cambiata.
+~~Il problema è che **lo Scanner non lo dice**: la retta della confidence usa pendenza
+`0.880`, cioè comprime.~~ **Corretto nel `b38`**: la retta dell'1X2 è stata sostituita
+dalla tabella misurata sul motore attuale, e le soglie della card sono state rimisurate
+(≥60% → **71.1%** su il **18%** del calendario, non più 74% su il 9%). Vedi *Il
+tabellone ordinava per la colonna sbagliata*.
 
 I **mercati gol** restano il muro, ma dal `b22` si sa di che è fatto, e sono due cose
 distinte che vanno tenute separate:
@@ -195,6 +202,8 @@ sovradispersione — scagionati con i dati in mano.
 | `b36` | **le due costanti dello shrinkage, misurate invece che sospettate**. `SHRINK_LAM_K` sull'1X2 vale **0.000 punti** da 0.5 a 40 (80x di escursione): tocca solo i lambda di *ruolo* e `ENS_SCOPE_W = 1` manda l'1X2 su quelli *completi*. E' la manopola di livello dei **mercati gol**, e li' l'Over 2.5 va da 43.6% a 10.5%. `SHRINK_K` l'1X2 lo tocca, ma la sua intera escursione chiude **meno della meta'** della timidezza (a `k = 0`, shrinkage spento, la pendenza resta **1.273**, `z = +3.0`) e la paga in livello dei gol. La media dell'ensemble e' scagionata: **espande** (1.0076), non comprime. `CMP_K_LIST` da `[4, 12, 28]` a **`[4, 2, 1]`**: 12 e 28 sono gia' risposti, il rimedio sta sotto |
 
 | `b37` | **il backtest che chiude lo shrinkage: nessuna delle due si muove.** 1127 partite di Serie A, tre stagioni, export `b36`. `SHRINK_K` sotto 4 migliora l'1X2 (`-0.0016`, `z = -3.03`, scelta fuori campione `k = 1` in 3 fold su 3) ma i mercati gol perdono **+0.0056**: il conto complessivo e' **+0.0040, peggio**. E il guadagno non regge dove i dati sono puliti (`z = -1.35` sulle 567 righe senza clamp dell'HFA). `SHRINK_LAM_K` alzata chiude il livello dei gol e il Brier dell'Over ha un ottimo interno a 5-8, ma il miglior `z` e' `-1.82` e **il segno si ribalta nel 2022/23**. Le due manopole tirano sulla **stessa** carenza in versi opposti, e l'escursione utile di una non paga il conto dell'altra: finche' il disallineamento di unita' non e' corretto alla radice, nessuna delle due e' libera. Nessuna riga di codice cambiata |
+
+| `b38` | **il tabellone ordinava per la colonna sbagliata, e la confidence dell'1X2 comprimeva**. Il `12` superava la sua soglia sul **90% delle partite** e valeva **+0.5 punti** sopra il giocarlo alla cieca; il `2`, che ne vale **+37.8**, compariva sul 5%. Ora si ordina per **scarto dal base rate della lega** — contato sull'archivio della lega stessa, a costo zero — e il guadagno cresce monotono con lo scarto (+6.3 / +14.1 / +24.6) mentre con la probabilita' grezza e' piatto. Il segno regge in **tutte e cinque le stagioni**. Entrano i tre mercati sui numeri, che avevano piu' scarto da offrire di `12`, `GG` e `Over 2.5` insieme ed erano gli unici assenti. Sulla proposta migliore di ogni partita il guadagno va da **+11.7 a +16.7** punti (walk-forward **+18.8**), e in cima non finisce piu' sempre una doppia chance. La retta della confidence 1X2 sostituita dalla **tabella misurata** (a 62 mostrava 61 dove il vero e' 67.5); quella dei mercati binari rimisurata e **lasciata com'e'**, sbaglia al massimo di 2.4 punti. Le probabilita' del motore non si muovono: 39 campi su 39 identici al `b36` |
 
 Le tre build finali hanno una storia sola e va letta in *La baseline di coppia*:
 tre tentativi svuotati dallo stesso malinteso.
@@ -412,10 +421,12 @@ già stato guardato nel codice e quello che è ancora un sospetto.
 
 ### Coda: leggibilità e presentazione
 
-- **Tabellone scommesse**: propone solo 1X / X2 / 12, mai gli altri mercati. È il
-  sintomo del problema noto (l'1X2 discrimina, i gol molto meno), non un difetto
-  della card. Da rivedere ora che i mercati sui numeri discriminano **meglio dei
-  gol**: cartellini e tiri in porta meriterebbero di comparirci.
+- ~~**Tabellone scommesse**: propone solo 1X / X2 / 12~~ — **fatto nel `b38`, e la
+  diagnosi qui sopra era sbagliata.** Non era «il sintomo del problema noto»: era che il
+  tabellone ordinava per **probabilità grezza**, che premia l'aritmetica delle doppie
+  chance. Ordinato per scarto dal base rate di lega, in cima finisce una doppia chance
+  solo nel 15% dei casi invece che nel 100%, e cartellini/tiri/corner sono entrati.
+  Vedi *Il tabellone ordinava per la colonna sbagliata*.
 - **Doppie chance e gol con confidence**: tabella confusa e, sui gol, poggia su
   probabilità che discriminano poco.
 - ~~**Progressione storica**~~ — **fatto nel `0905-b10`**: le quattro metriche
@@ -900,6 +911,23 @@ a `scanner.html` al commit `cd51a69`, prima della ripulitura.
   grado di libertà, scrivere per quale strada arriva al numero che si guarda** — e se
   la strada non c'è, `grep` lo dice in un secondo. Vedi *Le due costanti dello
   shrinkage*.
+- **Una probabilità alta non è un'informazione: lo scarto dal base rate lo è.** Il
+  tabellone ordinava per probabilità grezza e quindi proponeva il `12` sul **90% delle
+  partite**, dove vale **+0.5 punti** sopra il giocarlo alla cieca. Ordinato per scarto,
+  il guadagno cresce monotono (+6.3 / +14.1 / +24.6) dove per probabilità era piatto
+  (+1.4 / +3.3 / +7.1 / +6.1 / +5.1). È la stessa forma di *«il livello è ovvio,
+  l'informazione sta nello scarto»* che aveva già risolto i mercati sui numeri e la card
+  dei risultati esatti — terza volta, e la prima in cui costava qualcosa all'utente.
+  **E il base rate va preso dalla LEGA**, non dal campione su cui l'hai misurato: Over
+  2.5 è 48.6% in Serie A e 55% in Premier, e cablare i numeri della Serie A sarebbe la
+  *baseline di coppia* in una forma nuova. Vedi *Il tabellone ordinava per la colonna
+  sbagliata*.
+- **Una misura può essere sbagliata su un ramo e giusta sull'altro.** Le due rette della
+  confidence sembravano invecchiate insieme, ed erano state scritte insieme. Rimisurate:
+  quella dell'1X2 sbaglia fino a 8 punti, quella dei mercati binari **al massimo 2.4** e
+  quasi sempre dentro il 2se. Senza misurarle separatamente le avrei riscritte tutte e
+  due, e una delle due sarebbe peggiorata. Corollario: **due costanti dichiarate insieme
+  non invecchiano insieme**.
 - **Un'etichetta del CSV può essere abbreviata, non solo duplicata.** Ricostruendo
   `SHRINK_LAM_K` ho letto la media gol di trasferta da `Unita: media gol trasferta`,
   che **non esiste**: nel file è `Unita: media gol trasf.`. Il campo usciva `null`, il
@@ -2281,6 +2309,225 @@ la prima in cui il test è stato fatto *prima* di scrivere la spiegazione.
 - **Non dice niente su `k` fra 4 e 12**: la lista è `[4, 2, 1]`, e il ramo alto era già
   stato chiuso dal `b35`.
 
+## Il tabellone ordinava per la colonna sbagliata (`b38`)
+
+Nato da una frase dell'utente: *«ho come l'impressione che tutti i nostri cambiamenti non
+passino sullo scanner, incredibile la quantità di falle che ha quando gioco le schedine
+davvero»*. La prima metà era verificabile e la seconda andava misurata. Tutte e due
+avevano ragione.
+
+### 0. Prima cosa: i cambiamenti arrivavano, ma non c'era niente da far arrivare
+
+`origin/main` era a `b36`, badge incluso, e il branch differiva solo per AGENTS.md.
+Il codice c'era. Ma contando cosa avesse toccato davvero il motore:
+
+| build | righe in `scanner.html` | i numeri a schermo |
+|---|---|---|
+| `b30` | 122 | **si sono mossi** |
+| `b31` | 52 | no — la card delle pause |
+| `b32` | 44 | no — l'avviso sul clamp |
+| `b33`–`b34` | 8 | no |
+| `b35` | 29 | no — manopole esposte, default invariato |
+| `b36` | 12 | no — due campi di debug |
+| `b37` | 0 | no |
+
+**Sei build su sette non hanno spostato un numero**, e il `b36` l'aveva perfino
+verificato apposta (104 campi su 104 identici). Dal lato dell'utente è
+indistinguibile dal fermo. La disciplina era giusta — ogni candidato misurato e
+bocciato — ma il livello di **uscita**, cioè quello su cui si decide cosa giocare, non
+veniva toccato dal `b27`.
+
+**Nessuna difesa contro la cache**, ed è il primo controllo da fare quando ricapita:
+nessun `no-store`, nessun query string, un file solo che il browser si tiene. Il badge
+`#build-ver` è l'unico modo per sapere cosa si sta guardando.
+
+### 1. Il tabellone era rovesciato, e si misura
+
+Il tabellone ordinava per **probabilità grezza** con soglie fisse. Su 1882 partite di
+Serie A (cinque stagioni, **solo export post-`b30`**: gli altri undici CSV sono un
+motore diverso e mescolarli è la trappola di sempre):
+
+| mercato | soglia vecchia | supera | rende | base rate | **guadagno vero** |
+|---|---|---|---|---|---|
+| **`12`** | 70% | **90% delle partite** | 73.2% | 72.7% | **+0.5** |
+| `1X` | 65% | 59% | 81.5% | 67.6% | +13.9 |
+| `X2` | 60% | 50% | 74.3% | 59.6% | +14.7 |
+| `1` | 55% | 21% | 65.6% | 40.4% | **+25.3** |
+| `Over 2.5` | 55% | 8% | 62.7% | 48.6% | +14.1 |
+| **`2`** | 60% | **5%** | 70.1% | 32.4% | **+37.8** |
+
+Il «guadagno vero» è l'unica colonna che conta: quanto rende giocare quando il
+tabellone dice di giocare, **meno** quanto renderebbe giocarlo sempre alla cieca. Letta
+così la tabella è rovesciata: **il mercato che il tabellone propone di più vale meno di
+tutti**, e i due che valgono di più sono quelli che propone quasi mai. Un `12` al 73%
+non è una trovata: è il base rate.
+
+### 2. Ordinare per scarto funziona, ordinare per probabilità no
+
+Trasformando ogni coppia (partita, mercato) in una proposta — **28.230** in tutto — e
+guardando il guadagno per fascia:
+
+| fascia di **scarto** dal base rate | proposte | rende | alla cieca | guadagno | ±2se |
+|---|---|---|---|---|---|
+| sotto il base | 14333 | 43.1% | 50.2% | −7.1 | 0.8 |
+| +0 … +5 | 6920 | 51.9% | 49.5% | +2.3 | 1.2 |
+| +5 … +10 | 3436 | 57.1% | 50.8% | **+6.3** | 1.7 |
+| +10 … +15 | 1711 | 65.3% | 51.2% | **+14.1** | 2.3 |
+| +15 … +20 | 902 | 66.9% | 50.9% | **+16.0** | 3.1 |
+| +20 … +30 | 765 | 73.7% | 49.2% | **+24.6** | 3.2 |
+| +30 e oltre | 163 | 76.7% | 39.9% | **+36.8** | 6.6 |
+
+Monotono e molto sopra il rumore. Contro la stessa cosa ordinata per **probabilità
+grezza**, che è quello che il tabellone faceva:
+
+| fascia di probabilità | proposte | guadagno |
+|---|---|---|
+| 50–55% | 3554 | +1.4 |
+| 55–60% | 2531 | +3.3 |
+| 60–65% | 1679 | +7.1 |
+| 65–70% | 1712 | +6.1 |
+| 70–80% | 3895 | +5.1 |
+
+**Piatto.** Le due tabelle dicono la stessa cosa da due lati.
+
+**E il segno regge in tutte e cinque le stagioni**, monotono in ognuna:
+
+| stagione | +5…10 | +10…20 | +20 e oltre |
+|---|---|---|---|
+| 2021/22 | +7.8 | +13.3 | +23.9 |
+| 2022/23 | +4.5 | +13.2 | +29.2 |
+| 2023/24 | +7.5 | +17.0 | +23.9 |
+| 2024/25 | +7.1 | +16.2 | +29.3 |
+| 2025/26 | +4.2 | +15.4 | +27.3 |
+
+### 3. Quali mercati hanno uno scarto da offrire, e perché i numeri mancavano
+
+| mercato | volte con scarto ≥ +10 |
+|---|---|
+| `X2` / `1X` / `2` / `1` | 28–30% |
+| **`Tiri porta O8.5`** | **15%** |
+| **`Gialli O3.5`** | **14%** |
+| **`Corner O9.5`** | **13%** |
+| `NoGoal` / `Under 2.5` | 11% |
+| `Over 3.5` / `Over 2.5` | 3% |
+| `GG` | 2% |
+| **`12`** / `Over 1.5` | **1%** |
+| **`X`** | **0%** |
+
+I tre mercati sui numeri hanno più scarto da offrire di `12`, `GG` e `Over 2.5` messi
+insieme — ed erano gli unici **non presenti nel tabellone**, benché questo documento
+dica dal `b16` che discriminano meglio dei gol. `X` non ha scarto in nessuna partita su
+1882: il pareggio non si prevede, e ora la tabella lo mostra invece di dirlo a parole.
+
+### 4. Il base rate viene dalla lega, non dal campione di Serie A
+
+Il punto delicato: il base rate è **specifico della lega** (Over 2.5 è 48.6% in Serie A
+e 55% in Premier). Cablare i numeri della Serie A avrebbe mentito altrove — la trappola
+della *baseline di coppia* in una forma nuova.
+
+`leagueBaseRates(leagueId, targetTimeMs)` lo conta sull'archivio **della lega stessa**,
+con lo stesso `_isPast` del resto del motore, a costo zero chiamate: `globalLeagueMatchesCache`
+ha già tutti i punteggi. Per i mercati sui numeri l'archivio non basta (corner e tiri non
+stanno nella lista partite) e il base rate viene dal **riferimento ancorato ai gol di
+lega**, `MARKET_PER_GOAL × (avgH+avgA)` passato per la stessa binomiale negativa del
+mercato — l'unica quantità di lega che il motore abbia per quei conteggi.
+
+Il minimo è **200 partite** e non è una taratura: il guadagno è **piatto** fra 50 e 500
+(+18.8 / +19.1 / +18.3). 200 dimezza l'errore peggiore del base rate su archivio corto
+(19.6 → 11.9 punti) e in produzione non morde mai, perché lo Scanner carica tre stagioni
+e lì arrivano 900+ partite.
+
+### 5. Il backtest del tabellone nuovo, anche walk-forward
+
+| | proposte a partita | rende | alla cieca | **guadagno** |
+|---|---|---|---|---|
+| vecchio | 2.48 | 73.8% | 63.3% | +10.5 |
+| nuovo | 3.52 | 63.3% | 50.9% | **+12.4** |
+
+**La resa grezza scende e il guadagno sale**, ed è il punto: il vecchio rendeva di più
+perché proponeva soprattutto doppie chance, che vincono spesso per costruzione.
+
+E **come lo si usa davvero**, cioè prendendo la proposta migliore di ogni partita:
+
+| | in cima finisce | rende | alla cieca | **guadagno** |
+|---|---|---|---|---|
+| vecchio (percentuale più alta) | `1X` 43% · `X2` 29% · `12` 28% — **sempre una doppia chance** | 78.5% | 66.7% | +11.7 |
+| nuovo (scarto più grande) | `1` 26% · `2` 16% · `X2` 15% · `Gialli` 13% · `Under` 10% · `Tiri` 8% | 64.7% | 48.0% | **+16.7** |
+
+Rifatto **walk-forward**, con il base rate contato solo sulle partite precedenti come fa
+il motore: **+18.8 punti**, cioè *meglio* dell'in-sample. Nessun gonfiaggio.
+
+### 6. La confidence dell'1X2 comprimeva. Quella dei mercati binari no
+
+Misurata sulle stesse 1882 partite del motore attuale:
+
+| prob. del pick | partite | la retta mostra | hit **reale** | ±2se |
+|---|---|---|---|---|
+| 45–50% | 349 | 48 | 52.4% | 5.4 |
+| 55–60% | 220 | 57 | 56.4% | 6.6 |
+| 60–65% | 160 | 61 | **67.5%** | 7.4 |
+| 65–70% | 98 | 65 | **70.4%** | 9.2 |
+| 70%+ | 81 | 71 | **79.0%** | 9.0 |
+
+La retta `6.26 + 0.880·p` sottostima fino a **8 punti** proprio dove si decide. È la
+contraddizione che questo documento teneva aperta da undici build, e si scioglie così: le
+vecchie rette erano stimate **prima** dell'Elo che inclina i lambda (`b13`), dell'ensemble
+riscritto (`b20`) e di `ENS_SCOPE_W` (`b21`). Campione giusto, macchina diversa.
+Sostituita con la **tabella empirica per fascia** che il `b26` aveva già prescritto —
+una tabella non estrapola dove non ci sono dati. La retta resta raggiungibile con
+`window.CONF_1X2_MODE = 'retta'`.
+
+**La retta dei mercati binari invece è giusta e non si tocca.** Rimisurata su 22.584
+proposte, `−5.06 + 1.091·p` sbaglia al massimo di 2.4 punti e quasi sempre dentro il
+2se:
+
+| prob. media | hit reale | la retta mostra |
+|---|---|---|
+| 42.8 | 42.5% | 41.6 |
+| 52.4 | 51.2% | 52.1 |
+| 62.3 | 62.3% | 62.9 |
+| 72.4 | 72.9% | 73.9 |
+| 88.6 | 89.5% | 91.6 |
+
+Che fosse sbagliata **solo** quella dell'1X2 non era scontato, e senza la misura avrei
+riscritto tutte e due.
+
+### 7. Le soglie del pick, rimisurate sul motore di oggi
+
+La card ne mostrava di pre-`b30` («≥60% → 74% su 1 partita su 11»). Oggi:
+
+| soglia | partite | quota | azzecca | ±2se |
+|---|---|---|---|---|
+| ≥50% | 823 | 44% | 62.0% | 3.4 |
+| ≥55% | 559 | 30% | 65.3% | 4.0 |
+| ≥60% | 339 | **18%** | 71.1% | 4.9 |
+| ≥65% | 179 | 10% | 74.3% | 6.5 |
+| ≥70% | 81 | 4% | 79.0% | 9.0 |
+
+Rende un po' meno **e copre il doppio del calendario**: è quello che fa una
+de-compressione, ed è un guadagno netto.
+
+### Cosa è stato verificato prima di spedire
+
+- **Il motore non si è mosso**: `b36` contro `b38` su tre partite sintetiche, **39
+  campi su 39 identici** (1X2, i quattro lambda, `lgModel`, GG, Over, corner, tiri,
+  gialli). Ho toccato solo il livello di uscita.
+- **La confidence sì** (66 → 72 sulla partita più sbilanciata) e **il tabellone si
+  riordina** per partita, con 13 righe invece di 10.
+- Parità Comparatore↔Scanner **16 su 16**, i cinque agganci testuali, build allineate,
+  tre pagine a 390px con **zero errori e zero scroll laterale**.
+
+### Cosa NON dice questa misura
+
+- **Una lega sola.** Base rate, scarti e tabella della confidence sono Serie A. La
+  *struttura* (lo scarto ordina, la probabilità grezza no) regge in cinque stagioni, ma
+  i valori delle bande vanno riconfermati alla sesta lega. Il base rate invece è già
+  per-lega per costruzione, quindi quello non è un problema.
+- **Senza `/advanced`** su tre stagioni su cinque.
+- **Non è un modello nuovo**: le probabilità sono le stesse di prima. Cambia solo quale
+  di quei numeri viene messo in cima e come viene etichettato — che è esattamente dove
+  il `b26` aveva scritto che stava il margine, e dove per dieci build non ho guardato.
+
 ## L'audit sistematico del `b19`: cosa è stato controllato e cosa è saltato fuori
 
 Fatto prima di lanciare altri backtest, su richiesta di non lasciare niente al
@@ -3018,9 +3265,12 @@ nasconde, perché la retta della confidence ha pendenza `0.880` e comprime propr
 servirebbe espandere.
 
 **È il guadagno migliore disponibile: costa zero chiamate, zero modelli nuovi, e non
-tocca il motore.** L'unica ragione per cui non è già stato fatto è che questo documento
+tocca il motore.** ~~L'unica ragione per cui non è già stato fatto è che questo documento
 riporta altrove pendenze *sotto* 1 su campioni più vecchi (0.686 su 756 partite, 0.880
-su 6824) — segno opposto. Prima di riscrivere un numero che l'utente legge e su cui
+su 6824) — segno opposto.~~ **Preso nel `b38`**, dodici build dopo: le vecchie rette erano
+stimate prima del `b13`, del `b20` e del `b21`, quindi su una macchina diversa, e la
+sostituta è la tabella empirica per fascia che il punto 3 qui sotto prescriveva. Vedi
+*Il tabellone ordinava per la colonna sbagliata*. Prima di riscrivere un numero che l'utente legge e su cui
 decide, va risolta quella contraddizione, e la spiegazione più probabile è che quelle
 stime **precedano** l'Elo che inclina i lambda (`b13`), l'ensemble riscritto (`b20`) e
 `ENS_SCOPE_W` (`b21`): stime invecchiate, non misure sbagliate.
@@ -4421,6 +4671,9 @@ Costanti dell'ensemble introdotte nel `b20`, con la loro classificazione:
 | `GOALS_UNIT_FIX` | 0 | **spenta per misura** (`b22`) | il denominatore correla 0.77–0.87 col lambda e il livello sfonderebbe del 30%: non accendere finché `_baseN` non è sostituita da una media NPxG di lega |
 | `OL_BETA` / `T1` / `T2` | 2.056 / −0.475 / +0.671 | stimata | massima verosimiglianza su 1743 partite, validata leave-one-league-out |
 | `ROLE_SCOPE_INDEPENDENT` | 0 | **non stimata, dichiarata tale** (`b23`) | 0 = ruolo sottoinsieme, comportamento di sempre; l'unica in coda che **non** si ricostruisce dal CSV, servono due giri |
+| `CONF_1X2_TABLE` | 8 punti | stimata (`b38`) | resa misurata del pick per fascia su 1882 partite del motore post-`b30`, gia' monotona senza isotonica; `CONF_1X2_MODE = 'retta'` riporta alla vecchia |
+| `EDGE_BANDS` | 20 / 10 / 5 | stimata (`b38`) | guadagno per fascia di scarto su 28.230 proposte: +24.6 / +14.8 / +6.3 punti, monotono, segno concorde in 5 stagioni su 5 |
+| minimo di `leagueBaseRates` | 200 | **paracadute misurato** (`b38`) | il guadagno e' piatto fra 50 e 500 (+18.8 / +19.1 / +18.3): il 200 dimezza l'errore peggiore su archivio corto e in produzione non morde mai (lgN > 900) |
 
 Nel `b20` `ENS_SCOPE_W` era l'unica senza una misura dietro, ed è per questo che
 valeva zero: spedire un valore diverso sarebbe stato cambiare il motore sulla base di
@@ -4591,8 +4844,8 @@ l'emivita da una parte, cambiala dall'altra.
 **Le costanti calibrate portano la loro provenienza qui dentro, non nel codice.**
 I file non hanno commenti (vedi *Stile*), quindi `OL_BETA/OL_T1/OL_T2`, le rette
 della confidence, `RESID_GAMMA`, `STAT_SHRINK_TABLE`, le tre tabelle `MARKET_*`,
-`SOT_PER_GOAL`, `GOALS_SOT_W`, `ENS_W`, `ENS_SCOPE_W`, `LEAGUE_HALFLIFE_DAYS` e
-`ROLE_SCOPE_INDEPENDENT`
+`SOT_PER_GOAL`, `GOALS_SOT_W`, `ENS_W`, `ENS_SCOPE_W`, `LEAGUE_HALFLIFE_DAYS`,
+`ROLE_SCOPE_INDEPENDENT`, `CONF_1X2_TABLE` e `EDGE_BANDS`
 devono dire **in AGENTS.md** su quante partite sono state stimate e con che metodo.
 Se ne cambi una, aggiorna la sezione che la descrive; se ne aggiungi una, scrivila da
 qualche parte prima di committare.
