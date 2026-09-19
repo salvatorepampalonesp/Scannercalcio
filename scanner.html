@@ -174,7 +174,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b34</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b36</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -859,6 +859,14 @@ function markovFlow(lH, lA) {
   return { p1, pX, p2, dist };
 }
 
+// La regola dell'HFA. 'clamp' e' il comportamento di sempre (limite duro a [30,100]);
+// 'shrink' e' lo shrinkage empirico-bayesiano verso l'a priori, che e' la procedura
+// giusta per una stima su campione corto. Ferma su 'clamp' finche' un backtest non
+// parla: il CSV ricostruisce l'alternativa senza rilanciare il motore, perche' l'HFA
+// entra in lgElo come termine ADDITIVO e lgModel non dipende da lui.
+window.ELO_HFA_MODE  = (typeof window.ELO_HFA_MODE  === 'string') ? window.ELO_HFA_MODE  : 'clamp';
+window.ELO_HFA_PRIOR = (typeof window.ELO_HFA_PRIOR === 'number') ? window.ELO_HFA_PRIOR : 65;
+window.ELO_HFA_K     = (typeof window.ELO_HFA_K     === 'number') ? window.ELO_HFA_K     : 200;
 window.ELO_GAP_THRESHOLD = (typeof window.ELO_GAP_THRESHOLD === 'number') ? window.ELO_GAP_THRESHOLD : 45;
 window.ELO_GAP_TAU       = (typeof window.ELO_GAP_TAU       === 'number') ? window.ELO_GAP_TAU       : 360;
 window.ELO_GAP_ASY       = (typeof window.ELO_GAP_ASY       === 'number') ? window.ELO_GAP_ASY       : 0.9;
@@ -884,11 +892,22 @@ function buildGlobalElo(targetTimeMs) {
   // plausibile della Serie A moderna. Quindi un +30 a schermo puo' essere una misura vera
   // o il clamp che ha morso, e finche' non si espone il grezzo non si distingue.
   // Vedi AGENTS.md, 'Le costanti messe a mano', tipo 3.
-  let HFA_ELO = 65, _hfaRaw = null, _hfaClamp = null;
+  // MISURATO NEL b35 su 1882 partite vere di Serie A: il pavimento morde sul 27.6%
+  // delle righe, e non a caso — morde quando l'archivio e' corto (lgN<300: 62%) e mai
+  // quando e' pieno (lgN>=900: 0%). Cioe' sta curando un campione piccolo con un
+  // limite, dove la procedura giusta per un campione piccolo e' lo SHRINKAGE verso un
+  // a priori: n/(n+k), la stessa che il motore usa gia' ovunque (tipo 1 invece di
+  // tipo 3, vedi AGENTS.md 'Le costanti messe a mano').
+  // Si calcolano tutti e due, si usa quello che dice la manopola, e il default
+  // RIPRODUCE il comportamento di sempre finche' un backtest non parla.
+  let HFA_ELO = 65, _hfaRaw = null, _hfaClamp = null, _hfaShrunk = null;
   if (_n_hfa >= 50 && _h_w > 0 && _a_w > 0) {
     const wr_h = _h_w / _n_hfa, wr_a = _a_w / _n_hfa;
     _hfaRaw = 400 * Math.log10(wr_h / wr_a);
-    HFA_ELO = Math.max(30, Math.min(100, Math.round(_hfaRaw)));
+    const _w = _n_hfa / (_n_hfa + window.ELO_HFA_K);
+    _hfaShrunk = Math.round(_w * _hfaRaw + (1 - _w) * window.ELO_HFA_PRIOR);
+    const _clamped = Math.max(30, Math.min(100, Math.round(_hfaRaw)));
+    HFA_ELO = (window.ELO_HFA_MODE === 'shrink') ? _hfaShrunk : _clamped;
     if (Math.round(_hfaRaw) < 30) _hfaClamp = 'basso';
     else if (Math.round(_hfaRaw) > 100) _hfaClamp = 'alto';
   } else {
@@ -965,7 +984,7 @@ function buildGlobalElo(targetTimeMs) {
     series[h].unshift(Math.round(table[h])); series[a].unshift(Math.round(table[a]));
   }
   return { table, series, _hfa: HFA_ELO, _nHfa: _n_hfa, lastPlayed: lastMatchTime,
-           _hfaRaw, _hfaClamp, _hW: _h_w, _aW: _a_w,
+           _hfaRaw, _hfaClamp, _hfaShrunk, _hW: _h_w, _aW: _a_w,
            gapLog,
            _gap: { thr: GAP_THRESHOLD_DAYS, tau: ELO_GAP_TAU, asy: ELO_GAP_ASY } };
 }
@@ -1770,7 +1789,7 @@ function renderVerdetti(mk) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b34';
+window.__SCANNER_BUILD = '0905-b36';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -2136,9 +2155,15 @@ async function avviaScanner() {
 
     const _lk = window.SHRINK_LAM_K;
     const wSH = nHr / (nHr + _lk), wSA = nAr / (nAr + _lk);
+    // I lambda di ruolo PRIMA della contrazione verso la media di lega: con questi,
+    // wSH/wSA e LG.avgH/avgA si ricostruisce qualunque SHRINK_LAM_K senza rilanciare
+    // il motore (AGENTS.md, forma canonica punto 2). Serve perche' questa costante
+    // NON tocca l'1X2 (ENS_SCOPE_W=1 lo manda sui lambda completi) ma e' la manopola
+    // di livello dei mercati gol, e non e' mai stata misurata.
     window.__SCOPE_DEBUG = { indep: window.ROLE_SCOPE_INDEPENDENT, limit,
                              nHr, nAr, nHo, nAo, lamK: _lk, wSH, wSA,
-                             shrinkK: window.SHRINK_K };
+                             shrinkK: window.SHRINK_K,
+                             lamHrPre: lamH_role, lamArPre: lamA_role };
     lamH_role = wSH * lamH_role + (1 - wSH) * LG.avgH; lamA_role = wSA * lamA_role + (1 - wSA) * LG.avgA;
     if(!isFinite(lamH_over) || lamH_over < 0.15) lamH_over = LG.avgH; if(!isFinite(lamA_over) || lamA_over < 0.15) lamA_over = LG.avgA;
 

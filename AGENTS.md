@@ -47,8 +47,10 @@ cui si è già risposto, con i numeri. Le tre porte d'ingresso:
   ruolo*: gli export si accumulano, e le due righe sono i due regimi.
 - **«Come aumento la probabilità?»** → *La mappa onesta*: tre cose diverse sotto la
   stessa parola, e solo una ha margine oggi.
+- **«Alzo o abbasso lo shrinkage?»** → *Le due costanti dello shrinkage*: una delle due
+  sull'1X2 non fa **niente**, l'altra non basta e costa il livello dei gol.
 
-**Le sei cose che più facilmente fanno perdere una giornata**, se non le sai:
+**Le sette cose che più facilmente fanno perdere una giornata**, se non le sai:
 
 1. `_base` **non** è una media di lega: è una media della **coppia**, e correla 0.84
    col numeratore. → *La baseline di coppia*.
@@ -63,6 +65,10 @@ cui si è già risposto, con i numeri. Le tre porte d'ingresso:
 6. Lo scope `role` è un **sottoinsieme** di `overall`: con `limit = 15` sono 8
    partite, non 15. Ogni costante è tarata su quelle 8. → *Il campione di ruolo è
    un sottoinsieme*.
+7. `SHRINK_LAM_K` **non tocca l'1X2**, nemmeno di un millesimo: sta solo sui lambda di
+   ruolo, e `ENS_SCOPE_W = 1` manda l'1X2 su quelli completi. Chi la ritara pensando
+   alla calibrazione dell'1X2 sposta i **mercati gol** senza accorgersene. → *Le due
+   costanti dello shrinkage*.
 
 **E una regola sul documento stesso.** Le sezioni qui sotto sono state scritte
 lungo ventidue build, e un audit voce-per-voce contro il sorgente ha trovato quattro
@@ -76,7 +82,7 @@ memoria del progetto, non la sua verità corrente. → *L'audit del documento*.
 Sezione di consegna: dice a che punto siamo, così una sessione nuova non
 ricomincia da capo. Aggiornala quando cambia qualcosa di sostanziale.
 
-**Build corrente: `0905-b29`.** Scanner e Comparatore devono coincidere, e sul
+**Build corrente: `0905-b36`.** Scanner e Comparatore devono coincidere, e sul
 Comparatore il badge sotto la dropzone deve uscire **verde** dopo aver trascinato
 lo Scanner. Il branch di lavoro è `claude/controlla-agents-md-bugs-2dnlmj`.
 
@@ -183,6 +189,10 @@ sovradispersione — scagionati con i dati in mano.
 | `b33` | **la parità Comparatore↔Scanner rimisurata passando dal vero `cmpRunMatch`**: 16 campi su 16 identici, i lambda all'ultima cifra in virgola mobile. E il leakage rifatto nello scenario peggiore — **tutti gli orari appiattiti a `T00:00:00Z`** — resta chiuso, col controllo di potenza che scatta. Trovato un buco: la guardia sulla lega stava solo nel caricamento del database, quindi una partita fatta girare per altra via ripiegava su 1.50/1.20 **in silenzio**. Ora `cmpRunMatch` la ferma, e all'iniezione il log dice se le manopole sono ai default |
 
 | `b34` | **l'ultima copia cablata**: `cmpRunMatch` imponeva `SHRINK_LAM_K = 3` scritto a mano, cioè una copia di una costante del motore. Oggi coincideva; alla prima ritaratura avrebbe zittito il cambiamento. Ora si legge dal sorgente iniettato, e il verdetto di parità all'iniezione copre anche `SHRINK_K` e `history-limit` |
+
+| `b35` | **il backtest vero risponde a tre domande in un colpo**. La predizione del `b30` **regge**: sulle stesse 1504 partite la pendenza scende da **1.335 a 1.134**. Il punto 16 è **risolto**: la timidezza residua è nel **modello** (1.443, `z = +4.81`), non nell'Elo (1.092, `z = +1.30`). `ELO_SCALE 1.25` batte 1.00 a `z = 3.92`, `ELO_1X2_W` resta 0.75 (l'ottimo è interno e piatto fra 0.50 e 0.75). E il pavimento dell'HFA **morde sul 27.6%** delle righe: esposta la regola alternativa (shrinkage), ferma sul comportamento di sempre |
+
+| `b36` | **le due costanti dello shrinkage, misurate invece che sospettate**. `SHRINK_LAM_K` sull'1X2 vale **0.000 punti** da 0.5 a 40 (80x di escursione): tocca solo i lambda di *ruolo* e `ENS_SCOPE_W = 1` manda l'1X2 su quelli *completi*. E' la manopola di livello dei **mercati gol**, e li' l'Over 2.5 va da 43.6% a 10.5%. `SHRINK_K` l'1X2 lo tocca, ma la sua intera escursione chiude **meno della meta'** della timidezza (a `k = 0`, shrinkage spento, la pendenza resta **1.273**, `z = +3.0`) e la paga in livello dei gol. La media dell'ensemble e' scagionata: **espande** (1.0076), non comprime. `CMP_K_LIST` da `[4, 12, 28]` a **`[4, 2, 1]`**: 12 e 28 sono gia' risposti, il rimedio sta sotto |
 
 Le tre build finali hanno una storia sola e va letta in *La baseline di coppia*:
 tre tentativi svuotati dallo stesso malinteso.
@@ -293,11 +303,28 @@ sono ora manopole (`ELO_GAP_THRESHOLD`, `ELO_GAP_TAU`, `ELO_GAP_ASY`). Vedi
 13. ~~**Misurare `ROLE_SCOPE_INDEPENDENT`**~~ — **fatto, e la risposta è no.** L'A/B
    appaiato su 1133 partite e tre leghe dice `0.0002` di logloss: resta a 0. Vedi
    *L'A/B del campione di ruolo*. Ne esce una domanda nuova e più grossa, il punto 16.
-16. **Capire perché le probabilità sono sotto-disperse.** Due campioni indipendenti
-   danno pendenza **1.27** e **1.34** dove la retta a schermo ne usa 0.880, cioè spinge
-   dalla parte sbagliata. Il campione di ruolo è stato escluso come causa (punto 13).
-   Restano `SHRINK_K`, `SHRINK_LAM_K` e la media dell'ensemble, che comprime per
-   costruzione. Vedi *L'A/B del campione di ruolo*.
+16. ~~**Capire perché le probabilità sono sotto-disperse**~~ — **risolto a metà nel
+   `b35`**, e i tre sospettati che restavano sono stati **chiusi nel `b36`**. La scala
+   dell'Elo era una causa vera: sulle stesse 1504 partite la pendenza scende da
+   **1.335 a 1.134**. Quello che resta è **nel modello**, non nell'Elo: a `w = 0` (solo
+   Dixon-Coles + Markov) la pendenza è **1.443** con `z = +4.81`, a `w = 1` (solo Elo)
+   è **1.092** con `z = +1.30`. Il `b35` indicava `SHRINK_K`, `SHRINK_LAM_K` e la media
+   dell'ensemble: **due dei tre non c'entrano** (`SHRINK_LAM_K` non ha alcun percorso
+   verso l'1X2, l'ensemble *espande*) e il terzo, alla sua escursione massima, chiude
+   meno della metà del divario. **Non alzare `ELO_SCALE` per compensare**: sarebbe
+   prendere il prestito dal conto sbagliato. Vedi *Il backtest vero* e *Le due costanti
+   dello shrinkage*.
+16-ter. **Misurare `SHRINK_K` sotto 4.** L'unico pezzo di questo punto che resta
+   aperto, ed è già strumentato: `CMP_K_LIST` è `[4, 2, 1]` dal `b36` e il CSV esporta
+   il **log-odds del modello** a ogni `k`, quindi la pendenza si misura senza
+   ricostruirla. Guardare **insieme** la pendenza e il livello dell'Over: il cambio
+   misurato è di **38 punti di Over per punto di pendenza**, e l'Over è già `-2.6`.
+16-quater. **Misurare `SHRINK_LAM_K` sui mercati gol**, dove è la manopola vera e dove
+   non l'ha mai guardata nessuno. Dal `b36` il CSV esporta i lambda di ruolo **prima**
+   della contrazione, quindi il livello si ricostruisce senza rilanciare il motore.
+16-bis. **La regola dell'HFA: pavimento o shrinkage?** Esposta nel `b35` e ferma sul
+   pavimento. Il CSV la ricostruisce senza rilanciare il motore: **un backtest
+   decide**. Il pavimento morde sul 27.6% delle righe di backtest (mai in produzione).
 14. **Portare `RESID_GAMMA` a 0.360** (o rimisurarlo) prima di rileggere la sezione
    *A/B CORREZIONE RESIDUALE* del CSV: nel codice è ancora 0.678, cioè la scala che
    il `b5` ha dichiarato sbagliata. Non sposta probabilità (`RESID_ALPHA = 0`),
@@ -481,7 +508,7 @@ fare A/B prima di iniettare il motore:
 | costante | formula | default | effetto |
 |---|---|---|---|
 | `SHRINK_K` | `peso = n/(n+k)` | 4 | forze attacco/difesa verso la media di lega. k=4 → con 15 match crede al 79%; k=10 → 60%; k=28 → 35% |
-| `SHRINK_LAM_K` | `peso = n/(n+k)` | 3 | lambda di ruolo verso la media di lega quando le partite di ruolo sono poche |
+| `SHRINK_LAM_K` | `peso = n/(n+k)` | 3 | lambda **di ruolo** verso la media di lega quando le partite di ruolo sono poche. **Non tocca l'1X2**: con `ENS_SCOPE_W = 1` quello esce dai lambda completi. È la manopola di livello dei *mercati gol* — vedi *Le due costanti dello shrinkage* |
 
 Attenzione: qui **k alto = più shrinkage**, l'opposto della convenzione di
 `predictStat` (vedi *Convenzioni del motore*).
@@ -853,6 +880,22 @@ a `scanner.html` al commit `cd51a69`, prima della ripulitura.
   `Z`. Il difetto stava nel formato che non avevo generato. Quando un test genera i
   propri dati, la domanda da farsi non è «passa?» ma **«quali input non ho messo?»** —
   e per un campo che arriva da un'API esterna, il formato è il primo.
+- **Una costante può stare nell'elenco dei sospetti di un mercato su cui non ha
+  nessun percorso.** Il `b35` ha lasciato scritto che la sotto-dispersione dell'1X2
+  andava cercata in `SHRINK_K`, `SHRINK_LAM_K` e la media dell'ensemble. Due su tre non
+  c'entravano: `SHRINK_LAM_K` tocca **solo** i lambda di ruolo e l'1X2 esce da quelli
+  completi (0.000 punti di spostamento su un'escursione di 80 volte), e l'ensemble
+  **espande** invece di comprimere (1.0076). La regola è quella che l'A/B del campione
+  di ruolo aveva già insegnato e che non era stata applicata: **prima di misurare un
+  grado di libertà, scrivere per quale strada arriva al numero che si guarda** — e se
+  la strada non c'è, `grep` lo dice in un secondo. Vedi *Le due costanti dello
+  shrinkage*.
+- **Un banco di prova sintetico risponde alle domande di struttura, non a quelle di
+  direzione.** Sul campionato finto abbassare `SHRINK_K` *alza* l'Over 2.5; sulla Serie
+  A vera lo *abbassa*, perché lì i NPxG stanno sotto la media gol e la contrazione li
+  tira in su. Chiedere al sintetico «in che verso si muove?» dà una risposta che
+  dipende da come sono stati inventati i dati. «Esiste un percorso?» invece è una
+  domanda a cui risponde bene.
 - **Anche un elenco di trappole corrette è una costante non stimata.** Il punto 6
   qui sopra dava per risolto un difetto che nel `scanner.html` di questo repository
   non è mai stato risolto, e lo descriveva con il numero giusto («con 15 restavano
@@ -1705,6 +1748,343 @@ Le prime due sono errori se divergono; le ultime tre sono **scelte legittime** c
 servono agli A/B. La differenza fra le due categorie non sta nel codice, sta nel fatto
 che l'utente le abbia volute — quindi l'unica difesa è **dirlo a voce alta ogni volta**,
 non impedirlo.
+
+## Il backtest vero: quattro file, cinque stagioni, tre risposte (`b35`)
+
+Quattro CSV di Serie A girati col `b34`, `ELO_SCALE` al default. Prima dei numeri, i
+controlli che questo documento impone, **tutti e sei**:
+
+| controllo | esito |
+|---|---|
+| **I-bis** ID PARTITA unici | 4125 righe grezze → **1882 partite distinte**. Gli export si accumulano: sommare avrebbe contato ogni partita **2.2 volte** |
+| **H** colonna `LEGA` | 1882 su 1882 «Serie A», 27 squadre, tutte italiane ✓ |
+| **I** `Origine metriche avanzate` | **1127 `riserva-k-motore`**, 755 `motore`: `/advanced` manca sul 60% delle righe (le tre stagioni vecchie) |
+| **Q** `lgN > 0` | zero righe a 0 ✓ — la lega arriva al motore dappertutto |
+| **P** il clamp dell'HFA | **morde su 520 righe, il 27.6%** — vedi sotto |
+| parità | il log dichiara `ELO_SCALE = 1,25 (default b30)` su tutti e quattro ✓ |
+
+Il campione è cinque stagioni piene: 370 / 378 / 379 / 377 / 378.
+
+### 1. La predizione falsificabile del `b30` regge
+
+Il `b30` aveva scritto: *«se dopo il `b30` la pendenza misurata scende verso 1.05–1.15,
+la spiegazione regge; se non si muove, la scala dell'Elo non era la causa»*. Misurata
+sulle **stesse identiche 1504 partite** (2021/22 → 2024/25) del campione vecchio:
+
+| | pendenza | SE | sigma da 1 |
+|---|---|---|---|
+| prima del `b30` | 1.335 | 0.056 | +5.95 |
+| **dopo** | **1.134** | 0.047 | **+2.82** |
+
+Dentro la banda predetta. Su tutte e cinque le stagioni: **1.125** (`z = +2.95`), e per
+stagione fra 1.09 e 1.17, nessuna sopra 2 sigma da sola.
+
+**E non è un artefatto di `/advanced`**: le righe col motore danno 1.129, quelle di
+riserva 1.122. Era il sospetto sollevato in *Quattro backtest veri di Serie A* («non è
+la stessa macchina»), ed è escluso.
+
+### 2. Il punto 16 è risolto: la timidezza è nel MODELLO, non nell'Elo
+
+La sezione A/B del peso `w` scompone il bersaglio — `w = 0` è il solo modello, `w = 1`
+il solo Elo — e la pendenza di calibrazione su ciascuno dice chi sta sbagliando:
+
+| `w` | pendenza | sigma da 1 | chi parla |
+|---|---|---|---|
+| **0.00** | **1.443** | **+4.81** | **solo Dixon-Coles + Markov** |
+| 0.25 | 1.405 | +4.58 | |
+| 0.50 | 1.319 | +3.85 | |
+| 0.75 | 1.209 | +2.72 | la miscela in uso |
+| **1.00** | **1.092** | **+1.30** | **solo l'Elo, a scala 1.25** |
+
+**L'Elo dopo il `b30` è calibrato entro 1.3 sigma. Il modello è a 4.8.** La domanda
+aperta da dieci build ha una risposta e un indirizzo: `SHRINK_K`, `SHRINK_LAM_K` e la
+media dell'ensemble, che comprime per costruzione. L'Elo esce dalla lista dei
+sospettati.
+
+### 3. `ELO_SCALE` confermata, e la tentazione di alzarla è una trappola
+
+| `S` | logloss | pendenza | contro 1.25 |
+|---|---|---|---|
+| 0.75 | 0.5825 | 1.785 | `z = +5.29` peggio |
+| 1.00 | 0.5719 | 1.442 | **`z = +3.92` peggio** |
+| 1.10 | 0.5689 | 1.339 | `z = +3.42` peggio |
+| **1.25** | **0.5657** | **1.209** | in uso |
+| 1.40 | 0.5639 | 1.101 | `z = −1.91` meglio |
+| 1.60 | 0.5635 | **0.984** | `z = −1.00` meglio |
+
+Il `b30` è confermato sui dati veri: **1.25 batte 1.00 a `z = 3.92`**.
+
+Ma la logloss cala in modo **monotono** fino a 1.60, che questo documento insegna a
+trattare come sospetto («di solito vuol dire che stai solo affilando»). Qui non è
+affilatura — la pendenza attraversa 1 esattamente a 1.60 — **eppure alzarla sarebbe
+comunque la cura sbagliata**, ed è il punto 2 a dirlo: a `S = 1.25` l'Elo è già
+calibrato (1.092), il timido è il modello (1.443). Portare `S` a 1.60 calibrerebbe la
+miscela **sovra-scalando il termine giusto per compensare quello sbagliato**.
+
+È la stessa forma di `GOALS_UNIT_FIX` — *diagnosi giusta, cura sbagliata* — e della
+`_base` di coppia: si aggiusta un numero prendendo il prestito dal conto di un altro.
+**`ELO_SCALE` resta 1.25.** Quando il modello sarà calibrato, `S` andrà rimisurata: a
+quel punto l'ottimo scenderà, non salirà.
+
+### 4. `ELO_1X2_W = 0.75` regge, ed è la prima volta che si può dirlo dal `b21`
+
+Il `b31` aveva scoperto che la ricostruzione girava sul ramo sbagliato, quindi questa è
+la prima misura valida di `w` da dieci build:
+
+| `w` | logloss | contro 0.75 |
+|---|---|---|
+| 0.00 | 0.5740 | `z = +2.03` peggio |
+| 0.25 | 0.5683 | `z = +0.95` |
+| 0.50 | **0.5655** | `z = −0.10` — **indistinguibile** |
+| **0.75** | 0.5657 | in uso |
+| 1.00 | 0.5685 | `z = +2.09` peggio |
+
+Ottimo **interno**, piatto fra 0.50 e 0.75, e i due estremi peggiorano a 2 sigma.
+Il valore scelto nel `b14` regge. Non si tocca.
+
+### 5. Il pavimento dell'HFA morde sul 27.6%, e si sa esattamente quando
+
+Il `b32` aveva esposto il grezzo senza poter sapere se il limite mordesse davvero.
+Adesso sì:
+
+| archivio (`lgN`) | n | il clamp morde |
+|---|---|---|
+| < 100 | 90 | 36.7% (più 44.4% di ripiego) |
+| 100–300 | 203 | **61.6%** |
+| 300–600 | 294 | **90.1%** |
+| 600–900 | 574 | 16.9% |
+| ≥ 900 | 721 | **0%** |
+
+Il pavimento non morde a caso: morde **quando l'archivio è corto**, cioè dove la stima
+è rumorosa. Per stagione: 63.5% nel 2021/22, 75.4% nel 2022/23, **0% dalle altre tre**.
+Il grezzo peggiore è **−43** (26/09/2021, 53 partite in archivio), stampato come +30.
+
+**In produzione non morde mai** — lo Scanner carica tre stagioni e `lgN` sta sopra 900.
+Ma nel *backtest* contamina le prime due stagioni, che sono **748 partite, il 40% del
+campione**, ed è precisamente il campione da cui veniva l'1.335 del `b26`.
+
+**La cura giusta non è un limite diverso, è un'altra procedura.** Un limite duro è un
+paracadute (tipo 3); una stima rumorosa su campione corto vuole lo **shrinkage verso un
+a priori** (tipo 1), `n/(n+k)`, che è quello che il motore fa già ovunque. Sui dati veri:
+
+| regime | HFA oggi (mediana) | con shrinkage `k = 200` |
+|---|---|---|
+| `lgN < 300` | 30 — il pavimento | 46 |
+| 300–900 | 33 | 40 |
+| ≥ 900 | 46 | 49 — **coincidono** |
+
+Cioè lo shrinkage lascia stare il regime pieno e salva quello corto, che è esattamente
+il comportamento voluto.
+
+**Ma cambierebbe 778 righe su 1842 di più di 5 punti**, quindi non si spedisce senza
+misura. Esposte `ELO_HFA_MODE` (`'clamp'`, il comportamento di sempre), `ELO_HFA_PRIOR`
+(65) ed `ELO_HFA_K` (200), e il CSV ha la sezione **`A/B REGOLA DELL HFA`** che
+ricostruisce pavimento, shrinkage e grezzo **senza rilanciare il motore** — funziona per
+la stessa ragione dell'A/B della scala: l'HFA entra in `lgElo` come termine **additivo**
+e `lgModel` non dipende da lui. Forma canonica, punti 1 e 2. Un backtest decide.
+
+### 6. La fascia alta regge, e si è allargata
+
+| soglia | partite | quota | colpi | diceva (Serie A 21–25) |
+|---|---|---|---|---|
+| ≥ 50% | 823 | 44% | 62.0% ±3.3 | 63.6% |
+| ≥ 55% | 559 | **30%** | 65.3% ±3.9 | 68.3% *(su ~18%)* |
+| ≥ 60% | 339 | **18%** | 71.1% ±4.8 | 74.0% *(su ~9%)* |
+| ≥ 65% | 179 | 10% | 74.3% ±6.4 | 78.9% |
+| ≥ 70% | 81 | 4% | 79.0% ±8.9 | — |
+
+I colpi scendono di 2–4 punti **e le partite giocabili raddoppiano**: ≥60% passa dal 9%
+al 18% del calendario. È esattamente quello che fa una de-compressione, ed è un guadagno
+netto — non si perde precisione, si smette di scartare partite che erano già buone. Il
+pick complessivo resta **52.3%** contro il 40.4% del «gioca sempre in casa»: invariato,
+come il `b30` aveva previsto («il guadagno è tutto in calibrazione, zero in accuratezza»).
+
+Alla soglia del 55% il segno regge in tutte e cinque le stagioni (63.1 / 68.1 / 61.9 /
+63.9 / 68.9%).
+
+### Cosa NON dice questo backtest
+
+- **È una lega sola.** La Serie A da sola vorrebbe `S = 1.60`; nel `b30` la Liga da sola
+  diceva `S = 1.00`. La regola di questo documento — *il segno deve reggere ovunque* —
+  vale anche quando il segno piace.
+- **Il 60% delle righe non ha `/advanced`.** Non contamina la pendenza (misurato), ma
+  tutte le sezioni delle metriche avanzate su quelle righe restano da buttare.
+- **Non dice niente sui mercati gol.** Tutto qui sopra è 1X2.
+
+## Le due costanti dello shrinkage: una non tocca l'1X2, l'altra non basta (`b36`)
+
+Nata da una domanda diretta — *«Allora sistemiamo il modello, `SHRINK_K` e
+`SHRINK_LAM_K`?»* — che segue il puntatore lasciato dal `b35`: *«restano `SHRINK_K`,
+`SHRINK_LAM_K` e la media dell'ensemble»*. Il puntatore era per due terzi sbagliato, e
+il terzo che regge è più piccolo di quanto serva.
+
+### 1. `SHRINK_LAM_K` sull'1X2 vale zero, e non per poco
+
+Non «poco»: **zero**. Fatto girare il motore su sei coppie di un campionato sintetico
+con la costante a 0.5, 3, 12 e 40 — un'escursione di **80 volte** — l'1X2 non si muove
+di un millesimo:
+
+| coppia | `SHRINK_LAM_K` | 1 | X | 2 | Over 2.5 ruolo | λ ruolo casa |
+|---|---|---|---|---|---|---|
+| T0-T15 | 0.5 | 68.10 | 18.10 | 13.80 | 43.6% | 1.661 |
+| T0-T15 | 3 | 68.10 | 18.10 | 13.80 | 38.1% | 1.535 |
+| T0-T15 | 12 | 68.10 | 18.10 | 13.80 | 21.5% | 1.145 |
+| T0-T15 | 40 | 68.10 | 18.10 | 13.80 | **10.5%** | 0.834 |
+
+Scarto medio sull'1X2 su sei coppie, da 3 a 0.5 e da 3 a 40: **0.000 punti, massimo
+0.000**. La ragione sta in due righe di `scanner.html`:
+
+```js
+const _lk = window.SHRINK_LAM_K;
+lamH_role = wSH * lamH_role + (1 - wSH) * LG.avgH;   // SOLO i lambda di RUOLO
+```
+
+e `ENS_SCOPE_W = 1` dal `b21`, cioè l'1X2 nasce dai lambda **completi**. La costante è
+usata in **un solo punto** del motore (`grep` lo conferma: righe 2156-2161) e quel
+punto non è sul percorso dell'1X2. Non è nemmeno il caso di
+`ROLE_SCOPE_INDEPENDENT`, che almeno arrivava di straforo da `goalsSotCorrection` e
+valeva `0.0002`: qui il percorso **non esiste**.
+
+**Ma la stessa tabella dice dov'è la manopola**: i mercati gol escono da `dcMat =
+dcRole`, e lì `SHRINK_LAM_K` sposta l'Over 2.5 di **33 punti** sulla sua escursione.
+È una delle leve più grosse del motore su uno dei problemi aperti (*il livello* dei
+mercati gol), ed è ferma a 3 da sempre senza che nessuno l'abbia mai misurata.
+
+### 2. `SHRINK_K` l'1X2 lo tocca, ma la sua escursione intera non basta
+
+Misurato sulle **1882 partite** di Serie A dei quattro CSV del `b35`, usando la sezione
+*A/B SHRINKAGE* che ricalcola ogni partita a `k = 4, 12, 28`:
+
+| `k` | pendenza 1-contro-2 | σ da 1 | pendenza a tre esiti | logloss vs `k=4` | Over 2.5 previsto | reale |
+|---|---|---|---|---|---|---|
+| **4** | **1.199** (SE 0.076) | +2.62 | 1.125 | — | 46.0% | 48.6% |
+| 12 | 1.239 | +3.03 | 1.135 | +0.0021, `z = 5.01` | 47.8% | 48.6% |
+| 28 | 1.285 | +3.47 | 1.147 | +0.0043, `z = 5.40` | 49.3% | 48.6% |
+
+Due cose, e la seconda è quella che decide.
+
+**La direzione è quella giusta**: più shrinkage = più timido, quindi il rimedio sta
+**sotto** 4. E `k = 4` è già il migliore dei tre sulla logloss, in modo monotono e a
+5 sigma: 12 e 28 sono risposte chiuse.
+
+**Ma l'escursione disponibile è piccola.** Lo shrinkage è `(n·x + k)/(n + k) =
+w·x + (1 − w)` con `w = n/(n+k)`, e per `x` vicino a 1 vale `log(fattore) ≈ w·log(x)`:
+**`lgModel` scala come `w`**. Con `n = 30` (mediana in questi file) `w` va da 0.882 a
+`k = 4` fino a **1.000** a `k = 0`, cioè shrinkage spento. La verifica che la relazione
+sia davvero lineare in `w` è nei dati:
+
+| `k` | `w = n/(n+k)` | ampiezza di `lgModel` (sd) | attesa da `k=4` |
+|---|---|---|---|
+| 4 | 0.882 | 0.846 | — (ancora) |
+| 12 | 0.714 | 0.683 | 0.685 |
+| 28 | 0.517 | 0.516 | 0.496 |
+
+Quindi, ancorando alla pendenza di `lgModel` che il CSV esporta (**1.443**, SE 0.092):
+
+| `k` | `w` | pendenza attesa di `lgModel` | σ da 1 |
+|---|---|---|---|
+| 4 | 0.882 | 1.443 | +4.81 |
+| 2 | 0.938 | 1.358 | +3.89 |
+| 1 | 0.968 | 1.316 | +3.43 |
+| **0** | **1.000** | **1.273** | **+2.97** |
+
+**Spegnere del tutto lo shrinkage lascia il modello a 3 sigma dalla calibrazione.** La
+manopola chiude il 40% del divario nel migliore dei casi, e il migliore dei casi è
+anche il caso in cui le forze attacco/difesa non sono più regolarizzate affatto — che
+la logloss, per quel che vale un'estrapolazione, non promette.
+
+### 3. E costa, perché lo shrinkage fa un secondo mestiere
+
+Abbassare `k` **abbassa il livello dei gol**, e questo è controintuitivo finché non si
+ricorda il `b22`: tutti e otto i moltiplicatori attacco/difesa stanno **sotto 1**,
+perché sono NPxG divisi per la media **gol**. Contrarli verso 1 quindi li **alza**, ed
+è quel +12.3% che compensa il disallineamento di unità. Togliere la contrazione vuol
+dire togliere anche la compensazione.
+
+Nei numeri: da `k = 4` a `k = 28` la pendenza fa +0.086 e l'Over 2.5 previsto +3.2
+punti, cioè **38 punti di livello Over per ogni punto di pendenza**. Portare la
+pendenza da 1.199 a 1.000 costerebbe ~8 punti di Over nella direzione sbagliata, su un
+Over che è **già** `-2.6` sotto il reale.
+
+È la forma di `GOALS_UNIT_FIX` e della `_base` di coppia, terza volta: *si aggiusta un
+numero prendendo il prestito dal conto di un altro.* La differenza è che stavolta il
+conto da cui si prende è scritto: lo shrinkage sta facendo **due mestieri** —
+regolarizzare le stime e compensare il disallineamento di unità — e non si può tarare
+per uno senza scompensare l'altro. Finché il disallineamento non è corretto alla
+radice (serve una media NPxG **di lega**, che il motore non ha), `SHRINK_K` non è una
+manopola di calibrazione libera.
+
+### 4. Il terzo sospettato è scagionato: l'ensemble espande
+
+`ENS_W = { dc: 0.70, mk: 0.30 }` media **in probabilità**, e mediare in probabilità di
+solito comprime. Qui no. Regressione del log-odds 1-contro-2 dell'ensemble spedito sul
+`lgTarget` che l'inclinazione impone alla matrice, su 1882 partite:
+
+```
+logit(p1/(p1+p2))_ensemble = 0.0000 + 1.0076 x lgTarget      SE 0.0001
+```
+
+Pendenza **maggiore** di 1, intercetta zero. L'ensemble non toglie niente e aggiunge
+mezzo punto percentuale di ampiezza. La catena, anello per anello, sulle 1369 partite
+non pari:
+
+| anello | pendenza | SE | σ da 1 |
+|---|---|---|---|
+| `lgModel` — solo Dixon-Coles + Markov (`w = 0`) | **1.443** | 0.092 | **+4.81** |
+| `lgElo` — solo Elo, scala 1.25 (`w = 1`) | 1.092 | 0.070 | +1.30 |
+| `lgTarget` — la miscela a `w = 0.75` | 1.209 | 0.077 | +2.72 |
+| 1X2 spedito, dopo l'inclinazione | 1.199 | 0.076 | +2.62 |
+
+Fra le ultime due righe c'è tutto quello che l'ensemble fa: **0.010**.
+
+### 5. Perché qualunque rimedio lato modello arriva attenuato
+
+La tabella qui sopra dice anche l'ultima cosa, ed è strutturale: `ELO_1X2_W = 0.75`,
+quindi `lgTarget = 0.25·lgModel + 0.75·lgElo`. **Tre quarti del log-odds finale non
+passano dal modello.** Qualunque correzione lato modello arriva all'1X2 **divisa per
+quattro**: è per questo che `SHRINK_K` muove `lgModel` da 1.443 a 2.191 fra `k = 4` e
+`k = 28` e ne arriva 1.199 → 1.285 sul prodotto finito.
+
+Detto al contrario, ed è la lettura utile: **il modello è timido, ma l'Elo lo sta già
+coprendo.** Il prodotto che l'utente vede sta a 1.199 (binario) e 1.125 (tre esiti),
+non a 1.443. La timidezza di `lgModel` è un difetto vero e va corretto, ma non è il
+difetto che si vede a schermo.
+
+### Cosa è stato cambiato, e cosa no
+
+**Il motore non cambia**: `SHRINK_K` resta 4, `SHRINK_LAM_K` resta 3. Nessuna delle due
+ha un valore nuovo giustificato da una misura, e questo documento ha una regola per
+quel caso. Verificato facendo girare `b35` e `b36` fianco a fianco sullo stesso
+campionato sintetico: **104 campi su 104 identici** su quattro partite (1X2,
+confidence, i quattro lambda, `lgModel`, `lgElo`, inclinazione, scala dai tiri, GG,
+Over, corner, tiri, gialli, i parametri di lega).
+
+Quello che cambia è **la capacità di misurare**, tutta nel Comparatore:
+
+- `CMP_K_LIST` da `[4, 12, 28]` a **`[4, 2, 1]`**. Stesso costo (tre giri per partita),
+  ma spazza il lato che serve invece di quello già risposto. Il primo valore **deve**
+  restare 4: è il `SHRINK_K` del motore ed è il giro che finisce nelle colonne
+  principali del CSV.
+- Per ogni `k`, il CSV aggiunge **`log-odds modello (1 contro 2, pre-Elo)`**,
+  `Goal/Goal` e il **totale dei lambda completi**. Il primo è la quantità di cui si
+  misura la pendenza: ricostruirla dalle probabilità significa dividere per
+  `1 − w = 0.25`, cioè **moltiplicare per quattro** la quantizzazione a una cifra
+  decimale del file — e infatti la ricostruzione dà 1.397 dove il valore vero è 1.443.
+- Due righe nuove nella sezione del ruolo: **i lambda di ruolo prima della
+  contrazione**. Con quelli, `wSH`/`wSA` e `LG.avgH`/`avgA` si ricostruisce il livello
+  a qualunque `SHRINK_LAM_K` senza rilanciare il motore (forma canonica, punto 2). La
+  ricostruzione delle *probabilità* richiede in più la scala dai tiri e l'inclinazione,
+  quindi per quelle serve ancora un giro.
+
+### Una nota di metodo, perché mi ha quasi ingannato
+
+Sul campione **sintetico** abbassare `SHRINK_K` **alza** l'Over 2.5; su quello **vero**
+lo abbassa. Non è una contraddizione: nel banco di prova i NPxG finti stanno *sopra* la
+media gol, quindi contrarre verso 1 tira in giù, mentre in Serie A stanno *sotto* e
+contrarre tira in su. **Il sintetico serve a rispondere a domande di struttura** (esiste
+un percorso? la costante arriva fin qui?) **e non a domande di direzione**: quelle le
+decide solo il campione vero. Il risultato del punto 1 — `SHRINK_LAM_K` non tocca
+l'1X2 — è di struttura, e per quello il sintetico basta e avanza.
 
 ## L'audit sistematico del `b19`: cosa è stato controllato e cosa è saltato fuori
 
@@ -4037,6 +4417,12 @@ nome:
 | `SHRINK_K`, `SHRINK_LAM_K` | `n/(n+k)` | **k alto = più** shrinkage |
 | `MARKET_BASE_SHRINK` | `ref + c(x−ref)` | **c alto = meno** restringimento (`c = 1` non fa niente) |
 | `GOALS_SOT_W` | `(1−w)·a + w·b` | **w alto = più** peso ai tiri in porta |
+
+**Tre quarti dell'1X2 non passano dal modello.** `ELO_1X2_W = 0.75`, quindi
+`lgTarget = 0.25·lgModel + 0.75·lgElo`: qualunque correzione lato modello — shrinkage,
+feature, pesi dell'ensemble — arriva all'1X2 **divisa per quattro**. Prima di stimare
+quanto vale una modifica al Dixon-Coles, moltiplicarla per 0.25. Vedi *Le due costanti
+dello shrinkage*, punto 5.
 
 **Chi consuma una stima con una calibrazione propria passa un `k` esplicito.**
 L'Ordered Logit e `applyResidualCorrection` chiamano
