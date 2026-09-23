@@ -174,7 +174,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b41</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b42</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -1878,7 +1878,7 @@ function renderVerdetti(mk, base, adv) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b41';
+window.__SCANNER_BUILD = '0905-b42';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -2036,6 +2036,9 @@ const MARKET_LINES = { cor: [8.5, 9.5, 10.5, 11.5], sot: [6.5, 7.5, 8.5, 9.5], y
 // le partite squilibrate hanno meno cartellini: -0.0035 gialli per punto Elo di
 // scarto, stesso effetto in cinque leghe (AGENTS.md, Lo squilibrio e i cartellini)
 window.CARDS_ELO_B = (typeof window.CARDS_ELO_B === 'number') ? window.CARDS_ELO_B : -0.0035;
+// e piu' tiri in porta: +0.0030 per punto Elo, registrato prima di vedere Bundesliga e
+// Ligue 1 e passato su tutte e due (AGENTS.md, Lo squilibrio sui tiri in porta)
+window.SOT_ELO_B = (typeof window.SOT_ELO_B === 'number') ? window.SOT_ELO_B : 0.0030;
 
 // attacco e difesa nascono come NPxG / media GOL di lega: unita diverse, e lo
 // scarto entra due volte perche lambda = base x attacco x difesa. Il termine
@@ -2045,9 +2048,9 @@ window.CARDS_ELO_B = (typeof window.CARDS_ELO_B === 'number') ? window.CARDS_ELO
 window.GOALS_UNIT_FIX = (typeof window.GOALS_UNIT_FIX === 'number') ? window.GOALS_UNIT_FIX : 0;
 const CARDS_ELO_CAP = 0.30;
 
-function cardsMismatchAdj(lam, eloDiff, meanPair) {
+function cardsMismatchAdj(lam, eloDiff, meanPair, coef) {
   const out = { lam: lam, adj: 0, capped: false, mismatch: null, meanPair: meanPair, applied: false };
-  const b = window.CARDS_ELO_B;
+  const b = (coef === undefined) ? window.CARDS_ELO_B : coef;
   if (!(lam > 0) || !isFinite(b) || b === 0) return out;
   if (eloDiff == null || !isFinite(eloDiff) || !(meanPair > 0)) return out;
   const mm = Math.abs(eloDiff);
@@ -2320,10 +2323,14 @@ async function avviaScanner() {
         return (isFinite(out) && out > 0) ? out : raw;
       };
       const cH = getF(dH,'cor'), cA = getF(dA,'cor'); const lCor = lamOf('cor');
-      const sH = getF(dH,'sot'), sA = getF(dA,'sot'); const lSot = lamOf('sot');
+      const _mpg = meanPairEloGap(ELO && ELO.table);
+      const sH = getF(dH,'sot'), sA = getF(dA,'sot');
+      const _sotRaw = lamOf('sot');
+      const _SM = cardsMismatchAdj(_sotRaw, _eloDiff, _mpg, window.SOT_ELO_B);
+      const lSot = _SM.lam;
       const yH = getF(dH,'yel'), yA = getF(dA,'yel');
       const _yelRaw = lamOf('yel');
-      const _CM = cardsMismatchAdj(_yelRaw, _eloDiff, meanPairEloGap(ELO && ELO.table));
+      const _CM = cardsMismatchAdj(_yelRaw, _eloDiff, _mpg);
       const lYel = _CM.lam;
       const lFls = lamOf('fouls');
       const rH = getF(dH,'red_cards'), rA = getF(dA,'red_cards');
@@ -2346,6 +2353,7 @@ async function avviaScanner() {
                baseCor, baseSot, baseYel, lgRefCor, lgRefSot, lgRefYel, lgGoals,
                yelRaw: _yelRaw, yelAdj: _CM.adj, yelMismatch: _CM.mismatch,
                yelMeanPair: _CM.meanPair, yelCapped: _CM.capped,
+               sotRaw: _sotRaw, sotAdj: _SM.adj, sotCapped: _SM.capped,
                linesCor, linesSot, linesYel, pOv9c, pOv8s, pOv3y, pRed, kCor, kSot, kYel };
     };
     const advRole = calcAdv(true); const advOver = calcAdv(false);
