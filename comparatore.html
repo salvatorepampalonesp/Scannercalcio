@@ -165,7 +165,7 @@ select{cursor:pointer}
   <div class="topbar">
     <div class="brand">
       <h1>Comparatore V9.7</h1>
-      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b39</span>
+      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b40</span>
       <span class="badge" id="engine-badge">motore non caricato</span>
     </div>
     <span class="badge">previsioni vs realtà</span>
@@ -237,7 +237,7 @@ select{cursor:pointer}
         </div>
       </div>
       <div class="row c2">
-        <div><label>Storico per squadra (partite indietro)</label><input type="number" id="cmp-batch-limit" value="15" min="5" max="100"></div>
+        <div><label>Storico per squadra (partite indietro)</label><input type="number" id="cmp-batch-limit" value="30" min="5" max="100"></div>
         <div style="display:flex;align-items:flex-end">
           <button class="btn btn-go btn-full" id="cmp-batch-btn" onclick="cmpAvviaBatchStagioni()">Avvia batch stagioni</button>
         </div>
@@ -250,7 +250,7 @@ select{cursor:pointer}
       <div class="card-h"><div class="card-t">Sweep totale — tutti i campionati</div></div>
       <div class="note">Genera un Excel per ogni lega e ogni stagione disponibile, in sequenza e senza sorveglianza. Salva un checkpoint dopo ogni stagione: puoi fermarti (o spegnere) e riprendere da dove eri, perdendo solo la stagione in corso.</div>
       <div class="row c2">
-        <div><label>Storico per squadra (partite indietro)</label><input type="number" id="cmp-sweep-limit" value="15" min="5" max="100"></div>
+        <div><label>Storico per squadra (partite indietro)</label><input type="number" id="cmp-sweep-limit" value="30" min="5" max="100"></div>
         <div style="display:flex;align-items:flex-end;padding-bottom:8px">
           <label style="font-weight:400;display:flex;align-items:center;gap:7px;margin:0">
             <input type="checkbox" id="cmp-sweep-cups" style="width:auto"> includi coppe e nazionali (Champions, Europa, Mondiale)
@@ -307,7 +307,7 @@ select{cursor:pointer}
       </div>
 
       <div class="row c2">
-        <div><label>Storico per squadra (partite)</label><input type="number" id="cmp-history-limit" value="15" min="5" max="100"></div>
+        <div><label>Storico per squadra (partite)</label><input type="number" id="cmp-history-limit" value="30" min="5" max="100"></div>
         <div style="display:flex;align-items:flex-end">
           <button class="btn btn-go btn-full" id="cmp-btn-run" onclick="cmpRun()">Avvia analisi</button>
         </div>
@@ -737,7 +737,7 @@ async function loadEngineFromText(text, fileName) {
         _homeId:       (typeof hId!=='undefined') ? hId : null,
         _awayId:       (typeof aId!=='undefined') ? aId : null,
         _targetTimeMs: (typeof targetMs!=='undefined') ? targetMs : null,
-        _limit:        (typeof limit!=='undefined') ? limit : 15
+        _limit:        (typeof limit!=='undefined') ? limit : 30
       };
     } catch(e) { console.error('Hook _V97_probs failed:', e); }
     /* ─── FINE HOOK ─── */
@@ -813,8 +813,9 @@ async function loadEngineFromText(text, fileName) {
   {
     const _lm = text.match(/id="history-limit"[^>]*value="(\d+)"/);
     window.__ENGINE_LIMIT = _lm ? parseInt(_lm[1], 10) : null;
-    // I tre campi dello storico partono da quello dello Scanner. Il batch e lo sweep
-    // partivano da 30 mentre lo Scanner stampa con 15: ogni loro CSV era un'altra macchina.
+    // I tre campi dello storico partono da quello dello Scanner (30 dal b40). Fino al b38
+    // il batch e lo sweep partivano da 30 mentre lo Scanner stampava con 15: ogni loro
+    // CSV era un'altra macchina.
     if (window.__ENGINE_LIMIT) {
       for (const id of ['cmp-history-limit', 'cmp-batch-limit', 'cmp-sweep-limit']) {
         const el = document.getElementById(id);
@@ -854,7 +855,7 @@ async function loadEngineFromText(text, fileName) {
     <p><code>${fileName}</code> — clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
 
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b39';
+  const _bComp = '0905-b40';
   window.__CMP_BUILD = _bComp;
   const _el = document.getElementById('engine-build');
   if (_el) {
@@ -1077,7 +1078,7 @@ async function cmpSweepStart(resume) {
     }
     st = {
       version: 1, startedAt: new Date().toISOString(),
-      limit: parseInt(document.getElementById('cmp-sweep-limit').value) || window.__ENGINE_LIMIT || 15,
+      limit: parseInt(document.getElementById('cmp-sweep-limit').value) || window.__ENGINE_LIMIT || 30,
       jobs
     };
     cmpSweepSave(st);
@@ -1185,7 +1186,7 @@ async function cmpAvviaBatchStagioni() {
   const btn = document.getElementById('cmp-batch-btn'); btn.disabled = true;
   const prog = document.getElementById('cmp-batch-progress'); prog.style.display = 'block';
 
-  const batchLimit = parseInt(document.getElementById('cmp-batch-limit').value) || window.__ENGINE_LIMIT || 15;
+  const batchLimit = parseInt(document.getElementById('cmp-batch-limit').value) || window.__ENGINE_LIMIT || 30;
   const limitField = document.getElementById('cmp-history-limit');
   const prevLimit = limitField.value;
   limitField.value = batchLimit;
@@ -1637,7 +1638,7 @@ async function cmpEsegui() {
   const mId = document.getElementById('cmp-partita').value;
   if (!mId) return alert("Seleziona una partita");
   const match = cmpMatchesOfTheDay.find(m => m.id === mId);
-  const limit = parseInt(document.getElementById('cmp-history-limit').value) || 15;
+  const limit = parseInt(document.getElementById('cmp-history-limit').value) || window.__ENGINE_LIMIT || 30;
 
   try {
     cmpLog(`⚙️ Motore V9.7: ${match.home_team.name} vs ${match.away_team.name}...`);
@@ -1666,7 +1667,7 @@ async function cmpEseguiIntervallo() {
   if (!endDate) return alert('Imposta la data di fine nel campo "A (data fine)".');
   if (endDate < startDate) return alert(`La data fine (${endDate}) è precedente alla data inizio (${startDate}). Controlla i due campi "Da" e "A".`);
 
-  const limit = parseInt(document.getElementById('cmp-history-limit').value) || 15;
+  const limit = parseInt(document.getElementById('cmp-history-limit').value) || window.__ENGINE_LIMIT || 30;
 
   const _inDate = cmpAllMatches.filter(m => {
     if (m.status !== 'finished' || m.score_home == null || !m.time_utc) return false;
@@ -1725,7 +1726,7 @@ async function cmpEseguiIntervallo() {
 }
 
 async function cmpEseguiTutte() {  if (!cmpMatchesOfTheDay.length) return alert("Prima carica le partite del giorno");
-  const limit = parseInt(document.getElementById('cmp-history-limit').value) || 15;
+  const limit = parseInt(document.getElementById('cmp-history-limit').value) || window.__ENGINE_LIMIT || 30;
   const btn = document.getElementById('cmp-btn-tutte');
   const prog = document.getElementById('cmp-progress');
   const finite = cmpMatchesOfTheDay.filter(m => m.status === 'finished' && m.score_home != null);

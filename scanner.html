@@ -174,7 +174,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b39</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b40</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -197,7 +197,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <div class="grid-3" style="align-items:end">
         <div><label>Squadra Casa</label><select id="sel-home" style="font-weight:bold;color:var(--blue)"></select></div>
         <div><label>Squadra Trasferta</label><select id="sel-away" style="font-weight:bold;color:var(--red)"></select></div>
-        <div><label>Limite Match (Taglio Esatto)</label><input type="number" id="history-limit" value="15" min="5" max="100" style="font-weight:bold;"></div>
+        <div><label>Limite Match (Taglio Esatto)</label><input type="number" id="history-limit" value="30" min="5" max="100" style="font-weight:bold;"></div>
       </div>
       <button class="btn btn-green" id="btn-avvia" style="margin-top:15px; width:100%; padding:12px; font-size:15px" onclick="avviaScanner()">🚀 2. ESTRAI DATI E SIMULA MODELLI</button>
     </div>
@@ -1871,7 +1871,7 @@ function renderVerdetti(mk, base, adv) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b39';
+window.__SCANNER_BUILD = '0905-b40';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -2175,7 +2175,7 @@ async function avviaScanner() {
     if(selH.value === selA.value) return alert("Non puoi far sfidare la squadra contro se stessa!");
 
     const hId = selH.value; const hName = selH.options[selH.selectedIndex].text; const aId = selA.value; const aName = selA.options[selA.selectedIndex].text;
-    const limit = parseInt(document.getElementById('history-limit').value) || 15; const dateInput = document.getElementById('target-date').value; const matchTime = dateInput + "T00:00:00Z";
+    const limit = parseInt(document.getElementById('history-limit').value) || 30; const dateInput = document.getElementById('target-date').value; const matchTime = dateInput + "T00:00:00Z";
 
     document.getElementById('console-loader').innerHTML = ''; document.getElementById('console-loader').style.display = 'block'; document.getElementById('btn-avvia').disabled = true; document.getElementById('btn-avvia').innerHTML = "⏳ Simulazione in corso (Attendi)...";
 

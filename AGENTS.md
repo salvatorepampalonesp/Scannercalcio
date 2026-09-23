@@ -39,7 +39,7 @@ che li mette in `RAW_CACHE`.
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b39`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b40`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -76,19 +76,18 @@ spostala in *Cosa è già stato provato* con i numeri, e aggiorna *Stato attuale
 
 ### 0. Prima di tutto: rifare il campione di riferimento in copia conforme
 
-- [ ] **Un backtest `b39` di Serie A, cinque stagioni, una stagione per file.** Tutte le
-  misure dal `b24` al `b38` vengono da export del **batch per stagioni**, che fino al `b38`
-  girava con **30 partite di storico** mentre lo Scanner stampa con **15**, e che in ogni
-  file metteva anche le **due stagioni precedenti**, rifatte con meno storico di quello che
-  avrebbero nel loro file. Quindi `CONF_1X2_TABLE`, `EDGE_BANDS`, le soglie del pick, le
-  misure di `SHRINK_K`/`SHRINK_LAM_K` e il 27.6% del clamp dell'HFA sono stati misurati su
-  un'altra macchina. Il `b39` rende il batch copia conforme: il primo giro dice se quei
-  numeri reggono sullo Scanner com'e'. Prima cosa da guardare: `Copia conforme dello
-  Scanner` in testa al file deve essere N su N.
-- [ ] **Decidere lo storico canonico: 15 o 30.** Oggi lo Scanner stampa con 15 e il
-  Comparatore lo segue da solo (legge il default dallo Scanner). Se la misura dice che 30
-  prevede meglio, si cambia **una riga nello Scanner** (`id="history-limit" value="15"`) e
-  il Comparatore si allinea; costa circa il doppio delle chiamate per la prima partita.
+- [ ] **Un backtest `b40` di Serie A, cinque stagioni, una stagione per file.** Tutte le
+  misure dal `b24` al `b38` vengono da export del **batch per stagioni**, che in ogni file
+  metteva anche le **due stagioni precedenti**, rifatte con meno storico di quello che
+  avrebbero nel loro file, e deduplicate dopo senza sapere quale copia si teneva. Lo storico
+  invece e' lo stesso: quei batch giravano a 30, e dal `b40` lo Scanner stampa a 30. Quindi
+  `CONF_1X2_TABLE`, `EDGE_BANDS`, le soglie del pick, le misure di `SHRINK_K`/`SHRINK_LAM_K`
+  e il 27.6% del clamp dell'HFA vanno riconfermati su file puliti. Prima cosa da guardare:
+  `Copia conforme dello Scanner` in testa al file deve essere N su N.
+- [x] ~~Decidere lo storico canonico: 15 o 30~~ — **30, dal `b40`.** E' il batch base
+  dell'utente e lo storico su cui sono misurate le tarature `b24`–`b38`. Il Comparatore lo
+  legge dallo Scanner (`id="history-limit" value="30"`); la prima partita dello Scanner
+  scarica circa il doppio delle partite per squadra.
 
 ### 1. Backtest che decidono senza rilanciare il motore
 
@@ -187,12 +186,12 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b39`)
+## Stato attuale (`b40`)
 
 **1X2.** Pick azzeccato ~52% contro ~40–43% del «gioca sempre in casa», fermo da venti
 build. Il valore sta nella **fascia alta**, che la card mostra con la tabella misurata
-(1882 partite di Serie A, motore post-`b30`, **con 30 partite di storico**: lo Scanner ne
-usa 15, vedi *Da fare*, punto 0):
+(1882 partite di Serie A, motore post-`b30`, con 30 partite di storico come lo Scanner dal
+`b40`, ma da file con tre stagioni ciascuno: vedi *Da fare*, punto 0):
 
 | soglia sul pick | partite | quota del calendario | azzecca | ±2se |
 |---|---|---|---|---|
@@ -229,7 +228,7 @@ trascina con sé il `12`.
 
 | campione | partite | note |
 |---|---|---|
-| Serie A 2021/22 → 2025/26 | 1882 | motore post-`b30`; `/advanced` assente sulle tre stagioni più vecchie; storico 30, file con tre stagioni ciascuno (non copia conforme) |
+| Serie A 2021/22 → 2025/26 | 1882 | motore post-`b30`; `/advanced` assente sulle tre stagioni più vecchie; storico 30, ma file con tre stagioni ciascuno (non copia conforme) |
 | Serie A + Premier + LaLiga 2025/26 | 1133 | post-`b18`, con `/advanced` |
 | le tre sopra + Bundesliga + Ligue 1 2025/26 | 1743 | export `b14`, **pre-`b18`**: lega congelata a 1.50/1.20 |
 
@@ -249,8 +248,8 @@ costante: è l'errore che ha prodotto quattro falsi positivi di fila.
    direzione, scrivi la formula.
 5. In `predictStat` **`k` alto = MENO shrinkage**; in `SHRINK_K` e `SHRINK_LAM_K` è
    l'opposto. → *Convenzioni del motore*.
-6. Lo scope `role` è un **sottoinsieme** di `overall`: con `limit = 15` sono 8 partite, non
-   15. → *Il campione di ruolo è un sottoinsieme*.
+6. Lo scope `role` è un **sottoinsieme** di `overall`: con `limit = 30` (default dal `b40`)
+   sono circa 15 partite, non 30. → *Il campione di ruolo è un sottoinsieme*.
 7. `SHRINK_LAM_K` **non tocca l'1X2**: sta solo sui lambda di ruolo, e `ENS_SCOPE_W = 1`
    manda l'1X2 su quelli completi. Chi la ritara per l'1X2 sposta i **mercati gol**.
 8. Una probabilità alta **non è una proposta**: `12` al 73% è il base rate della lega.
@@ -259,7 +258,7 @@ costante: è l'errore che ha prodotto quattro falsi positivi di fila.
 ## Come funziona il motore
 
 **La catena.** `aggregaTeam` scarica lo storico di una squadra (`history-limit`, default
-15, dentro una finestra di 500 giorni) e per ogni partita estrae quanto la squadra ha
+30 dal `b40`, dentro una finestra di 500 giorni) e per ogni partita estrae quanto la squadra ha
 **prodotto** e **concesso**. `calcFeatures` trasforma ogni serie in
 `{avg_3, avg_5, avg_10, avg_15, avg_tot, decay, std, nValid}`; `decay` (emivita 106 giorni,
 `_timeDecayDates`) è il valore usato quasi ovunque. Dai lambda esce **una sola matrice
@@ -407,8 +406,9 @@ Il segnale c'è, ma è piccolo.
 ### Scanner in uso
 
 - `nuovaPartita()` rimette la card di setup senza svuotare `globalLeagueMatchesCache` né
-  `RAW_CACHE`: la prima partita costa 239 chiamate, una con una squadra già vista 108, una
-  con tutte e due già viste 0. Ricaricare la pagina butta tutto.
+  `RAW_CACHE`: con storico 15 la prima partita costava 239 chiamate, una con una squadra già
+  vista 108, una con tutte e due già viste 0 (a 30 le partite da scaricare per squadra
+  raddoppiano). Ricaricare la pagina butta tutto.
 - Il database di lega va in `localStorage` (chiave lega+stagione, scadenza 24 ore).
   `RAW_CACHE` no: sono decine di MB.
 - **Progressione Storica**: le medie brevi non prevedono mai meglio della lunga (47 metriche
@@ -523,7 +523,7 @@ testo, lo modifica con delle regex e lo esegue con `new Function`. Dipende quind
    `key`: `p1`, `pX`, `p2`, `p1X`, `pX2`, `p12`, `pOv`, `pUn`, `pGG`, `pNG`, `cor9.5`,
    `sot8.5`, `yel3.5`). Una voce nuova nel tabellone vuole una `key` nuova e il suo caso in
    `cmpTabHit`, altrimenti nel CSV il reale di quella voce e' `N/D`.
-8. **Lo storico dello Scanner** si legge dall'attributo `id="history-limit" ... value="15"`
+8. **Lo storico dello Scanner** si legge dall'attributo `id="history-limit" ... value="30"`
    dell'HTML dello Scanner. Cambiarne la forma lascia il Comparatore senza metro (il log
    dice «storico dello Scanner: NON TROVATO»).
 9. **Le manopole** si dichiarano in una delle due forme che `cmpEngineDefaults` sa leggere:
@@ -594,18 +594,19 @@ GG e Over, corner/tiri/gialli e le loro linee, handicap, multigol, Elo, tabellon
 voce, certificato). Tre modalita' sono controlli di potenza, e passano solo se il certificato
 dice NO col motivo giusto.
 
-Esito al `b39`, a 390px:
+Esito al `b40` (storico 30), a 390px:
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
 | una partita, tutte del giorno, intervallo | 3/3 | 0 su 188 | 0 su 81 | 0 |
 | batch per stagioni, sweep | 89/89, solo la stagione caricata | 0 su 188 | 0 su 81 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
-| `ab`: scala Elo 1.00 e storico 30 (controllo) | 0/3, «ELO_SCALE ... / storico di 30 ...» | 131-152 | 68-76 | 0 |
-| `vecchio`: motore `b38` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 | 11 | 0 |
+| `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 122-152 | 69-74 | 0 |
+| `vecchio`: motore `b39` caricato, storico 15 (controllo) | 0/3, «motore caricato diverso ...» | 131-152 | 74-75 | 0 |
 
-Il `vecchio` dice anche un'altra cosa: il motore `b39` stampa **esattamente** quello che
-stampava il `b38` (188 scritture su 188). Le differenze erano tutte nel Comparatore.
+Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
+motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
+Comparatore. Al `b40` il motore cambia davvero (lo storico passa a 30), e il banco lo vede.
 
 **Cosa resta fuori, e va saputo:**
 
@@ -680,7 +681,7 @@ l'API cominciasse a restituire la data *locale* di una lega a ovest di Greenwich
 | `EDGE_BANDS` | ≥20 / ≥10 / ≥5 | stimata `b38` | 28.230 proposte: +24.6 / +14.8 / +6.3 punti, monotono, segno concorde in 5 stagioni su 5 |
 | minimo di `leagueBaseRates` | 200 partite | paracadute misurato `b38` | guadagno piatto fra 50 e 500; in produzione arrivano 900+ partite |
 | emivita | 106 giorni | a mano | uguale nei due file |
-| storico per squadra (`history-limit`) | 15 | a mano, nello Scanner | il Comparatore lo legge da li' in tutte le modalita' (dal `b39`); le misure `b24`–`b38` sono a 30: vedi *Da fare*, punto 0 |
+| storico per squadra (`history-limit`) | 30 | scelta dell'utente (`b40`) | il batch base dell'utente e lo storico delle tarature `b24`–`b38`; fino al `b39` lo Scanner stampava a 15. Il Comparatore lo legge dallo Scanner in tutte le modalita' |
 | a priori di lega | avgH 1.50 / avgA 1.20 sotto 30 partite; `rho` −0.11 sotto 100 | a priori | si spengono da soli; `lgN` dice se sono attivi |
 | `RESID_ALPHA` | 0 | spenta per misura `b3`/`b5` | residuo contro errore dell'ensemble: +0.015 su 716 partite |
 | `RESID_GAMMA` | 0.678 | **sbagliata** | il `b5` ha misurato 0.360: vedi *Da fare* |
@@ -1130,9 +1131,9 @@ let overallMatches = past.slice(0, limit);
 let roleMatches = overallMatches.filter(m => (m.home_team.id === teamId) === isHomeTeamUI);
 ```
 
-`role` è quello che c'è **dentro** le ultime `limit` partite: con `limit = 15` restano 8
-partite, e in produzione `nHr ≈ limit/2` (alzare `history-limit` alza il ruolo a metà
-velocità). Questo file ha sostenuto il contrario per parecchie build, anche nell'elenco delle
+`role` è quello che c'è **dentro** le ultime `limit` partite: con `limit = 15` restavano 8
+partite, col default di oggi (30, dal `b40`) circa 15; in produzione `nHr ≈ limit/2` (alzare
+`history-limit` alza il ruolo a metà velocità). Questo file ha sostenuto il contrario per parecchie build, anche nell'elenco delle
 trappole «già corrette». Ogni costante tarata finora (`SHRINK_LAM_K`, le tre `MARKET_*`) è
 tarata su ~8 partite di ruolo: **non «correggere» la riga senza un backtest.**
 
@@ -1292,7 +1293,9 @@ Prima di analizzare, sempre, in quest'ordine:
 - **Copia conforme.** In testa al file, `Copia conforme dello Scanner: N partite su M`; per
   partita, la riga `COPIA CONFORME DELLO SCANNER`. Una riga a NO non e' un errore (e' un A/B,
   o un giro con un'altra manopola), ma non va mescolata alle altre: il motivo e' scritto li'.
-  I file precedenti al `b39` non hanno la riga, e quelli fatti col batch sono a storico 30.
+  I file precedenti al `b39` non hanno la riga; quelli del `b39` sono a storico 15, quelli
+  dal `b40` a 30 come lo Scanner. I batch precedenti al `b39` sono a 30 ma con tre stagioni
+  per file.
 - **I-bis. `ID PARTITA` unici**, dentro il file e fra i file. `cmpSavedMatches` si accumula:
   export consecutivi si contengono (conteggi multipli di una giornata, 378, 756, 1134… sono il
   segnale) e la stessa partita può comparire due volte. Se le due righe hanno regimi diversi
@@ -1493,3 +1496,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b36`–`b37` | le due costanti dello shrinkage misurate: nessuna si muove |
 | `b38` | tabellone per scarto dal base rate, confidence 1X2 dalla tabella misurata |
 | `b39` | il Comparatore stampa come lo Scanner in tutte le modalita': storico e stagione come lo Scanner, confidence e tabellone letti dal motore, certificato per partita, banco di prova `strumenti/banco-parita.js`. Motore invariato |
+| `b40` | storico per squadra da 15 a 30 nello Scanner, il batch base dell'utente: le tarature `b24`–`b38` sono state misurate a 30. Il Comparatore lo segue da solo |

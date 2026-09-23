@@ -292,8 +292,9 @@ async function runComparatore(browser, base, mode, date) {
   } else if (mode === 'ab') {
     // controllo di potenza: un A/B dichiarato NON deve risultare copia conforme
     await page.evaluate(d => { document.getElementById('cmp-target-date').value = d; }, date);
+    // uno storico diverso da quello dello Scanner, qualunque esso sia
     await page.evaluate(() => { document.getElementById('cmp-elo-scale').value = '1.00'; cmpApplyEloScale(true);
-                                document.getElementById('cmp-history-limit').value = '30'; });
+                                document.getElementById('cmp-history-limit').value = (window.__ENGINE_LIMIT === 15) ? '30' : '15'; });
     await page.evaluate(() => cmpCaricaDatabase());
     await page.evaluate(async () => { await cmpEseguiTutte(); cmpExportCSV(); });
   } else if (mode === 'sconfina') {
