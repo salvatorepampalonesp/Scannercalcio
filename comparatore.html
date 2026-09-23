@@ -162,7 +162,7 @@ select{cursor:pointer}
   <div class="topbar">
     <div class="brand">
       <h1>Comparatore V9.7</h1>
-      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b38</span>
+      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b39</span>
       <span class="badge" id="engine-badge">motore non caricato</span>
     </div>
     <span class="badge">previsioni vs realtà</span>
@@ -620,8 +620,6 @@ async function loadEngineFromText(text, fileName) {
         scopeDebug:  (typeof window.__SCOPE_DEBUG !== 'undefined') ? window.__SCOPE_DEBUG : null,
         m1: (typeof m1!=='undefined')?m1:null, mX: (typeof mX!=='undefined')?mX:null, m2: (typeof m2!=='undefined')?m2:null,
         confidence:  (typeof confidence  !== 'undefined') ? confidence  : null,
-        sampleFactor:(typeof sampleFactor!== 'undefined') ? sampleFactor: null,
-        wKnn:        (typeof wKnn        !== 'undefined') ? wKnn        : null,
         dH: (typeof dH!=='undefined')?dH:null,
         dA: (typeof dA!=='undefined')?dA:null,
         /* MERCATI AVANZATI per validazione estesa */
@@ -639,7 +637,6 @@ async function loadEngineFromText(text, fileName) {
         eloHfaRaw:   (typeof ELO!=='undefined' && ELO) ? (ELO._hfaRaw ?? null) : null,
         eloHfaClamp: (typeof ELO!=='undefined' && ELO) ? (ELO._hfaClamp ?? null) : null,
         eloHfaShrunk:(typeof ELO!=='undefined' && ELO) ? (ELO._hfaShrunk ?? null) : null,
-        eloNHfa2:    (typeof ELO!=='undefined' && ELO) ? (ELO._nHfa ?? null) : null,
         eloNHFA: (typeof ELO!=='undefined' && ELO && ELO._nHfa) ? ELO._nHfa : null,
         /* ID squadre + timestamp — servono al Comparatore per ricalcolare storico e aggregare metriche extra */
         _homeId:       (typeof hId!=='undefined') ? hId : null,
@@ -677,10 +674,12 @@ async function loadEngineFromText(text, fileName) {
     'computeLeagueParams','multigoal','asianHandicapMat','negBinCDF','negBinK','poisson',
     'expectedPoints','loadLegheJson','fetchMatchRaw',
 
-    'predictStat','_isPast'];
+    'predictStat','_isPast','_calibConf1X2'];
   let exposer = '\n;(function(){\n';
   exposeNames.forEach(n => {
-    exposer += `  try { if (typeof ${n} !== 'undefined') window[${JSON.stringify(n)}] = ${n}; } catch(e){}\n`;
+    // un nome che il motore non ha va AZZERATO, non lasciato com'era: trascinando un motore
+    // vecchio dopo uno nuovo resterebbe in window la funzione del giro prima
+    exposer += `  try { window[${JSON.stringify(n)}] = (typeof ${n} !== 'undefined') ? ${n} : undefined; } catch(e){}\n`;
   });
   exposer += '})();\n';
 
@@ -746,6 +745,7 @@ async function loadEngineFromText(text, fileName) {
       diff.push(`SHRINK_LAM_K non trovato nel sorgente: il Comparatore ripiega su 3`);
     const _hm = (typeof window.ELO_HFA_MODE === 'string') ? window.ELO_HFA_MODE : 'clamp';
     if (_hm !== 'clamp') diff.push(`ELO_HFA_MODE "${_hm}" invece di "clamp"`);
+    if (window.CONF_1X2_MODE === 'retta') diff.push(`CONF_1X2_MODE "retta" invece della tabella`);
     const _lim = document.getElementById('cmp-history-limit');
     if (_lim && _lim.value && +_lim.value !== 15)
       diff.push(`history-limit ${_lim.value} invece dei 15 di default dello Scanner`);
@@ -756,6 +756,10 @@ async function loadEngineFromText(text, fileName) {
       cmpLog(`   \u2705 Manopole ai default del motore: questo giro stampa gli stessi numeri dello Scanner.`);
     }
   }
+
+  cmpLog(typeof globalThis._calibConf1X2 === 'function'
+    ? '   \u2705 Confidence 1X2 del CSV: la tabella del motore, la stessa dello Scanner.'
+    : '   \u26a0\ufe0f Motore precedente al b39: la colonna Confidence del CSV usa la retta vecchia 6.26 + 0.880p.');
 
   if (typeof window.__SCANNER_BUILD === 'string') {
     cmpLog('   motore build ' + window.__SCANNER_BUILD);
@@ -773,7 +777,7 @@ async function loadEngineFromText(text, fileName) {
     <p><code>${fileName}</code> — clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
 
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b38';
+  const _bComp = '0905-b39';
   const _el = document.getElementById('engine-build');
   if (_el) {
     if (!_bScan) {
@@ -1523,7 +1527,7 @@ async function cmpEsegui() {
     await cmpRunMatch(match, limit, true);
     const R = globalThis._V97_probs;
     cmpLog(`   → Ensemble: 1=${(R.m1*100).toFixed(1)}% X=${(R.mX*100).toFixed(1)}% 2=${(R.m2*100).toFixed(1)}%`);
-    if (R.probsKnn) cmpLog(`   → KNN attivo (wKnn=${R.wKnn!=null?R.wKnn.toFixed(2):'?'})`);
+    if (R.probsKnn) cmpLog(`   → KNN calcolato (riferimento tattico, fuori dall'ensemble)`);
     cmpLog("✅ Confronto pronto.");
   } catch (e) {
     cmpLog(`❌ Errore: ${e.message}`);
@@ -1636,11 +1640,17 @@ async function cmpEseguiTutte() {  if (!cmpMatchesOfTheDay.length) return alert(
 
 const CMP_HALF_LIFE_DAYS = 106;
 
-// Una sola copia: era scritta identica in due funzioni, ed e' la forma esatta del caso
-// CMP_DC_SHRINK_TABLE (AGENTS.md, Due copie della stessa costante divergono, sempre).
-// Le rette stanno in AGENTS.md, sezione La confidence.
-const _calibConf1X2 = (p) => (p == null || !isFinite(p)) ? null
-  : Math.max(0, Math.min(100, Math.round(6.26 + 0.880 * (p * 100))));
+// Una sola copia, ed e' quella del MOTORE. Fino al b38 qui c'era la retta 6.26 + 0.880p
+// mentre lo Scanner era passato alla tabella misurata: la colonna Confidence del CSV
+// diceva un numero diverso da quello a schermo, e la parita' non lo vedeva perche'
+// confronta R.confidence, che viene dal motore. La retta resta solo come rete per un
+// motore precedente al b39, e il log lo dice all'iniezione (AGENTS.md, audit b39).
+const cmpConf1X2 = (p) => {
+  if (p == null || !isFinite(p)) return null;
+  const v = (typeof globalThis._calibConf1X2 === 'function')
+    ? globalThis._calibConf1X2(p) : (6.26 + 0.880 * (p * 100));
+  return Math.max(0, Math.min(100, Math.round(v)));
+};
 const CMP_LN2 = Math.log(2);
 
 function cmpTimeDecayWeighted(vals, times, targetMs) {
@@ -1959,7 +1969,7 @@ function cmpRender(match, R, actH, actA) {
     return `<span style="background:${col};color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold">${v}</span>`;
   };
 
-  const _conf = (p) => _calibConf1X2(p);
+  const _conf = (p) => cmpConf1X2(p);
   const c1 = _conf(R.m1);
   const cX = _conf(R.mX);
   const c2 = _conf(R.m2);
@@ -2087,7 +2097,7 @@ function cmpBuildResult(match, R, actH, actA) {
   const prevH = cmpExtractPrev(R.dH, 'H', R.predStats);
   const prevA = cmpExtractPrev(R.dA, 'A', R.predStats);
 
-  const _conf = (p) => _calibConf1X2(p);
+  const _conf = (p) => cmpConf1X2(p);
 
   // La lega va presa DALLA PARTITA, non dalla dropdown: cmpUpdateLeagues() la svuota a
   // '-- --' a ogni cambio di paese, e in un archivio multi-lega l'etichetta finiva su
@@ -2166,7 +2176,6 @@ function cmpBuildResult(match, R, actH, actA) {
       hfaRaw: R.eloHfaRaw != null ? Math.round(R.eloHfaRaw) : null,
       hfaClamp: R.eloHfaClamp || null,
       hfaShrunk: R.eloHfaShrunk != null ? Math.round(R.eloHfaShrunk) : null,
-      nHfa: R.eloNHfa2 || null,
       nHfa: R.eloNHFA || null
     }
   };

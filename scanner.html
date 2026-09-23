@@ -174,7 +174,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b38</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b39</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -271,10 +271,14 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       Ordinato per <b>scarto dal base rate della lega</b>, non per percentuale. Il base rate &egrave; quanto
       rende giocare quel mercato <b>sempre, alla cieca</b>, contato sull'archivio di questa lega: un
       <code>12</code> al 73% non &egrave; una trovata, &egrave; il base rate. Quello che conta &egrave; di quanto lo batte.
+      Per corner, tiri e gialli l'archivio non basta, e il base rate viene dal riferimento di lega
+      ancorato ai gol.
       Misurato su <b>1.882 partite</b> di Serie A, cinque stagioni, solo backtest del motore attuale:
       con scarto <b>+5&hellip;+10</b> si rende +6 punti sopra il giocarlo sempre, <b>+10&hellip;+20</b> +15 punti,
-      <b>+20 e oltre</b> +25. Il segno regge in tutte e cinque le stagioni.
+      <b>+20 e oltre</b> +27. Il segno regge in ogni anno dal 2022 al 2026.
       Sotto +5 non c'&egrave; verdetto: il guadagno misurato sta dentro il rumore.
+      <b>NoGoal</b> e <b>Under</b> partono avvantaggiati di ~6 punti perch&eacute; il modello stima pochi gol:
+      NoGoal rende meno della sua banda.
     </div>
     <div id="league-note"></div>
     <div class="tbl-scroll"><table class="table-ui table-compact">
@@ -364,8 +368,8 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
             <span style="color:var(--orange)">&ge;50% &rarr; <b>62.0%</b></span> (1 su 2.3) &middot;
             <span style="color:var(--red)">&lt;45% &rarr; non selezionare</span>.<br>
             Su tutte le partite il pick azzecca il <b>52.3%</b> contro il 40.4% del &laquo;gioca sempre in
-            casa&raquo;. Le soglie alte rendono di pi&ugrave; <b>e</b> coprono pi&ugrave; calendario di quanto
-            dicesse la stima vecchia. Una lega sola: l'intervallo a &ge;65% &egrave; &plusmn;6.5 punti.
+            casa&raquo;. Rispetto alla stima vecchia le soglie alte rendono 2-4 punti in meno ma coprono
+            il <b>doppio</b> del calendario. Una lega sola: l'intervallo a &ge;65% &egrave; &plusmn;6.5 punti.
           </div>
         </div>
 
@@ -1609,9 +1613,35 @@ function _shrunkMean(roleArr, overallArr, fallback, k = 5) {
 
 window.SHRINK_K     = (typeof window.SHRINK_K     === 'number') ? window.SHRINK_K     : 4;
 window.SHRINK_LAM_K = (typeof window.SHRINK_LAM_K === 'number') ? window.SHRINK_LAM_K : 3;
+// i primi cinque punti (sotto il 33%) sono esiti che NON sono il pick: senza, la tabella
+// restava piatta a 36 e un pareggio al 24% usciva con confidence 36 (AGENTS.md, audit b39)
 window.CONF_1X2_TABLE = window.CONF_1X2_TABLE ||
-  [[37.6,36.1],[42.5,45.6],[47.3,52.4],[52.4,54.9],[57.3,56.4],[62.4,67.5],[67.0,70.4],[73.8,79.0]];
+  [[11.4,9.7],[17.7,16.2],[22.8,20.0],[27.5,27.4],[31.3,31.0],
+   [37.6,36.1],[42.5,45.6],[47.3,52.4],[52.4,54.9],[57.3,56.4],[62.4,67.5],[67.0,70.4],[73.8,79.0]];
 window.CONF_1X2_MODE = window.CONF_1X2_MODE || 'tabella';
+// La confidence e' la probabilita' reale di indovinare, non l'accordo fra i modelli.
+// Sull'1X2 e' la TABELLA della resa misurata per fascia (1882 partite di Serie A, solo
+// export post-b30): la retta 6.26 + 0.880p comprimeva, a 62 mostrava 61 dove il vero e'
+// 67.5. La retta dei mercati BINARI invece e' stata rimisurata ed e' giusta.
+// Stanno fuori da avviaScanner perche' il Comparatore le usa per la colonna Confidence
+// del CSV: prima ne teneva una copia con la retta vecchia (AGENTS.md, audit b39).
+function _interpConf(tab, x) {
+  if (!tab || tab.length < 2) return null;
+  if (x <= tab[0][0]) return tab[0][1];
+  if (x >= tab[tab.length - 1][0]) return tab[tab.length - 1][1];
+  for (let i = 0; i < tab.length - 1; i++) {
+    const [x0, y0] = tab[i], [x1, y1] = tab[i + 1];
+    if (x >= x0 && x <= x1) return (x1 === x0) ? y0 : y0 + (y1 - y0) * (x - x0) / (x1 - x0);
+  }
+  return tab[tab.length - 1][1];
+}
+function _calibConf1X2(p) {
+  const x = p * 100;
+  const v = (window.CONF_1X2_MODE === 'retta') ? (6.26 + 0.880 * x)
+                                               : _interpConf(window.CONF_1X2_TABLE, x);
+  return Math.max(0, Math.min(100, v == null ? (6.26 + 0.880 * x) : v));
+}
+function _calibConfBin(p) { return Math.max(0, Math.min(100, -5.06 + 1.091 * (p * 100))); }
 
 const KNN_MIN_COVERAGE = 0.6;
 const KNN_DIMS = [
@@ -1769,29 +1799,33 @@ function renderLeagueNote() {
   if (s.acc >= 49) { tono = '#0f766e'; testo = 'il modello rende bene qui'; }
   else if (s.acc >= 46) { tono = '#f59e0b'; testo = 'rendimento medio'; }
   else { tono = '#ef4444'; testo = '<b>campionato difficile</b>: le soglie qui valgono meno'; }
+  // Misurata col motore v9.6, prima dell'Elo nell'1X2 (b13) e della confidence a tabella
+  // (b38). Rifatta sulla Serie A col motore di oggi: segno 52.3 (qui 49.8), pick sopra il
+  // 55% 65.5 (qui 65.3), ma confidence 60+ 68.8 (qui 74.5) e gap casa 0.0 (qui -2.4).
+  // Si mostrano solo i due campi che reggono come ORDINE fra campionati; confHit e
+  // gapCasa restano nella tabella e non vanno rimessi a schermo (AGENTS.md, audit b39).
   let det = ' <b>' + s.acc + '%</b> sul segno';
   if (s.netHit != null) det += ', <b>' + s.netHit + '%</b> sui pick sopra il 55%';
-  if (s.confHit != null) det += ', <b>' + s.confHit + '%</b> con confidence 60+';
-  let casa = '';
-  if (s.gapCasa <= -3) casa = ' Qui il modello <b>sopravvaluta la casa</b> di ' + Math.abs(s.gapCasa) + ' punti.';
-  else if (s.gapCasa >= 2) casa = ' Qui il modello sottovaluta la casa di ' + s.gapCasa + ' punti.';
   box.innerHTML = '<div style="border-left:3px solid ' + tono + ';padding:10px 14px;margin-bottom:14px;'
     + 'background:rgba(255,255,255,.03);border-radius:0 8px 8px 0;font-size:12px;line-height:1.6">'
-    + '<b style="color:' + tono + '">' + nome + '</b> &middot; ' + testo + det + '.' + casa
-    + '<span style="color:var(--dim)"> Misurato su ' + s.n + ' partite.</span></div>';
+    + '<b style="color:' + tono + '">' + nome + '</b> &middot; ' + testo + det + '.'
+    + '<span style="color:var(--dim)"> Misurato su ' + s.n + ' partite col motore v9.6: conta l\'ordine fra'
+    + ' campionati, non il livello (in Serie A il motore di oggi fa 52.3% sul segno).</span></div>';
 }
 
 // SCARTI misurati su 1882 partite di Serie A, cinque stagioni, SOLO export post-b30
 // (gli altri undici CSV sono un motore diverso). Lo scarto e' la probabilita' meno il
 // base rate DI QUEL mercato NELLA SUA LEGA: quanto batte il giocarlo sempre alla cieca.
-// Il guadagno cresce con lo scarto (+6.3 / +14.1 / +16.0 / +24.6 punti) e resta piatto
-// con la probabilita' grezza (+1.4 / +3.3 / +7.1 / +6.1 / +5.1): e' il motivo per cui
-// il tabellone proponeva sempre 1X / X2 / 12. Il 12 supera la sua vecchia soglia sul
-// 90% delle partite e vale +0.5 punti. Il segno regge in tutte e cinque le stagioni.
+// Il guadagno cresce con lo scarto e resta piatto con la probabilita' grezza (+1.4 /
+// +3.3 / +7.1 / +6.1 / +5.1): e' il motivo per cui il tabellone proponeva sempre
+// 1X / X2 / 12. Il 12 supera la sua vecchia soglia sul 90% delle partite e vale +0.5.
+// Le tre bande sono misurate ESATTAMENTE come le calcola renderVerdetti (b39): i 13
+// mercati del tabellone, base dei gol walk-forward col minimo a 200, base dei numeri
+// dal riferimento di lega. Il segno regge in ogni anno dal 2022 al 2026.
 window.EDGE_BANDS = window.EDGE_BANDS ||
-  [[20, 'FORTE',      24.6, 765],
-   [10, 'GIOCABILE',  14.8, 2613],
-   [5,  'MARGINALE',   6.3, 3436]];
+  [[20, 'FORTE',      26.6, 848],
+   [10, 'GIOCABILE',  15.4, 2290],
+   [5,  'MARGINALE',   6.2, 2653]];
 
 function renderVerdetti(mk, base, adv) {
   const over = (line, lam, k) => 1 - negBinCDF(Math.floor(line), lam, k);
@@ -1808,17 +1842,18 @@ function renderVerdetti(mk, base, adv) {
     ['Goal (GG)',  mk.pGG, B && B.pGG,  'Segnano entrambe'],
     ['NoGoal',     mk.pNG, B && B.pNG,  'Almeno una a secco']
   ];
-  // I mercati sui numeri non erano nel tabellone, e hanno uno scarto >= +10 sul
-  // 13-15% delle partite contro l'1-3% di 12, GG e Over 2.5. Il loro base rate non si
-  // puo' contare nell'archivio di lega (corner e tiri non stanno nella lista partite):
-  // viene dal riferimento ancorato ai gol di lega, che e' l'unica quantita' di lega
-  // che il motore ha per questi conteggi.
+  // Il base rate dei mercati sui numeri non si puo' contare nell'archivio di lega
+  // (corner e tiri non stanno nella lista partite): viene dal riferimento ancorato ai
+  // gol di lega, l'unica quantita' di lega che il motore ha per questi conteggi.
+  // k = Infinity NON e' un dato mancante: e' negBinK che dice "non sovradisperso", e
+  // negBinCDF lo tratta come Poisson. Filtrarlo con isFinite spegneva la base sul 32%
+  // dei corner, 47% dei tiri e 76% dei gialli (AGENTS.md, audit b39).
   if (adv) {
     const NUM = [['Corner Over 9.5', adv.pOv9c, adv.lgRefCor, adv.kCor, 9.5, 'Piu\' di 9 corner'],
                  ['Tiri porta Over 8.5', adv.pOv8s, adv.lgRefSot, adv.kSot, 8.5, 'Piu\' di 8 tiri in porta'],
                  ['Gialli Over 3.5', adv.pOv3y, adv.lgRefYel, adv.kYel, 3.5, 'Piu\' di 3 gialli']];
     for (const [nome, pr, ref, kk, line, desc] of NUM)
-      R.push([nome, pr, (ref > 0 && isFinite(kk)) ? over(line, ref, kk) : null, desc]);
+      R.push([nome, pr, (ref > 0 && kk > 0) ? over(line, ref, kk) : null, desc]);
   }
 
   const righe = [], voci = [];
@@ -1869,7 +1904,7 @@ function renderVerdetti(mk, base, adv) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b38';
+window.__SCANNER_BUILD = '0905-b39';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -1942,9 +1977,12 @@ for (const [k, , t] of ADV_SPEC) if (t && t !== 'volume') STAT_TYPE[k] = t;
 function predictStat(att, dif, feat, scope, kOverride) {
   const sc = scope || 'role';
   const add = STAT_TYPE[feat] === 'additivo';
+  // nValid e non il segno: _timeDecayDates restituisce 0 quando non c'e' nessun valore,
+  // e per le additive 0 e' un numero valido. Senza questo controllo "nessun dato" usciva
+  // come "previsto 0" sul 100% delle righe senza /advanced (AGENTS.md, audit b39).
   const gv = (t, f) => {
     const x = t && t[sc] && t[sc].features && t[sc].features[f];
-    if (!x || !isFinite(x.decay)) return null;
+    if (!x || !(x.nValid > 0) || !isFinite(x.decay)) return null;
     return add ? x.decay : (x.decay > 0 ? x.decay : null);
   };
   const mine = gv(att, feat);
@@ -2515,33 +2553,6 @@ async function avviaScanner() {
     window.__RESID_DEBUG = _RC.debug;
     const m1 = _RC.p1; const mX = _RC.pX; const m2 = _RC.p2;
 
-    // rette di calibrazione empiriche su 6824 partite: la confidence e' la probabilita'
-    // reale di indovinare, non l'accordo fra i modelli (AGENTS.md)
-    // La retta 6.26 + 0.880p COMPRIME: a 62 mostrava 61 dove il vero misurato e' 67.5,
-    // a 74 mostrava 71 dove il vero e' 79. Era stimata prima dell'Elo che inclina i
-    // lambda (b13), dell'ensemble riscritto (b20) e di ENS_SCOPE_W (b21): campione
-    // giusto, macchina diversa. Sostituita da una TABELLA misurata sul motore di oggi
-    // (1882 partite di Serie A, cinque stagioni, solo export post-b30), che non
-    // estrapola dove non ci sono dati. La retta dei mercati BINARI invece e' stata
-    // rimisurata ed e' giusta: scarti entro 2 punti su 22.600 proposte, resta com'e'.
-    // Vedi AGENTS.md, Il tabellone ordinava per la colonna sbagliata.
-    const _interp = (tab, x) => {
-      if (!tab || tab.length < 2) return null;
-      if (x <= tab[0][0]) return tab[0][1];
-      if (x >= tab[tab.length - 1][0]) return tab[tab.length - 1][1];
-      for (let i = 0; i < tab.length - 1; i++) {
-        const [x0, y0] = tab[i], [x1, y1] = tab[i + 1];
-        if (x >= x0 && x <= x1) return (x1 === x0) ? y0 : y0 + (y1 - y0) * (x - x0) / (x1 - x0);
-      }
-      return tab[tab.length - 1][1];
-    };
-    const _calibConf1X2 = (p) => {
-      const x = p * 100;
-      const v = (window.CONF_1X2_MODE === 'retta') ? (6.26 + 0.880 * x)
-                                                   : _interp(window.CONF_1X2_TABLE, x);
-      return Math.max(0, Math.min(100, v == null ? (6.26 + 0.880 * x) : v));
-    };
-    const _calibConfBin = (p) => Math.max(0, Math.min(100, -5.06 + 1.091 * (p * 100)));
 
 
 
@@ -3065,7 +3076,7 @@ non mescolarli in una stessa frase senza dirlo.
 - Confidence Score: ${confidence}/100
 - Scarti fuori soglia: ${hiddenValueMsgClean}
 
-1-bis. TABELLONE GIOCABILITA' — verdetti gia' decisi da 2963 partite di backtest.
+1-bis. TABELLONE GIOCABILITA' — verdetti gia' decisi da 1882 partite di backtest.
 Sono la parte piu' affidabile di questo prompt: NON ridiscuterli e non riclassificarli.
 ${window.__VERDETTI_TXT || '(non disponibile)'}
 
@@ -3188,13 +3199,13 @@ di questa partita portano a quel numero. Il verdetto e l'hit li ha gia' decisi i
 backtest: non riclassificarli, non aggiungere ALTO/MEDIO/BASSO tuoi, non proporre
 mercati che il tabellone non elenca.
 
-Dove il verdetto e' FUORI SOGLIA, scrivi in mezza riga cosa manca perche' quel mercato
-diventi giocabile (quale statistica dovrebbe muoversi e in che verso).
+Dove il verdetto e' NESSUN VERDETTO (scarto sotto +5), scrivi in mezza riga cosa manca
+perche' quel mercato diventi giocabile (quale statistica dovrebbe muoversi e in che verso).
 
 ## COSA NON FARE
 - Non pronosticare un risultato esatto e non usare "certo", "sicuro", "esplosione", "goleada".
 - Non trasformare uno scarto statistico in una previsione di esito: il modello azzecca
-  il pick nel ~52% dei casi, e la fascia alta arriva al 74%. Niente di piu'.
+  il pick nel ~52% dei casi, e sopra il 60% arriva al ~71%. Niente di piu'.
 - Non mescolare RUOLO e GENERALE in una stessa frase senza dire quale stai usando.
 - Se un dato e' N/D, dillo invece di aggirarlo.`;
 

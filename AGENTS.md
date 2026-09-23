@@ -52,6 +52,9 @@ cui si è già risposto, con i numeri. Le tre porte d'ingresso:
 - **«Il tabellone propone sempre le stesse cose / la confidence mi sembra bassa»** →
   *Il tabellone ordinava per la colonna sbagliata*: ordinava per probabilità grezza, che
   premia l'aritmetica delle doppie chance, e la retta dell'1X2 comprimeva di 8 punti.
+- **«Il codice è stato ricontrollato tutto? Questo file è ancora vero?»** → *L'audit del
+  `b39`*: i controlli rifatti da capo, cosa hanno trovato nel codice del `b38`, e le frasi
+  di questo file che descrivevano un motore di dieci build fa.
 
 **Le otto cose che più facilmente fanno perdere una giornata**, se non le sai:
 
@@ -88,7 +91,7 @@ memoria del progetto, non la sua verità corrente. → *L'audit del documento*.
 Sezione di consegna: dice a che punto siamo, così una sessione nuova non
 ricomincia da capo. Aggiornala quando cambia qualcosa di sostanziale.
 
-**Build corrente: `0905-b38`.** Scanner e Comparatore devono coincidere, e sul
+**Build corrente: `0905-b39`.** Scanner e Comparatore devono coincidere, e sul
 Comparatore il badge sotto la dropzone deve uscire **verde** dopo aver trascinato
 lo Scanner. Il branch di lavoro è `claude/controlla-agents-md-bugs-2dnlmj`.
 
@@ -109,21 +112,25 @@ casa». L'ensemble è `Dixon-Coles 70% + Markov 30%` su lambda stimati su **tutt
 partite di una squadra; l'Ordered Logit è calcolato e mostrato ma ha **peso 0**.
 
 Ma il numero che conta per chi usa lo Scanner non è la media: è **quanto rende la
-fascia alta**. Misurato su due campioni che non condividono né stagioni, né leghe, né
-disponibilità di `/advanced`:
+fascia alta**. Al `b26` era stato misurato su due campioni che non condividono né
+stagioni, né leghe, né disponibilità di `/advanced`; dal `b30` il motore de-comprime
+(la scala dell'Elo), e la colonna che vale oggi è l'ultima:
 
-| soglia sul pick | 2025/26, tre leghe | Serie A 2021–25 | quota di partite |
+| soglia sul pick | `b26`: 2025/26, tre leghe | `b26`: Serie A 2021–25 | **oggi**: Serie A 2021–26, 1882 partite |
 |---|---|---|---|
-| ≥ 45% | 59.1% | 60.8% | ~52% |
-| ≥ 50% | **66.2%** | **63.6%** | ~32% |
-| ≥ 55% | 69.8% | 68.3% | ~18% |
-| ≥ 60% | **73.6%** | **74.0%** | ~9% |
-| ≥ 65% | 87.7% | 78.9% | ~4% |
+| ≥ 45% | 59.1% su ~52% | 60.8% | **59.1%** ±2.9 su 62% |
+| ≥ 50% | 66.2% su ~32% | 63.6% | **62.0%** ±3.4 su 44% |
+| ≥ 55% | 69.8% su ~18% | 68.3% | **65.3%** ±4.0 su 30% |
+| ≥ 60% | 73.6% su ~9% | 74.0% | **71.1%** ±4.9 su 18% |
+| ≥ 65% | 87.7% su ~4% | 78.9% | **74.3%** ±6.5 su 10% |
+| ≥ 70% | — | — | **79.0%** ±9.0 su 4% |
 
-Le due colonne coincidono a ogni soglia, e alla soglia del 50% il segno regge in tutte
-e tre le leghe (LaLiga 70.3%, Serie A 67.0%, Premier 59.5%). **Una partita su tre esce
-già oggi con una probabilità reale attorno ai due terzi, e una su undici attorno al
-75%.**
+Le due colonne del `b26` coincidono a ogni soglia, e alla soglia del 50% il segno
+reggeva in tutte e tre le leghe (LaLiga 70.3%, Serie A 67.0%, Premier 59.5%). Sul
+motore di oggi ogni soglia rende 2–4 punti in meno **e copre il doppio del
+calendario**: è quello che fa una de-compressione. **Quasi una partita su cinque (il 18%) ha
+un pick che si avvera il 71% delle volte.** (Tabella rifatta all'audit del `b39`: fino
+al `b38` qui c'erano solo le due colonne pre-`b30`.)
 
 ~~Il problema è che **lo Scanner non lo dice**: la retta della confidence usa pendenza
 `0.880`, cioè comprime.~~ **Corretto nel `b38`**: la retta dell'1X2 è stata sostituita
@@ -204,6 +211,7 @@ sovradispersione — scagionati con i dati in mano.
 | `b37` | **il backtest che chiude lo shrinkage: nessuna delle due si muove.** 1127 partite di Serie A, tre stagioni, export `b36`. `SHRINK_K` sotto 4 migliora l'1X2 (`-0.0016`, `z = -3.03`, scelta fuori campione `k = 1` in 3 fold su 3) ma i mercati gol perdono **+0.0056**: il conto complessivo e' **+0.0040, peggio**. E il guadagno non regge dove i dati sono puliti (`z = -1.35` sulle 567 righe senza clamp dell'HFA). `SHRINK_LAM_K` alzata chiude il livello dei gol e il Brier dell'Over ha un ottimo interno a 5-8, ma il miglior `z` e' `-1.82` e **il segno si ribalta nel 2022/23**. Le due manopole tirano sulla **stessa** carenza in versi opposti, e l'escursione utile di una non paga il conto dell'altra: finche' il disallineamento di unita' non e' corretto alla radice, nessuna delle due e' libera. Nessuna riga di codice cambiata |
 
 | `b38` | **il tabellone ordinava per la colonna sbagliata, e la confidence dell'1X2 comprimeva**. Il `12` superava la sua soglia sul **90% delle partite** e valeva **+0.5 punti** sopra il giocarlo alla cieca; il `2`, che ne vale **+37.8**, compariva sul 5%. Ora si ordina per **scarto dal base rate della lega** — contato sull'archivio della lega stessa, a costo zero — e il guadagno cresce monotono con lo scarto (+6.3 / +14.1 / +24.6) mentre con la probabilita' grezza e' piatto. Il segno regge in **tutte e cinque le stagioni**. Entrano i tre mercati sui numeri, che avevano piu' scarto da offrire di `12`, `GG` e `Over 2.5` insieme ed erano gli unici assenti. Sulla proposta migliore di ogni partita il guadagno va da **+11.7 a +16.7** punti (walk-forward **+18.8**), e in cima non finisce piu' sempre una doppia chance. La retta della confidence 1X2 sostituita dalla **tabella misurata** (a 62 mostrava 61 dove il vero e' 67.5); quella dei mercati binari rimisurata e **lasciata com'e'**, sbaglia al massimo di 2.4 punti. Le probabilita' del motore non si muovono: 39 campi su 39 identici al `b36` |
+| `b39` | **audit del codice e del documento: due difetti del `b38` e una copia divergente**. Il tabellone **spegneva la base** dei mercati sui numeri quando la dispersione era infinita — cioè Poisson, non un buco — sul 32% dei corner, 47% dei tiri e **76% dei gialli**: corretto, e 133 partite in piu' su 1882 hanno una proposta a guadagno invariato (+18.5). La confidence del CSV veniva da una **copia** della retta vecchia nel Comparatore (fino a 8 punti dallo schermo): ora c'e' una funzione sola. La tabella della confidence, misurata sui pick, dava **36 a un pareggio al 24%**: estesa sotto il 33% con gli esiti non-pick (reale 23.5, prima 36.1, ora 23.6). Le metriche additive senza dati uscivano **previste 0** sul 100% delle righe senza `/advanced`. `LEAGUE_STATS`, mai citata qui, mostrava due campi del motore v9.6 che in Serie A non reggono. Bande rimisurate sulla definizione del tabellone (+6.2 / +15.4 / +26.6). Probabilita' del motore **39 campi su 39 identici**, parita' 19 su 19 |
 
 Le tre build finali hanno una storia sola e va letta in *La baseline di coppia*:
 tre tentativi svuotati dallo stesso malinteso.
@@ -348,6 +356,19 @@ sono ora manopole (`ELO_GAP_THRESHOLD`, `ELO_GAP_TAU`, `ELO_GAP_ASY`). Vedi
    *A/B CORREZIONE RESIDUALE* del CSV: nel codice è ancora 0.678, cioè la scala che
    il `b5` ha dichiarato sbagliata. Non sposta probabilità (`RESID_ALPHA = 0`),
    sposta la diagnostica che dovrebbe dire se riaccendere la correzione.
+17. **Lo scarto finto di NoGoal e Under** (`b39`). Con la base del motore i due mercati
+   hanno scarto medio **+6.1 e +5.6** su tutte le partite, perché il livello dei gol è
+   basso; `NoGoal` rende +1.3 / +10.0 dove le bande promettono +6.2 / +15.4. La cura
+   vera è il livello (punti 0-ter e 16-quater); quella di ripiego sarebbe misurare lo
+   scarto contro la **media del modello** invece che contro la lega. Da decidere alla
+   sesta lega, non su una.
+18. **`MARKET_PER_GOAL` in Serie A sta alta del 5%** su corner e tiri (riferimento 9.84
+   contro 9.35 reali, 8.72 contro 8.29), ed è una delle costanti che il `b18` aveva
+   marcato come tarate con la lega congelata. Il CSV esporta riferimento e dispersione
+   per partita: la ritaratura si fa offline, ma su più di una lega.
+19. **Rimisurare `LEAGUE_STATS`** lega per lega col motore di oggi. Oggi la nota mostra
+   solo segno e pick sopra il 55%, che in Serie A reggono; `confHit` e `gapCasa` sono
+   del motore v9.6 e sono stati tolti dallo schermo.
 
 Già fatte e da non riaprire: togliere il KNN dall'ensemble (`b7`), `sum_sot`
 nell'Over/Under (`b9`, riformulato nel `b12`), tarare i `k` di mercato (`b12`).
@@ -386,9 +407,10 @@ già stato guardato nel codice e quello che è ancora un sospetto.
   (`400·log10(wr_casa/wr_trasferta)`, limitato fra 30 e 100, e solo con almeno 50
   partite in archivio), K adattivo (30 sotto le 15 partite, poi 20),
   moltiplicatore per scarto di gol, cronologico e a somma zero. Il **salto data**
-  era una funzione a gradini ed è stato smussato nel `b9`: oggi è
-  `0.9·(1 − exp(−(giorni − 45)/110))`, verificato nel sorgente. Vedi *Il salto
-  data dell'Elo*.
+  era una funzione a gradini ed è stato smussato nel `b9` con τ = 110; dal `b30` è
+  `ELO_GAP_ASY·(1 − exp(−(giorni − ELO_GAP_THRESHOLD)/ELO_GAP_TAU))` con
+  0.9 / 45 / **360**, riverificato nel sorgente all'audit del `b39`. Vedi *Il salto
+  data dell'Elo* e *La scala dell'Elo, e la curva dello stacco*.
 
 ### Sistemato (b6 → b8)
 
@@ -585,27 +607,35 @@ della costante perché è il tipo di cosa che qualcuno «sistema» in buona fede
   Il sospetto che l'aveva tenuto sotto il picco 0.45 del KNN era fondato e si è
   rivelato più forte del previsto: l'OL mangia lo stesso NPxG del Dixon-Coles, quindi
   non porta informazione in più — misurato, non congetturato.
-- Il **KNN resta calcolato e mostrato** come riferimento tattico e alimenta
-  `knnRel`/`wKnn` usati altrove, ma **non entra nell'ensemble**. Se scrivi
-  testi o prompt, non descriverlo come se ci fosse.
+- Il **KNN resta calcolato e mostrato** come riferimento tattico (card dei
+  vicini, `probsKnn` nel CSV e nel prompt), ma **non entra nell'ensemble**. Se
+  scrivi testi o prompt, non descriverlo come se ci fosse. `knnRel`, `wKnn`,
+  `tvDist` e `sampleFactor` **non esistono più** dal `b7`: questo paragrafo diceva
+  che «alimentavano altro» fino all'audit del `b39`, e l'hook del Comparatore
+  esportava ancora le ultime due come `null`.
 
 **La confidence non è l'accordo fra i modelli.** La vecchia formula misurava
 `1 − tvDist` fra DC, KNN e Markov: verificato sui backtest, la correlazione fra
 accordo e azzeccare è **−0.007**, cioè zero. Due modelli che concordano non
 azzeccano più spesso di due che discordano; il numero era alto (spesso 90+) e
 non significava niente. Ora la confidence è la **probabilità del pick,
-ricalibrata sull'hit reale** con due rette stimate su 6824 partite
-(Europa + MLS + Turchia):
+ricalibrata sull'hit reale**, in due forme diverse:
 
 ```
-1X2             hit_reale ≈ 6.26 + 0.880 × prob
-mercati binari  hit_reale ≈ −5.06 + 1.091 × prob
+1X2             CONF_1X2_TABLE: la resa misurata per fascia (b38, estesa nel b39)
+mercati binari  hit_reale ≈ −5.06 + 1.091 × prob   (rimisurata nel b38: regge)
 ```
 
-Riscontro: pick ≥60% → 64.7% di hit reale su 821 partite, ≥65% → 69.5% su 387.
-"Confidence 64" vuol dire davvero "64% di probabilità di indovinare".
-`tvDist` e `sampleFactor` restano calcolati perché servono ai narrativi, ma
-**non entrano più nella confidence**.
+Le due funzioni, `_calibConf1X2` e `_calibConfBin`, stanno a livello di modulo
+nello Scanner e il Comparatore usa **quella del motore** (dal `b39`, vedi *L'audit
+del b39*). La tabella dell'1X2 ha 13 punti: gli otto sopra il 37% vengono dalla resa
+del **pick** su 1882 partite di Serie A post-`b30`, i cinque sotto il 33% dagli esiti
+che **non** sono il pick (3572 coppie), perché la confidence si mostra per tutti e tre
+gli esiti. La retta vecchia `6.26 + 0.880·p` (stimata su 6824 partite Europa + MLS +
+Turchia, prima del `b13`) resta raggiungibile con `CONF_1X2_MODE = 'retta'`.
+«Confidence 71» vuol dire davvero «71% di probabilità di indovinare», e il numero va
+riletto ogni volta che il motore sotto cambia: è una stima della macchina, non del
+calcio.
 
 **Le statistiche previste** passano da `predictStat`, modello moltiplicativo
 `media_lega × (quanto produco / lega) × (quanto concede lui / lega)` con
@@ -704,7 +734,9 @@ semplice. Ora sono in `ORPHAN_PAIRS`, che le aggancia ai rispettivi `opp_*`.
     `mio/lg` fra due negativi ha segno invertito e il prodotto è privo di senso;
     peggio, i guardiani storici `decay > 0` e `v > 0` li scartavano in silenzio
     e `predictStat` tornava `null`. I guardiani per le additive sono su
-    `isFinite`, non sul segno.
+    `isFinite`, non sul segno — **e sul conteggio** (`nValid > 0`, dal `b39`): una
+    serie tutta `null` ha `decay = 0`, che è finito, e dal `b4` al `b38` le quattro
+    additive senza dati sono uscite «previste 0» invece che `N/D`.
 
     Oggi `STAT_TYPE` contiene **quattro** voci e non sei: `avg_x`, `avg_def_x`,
     `vaep`, `pv`. `vaep_def` e `pv_def` sono uscite da `ADV_SPEC` nel `b7`, quindi
@@ -746,6 +778,10 @@ sono lo stesso problema.
   stata davvero restituita: serve a distinguere a colpo d'occhio una metrica
   assente (0%) da una con zeri legittimi. `N/D` si mostra solo a copertura
   zero — uno zero reale resta zero.
+- **Una previsione senza dati è `null`, mai 0**, anche quando lo zero è un valore
+  plausibile della metrica. `predictStat` lo garantisce chiedendo `nValid > 0` (`b39`);
+  prima lo zero passava dalle metriche additive, dove nessun controllo sul segno poteva
+  fermarlo. Vedi *L'audit del `b39`*, punto 7.
 
 ## Trappole già corrette: non rifarle
 
@@ -949,6 +985,36 @@ a `scanner.html` al commit `cd51a69`, prima della ripulitura.
   chiude la domanda. La regola è la stessa delle costanti — **accanto a «corretto»
   va scritto dove guardare nel sorgente per riverificarlo**, altrimenti fra sei
   build nessuno sa più se è vero. Vedi *L'audit del documento*.
+- **Un valore sentinella non è un dato mancante.** `negBinK` restituisce `Infinity` per
+  dire «non sovradisperso, usa Poisson», e `negBinCDF` lo sa. Il `b38` lo filtrava con
+  `isFinite` e spegneva la base dei gialli in tre partite su quattro. Prima di filtrare un
+  valore «strano», cercare chi lo produce e **cosa intende dire**: `Infinity`, `0`, `null`
+  e `NaN` non sono sinonimi, e ogni funzione del motore ne usa uno per un motivo. Vedi
+  *L'audit del `b39`*, punto 1.
+- **Una misura vale per la definizione con cui è stata fatta, non per il codice che la
+  cita.** Le bande del tabellone erano misurate con la base empirica dei mercati sui
+  numeri e 15 mercati; il codice usa la base del motore e 13. I numeri erano vicini, i
+  conteggi no, e la tabella dei «mercati con più scarto» cambiava del tutto (Tiri dal 15%
+  all'1.8%). Regola: **la misura si rifà facendo girare la stessa funzione che la usa**,
+  non una sua ricostruzione più comoda.
+- **Una calibrazione ha un dominio.** La tabella della confidence era misurata sui pick,
+  sempre sopra il 33%, e veniva applicata a tutti e tre gli esiti: un pareggio al 24%
+  usciva con confidence 36. Una tabella non estrapola — ma nemmeno avverte quando le si
+  chiede un punto fuori dal campione: resta piatta, e piatto sembra plausibile.
+- **Due copie divergono anche quando una delle due è appena stata corretta.** Quarta
+  volta (`CMP_DC_SHRINK_TABLE`, `aerials`, `_calibConf1X2` doppia nel `b23`, e ora la
+  retta nel Comparatore dopo il `b38`). La parità non la vedeva perché confrontava la
+  copia **giusta** (`R.confidence`, dal motore). Un controllo di parità deve toccare
+  **ogni numero che il CSV scrive**, non solo quelli che il motore restituisce.
+- **Una media di niente è zero, e zero passa i controlli sul segno.** `_timeDecayDates`
+  su una serie tutta `null` restituisce 0; per le metriche additive lo zero è un valore
+  legittimo, quindi «nessun dato» diventava «previsto 0» sul 100% delle righe senza
+  `/advanced`. Il controllo giusto è sul **conteggio** (`nValid > 0`), non sul valore.
+- **Una tabella a schermo senza una riga in questo file è una stima di cui nessuno sa
+  l'età.** `LEAGUE_STATS` stava nel motore dal primo caricamento, a schermo in ogni
+  analisi, e non era mai stata nominata qui: diceva «sopravvaluta la casa» con numeri del
+  motore v9.6. Ogni tabella che finisce davanti all'utente va elencata in *Le costanti
+  messe a mano* col suo campione e la sua macchina.
 
 ## Cosa è già stato provato, e come è andata
 
@@ -970,7 +1036,7 @@ riga qui sotto costa già un backtest.
 | `rho` come causa del bias dell'Over 2.5 | **falsificata** | spegnerlo sposta l'Over 2.5 di **+0.0 punti** in tutte e tre le leghe: `rho` stimato vale fra −0.001 e −0.043 e tocca quattro celle di una matrice 11×11 |
 | Una distribuzione a coda più grassa per i gol | **falsificata, ed era di segno sbagliato** | il totale gol è **sotto**disperso rispetto a Poisson: var/media 0.849 / 0.895 / 0.975 |
 | `GOALS_UNIT_FIX` (normalizzare attacco/difesa sugli NPxG) | **diagnosi giusta, cura sbagliata** | il disallineamento c'è (8 moltiplicatori su 8 sotto 1) ma è già compensato a valle; la cura divide per una baseline che correla 0.77–0.87 col lambda e porterebbe il livello a 3.13–3.65 contro 2.43–2.75 veri |
-| Ricalibrare le rette della confidence | **non serve** | rifittate su 756 partite danno 16.88 + 0.686·p contro 6.26 + 0.880·p: ai punti che contano (50–60%) coincidono entro un punto |
+| Ricalibrare le rette della confidence | **serviva per l'1X2, non per i binari** | nel `b5` rifittata su 756 partite dava 16.88 + 0.686·p, e sembrava confermare la retta. Nel `b38`, sul motore post-`b30` e su 1882 partite, la retta dell'1X2 sottostimava fino a **8 punti** (a 62 mostrava 61, vero 67.5) ed è stata sostituita dalla tabella; quella dei binari sbaglia al massimo di 2.4 punti ed è rimasta. I fit vecchi erano di un'altra macchina. Vedi *Il tabellone ordinava per la colonna sbagliata* |
 | Affilare le probabilità (temperatura) | **non serve** | il Brier peggiora oltre T≈1.1 su 716 partite |
 | Stimare attacco/difesa su **tutta la lega** invece che su 15 partite a squadra | **non serve** | AUC 0.681 contro 0.680 del modello attuale; mescolato 0.688 contro lo 0.690 che l'Elo dà già. Sul totale gol è perfino peggio. Vedi *L'Elo nell'1X2* |
 | Abbassare `SHRINK_K` per de-comprimere l'1X2 | **funziona sull'1X2, non sul conto** | `-0.0016` di logloss 1X2 (`z = -3.03`) contro `+0.0056` sui mercati gol: somma **+0.0040, peggio**. E sulle righe senza clamp dell'HFA il segno non regge (`z = -1.35`). Vedi *Il backtest che chiude lo shrinkage* |
@@ -1227,9 +1293,14 @@ ma **inclinando il rapporto fra i lambda tenendo fisso il totale**:
 
 ```
 lgModel  = logit( p1 / (p1 + p2) )         dalla matrice attuale
-lgElo    = (Elo_casa − Elo_trasferta + HFA) / 173.72
-lgTarget = (1 − w) · lgModel + w · lgElo    w = ELO_1X2_W = 0.50
+lgElo    = (ELO_SCALE · (Elo_casa − Elo_trasferta) + HFA) / 173.7178
+lgTarget = (1 − w) · lgModel + w · lgElo    w = ELO_1X2_W
 ```
+
+Com'è **oggi** nel sorgente (`eloTiltLambdas`, riletto all'audit del `b39`): `w = 0.75`
+dal `b14` e `ELO_SCALE = 1.25` dal `b30`. Questo blocco ha mostrato `w = 0.50` e
+`lgElo` senza scala fino al `b38`: era la formula del `b13`, rimasta com'era mentre
+le due costanti cambiavano sotto.
 
 poi `eloTiltLambdas` cerca per bisezione l'inclinazione `t` tale che
 `lamH·e^t`, `lamA·e^−t` (riscalati perché la somma resti identica) producano
@@ -2419,6 +2490,14 @@ insieme — ed erano gli unici **non presenti nel tabellone**, benché questo do
 dica dal `b16` che discriminano meglio dei gol. `X` non ha scarto in nessuna partita su
 1882: il pareggio non si prevede, e ora la tabella lo mostra invece di dirlo a parole.
 
+> **Rifatta all'audit del `b39`, e per i numeri cambia molto.** Questa tabella usava
+> come base dei mercati sui numeri la **frequenza empirica** della Serie A, ma il motore
+> usa il **riferimento ancorato ai gol**, che in Serie A sta 5 punti sopra il vero su
+> corner e tiri (base 51.2% contro 46.1%, 50.1% contro 45.3%) e 2.6 sotto sui gialli.
+> Con la base che il tabellone calcola davvero: **Gialli 18%**, Tiri **1.8%**, Corner
+> **0.7%**. E `NoGoal`/`Under 2.5` salgono al 21–23%, ma per una ragione che non è
+> informazione: vedi *L'audit del `b39`*, punto 3.
+
 ### 4. Il base rate viene dalla lega, non dal campione di Serie A
 
 Il punto delicato: il base rate è **specifico della lega** (Over 2.5 è 48.6% in Serie A
@@ -2456,6 +2535,14 @@ E **come lo si usa davvero**, cioè prendendo la proposta migliore di ogni parti
 
 Rifatto **walk-forward**, con il base rate contato solo sulle partite precedenti come fa
 il motore: **+18.8 punti**, cioè *meglio* dell'in-sample. Nessun gonfiaggio.
+
+> **Due cose che questa misura non diceva, trovate all'audit del `b39`.** Il
+> walk-forward era fatto **senza** i mercati sui numeri (lo script lo scriveva, questa
+> sezione no), e l'in-sample li contava con la base empirica invece che con quella del
+> motore. Nel motore spedito, poi, la base dei numeri era **spenta** su una partita su
+> tre per i corner e tre su quattro per i gialli (vedi *L'audit del `b39`*, punto 1).
+> Rifatto tutto com'è nel `b39`: **+18.5 ±2.2 su 1734 partite con una proposta**, in
+> cima `1` 24% · `Gialli` 22% · `X2` 16% · `2` 15% · `Under` 14% · `1X` 6% · `Tiri` 2%.
 
 ### 6. La confidence dell'1X2 comprimeva. Quella dei mercati binari no
 
@@ -2527,6 +2614,247 @@ de-compressione, ed è un guadagno netto.
 - **Non è un modello nuovo**: le probabilità sono le stesse di prima. Cambia solo quale
   di quei numeri viene messo in cima e come viene etichettato — che è esattamente dove
   il `b26` aveva scritto che stava il margine, e dove per dieci build non ho guardato.
+
+## L'audit del `b39`: il codice contro se stesso, e il documento contro il codice
+
+Richiesto così: *«controlli tutto il codice ed aggiorni agents?»*, subito dopo aver
+spedito il `b38` su `main`. Tre giri: i controlli meccanici di *Come validare* rifatti
+da capo, la rilettura riga per riga del codice nuovo del `b38` (che era quello meno
+collaudato), e il documento confrontato col sorgente. **Il codice nuovo aveva due difetti
+veri e uno di dominio; il codice vecchio tre copie o zeri silenziosi; il documento una
+dozzina di frasi che descrivevano un motore di dieci build fa.** Le probabilità del
+motore non si muovono: `b38` contro `b39`, **39 campi su 39 identici**.
+
+### I controlli meccanici
+
+| controllo | esito |
+|---|---|
+| sintassi dei tre file (`node --check`) | OK |
+| i cinque agganci testuali | 5 su 5, una occorrenza ciascuno |
+| build allineate (`__SCANNER_BUILD`, `_bComp`, due badge) | tutte `0905-b39` |
+| `exposeNames` contro il motore | 23 su 23 (era 22: entra `_calibConf1X2`) |
+| **E** — `ADV_SPEC` contro `CMP_NEW_SPEC` | 31 chiavi comuni, stesso campo, stesso ordine; le 7 lette a mano in `aggregaTeam` coincidono con `CMP_ADV_KEYS` |
+| **F** — chiavi lette come `R.*` contro quelle esposte dall'hook | zero orfane; due esposte che il motore **non ha più** (`sampleFactor`, `wKnn`): tolte |
+| **G** — etichette del CSV ripetute con valori **diversi** | zero, sul sintetico e su un export vero da 1127 partite (vedi sotto per la definizione nuova) |
+| **J** — costanti del motore contro questo file | coincidono; fuori posto erano le **formule** citate (Elo, curva dello stacco, confidence), non i numeri |
+| **K** — `eslint` | **un errore vero**: chiave `nHfa` doppia nel risultato del Comparatore (innocua: tutte e due leggevano `ELO._nHfa`). Tolta. Restano 35 avvertenze attese (`onclick`, `catch(e)`, `lamH_mix` letta dall'hook) |
+| ogni id scritto o letto esiste nel DOM | 194 su 194 nello Scanner, 60 su 60 nel Comparatore (tre composti a runtime) |
+| parità Comparatore↔Scanner | **19 campi su 19**: i 16 di sempre più la confidence **per esito** |
+| tre pagine a 390px | zero errori, zero richieste fallite, zero scroll laterale |
+
+Il controllo **G** è stato ridefinito, perché nella forma vecchia («zero etichette
+duplicate») falliva da tre build senza che nessuno lo rifacesse: `esito reale 1 contro
+2` sta in tre sezioni A/B, `Over 2.5` in due, `Nome Casa` in tre. Tutte e tre portano **lo
+stesso valore per costruzione**, quindi un parser che prende la prima occorrenza legge il
+numero giusto. La domanda che conta non è «ci sono ripetizioni?» ma **«ci sono
+ripetizioni con valori diversi fuori dalle coppie casa/trasferta?»**, ed è quella che
+fa sbagliare sezione in silenzio.
+
+### 1. Il tabellone spegneva la base dei mercati sui numeri (`b38`)
+
+```js
+R.push([nome, pr, (ref > 0 && isFinite(kk)) ? over(line, ref, kk) : null, desc]);
+```
+
+`kk` è la dispersione da `negBinK`, che restituisce **`Infinity`** quando il campione non
+è sovradisperso — non è un dato mancante, è un risultato, e `negBinCDF` lo tratta come
+Poisson. Il filtro `isFinite` lo scambiava per un buco: base assente, riga in fondo, con
+la scritta «archivio di lega troppo corto», che era falsa. Quanto spesso, dai cinque
+export post-`b30` (1882 partite, la dispersione è nel CSV):
+
+| mercato | `k` infinito | cioè senza base nel `b38` |
+|---|---|---|
+| Corner O9.5 | 31.7% | una partita su tre |
+| Tiri porta O8.5 | 47.0% | una su due |
+| **Gialli O3.5** | **75.9%** | **tre su quattro** |
+
+Il mercato sui numeri migliore spariva in tre partite su quattro. Corretto in `kk > 0`.
+Walk-forward, com'è nel motore:
+
+| | partite con una proposta | rende | guadagno | in cima i gialli |
+|---|---|---|---|---|
+| `b38` | 1601 | 66.7% | +18.7 ±2.4 | 5% |
+| `b39` | **1734** | 68.1% | **+18.5** ±2.2 | **22%** |
+
+Il guadagno per proposta non si muove, **133 partite in più** hanno qualcosa da giocare.
+È esattamente ciò che il `b38` voleva e che il filtro impediva.
+
+### 2. Le bande misurate con una base, applicate con un'altra
+
+Le tre bande di `EDGE_BANDS` venivano da 15 mercati (anche Over 1.5 e 3.5, che il
+tabellone non mostra) e dalla base **empirica** della Serie A per corner, tiri e gialli.
+Il tabellone ne mostra 13, con la base del **motore**. Rimisurate esattamente come le
+calcola `renderVerdetti` (base dei gol walk-forward col minimo a 200, base dei numeri dal
+riferimento di lega):
+
+| scarto | proposte | guadagno | `b38` |
+|---|---|---|---|
+| +5…+10 | 2653 | **+6.2** ±1.9 | +6.3 su 3436 |
+| +10…+20 | 2290 | **+15.4** ±2.0 | +14.8 su 2613 |
+| +20 e oltre | 848 | **+26.6** ±3.0 | +24.6 su 765 |
+
+Stesso ordine, stesso segno in ogni anno dal 2022 al 2026. Cambiano i conteggi, che nel
+`b38` erano di un'altra definizione (la banda «FORTE» contava solo +20…+30).
+
+### 3. NoGoal e Under partono avvantaggiati, e non è informazione
+
+Con la base del motore lo **scarto medio** su tutte le partite è circa zero per ogni
+mercato tranne quattro: `NoGoal` **+6.1**, `Under 2.5` **+5.6**, `Over 2.5` −5.6, `GG`
+−6.1. È il livello dei gol troppo basso (il bias noto dell'Over, −2.6/−3.4 punti) che si
+trasforma in scarto finto verso l'Under. Per mercato, contro il guadagno che la banda
+promette:
+
+| mercato | +5…+10 (banda +6.2) | +10…+20 (banda +15.4) |
+|---|---|---|
+| `Under 2.5` | +3.5 ±4.2, n 571 | +14.9 ±5.1, n 351 |
+| **`NoGoal`** | **+1.3** ±4.2, n 554 | **+10.0** ±5.2, n 363 |
+| `Gialli` | +5.7 ±4.5, n 456 | +12.5 ±5.0, n 326 |
+| `1X` | +15.5 ±5.4, n 198 | +18.0 ±3.7, n 357 |
+
+`NoGoal` rende meno della sua banda in tutte e due le fasce, a 1–2 sigma. **Non è stato
+corretto nel codice** — una lega sola, e la cura giusta è il livello dei gol, non un
+ritocco al tabellone — ma l'intestazione del tabellone ora lo dice. È il punto 17 della
+coda.
+
+### 4. Il riferimento dei mercati sui numeri sta alto del 5% in Serie A
+
+| | riferimento medio | reale medio | base del motore | frequenza vera |
+|---|---|---|---|---|
+| Corner O9.5 | 9.84 | 9.35 | 51.2% | 46.1% ±2.3 |
+| Tiri porta O8.5 | 8.72 | 8.29 | 50.1% | 45.3% ±2.3 |
+| Gialli O3.5 | 4.03 | 4.05 | 57.0% | 59.6% ±2.3 |
+
+`MARKET_PER_GOAL` è stata tarata sulle tre leghe 2025/26 **prima del `b18`**, cioè con la
+lega congelata a 2.70 gol: il documento la elencava già fra le costanti esposte a quel
+bug. Qui si vede in Serie A. **Non ritarata**: una lega sola, e il documento ha la regola
+per questo caso. Effetto pratico: corner e tiri arrivano raramente in cima (0.7% e 1.8%
+delle partite con scarto ≥ +10), i gialli un po' troppo spesso. Punto 18 della coda.
+
+### 5. La confidence del CSV non era quella dello schermo (`b38`)
+
+Il Comparatore teneva una **sua** `_calibConf1X2` con la retta `6.26 + 0.880·p`; il
+`b38` aveva cambiato quella dello Scanner. La colonna *Confidence* del CSV e i badge del
+Comparatore divergevano dallo schermo, sullo stesso campionato sintetico:
+
+| | Scanner | Comparatore `b38` | Comparatore `b39` |
+|---|---|---|---|
+| confidence `1` (51.5%) | 54 | **52** | 54 |
+| confidence `X` (24.3%) | 36 → 22 | **28** | 22 |
+| confidence `2` (24.2%) | 36 → 22 | **28** | 22 |
+
+La parità non se n'era accorta perché confrontava `R.confidence`, che viene dal motore.
+**Quarta volta della trappola delle due copie**, e la terza in cui nessun controllo la
+vede perché controlla la copia giusta. Ora le funzioni stanno a livello di modulo nello
+Scanner, `_calibConf1X2` è in `exposeNames`, il Comparatore la usa e ripiega sulla retta
+solo per un motore precedente al `b39`, dicendolo nel log. La parità controlla anche la
+confidence per esito.
+
+### 6. La tabella della confidence usata fuori dal suo dominio (`b38`)
+
+Nella colonna qui sopra c'è un «36 → 22»: il pareggio al 24.3% usciva con confidence
+**36**. La tabella del `b38` è misurata sui **pick** (la probabilità più alta, sempre
+≥33%), e sotto il suo primo punto restava piatta a 36.1. Ma lo Scanner mostra la
+confidence per **tutti e tre** gli esiti. Misurati gli esiti che non sono il pick:
+
+| fascia | n | probabilità media | si avvera |
+|---|---|---|---|
+| 0–15% | 310 | 11.4% | 9.7% |
+| 15–20% | 390 | 17.7% | 16.2% |
+| 20–25% | 755 | 22.8% | 20.0% |
+| 25–30% | 1649 | 27.5% | 27.4% |
+| 30–33% | 468 | 31.3% | 31.0% |
+
+Quasi calibrati. Aggiunti come cinque punti in testa alla tabella (13 in tutto,
+monotona): sui 3572 esiti non-pick sotto il 33% la confidence media passa da **36.1 a
+23.6** contro il **23.5%** reale, Brier ×10⁴ da 1958 a 1759. Sul pick nella fascia bassa
+(33–37.6%) quasi niente: 36.1 → 35.1, reale 33.1.
+
+### 7. «Nessun dato» usciva come «previsto 0» sulle metriche additive
+
+`_timeDecayDates` restituisce **0** quando non c'è nessun valore valido. Per le metriche
+`volume` `predictStat` lo scarta (`decay > 0`), per le quattro `additivo` (`avg_x`,
+`avg_def_x`, `vaep`, `pv`) no: accetta qualunque numero finito, e 0 lo è. Sull'export
+`b36` da 1127 partite senza `/advanced`, *Altezza Difensiva*, `vaep` e `pv` uscivano
+**previsti 0 sul 100% delle righe**, contro un reale `N/D`. Probabilità e lambda non
+toccati (passano solo da metriche `volume`), il prompt nemmeno (non le usa): il danno
+stava nel CSV. Ora `predictStat` chiede `nValid > 0`, che per le `volume` non cambia
+niente.
+
+È la politica sui valori mancanti rotta da una porta che il `b19` non aveva guardato:
+lì lo zero entrava da `zeroIf` prima dei fallback, qui da una media pesata di niente. Il
+ramo additivo è del `b4`: il difetto ha trentaquattro build.
+
+### 8. `LEAGUE_STATS`: una tabella a schermo che il documento non citava mai
+
+Nel sorgente dal primo caricamento, **zero menzioni** in questo file. È la nota di lega
+sopra il tabellone: accuratezza sul segno, resa dei pick sopra il 55%, resa con
+confidence 60+, e «il modello sopravvaluta la casa di N punti», su 32.929 partite di 26
+leghe. Misurata col motore **v9.6** (così dichiara il primo caricamento), prima dell'Elo
+nell'1X2 e della confidence a tabella. Rifatta sull'unica lega che si può rimisurare:
+
+| campo | tabella (v9.6) | motore di oggi, Serie A, 1882 partite |
+|---|---|---|
+| segno azzeccato | 49.8% | 52.3% ±2.3 |
+| pick sopra il 55% | 65.3% | 65.5% ±4.0 |
+| confidence 60+ | 74.5% | **68.8%** ±4.7 |
+| gap casa | −2.4, «sopravvaluta la casa» | **0.0** |
+
+Il «sopravvaluta la casa» è il difetto che il `b20` ha corretto nell'Ordered Logit. La
+nota mostra ora solo i due campi che reggono come **ordine** fra campionati, dice da
+quale motore vengono e che in Serie A oggi il segno fa 52.3%. `confHit` e `gapCasa`
+restano nella tabella e **non vanno rimessi a schermo** senza rimisurarli.
+
+### 9. Testi rimasti indietro
+
+- Mega-prompt: «verdetti decisi da **2963** partite» (sono 1882 dal `b38`), «la fascia
+  alta arriva al **74%**» (sopra il 60% oggi è il 71%), e un'istruzione su verdetti
+  «**FUORI SOGLIA**», un nome che dal `b38` non esiste più.
+- Card della confidence: le soglie alte «rendono di più **e** coprono più calendario»
+  della stima vecchia. Rendono 2–4 punti in **meno**, su un calendario doppio.
+- Intestazione del tabellone: diceva che il base rate è «contato sull'archivio della
+  lega» anche per corner, tiri e gialli, che invece usano il riferimento ancorato.
+
+### 10. Pulizia che non sposta numeri
+
+- L'hook esportava `sampleFactor` e `wKnn`, che il motore non ha dal `b7`: il log stampava
+  `wKnn=?` a ogni partita.
+- L'exposer lasciava in `window` le funzioni del motore precedente quando il nuovo non le
+  aveva: ora le azzera.
+
+### 11. Il documento contro il codice
+
+Riscritti perché descrivevano un motore diverso da quello che gira: la confidence in
+*Come funziona il motore* (due rette su 6824 partite, e `tvDist`/`sampleFactor` «ancora
+calcolati»), il KNN che «alimenta `knnRel`/`wKnn`», la formula dell'Elo in *Come è
+collegato* (`w = 0.50` e `lgElo` senza `ELO_SCALE`), la curva dello stacco nella
+revisione della UI (τ = 110), la riga *Ricalibrare le rette della confidence — non
+serve*, la tabella delle soglie in *Dove siamo* (solo pre-`b30`), il punto 2 della
+*Mappa onesta* (chiuso nel `b38` ma scritto come aperto), `CMP_K_LIST = [4, 12, 28]` in
+due descrizioni dello stato corrente, e il contratto (`exposeNames` da 22 a 23). Le
+sezioni **datate** — i racconti di una build — sono state lasciate come sono: descrivono
+cosa si sapeva allora, ed è il loro scopo.
+
+### Un falso allarme, che vale la pena scrivere
+
+A metà verifica il tabellone mostrava base **0.0%** per i corner e 1.9% per i gialli. Il
+banco di prova usato per il confronto `b38`/`b39` genera un campionato da **0.7 gol a
+partita** con 13 corner: un riferimento ancorato ai gol (3.61 corner per gol) ne dà 2.5.
+Il codice era giusto, il sintetico non rispettava il rapporto corner/gol di una lega
+vera. È la regola del `b36` in un'altra forma: **il sintetico risponde alle domande di
+struttura, non a quelle di livello** — e questa era una domanda di livello.
+
+### Cosa resta scoperto
+
+- **Tutto quello qui sopra è Serie A.** Base dei numeri, bande, NoGoal: sesta lega.
+- **`LEAGUE_STATS` per le altre 25 leghe** non si può rimisurare senza i loro backtest.
+- **Il mega-prompt** è stato riletto nelle frasi con numeri, non riga per riga.
+- **I parametri interni del Markov** restano verificati solo negli invarianti.
+- **Le manopole scritte `window.X = window.X || <default>`** (`CONF_1X2_TABLE`,
+  `EDGE_BANDS`, `ENS_W`, `STAT_SHRINK_TABLE`, le tre `MARKET_*`) sopravvivono a una
+  seconda iniezione nella stessa pagina: trascinando nel Comparatore un motore nuovo
+  dopo uno vecchio, **senza ricaricare**, resta il valore del vecchio. L'exposer ora
+  azzera le funzioni mancanti, non queste. Comportamento di sempre, e il rimedio è
+  ricaricare la pagina: scritto qui perché nessun log lo dice.
 
 ## L'audit sistematico del `b19`: cosa è stato controllato e cosa è saltato fuori
 
@@ -2899,7 +3227,8 @@ controllato.
 **Sì, coincidono — bit per bit.** Non è ovvio, perché il Comparatore non chiama il
 motore come lo chiamerebbe un utente: gli mette la lega nel DOM, forza
 `SHRINK_LAM_K`, e soprattutto gira `avviaScanner()` **tre volte** dentro un ciclo su
-`CMP_K_LIST = [4, 12, 28]` per riempire la sezione *A/B SHRINKAGE*. Quello che finisce
+`CMP_K_LIST` (`[4, 12, 28]` quando questa sezione è stata scritta, `[4, 2, 1]` dal
+`b36`) per riempire la sezione *A/B SHRINKAGE*. Quello che finisce
 nel CSV è il **primo giro**, e `CMP_K_LIST[0]` è `4`, cioè il `SHRINK_K` di default
 dello Scanner. Se qualcuno riordina quella lista, il CSV smette di essere confrontabile
 con quello che l'utente vede a schermo. Dal `b23` il Comparatore lo dice: subito dopo
@@ -3258,33 +3587,23 @@ una costante è, coi dati in mano, irrealistico.**
 Questa è la parte che l'utente vuole davvero, e la risposta è che **esiste già e non è
 esposta**. Il modello produce una fascia alta che rende molto più della sua media, e
 **due campioni indipendenti la confermano soglia per soglia** (tabella in *Dove siamo*):
-una partita su tre ha probabilità reale ~65%, una su undici ~74%.
+al `b26` una partita su tre aveva probabilità reale ~65% e una su undici ~74%; sul
+motore di oggi una su tre ~65% e **una su cinque ~71%**.
 
-Non è «più accuratezza»: è la stessa accuratezza, **selezionata**. E oggi lo Scanner la
+Non è «più accuratezza»: è la stessa accuratezza, **selezionata**. ~~E oggi lo Scanner la
 nasconde, perché la retta della confidence ha pendenza `0.880` e comprime proprio dove
-servirebbe espandere.
+servirebbe espandere.~~
 
-**È il guadagno migliore disponibile: costa zero chiamate, zero modelli nuovi, e non
-tocca il motore.** ~~L'unica ragione per cui non è già stato fatto è che questo documento
-riporta altrove pendenze *sotto* 1 su campioni più vecchi (0.686 su 756 partite, 0.880
-su 6824) — segno opposto.~~ **Preso nel `b38`**, dodici build dopo: le vecchie rette erano
-stimate prima del `b13`, del `b20` e del `b21`, quindi su una macchina diversa, e la
-sostituta è la tabella empirica per fascia che il punto 3 qui sotto prescriveva. Vedi
-*Il tabellone ordinava per la colonna sbagliata*. Prima di riscrivere un numero che l'utente legge e su cui
-decide, va risolta quella contraddizione, e la spiegazione più probabile è che quelle
-stime **precedano** l'Elo che inclina i lambda (`b13`), l'ensemble riscritto (`b20`) e
-`ENS_SCOPE_W` (`b21`): stime invecchiate, non misure sbagliate.
-
-**Come chiuderla, in ordine di costo:**
-
-1. **Rifare i vecchi fit sul motore di oggi.** Se i 6824 match di allora sono ancora
-   disponibili, ribacktestarli col `b26` e rimisurare la pendenza. Se viene sopra 1,
-   la contraddizione sparisce e la retta si cambia.
-2. **Se non sono disponibili, una quarta e quinta lega** sul motore attuale. Con cinque
-   leghe concordi la stima vecchia è archiviata per anzianità.
-3. **Poi, e solo poi**, sostituire le due rette — o meglio, sostituirle con la
-   **tabella empirica per fascia** invece che con una retta: le soglie sono quello che
-   l'utente guarda, e una tabella non estrapola dove non ci sono dati.
+**Preso nel `b38`**, dodici build dopo averlo scritto qui. L'unica ragione per cui non
+era già stato fatto era una contraddizione: altrove questo documento riportava pendenze
+*sotto* 1 su campioni più vecchi (0.686 su 756 partite, 0.880 su 6824). Si è sciolta
+come previsto: quelle stime **precedevano** l'Elo che inclina i lambda (`b13`),
+l'ensemble riscritto (`b20`) ed `ENS_SCOPE_W` (`b21`) — stime invecchiate, non misure
+sbagliate. Dei tre passi che questo punto prescriveva, il primo (rifare i fit vecchi) è
+stato saltato perché i 6824 match non ci sono più; il secondo è a metà (una lega sola,
+cinque stagioni); il terzo è fatto nella forma indicata, cioè **una tabella per fascia**
+e non una retta nuova. Vedi *Il tabellone ordinava per la colonna sbagliata* e, per
+l'estensione agli esiti che non sono il pick, *L'audit del `b39`*.
 
 ### 3. Prevedere meglio i gol — il muro, e resta muro
 
@@ -4671,8 +4990,9 @@ Costanti dell'ensemble introdotte nel `b20`, con la loro classificazione:
 | `GOALS_UNIT_FIX` | 0 | **spenta per misura** (`b22`) | il denominatore correla 0.77–0.87 col lambda e il livello sfonderebbe del 30%: non accendere finché `_baseN` non è sostituita da una media NPxG di lega |
 | `OL_BETA` / `T1` / `T2` | 2.056 / −0.475 / +0.671 | stimata | massima verosimiglianza su 1743 partite, validata leave-one-league-out |
 | `ROLE_SCOPE_INDEPENDENT` | 0 | **non stimata, dichiarata tale** (`b23`) | 0 = ruolo sottoinsieme, comportamento di sempre; l'unica in coda che **non** si ricostruisce dal CSV, servono due giri |
-| `CONF_1X2_TABLE` | 8 punti | stimata (`b38`) | resa misurata del pick per fascia su 1882 partite del motore post-`b30`, gia' monotona senza isotonica; `CONF_1X2_MODE = 'retta'` riporta alla vecchia |
-| `EDGE_BANDS` | 20 / 10 / 5 | stimata (`b38`) | guadagno per fascia di scarto su 28.230 proposte: +24.6 / +14.8 / +6.3 punti, monotono, segno concorde in 5 stagioni su 5 |
+| `CONF_1X2_TABLE` | 13 punti | stimata (`b38`, estesa nel `b39`) | otto punti sopra il 37%: resa del **pick** per fascia su 1882 partite del motore post-`b30`; cinque sotto il 33%: esiti **non-pick** (3572 coppie), perche' la confidence si mostra per tutti e tre gli esiti. Monotona senza isotonica; `CONF_1X2_MODE = 'retta'` riporta alla vecchia |
+| `EDGE_BANDS` | 20 / 10 / 5 | stimata (`b38`, rimisurata nel `b39`) | guadagno per fascia misurato come lo calcola `renderVerdetti`: 13 mercati, base dei gol walk-forward, base dei numeri dal riferimento di lega. +26.6 su 848 / +15.4 su 2290 / +6.2 su 2653, segno concorde in ogni anno 2022-2026 |
+| `LEAGUE_STATS` | 26 leghe | **stimata su un'altra macchina** (motore v9.6, 32.929 partite) | nel sorgente dal primo caricamento e mai citata qui fino al `b39`. In Serie A reggono segno e pick sopra il 55% (come ordine fra leghe), non `confHit` (74.5 contro 68.8) ne' `gapCasa` (-2.4 contro 0.0): quei due non si mostrano piu'. Coda, punto 19 |
 | minimo di `leagueBaseRates` | 200 | **paracadute misurato** (`b38`) | il guadagno e' piatto fra 50 e 500 (+18.8 / +19.1 / +18.3): il 200 dimezza l'errore peggiore su archivio corto e in produzione non morde mai (lgN > 900) |
 
 Nel `b20` `ENS_SCOPE_W` era l'unica senza una misura dietro, ed è per questo che
@@ -4758,11 +5078,17 @@ Scanner: ne legge il testo, lo modifica con delle regex e lo esegue con
    `markovFlow`, `probsFromMatrix`, `estimateRho`, `calculateRho`,
    `getSimilarMatches`, `computeLeagueParams`, `multigoal`,
    `asianHandicapMat`, `negBinCDF`, `negBinK`, `poisson`, `expectedPoints`,
-   `loadLegheJson`, `fetchMatchRaw`, `predictStat`, `_isPast`.
-   Sono **ventidue**, e ventidue sono le voci di `exposeNames`. Il **contenuto** è
+   `loadLegheJson`, `fetchMatchRaw`, `predictStat`, `_isPast`, `_calibConf1X2`.
+   Sono **ventitré**, e ventitré sono le voci di `exposeNames`. Il **contenuto** è
    libero, i **nomi** no. `_isPast` è entrata nel `b24`: il Comparatore ricostruisce lo
    storico per conto proprio e deve tagliare **con la stessa funzione** del motore, non
    con una copia della condizione — è la solita regola delle due copie che divergono.
+   `_calibConf1X2` è entrata nel `b39` per la stessa ragione: il Comparatore ne teneva
+   una copia con la retta vecchia, e dal `b38` la colonna *Confidence* del CSV diceva
+   un numero diverso dallo schermo. Nessuna delle due è in `required`: un motore che
+   non le ha resta caricabile, e l'exposer **azzera** i nomi che il motore non espone,
+   così un motore vecchio trascinato dopo uno nuovo non eredita le funzioni del giro
+   prima.
 
 3. **Il punto di aggancio dell'hook** è la riga della confidence, trovata con
    `/(const\s+confidence\s*=\s*Math\.round\([^;]*;)/`. Non riscriverla e non
@@ -4845,7 +5171,7 @@ l'emivita da una parte, cambiala dall'altra.
 I file non hanno commenti (vedi *Stile*), quindi `OL_BETA/OL_T1/OL_T2`, le rette
 della confidence, `RESID_GAMMA`, `STAT_SHRINK_TABLE`, le tre tabelle `MARKET_*`,
 `SOT_PER_GOAL`, `GOALS_SOT_W`, `ENS_W`, `ENS_SCOPE_W`, `LEAGUE_HALFLIFE_DAYS`,
-`ROLE_SCOPE_INDEPENDENT`, `CONF_1X2_TABLE` e `EDGE_BANDS`
+`ROLE_SCOPE_INDEPENDENT`, `CONF_1X2_TABLE`, `EDGE_BANDS` e `LEAGUE_STATS`
 devono dire **in AGENTS.md** su quante partite sono state stimate e con che metodo.
 Se ne cambi una, aggiorna la sezione che la descrive; se ne aggiungi una, scrivila da
 qualche parte prima di committare.
@@ -5026,6 +5352,13 @@ girano sul solo sorgente, quindi si possono fare a ogni commit senza un backtest
   di lookup: quelle condividono le chiavi per costruzione e segnalarle è un falso
   allarme del controllo. Al `b23`: 91 etichette, zero duplicati. Il numero cresce a
   ogni sezione nuova — è il conto che conta, non il valore assoluto.
+  **Ridefinito nel `b39`**: dal `b31` tre etichette si ripetono con lo **stesso valore
+  per costruzione** (`esito reale 1 contro 2` in tre A/B, `Over 2.5` dalla stessa
+  matrice in due sezioni, `Nome Casa` in tre intestazioni), e il controllo nella forma
+  vecchia falliva senza che nessuno lo rifacesse. La domanda giusta è: **ci sono
+  etichette ripetute con valori DIVERSI fuori dalle coppie casa/trasferta?** Al `b39`:
+  370 etichette distinte, 75 ripetute, **zero** con valori diversi, sul sintetico e su un
+  export vero da 1127 partite.
 
 **I due controlli aggiunti dall'audit del documento**, che girano sul solo sorgente:
 
@@ -5076,10 +5409,24 @@ girano sul solo sorgente, quindi si possono fare a ogni commit senza un backtest
   stesso modo: è il bug del `b18` e si ripresenta ogni volta che si entra nel motore da
   una porta diversa.
 - **R. Il debug su `window` è dell'ultimo giro, non di quello nel CSV (`b33`).**
-  `cmpRunMatch` chiama `avviaScanner()` tre volte (`CMP_K_LIST = [4, 12, 28]`) e i
-  `window.__*_DEBUG` restano quelli di `k = 28`, mentre il risultato e il CSV sono
-  `k = 4`. Per qualunque confronto, leggere il debug **dentro l'oggetto risultato**
-  (`R.eloDebugOver`, `R.scopeDebug`, …), mai da `window`.
+  `cmpRunMatch` chiama `avviaScanner()` tre volte (`CMP_K_LIST`, oggi `[4, 2, 1]`; fino
+  al `b35` era `[4, 12, 28]`) e i `window.__*_DEBUG` restano quelli dell'**ultimo** `k`,
+  mentre il risultato e il CSV sono il primo, `k = 4`. Per qualunque confronto, leggere
+  il debug **dentro l'oggetto risultato** (`R.eloDebugOver`, `R.scopeDebug`, …), mai da
+  `window`.
+- **S. La parità tocca ogni numero che il CSV scrive, non solo quelli del motore
+  (`b39`).** Fino al `b38` la parità confrontava 16 campi, tutti presi da `R`, cioè dal
+  motore; la colonna *Confidence* per esito il Comparatore la calcolava **da sé**, con
+  una copia vecchia, e divergeva di 2–8 punti senza che la parità lo vedesse. Oggi sono
+  19 campi: i 16 più `conf-p1/px/p2` dello Scanner contro `R.conf.c1/cX/c2`. Regola:
+  per ogni colonna del CSV, chiedersi **chi la calcola**; se non è il motore, va nella
+  parità.
+- **T. Una misura che finisce nel codice si rifà con la funzione del codice (`b39`).**
+  Le bande di `EDGE_BANDS` erano state misurate con una base diversa da quella che
+  `renderVerdetti` usa. Il controllo: ricostruire dal CSV **esattamente** l'ingresso
+  della funzione (qui: riferimento di lega e dispersione per partita, entrambi
+  esportati), rifare la misura, e confrontare i conteggi oltre ai valori. Se i conteggi
+  non tornano, le due definizioni sono diverse anche quando i valori si somigliano.
 
 **Il giro completo senza rete.** Il motore si può far girare per intero su dati
 finti, in Chromium, senza toccare PitchAPI: è il controllo che ha misurato
