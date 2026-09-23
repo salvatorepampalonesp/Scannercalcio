@@ -39,7 +39,7 @@ che li mette in `RAW_CACHE`.
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b38`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b39`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -58,6 +58,10 @@ che li mette in `RAW_CACHE`.
   non deve scorrere; i figli di griglia vogliono `min-width:0`.
 - **Le manopole per chi fa backtest vanno nel pannello del Comparatore**, non in console:
   il Comparatore si usa anche da telefono.
+- **Il Comparatore deve stampare quello che stampa lo Scanner.** Ogni riga del CSV dice se
+  lo fa (`COPIA CONFORME DELLO SCANNER`), e `strumenti/banco-parita.js` lo verifica in tutte
+  le modalita'. Chi tocca il motore o il Comparatore lo rifa' prima di committare. Vedi
+  *Il Comparatore stampa come lo Scanner*.
 - **Ogni costante del motore** è stimata dai dati (campione scritto nel *Registro delle
   costanti*), oppure è un a priori dichiarato che si spegne quando i dati bastano, oppure
   è un paracadute di cui è misurato che non morde. Altrimenti è un parametro nascosto.
@@ -69,6 +73,22 @@ che li mette in `RAW_CACHE`.
 
 Dentro ogni gruppo, in ordine di rapporto valore/rischio. Quando chiudi una voce,
 spostala in *Cosa è già stato provato* con i numeri, e aggiorna *Stato attuale*.
+
+### 0. Prima di tutto: rifare il campione di riferimento in copia conforme
+
+- [ ] **Un backtest `b39` di Serie A, cinque stagioni, una stagione per file.** Tutte le
+  misure dal `b24` al `b38` vengono da export del **batch per stagioni**, che fino al `b38`
+  girava con **30 partite di storico** mentre lo Scanner stampa con **15**, e che in ogni
+  file metteva anche le **due stagioni precedenti**, rifatte con meno storico di quello che
+  avrebbero nel loro file. Quindi `CONF_1X2_TABLE`, `EDGE_BANDS`, le soglie del pick, le
+  misure di `SHRINK_K`/`SHRINK_LAM_K` e il 27.6% del clamp dell'HFA sono stati misurati su
+  un'altra macchina. Il `b39` rende il batch copia conforme: il primo giro dice se quei
+  numeri reggono sullo Scanner com'e'. Prima cosa da guardare: `Copia conforme dello
+  Scanner` in testa al file deve essere N su N.
+- [ ] **Decidere lo storico canonico: 15 o 30.** Oggi lo Scanner stampa con 15 e il
+  Comparatore lo segue da solo (legge il default dallo Scanner). Se la misura dice che 30
+  prevede meglio, si cambia **una riga nello Scanner** (`id="history-limit" value="15"`) e
+  il Comparatore si allinea; costa circa il doppio delle chiamate per la prima partita.
 
 ### 1. Backtest che decidono senza rilanciare il motore
 
@@ -83,7 +103,8 @@ Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export rec
   `'shrink'` (prior 65, `k` 200). Il pavimento 30 morde sul 27.6% delle righe di backtest
   (archivi corti, mai in produzione), ed è lì che si concentra il guadagno sospetto di
   `SHRINK_K`. Sezione CSV `A/B REGOLA DELL HFA`. **Da decidere prima di riaprire lo
-  shrinkage.**
+  shrinkage**, e dopo il punto 0: parte di quel 27.6% puo' venire dalle stagioni rifatte
+  con lo storico corto dentro i file di stagioni successive.
 - [ ] **Rifare il backtest su tutte e cinque le leghe col motore attuale.** Dopo il `b18`
   è stata rifatta solo la Serie A: Premier, LaLiga, Bundesliga e Ligue 1 hanno misure prese
   con la lega congelata a 1.50/1.20, e la Bundesliga (3.25 gol reali) è dove il bug mordeva
@@ -166,11 +187,12 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b38`)
+## Stato attuale (`b39`)
 
 **1X2.** Pick azzeccato ~52% contro ~40–43% del «gioca sempre in casa», fermo da venti
 build. Il valore sta nella **fascia alta**, che la card mostra con la tabella misurata
-(1882 partite di Serie A, motore post-`b30`):
+(1882 partite di Serie A, motore post-`b30`, **con 30 partite di storico**: lo Scanner ne
+usa 15, vedi *Da fare*, punto 0):
 
 | soglia sul pick | partite | quota del calendario | azzecca | ±2se |
 |---|---|---|---|---|
@@ -207,7 +229,7 @@ trascina con sé il `12`.
 
 | campione | partite | note |
 |---|---|---|
-| Serie A 2021/22 → 2025/26 | 1882 | motore post-`b30`; `/advanced` assente sulle tre stagioni più vecchie |
+| Serie A 2021/22 → 2025/26 | 1882 | motore post-`b30`; `/advanced` assente sulle tre stagioni più vecchie; storico 30, file con tre stagioni ciascuno (non copia conforme) |
 | Serie A + Premier + LaLiga 2025/26 | 1133 | post-`b18`, con `/advanced` |
 | le tre sopra + Bundesliga + Ligue 1 2025/26 | 1743 | export `b14`, **pre-`b18`**: lega congelata a 1.50/1.20 |
 
@@ -495,38 +517,117 @@ testo, lo modifica con delle regex e lo esegue con `new Function`. Dipende quind
    `CMP_ADV_KEYS` (Comparatore) devono leggere lo stesso campo per la stessa chiave.
    Controllo E dopo ogni getter toccato.
 6. **La build** coincide nei due file (vedi *Regole di lavoro*).
+7. **Quello che lo Scanner stampa dopo l'hook** il Comparatore lo legge su `window` a fine
+   giro, dal **primo** giro del ciclo: `window.__CONF_MK` (le confidence di tutti i mercati,
+   gia' arrotondate come nei badge) e `window.__VERDETTI` (il tabellone, ogni voce con la sua
+   `key`: `p1`, `pX`, `p2`, `p1X`, `pX2`, `p12`, `pOv`, `pUn`, `pGG`, `pNG`, `cor9.5`,
+   `sot8.5`, `yel3.5`). Una voce nuova nel tabellone vuole una `key` nuova e il suo caso in
+   `cmpTabHit`, altrimenti nel CSV il reale di quella voce e' `N/D`.
+8. **Lo storico dello Scanner** si legge dall'attributo `id="history-limit" ... value="15"`
+   dell'HTML dello Scanner. Cambiarne la forma lascia il Comparatore senza metro (il log
+   dice «storico dello Scanner: NON TROVATO»).
+9. **Le manopole** si dichiarano in una delle due forme che `cmpEngineDefaults` sa leggere:
+   `window.X = (typeof window.X === 'number'|'string') ? window.X : <default>;` oppure
+   `window.X = window.X || <default>;`, con il nome in maiuscolo. Una manopola scritta in
+   un'altra forma sfugge al certificato di copia conforme.
+10. **`safeTxt` e `safeHtml`** restano scritte come sono: il banco di prova le strumenta per
+    testo, e se cambiano forma si ferma dicendolo.
 
 **Come gira un batch.** `cmpRunMatch` mette la lega nel DOM del motore (creando l'`<option>`
 se manca e verificando che abbia attecchito), ricopia `history-limit`, e chiama
 `avviaScanner()` **tre volte**, una per ogni valore di `CMP_K_LIST = [4, 2, 1]`, per la
 sezione *A/B SHRINKAGE*. Il CSV e le colonne principali sono il **primo** giro, quindi
-`CMP_K_LIST[0]` deve restare uguale al `SHRINK_K` del motore. I `window.__*_DEBUG` restano
-quelli dell'**ultimo** giro: per qualunque confronto si legge il debug dentro l'oggetto
-risultato (`R.eloDebugOver`, `R.scopeDebug`, …). Se `__UNIT_DEBUG.lgN` è 0 dopo il primo
-giro, `cmpRunMatch` si ferma: la lega non è arrivata al motore.
+`CMP_K_LIST[0]` deve restare uguale al `SHRINK_K` del motore. `window.__*_DEBUG` e
+`globalThis._V97_probs` restano quelli dell'**ultimo** giro: per qualunque confronto si legge
+dall'oggetto risultato (`R.eloDebugOver`, `R.scopeDebug`, `R._confMk`, `R._verdetti`, …).
+Se `__UNIT_DEBUG.lgN` è 0, `cmpRunMatch` si ferma, a ogni partita.
 
-**Le manopole che possono far divergere Comparatore e Scanner**, tutte dichiarate nel log
-all'iniezione con un verdetto (verde ai default, arancione nominando la manopola). I default
-si leggono **dal sorgente iniettato**, non da `window`, perché le righe del motore
-preservano un valore già impostato.
-
-| manopola | default | chi la sposta |
-|---|---|---|
-| `SHRINK_K` | 4 | `CMP_K_LIST[0]`, se qualcuno riordina la lista |
-| `SHRINK_LAM_K` | 3 | letta dal sorgente (fino al `b34` era cablata a mano) |
-| `ELO_SCALE` | 1.25 | il campo nel pannello |
-| `ROLE_SCOPE_INDEPENDENT` | 0 | la casella nel pannello |
-| `history-limit` | 15 | `cmp-history-limit`: la più facile da spostare senza pensarci |
-
-Le prime due, se divergono, sono errori; le ultime tre sono scelte legittime per gli A/B, e
-l'unica difesa è dichiararle.
+**Il database e la stagione.** Lo Scanner, per una partita, carica la **sua** stagione e le
+due precedenti. Il Comparatore fa lo stesso (`cmpCaricaDatabase`, stagione `s1` in
+`cmpLoadedSeason`), e da `b39` elabora **solo** le partite di `s1`, in tutte le modalita':
+quelle delle due stagioni precedenti hanno nel suo database una stagione di storico in meno,
+e le salta dicendolo nel log.
 
 ## Il Comparatore stampa come lo Scanner
 
-Misurato passando dal vero `cmpRunMatch` (`b33`): lo Scanner con `caricaSquadreLega()` +
-`avviaScanner()`, il Comparatore con `loadEngineFromText()` + `cmpRunMatch()`, stesso
-campionato sintetico. **16 campi su 16 identici**, i lambda fino all'ultima cifra in virgola
-mobile. Da rifare quando si tocca il percorso di iniezione.
+**La richiesta, e cosa vuol dire.** Qualunque cosa il Comparatore stampi su una partita
+(schermo o CSV, in qualunque modalita') deve essere quello che lo Scanner avrebbe stampato
+su quella partita. Dal `b39` e' verificato, non affermato: il Comparatore lo certifica a ogni
+partita, e un banco di prova lo misura in tutte le modalita'.
+
+**Il certificato.** `cmpParita(match)`, chiamata in `cmpRunMatch` al momento del giro,
+restituisce l'elenco di cio' che rende quel giro diverso dallo Scanner, vuoto se non c'e'
+niente. Controlla:
+
+- che il motore caricato sia lo `scanner.html` pubblicato accanto al Comparatore (hash del
+  testo; all'apertura il Comparatore ripristina la copia salvata in localStorage, che puo'
+  essere vecchia) e che le build coincidano;
+- **ogni** manopola del motore contro il suo default letto dal sorgente
+  (`cmpEngineDefaults`, 26 manopole oggi), piu' `CMP_K_LIST[0]` contro `SHRINK_K`;
+- lo storico per squadra contro quello dello Scanner (`window.__ENGINE_LIMIT`);
+- che la partita sia della stagione per cui e' caricato il database.
+
+Il risultato finisce nella riga `COPIA CONFORME DELLO SCANNER` (SI, oppure NO con i motivi)
+e in testa al file (`Copia conforme dello Scanner: N partite su M`).
+
+**Cosa stampava di diverso fino al `b38`**, trovato col banco di prova:
+
+| cosa | dove | effetto |
+|---|---|---|
+| batch per stagioni e sweep con **30** partite di storico, lo Scanner 15 | tutti i CSV di batch | 131-152 scritture a schermo su 188 diverse dallo Scanner, 62-66 righe del CSV su 66 |
+| il batch per stagioni elaborava le **tre** stagioni del database | ogni file di stagione | le due stagioni vecchie rifatte con una stagione di storico in meno, e presenti in piu' file |
+| confidence di 1/X/2 da una copia della **retta** vecchia; lo Scanner usa `CONF_1X2_TABLE` | schermo e CSV | es. 37/32/37 dove lo Scanner mostrava 36/36/36 |
+| confidence di doppie chance, GG e Over/Under non esportate | CSV | sette numeri dello Scanner assenti |
+| il **tabellone** non c'era | CSV e schermo | la cosa da cui si gioca andava ricostruita a mano |
+| `cmpLgWarned` spegneva la guardia sulla lega dopo il primo errore | batch | le partite successive con `lgN = 0` passavano |
+| il log di una partita singola mostrava l'ensemble dell'ultimo giro (k = 1) | log | un numero diverso da quello a schermo |
+
+**Il banco di prova: `strumenti/banco-parita.js`.** Node e Playwright (Chromium e'
+preinstallato). Una lega finta di 10 squadre su tre stagioni, generata in modo deterministico
+dall'id della partita e servita al posto di PitchAPI, con una neopromossa e senza
+`/advanced` sulla stagione piu' vecchia come l'API vera. Lo Scanner si guida come lo usa
+l'utente (`caricaSquadreLega` e `avviaScanner` sulle partite di una data), il Comparatore gira
+in ogni modalita', e si confrontano **ogni scrittura a schermo del motore** (`safeTxt` e
+`safeHtml`, strumentate nei due file allo stesso modo: 188 per partita) e **81 righe del CSV**
+che riportano un numero dello Scanner (1X2, confidence di tutti i mercati, i sei modelli,
+GG e Over, corner/tiri/gialli e le loro linee, handicap, multigol, Elo, tabellone voce per
+voce, certificato). Tre modalita' sono controlli di potenza, e passano solo se il certificato
+dice NO col motivo giusto.
+
+Esito al `b39`, a 390px:
+
+| modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
+|---|---|---|---|---|
+| una partita, tutte del giorno, intervallo | 3/3 | 0 su 188 | 0 su 81 | 0 |
+| batch per stagioni, sweep | 89/89, solo la stagione caricata | 0 su 188 | 0 su 81 | 0 |
+| intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
+| `ab`: scala Elo 1.00 e storico 30 (controllo) | 0/3, «ELO_SCALE ... / storico di 30 ...» | 131-152 | 68-76 | 0 |
+| `vecchio`: motore `b38` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 | 11 | 0 |
+
+Il `vecchio` dice anche un'altra cosa: il motore `b39` stampa **esattamente** quello che
+stampava il `b38` (188 scritture su 188). Le differenze erano tutte nel Comparatore.
+
+**Cosa resta fuori, e va saputo:**
+
+- **Il database dello Scanner puo' essere piu' vecchio di quello del Comparatore.** Lo Scanner
+  lo tiene in memoria e in localStorage fino a 24 ore: le partite finite dopo il download
+  mancano, e un backtest fatto dopo le vedra'. Dal `b39` lo Scanner lo dice nel sottotitolo
+  («N partite di lega prima di questa data non risultano concluse nel database»).
+- **Una chiamata fallita nello Scanner** lascia quella partita senza dati per tutta la
+  sessione (`RAW_CACHE` memorizza anche la risposta vuota); il Comparatore riprova fino a tre
+  volte. Se l'API ha avuto un buco mentre si usava lo Scanner, i due non coincidono.
+- **Le colonne Esito e la riga `PICK >=55%`** sono regole del file per contare, non verdetti
+  dello Scanner; i verdetti sono nella sezione `TABELLONE`. Idem il «Previsto» delle metriche
+  che il motore non prevede (tiri totali, big chances, dribbling...): e' una media calcolata
+  dal Comparatore.
+- Il banco confronta cio' che il motore scrive con `safeTxt`/`safeHtml`. Le poche card
+  scritte con `innerHTML` diretto (la card dell'Elo, la nota di lega) e il mega-prompt non
+  sono nel confronto.
+
+**Come si rifa'.** `node strumenti/banco-parita.js` (tutte le modalita' e i controlli, circa
+tre minuti); `MOBILE=1` misura lo scorrimento laterale a 390px; `VECCHIO=<scanner vecchio>`
+aggiunge il controllo sul motore diverso dal pubblicato; `PENDENTI=1` mette due partite non
+concluse nel database. Esce con 0 se tutto e' come deve essere.
 
 **Il leakage è chiuso, e il controllo ha potere.** Il risultato di una partita entra nel
 motore da **due strade**: il payload (`/stats`, `/advanced` → `aggregaTeam`) e il punteggio
@@ -579,6 +680,7 @@ l'API cominciasse a restituire la data *locale* di una lega a ovest di Greenwich
 | `EDGE_BANDS` | ≥20 / ≥10 / ≥5 | stimata `b38` | 28.230 proposte: +24.6 / +14.8 / +6.3 punti, monotono, segno concorde in 5 stagioni su 5 |
 | minimo di `leagueBaseRates` | 200 partite | paracadute misurato `b38` | guadagno piatto fra 50 e 500; in produzione arrivano 900+ partite |
 | emivita | 106 giorni | a mano | uguale nei due file |
+| storico per squadra (`history-limit`) | 15 | a mano, nello Scanner | il Comparatore lo legge da li' in tutte le modalita' (dal `b39`); le misure `b24`–`b38` sono a 30: vedi *Da fare*, punto 0 |
 | a priori di lega | avgH 1.50 / avgA 1.20 sotto 30 partite; `rho` −0.11 sotto 100 | a priori | si spengono da soli; `lgN` dice se sono attivi |
 | `RESID_ALPHA` | 0 | spenta per misura `b3`/`b5` | residuo contro errore dell'ensemble: +0.015 su 716 partite |
 | `RESID_GAMMA` | 0.678 | **sbagliata** | il `b5` ha misurato 0.360: vedi *Da fare* |
@@ -689,6 +791,17 @@ di questo elenco è stata a lungo falsa proprio perché nessuno sapeva dove cont
   squadra (14.5) con una di partita (28.4).
 - **Quando una costante sceglie un ramo, ogni strumento di misura a valle va riletto quel
   giorno stesso.** Vedi *Il peso dell'Elo si misurava sul ramo sbagliato*.
+- **Lo stesso parametro con due default in due file.** Lo Scanner stampava con 15 partite di
+  storico, il batch e lo sweep del Comparatore partivano da 30: per quattordici build ogni
+  backtest grande ha misurato un'altra macchina, e il verdetto di parita' all'iniezione
+  guardava un campo diverso da quello che il batch usava. Il default si legge da una parte
+  sola (lo Scanner) e si controlla al momento del giro, non all'apertura.
+- **Un batch che carica tre stagioni ne elabora tre.** L'intervallo di default copriva tutto
+  il database, quindi il file di una stagione conteneva anche le due precedenti, rifatte con
+  meno storico. Una partita e' confrontabile con lo Scanner solo col database della SUA
+  stagione.
+- **Dopo un ciclo di giri, `window` e' dell'ultimo giro.** Vale per i `__*_DEBUG`, per
+  `_V97_probs`, per `__CONF_MK` e `__VERDETTI`: si legge dall'oggetto risultato.
 - **Una costante tarata sul predittore del Comparatore non vale per lo Scanner.**
   `RESID_GAMMA` era 0.56 sul predittore del Comparatore (scope `overall`) e 0.678 su quello
   dello Scanner (scope `role`, baseline `_base`): un bias costante verso la trasferta. Se tari
@@ -1121,7 +1234,9 @@ Sulla proposta migliore di ogni partita: prima in cima finiva sempre una doppia 
 walk-forward **+18.8**). La resa grezza scende e il guadagno sale: è il punto.
 
 Il motore non si è mosso (39 campi su 39 identici al `b36`): è cambiato solo quale numero va
-in cima e come è etichettato. Resta da riconfermare su una seconda lega (vedi *Da fare*).
+in cima e come è etichettato. Resta da riconfermare su una seconda lega, e prima ancora sul
+campione in copia conforme: queste misure vengono da export a storico 30, con tre stagioni
+per file (vedi *Da fare*, punto 0).
 
 ## Gli audit
 
@@ -1174,6 +1289,10 @@ dei due `.html`. Controlli J e K.
 
 Prima di analizzare, sempre, in quest'ordine:
 
+- **Copia conforme.** In testa al file, `Copia conforme dello Scanner: N partite su M`; per
+  partita, la riga `COPIA CONFORME DELLO SCANNER`. Una riga a NO non e' un errore (e' un A/B,
+  o un giro con un'altra manopola), ma non va mescolata alle altre: il motivo e' scritto li'.
+  I file precedenti al `b39` non hanno la riga, e quelli fatti col batch sono a storico 30.
 - **I-bis. `ID PARTITA` unici**, dentro il file e fra i file. `cmpSavedMatches` si accumula:
   export consecutivi si contengono (conteggi multipli di una giornata, 378, 756, 1134… sono il
   segnale) e la stessa partita può comparire due volte. Se le due righe hanno regimi diversi
@@ -1187,6 +1306,12 @@ Prima di analizzare, sempre, in quest'ordine:
 - **Q. `lgN > 0`** su tutte le righe.
 - **P. Il clamp dell'HFA**: su quante righe ha morso (`HFA: il clamp ha morso?`).
 - **Il verdetto di parità** nel log dell'iniezione: manopole ai default o A/B dichiarato.
+
+La sezione `TABELLONE (come lo stampa lo Scanner)` riporta le proposte nell'ordine dello
+Scanner: per ogni `Tabellone #i`, Previsto = mercato e probabilita', Confidence = base rate
+di lega, Reale = SI/NO, Esito = scarto e verdetto. La vecchia riga `GIOCABILE (>=55%)` si
+chiama ora `PICK >=55% (regola del backtest, non il tabellone)`: era la soglia del file, e
+aveva lo stesso nome di un verdetto del tabellone che vuol dire un'altra cosa.
 
 Poi: ogni partita occupa **4 colonne** (Previsto, Confidence, Reale, Esito); le sezioni CASA e
 TRASFERTA ripetono le stesse etichette (la seconda occorrenza è la trasferta); le
@@ -1237,7 +1362,10 @@ const t=[["cache lega",  /(^|\n)\s*(?:let|var|const)\s+globalLeagueMatchesCache\
 for(const [n,re] of t) console.log((re.test(js)?"OK  ":"KO  ")+n);
 ' # e le build: window.__SCANNER_BUILD deve coincidere con _bComp del Comparatore
 
-# 3. le pagine si aprono senza errori in console
+# 3. il Comparatore stampa ancora come lo Scanner, in tutte le modalita' (~3 minuti)
+node strumenti/banco-parita.js     # deve uscire con 0; MOBILE=1 per i 390px
+
+# 4. le pagine si aprono senza errori in console
 python3 -m http.server 8204 &
 # poi Playwright (Chromium è preinstallato in /opt/pw-browsers/chromium):
 # apri le tre pagine e raccogli pageerror + console error: zero errori e zero richieste
@@ -1266,6 +1394,7 @@ trovato un bug vero.
 | P | ogni clamp espone il grezzo e quante volte ha morso (HFA, `ELO_TILT_MAX`, `GOALS_SOT_CAP`) | clamp nuovo o toccato |
 | Q | `__UNIT_DEBUG.lgN > 0` a ogni partita | nuovo percorso che chiama `avviaScanner()` |
 | R | il debug si legge dall'oggetto risultato, non da `window` (che è dell'ultimo `k` di `CMP_K_LIST`) | confronti Comparatore/Scanner |
+| S | `strumenti/banco-parita.js`: ogni scrittura a schermo del motore e ogni riga del CSV identiche allo Scanner, in tutte le modalita', e il certificato che dice NO nei controlli di potenza | si tocca il motore o il Comparatore |
 
 **Il giro completo senza rete.** Il motore gira per intero su dati finti, in Chromium, senza
 PitchAPI:
@@ -1363,3 +1492,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b35` | backtest su cinque stagioni: la timidezza è nel modello, non nell'Elo |
 | `b36`–`b37` | le due costanti dello shrinkage misurate: nessuna si muove |
 | `b38` | tabellone per scarto dal base rate, confidence 1X2 dalla tabella misurata |
+| `b39` | il Comparatore stampa come lo Scanner in tutte le modalita': storico e stagione come lo Scanner, confidence e tabellone letti dal motore, certificato per partita, banco di prova `strumenti/banco-parita.js`. Motore invariato |
