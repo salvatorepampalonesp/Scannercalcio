@@ -174,7 +174,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b40</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b41</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -352,20 +352,20 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
           </div>
           <div style="font-size:9px; color:var(--dim); margin-top:5px">
             Non &egrave; pi&ugrave; una retta: &egrave; la <b>resa misurata</b> del pick, fascia per fascia, su
-            <b>1.882 partite</b> del motore attuale. La vecchia retta (6.26 + 0.880 &times; p, stimata su un
+            <b>1.882 partite</b> (b38), riconfermata su <b>1.134</b> in copia conforme dello Scanner (b41). La vecchia retta (6.26 + 0.880 &times; p, stimata su un
             motore precedente) <b>comprimeva</b>: a 62 mostrava 61 dove il vero &egrave; 67.5, a 74 mostrava 71
             dove il vero &egrave; 79. Il numero qui sotto ora si legge com'&egrave;.
           </div>
           <div style="font-size:9px; color:var(--dim); margin-top:6px; background:var(--panel2); border-radius:6px; padding:6px 8px; line-height:1.5">
-            <b>Come usarla &mdash; resa del pick per soglia, rimisurata sul motore di oggi:</b><br>
-            <span style="color:var(--green)">pick &ge;65% &rarr; azzecca il <b>74.3%</b></span> (1 partita su 10) &middot;
-            <span style="color:var(--green)">&ge;60% &rarr; <b>71.1%</b></span> (1 su 5.6) &middot;
-            <span style="color:var(--green)">&ge;55% &rarr; <b>65.3%</b></span> (1 su 3.4) &middot;
-            <span style="color:var(--orange)">&ge;50% &rarr; <b>62.0%</b></span> (1 su 2.3) &middot;
+            <b>Come usarla &mdash; resa del pick per soglia, in copia conforme dello Scanner (1.134 partite di Serie A, 2023/24&ndash;2025/26):</b><br>
+            <span style="color:var(--green)">pick &ge;65% &rarr; azzecca il <b>73.7%</b></span> (1 partita su 10) &middot;
+            <span style="color:var(--green)">&ge;60% &rarr; <b>70.1%</b></span> (1 su 5.1) &middot;
+            <span style="color:var(--green)">&ge;55% &rarr; <b>64.9%</b></span> (1 su 3.2) &middot;
+            <span style="color:var(--orange)">&ge;50% &rarr; <b>61.3%</b></span> (1 su 2.2) &middot;
             <span style="color:var(--red)">&lt;45% &rarr; non selezionare</span>.<br>
-            Su tutte le partite il pick azzecca il <b>52.3%</b> contro il 40.4% del &laquo;gioca sempre in
+            Su tutte le partite il pick azzecca il <b>52.9%</b> contro il 40.2% del &laquo;gioca sempre in
             casa&raquo;. Le soglie alte rendono di pi&ugrave; <b>e</b> coprono pi&ugrave; calendario di quanto
-            dicesse la stima vecchia. Una lega sola: l'intervallo a &ge;65% &egrave; &plusmn;6.5 punti.
+            dicesse la stima vecchia. Una lega sola: l'intervallo a &ge;65% &egrave; &plusmn;8.1 punti.
           </div>
         </div>
 
@@ -409,7 +409,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
                     <td id="conf-p2" style="font-weight:bold;font-size:11px">--</td>
                   </tr>
                 </table>
-                <div style="font-size:9px; color:var(--dim); margin-top:4px">Confidence per esito = probabilita' calibrata di indovinare quell'esito. Sull'1X2 viene da una TABELLA misurata su 1882 partite del motore attuale (la vecchia retta 6.26 + 0.880 x p comprimeva: a 62 mostrava 61 dove il vero e' 67.5); sui mercati binari resta la retta -5.06 + 1.091 x p, rimisurata e giusta entro 2 punti. Non misura l'accordo fra i modelli: sui backtest quello correlava zero con l'azzeccare.</div>
+                <div style="font-size:9px; color:var(--dim); margin-top:4px">Confidence per esito = probabilita' calibrata di indovinare quell'esito. Sull'1X2 viene da una TABELLA misurata su 1882 partite e riconfermata su 1134 in copia conforme (la vecchia retta 6.26 + 0.880 x p comprimeva: a 62 mostrava 61 dove il vero e' 67.5); sui mercati binari resta la retta -5.06 + 1.091 x p, rimisurata e giusta entro 2 punti. Non misura l'accordo fra i modelli: sui backtest quello correlava zero con l'azzeccare.</div>
               </div>
               <div style="background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:10px; margin-top:12px">
                 <div style="font-size:11px;font-weight:bold;color:var(--dim);margin-bottom:6px">🎯 Doppie Chance & Gol (con confidence)</div>
@@ -906,6 +906,9 @@ function buildGlobalElo(targetTimeMs) {
   // tipo 3, vedi AGENTS.md 'Le costanti messe a mano').
   // Si calcolano tutti e due, si usa quello che dice la manopola, e il default
   // RIPRODUCE il comportamento di sempre finche' un backtest non parla.
+  // b41, in copia conforme (1134 partite, un file per stagione, lgN >= 760): morde
+  // sullo 0%. Il 27.6% erano stagioni rifatte con archivio corto: in produzione e'
+  // inerte, e la regola (pavimento o shrinkage) non sposta niente.
   let HFA_ELO = 65, _hfaRaw = null, _hfaClamp = null, _hfaShrunk = null;
   if (_n_hfa >= 50 && _h_w > 0 && _a_w > 0) {
     const wr_h = _h_w / _n_hfa, wr_a = _a_w / _n_hfa;
@@ -1609,8 +1612,10 @@ function _shrunkMean(roleArr, overallArr, fallback, k = 5) {
 
 window.SHRINK_K     = (typeof window.SHRINK_K     === 'number') ? window.SHRINK_K     : 4;
 window.SHRINK_LAM_K = (typeof window.SHRINK_LAM_K === 'number') ? window.SHRINK_LAM_K : 3;
+// [0,0]: la tabella serve anche gli esiti non scelti. Senza, sotto 37.6 restava piatta a 36
+// (un 11% mostrava 36). Vedi AGENTS.md, La confidence.
 window.CONF_1X2_TABLE = window.CONF_1X2_TABLE ||
-  [[37.6,36.1],[42.5,45.6],[47.3,52.4],[52.4,54.9],[57.3,56.4],[62.4,67.5],[67.0,70.4],[73.8,79.0]];
+  [[0,0],[37.6,36.1],[42.5,45.6],[47.3,52.4],[52.4,54.9],[57.3,56.4],[62.4,67.5],[67.0,70.4],[73.8,79.0]];
 window.CONF_1X2_MODE = window.CONF_1X2_MODE || 'tabella';
 
 const KNN_MIN_COVERAGE = 0.6;
@@ -1819,8 +1824,10 @@ function renderVerdetti(mk, base, adv) {
     const NUM = [['Corner Over 9.5', adv.pOv9c, adv.lgRefCor, adv.kCor, 9.5, 'Piu\' di 9 corner', 'cor9.5'],
                  ['Tiri porta Over 8.5', adv.pOv8s, adv.lgRefSot, adv.kSot, 8.5, 'Piu\' di 8 tiri in porta', 'sot8.5'],
                  ['Gialli Over 3.5', adv.pOv3y, adv.lgRefYel, adv.kYel, 3.5, 'Piu\' di 3 gialli', 'yel3.5']];
+    // kk infinito vuol dire Poisson (negBinPMF): non e' una base mancante. Col vecchio
+    // isFinite(kk) i gialli restavano senza base sul 73% delle partite.
     for (const [nome, pr, ref, kk, line, desc, key] of NUM)
-      R.push([nome, pr, (ref > 0 && isFinite(kk)) ? over(line, ref, kk) : null, desc, key]);
+      R.push([nome, pr, (ref > 0) ? over(line, ref, kk) : null, desc, key]);
   }
 
   const righe = [], voci = [];
@@ -1871,7 +1878,7 @@ function renderVerdetti(mk, base, adv) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b40';
+window.__SCANNER_BUILD = '0905-b41';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
