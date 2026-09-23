@@ -144,6 +144,9 @@ select{cursor:pointer}
 }
 .count{font-size:16px;font-weight:800;background:var(--ok);color:#0f1116;padding:2px 10px;border-radius:7px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid2>*,.row>*{min-width:0}
+/* le tabelle larghe scorrono dentro la propria card, non spingono la pagina (telefono in verticale) */
+.tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
 @media(max-width:900px){.grid2{grid-template-columns:1fr}}
 .res-head{
   display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
@@ -162,7 +165,7 @@ select{cursor:pointer}
   <div class="topbar">
     <div class="brand">
       <h1>Comparatore V9.7</h1>
-      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b38</span>
+      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b40</span>
       <span class="badge" id="engine-badge">motore non caricato</span>
     </div>
     <span class="badge">previsioni vs realtà</span>
@@ -304,7 +307,7 @@ select{cursor:pointer}
       </div>
 
       <div class="row c2">
-        <div><label>Storico per squadra (partite)</label><input type="number" id="cmp-history-limit" value="15" min="5" max="100"></div>
+        <div><label>Storico per squadra (partite)</label><input type="number" id="cmp-history-limit" value="30" min="5" max="100"></div>
         <div style="display:flex;align-items:flex-end">
           <button class="btn btn-go btn-full" id="cmp-btn-run" onclick="cmpRun()">Avvia analisi</button>
         </div>
@@ -361,6 +364,15 @@ select{cursor:pointer}
         <table class="tbl">
           <thead><tr><th>Mercato</th><th>Ensemble</th><th>DC</th><th>Ord.Logit</th><th>KNN</th><th>Conf.</th><th>Reale</th><th>Esito</th></tr></thead>
           <tbody id="cmp-markets-body"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-t">Tabellone dello Scanner</div>
+        <div class="card-sub">Le proposte nell'ordine e coi verdetti con cui le stampa lo Scanner (per scarto dal base rate della lega), e cosa è successo</div>
+        <table class="tbl">
+          <thead><tr><th>#</th><th>Mercato</th><th>Verdetto</th><th>Reale</th></tr></thead>
+          <tbody id="cmp-tab-body"></tbody>
         </table>
       </div>
 
@@ -461,7 +473,86 @@ const CMP_K_LIST = [4, 2, 1];
 
 let cmpCurrentLeagueId = '';
 let cmpLgWarned = false;
+let cmpConfWarned = false;
 let cmpPredSource = '';
+// La stagione per cui e' stato caricato il database (s1): lo Scanner la carica con le due
+// precedenti, quindi una partita e' copia conforme solo se e' di questa stagione.
+let cmpLoadedSeason = '';
+
+// Le manopole del motore coi loro default, lette dal sorgente nelle due forme che usa:
+// `window.X = (typeof window.X === 'number') ? window.X : <default>` e
+// `window.X = window.X || <default>`. Il letterale si legge fino al ';' a profondita' 0.
+function cmpEngineDefaults(src) {
+  const D = {};
+  const valOf = (lit) => { try { return (new Function('return (' + lit + ');'))(); } catch (e) { return undefined; } };
+  const reTyp = /window\.([A-Z][A-Z0-9_]*)\s*=\s*\(typeof\s+window\.\1\s*===\s*'(?:number|string)'\)\s*\?\s*window\.\1\s*:\s*([^;]+);/g;
+  let m;
+  while ((m = reTyp.exec(src)) !== null) { const v = valOf(m[2]); if (v !== undefined && !(m[1] in D)) D[m[1]] = v; }
+  const reOr = /window\.([A-Z][A-Z0-9_]*)\s*=\s*window\.\1\s*\|\|\s*/g;
+  while ((m = reOr.exec(src)) !== null) {
+    let i = reOr.lastIndex, depth = 0, q = null;
+    for (; i < src.length; i++) {
+      const c = src[i];
+      if (q) { if (c === '\\') { i++; continue; } if (c === q) q = null; continue; }
+      if (c === "'" || c === '"' || c === '`') { q = c; continue; }
+      if (c === '[' || c === '{' || c === '(') depth++;
+      else if (c === ']' || c === '}' || c === ')') depth--;
+      else if (c === ';' && depth === 0) break;
+    }
+    const v = valOf(src.slice(reOr.lastIndex, i));
+    if (v !== undefined && !(m[1] in D)) D[m[1]] = v;
+  }
+  return D;
+}
+
+const cmpHash = (t) => { let h = 2166136261 >>> 0; const x = String(t || '').replace(/\r/g, '');
+  for (let i = 0; i < x.length; i++) { h ^= x.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h.toString(16) + ':' + x.length; };
+
+// Il motore caricato e' lo scanner.html pubblicato? All'apertura il Comparatore ripristina
+// la copia salvata in localStorage, che puo' essere di prima dell'ultimo aggiornamento.
+async function cmpVerificaMotorePubblicato() {
+  try {
+    const r = await fetch('scanner.html?v=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) return;
+    window.__SERVER_ENGINE_HASH = cmpHash(await r.text());
+    if (window.__ENGINE_HASH && window.__SERVER_ENGINE_HASH !== window.__ENGINE_HASH)
+      cmpLog('   \u26a0\ufe0f Il motore caricato NON e\' lo scanner.html pubblicato accanto al Comparatore: '
+           + 'questi numeri non sono quelli dello Scanner di oggi. Ricarica il motore dal server o ritrascinalo.');
+  } catch (e) { /* aperto da file: non si puo' verificare, resta il controllo sulla build */ }
+}
+
+// COPIA CONFORME DELLO SCANNER. Una partita del Comparatore stampa i numeri dello
+// Scanner se e solo se: il motore caricato e' lo scanner.html pubblicato, ogni manopola
+// del motore e' al suo default, il primo k del ciclo e' lo SHRINK_K del motore, lo
+// storico per squadra e' quello dello Scanner, e la partita e' della stagione per cui e'
+// caricato il database. Si controlla a ogni partita, al momento del giro, e ogni riga
+// del CSV lo dice (AGENTS.md, Il Comparatore stampa come lo Scanner).
+function cmpParita(match) {
+  const diff = [];
+  if (window.__SERVER_ENGINE_HASH && window.__ENGINE_HASH && window.__SERVER_ENGINE_HASH !== window.__ENGINE_HASH)
+    diff.push('motore caricato diverso dallo scanner.html pubblicato');
+  if (typeof window.__SCANNER_BUILD === 'string' && window.__CMP_BUILD && window.__SCANNER_BUILD !== window.__CMP_BUILD)
+    diff.push(`motore build ${window.__SCANNER_BUILD} con Comparatore build ${window.__CMP_BUILD}`);
+  const D = window.__ENGINE_DEFAULTS || {};
+  for (const [nome, def] of Object.entries(D)) {
+    if (nome === 'SHRINK_K' || nome === 'SHRINK_LAM_K') continue;   // le imposta cmpRunMatch
+    const cur = window[nome];
+    const same = (typeof def === 'number')
+      ? (typeof cur === 'number' && Math.abs(cur - def) < 1e-9)
+      : JSON.stringify(cur) === JSON.stringify(def);
+    if (!same) diff.push(`${nome} ${JSON.stringify(cur)} invece di ${JSON.stringify(def)}`);
+  }
+  if (typeof D.SHRINK_K === 'number' && CMP_K_LIST[0] !== D.SHRINK_K)
+    diff.push(`SHRINK_K ${CMP_K_LIST[0]} invece di ${D.SHRINK_K}`);
+  if (typeof D.SHRINK_LAM_K !== 'number')
+    diff.push('SHRINK_LAM_K non trovato nel sorgente del motore');
+  const _lim = parseInt((document.getElementById('cmp-history-limit') || {}).value, 10);
+  if (window.__ENGINE_LIMIT != null && _lim && _lim !== window.__ENGINE_LIMIT)
+    diff.push(`storico di ${_lim} partite invece delle ${window.__ENGINE_LIMIT} dello Scanner`);
+  if (match && cmpLoadedSeason && match._season && match._season !== cmpLoadedSeason)
+    diff.push(`partita del ${match._season} col database caricato per il ${cmpLoadedSeason}: storico piu' corto`);
+  return diff;
+}
 
 const CMP_LEAGUES_FALLBACK = [{"id":"l_3hvsne","name":"2. Bundesliga","country_code":"GER","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_4MPd7x","name":"A-League","country_code":"AUS","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_1XsMdH","name":"Allsvenskan","country_code":"SWE","seasons":["2021","2022","2023","2024","2025","2026"]},{"id":"l_3zsMpo","name":"Bundesliga","country_code":"AUT","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_1Isor4","name":"Bundesliga","country_code":"GER","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_1pQOHK","name":"Challenger Pro League","country_code":"BEL","seasons":["2025/2026","2026/2027"]},{"id":"l_0bfbkO","name":"Champions League","country_code":"INT-2","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_4DWyTT","name":"Championship","country_code":"ENG","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_2WZ2tt","name":"Conference League","country_code":"INT-2","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_214sqK","name":"Ekstraklasa","country_code":"POL","seasons":["2025/2026","2026/2027"]},{"id":"l_0uqFK8","name":"Eliteserien","country_code":"NOR","seasons":["2021","2022","2023","2024","2025","2026"]},{"id":"l_4H43wr","name":"Eredivisie","country_code":"NED","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_38d9HA","name":"Europa League","country_code":"INT-2","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_2L6d1F","name":"First Division A","country_code":"BEL","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_1qpFVw","name":"Indian Super League","country_code":"IND","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_2ApGa4","name":"J. League","country_code":"JPN","seasons":["2022","2023","2024","2025","2026"]},{"id":"l_2EKrnc","name":"K League 1","country_code":"KOR","seasons":["2022","2023","2024","2025","2026"]},{"id":"l_0ErfuF","name":"LaLiga","country_code":"ESP","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_3kyHLd","name":"LaLiga2","country_code":"ESP","seasons":["2025/2026","2026/2027"]},{"id":"l_0ahLw8","name":"League One","country_code":"ENG","seasons":["2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_1W6idJ","name":"League Two","country_code":"ENG","seasons":["2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_3v84VE","name":"Liga MX","country_code":"MEX","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_4QexZg","name":"Liga Portugal","country_code":"POR","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_45VZuL","name":"Liga Profesional","country_code":"ARG","seasons":["2023","2024","2025","2026"]},{"id":"l_3FJFUl","name":"Ligue 1","country_code":"FRA","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_0275VP","name":"Ligue 2","country_code":"FRA","seasons":["2025/2026","2026/2027"]},{"id":"l_0eg6C9","name":"MLS","country_code":"USA","seasons":["2021","2022","2023","2024","2025","2026"]},{"id":"l_2Mh0jT","name":"Premier League","country_code":"RUS","seasons":["2025/2026","2026/2027"]},{"id":"l_46aZMC","name":"Premier League","country_code":"EGY","seasons":["2025/2026","2026/2027"]},{"id":"l_4WFCIZ","name":"Premier League","country_code":"ENG","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_1Kknkl","name":"Premier Soccer League","country_code":"RSA","seasons":["2025/2026","2026/2027"]},{"id":"l_1LMdEO","name":"Premiership","country_code":"SCO","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_0Lpz1f","name":"Saudi Pro League","country_code":"KSA","seasons":["2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_0ALvwF","name":"Serie A","country_code":"ITA","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_1D8Xrl","name":"Serie A","country_code":"BRA","seasons":["2023","2024","2025","2026"]},{"id":"l_0jy5yE","name":"Serie B","country_code":"ITA","seasons":["2025/2026","2026/2027"]},{"id":"l_4d6Bwl","name":"Super League","country_code":"SUI","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_3xwVF2","name":"Super League 1","country_code":"GRE","seasons":["2024/2025","2025/2026","2026/2027"]},{"id":"l_0S1uaf","name":"Super Lig","country_code":"TUR","seasons":["2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_49Zmno","name":"Superligaen","country_code":"DEN","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_3hW1NO","name":"Thai League 1","country_code":"THA","seasons":["2025/2026"]},{"id":"l_1XLtP0","name":"World Cup","country_code":"INT","seasons":["2022","2026"]}];
 
@@ -633,8 +724,9 @@ async function loadEngineFromText(text, fileName) {
         ahData:   (typeof ahData!=='undefined') ? ahData : null,    /* handicap asiatico */
         mgTot:    (typeof mgTot!=='undefined') ? mgTot : null,      /* multigol totali */
         /* ELO — necessario per validare il fix HFA dinamico */
-        eloH:    (typeof ELO!=='undefined' && ELO && ELO.table && typeof hId!=='undefined') ? ELO.table[hId] : null,
-        eloA:    (typeof ELO!=='undefined' && ELO && ELO.table && typeof aId!=='undefined') ? ELO.table[aId] : null,
+        /* il rating come lo stampa lo Scanner: arrotondato, e 1500 se la squadra non ne ha uno */
+        eloH:    (typeof eloH_ov!=='undefined') ? eloH_ov : ((typeof ELO!=='undefined' && ELO && ELO.table && typeof hId!=='undefined') ? ELO.table[hId] : null),
+        eloA:    (typeof eloA_ov!=='undefined') ? eloA_ov : ((typeof ELO!=='undefined' && ELO && ELO.table && typeof aId!=='undefined') ? ELO.table[aId] : null),
         eloHFA:  (typeof ELO!=='undefined' && ELO && ELO._hfa) ? ELO._hfa : null,
         eloHfaRaw:   (typeof ELO!=='undefined' && ELO) ? (ELO._hfaRaw ?? null) : null,
         eloHfaClamp: (typeof ELO!=='undefined' && ELO) ? (ELO._hfaClamp ?? null) : null,
@@ -645,7 +737,7 @@ async function loadEngineFromText(text, fileName) {
         _homeId:       (typeof hId!=='undefined') ? hId : null,
         _awayId:       (typeof aId!=='undefined') ? aId : null,
         _targetTimeMs: (typeof targetMs!=='undefined') ? targetMs : null,
-        _limit:        (typeof limit!=='undefined') ? limit : 15
+        _limit:        (typeof limit!=='undefined') ? limit : 30
       };
     } catch(e) { console.error('Hook _V97_probs failed:', e); }
     /* ─── FINE HOOK ─── */
@@ -704,56 +796,46 @@ async function loadEngineFromText(text, fileName) {
 
   cmpLog(`✅ Tutte le ${required.length} funzioni chiave esposte.`);
 
-  // Il CSV riporta il PRIMO giro del ciclo su CMP_K_LIST: se quel k non e' il default
-  // del motore, le colonne del file non sono piu' quelle che l'utente vede a schermo,
-  // e senza questa riga non lo direbbe nessuno (AGENTS.md, Il Comparatore stampa come
-  // lo Scanner).
   // I default del motore vanno letti dal SORGENTE, non da window: le righe del motore
-  // sono nella forma `window.X = (typeof window.X === 'number') ? window.X : <default>`,
-  // cioe' PRESERVANO un valore gia' impostato dalle manopole del Comparatore. Leggere
-  // window dopo l'iniezione restituirebbe la manopola e il confronto direbbe sempre "ok".
-  const _defDa = (nome) => {
-    const m = processedJs.match(new RegExp('window\\.' + nome + '\\s*=[^;]*?:\\s*(-?[0-9.]+)\\s*;'));
-    return m ? parseFloat(m[1]) : null;
-  };
-  window.__ENGINE_ELO_SCALE = _defDa('ELO_SCALE');
-  window.__ENGINE_ROLE_INDEP = _defDa('ROLE_SCOPE_INDEPENDENT') ?? 0;
-  window.__ENGINE_SHRINK_LAM_K = _defDa('SHRINK_LAM_K');
-  window.__ENGINE_SHRINK_K_DEF = _defDa('SHRINK_K');
-  window.__ENGINE_SHRINK_K = (typeof window.SHRINK_K === 'number') ? window.SHRINK_K : null;
-  if (window.__ENGINE_SHRINK_K != null && CMP_K_LIST[0] !== window.__ENGINE_SHRINK_K) {
-    cmpLog(`   \u26a0\ufe0f CMP_K_LIST[0] e' ${CMP_K_LIST[0]} ma il motore ha SHRINK_K ${window.__ENGINE_SHRINK_K}: `
-         + `il CSV NON corrispondera' ai numeri dello Scanner. Rimetti ${window.__ENGINE_SHRINK_K} in testa alla lista.`);
-  } else if (window.__ENGINE_SHRINK_K != null) {
-    cmpLog(`   \u2705 CMP_K_LIST[0] = ${CMP_K_LIST[0]} = SHRINK_K del motore: il CSV coincide con lo Scanner.`);
+  // sono nella forma `window.X = (typeof window.X === 'number') ? window.X : <default>`
+  // o `window.X = window.X || <default>`, cioe' PRESERVANO un valore gia' impostato
+  // dalle manopole del Comparatore. Leggere window dopo l'iniezione restituirebbe la
+  // manopola e il confronto direbbe sempre "ok".
+  window.__ENGINE_DEFAULTS = cmpEngineDefaults(rawJs);
+  window.__ENGINE_HASH = cmpHash(text);
+  window.__SERVER_ENGINE_HASH = null;
+  cmpVerificaMotorePubblicato();
+  const _D = window.__ENGINE_DEFAULTS;
+  window.__ENGINE_ELO_SCALE = (typeof _D.ELO_SCALE === 'number') ? _D.ELO_SCALE : null;
+  window.__ENGINE_ROLE_INDEP = (typeof _D.ROLE_SCOPE_INDEPENDENT === 'number') ? _D.ROLE_SCOPE_INDEPENDENT : 0;
+  window.__ENGINE_SHRINK_LAM_K = (typeof _D.SHRINK_LAM_K === 'number') ? _D.SHRINK_LAM_K : null;
+  window.__ENGINE_SHRINK_K_DEF = (typeof _D.SHRINK_K === 'number') ? _D.SHRINK_K : null;
+  {
+    const _lm = text.match(/id="history-limit"[^>]*value="(\d+)"/);
+    window.__ENGINE_LIMIT = _lm ? parseInt(_lm[1], 10) : null;
+    // I tre campi dello storico partono da quello dello Scanner (30 dal b40). Fino al b38
+    // il batch e lo sweep partivano da 30 mentre lo Scanner stampava con 15: ogni loro
+    // CSV era un'altra macchina.
+    if (window.__ENGINE_LIMIT) {
+      for (const id of ['cmp-history-limit', 'cmp-batch-limit', 'cmp-sweep-limit']) {
+        const el = document.getElementById(id);
+        if (el) el.value = window.__ENGINE_LIMIT;
+      }
+    }
+    cmpLog(`   manopole del motore lette dal sorgente: ${Object.keys(_D).length}`
+         + ` · storico dello Scanner: ${window.__ENGINE_LIMIT != null ? window.__ENGINE_LIMIT + ' partite' : 'NON TROVATO'}`);
   }
 
-  // VERDETTO DI PARITA'. Misurato nel b33: passando dal vero cmpRunMatch, Comparatore e
-  // Scanner danno 16 campi su 16 identici — la maggior parte all'ultima cifra in virgola
-  // mobile — A PATTO che le manopole siano ai default del motore. Sono legittime (servono
-  // agli A/B) ma vanno dichiarate, non scoperte guardando il CSV.
+  // VERDETTO DI PARITA' all'iniezione. Lo stesso controllo si rifa' a ogni partita, al
+  // momento del giro, e finisce nel CSV (riga COPIA CONFORME DELLO SCANNER): le manopole
+  // e i campi si possono cambiare dopo l'iniezione, e il batch cambiava lo storico.
   {
-    const diff = [];
-    const _s = (typeof window.ELO_SCALE === 'number') ? window.ELO_SCALE : null;
-    const _r = (typeof window.ROLE_SCOPE_INDEPENDENT === 'number') ? window.ROLE_SCOPE_INDEPENDENT : 0;
-    if (_s != null && window.__ENGINE_ELO_SCALE != null && Math.abs(_s - window.__ENGINE_ELO_SCALE) > 1e-9)
-      diff.push(`ELO_SCALE ${_s} invece di ${window.__ENGINE_ELO_SCALE}`);
-    if (_r !== window.__ENGINE_ROLE_INDEP)
-      diff.push(`ROLE_SCOPE_INDEPENDENT ${_r} invece di ${window.__ENGINE_ROLE_INDEP}`);
-    if (window.__ENGINE_SHRINK_K_DEF != null && CMP_K_LIST[0] !== window.__ENGINE_SHRINK_K_DEF)
-      diff.push(`SHRINK_K ${CMP_K_LIST[0]} invece di ${window.__ENGINE_SHRINK_K_DEF}`);
-    if (window.__ENGINE_SHRINK_LAM_K == null)
-      diff.push(`SHRINK_LAM_K non trovato nel sorgente: il Comparatore ripiega su 3`);
-    const _hm = (typeof window.ELO_HFA_MODE === 'string') ? window.ELO_HFA_MODE : 'clamp';
-    if (_hm !== 'clamp') diff.push(`ELO_HFA_MODE "${_hm}" invece di "clamp"`);
-    const _lim = document.getElementById('cmp-history-limit');
-    if (_lim && _lim.value && +_lim.value !== 15)
-      diff.push(`history-limit ${_lim.value} invece dei 15 di default dello Scanner`);
+    const diff = cmpParita(null);
     if (diff.length) {
-      cmpLog(`   \u26a0\ufe0f Questo giro NON stampera' i numeri dello Scanner: ${diff.join(', ')}. `
+      cmpLog(`   ⚠️ Questo giro NON stampera' i numeri dello Scanner: ${diff.join('; ')}. `
            + `E' un A/B, va bene — ma non confondere il file con un giro di riferimento.`);
     } else {
-      cmpLog(`   \u2705 Manopole ai default del motore: questo giro stampa gli stessi numeri dello Scanner.`);
+      cmpLog(`   ✅ Manopole e storico ai default dello Scanner: questo giro stampa gli stessi numeri.`);
     }
   }
 
@@ -773,7 +855,8 @@ async function loadEngineFromText(text, fileName) {
     <p><code>${fileName}</code> — clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
 
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b38';
+  const _bComp = '0905-b40';
+  window.__CMP_BUILD = _bComp;
   const _el = document.getElementById('engine-build');
   if (_el) {
     if (!_bScan) {
@@ -995,7 +1078,7 @@ async function cmpSweepStart(resume) {
     }
     st = {
       version: 1, startedAt: new Date().toISOString(),
-      limit: parseInt(document.getElementById('cmp-sweep-limit').value) || 30,
+      limit: parseInt(document.getElementById('cmp-sweep-limit').value) || window.__ENGINE_LIMIT || 30,
       jobs
     };
     cmpSweepSave(st);
@@ -1103,7 +1186,7 @@ async function cmpAvviaBatchStagioni() {
   const btn = document.getElementById('cmp-batch-btn'); btn.disabled = true;
   const prog = document.getElementById('cmp-batch-progress'); prog.style.display = 'block';
 
-  const batchLimit = parseInt(document.getElementById('cmp-batch-limit').value) || 30;
+  const batchLimit = parseInt(document.getElementById('cmp-batch-limit').value) || window.__ENGINE_LIMIT || 30;
   const limitField = document.getElementById('cmp-history-limit');
   const prevLimit = limitField.value;
   limitField.value = batchLimit;
@@ -1253,6 +1336,7 @@ async function cmpCaricaDatabase() {
     window.__ENGINE_CACHE = allMatches;
     globalThis.globalLeagueMatchesCache = allMatches;
     cmpAllMatches = allMatches;
+    cmpLoadedSeason = s1;
 
     // Un time_utc senza Z (o senza offset) viene letto come ora LOCALE: in un fuso avanti
     // rispetto a UTC le partite del giorno bersaglio scivolano prima del taglio. Il motore
@@ -1268,9 +1352,18 @@ async function cmpCaricaDatabase() {
       }
     }
 
-    cmpMatchesOfTheDay = allMatches.filter(m =>
+    // Solo le partite della stagione caricata: lo Scanner, per una partita, carica la SUA
+    // stagione e le due precedenti. Una partita di s2 rifatta qui avrebbe una stagione di
+    // storico in meno, e non stamperebbe i numeri dello Scanner.
+    const _delGiorno = allMatches.filter(m =>
       m.status === 'finished' && m.time_utc && m.time_utc.startsWith(targetDate)
     );
+    cmpMatchesOfTheDay = _delGiorno.filter(m => m._season === s1);
+    if (_delGiorno.length > cmpMatchesOfTheDay.length) {
+      const _alt = [...new Set(_delGiorno.filter(m => m._season !== s1).map(m => m._season))].join(', ');
+      cmpLog(`   \u26a0\ufe0f ${_delGiorno.length - cmpMatchesOfTheDay.length} partite del ${targetDate} sono della stagione ${_alt}: `
+           + `per rifarle come lo Scanner carica quella stagione (qui avrebbero uno storico piu' corto).`);
+    }
 
     const selP = document.getElementById('cmp-partita');
     selP.innerHTML = '';
@@ -1286,10 +1379,13 @@ async function cmpCaricaDatabase() {
       cmpLog(`✅ ${cmpMatchesOfTheDay.length} partite per ${targetDate}`);
     }
 
-    const finiteMatches = allMatches.filter(m => m.status === 'finished' && m.time_utc).map(m => m.time_utc.split('T')[0]).sort();
+    // l'intervallo di default e' la stagione caricata, non le tre: il batch per stagioni
+    // lo usava cosi' com'e', e ogni file conteneva anche le due stagioni precedenti
+    // rifatte con uno storico piu' corto
+    const finiteMatches = allMatches.filter(m => m.status === 'finished' && m.time_utc && m._season === s1).map(m => m.time_utc.split('T')[0]).sort();
     if (finiteMatches.length) {
       const dMin = finiteMatches[0], dMax = finiteMatches[finiteMatches.length-1];
-      cmpLog(`📆 Partite concluse disponibili in questa stagione: dal ${dMin} al ${dMax} (${finiteMatches.length} totali)`);
+      cmpLog(`📆 Partite concluse della stagione ${s1}: dal ${dMin} al ${dMax} (${finiteMatches.length} totali)`);
       const rs = document.getElementById('cmp-range-start'); const re = document.getElementById('cmp-range-end');
       if (rs && !rs.value) rs.value = dMin;
       if (re && !re.value) re.value = dMax;
@@ -1358,6 +1454,11 @@ async function cmpRunMatch(match, limit, render) {
   const mId = match.id;
   cmpApplyScopeFlag(false);
   cmpApplyEloScale(false);
+  // il certificato si prende ADESSO, con le manopole e lo storico di questo giro
+  const _parita = cmpParita(match);
+  if (limit != null && window.__ENGINE_LIMIT != null && +limit !== window.__ENGINE_LIMIT
+      && !_parita.some(x => x.startsWith('storico')))
+    _parita.push(`storico di ${limit} partite invece delle ${window.__ENGINE_LIMIT} dello Scanner`);
 
   const setSel = (id, valId, valName) => {
     const el = document.getElementById(id);
@@ -1390,6 +1491,9 @@ async function cmpRunMatch(match, limit, render) {
   for (const kVal of CMP_K_LIST) {
     window.SHRINK_K = kVal;
     globalThis._V97_probs = null;
+    // quello che lo Scanner stampa DOPO l'hook (confidence dei mercati, tabellone) lo
+    // espone su window a fine giro: si azzera prima, cosi' non si legge il giro precedente
+    window.__CONF_MK = null; window.__VERDETTI = null;
     await globalThis.avviaScanner();
     if (!globalThis._V97_probs) throw new Error("Il V9.7 non ha esposto _V97_probs (hook mancante o storico insufficiente).");
     const S = globalThis._V97_probs;
@@ -1397,12 +1501,16 @@ async function cmpRunMatch(match, limit, render) {
     // database, non qui: una partita fatta girare per altra via ripiegava su
     // avgH 1.50 / avgA 1.20 / rho -0.11 in silenzio. Il motore lo dice da solo con
     // __UNIT_DEBUG.lgN, basta guardarlo (AGENTS.md, La lega che non arrivava mai).
-    if (!cmpLgWarned) {
+    // A ogni partita: prima il controllo stava dietro cmpLgWarned, e dopo il primo errore
+    // non si faceva piu'. Si avvisa una volta sola, ma ci si ferma sempre.
+    {
       const _u = (typeof window.__UNIT_DEBUG === 'object' && window.__UNIT_DEBUG) || null;
       if (_u && !(_u.lgN > 0)) {
-        cmpLgWarned = true;
-        cmpLog(`   \u274c La lega NON sta arrivando al motore (lgN = 0): media gol e rho sono i valori `
-             + `di ripiego 1.50/1.20 e -0.11, non quelli della lega. I numeri NON coincidono con lo Scanner.`);
+        if (!cmpLgWarned) {
+          cmpLgWarned = true;
+          cmpLog(`   \u274c La lega NON sta arrivando al motore (lgN = 0): media gol e rho sono i valori `
+               + `di ripiego 1.50/1.20 e -0.11, non quelli della lega. I numeri NON coincidono con lo Scanner.`);
+        }
         throw new Error('Lega non arrivata al motore (LG.n = 0): i risultati non sarebbero confrontabili con lo Scanner.');
       }
     }
@@ -1415,9 +1523,23 @@ async function cmpRunMatch(match, limit, render) {
                     pOv: S.probsRole?.pOv, pGG: S.probsRole?.pGG,
                     lgM: S.eloDebugOver?.lgModel, lgT: S.eloDebugOver?.lgTarget,
                     lamHo: S.eloDebugOver?.lamH0, lamAo: S.eloDebugOver?.lamA0 };
-    if (R === null) R = S;
+    if (R === null) {
+      R = S;
+      // Il primo giro e' quello dello Scanner (k = SHRINK_K del motore): da qui le
+      // confidence dei mercati e il tabellone COME LO SCANNER LI STAMPA, invece di
+      // ricalcolarli con una copia delle rette o delle soglie.
+      R._confMk = (window.__CONF_MK && typeof window.__CONF_MK === 'object') ? { ...window.__CONF_MK } : null;
+      R._verdetti = Array.isArray(window.__VERDETTI) ? window.__VERDETTI.map(v => ({ ...v })) : null;
+      if (!R._confMk && !cmpConfWarned) {
+        cmpConfWarned = true;
+        cmpLog('   \u26a0\ufe0f Il motore non espone le confidence dei mercati (__CONF_MK, dal b39): '
+             + 'nel CSV restano vuote invece di essere ricalcolate con una copia delle rette.');
+      }
+    }
   }
   R._kRuns = kRuns;
+  R._parita = _parita;
+  R._dbSeason = cmpLoadedSeason;
 
   let sRes, aRes;
   if (typeof globalThis.fetchMatchRaw === 'function') {
@@ -1516,13 +1638,16 @@ async function cmpEsegui() {
   const mId = document.getElementById('cmp-partita').value;
   if (!mId) return alert("Seleziona una partita");
   const match = cmpMatchesOfTheDay.find(m => m.id === mId);
-  const limit = parseInt(document.getElementById('cmp-history-limit').value) || 15;
+  const limit = parseInt(document.getElementById('cmp-history-limit').value) || window.__ENGINE_LIMIT || 30;
 
   try {
     cmpLog(`⚙️ Motore V9.7: ${match.home_team.name} vs ${match.away_team.name}...`);
-    await cmpRunMatch(match, limit, true);
-    const R = globalThis._V97_probs;
-    cmpLog(`   → Ensemble: 1=${(R.m1*100).toFixed(1)}% X=${(R.mX*100).toFixed(1)}% 2=${(R.m2*100).toFixed(1)}%`);
+    // il risultato, non globalThis._V97_probs: quello e' l'ULTIMO giro del ciclo su
+    // CMP_K_LIST (k = 1), mentre lo Scanner stampa il primo (k = SHRINK_K del motore)
+    const res = await cmpRunMatch(match, limit, true);
+    const R = (res && res.R) || globalThis._V97_probs;
+    cmpLog(`   → Ensemble: 1=${(R.m1*100).toFixed(1)}% X=${(R.mX*100).toFixed(1)}% 2=${(R.m2*100).toFixed(1)}%`
+         + (res && Array.isArray(res.parita) ? (res.parita.length ? ` \u00b7 NON copia conforme: ${res.parita.join('; ')}` : ' \u00b7 copia conforme dello Scanner') : ''));
     if (R.probsKnn) cmpLog(`   → KNN attivo (wKnn=${R.wKnn!=null?R.wKnn.toFixed(2):'?'})`);
     cmpLog("✅ Confronto pronto.");
   } catch (e) {
@@ -1542,13 +1667,21 @@ async function cmpEseguiIntervallo() {
   if (!endDate) return alert('Imposta la data di fine nel campo "A (data fine)".');
   if (endDate < startDate) return alert(`La data fine (${endDate}) è precedente alla data inizio (${startDate}). Controlla i due campi "Da" e "A".`);
 
-  const limit = parseInt(document.getElementById('cmp-history-limit').value) || 15;
+  const limit = parseInt(document.getElementById('cmp-history-limit').value) || window.__ENGINE_LIMIT || 30;
 
-  const inRange = cmpAllMatches.filter(m => {
+  const _inDate = cmpAllMatches.filter(m => {
     if (m.status !== 'finished' || m.score_home == null || !m.time_utc) return false;
     const d = m.time_utc.split('T')[0];
     return d >= startDate && d <= endDate;
-  }).sort((a,b) => a.time_utc.localeCompare(b.time_utc));
+  });
+  // solo la stagione caricata, come fa lo Scanner (vedi cmpCaricaDatabase)
+  const inRange = _inDate.filter(m => !cmpLoadedSeason || m._season === cmpLoadedSeason)
+    .sort((a,b) => a.time_utc.localeCompare(b.time_utc));
+  if (_inDate.length > inRange.length) {
+    const _alt = [...new Set(_inDate.filter(m => m._season !== cmpLoadedSeason).map(m => m._season))].join(', ');
+    cmpLog(`\u26a0\ufe0f ${_inDate.length - inRange.length} partite dell'intervallo sono della stagione ${_alt} e le salto: `
+         + `rifatte col database del ${cmpLoadedSeason} avrebbero uno storico piu' corto di quello dello Scanner. Carica la loro stagione.`);
+  }
 
   if (!inRange.length) {
     const avail = cmpAllMatches.filter(m => m.status==='finished' && m.time_utc).map(m=>m.time_utc.split('T')[0]).sort();
@@ -1593,7 +1726,7 @@ async function cmpEseguiIntervallo() {
 }
 
 async function cmpEseguiTutte() {  if (!cmpMatchesOfTheDay.length) return alert("Prima carica le partite del giorno");
-  const limit = parseInt(document.getElementById('cmp-history-limit').value) || 15;
+  const limit = parseInt(document.getElementById('cmp-history-limit').value) || window.__ENGINE_LIMIT || 30;
   const btn = document.getElementById('cmp-btn-tutte');
   const prog = document.getElementById('cmp-progress');
   const finite = cmpMatchesOfTheDay.filter(m => m.status === 'finished' && m.score_home != null);
@@ -1636,11 +1769,31 @@ async function cmpEseguiTutte() {  if (!cmpMatchesOfTheDay.length) return alert(
 
 const CMP_HALF_LIFE_DAYS = 106;
 
-// Una sola copia: era scritta identica in due funzioni, ed e' la forma esatta del caso
-// CMP_DC_SHRINK_TABLE (AGENTS.md, Due copie della stessa costante divergono, sempre).
-// Le rette stanno in AGENTS.md, sezione La confidence.
-const _calibConf1X2 = (p) => (p == null || !isFinite(p)) ? null
-  : Math.max(0, Math.min(100, Math.round(6.26 + 0.880 * (p * 100))));
+// Le confidence NON si calcolano qui: si leggono dal motore (R._confMk, dal primo giro).
+// Qui c'era una copia della retta 6.26 + 0.880p, rimasta indietro quando lo Scanner e'
+// passato alla tabella misurata (b38): il CSV scriveva 37 dove lo Scanner mostrava 36
+// (AGENTS.md, Due copie della stessa costante divergono, sempre).
+const cmpConfOf = (R) => {
+  const C = (R && R._confMk) || {};
+  const g = k => (C[k] != null && isFinite(C[k])) ? C[k] : null;
+  return { c1: g('p1'), cX: g('pX'), c2: g('p2'), c1X: g('p1X'), cX2: g('pX2'), c12: g('p12'),
+           cGG: g('pGG'), cNG: g('pNG'), cOv: g('pOv'), cUn: g('pUn'),
+           global: (R && R.confidence != null) ? R.confidence : null };
+};
+// Cosa e' successo davvero per ogni proposta del tabellone, dalla chiave che il motore
+// mette su ogni voce (renderVerdetti). null = il reale non c'e' (es. corner mancanti).
+const cmpTabHit = (key, o, gt, gg, T) => {
+  switch (key) {
+    case 'p1': return o === '1';   case 'pX': return o === 'X';   case 'p2': return o === '2';
+    case 'p1X': return o !== '2';  case 'pX2': return o !== '1';  case 'p12': return o !== 'X';
+    case 'pOv': return gt > 2.5;   case 'pUn': return gt < 2.5;
+    case 'pGG': return gg;         case 'pNG': return !gg;
+    case 'cor9.5': return (T && T.cor != null) ? T.cor > 9.5 : null;
+    case 'sot8.5': return (T && T.sot != null) ? T.sot > 8.5 : null;
+    case 'yel3.5': return (T && T.yel != null) ? T.yel > 3.5 : null;
+  }
+  return null;
+};
 const CMP_LN2 = Math.log(2);
 
 function cmpTimeDecayWeighted(vals, times, targetMs) {
@@ -1959,10 +2112,8 @@ function cmpRender(match, R, actH, actA) {
     return `<span style="background:${col};color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold">${v}</span>`;
   };
 
-  const _conf = (p) => _calibConf1X2(p);
-  const c1 = _conf(R.m1);
-  const cX = _conf(R.mX);
-  const c2 = _conf(R.m2);
+  const CF = cmpConfOf(R);
+  const c1 = CF.c1, cX = CF.cX, c2 = CF.c2;
 
   const rowMdl = (name, p1, pX, p2) => {
     if (p1 == null) return `<tr><td>${name}</td><td colspan="6" style="color:#999;font-size:11px">non disponibile (dati tracking insufficienti)</td></tr>`;
@@ -1972,7 +2123,7 @@ function cmpRender(match, R, actH, actA) {
   };
   document.getElementById('cmp-1x2-body').innerHTML =
     rowMdl('Dixon-Coles (Ruolo)', R.probsRole?.p1, R.probsRole?.pX, R.probsRole?.p2) +
-    rowMdl('Ordered Logit (30%)', R.probsOL?.p1, R.probsOL?.pX, R.probsOL?.p2) +
+    rowMdl('Ordered Logit (peso 0, solo a schermo)', R.probsOL?.p1, R.probsOL?.pX, R.probsOL?.p2) +
     rowMdl('KNN Storico (11 dim, fuori ensemble)', R.probsKnn?.p1, R.probsKnn?.pX, R.probsKnn?.p2) +
     rowMdl('Markov Score-Flow', R.mk_ro?.p1, R.mk_ro?.pX, R.mk_ro?.p2) +
     `<tr style="background:#f0f8ff;font-weight:bold">${rowMdl('ENSEMBLE V9.7', R.m1, R.mX, R.m2).slice(4)}`;
@@ -1987,13 +2138,32 @@ function cmpRender(match, R, actH, actA) {
     rowMkt('1 (Casa)',      R.m1,        dc.p1,  O?O.p1:null,       K?K.p1:null,  c1, outcome, outcome==='1') +
     rowMkt('X (Pareggio)',  R.mX,        dc.pX,  O?O.pX:null,       K?K.pX:null,  cX, outcome, outcome==='X') +
     rowMkt('2 (Trasferta)', R.m2,        dc.p2,  O?O.p2:null,       K?K.p2:null,  c2, outcome, outcome==='2') +
-    rowMkt('1X',            R.m1+R.mX,   (dc.p1||0)+(dc.pX||0), O?O.p1+O.pX:null, K?K.p1+K.pX:null, null, outcome, outcome!=='2') +
-    rowMkt('X2',            R.mX+R.m2,   (dc.pX||0)+(dc.p2||0), O?O.pX+O.p2:null, K?K.pX+K.p2:null, null, outcome, outcome!=='1') +
-    rowMkt('12',            R.m1+R.m2,   (dc.p1||0)+(dc.p2||0), O?O.p1+O.p2:null, K?K.p1+K.p2:null, null, outcome, outcome!=='X') +
-    rowMkt('Goal (GG)',     dc.pGG,      dc.pGG, null,              K?K.pGG:null,       null, gg, gg==='Goal') +
-    rowMkt('NoGoal',        1-(dc.pGG||0), 1-(dc.pGG||0), null,     K?1-K.pGG:null, null, gg, gg==='NoGoal') +
-    rowMkt('Over 2.5',      dc.pOv,      dc.pOv, null,              K?K.pOv:null,       null, `${goalTot} gol`, ov==='Over 2.5') +
-    rowMkt('Under 2.5',     1-(dc.pOv||0), 1-(dc.pOv||0), null,     K?1-K.pOv:null, null, `${goalTot} gol`, ov==='Under 2.5');
+    rowMkt('1X',            R.m1+R.mX,   (dc.p1||0)+(dc.pX||0), O?O.p1+O.pX:null, K?K.p1+K.pX:null, CF.c1X, outcome, outcome!=='2') +
+    rowMkt('X2',            R.mX+R.m2,   (dc.pX||0)+(dc.p2||0), O?O.pX+O.p2:null, K?K.pX+K.p2:null, CF.cX2, outcome, outcome!=='1') +
+    rowMkt('12',            R.m1+R.m2,   (dc.p1||0)+(dc.p2||0), O?O.p1+O.p2:null, K?K.p1+K.p2:null, CF.c12, outcome, outcome!=='X') +
+    rowMkt('Goal (GG)',     dc.pGG,      dc.pGG, null,              K?K.pGG:null,       CF.cGG, gg, gg==='Goal') +
+    rowMkt('NoGoal',        1-(dc.pGG||0), 1-(dc.pGG||0), null,     K?1-K.pGG:null, CF.cNG, gg, gg==='NoGoal') +
+    rowMkt('Over 2.5',      dc.pOv,      dc.pOv, null,              K?K.pOv:null,       CF.cOv, `${goalTot} gol`, ov==='Over 2.5') +
+    rowMkt('Under 2.5',     1-(dc.pOv||0), 1-(dc.pOv||0), null,     K?1-K.pOv:null, CF.cUn, `${goalTot} gol`, ov==='Under 2.5');
+
+  // IL TABELLONE, nell'ordine e coi verdetti con cui lo stampa lo Scanner
+  {
+    const T = { cor: (actH.cor!=null&&actA.cor!=null)?actH.cor+actA.cor:null,
+                sot: (actH.sot!=null&&actA.sot!=null)?actH.sot+actA.sot:null,
+                yel: (actH.yel!=null&&actA.yel!=null)?actH.yel+actA.yel:null };
+    const V = R._verdetti || [];
+    const body = document.getElementById('cmp-tab-body');
+    if (body) body.innerHTML = V.length ? V.map((v, i) => {
+      const hit = cmpTabHit(v.key, outcome, goalTot, gg === 'Goal', T);
+      const ok = v.verdetto === 'FORTE' || v.verdetto === 'GIOCABILE';
+      const eTxt = v.edge == null ? '--' : (v.edge >= 0 ? '+' : '') + v.edge.toFixed(1);
+      return `<tr${ok ? ' style="background:rgba(34,197,94,.10)"' : ''}><td>${i + 1}</td>`
+        + `<td style="text-align:left"><b>${v.nome}</b> ${(v.p * 100).toFixed(1)}%`
+        + `<div style="font-size:10px;color:var(--dim)">lega ${v.b == null ? '--' : (v.b * 100).toFixed(0) + '%'}</div></td>`
+        + `<td style="text-align:left">scarto ${eTxt}<div style="font-size:10px;font-weight:bold">${v.verdetto}</div></td>`
+        + `<td>${hit == null ? '--' : _win(hit)}</td></tr>`;
+    }).join('') : '<tr><td colspan="4" style="color:#999">Il motore non ha esposto il tabellone (motore precedente al b38?)</td></tr>';
+  }
 
   const gm = marketsFromMatrix(R.dcMat);
   let goalsHtml = '';
@@ -2087,8 +2257,6 @@ function cmpBuildResult(match, R, actH, actA) {
   const prevH = cmpExtractPrev(R.dH, 'H', R.predStats);
   const prevA = cmpExtractPrev(R.dA, 'A', R.predStats);
 
-  const _conf = (p) => _calibConf1X2(p);
-
   // La lega va presa DALLA PARTITA, non dalla dropdown: cmpUpdateLeagues() la svuota a
   // '-- --' a ogni cambio di paese, e in un archivio multi-lega l'etichetta finiva su
   // partite di un'altra lega. Nei tre export del 06/09 il 59-88% delle righe aveva la
@@ -2113,13 +2281,10 @@ function cmpBuildResult(match, R, actH, actA) {
     ids,
     tgt: { hName: match.home_team.name, aName: match.away_team.name, sH: actH.gf, sA: actA.gf, time: match.time_utc },
     R, actH, actA, outcome, gg, ov, goalTot, prevH, prevA,
-    conf: {
-      c1: _conf(R.m1),
-      cX: _conf(R.mX),
-      c2: _conf(R.m2),
-
-      global: R.confidence != null ? R.confidence : _conf(Math.max(R.m1||0, R.mX||0, R.m2||0))
-    },
+    conf: cmpConfOf(R),
+    verdetti: R._verdetti || null,
+    parita: R._parita || [],
+    dbSeason: R._dbSeason || '',
 
     predDebug: R.predDebug || null,
     residDebug: R.residDebug || null,
@@ -2240,6 +2405,21 @@ function cmpExportCSV() {
   rows.push('=== BACKTEST SCANNER V9.7 ===' + pad);
   rows.push(`Generato il;${nowStr}` + ';;;'.repeat(M.length));
   rows.push(`Partite nel file;${M.length}` + ';;;'.repeat(M.length));
+  // COPIA CONFORME: quante righe stampano esattamente quello che avrebbe stampato lo
+  // Scanner su quella partita. Si decide a ogni giro (cmpParita), non all'export.
+  {
+    const nOk = M.filter(m => Array.isArray(m.parita) && m.parita.length === 0).length;
+    const nNo = M.filter(m => Array.isArray(m.parita) && m.parita.length > 0).length;
+    const nIgn = M.length - nOk - nNo;
+    rows.push(`Copia conforme dello Scanner;${nOk} partite su ${M.length}` + ';;;'.repeat(M.length));
+    if (nNo) {
+      const motivi = {};
+      M.forEach(m => (m.parita || []).forEach(x => { motivi[x] = (motivi[x] || 0) + 1; }));
+      rows.push(`ATTENZIONE: ${nNo} partite NON sono i numeri dello Scanner — ` +
+        Object.entries(motivi).map(([k, v]) => `${k} (${v})`).join('; ') + '. Riga COPIA CONFORME DELLO SCANNER, partita per partita.' + ';;;'.repeat(M.length));
+    }
+    if (nIgn) rows.push(`${nIgn} partite salvate da un Comparatore precedente al b39: la copia conforme non e' stata verificata.` + ';;;'.repeat(M.length));
+  }
   {
     const mix = cmpScopeMix();
     if (mix.si && mix.no) {
@@ -2258,6 +2438,13 @@ function cmpExportCSV() {
   rows.push('' );
   rows.push('COME SI LEGGE:' + pad);
   rows.push('Ogni partita occupa 4 colonne: Previsto | Confidence | Reale | Esito.' + pad);
+  rows.push('COPIA CONFORME DELLO SCANNER = SI vuol dire che su quella partita il file riporta gli stessi numeri che lo Scanner stampa a schermo: '
+    + 'probabilita\', confidence (lette dal motore) e tabellone (sezione TABELLONE). NO dice quale manopola o quale storico e\' diverso.' + pad);
+  rows.push('Le colonne Esito (WIN/LOSS/SORPRESA/COERENTE) e la riga PICK >=55% sono regole di questo file per contare, non verdetti dello Scanner: '
+    + 'i verdetti dello Scanner sono quelli della sezione TABELLONE.' + pad);
+  rows.push('Sezioni SQUADRA: Previsto viene da predictStat del motore quando il motore la calcola (window.__PRED_STATS); per le metriche che il motore '
+    + 'non prevede (tiri totali, rossi, big chances, dribbling, controlli sbagliati, palle perse...) e\' una media dello storico di ruolo calcolata qui, '
+    + 'oppure N/D: non e\' un numero che lo Scanner stampa come previsione.' + pad);
   rows.push('Esito 1X2: WIN/LOSS solo se la probabilita\' era >=55% (vera scommessa).' + pad);
   rows.push('Sotto il 45% un esito non previsto che non accade e\' COERENTE, non un errore.' + pad);
   rows.push('Metriche avanzate: previste col modello attacco x difesa avversario x media lega,' + pad);
@@ -2297,13 +2484,20 @@ function cmpExportCSV() {
   M.forEach(m => ggRealRow.push((m.tgt.sH > 0 && m.tgt.sA > 0) ? 'GG' : 'NG', '', '', ''));
   rows.push(ggRealRow.join(';'));
 
+  const confRow = ['COPIA CONFORME DELLO SCANNER'];
+  M.forEach(m => confRow.push(!Array.isArray(m.parita) ? 'non verificata'
+    : (m.parita.length ? 'NO: ' + m.parita.join(' / ') : 'SI'), '', '', ''));
+  rows.push(confRow.join(';'));
+
   const pickOf = m => {
     const P = [[m.R?.m1, '1'], [m.R?.mX, 'X'], [m.R?.m2, '2']].filter(x => x[0] != null);
     if (!P.length) return null;
     P.sort((a, b) => b[0] - a[0]);
     return { seg: P[0][1], p: P[0][0] };
   };
-  const pkRow = ['PICK ENSEMBLE'], ppRow = ['PROB DEL PICK'], okRow = ['PICK AZZECCATO'], plRow = ['GIOCABILE (>=55%)'];
+  // la soglia del 55% e' una regola di questo file, non il tabellone dello Scanner: si
+  // chiamava GIOCABILE, lo stesso nome di un verdetto del tabellone che vuol dire altro
+  const pkRow = ['PICK ENSEMBLE'], ppRow = ['PROB DEL PICK'], okRow = ['PICK AZZECCATO'], plRow = ['PICK >=55% (regola del backtest, non il tabellone)'];
   M.forEach(m => {
     const pk = pickOf(m);
     pkRow.push(pk ? pk.seg : 'N/D', '', '', '');
@@ -2329,19 +2523,48 @@ function cmpExportCSV() {
     ['1', m => [fmt(m.R.m1), m.conf.c1||'-', m.outcome, verd(m.R.m1, m.outcome==='1')]],
     ['X', m => [fmt(m.R.mX), m.conf.cX||'-', m.outcome, verd(m.R.mX, m.outcome==='X')]],
     ['2', m => [fmt(m.R.m2), m.conf.c2||'-', m.outcome, verd(m.R.m2, m.outcome==='2')]],
-    ['1X', m => [fmt(m.R.m1+m.R.mX), '-', m.outcome, verd(m.R.m1+m.R.mX, m.outcome!=='2')]],
-    ['X2', m => [fmt(m.R.mX+m.R.m2), '-', m.outcome, verd(m.R.mX+m.R.m2, m.outcome!=='1')]],
-    ['12', m => [fmt(m.R.m1+m.R.m2), '-', m.outcome, verd(m.R.m1+m.R.m2, m.outcome!=='X')]],
-    ['Goal', m => [fmt(m.R.probsRole?.pGG), '-', m.gg, verd(m.R.probsRole?.pGG, m.gg==='Goal')]],
-    ['NoGoal', m => [fmt(1-(m.R.probsRole?.pGG||0)), '-', m.gg, verd(1-(m.R.probsRole?.pGG||0), m.gg==='NoGoal')]],
-    ['Over 2.5', m => [fmt(m.R.probsRole?.pOv), '-', `${m.goalTot} gol`, verd(m.R.probsRole?.pOv, m.ov==='Over 2.5')]],
-    ['Under 2.5', m => [fmt(1-(m.R.probsRole?.pOv||0)), '-', `${m.goalTot} gol`, verd(1-(m.R.probsRole?.pOv||0), m.ov==='Under 2.5')]]
+    ['1X', m => [fmt(m.R.m1+m.R.mX), m.conf.c1X ?? '-', m.outcome, verd(m.R.m1+m.R.mX, m.outcome!=='2')]],
+    ['X2', m => [fmt(m.R.mX+m.R.m2), m.conf.cX2 ?? '-', m.outcome, verd(m.R.mX+m.R.m2, m.outcome!=='1')]],
+    ['12', m => [fmt(m.R.m1+m.R.m2), m.conf.c12 ?? '-', m.outcome, verd(m.R.m1+m.R.m2, m.outcome!=='X')]],
+    ['Goal', m => [fmt(m.R.probsRole?.pGG), m.conf.cGG ?? '-', m.gg, verd(m.R.probsRole?.pGG, m.gg==='Goal')]],
+    ['NoGoal', m => [fmt(1-(m.R.probsRole?.pGG||0)), m.conf.cNG ?? '-', m.gg, verd(1-(m.R.probsRole?.pGG||0), m.gg==='NoGoal')]],
+    ['Over 2.5', m => [fmt(m.R.probsRole?.pOv), m.conf.cOv ?? '-', `${m.goalTot} gol`, verd(m.R.probsRole?.pOv, m.ov==='Over 2.5')]],
+    ['Under 2.5', m => [fmt(1-(m.R.probsRole?.pOv||0)), m.conf.cUn ?? '-', `${m.goalTot} gol`, verd(1-(m.R.probsRole?.pOv||0), m.ov==='Under 2.5')]]
   ];
   mkts.forEach(([lbl, fn]) => {
     const r = [lbl];
     M.forEach(m => r.push(...fn(m)));
     rows.push(r.join(';'));
   });
+
+  // IL TABELLONE COME LO STAMPA LO SCANNER: stesse proposte, stesso ordine, stessi
+  // verdetti, letti dal motore (window.__VERDETTI del primo giro). E' quello da cui si
+  // gioca: fino al b38 il CSV non lo conteneva, e le misure lo ricostruivano a mano.
+  rows.push('');
+  rows.push('--- TABELLONE (come lo stampa lo Scanner) ---' + ';;;;'.repeat(M.length));
+  {
+    const nMax = Math.max(0, ...M.map(m => (m.verdetti || []).length));
+    const tabHit = m => v => cmpTabHit(v.key, m.outcome, m.goalTot, m.gg === 'Goal', m.realTotals);
+    const siNo = h => h == null ? 'N/D' : (h ? 'SI' : 'NO');
+    for (let i = 0; i < nMax; i++) {
+      const r = ['Tabellone #' + (i + 1)];
+      M.forEach(m => {
+        const v = (m.verdetti || [])[i];
+        if (!v) { r.push(m.verdetti ? '' : 'N/D', '', '', ''); return; }
+        const eTxt = v.edge == null ? '' : 'scarto ' + (v.edge >= 0 ? '+' : '') + v.edge.toFixed(1).replace('.', ',') + ' \u00b7 ';
+        r.push(`${v.nome} ${fmt(v.p)}`, 'lega ' + (v.b == null ? 'N/D' : fmt(v.b)), siNo(tabHit(m)(v)), eTxt + v.verdetto);
+      });
+      rows.push(r.join(';'));
+    }
+    const rTop = ['Tabellone: la prima proposta e\' uscita?'], rOk = ['Tabellone: FORTE e GIOCABILE uscite'];
+    M.forEach(m => {
+      const V = m.verdetti || [];
+      rTop.push(V.length ? siNo(tabHit(m)(V[0])) : 'N/D', '', '', '');
+      const G = V.filter(v => v.verdetto === 'FORTE' || v.verdetto === 'GIOCABILE').map(tabHit(m)).filter(h => h != null);
+      rOk.push(m.verdetti ? `${G.filter(Boolean).length} su ${G.length}` : 'N/D', '', '', '');
+    });
+    rows.push(rTop.join(';')); rows.push(rOk.join(';'));
+  }
 
   rows.push('');
   rows.push('--- OVER/UNDER MULTI-LINEA (prob DC vs reale) ---' + ';;;;'.repeat(M.length));
@@ -2895,6 +3118,7 @@ function cmpExportCSV() {
     ['LEGA',       m => m.ids?.league],
     ['PAESE',      m => m.ids?.country],
     ['STAGIONE',   m => m.ids?.season],
+    ['STAGIONE DEL DATABASE', m => m.dbSeason],
     ['ID SQUADRA CASA',      m => m.ids?.homeId],
     ['ID SQUADRA TRASFERTA', m => m.ids?.awayId],
     ['DATA ISO (UTC)',       m => m.tgt?.time]
@@ -2987,6 +3211,12 @@ function cmpRefreshMatches(){
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
+  // una volta sola: le tabelle dei risultati sono statiche, si riempie solo il tbody
+  document.querySelectorAll('#cmp-results table.tbl').forEach(t => {
+    if (t.parentElement && t.parentElement.classList.contains('tbl-scroll')) return;
+    const w = document.createElement('div'); w.className = 'tbl-scroll';
+    t.parentNode.insertBefore(w, t); w.appendChild(t);
+  });
   // prima del return qui sotto: l'interruttore va ripristinato anche senza motore salvato
   try {
     const el = document.getElementById('cmp-role-indep');

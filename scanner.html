@@ -174,7 +174,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b38</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b40</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -197,7 +197,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <div class="grid-3" style="align-items:end">
         <div><label>Squadra Casa</label><select id="sel-home" style="font-weight:bold;color:var(--blue)"></select></div>
         <div><label>Squadra Trasferta</label><select id="sel-away" style="font-weight:bold;color:var(--red)"></select></div>
-        <div><label>Limite Match (Taglio Esatto)</label><input type="number" id="history-limit" value="15" min="5" max="100" style="font-weight:bold;"></div>
+        <div><label>Limite Match (Taglio Esatto)</label><input type="number" id="history-limit" value="30" min="5" max="100" style="font-weight:bold;"></div>
       </div>
       <button class="btn btn-green" id="btn-avvia" style="margin-top:15px; width:100%; padding:12px; font-size:15px" onclick="avviaScanner()">🚀 2. ESTRAI DATI E SIMULA MODELLI</button>
     </div>
@@ -1796,17 +1796,19 @@ window.EDGE_BANDS = window.EDGE_BANDS ||
 function renderVerdetti(mk, base, adv) {
   const over = (line, lam, k) => 1 - negBinCDF(Math.floor(line), lam, k);
   const B = base && base.ok ? base : null;
+  // l'ultima colonna e' la chiave del mercato: il Comparatore la usa per sapere cosa e'
+  // successo davvero senza dipendere dall'etichetta a schermo
   const R = [
-    ['1 (Casa)',   mk.p1,  B && B.p1,   'Vittoria casa'],
-    ['X (Pari)',   mk.pX,  B && B.pX,   'Pareggio'],
-    ['2 (Trasf.)', mk.p2,  B && B.p2,   'Vittoria trasferta'],
-    ['1X',         mk.p1X, B && B.p1X,  'Casa o pari'],
-    ['X2',         mk.pX2, B && B.pX2,  'Pari o trasferta'],
-    ['12',         mk.p12, B && B.p12,  'Niente pari'],
-    ['Over 2.5',   mk.pOv, B && B.pOv,  'Piu\' di 2 gol'],
-    ['Under 2.5',  mk.pUn, B && B.pUn,  'Meno di 3 gol'],
-    ['Goal (GG)',  mk.pGG, B && B.pGG,  'Segnano entrambe'],
-    ['NoGoal',     mk.pNG, B && B.pNG,  'Almeno una a secco']
+    ['1 (Casa)',   mk.p1,  B && B.p1,   'Vittoria casa',      'p1'],
+    ['X (Pari)',   mk.pX,  B && B.pX,   'Pareggio',           'pX'],
+    ['2 (Trasf.)', mk.p2,  B && B.p2,   'Vittoria trasferta', 'p2'],
+    ['1X',         mk.p1X, B && B.p1X,  'Casa o pari',        'p1X'],
+    ['X2',         mk.pX2, B && B.pX2,  'Pari o trasferta',   'pX2'],
+    ['12',         mk.p12, B && B.p12,  'Niente pari',        'p12'],
+    ['Over 2.5',   mk.pOv, B && B.pOv,  'Piu\' di 2 gol',     'pOv'],
+    ['Under 2.5',  mk.pUn, B && B.pUn,  'Meno di 3 gol',      'pUn'],
+    ['Goal (GG)',  mk.pGG, B && B.pGG,  'Segnano entrambe',   'pGG'],
+    ['NoGoal',     mk.pNG, B && B.pNG,  'Almeno una a secco', 'pNG']
   ];
   // I mercati sui numeri non erano nel tabellone, e hanno uno scarto >= +10 sul
   // 13-15% delle partite contro l'1-3% di 12, GG e Over 2.5. Il loro base rate non si
@@ -1814,22 +1816,22 @@ function renderVerdetti(mk, base, adv) {
   // viene dal riferimento ancorato ai gol di lega, che e' l'unica quantita' di lega
   // che il motore ha per questi conteggi.
   if (adv) {
-    const NUM = [['Corner Over 9.5', adv.pOv9c, adv.lgRefCor, adv.kCor, 9.5, 'Piu\' di 9 corner'],
-                 ['Tiri porta Over 8.5', adv.pOv8s, adv.lgRefSot, adv.kSot, 8.5, 'Piu\' di 8 tiri in porta'],
-                 ['Gialli Over 3.5', adv.pOv3y, adv.lgRefYel, adv.kYel, 3.5, 'Piu\' di 3 gialli']];
-    for (const [nome, pr, ref, kk, line, desc] of NUM)
-      R.push([nome, pr, (ref > 0 && isFinite(kk)) ? over(line, ref, kk) : null, desc]);
+    const NUM = [['Corner Over 9.5', adv.pOv9c, adv.lgRefCor, adv.kCor, 9.5, 'Piu\' di 9 corner', 'cor9.5'],
+                 ['Tiri porta Over 8.5', adv.pOv8s, adv.lgRefSot, adv.kSot, 8.5, 'Piu\' di 8 tiri in porta', 'sot8.5'],
+                 ['Gialli Over 3.5', adv.pOv3y, adv.lgRefYel, adv.kYel, 3.5, 'Piu\' di 3 gialli', 'yel3.5']];
+    for (const [nome, pr, ref, kk, line, desc, key] of NUM)
+      R.push([nome, pr, (ref > 0 && isFinite(kk)) ? over(line, ref, kk) : null, desc, key]);
   }
 
   const righe = [], voci = [];
-  for (const [nome, p, b, desc] of R) {
+  for (const [nome, p, b, desc, key] of R) {
     if (p == null || isNaN(p)) continue;
     const edge = (b == null || isNaN(b)) ? null : (p - b) * 100;
     let verdetto = 'NESSUN VERDETTO', guad = null, nOss = null;
     if (edge == null) verdetto = 'BASE DI LEGA ASSENTE';
     else for (const [soglia, v, g, n] of window.EDGE_BANDS)
       if (edge >= soglia) { verdetto = v; guad = g; nOss = n; break; }
-    voci.push({ nome, p, b, edge, verdetto, guad, nOss, desc });
+    voci.push({ nome, p, b, edge, verdetto, guad, nOss, desc, key });
   }
   // ordinati per scarto: in cima quello che batte di piu' il giocarlo alla cieca,
   // non quello con la percentuale piu' grossa.
@@ -1869,7 +1871,7 @@ function renderVerdetti(mk, base, adv) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b38';
+window.__SCANNER_BUILD = '0905-b40';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -2173,7 +2175,7 @@ async function avviaScanner() {
     if(selH.value === selA.value) return alert("Non puoi far sfidare la squadra contro se stessa!");
 
     const hId = selH.value; const hName = selH.options[selH.selectedIndex].text; const aId = selA.value; const aName = selA.options[selA.selectedIndex].text;
-    const limit = parseInt(document.getElementById('history-limit').value) || 15; const dateInput = document.getElementById('target-date').value; const matchTime = dateInput + "T00:00:00Z";
+    const limit = parseInt(document.getElementById('history-limit').value) || 30; const dateInput = document.getElementById('target-date').value; const matchTime = dateInput + "T00:00:00Z";
 
     document.getElementById('console-loader').innerHTML = ''; document.getElementById('console-loader').style.display = 'block'; document.getElementById('btn-avvia').disabled = true; document.getElementById('btn-avvia').innerHTML = "⏳ Simulazione in corso (Attendi)...";
 
@@ -2599,7 +2601,14 @@ async function avviaScanner() {
     }
 
     document.getElementById('setup-card').style.display = 'none'; document.getElementById('dashboard-area').style.display = 'block';
-    safeTxt('ui-title', `${hName} - ${aName}`); safeTxt('ui-subtitle', `Motore V9.7: Analisi Integrale su ${dH.overall.n} match (Simulazione al ${dateInput})`);
+    // Partite di lega PRIMA della data che nel database non risultano concluse: o sono
+    // rinviate, o il database e' stato scaricato prima che finissero (resta in memoria
+    // fino a 24 ore). Nel secondo caso un backtest fatto dopo le vedra' concluse e non
+    // stampera' questi numeri: va detto qui, dove si decide.
+    const _pendenti = globalLeagueMatchesCache.filter(m => m.league_id === lId && m.status !== 'finished'
+      && typeof m.time_utc === 'string' && m.time_utc.slice(0, 10) < dateInput).length;
+    safeTxt('ui-title', `${hName} - ${aName}`); safeTxt('ui-subtitle', `Motore V9.7: Analisi Integrale su ${dH.overall.n} match (Simulazione al ${dateInput})`
+      + (_pendenti ? ` · ⚠ ${_pendenti} partite di lega prima di questa data non risultano concluse nel database: se si sono gia' giocate, ricaricalo` : ''));
 
     const covOf = (team, key) => ((team.overall.coverage||{})[key]||0);
     const nd = (team, key, txt) => covOf(team, key) > 0 ? txt : 'N/D';
@@ -2653,6 +2662,15 @@ async function avviaScanner() {
     safeHtml('conf-ng', _badgeConf(_confMarket([dcNG], true)));
     safeHtml('conf-ov', _badgeConf(_confMarket([dcOv], true)));
     safeHtml('conf-un', _badgeConf(_confMarket([dcUn], true)));
+    // Gli stessi numeri dei badge qui sopra: il Comparatore li legge da qui invece di
+    // ricalcolarli con una sua copia delle rette, che era rimasta alla retta vecchia
+    // (AGENTS.md, Il Comparatore stampa come lo Scanner).
+    window.__CONF_MK = {
+      p1: _confMarket([m1]), pX: _confMarket([mX]), p2: _confMarket([m2]),
+      p1X: _confMarket([dcP1X], true), pX2: _confMarket([dcPX2], true), p12: _confMarket([dcP12], true),
+      pGG: _confMarket([dcGG], true), pNG: _confMarket([dcNG], true),
+      pOv: _confMarket([dcOv], true), pUn: _confMarket([dcUn], true)
+    };
 
     const _LGBASE = leagueBaseRates(lId, targetMs);
     window.__BASE_DEBUG = _LGBASE;
