@@ -39,7 +39,7 @@ che li mette in `RAW_CACHE`.
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b40`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b41`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -74,16 +74,13 @@ che li mette in `RAW_CACHE`.
 Dentro ogni gruppo, in ordine di rapporto valore/rischio. Quando chiudi una voce,
 spostala in *Cosa è già stato provato* con i numeri, e aggiorna *Stato attuale*.
 
-### 0. Prima di tutto: rifare il campione di riferimento in copia conforme
+### 0. Il campione di riferimento in copia conforme — fatto (`b41`)
 
-- [ ] **Un backtest `b40` di Serie A, cinque stagioni, una stagione per file.** Tutte le
-  misure dal `b24` al `b38` vengono da export del **batch per stagioni**, che in ogni file
-  metteva anche le **due stagioni precedenti**, rifatte con meno storico di quello che
-  avrebbero nel loro file, e deduplicate dopo senza sapere quale copia si teneva. Lo storico
-  invece e' lo stesso: quei batch giravano a 30, e dal `b40` lo Scanner stampa a 30. Quindi
-  `CONF_1X2_TABLE`, `EDGE_BANDS`, le soglie del pick, le misure di `SHRINK_K`/`SHRINK_LAM_K`
-  e il 27.6% del clamp dell'HFA vanno riconfermati su file puliti. Prima cosa da guardare:
-  `Copia conforme dello Scanner` in testa al file deve essere N su N.
+- [x] ~~Un backtest `b40` di Serie A, una stagione per file~~ — **1134 partite,
+  2023/24–2025/26, 1134 su 1134 in copia conforme.** Sono tutte le stagioni di Serie A
+  rifacibili come le vede lo Scanner (l'API parte dal 2021/22). Tarature riconfermate, il
+  clamp dell'HFA non morde mai, e due difetti del motore trovati e corretti. Vedi *Il
+  campione di riferimento in copia conforme*.
 - [x] ~~Decidere lo storico canonico: 15 o 30~~ — **30, dal `b40`.** E' il batch base
   dell'utente e lo storico su cui sono misurate le tarature `b24`–`b38`. Il Comparatore lo
   legge dallo Scanner (`id="history-limit" value="30"`); la prima partita dello Scanner
@@ -93,34 +90,35 @@ spostala in *Cosa è già stato provato* con i numeri, e aggiorna *Stato attuale
 
 Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export recente.
 
+- [ ] **Rifare il backtest su tutte e cinque le leghe col motore attuale**, come per la
+  Serie A: build `b41`, una stagione per file, solo 2023/24–2025/26 (le stagioni con due
+  stagioni alle spalle). Dopo il `b18` è stata rifatta solo la Serie A: Premier, LaLiga,
+  Bundesliga e Ligue 1 hanno misure prese con la lega congelata a 1.50/1.20. È la seconda
+  lega che manca a quasi ogni voce del punto 2. Primo controllo: `Copia conforme dello
+  Scanner` N su N, e `Unita: partite di lega usate` mai sotto 700.
 - [ ] **`LEAGUE_HALFLIFE_DAYS`** (oggi 0 = media piatta). È l'ultima ipotesi rimasta sul
   *livello* dei mercati gol: il lambda è inversamente proporzionale alla base di lega, e la
   base è una media piatta su tre stagioni (Premier: 3.041 contro 2.754 veri, −5% sul
-  lambda). Il CSV esporta `Unita: media gol casa (piatta)` e `(emivita 106)` fianco a
-  fianco. Vedi *I mercati gol: due muri*.
-- [ ] **La regola dell'HFA: pavimento o shrinkage.** `ELO_HFA_MODE` da `'clamp'` a
-  `'shrink'` (prior 65, `k` 200). Il pavimento 30 morde sul 27.6% delle righe di backtest
-  (archivi corti, mai in produzione), ed è lì che si concentra il guadagno sospetto di
-  `SHRINK_K`. Sezione CSV `A/B REGOLA DELL HFA`. **Da decidere prima di riaprire lo
-  shrinkage**, e dopo il punto 0: parte di quel 27.6% puo' venire dalle stagioni rifatte
-  con lo storico corto dentro i file di stagioni successive.
-- [ ] **Rifare il backtest su tutte e cinque le leghe col motore attuale.** Dopo il `b18`
-  è stata rifatta solo la Serie A: Premier, LaLiga, Bundesliga e Ligue 1 hanno misure prese
-  con la lega congelata a 1.50/1.20, e la Bundesliga (3.25 gol reali) è dove il bug mordeva
-  di più. Primo controllo: `Unita: partite di lega usate` alto, mai 0.
+  lambda). Sul campione in copia conforme la base piatta sbaglia i gol reali della stagione
+  di 0.083 in media, quella a emivita 106 di 0.028 (2 stagioni su 3 a favore). Va
+  ricostruito il verso sull'Over, non dedotto: il CSV esporta `Unita: media gol casa
+  (piatta)` e `(emivita 106)` fianco a fianco. Vedi *I mercati gol: due muri*.
 
 ### 2. Aspettano una sesta lega (o le stagioni vecchie di Premier e LaLiga)
 
 Quasi tutto oggi è misurato sulla sola Serie A.
 
-- [ ] **Riconfermare la tabella del `b38`** (`CONF_1X2_TABLE`, `EDGE_BANDS`, soglie del
-  pick). La struttura regge in cinque stagioni (lo scarto ordina, la probabilità grezza no);
-  i valori delle bande sono di una lega sola.
+- [ ] **Riconfermare la tabella del `b38` su una seconda lega** (`CONF_1X2_TABLE`,
+  `EDGE_BANDS`, soglie del pick). Sulla Serie A in copia conforme reggono tutte (`b41`); i
+  valori restano di una lega sola.
 - [ ] **`ELO_SCALE` e `ELO_1X2_W` rispazzati insieme.** LaLiga da sola dice `S = 1.00`, la
   Serie A 1.60, il pool 1.25. Non alzare `S` per compensare la timidezza del modello: vedi
   *La scala dell'Elo*.
-- [ ] **`SHRINK_LAM_K` fra 5 e 8.** Chiude parte del livello dei gol, ma `z = −1.82` e il
-  segno si ribalta nel 2022/23. Punta nello stesso verso di `LEAGUE_HALFLIFE_DAYS`.
+- [ ] **`SHRINK_LAM_K` sopra 3.** Chiude parte del livello dei gol. Sul campione pulito
+  Over+GG migliora in modo monotono fino a 20 (miglior `z = −1.99` a 5), segno concorde in 3
+  stagioni su 3, ma senza ottimo interno e con una lega sola. Il 2022/23 che ribaltava il
+  segno non è rifacibile in copia conforme. Punta nello stesso verso di
+  `LEAGUE_HALFLIFE_DAYS`.
 - [ ] **`GOALS_SOT_W`**: 0.50 in uso, 0.75 e 1.00 indistinguibili (±0.030 di SE).
 - [ ] **Lo squilibrio sui tiri in porta**, come per i cartellini: 2.8 sigma, una lega su
   cinque discorde.
@@ -186,49 +184,54 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b40`)
+## Stato attuale (`b41`)
 
-**1X2.** Pick azzeccato ~52% contro ~40–43% del «gioca sempre in casa», fermo da venti
-build. Il valore sta nella **fascia alta**, che la card mostra con la tabella misurata
-(1882 partite di Serie A, motore post-`b30`, con 30 partite di storico come lo Scanner dal
-`b40`, ma da file con tre stagioni ciascuno: vedi *Da fare*, punto 0):
+**1X2.** Pick azzeccato 52.9% (±3.0) contro il 40.2% del «gioca sempre in casa», fermo da
+venti build. Il valore sta nella **fascia alta**, che la card mostra con la tabella misurata
+in copia conforme dello Scanner (1134 partite di Serie A, 2023/24–2025/26, una stagione per
+file; vedi *Il campione di riferimento in copia conforme*):
 
-| soglia sul pick | partite | quota del calendario | azzecca | ±2se |
-|---|---|---|---|---|
-| ≥50% | 823 | 44% | 62.0% | 3.4 |
-| ≥55% | 559 | 30% | 65.3% | 4.0 |
-| ≥60% | 339 | 18% | 71.1% | 4.9 |
-| ≥65% | 179 | 10% | 74.3% | 6.5 |
-| ≥70% | 81 | 4% | 79.0% | 9.0 |
+| soglia sul pick | partite | quota del calendario | azzecca | ±2se | `b38` (1882, non conforme) |
+|---|---|---|---|---|---|
+| ≥50% | 522 | 46% | 61.3% | 4.3 | 62.0% |
+| ≥55% | 359 | 32% | 64.9% | 5.0 | 65.3% |
+| ≥60% | 221 | 19% | 70.1% | 6.2 | 71.1% |
+| ≥65% | 118 | 10% | 73.7% | 8.1 | 74.3% |
+| ≥70% | 52 | 5% | 73.1% | 12.3 | 79.0% |
 
 **La selezione vale più dell'accuratezza.** Prima di aggiungere una feature, chiedersi se
 il segnale non sia già nell'output, solo mal etichettato.
 
 **Tabellone.** Ordina per **scarto dal base rate della lega**. Sulla proposta migliore di
-ogni partita rende +16.7 punti sopra il giocarla alla cieca (walk-forward +18.8), contro
-+11.7 del vecchio ordinamento per probabilità. Vedi *Il tabellone ordinava per la colonna
-sbagliata*.
+ogni partita rende +17.6 punti sopra il giocarla alla cieca come la stampava il `b40`, +18.9
+col `b41` (che ridà la base ai mercati sui numeri), contro +11.7 del vecchio ordinamento per
+probabilità. Vedi *Il tabellone ordinava per la colonna sbagliata*.
 
-**Calibrazione 1X2.** Probabilità ancora un po' timide: pendenza 1.199 (1 contro 2) e 1.125
-(tre esiti) sul prodotto finito. La timidezza sta nel modello (`lgModel` 1.443, `z = +4.81`),
-non nell'Elo (1.092). Nessuna manopola disponibile la chiude senza costare sui gol.
+**Calibrazione 1X2.** Probabilità ancora un po' timide: pendenza 1.249 ±0.098 (1 contro 2)
+sul prodotto finito. La timidezza sta nel modello (`lgModel` 1.637, `z = +4.96`), non
+nell'Elo (1.119, `z = +1.34`). Nessuna manopola disponibile la chiude senza costare sui gol.
 
 **Mercati gol.** Due muri distinti. *Ordinamento*: AUC dell'Over 2.5 fra 0.51 e 0.60 a
-seconda del campione, e l'unica feature che l'ha spostato è `sum_sot`. *Livello*: l'Over
-2.5 previsto sta ~2.6 punti sotto il reale; resta un'ipotesi (`LEAGUE_HALFLIFE_DAYS`) più la
+seconda del campione (0.552 in copia conforme, GG 0.532), e l'unica feature che l'ha spostato
+è `sum_sot`. *Livello*: l'Over 2.5 previsto sta 3.4 punti sotto il reale (44.2% contro
+47.6%), il GG 3.0 (46.6% contro 49.6%); resta un'ipotesi (`LEAGUE_HALFLIFE_DAYS`) più la
 radice (la media NPxG di lega).
 
-**Mercati sui numeri.** Discriminano meglio dei gol: cartellini ~0.59 di AUC, tiri in porta
-~0.56, corner ~0.53. Dal `b38` sono nel tabellone.
+**Mercati sui numeri.** Discriminano meglio dei gol: in copia conforme gialli 0.647 di AUC,
+corner 0.574, tiri in porta 0.556, calibrati in media (previsto contro reale 55.2/54.4,
+45.6/45.4, 44.1/44.1). Dal `b38` sono nel tabellone, dal `b41` anche quando la coppia non è
+sovradispersa.
 
-**Pareggio.** Non si prevede: `pX` ha AUC 0.487. È calibrato in media e piatto a fasce, e
-trascina con sé il `12`.
+**Pareggio.** Non si prevede abbastanza da giocarlo: in copia conforme `pX` ha AUC 0.562
+(0.561 / 0.580 / 0.542 nelle tre stagioni; 0.487 sul vecchio campione), ma sta quasi sempre
+fra 25 e 30% e il suo scarto dal base rate non passa mai +7.1. Trascina con sé il `12`.
 
 **Campioni su cui si è misurato:**
 
 | campione | partite | note |
 |---|---|---|
-| Serie A 2021/22 → 2025/26 | 1882 | motore post-`b30`; `/advanced` assente sulle tre stagioni più vecchie; storico 30, ma file con tre stagioni ciascuno (non copia conforme) |
+| **Serie A 2023/24 → 2025/26** | **1134** | **il riferimento**: export `b40`, 1134 su 1134 in copia conforme, una stagione per file, storico 30, `lgN` ≥ 760; `/advanced` assente sul 2023/24 (`riserva-k-motore`) |
+| Serie A 2021/22 → 2025/26 | 1882 | motore post-`b30`; `/advanced` assente sulle tre stagioni più vecchie; storico 30, ma file con tre stagioni ciascuno (non copia conforme). Superato dalla riga sopra |
 | Serie A + Premier + LaLiga 2025/26 | 1133 | post-`b18`, con `/advanced` |
 | le tre sopra + Bundesliga + Ligue 1 2025/26 | 1743 | export `b14`, **pre-`b18`**: lega congelata a 1.50/1.20 |
 
@@ -314,11 +317,19 @@ all'1X2 divisa per quattro.
 È la probabilità del pick **ricalibrata sull'hit reale**, non l'accordo fra i modelli
 (l'accordo correlava −0.007 con l'azzeccare).
 
-- **1X2**: `CONF_1X2_TABLE`, tabella empirica per fascia (`b38`, 1882 partite). Con
+- **1X2**: `CONF_1X2_TABLE`, tabella empirica per fascia (`b38`, 1882 partite),
+  riconfermata in copia conforme nel `b41` (8 fasce su 8 dentro 2se). Con
   `window.CONF_1X2_MODE = 'retta'` si torna alla vecchia `6.26 + 0.880·p`, che sottostimava
   fino a 8 punti dove si decide (a 62 mostrava 61, il vero era 67.5).
-- **Mercati binari**: retta `−5.06 + 1.091·p`, rimisurata nel `b38` su 22.584 proposte:
-  sbaglia al massimo di 2.4 punti. Non si tocca.
+- **La tabella serve anche gli esiti non scelti** (le confidence di `1`, `X` e `2` a schermo
+  e in `__CONF_MK`), ma era misurata sul solo pick, che non scende mai sotto il 33%. Fino al
+  `b40` sotto il primo punto (37.6) restava piatta a 36: un `2` all'11% mostrava 36, e ne
+  vince il 9%. Dal `b41` la tabella parte da `[0,0]`, cioè sotto 37.6 scende in linea retta
+  (0.960·p). Misura: 2381 probabilità sotto 37.6, hit/p = 0.939.
+- **Mercati binari**: retta `−5.06 + 1.091·p`, rimisurata nel `b38` su 22.584 proposte
+  (errore massimo 2.4 punti) e nel `b41` su 7938 (errore massimo 2.5, fascia 50–60). Non si
+  tocca: lo scarto per mercato (Over −4.4, GG −3.8, `12` +3.3) è il livello dei gol e la
+  timidezza dell'1X2, non la retta.
 
 ### Il tabellone
 
@@ -327,8 +338,11 @@ all'1X2 divisa per quattro.
 `leagueBaseRates(leagueId, targetTimeMs)` sull'archivio della lega stessa, con lo stesso
 `_isPast` del motore e a costo zero chiamate (minimo 200 partite). Per corner, tiri e
 gialli il base rate è il riferimento ancorato ai gol di lega (`MARKET_PER_GOAL ×
-(avgH+avgA)`) passato per la stessa binomiale negativa. Fasce (`EDGE_BANDS`): ≥20 FORTE,
-≥10 GIOCABILE, ≥5 MARGINALE. Ogni riga dice su quanti casi è misurato il suo hit.
+(avgH+avgA)`) passato per la stessa binomiale negativa, **anche quando la `k` della coppia è
+infinita** (Poisson): fino al `b40` una guardia `isFinite(kk)` lasciava il mercato senza base
+e fuori dall'ordinamento sul 73% delle partite per i gialli, 44% per i tiri, 23% per i
+corner. Fasce (`EDGE_BANDS`): ≥20 FORTE, ≥10 GIOCABILE, ≥5 MARGINALE. Ogni riga dice su
+quanti casi è misurato il suo hit.
 
 ### Le statistiche previste: `predictStat`
 
@@ -594,19 +608,22 @@ GG e Over, corner/tiri/gialli e le loro linee, handicap, multigol, Elo, tabellon
 voce, certificato). Tre modalita' sono controlli di potenza, e passano solo se il certificato
 dice NO col motivo giusto.
 
-Esito al `b40` (storico 30), a 390px:
+Esito al `b41` (storico 30), a 390px:
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
 | una partita, tutte del giorno, intervallo | 3/3 | 0 su 188 | 0 su 81 | 0 |
 | batch per stagioni, sweep | 89/89, solo la stagione caricata | 0 su 188 | 0 su 81 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
-| `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 122-152 | 69-74 | 0 |
-| `vecchio`: motore `b39` caricato, storico 15 (controllo) | 0/3, «motore caricato diverso ...» | 131-152 | 74-75 | 0 |
+| `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 122-154 | 69-77 | 0 |
+| `vecchio`: motore `b40` caricato (controllo) | 0/3, «motore caricato diverso ...» | 3-5 | 16-18 | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
-Comparatore. Al `b40` il motore cambia davvero (lo storico passa a 30), e il banco lo vede.
+Comparatore. Al `b40` il motore cambia davvero (lo storico passa a 30, 131-152 scritture
+diverse col `b39`). Al `b41` il controllo col `b40` vede solo le due correzioni: le confidence
+degli esiti non scelti (36/36/36 → 34/30/33) e il tabellone, dove sale in cima un mercato sui
+numeri.
 
 **Cosa resta fuori, e va saputo:**
 
@@ -652,20 +669,142 @@ partite di lega per previsione (fino a 8). E per Serie A, Premier e LaLiga la da
 può scivolare (primo calcio d'inizio 10:30Z, ultimo 19:00Z). Diventerebbe utile solo se
 l'API cominciasse a restituire la data *locale* di una lega a ovest di Greenwich.
 
+## Il campione di riferimento in copia conforme
+
+Tre export `b40` di Serie A, uno per stagione (2023/24, 2024/25, 2025/26), **1134 partite,
+1134 su 1134 in copia conforme**. ID unici dentro e fra i file, `STAGIONE` uguale a
+`STAGIONE DEL DATABASE` su ogni riga, `lgN` fra 760 e 1140, storico 30 (ruolo in media 13.9
+partite). Il 2023/24 è tutto `riserva-k-motore`: fino a quella stagione PitchAPI non serve
+`/advanced`, e il motore gira con l'xG al posto degli NPxG.
+
+**Sono tutte le stagioni di Serie A rifacibili come le vede lo Scanner.** In `leghe.json` la
+Serie A parte dal 2021/22: nel suo file il 2021/22 ha zero stagioni alle spalle e il 2022/23
+una, mentre lo Scanner in produzione ne carica due. Per avere più partite servono altre
+leghe, non stagioni più vecchie. Le analisi si rifanno dai CSV, con la prova di coincidenza
+prima di ogni ricostruzione.
+
+| cosa | `b35`–`b38` (1882, tre stagioni per file) | copia conforme | verdetto |
+|---|---|---|---|
+| clamp dell'HFA | morde sul 27.6% | **0 su 1134** | paracadute inerte |
+| soglie del pick ≥50/55/60/65 | 62.0 / 65.3 / 71.1 / 74.3 | 61.3 / 64.9 / 70.1 / 73.7 | riconfermate |
+| `CONF_1X2_TABLE` sul pick | — | 8 fasce su 8 dentro 2se (χ² ≈ 6 su 8) | riconfermata |
+| retta dei binari | errore massimo 2.4 | errore massimo 2.5 | riconfermata |
+| `EDGE_BANDS` 20 / 10 / 5 | +24.6 / +14.8 / +6.3 | +25.6 / +15.6 / +4.8 (`b40`), +25.0 / +14.9 / +5.7 (`b41`) | riconfermate |
+| proposta migliore del tabellone | +16.7 | +17.6 (`b40`), +18.9 (`b41`) | regge |
+| `SHRINK_K` 4 | 1X2 meglio sotto 4, gol peggio | idem | resta 4 |
+| `SHRINK_LAM_K` 3 | ottimo 5–8, `z = −1.82` | monotono fino a 20, miglior `z = −1.99` | resta 3 |
+| `ELO_1X2_W` 0.75 | piatto fra 0.50 e 0.75 | piatto fra 0.50 e 0.75 | riconfermato |
+| `ELO_SCALE` 1.25 | Elo calibrato (1.092) | Elo calibrato (1.119 ±0.089) | riconfermata |
+
+**Il clamp dell'HFA.** Morde su 0 righe su 1134 (HFA di lega fra 31 e 62). Il 27.6% del `b35`
+erano partite con l'archivio corto: le stagioni 2021/22 e 2022/23, e le stagioni vecchie
+rifatte dentro i file delle successive. La regola non sposta niente: la sezione `A/B REGOLA
+DELL HFA` dà pavimento = grezzo sul 100% delle righe, e lo shrinkage −0.00027 di logloss
+(`z = −1.25`). Il clamp resta com'è, tipo 3 legittimo.
+
+**La confidence dell'1X2**, pick per fascia di probabilità:
+
+| fascia | pick | p media | tabella | hit reale | ±2se |
+|---|---|---|---|---|---|
+| < 40 | 210 | 37.4 | 36.1 | 34.8 | 6.6 |
+| 40–45 | 207 | 42.4 | 45.5 | 44.0 | 6.9 |
+| 45–50 | 195 | 47.3 | 52.4 | 59.5 | 7.0 |
+| 50–55 | 163 | 52.4 | 54.9 | 53.4 | 7.8 |
+| 55–60 | 138 | 57.2 | 56.4 | 56.5 | 8.4 |
+| 60–65 | 103 | 62.5 | 67.6 | 66.0 | 9.3 |
+| 65–70 | 66 | 67.0 | 70.4 | 74.2 | 10.8 |
+| ≥ 70 | 52 | 74.1 | 79.0 | 73.1 | 12.3 |
+
+Sugli esiti **non** scelti la tabella non era mai stata misurata, e lì sbagliava di 6–27
+punti: fasce 0–15 / 15–20 / 20–25 / 25–30 / 30–35, probabilità 11.2 / 17.7 / 22.7 / 27.6 /
+31.8, hit 9.0 / 15.7 / 19.4 / 27.9 / 29.5, confidence mostrata 36 su tutte. Corretta nel
+`b41` (vedi *La confidence*).
+
+**Il tabellone**, guadagno per fascia di scarto (hit meno la frequenza del mercato nella
+stagione), col `b41`:
+
+| fascia | proposte | rende | alla cieca | guadagno | ±2se |
+|---|---|---|---|---|---|
+| sotto il base | 7438 | 40.7% | 48.4% | −7.8 | 1.1 |
+| +0 … +5 | 3501 | 52.8% | 49.7% | +3.1 | 1.6 |
+| +5 … +10 | 1810 | 57.8% | 52.1% | +5.7 | 2.3 |
+| +10 … +15 | 918 | 65.4% | 52.6% | +12.8 | 3.1 |
+| +15 … +20 | 505 | 71.3% | 52.5% | +18.8 | 4.0 |
+| +20 … +30 | 474 | 73.8% | 48.8% | +25.0 | 3.9 |
+| +30 e oltre | 96 | 77.1% | 39.7% | +37.4 | 8.5 |
+
+Monotono in ognuna delle tre stagioni (+5…10 / +10…20 / ≥ +20: +5.9 / +15.1 / +24.4,
++6.6 / +14.7 / +30.4, +4.4 / +14.9 / +26.5). Contro il base rate di lega, che è contato solo
+sulle partite precedenti, i numeri sono gli stessi entro 0.7 punti: il guadagno non viene dal
+senno di poi. I valori di `EDGE_BANDS` (+24.6 / +14.8 / +6.3) restano quelli del `b38`: le due
+misure coincidono entro l'errore.
+
+La proposta migliore di ogni partita: come la stampava il `b40` rende 64.4% contro 46.7%
+alla cieca (**+17.6**, per stagione +21.6 / +17.7 / +13.6); col `b41` 66.3% contro 47.4%
+(**+18.9**, +18.5 / +19.7 / +18.5). In cima: `1` 27%, gialli 21%, `2` 19%, `X2` 14%, Under
+12%. Le partite con almeno una proposta FORTE o GIOCABILE passano dal 71% all'80%. Sulle 203
+partite dove la prima proposta cambia il guadagno è +7.0 punti (`z = 1.44`): da solo non
+basterebbe, ma la correzione non è una taratura, è il motore che fa quello che dichiarava.
+
+**I mercati sui numeri hanno meno scarto di quanto scritto nel `b38`.** Scarto ≥ +10: gialli
+20% delle partite, tiri 1%, corner 1% (il `b38` diceva 14 / 15 / 13%). I tiri e i corner
+previsti hanno una sd di 5.5 punti, i gialli di 10.8: solo i gialli si allontanano dal base
+rate abbastanza da essere proposti. Non riprodotto, e non spiegato.
+
+**Lo shrinkage.** `SHRINK_K`, dalla sezione `A/B SHRINKAGE`, contro `k = 4`:
+
+| `k` | 1X2 | Over 2.5 | GG | somma |
+|---|---|---|---|---|
+| 2 | −0.00069 (`z = −3.30`) | +0.00104 | +0.00120 | **+0.00155** (`z = 1.80`) |
+| 1 | −0.00101 (`z = −2.78`) | +0.00185 | +0.00211 | **+0.00295** (`z = 2.06`) |
+
+Il guadagno sull'1X2 c'è anche senza nessuna riga col clamp: il sospetto del `b37` (che
+venisse dal pavimento dell'HFA) è falsificato. Ma i gol pagano di più: la somma peggiora
+nel 2023/24 e nel 2024/25, e nel 2025/26 è pari. **Resta 4.**
+
+`SHRINK_LAM_K`, ricostruita dal CSV (lambda di ruolo prima della contrazione, pesi, scala dei
+tiri, `rho`; la divisione fra casa e trasferta tenuta quella del giro, per il GG è
+un'approssimazione). Prova di coincidenza a `K = 3`: Over entro 0.05, GG entro 0.06.
+
+| `SHRINK_LAM_K` | bias Over | Brier Over | logloss Over+GG contro 3 |
+|---|---|---|---|
+| 1 | −3.8 | 0.24870 | +0.00156 (`z = 2.35`) |
+| **3** | −3.4 | 0.24833 | in uso |
+| 5 | −3.0 | 0.24814 | −0.00096 (`z = −1.99`) |
+| 8 | −2.7 | 0.24799 | −0.00184 (`z = −1.80`) |
+| 20 | −1.9 | 0.24790 | −0.00302 (`z = −1.38`) |
+
+Stesso verso in 3 stagioni su 3, ma monotono senza ottimo interno e sotto soglia. **Resta 3**
+fino a una seconda lega.
+
+**L'Elo**, 817 partite senza pareggio, logloss 1 contro 2:
+
+| `w` | 0 | 0.25 | 0.50 | **0.75** | 1 |
+|---|---|---|---|---|---|
+| logloss | 0.5601 | 0.5535 | 0.5502 | **0.5501** | 0.5527 |
+
+| `ELO_SCALE` | 0.75 | 1.00 | 1.10 | **1.25** | 1.40 | 1.60 |
+|---|---|---|---|---|---|---|
+| logloss | 0.5700 | 0.5576 | 0.5540 | **0.5501** | 0.5476 | 0.5466 |
+
+1.25 batte 1.00 a `z = 3.55`; salire oltre migliora (1.40: `z = −1.91`) solo perché compensa
+il modello timido. Pendenze di calibrazione: modello 1.637 ±0.128, Elo 1.119 ±0.089, prodotto
+finito 1.249 ±0.098. Per stagione l'Elo sta a 1.238 / 1.205 / 0.977.
+
 ## Registro delle costanti
 
 | costante | valore | tipo | da dove viene |
 |---|---|---|---|
 | `ENS_W` dc / mk / ol | 0.70 / 0.30 / 0.00 | stimata `b20` | griglia leave-one-league-out su 1743 partite, OL a 0 in 4 fold su 5. Vale −0.0013 di logloss, `z = −2.03`: pulizia più che guadagno |
 | `ENS_SCOPE_W` | 1 | stimata `b21` | 1133 partite, logloss 1.0113 → 1.0071, monotono in 3 leghe su 3, `z = −3.96`, fuori campione 1.0 in 3 fold su 3. Solo 1X2 |
-| `ELO_1X2_W` | 0.75 | stimata `b14`, riconfermata `b35` | 5 leghe, 1743 partite: w 0 → 0.50 a +5.02σ, ottimo a 0.75. `b35` (Serie A 1882, ramo giusto): ottimo interno piatto fra 0.50 e 0.75, estremi peggiori a 2σ |
-| `ELO_SCALE` | 1.25 | stimata `b30`, confermata `b35` | pendenza di calibrazione dell'Elo 1.235 (`z = 3.13`); fuori campione 1.20–1.35 in 7 fold su 7; `b35`: 1.25 batte 1.00 a `z = 3.92`. Applicata alla sola differenza di rating, non all'HFA |
+| `ELO_1X2_W` | 0.75 | stimata `b14`, riconfermata `b35` e `b41` | 5 leghe, 1743 partite: w 0 → 0.50 a +5.02σ, ottimo a 0.75. `b35` (Serie A 1882, ramo giusto): ottimo interno piatto fra 0.50 e 0.75, estremi peggiori a 2σ. `b41` (1134 in copia conforme): idem |
+| `ELO_SCALE` | 1.25 | stimata `b30`, confermata `b35` e `b41` | pendenza di calibrazione dell'Elo 1.235 (`z = 3.13`); fuori campione 1.20–1.35 in 7 fold su 7; `b35`: 1.25 batte 1.00 a `z = 3.92`; `b41`: a `z = 3.55`, Elo a 1.119 ±0.089. Applicata alla sola differenza di rating, non all'HFA |
 | `ELO_GAP_THRESHOLD` / `TAU` / `ASY` | 45 / 360 / 0.9 | `τ` scelto dove smette di costare (`b30`) | la logloss cala in modo monotono fino a τ infinito; da 360 in su il guadagno residuo è 0.0005. Non misurato sulla pausa estiva (33 partite) |
 | K dell'Elo | 30 sotto le 15 partite, poi 20 | a mano, verificato `b30` | alzare K porta la pendenza a 1 ma peggiora la logloss oltre 40/28: si tara la conversione, non il rating |
-| clamp dell'HFA | [30, 100], con ≥50 partite | **paracadute che morde** | 27.6% delle righe di backtest (archivio < 600 partite), 0% con ≥900 (produzione). Alternativa esposta: `ELO_HFA_MODE = 'shrink'`, `ELO_HFA_PRIOR` 65, `ELO_HFA_K` 200 |
+| clamp dell'HFA | [30, 100], con ≥50 partite | paracadute misurato, inerte (`b41`) | 0 righe su 1134 in copia conforme (`lgN` ≥ 760). Il 27.6% del `b35` erano archivi corti (< 600 partite), che lo Scanner in produzione non ha. Alternativa esposta e inutile: `ELO_HFA_MODE = 'shrink'`, `ELO_HFA_PRIOR` 65, `ELO_HFA_K` 200 (−0.00027, `z = −1.25`) |
 | `ELO_TILT_MAX` | 0.60 | paracadute misurato | inclinazione massima osservata 0.215 |
-| `SHRINK_K` | 4 | misurata `b35`–`b37` | 12 e 28 peggiori a 5σ; sotto 4 migliora l'1X2 (−0.0016, `z = −3.03`) ma i gol pagano +0.0056 |
-| `SHRINK_LAM_K` | 3 | a mano, misurata `b37` | ottimo del Brier Over fra 5 e 8, ma `z = −1.82` e segno ribaltato nel 2022/23 |
+| `SHRINK_K` | 4 | misurata `b35`–`b37`, riconfermata `b41` | 12 e 28 peggiori a 5σ; sotto 4 migliora l'1X2 (−0.0016, `z = −3.03`) ma i gol pagano +0.0056. `b41`, copia conforme e zero clamp: a 2 l'1X2 −0.00069 (`z = −3.30`), la somma +0.00155 |
+| `SHRINK_LAM_K` | 3 | a mano, misurata `b37` e `b41` | `b37`: ottimo del Brier Over fra 5 e 8, `z = −1.82`, segno ribaltato nel 2022/23. `b41`: monotono fino a 20, miglior `z = −1.99` a 5, 3 stagioni su 3 concordi. Una lega sola |
 | `GOALS_SOT_W` | 0.50 | stimata `b12`, confermata `b14` | AUC Over 2.5 da 0.554/0.495/0.501 a 0.572/0.514/0.521; cinque leghe +2.18σ |
 | `SOT_PER_GOAL` | 3.25 | misurata | LaLiga 3.19, Premier 3.04, Serie A 3.33. Tocca solo il livello |
 | `GOALS_SOT_CAP` | 0.20 | paracadute misurato | morde nello 0.18% |
@@ -676,9 +815,9 @@ l'API cominciasse a restituire la data *locale* di una lega a ovest di Greenwich
 | `MARKET_PER_GOAL` | cor 3.61 · sot 3.20 · yel 1.48 · fouls null | misurata | variazione fra leghe: corner 1.1%, tiri 8.7%, gialli 14.7%, falli 28% (quindi null) |
 | `STAT_SHRINK_TABLE` | 51 voci, default 0.50 | stimata `b5` | vedi *Le statistiche previste* |
 | `STAT_SHRINK_LEGACY` | 0.35 | storica | il `k` a cui valgono OL e correzione residuale |
-| `CONF_1X2_TABLE` | 8 fasce | stimata `b38` | resa del pick per fascia, 1882 partite di Serie A post-`b30` |
-| retta dei mercati binari | −5.06 + 1.091·p | stimata, riconfermata `b38` | 22.584 proposte, errore massimo 2.4 punti |
-| `EDGE_BANDS` | ≥20 / ≥10 / ≥5 | stimata `b38` | 28.230 proposte: +24.6 / +14.8 / +6.3 punti, monotono, segno concorde in 5 stagioni su 5 |
+| `CONF_1X2_TABLE` | `[0,0]` + 8 fasce | stimata `b38`, riconfermata `b41` | resa del pick per fascia, 1882 partite di Serie A post-`b30`; `b41`, 1134 in copia conforme: 8 fasce su 8 dentro 2se. Il punto `[0,0]` (`b41`) serve gli esiti non scelti: 2381 probabilità sotto 37.6, hit/p 0.939 contro 0.960 della tabella |
+| retta dei mercati binari | −5.06 + 1.091·p | stimata, riconfermata `b38` e `b41` | 22.584 proposte, errore massimo 2.4 punti; `b41` 7938 proposte, 2.5 |
+| `EDGE_BANDS` | ≥20 / ≥10 / ≥5 | stimata `b38`, riconfermata `b41` | 28.230 proposte: +24.6 / +14.8 / +6.3 punti, monotono, segno concorde in 5 stagioni su 5. `b41` (copia conforme): +25.6 / +15.6 / +4.8 sulle 13.148 proposte con base del `b40`, +25.0 / +14.9 / +5.7 sulle 14.742 del `b41`, monotono in 3 stagioni su 3 |
 | minimo di `leagueBaseRates` | 200 partite | paracadute misurato `b38` | guadagno piatto fra 50 e 500; in produzione arrivano 900+ partite |
 | emivita | 106 giorni | a mano | uguale nei due file |
 | storico per squadra (`history-limit`) | 30 | scelta dell'utente (`b40`) | il batch base dell'utente e lo storico delle tarature `b24`–`b38`; fino al `b39` lo Scanner stampava a 15. Il Comparatore lo legge dallo Scanner in tutte le modalita' |
@@ -704,8 +843,8 @@ prima di scriverla nel codice.
   **osservabili** (vedi *La lega che non arrivava mai*).
 - **Tipo 3, il paracadute, legittimo finché è inerte.** Un cap non è un parametro finché non
   morde; quando morde **diventa** il modello, in silenzio. Va misurato quanto morde e
-  mostrato il grezzo accanto al valore usato (controllo P). Il clamp sull'HFA è l'unico che
-  morde davvero.
+  mostrato il grezzo accanto al valore usato (controllo P). Il clamp sull'HFA mordeva sul
+  27.6% dei vecchi backtest, ma solo su archivi che lo Scanner non ha: in copia conforme 0%.
 
 **Fuori classifica**, trovati nel motore e tolti: `Math.max(2, ...)` in `negBinK`; la media
 geometrica in `calcAdv`, cioè shrinkage zero deciso non scrivendolo (pendenza 0.47); e
@@ -762,6 +901,14 @@ di questo elenco è stata a lungo falsa proprio perché nessuno sapeva dove cont
   abbassa. Scrivi la formula prima di dedurre un segno.
 - **Una probabilità alta non è un'informazione, lo scarto dal base rate sì**, e il base rate
   va preso dalla lega, non dal campione su cui l'hai misurato.
+- **Una tabella misurata su un sottoinsieme vale solo lì.** `CONF_1X2_TABLE` era misurata sul
+  pick e si applicava a tutti e tre gli esiti: sotto il primo punto restava piatta, e un 11%
+  mostrava 36 per tre build. Accanto a una calibrazione va scritto su quali valori è stata
+  misurata, e cosa fa fuori da lì.
+- **Una guardia contro un valore «strano» può spegnere un mercato.** `isFinite(kk)` scartava
+  la `k` infinita, che per `negBinPMF` è Poisson e non un errore: i gialli restavano senza
+  base sul 73% delle partite. «BASE DI LEGA ASSENTE» sembrava un caso raro; contare quante
+  righe lo dicono costa una riga di Python.
 
 **Nei dati**
 
@@ -800,7 +947,8 @@ di questo elenco è stata a lungo falsa proprio perché nessuno sapeva dove cont
 - **Un batch che carica tre stagioni ne elabora tre.** L'intervallo di default copriva tutto
   il database, quindi il file di una stagione conteneva anche le due precedenti, rifatte con
   meno storico. Una partita e' confrontabile con lo Scanner solo col database della SUA
-  stagione.
+  stagione. Il 27.6% di clamp dell'HFA su cui si ragionava da tre build veniva da lì (e dalle
+  stagioni troppo vecchie per avere due stagioni alle spalle): in copia conforme è 0%.
 - **Dopo un ciclo di giri, `window` e' dell'ultimo giro.** Vale per i `__*_DEBUG`, per
   `_V97_probs`, per `__CONF_MK` e `__VERDETTI`: si legge dall'oggetto risultato.
 - **Una costante tarata sul predittore del Comparatore non vale per lo Scanner.**
@@ -882,13 +1030,15 @@ misurate.
 | Affilare le probabilità (temperatura) | **no** | il Brier peggiora oltre T ≈ 1.1 |
 | Attacco/difesa stimati su tutta la lega invece che su 15 partite | **no** | AUC 0.681 contro 0.680; mescolato 0.688 contro lo 0.690 che l'Elo dà già |
 | Rendere il campione di ruolo indipendente | **no** | vedi *Il campione di ruolo è un sottoinsieme* |
-| Abbassare `SHRINK_K` sotto 4 | **no** | vedi *Le due costanti dello shrinkage* |
-| Alzare `SHRINK_LAM_K` | **non ancora** | candidato per la sesta lega |
+| Abbassare `SHRINK_K` sotto 4 | **no** | vedi *Le due costanti dello shrinkage*; rifatto in copia conforme nel `b41`, stesso esito |
+| Il guadagno di `SHRINK_K` sull'1X2 viene dal clamp dell'HFA | **falsificato** (`b41`) | in copia conforme il clamp non morde mai e il guadagno resta (`z = −3.30` a `k = 2`): è vero, ma i gol lo pagano |
+| La regola dell'HFA: pavimento o shrinkage | **indifferente** (`b41`) | il pavimento non morde su 0 righe su 1134; shrinkage −0.00027, `z = −1.25` |
+| Alzare `SHRINK_LAM_K` | **non ancora** | candidato per la sesta lega; `b41`: monotono fino a 20, miglior `z = −1.99` |
 | `SHRINK_K` giù e `SHRINK_LAM_K` su per compensare | **non torna** | l'escursione utile di `SHRINK_LAM_K` (0.9 punti di Over) non paga gli 1.5 che `SHRINK_K` a 1 toglie |
 | Alzare `ELO_SCALE` oltre 1.25 | **no** | la logloss migliora fino a 1.60, ma a 1.25 l'Elo è già calibrato (1.092): si sovra-scalerebbe il termine giusto per compensare quello sbagliato |
 | Alzare il K dell'Elo | **no** | vedi *Registro delle costanti* |
 | Applicare la regressione dell'Elo fra l'ultima partita e la data da prevedere | **no** | peggiora: 0.5743 → 0.5745, sulle partite post-stacco 0.5068 → 0.5124 |
-| Prevedere quali partite finiscono pari | **no** | `pX` ha AUC 0.487 (±0.020); anche `−|p1−p2|` e `−max(p1,p2)` stanno a 0.495–0.498 |
+| Prevedere quali partite finiscono pari | **no** | `pX` ha AUC 0.487 (±0.020); anche `−|p1−p2|` e `−max(p1,p2)` stanno a 0.495–0.498. In copia conforme (`b41`) 0.562, ma lo scarto non supera mai +7.1: non si gioca |
 | Soglia sul pareggio «alla Champions» (X se nessuno supera il 43%) | **no** | corregge il conteggio dei pareggi ma sceglie le partite a caso (22.8% contro 25.9% alla cieca). La colonna ▲▼ di quella classifica è un artefatto del calendario |
 | Prevedere meglio le stats | **al tetto** | 26 metriche su 47 al 90% del tetto `sqrt(ICC)` |
 | Calibrare le stats sullo stile dell'avversario | **si fa già** | il «concesso» di `predictStat` lo fa; un indice composito aggiunge +0.001 |
@@ -905,7 +1055,7 @@ misurate.
 | idea | numeri |
 |---|---|
 | **L'Elo che inclina i lambda dell'1X2** (`b13`–`b14`) | +5σ, replicato su due leghe mai usate per tarare |
-| **Il tabellone per scarto dal base rate** (`b38`) | +16.7 punti sulla proposta migliore, walk-forward +18.8, monotono in 5 stagioni |
+| **Il tabellone per scarto dal base rate** (`b38`) | +16.7 punti sulla proposta migliore, walk-forward +18.8, monotono in 5 stagioni; in copia conforme +17.6 (`b40`) e +18.9 (`b41`), monotono in 3 stagioni su 3 |
 | **La scala dell'Elo 1.25** (`b30`) | logloss 1-contro-2 0.5836 → 0.5743, `z = −3.54`, 6 fold su 7 |
 | **`ENS_SCOPE_W = 1`** (`b21`) | −0.0042 di logloss, `z = −3.96`, 3 leghe su 3 |
 | **Lo squilibrio sui cartellini** (`b16`) | AUC 0.562 → 0.593, stesso segno in 5 leghe |
@@ -995,7 +1145,17 @@ proporzionale.
 | Premier | 3.041 | 2.754 | −5.0% |
 | Serie A | 2.548 | 2.426 | +0.3% |
 
-Da qui `LEAGUE_HALFLIFE_DAYS` (vedi *Da fare*).
+Sul campione in copia conforme (Serie A, `b40`), stagione per stagione:
+
+| stagione | base piatta | base emivita 106 | gol reali | lambda dell'Over contro reale | Over previsto contro reale |
+|---|---|---|---|---|---|
+| 2023/24 | 2.692 | 2.603 | 2.607 | −6.1% | −5.0 punti |
+| 2024/25 | 2.600 | 2.628 | 2.557 | −3.3% | −3.2 |
+| 2025/26 | 2.548 | 2.435 | 2.426 | +0.3% | −1.9 |
+
+Il lambda dell'Over è `Ambito: lambda casa/trasf. (ruolo)`, già dopo la scala dei tiri. Più
+manca il lambda, più manca l'Over, ma con il lambda giusto (2025/26) mancano ancora 1.9 punti:
+il livello del lambda non è tutto. Da qui `LEAGUE_HALFLIFE_DAYS` (vedi *Da fare*).
 
 **I sei mercati, sull'ensemble del `b22`** (1133 partite, tre leghe):
 
@@ -1181,6 +1341,9 @@ E sulle 567 righe dove il pavimento dell'HFA non morde il guadagno sull'1X2 scen
 compensazione del disallineamento di unità: le due manopole tirano sulla stessa carenza in
 versi opposti, e la radice è la media NPxG di lega.
 
+Nel `b41` tutte e due rifatte in copia conforme, stesso esito: vedi *Il campione di
+riferimento in copia conforme*.
+
 **L'ensemble non comprime, espande**: log-odds dell'ensemble = 1.0076 × `lgTarget`.
 
 ## Lo squilibrio e i cartellini
@@ -1227,17 +1390,17 @@ delle doppie chance. Su 1882 partite di Serie A:
 Il mercato proposto di più valeva meno di tutti. Su 28.230 proposte il guadagno per fascia di
 **scarto** cresce monotono (+2.3 / +6.3 / +14.1 / +16.0 / +24.6 / +36.8) e regge in tutte e
 cinque le stagioni; per fascia di **probabilità** è piatto (+1.4 … +7.1). I mercati sui numeri
-hanno più scarto da offrire di `12`, `GG` e `Over 2.5` insieme (scarto ≥ +10: tiri 15%, gialli
-14%, corner 13%) ed erano gli unici assenti. `X` non ha mai uno scarto ≥ +10.
+erano gli unici assenti; il `b38` gli attribuiva molto scarto (≥ +10: tiri 15%, gialli 14%,
+corner 13%), ma in copia conforme sono gialli 20%, tiri 1%, corner 1%. `X` non ha mai uno
+scarto ≥ +10.
 
 Sulla proposta migliore di ogni partita: prima in cima finiva sempre una doppia chance
 (guadagno +11.7), ora `1` 26%, `2` 16%, `X2` 15%, gialli 13%, Under 10%, tiri 8% (**+16.7**,
 walk-forward **+18.8**). La resa grezza scende e il guadagno sale: è il punto.
 
 Il motore non si è mosso (39 campi su 39 identici al `b36`): è cambiato solo quale numero va
-in cima e come è etichettato. Resta da riconfermare su una seconda lega, e prima ancora sul
-campione in copia conforme: queste misure vengono da export a storico 30, con tre stagioni
-per file (vedi *Da fare*, punto 0).
+in cima e come è etichettato. Riconfermato in copia conforme nel `b41` (vedi *Il campione di
+riferimento in copia conforme*); resta da riconfermare su una seconda lega.
 
 ## Gli audit
 
@@ -1295,7 +1458,9 @@ Prima di analizzare, sempre, in quest'ordine:
   o un giro con un'altra manopola), ma non va mescolata alle altre: il motivo e' scritto li'.
   I file precedenti al `b39` non hanno la riga; quelli del `b39` sono a storico 15, quelli
   dal `b40` a 30 come lo Scanner. I batch precedenti al `b39` sono a 30 ma con tre stagioni
-  per file.
+  per file. Nei file del `b40` il tabellone dice «BASE DI LEGA ASSENTE» su gialli, tiri e
+  corner quando la loro `Dispersione` è `--`: è il difetto corretto nel `b41`, e la base si
+  ricostruisce da `Rif. lega …` con Poisson.
 - **I-bis. `ID PARTITA` unici**, dentro il file e fra i file. `cmpSavedMatches` si accumula:
   export consecutivi si contengono (conteggi multipli di una giornata, 378, 756, 1134… sono il
   segnale) e la stessa partita può comparire due volte. Se le due righe hanno regimi diversi
@@ -1497,3 +1662,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b38` | tabellone per scarto dal base rate, confidence 1X2 dalla tabella misurata |
 | `b39` | il Comparatore stampa come lo Scanner in tutte le modalita': storico e stagione come lo Scanner, confidence e tabellone letti dal motore, certificato per partita, banco di prova `strumenti/banco-parita.js`. Motore invariato |
 | `b40` | storico per squadra da 15 a 30 nello Scanner, il batch base dell'utente: le tarature `b24`–`b38` sono state misurate a 30. Il Comparatore lo segue da solo |
+| `b41` | il campione in copia conforme (Serie A 2023/24–2025/26, 1134 su 1134): tarature `b30`–`b38` riconfermate, il clamp dell'HFA non morde mai (il 27.6% erano archivi corti). Due difetti corretti: i mercati sui numeri senza base quando la coppia non è sovradispersa (gialli sul 73% delle partite; proposta migliore +17.6 → +18.9), e `CONF_1X2_TABLE` piatta a 36 sugli esiti non scelti (ora parte da `[0,0]`) |

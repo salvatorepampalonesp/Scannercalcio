@@ -165,7 +165,7 @@ select{cursor:pointer}
   <div class="topbar">
     <div class="brand">
       <h1>Comparatore V9.7</h1>
-      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b40</span>
+      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b41</span>
       <span class="badge" id="engine-badge">motore non caricato</span>
     </div>
     <span class="badge">previsioni vs realtà</span>
@@ -855,7 +855,7 @@ async function loadEngineFromText(text, fileName) {
     <p><code>${fileName}</code> — clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
 
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b40';
+  const _bComp = '0905-b41';
   window.__CMP_BUILD = _bComp;
   const _el = document.getElementById('engine-build');
   if (_el) {
@@ -2447,8 +2447,8 @@ function cmpExportCSV() {
     + 'oppure N/D: non e\' un numero che lo Scanner stampa come previsione.' + pad);
   rows.push('Esito 1X2: WIN/LOSS solo se la probabilita\' era >=55% (vera scommessa).' + pad);
   rows.push('Sotto il 45% un esito non previsto che non accade e\' COERENTE, non un errore.' + pad);
-  rows.push('Metriche avanzate: previste col modello attacco x difesa avversario x media lega,' + pad);
-  rows.push(`shrinkage per metrica sui rapporti (k da 0.25 a 0.67, default ${CMP_DC_SHRINK}); non media semplice.` + pad);
+  rows.push('Metriche avanzate: previste da predictStat del motore, media della coppia x attacco x difesa avversaria,' + pad);
+  rows.push('con k per metrica da STAT_SHRINK_TABLE (da 0.10 a 0.76, default 0.50): non media semplice.' + pad);
   rows.push('Sezione A/B SHRINKAGE: stessa partita ricalcolata con piu\' valori di SHRINK_K. '
     + 'I k testati sono 4 (quello del motore, ed e\' il giro delle colonne principali), 2 e 1: '
     + 'SOTTO il default, perche\' il modello e\' sotto-disperso e il rimedio sta da quella parte. '
