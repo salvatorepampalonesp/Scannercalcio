@@ -165,7 +165,7 @@ select{cursor:pointer}
   <div class="topbar">
     <div class="brand">
       <h1>Comparatore V9.7</h1>
-      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b41</span>
+      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b45</span>
       <span class="badge" id="engine-badge">motore non caricato</span>
     </div>
     <span class="badge">previsioni vs realtà</span>
@@ -709,6 +709,8 @@ async function loadEngineFromText(text, fileName) {
         lamAover:    (typeof lamA_over   !== 'undefined') ? lamA_over   : null,
         ensDebug:    (typeof window.__ENS_DEBUG !== 'undefined') ? window.__ENS_DEBUG : null,
         scopeDebug:  (typeof window.__SCOPE_DEBUG !== 'undefined') ? window.__SCOPE_DEBUG : null,
+        lineupDebug: (typeof window.__LINEUP_DEBUG !== 'undefined') ? window.__LINEUP_DEBUG : null,
+        fatigueDebug: (typeof window.__FATIGUE_DEBUG !== 'undefined') ? window.__FATIGUE_DEBUG : null,
         m1: (typeof m1!=='undefined')?m1:null, mX: (typeof mX!=='undefined')?mX:null, m2: (typeof m2!=='undefined')?m2:null,
         confidence:  (typeof confidence  !== 'undefined') ? confidence  : null,
         sampleFactor:(typeof sampleFactor!== 'undefined') ? sampleFactor: null,
@@ -855,7 +857,7 @@ async function loadEngineFromText(text, fileName) {
     <p><code>${fileName}</code> — clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
 
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b41';
+  const _bComp = '0905-b45';
   window.__CMP_BUILD = _bComp;
   const _el = document.getElementById('engine-build');
   if (_el) {
@@ -2293,6 +2295,8 @@ function cmpBuildResult(match, R, actH, actA) {
     eloDebugOver: R.eloDebugOver || null,
     unitDebug: R.unitDebug || null,
     scopeDebug: R.scopeDebug || null,
+    lineupDebug: R.lineupDebug || null,
+    fatigueDebug: R.fatigueDebug || null,
     predStats: R.predStats || null,
     goalsMarket: gm,
     realTotals: { cor: (actH.cor!=null&&actA.cor!=null)?actH.cor+actA.cor:null,
@@ -2456,6 +2460,9 @@ function cmpExportCSV() {
     + 'quanto costa in livello dei mercati gol.' + pad);
   rows.push('Sezione A/B CORREZIONE RESIDUALE: stessa partita con piu\' valori di alpha (ricostruiti, senza rilanciare il motore).' + pad);
   rows.push('Sezioni METRICHE 0905-b4: le 34 metriche aggiunte al motore, previste col modello moltiplicativo e reali.' + pad);
+  rows.push('Sezione FORMAZIONI (dal b43): i titolari della partita contro quelli abituali (titolari in almeno meta\' delle ultime 10, ancora in rosa nelle ultime 5). '
+           + 'Peso = quota delle presenze da titolare che manca oggi; gol = quota dei gol di squadra segnati dai titolari assenti. Solo misura: le probabilita\' non la usano.' + pad);
+  rows.push('Sezione STANCHEZZA (dal b44): giorni dall ultima partita ufficiale (lega e coppe europee), partite negli ultimi 14 giorni, giorni dall ultima e alla prossima coppa europea. Coppe nazionali escluse. Solo misura.' + pad);
   rows.push('Sezione INCLINAZIONE DALL ELO: l Elo ribilancia casa e trasferta lasciando fermo il totale gol (peso w, e scala ELO_SCALE sulla differenza di rating).\nSezione LAMBDA DAI TIRI: i tiri in porta previsti danno una SECONDA stima del totale gol, mediata col Dixon-Coles (peso w 0.50).' + pad);
   rows.push('');
 
@@ -2612,7 +2619,10 @@ function cmpExportCSV() {
     ['Gialli: aggiustamento', m => { const a = m.R.advRole||m.R.advOver; return [a&&a.yelAdj!=null?_num(a.yelAdj):'N/D', '-', '', '']; }],
     ['Gialli: squilibrio Elo', m => { const a = m.R.advRole||m.R.advOver; return [a&&a.yelMismatch!=null?_num(a.yelMismatch):'N/D', '-', '', '']; }],
     ['Gialli: squilibrio medio di lega', m => { const a = m.R.advRole||m.R.advOver; return [a&&a.yelMeanPair!=null?_num(a.yelMeanPair):'N/D', '-', '', '']; }],
-    ['Gialli: aggiustamento al cap', m => { const a = m.R.advRole||m.R.advOver; return [a?(a.yelCapped?'SI':'no'):'N/D', '-', '', '']; }]
+    ['Gialli: aggiustamento al cap', m => { const a = m.R.advRole||m.R.advOver; return [a?(a.yelCapped?'SI':'no'):'N/D', '-', '', '']; }],
+    ['Tiri porta prima dello squilibrio', m => { const a = m.R.advRole||m.R.advOver; return [a&&a.sotRaw!=null?_num(a.sotRaw):'N/D', '-', '', '']; }],
+    ['Tiri porta: aggiustamento', m => { const a = m.R.advRole||m.R.advOver; return [a&&a.sotAdj!=null?_num(a.sotAdj):'N/D', '-', '', '']; }],
+    ['Tiri porta: aggiustamento al cap', m => { const a = m.R.advRole||m.R.advOver; return [a?(a.sotCapped?'SI':'no'):'N/D', '-', '', '']; }]
   ];
   const lineMkts = [];
   [['Corner','linesCor','cor'], ['Tiri porta','linesSot','sot'], ['Gialli','linesYel','yel']].forEach(([nome, campo, real]) => {
@@ -2933,6 +2943,54 @@ function cmpExportCSV() {
   scRows.forEach(([lbl, fn]) => {
     const r = [lbl];
     M.forEach(m => r.push(fn(m.scopeDebug), '', '', ''));
+    rows.push(r.join(';'));
+  });
+
+  rows.push('');
+  rows.push('--- FORMAZIONI (misura: non entrano nelle probabilita\') ---' + ';;;;'.repeat(M.length));
+  const _luN = v => v == null ? 'N/D' : String(v);
+  const _luF = v => v == null ? 'N/D' : _g4(v);
+  const _luB = v => v == null ? 'N/D' : (v ? 'SI' : 'no');
+  const luRows = [['Formazioni: partita bersaglio trovata', d => d ? (d.id ? 'SI' : 'no') : 'N/D']];
+  [['casa', 'H'], ['trasf.', 'A']].forEach(([nome, k]) => {
+    const F = d => d && d[k] ? d[k] : null;
+    luRows.push(
+      ['Formazioni ' + nome + ': disponibile',               d => F(d) ? _luB(F(d).disponibile) : 'N/D'],
+      ['Formazioni ' + nome + ': confermata',                d => F(d) ? _luB(F(d).confermata) : 'N/D'],
+      ['Formazioni ' + nome + ': formazioni nello storico',  d => F(d) ? _luN(F(d).nStorico) : 'N/D'],
+      ['Formazioni ' + nome + ': titolari abituali assenti', d => F(d) ? _luN(F(d).abitualiAssenti) : 'N/D'],
+      ['Formazioni ' + nome + ': peso degli assenti',        d => F(d) ? _luF(F(d).pesoAssenti) : 'N/D'],
+      ['Formazioni ' + nome + ': gol degli assenti',         d => F(d) ? _luF(F(d).golAssenti) : 'N/D'],
+      ['Formazioni ' + nome + ': cambi dall ultima',         d => F(d) ? _luN(F(d).cambi) : 'N/D'],
+      ['Formazioni ' + nome + ': capitano assente',          d => F(d) ? _luB(F(d).capitanoAssente) : 'N/D'],
+      ['Formazioni ' + nome + ': allenatore nuovo',          d => F(d) ? _luB(F(d).allenatoreNuovo) : 'N/D'],
+      ['Formazioni ' + nome + ': partite con l allenatore',  d => F(d) ? _luN(F(d).partiteAllenatore) : 'N/D']);
+  });
+  luRows.forEach(([lbl, fn]) => {
+    const r = [lbl];
+    M.forEach(m => r.push(fn(m.lineupDebug), '', '', ''));
+    rows.push(r.join(';'));
+  });
+
+  rows.push('');
+  rows.push('--- STANCHEZZA (misura: non entra nelle probabilita\') ---' + ';;;;'.repeat(M.length));
+  const stRows = [
+    ['Stanchezza: stagione delle coppe',          d => d && d.stagione ? d.stagione : 'N/D'],
+    ['Stanchezza: competizioni europee caricate', d => d ? _luN(d.competizioni) : 'N/D'],
+    ['Stanchezza: partite europee in archivio',   d => d ? _luN(d.partiteCoppe) : 'N/D']];
+  [['casa', 'H'], ['trasf.', 'A']].forEach(([nome, k]) => {
+    const S = d => d && d[k] ? d[k] : null;
+    stRows.push(
+      ['Stanchezza ' + nome + ': giorni di riposo',          d => S(d) ? _luN(S(d).riposo) : 'N/D'],
+      ['Stanchezza ' + nome + ': giorni di riposo dalla lega', d => S(d) ? _luN(S(d).riposoLega) : 'N/D'],
+      ['Stanchezza ' + nome + ': partite in 14 giorni',      d => S(d) ? _luN(S(d).partite14) : 'N/D'],
+      ['Stanchezza ' + nome + ': giorni dalla coppa europea', d => S(d) ? _luN(S(d).coppaPrima) : 'N/D'],
+      ['Stanchezza ' + nome + ': giorni alla coppa europea',  d => S(d) ? _luN(S(d).coppaDopo) : 'N/D'],
+      ['Stanchezza ' + nome + ': in Europa',                  d => S(d) ? _luB(S(d).inEuropa) : 'N/D']);
+  });
+  stRows.forEach(([lbl, fn]) => {
+    const r = [lbl];
+    M.forEach(m => r.push(fn(m.fatigueDebug), '', '', ''));
     rows.push(r.join(';'));
   });
 

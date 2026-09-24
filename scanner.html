@@ -174,7 +174,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b41</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b45</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -284,6 +284,35 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       </tr></thead>
       <tbody id="verdetti-body"></tbody>
     </table></div>
+  </div>
+
+  <div class="card" id="card-formazioni" style="border-top:3px solid var(--blue)">
+    <div class="section-title" style="color:var(--blue)">&#128101; Formazioni e stanchezza &mdash; chi manca, chi &egrave; stanco</div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:10px">
+      <b>Titolari abituali</b> = chi &egrave; partito titolare in almeno met&agrave; delle ultime 10 partite ed &egrave;
+      ancora in rosa (in campo o in panchina nelle ultime 5). Gli indici valgono solo con la formazione
+      <b>confermata</b>, che l'API pubblica a ridosso del calcio d'inizio: prima c'&egrave; solo quella probabile.
+      Il <b>riposo</b> conta campionato e coppe europee (Champions, Europa e Conference League), non le
+      coppe nazionali n&eacute; le nazionali.
+      <b>Niente di questo entra ancora nelle probabilit&agrave;</b>: si sta misurando sul backtest.
+    </div>
+    <div id="formazioni-box" style="font-size:12px;color:var(--dim)">--</div>
+  </div>
+
+  <div class="card" id="card-giocatori" style="border-top:3px solid var(--purple)">
+    <div class="section-title" style="color:var(--purple)">&#128100; Giocatori &mdash; le ultime 30 partite</div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:10px">
+      Per ogni giocatore della rosa di oggi: in quante delle ultime 30 partite di campionato della squadra
+      &egrave; partito titolare, la media, e quante volte ha raggiunto la soglia nelle sue <b>ultime 5</b> da
+      titolare e in <b>tutte</b>. Sono <b>frequenze, non probabilit&agrave;</b>: non sanno niente dell'avversario.
+      Cinque partite sono poche, e nel motore le medie brevi non hanno mai previsto meglio della lunga: la
+      colonna da guardare &egrave; <b>Tutte</b>, e l'ordine tiene conto di quante partite ci sono dietro
+      (un 2 su 3 non passa davanti a un 15 su 24). &#9679; = titolare nella formazione di oggi. La prima volta
+      costa una chiamata per partita (circa 60).
+    </div>
+    <button class="btn btn-sm" id="btn-giocatori" onclick="caricaGiocatori()">&#128100; Carica le statistiche dei giocatori</button>
+    <select id="sel-mercato-giocatori" onchange="renderGiocatori()" style="margin:10px 0;width:100%"></select>
+    <div id="giocatori-box" style="font-size:12px;color:var(--dim)">--</div>
   </div>
 
 
@@ -1238,6 +1267,247 @@ async function fetchMatchRaw(id) {
 
 window.__fetchMatchRaw = (typeof fetchMatchRaw !== 'undefined') ? fetchMatchRaw : null;
 
+const LINEUP_WINDOW = 10, LINEUP_SQUAD_WINDOW = 5, LINEUP_REGULAR = 0.5, LINEUP_MIN_HIST = 5;
+const _pid = p => p ? (p.player_id || p.id || (p.player && p.player.id) || null) : null;
+
+// solo i titolari: panchina e cambi della partita bersaglio non entrano mai (AGENTS.md, Formazioni e assenze)
+function _luSide(res, isH) {
+  const d = res && res.data ? res.data : null; const s = d ? d[isH ? 'home' : 'away'] : null;
+  if (!s || !Array.isArray(s.starters)) return null;
+  const xi = s.starters.map(_pid).filter(Boolean);
+  if (xi.length < 10) return null;
+  const cap = s.starters.find(p => p && p.is_captain);
+  return { xi, subs: (Array.isArray(s.subs) ? s.subs : []).map(_pid).filter(Boolean),
+           captain: cap ? _pid(cap) : null, coach: (s.coach && s.coach.name) || null,
+           confirmed: s.confirmed !== false, type: s.lineup_type || null };
+}
+
+function storicoFormazioni(matchList, details) {
+  const lus = matchList.map(m => details[m.id] && details[m.id].lu).filter(Boolean);
+  const out = { nLu: lus.length, share: {}, squad: new Set(), goals: {}, totGoals: 0,
+                lastXI: null, captain: null, coach: null, coachRun: 0 };
+  if (!lus.length) return out;
+  const win = lus.slice(0, LINEUP_WINDOW); const cnt = {};
+  win.forEach(l => l.xi.forEach(p => { cnt[p] = (cnt[p] || 0) + 1; }));
+  Object.keys(cnt).forEach(p => { out.share[p] = cnt[p] / win.length; });
+  lus.slice(0, LINEUP_SQUAD_WINDOW).forEach(l => { l.xi.forEach(p => out.squad.add(p)); l.subs.forEach(p => out.squad.add(p)); });
+  out.lastXI = lus[0].xi;
+  const caps = {}; win.forEach(l => { if (l.captain) caps[l.captain] = (caps[l.captain] || 0) + 1; });
+  let best = 0; Object.keys(caps).forEach(p => { if (caps[p] > best) { best = caps[p]; out.captain = p; } });
+  out.coach = lus[0].coach;
+  for (const l of lus) { if (out.coach && l.coach === out.coach) out.coachRun++; else break; }
+  matchList.forEach(m => {
+    const d = details[m.id]; if (!d || !Array.isArray(d.scorerIds)) return;
+    d.scorerIds.forEach(p => { out.goals[p] = (out.goals[p] || 0) + 1; out.totGoals++; });
+  });
+  return out;
+}
+
+function indiciFormazione(h, side) {
+  const out = { disponibile: false, confermata: null, tipo: null, nStorico: h ? h.nLu : 0,
+                abitualiAssenti: null, pesoAssenti: null, golAssenti: null, cambi: null,
+                capitanoAssente: null, allenatore: null, allenatoreNuovo: null, partiteAllenatore: null };
+  if (!side) return out;
+  out.disponibile = true; out.confermata = side.confirmed; out.tipo = side.type; out.allenatore = side.coach;
+  if (!h || h.nLu < LINEUP_MIN_HIST) return out;
+  const xi = new Set(side.xi);
+  const reg = Object.keys(h.share).filter(p => h.share[p] >= LINEUP_REGULAR && h.squad.has(p));
+  const miss = reg.filter(p => !xi.has(p));
+  const tot = reg.reduce((a, p) => a + h.share[p], 0);
+  out.abitualiAssenti = miss.length;
+  out.pesoAssenti = tot > 0 ? miss.reduce((a, p) => a + h.share[p], 0) / tot : null;
+  out.golAssenti = h.totGoals > 0 ? miss.reduce((a, p) => a + (h.goals[p] || 0), 0) / h.totGoals : null;
+  if (h.lastXI) out.cambi = h.lastXI.filter(p => !xi.has(p)).length;
+  if (h.captain) out.capitanoAssente = !xi.has(h.captain);
+  if (side.coach && h.coach) { out.allenatoreNuovo = side.coach !== h.coach; out.partiteAllenatore = out.allenatoreNuovo ? 0 : h.coachRun; }
+  return out;
+}
+
+const TARGET_CACHE = {};
+async function partitaBersaglio(hId, aId, dateStr) {
+  const same = m => m && m.home_team && m.away_team && m.home_team.id === hId && m.away_team.id === aId
+                    && String(m.date || m.time_utc || '').slice(0, 10) === dateStr;
+  const hit = globalLeagueMatchesCache.find(same);
+  if (hit) return hit.id;
+  if (!TARGET_CACHE[dateStr]) {
+    const json = await apiCall(`/date/${dateStr}?status=all`, true);
+    const list = json ? (json.data?.matches || json.matches || (Array.isArray(json.data) ? json.data : null)) : null;
+    if (!Array.isArray(list)) return null;
+    TARGET_CACHE[dateStr] = list;
+  }
+  const m = TARGET_CACHE[dateStr].find(same);
+  return m ? m.id : null;
+}
+
+const LINEUP_CACHE = {};
+async function formazioneBersaglio(id) {
+  if (!id) return null;
+  if (LINEUP_CACHE[id]) return LINEUP_CACHE[id];
+  const raw = RAW_CACHE[id];
+  const res = (raw && raw[1] && raw[1].data) ? raw[1] : await apiCall(`/matches/${id}/lineups`, true);
+  if (!res || !res.data) return null;
+  const out = { home: _luSide(res, true), away: _luSide(res, false) };
+  if (out.home && out.home.confirmed && out.away && out.away.confirmed) LINEUP_CACHE[id] = out;
+  return out;
+}
+
+const UEFA_IDS = ['l_0bfbkO', 'l_38d9HA', 'l_2WZ2tt'];
+const COPPE_CACHE = {};
+async function archivioCoppe(dateStr) {
+  const y = +dateStr.slice(0, 4), mo = +dateStr.slice(5, 7);
+  const season = mo >= 7 ? `${y}/${y + 1}` : `${y - 1}/${y}`;
+  if (COPPE_CACHE[season]) return COPPE_CACHE[season];
+  let all = [], ok = 0;
+  for (const lid of UEFA_IDS) {
+    const json = await apiCall(`/leagues/${lid}/matches?season=${encodeURIComponent(season)}&status=all`, true);
+    const m = json ? (json.data?.matches || json.matches || null) : null;
+    if (Array.isArray(m)) { ok++; all = all.concat(m); }
+  }
+  const out = { season, ok, n: all.length, matches: all };
+  if (ok === UEFA_IDS.length) COPPE_CACHE[season] = out;
+  return out;
+}
+
+function indiciStanchezza(teamId, dateStr, leagueMatches, coppe) {
+  const tMs = Date.parse(dateStr + 'T00:00:00Z');
+  const gg = m => Math.round((tMs - Date.parse(m.time_utc.slice(0, 10) + 'T00:00:00Z')) / 86400000);
+  const mine = m => m && m.home_team && m.away_team && typeof m.time_utc === 'string' && (m.home_team.id === teamId || m.away_team.id === teamId);
+  const prima = []; let dopo = null;
+  leagueMatches.forEach(m => { if (mine(m) && m.status === 'finished' && _isPast(m.time_utc, tMs, dateStr)) prima.push({ g: gg(m), coppa: false }); });
+  (coppe ? coppe.matches : []).forEach(m => {
+    if (!mine(m)) return;
+    if (_isPast(m.time_utc, tMs, dateStr)) { if (m.status === 'finished') prima.push({ g: gg(m), coppa: true }); }
+    else if (m.time_utc.slice(0, 10) > dateStr) { const g = -gg(m); if (dopo === null || g < dopo) dopo = g; }
+  });
+  const minG = arr => arr.length ? Math.min(...arr.map(x => x.g)) : null;
+  const pc = prima.filter(x => x.coppa);
+  return { riposo: minG(prima), riposoLega: minG(prima.filter(x => !x.coppa)),
+           partite14: prima.filter(x => x.g <= 14).length,
+           coppaPrima: minG(pc), coppaDopo: dopo, inEuropa: pc.length > 0 || dopo !== null };
+}
+
+const _escHtml = t => String(t).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
+const PLAYER_CACHE = {};
+async function fetchPlayersRaw(id) {
+  if (PLAYER_CACHE[id]) return PLAYER_CACHE[id];
+  const res = await apiCall(`/matches/${id}/players`, true);
+  if (res && res.data) PLAYER_CACHE[id] = res;
+  await sleep(120);
+  return res;
+}
+
+function _statiGiocatore(entry) {
+  const out = {};
+  (Array.isArray(entry.stats) ? entry.stats : []).forEach(g => {
+    if (!g) return; out['#' + String(g.key || '').toLowerCase()] = true;
+    Object.entries(g.stats || {}).forEach(([label, it]) => {
+      const st = it && it.stat; if (!st) return; const v = +st.value; if (!isFinite(v)) return;
+      const k = String(it.key || '').toLowerCase(), l = '@' + String(label).toLowerCase();
+      if (k) out[k] = v; out[l] = v;
+    });
+  });
+  return out;
+}
+
+const PLAYER_STATS = {
+  min:    { g: 'top_stats', k: ['minutes_played'], l: ['minutes played'], zero: false },
+  gol:    { g: 'top_stats', k: ['goals'], l: ['goals'], zero: true },
+  ast:    { g: 'top_stats', k: ['assists', 'goal_assist'], l: ['assists'], zero: true },
+  tiri:   { g: 'top_stats', k: ['total_shots'], l: ['total shots'], zero: true },
+  porta:  { g: null, k: ['shots_on_target', 'shotsontarget', 'shot_accuracy'], l: ['shots on target', 'shot accuracy'], zero: false },
+  falliF: { g: 'duels', k: ['fouls', 'fouls_committed'], l: ['fouls committed', 'fouls'], zero: true },
+  falliS: { g: 'duels', k: ['was_fouled', 'fouls_won', 'fouled'], l: ['was fouled', 'fouls won'], zero: true },
+  contr:  { g: 'defense', k: ['tackles_won', 'tackles_succeeded', 'tackles'], l: ['tackles won', 'tackles'], zero: true }
+};
+const MERCATI_GIOCATORI = [
+  ['falliS', 1, 'Falli subiti: almeno 1'], ['falliS', 2, 'Falli subiti: almeno 2'], ['falliS', 3, 'Falli subiti: almeno 3'],
+  ['falliF', 1, 'Falli commessi: almeno 1'], ['falliF', 2, 'Falli commessi: almeno 2'],
+  ['tiri', 1, 'Tiri: almeno 1'], ['tiri', 2, 'Tiri: almeno 2'], ['tiri', 3, 'Tiri: almeno 3'],
+  ['porta', 1, 'Tiri in porta: almeno 1'], ['porta', 2, 'Tiri in porta: almeno 2'],
+  ['giallo', 1, 'Ammonito'], ['gol', 1, 'Segna'], ['ast', 1, 'Fa un assist'], ['golast', 1, 'Gol o assist'],
+  ['contr', 2, 'Contrasti vinti: almeno 2']
+];
+
+function _rigaGiocatore(s, trovati) {
+  const r = {};
+  Object.keys(PLAYER_STATS).forEach(m => {
+    const d = PLAYER_STATS[m]; let v = null;
+    for (const k of d.k) if (s[k] != null) { v = s[k]; break; }
+    if (v == null) for (const l of d.l) if (s['@' + l] != null) { v = s['@' + l]; break; }
+    if (v != null) trovati[m] = (trovati[m] || 0) + 1;
+    else if (d.zero && s['#' + d.g]) v = 0;
+    r[m] = v;
+  });
+  if (r.porta == null && r.tiri === 0) r.porta = 0;
+  return r;
+}
+
+async function caricaGiocatori() {
+  const C = window.__PLAYER_CTX;
+  if (!C) return alert("Prima lancia l'analisi della partita.");
+  const btn = document.getElementById('btn-giocatori'); if (btn) btn.disabled = true;
+  const out = {};
+  for (const side of ['H', 'A']) {
+    const T = C[side], rec = {}, trovati = {}; let nDati = 0, nRighe = 0;
+    for (let i = 0; i < T.partite.length; i++) {
+      const pm = T.partite[i];
+      safeHtml('giocatori-box', 'Scarico ' + _escHtml(T.nome) + ': partita ' + (i + 1) + ' di ' + T.partite.length + '...');
+      const res = await fetchPlayersRaw(pm.id);
+      const list = res ? (Array.isArray(res.data) ? res.data : (res.data && Array.isArray(res.data.players) ? res.data.players : null)) : null;
+      if (!list) continue;
+      nDati++;
+      const raw = RAW_CACHE[pm.id], lu = raw && raw[1] ? _luSide(raw[1], pm.isH) : null;
+      const xi = lu ? new Set(lu.xi) : null, rosa = lu ? new Set(lu.xi.concat(lu.subs)) : null;
+      const evs = raw && raw[3] ? (raw[3].data?.events || raw[3].events || null) : null, gialli = {};
+      if (Array.isArray(evs)) evs.forEach(ev => { if (ev && String(ev.event_type || '').toLowerCase() === 'yellowcard' && ev.player && ev.player.id) gialli[ev.player.id] = (gialli[ev.player.id] || 0) + 1; });
+      list.forEach(e => {
+        const pid = _pid(e.player || e); if (!pid) return;
+        if (e.team_id ? e.team_id !== T.id : !(rosa && rosa.has(pid))) return;
+        const r = _rigaGiocatore(_statiGiocatore(e), trovati); nRighe++;
+        r.giallo = Array.isArray(evs) ? (gialli[pid] || 0) : null;
+        r.golast = (r.gol == null && r.ast == null) ? null : (r.gol || 0) + (r.ast || 0);
+        r.tit = xi ? xi.has(pid) : null; r.recente = i < 5;
+        r.base = r.tit === true || (r.tit === null && r.min != null && r.min >= 45);
+        (rec[pid] = rec[pid] || { id: pid, nome: (e.player && e.player.name) || pid, righe: [] }).righe.push(r);
+      });
+    }
+    out[side] = { nome: T.nome, nPartite: T.partite.length, nDati, nRighe, trovati, xi: T.xi, giocatori: Object.values(rec) };
+  }
+  window.__PLAYER_DATA = out;
+  if (btn) btn.disabled = false;
+  renderGiocatori();
+}
+
+function renderGiocatori() {
+  const sel = document.getElementById('sel-mercato-giocatori');
+  if (sel && !sel.options.length) { MERCATI_GIOCATORI.forEach((m, i) => sel.add(new Option(m[2], String(i)))); sel.value = '1'; }
+  const D = window.__PLAYER_DATA; if (!D) return;
+  const [met, soglia, nomeM] = MERCATI_GIOCATORI[+(sel ? sel.value : 1) || 0];
+  const esc = _escHtml;
+  const tab = S => {
+    const oggi = new Set(S.xi || []);
+    const righe = S.giocatori.map(g => {
+      const base = g.righe.filter(r => r.base && r[met] != null);
+      if (!(oggi.has(g.id) || g.righe.some(r => r.recente)) || base.length < 3) return null;
+      const u5 = base.slice(0, 5), ok = r => r[met] >= soglia;
+      return { g, oggi: oggi.has(g.id), tit: g.righe.filter(r => r.tit === true).length,
+               media: base.reduce((a, r) => a + r[met], 0) / base.length,
+               u5: u5.filter(ok).length, n5: u5.length, tot: base.filter(ok).length, n: base.length };
+    }).filter(Boolean).sort((a, b) => (b.tot + 1) / (b.n + 2) - (a.tot + 1) / (a.n + 2) || b.n - a.n).slice(0, 12);
+    if (!righe.length) return '<div style="margin:6px 0">Nessun giocatore con almeno 3 partite da titolare su questo dato.</div>';
+    return '<div class="tbl-scroll"><table class="table-ui table-compact"><thead><tr><th style="text-align:left">' + esc(S.nome) + '</th><th>Tit.</th><th>Media</th><th>Ult. 5</th><th>Tutte</th></tr></thead><tbody>'
+      + righe.map(x => { const pc = Math.round(100 * x.tot / x.n);
+          return '<tr><td style="text-align:left;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap' + (x.oggi ? ';font-weight:bold' : '') + '">' + (x.oggi ? '&#9679; ' : '') + esc(x.g.nome) + '</td>'
+            + '<td>' + x.tit + '/' + S.nPartite + '</td><td>' + x.media.toFixed(1) + '</td><td>' + x.u5 + '/' + x.n5 + '</td>'
+            + '<td style="font-weight:bold;color:' + (pc >= 70 ? 'var(--ok)' : pc >= 50 ? 'var(--txt)' : 'var(--dim)') + '">' + pc + '% <span style="font-weight:normal;color:var(--dim)">(' + x.tot + '/' + x.n + ')</span></td></tr>'; }).join('')
+      + '</tbody></table></div>';
+  };
+  const cop = S => { const m = met === 'golast' ? 'gol' : met; if (m === 'giallo') return ''; const n = S.trovati[m] || 0;
+    return S.nRighe && n / S.nRighe < 0.5 ? '<div style="color:var(--orange);margin:4px 0">' + esc(S.nome) + ': il dato &laquo;' + esc(nomeM) + '&raquo; c\'&egrave; solo su ' + n + ' righe su ' + S.nRighe + '.</div>' : ''; };
+  safeHtml('giocatori-box', '<div style="margin:4px 0 8px">' + esc(nomeM) + ' &middot; statistiche giocatori trovate per ' + D.H.nDati + '/' + D.H.nPartite + ' e ' + D.A.nDati + '/' + D.A.nPartite + ' partite</div>'
+    + cop(D.H) + tab(D.H) + '<div style="height:10px"></div>' + cop(D.A) + tab(D.A));
+}
+
 // Il campione di ruolo e' un SOTTOINSIEME delle ultime `limit` complessive: con
 // limit=15 restano 8 partite, misurate. A 1 diventa indipendente, cioe' le ultime
 // `limit` giocate nel ruolo, che e' quello che AGENTS.md ha descritto per parecchie
@@ -1463,12 +1733,12 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
     f3_entries = zeroIf(f3_entries, advOk); tch_box = zeroIf(tch_box, anyOk); cp_regains = zeroIf(cp_regains, advOk);
     opp_cp_regains = zeroIf(opp_cp_regains, advOk); opp_f3_entries = zeroIf(opp_f3_entries, advOk);
 
-    let red_cards = 0; let goal_timings_scored = []; let goal_timings_conceded = []; let scorers = [];
+    let red_cards = 0; let goal_timings_scored = []; let goal_timings_conceded = []; let scorers = []; let scorerIds = [];
     if(eventsRes) {
         const evs = eventsRes.data?.events || eventsRes.events || eventsRes.data || [];
         evs.forEach(ev => {
             if(ev.event_type && ev.event_type.toLowerCase() === 'goal') {
-                if (ev.team_id === teamId) { if (!ev.is_own_goal) { goal_timings_scored.push(ev.minute); if(ev.player && ev.player.name) scorers.push(ev.player.name); } else goal_timings_conceded.push(ev.minute); }
+                if (ev.team_id === teamId) { if (!ev.is_own_goal) { goal_timings_scored.push(ev.minute); if(ev.player && ev.player.name) scorers.push(ev.player.name); if(ev.player && ev.player.id) scorerIds.push(ev.player.id); } else goal_timings_conceded.push(ev.minute); }
                 else { if (!ev.is_own_goal) goal_timings_conceded.push(ev.minute); else goal_timings_scored.push(ev.minute); }
             }
             if(ev.event_type && ev.event_type.toLowerCase() === 'redcard' && ev.team_id === teamId) red_cards++;
@@ -1492,7 +1762,8 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
       gca, sca, xag, prog_passes, passes_box, carries_box, prog_carries,
       gca_ag, sca_ag, xag_ag, prog_passes_ag, passes_box_ag, carries_box_ag, prog_carries_ag, xg_sp_ag,
       ...advX,
-      red_cards, goal_timings_scored, goal_timings_conceded, scorers, rawPresent
+      red_cards, goal_timings_scored, goal_timings_conceded, scorers, scorerIds, rawPresent,
+      lu: _luSide(lineupsRes, isH)
     };
   }
 
@@ -1599,7 +1870,9 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
     let safeN = (det.npxg != null ? det.npxg : det.xg);
     logHtml += `<tr><td>${det.dateShort}</td><td>${det.isH ? 'vs' : '@'} ${det.avv.substring(0,12)}</td><td>${esito}</td><td><b>${det.gf}-${det.ga}</b></td><td style="color:var(--dim)">${safeN != null ? safeN.toFixed(1) : '-'}</td><td>${det.oppModulo}</td></tr>`;
   });
-  return { overall: outOverall, role: outRole, logHtml, teamName, isHomeTeamUI };
+  return { overall: outOverall, role: outRole, logHtml, teamName, isHomeTeamUI,
+           lineupHist: storicoFormazioni(overallMatches, matchDetails),
+           matchList: overallMatches.map(m => ({ id: m.id, isH: m.home_team.id === teamId })) };
 }
 
 function _shrunkMean(roleArr, overallArr, fallback, k = 5) {
@@ -1763,6 +2036,32 @@ function _leagueKey() {
   return null;
 }
 
+function renderFormazioni(FH, FA, SH, SA) {
+  const esc = t => String(t).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
+  const st = F => !F.disponibile ? 'non disponibile' : (F.confermata ? 'confermata' : 'probabile' + (F.tipo ? ' (' + esc(F.tipo) + ')' : ''));
+  const pc = v => v == null ? '--' : Math.round(100 * v) + '%';
+  const ab = F => F.abitualiAssenti == null ? '--' : F.abitualiAssenti + ' (' + pc(F.pesoAssenti) + ' del peso)';
+  const sn = v => v == null ? '--' : (v ? 'SI' : 'no');
+  const gi = v => v == null ? '--' : String(v);
+  const eu = S => !S.inEuropa ? 'no' : [S.coppaPrima != null ? S.coppaPrima + ' gg fa' : null, S.coppaDopo != null ? 'fra ' + S.coppaDopo + ' gg' : null].filter(Boolean).join(' &middot; ');
+  const al = F => !F.allenatore ? '--' : (esc(F.allenatore) + (F.allenatoreNuovo ? ' &middot; <b>NUOVO</b>' : (F.partiteAllenatore != null ? ' &middot; ' + F.partiteAllenatore + '+ partite' : '')));
+  const rows = [
+    ['Formazione', st(FH), st(FA)],
+    ['Titolari abituali assenti', ab(FH), ab(FA)],
+    ['Gol dei titolari assenti', pc(FH.golAssenti), pc(FA.golAssenti)],
+    ['Cambi dall\'ultima', FH.cambi == null ? '--' : FH.cambi, FA.cambi == null ? '--' : FA.cambi],
+    ['Capitano assente', sn(FH.capitanoAssente), sn(FA.capitanoAssente)],
+    ['Allenatore', al(FH), al(FA)],
+    ['Formazioni nello storico', FH.nStorico, FA.nStorico],
+    ['Giorni di riposo', gi(SH.riposo) + (SH.riposo !== SH.riposoLega ? ' (lega ' + gi(SH.riposoLega) + ')' : ''), gi(SA.riposo) + (SA.riposo !== SA.riposoLega ? ' (lega ' + gi(SA.riposoLega) + ')' : '')],
+    ['Partite in 14 giorni', SH.partite14, SA.partite14],
+    ['Coppa europea', eu(SH), eu(SA)]
+  ];
+  safeHtml('formazioni-box', '<div class="tbl-scroll"><table class="table-ui table-compact"><thead><tr><th style="text-align:left"></th><th>Casa</th><th>Trasf.</th></tr></thead><tbody>'
+    + rows.map(r => '<tr><td style="text-align:left">' + r[0] + '</td><td>' + r[1] + '</td><td>' + r[2] + '</td></tr>').join('')
+    + '</tbody></table></div>');
+}
+
 function renderLeagueNote() {
   const box = document.getElementById('league-note');
   if (!box) return;
@@ -1878,7 +2177,7 @@ function renderVerdetti(mk, base, adv) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b41';
+window.__SCANNER_BUILD = '0905-b45';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -2036,6 +2335,9 @@ const MARKET_LINES = { cor: [8.5, 9.5, 10.5, 11.5], sot: [6.5, 7.5, 8.5, 9.5], y
 // le partite squilibrate hanno meno cartellini: -0.0035 gialli per punto Elo di
 // scarto, stesso effetto in cinque leghe (AGENTS.md, Lo squilibrio e i cartellini)
 window.CARDS_ELO_B = (typeof window.CARDS_ELO_B === 'number') ? window.CARDS_ELO_B : -0.0035;
+// e piu' tiri in porta: +0.0030 per punto Elo, registrato prima di vedere Bundesliga e
+// Ligue 1 e passato su tutte e due (AGENTS.md, Lo squilibrio sui tiri in porta)
+window.SOT_ELO_B = (typeof window.SOT_ELO_B === 'number') ? window.SOT_ELO_B : 0.0030;
 
 // attacco e difesa nascono come NPxG / media GOL di lega: unita diverse, e lo
 // scarto entra due volte perche lambda = base x attacco x difesa. Il termine
@@ -2045,9 +2347,9 @@ window.CARDS_ELO_B = (typeof window.CARDS_ELO_B === 'number') ? window.CARDS_ELO
 window.GOALS_UNIT_FIX = (typeof window.GOALS_UNIT_FIX === 'number') ? window.GOALS_UNIT_FIX : 0;
 const CARDS_ELO_CAP = 0.30;
 
-function cardsMismatchAdj(lam, eloDiff, meanPair) {
+function cardsMismatchAdj(lam, eloDiff, meanPair, coef) {
   const out = { lam: lam, adj: 0, capped: false, mismatch: null, meanPair: meanPair, applied: false };
-  const b = window.CARDS_ELO_B;
+  const b = (coef === undefined) ? window.CARDS_ELO_B : coef;
   if (!(lam > 0) || !isFinite(b) || b === 0) return out;
   if (eloDiff == null || !isFinite(eloDiff) || !(meanPair > 0)) return out;
   const mm = Math.abs(eloDiff);
@@ -2191,6 +2493,19 @@ async function avviaScanner() {
     if(dH.overall.n === 0 || dA.overall.n === 0) return alert("Storico insufficiente per una delle due squadre prima della data target.");
 
     const lId = document.getElementById('sel-league').value;
+
+    const _tgtId = await partitaBersaglio(hId, aId, dateInput);
+    const _luT = await formazioneBersaglio(_tgtId);
+    const _FH = indiciFormazione(dH.lineupHist, _luT && _luT.home);
+    const _FA = indiciFormazione(dA.lineupHist, _luT && _luT.away);
+    window.__LINEUP_DEBUG = { id: _tgtId, H: _FH, A: _FA };
+    const _coppe = await archivioCoppe(dateInput);
+    const _lgM = globalLeagueMatchesCache.filter(m => !lId || m.league_id === lId);
+    const _SH = indiciStanchezza(hId, dateInput, _lgM, _coppe), _SA = indiciStanchezza(aId, dateInput, _lgM, _coppe);
+    window.__FATIGUE_DEBUG = { stagione: _coppe.season, competizioni: _coppe.ok, partiteCoppe: _coppe.n, H: _SH, A: _SA };
+    window.__PLAYER_CTX = { H: { id: hId, nome: hName, partite: dH.matchList, xi: _luT && _luT.home ? _luT.home.xi : null },
+                            A: { id: aId, nome: aName, partite: dA.matchList, xi: _luT && _luT.away ? _luT.away.xi : null } };
+    window.__PLAYER_DATA = null;
     const targetMs = new Date(matchTime).getTime();
     const ELO = buildGlobalElo(targetMs);
     const eloSeriesH = ELO.series[hId] || []; const eloSeriesA = ELO.series[aId] || [];
@@ -2320,10 +2635,14 @@ async function avviaScanner() {
         return (isFinite(out) && out > 0) ? out : raw;
       };
       const cH = getF(dH,'cor'), cA = getF(dA,'cor'); const lCor = lamOf('cor');
-      const sH = getF(dH,'sot'), sA = getF(dA,'sot'); const lSot = lamOf('sot');
+      const _mpg = meanPairEloGap(ELO && ELO.table);
+      const sH = getF(dH,'sot'), sA = getF(dA,'sot');
+      const _sotRaw = lamOf('sot');
+      const _SM = cardsMismatchAdj(_sotRaw, _eloDiff, _mpg, window.SOT_ELO_B);
+      const lSot = _SM.lam;
       const yH = getF(dH,'yel'), yA = getF(dA,'yel');
       const _yelRaw = lamOf('yel');
-      const _CM = cardsMismatchAdj(_yelRaw, _eloDiff, meanPairEloGap(ELO && ELO.table));
+      const _CM = cardsMismatchAdj(_yelRaw, _eloDiff, _mpg);
       const lYel = _CM.lam;
       const lFls = lamOf('fouls');
       const rH = getF(dH,'red_cards'), rA = getF(dA,'red_cards');
@@ -2346,6 +2665,7 @@ async function avviaScanner() {
                baseCor, baseSot, baseYel, lgRefCor, lgRefSot, lgRefYel, lgGoals,
                yelRaw: _yelRaw, yelAdj: _CM.adj, yelMismatch: _CM.mismatch,
                yelMeanPair: _CM.meanPair, yelCapped: _CM.capped,
+               sotRaw: _sotRaw, sotAdj: _SM.adj, sotCapped: _SM.capped,
                linesCor, linesSot, linesYel, pOv9c, pOv8s, pOv3y, pRed, kCor, kSot, kYel };
     };
     const advRole = calcAdv(true); const advOver = calcAdv(false);
@@ -2683,6 +3003,8 @@ async function avviaScanner() {
     window.__BASE_DEBUG = _LGBASE;
     renderVerdetti({ p1:m1, pX:mX, p2:m2, p1X:m1+mX, pX2:mX+m2, p12:m1+m2,
                      pOv:dcOv, pUn:dcUn, pGG:dcGG, pNG:dcNG }, _LGBASE, advRole);
+    renderFormazioni(_FH, _FA, _SH, _SA);
+    safeHtml('giocatori-box', 'Premi il bottone per le statistiche dei giocatori di ' + _escHtml(hName) + ' e ' + _escHtml(aName) + '.');
     const odd1 = probsRole.p1 > 0 ? (1/probsRole.p1).toFixed(2) : "N/A"; const oddX = probsRole.pX > 0 ? (1/probsRole.pX).toFixed(2) : "N/A"; const odd2 = probsRole.p2 > 0 ? (1/probsRole.p2).toFixed(2) : "N/A";
     const oddM1 = m1 > 0 ? (1/m1).toFixed(2) : "N/A"; const oddMX = mX > 0 ? (1/mX).toFixed(2) : "N/A"; const oddM2 = m2 > 0 ? (1/m2).toFixed(2) : "N/A";
     safeTxt('m-odd-1', oddM1); safeTxt('m-odd-x', oddMX); safeTxt('m-odd-2', oddM2);

@@ -67,6 +67,17 @@ SEASONS.forEach((s, si) => {
   }));
 });
 
+// coppe europee finte: le squadre 0 e 1 giocano 3 giorni prima e 4 dopo ogni giornata, la 2 solo dopo
+const UEFA = { l_0bfbkO: {}, l_38d9HA: {}, l_2WZ2tt: {} };
+SEASONS.forEach((s, si) => {
+  const t0 = Date.UTC(2023 + si, 7, 19); UEFA.l_0bfbkO[s] = [];
+  for (let ri = 0; ri < 18; ri++) for (const [t, off] of [[0, -3], [1, -3], [0, 4], [1, 4], [2, 4]]) {
+    const day = new Date(t0 + (ri * 14 + off) * 86400000).toISOString().slice(0, 10), r = rng(`u${si}r${ri}t${t}${off}`);
+    UEFA.l_0bfbkO[s].push({ id: `u${si}r${ri}t${t}${off < 0 ? 'a' : 'b'}`, home_team: team(t), away_team: { id: 't_9' + t, name: 'Estero ' + t },
+      status: 'finished', time_utc: `${day}T20:00:00Z`, score_home: pois(1.3, r), score_away: pois(1.1, r) });
+  }
+});
+
 const PEND = new Set(process.env.PENDENTI ? ['m2r10k0', 'm2r10k1'] : []);
 const pub = m => PEND.has(m.id) ? ({ id: m.id, home_team: { ...m.home_team }, away_team: { ...m.away_team }, status: 'scheduled',
                     time_utc: m.time_utc, score_home: null, score_away: null })
@@ -128,14 +139,52 @@ function advOf(m) {
 
 function eventsOf(m) {
   const r = rng(m.id + 'ev'); const ev = [];
-  const add = (tid, n) => { for (let i = 0; i < n; i++) ev.push({ event_type: 'goal', team_id: tid, minute: 1 + Math.floor(r() * 94),
-                            is_own_goal: false, player: { name: 'Giocatore ' + tid.slice(2) + '-' + Math.floor(r() * 6) } }); };
+  const add = (tid, n) => { const rs = rng(m.id + 'marcatori' + tid), xi = xiOf(m, tid).xi;
+    for (let i = 0; i < n; i++) { const pid = xi[6 + Math.floor(rs() * 5)];
+      ev.push({ event_type: 'goal', team_id: tid, minute: 1 + Math.floor(r() * 94),
+                is_own_goal: false, player: { id: pid, name: 'Giocatore ' + tid.slice(2) + '-' + Math.floor(r() * 6) } }); } };
   add(m.home_team.id, m.score_home); add(m.away_team.id, m.score_away);
   if (r() < 0.12) ev.push({ event_type: 'redcard', team_id: r() < 0.5 ? m.home_team.id : m.away_team.id, minute: 60 });
+  for (const tid of [m.home_team.id, m.away_team.id]) { const ry = rng(m.id + 'gialli' + tid), xi = xiOf(m, tid).xi;
+    for (let i = pois(1.9, ry); i > 0; i--) ev.push({ event_type: 'YellowCard', team_id: tid, minute: 30, player: { id: xi[Math.floor(ry() * 11)], name: 'G' } }); }
   return { data: { events: ev } };
 }
 const FORM = ['4-3-3', '4-2-3-1', '3-5-2', '4-4-2', '3-4-3'];
-const lineupsOf = m => ({ data: { home: { formation: FORM[hash(m.home_team.id) % 5] }, away: { formation: FORM[hash(m.away_team.id + 'a') % 5] } } });
+// rosa di 18 per squadra: 11 titolari abituali, ognuno riposa col 15%; la squadra 3 cambia
+// allenatore a meta' del girone d'andata dell'ultima stagione (AGENTS.md, Formazioni e assenze)
+function xiOf(m, tid) {
+  const r = rng(m.id + 'xi' + tid); const sq = [...Array(18).keys()].map(k => 'p_' + tid.slice(2) + '_' + k);
+  const xi = []; let b = 11;
+  for (let k = 0; k < 11; k++) xi.push(r() < 0.15 && b < 18 ? sq[b++] : sq[k]);
+  return { xi, subs: sq.filter(p => !xi.includes(p)).slice(0, 7), cap: xi.includes(sq[0]) ? sq[0] : xi[1] };
+}
+const coachOf = (m, tid) => 'Allenatore ' + tid.slice(2) + (tid === 't_3' && m._si === 2 && m._ri >= 6 ? ' bis' : '');
+function sideOf(m, tid, fi) {
+  const { xi, subs, cap } = xiOf(m, tid);
+  return { formation: FORM[fi], confirmed: true, coach: { name: coachOf(m, tid) },
+    starters: xi.map((p, i) => ({ player_id: p, name: 'G ' + p, shirt_number: String(i + 1), position_id: i, is_captain: p === cap, pitch_x: 0.5, pitch_y: 0.5 })),
+    subs: subs.map(p => ({ player_id: p, name: 'G ' + p, shirt_number: '', position_id: 2, is_captain: false, pitch_x: 0, pitch_y: 0 })) };
+}
+// statistiche per giocatore come /players: gol e assist omessi quando valgono 0, il portiere
+// (k = 0) senza il gruppo duels, come fa l'API; le chiavi sono quelle attese dal motore
+function playersOf(m) {
+  const out = [], it = (key, value, total) => ({ key, stat: total == null ? { type: 'integer', value } : { type: 'fractionWithPercentage', value, total } });
+  for (const tid of [m.home_team.id, m.away_team.id]) {
+    const { xi, subs } = xiOf(m, tid), r = rng(m.id + 'pl' + tid);
+    xi.concat(subs.slice(0, 3)).forEach((pid, i) => {
+      const mins = i < 11 ? (r() < 0.8 ? 90 : 60 + Math.floor(r() * 30)) : 10 + Math.floor(r() * 25), k = +pid.split('_').pop(), q = mins / 90;
+      const shots = pois((k >= 6 && k <= 10 ? 2.2 : 0.4) * q, r), sot = Math.min(shots, pois(shots * 0.4, r)), gol = Math.min(sot, pois(sot * 0.3, r));
+      const top = { 'Minutes played': it('minutes_played', mins), 'Total shots': it('total_shots', shots), 'Shot accuracy': it('shot_accuracy', sot, shots) };
+      if (gol) top.Goals = it('goals', gol); const ast = pois(0.1 * q, r); if (ast) top.Assists = it('assists', ast);
+      const stats = [{ key: 'top_stats', stats: top }];
+      if (k !== 0) stats.push({ key: 'duels', stats: { 'Fouls committed': it('fouls', pois(1.1 * q, r)), 'Was fouled': it('was_fouled', pois((k >= 6 ? 1.8 : 0.9) * q, r)) } },
+                             { key: 'defense', stats: { 'Tackles won': it('tackles_won', pois(1.3 * q, r)) } });
+      out.push({ player: { id: pid, name: 'Giocatore ' + pid.slice(2), position_id: k }, team_id: tid, stats });
+    });
+  }
+  return { data: out };
+}
+const lineupsOf = m => ({ data: { home: sideOf(m, m.home_team.id, hash(m.home_team.id) % 5), away: sideOf(m, m.away_team.id, hash(m.away_team.id + 'a') % 5) } });
 
 let API_CALLS = 0;
 function api(url) {
@@ -145,13 +194,17 @@ function api(url) {
   if (mm) {
     const s = u.searchParams.get('season');
     if (mm[1] === LEAGUE && BY_SEASON[s]) return { data: { matches: BY_SEASON[s].map(pub) } };
+    if (UEFA[mm[1]]) return { data: { matches: (UEFA[mm[1]][s] || []).map(m => ({ ...m })) } };
     return { data: { matches: [] } };
   }
-  mm = p.match(/^\/matches\/([^/]+)\/(stats|lineups|advanced|events)$/);
+  mm = p.match(/^\/date\/(\d{4}-\d{2}-\d{2})$/);
+  if (mm) return { data: { date: mm[1], matches: Object.values(MATCHES).filter(m => m.time_utc.slice(0, 10) === mm[1]).map(pub) } };
+  mm = p.match(/^\/matches\/([^/]+)\/(stats|lineups|advanced|events|players)$/);
   if (mm && MATCHES[mm[1]]) {
     const m = MATCHES[mm[1]];
     if (mm[2] === 'stats') return statsOf(m);
     if (mm[2] === 'lineups') return lineupsOf(m);
+    if (mm[2] === 'players') return playersOf(m);
     if (mm[2] === 'events') return eventsOf(m);
     if (mm[2] === 'advanced') return advOf(m);
   }
@@ -209,7 +262,8 @@ async function newPage(browser, base) {
 // Lo stato del motore dopo un giro: le scritture a schermo e quello che il motore espone
 const SNAP = `(() => ({ rec: window.__REC_CUR || [], verd: JSON.parse(JSON.stringify(window.__VERDETTI || null)),
   verdTxt: window.__VERDETTI_TXT || null, master: JSON.parse(JSON.stringify(window.__MASTER || null)),
-  confMk: JSON.parse(JSON.stringify(window.__CONF_MK || null)) }))()`;
+  confMk: JSON.parse(JSON.stringify(window.__CONF_MK || null)), lineup: JSON.parse(JSON.stringify(window.__LINEUP_DEBUG || null)),
+  fatigue: JSON.parse(JSON.stringify(window.__FATIGUE_DEBUG || null)) }))()`;
 
 async function runScanner(browser, base, matches, limit) {
   const page = await newPage(browser, base);
@@ -234,10 +288,20 @@ async function runScanner(browser, base, matches, limit) {
     }, { h: m.home_team.id, a: m.away_team.id, d: m.time_utc.slice(0, 10), limit, SNAP });
     out[m.id] = snap;
   }
+  // le statistiche dei giocatori (bottone, fuori dal giro del motore): tabelle piene, niente NaN
+  const giocatori = await page.evaluate(async () => {
+    if (typeof caricaGiocatori !== 'function') return null;
+    await caricaGiocatori(); const sel = document.getElementById('sel-mercato-giocatori'); const per = [];
+    for (let i = 0; i < sel.options.length; i++) { sel.value = String(i); renderGiocatori();
+      const h = document.getElementById('giocatori-box').innerHTML;
+      per.push({ m: sel.options[i].text, righe: (h.match(/<tr>/g) || []).length, rotto: /NaN|undefined|Infinity/.test(h) }); }
+    const D = window.__PLAYER_DATA; sel.value = '1'; renderGiocatori();
+    return { dati: [D.H.nDati, D.A.nDati], partite: [D.H.nPartite, D.A.nPartite], per };
+  });
   const log = page.__log.slice();
   const scroll = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   await page.context().close();
-  return { runs: out, log, scroll };
+  return { runs: out, log, scroll, giocatori };
 }
 
 async function comparatorePage(browser, base, engineText) {
@@ -391,6 +455,39 @@ function csvChecks(S, csv, col) {
   cmp('Over 2.5 (multi-linea)', R['mdl-dc-ov'], cell('Over 2.5', 0, '--- OVER/UNDER MULTI-LINEA (prob DC vs reale) ---'));
   cmp('GG (da matrice)', R['mdl-dc-gg'], cell('GG (da matrice)', 0));
   { const cc = cell('COPIA CONFORME DELLO SCANNER', 0); out.push({ what: 'certificato di copia conforme', scanner: 'SI', csv: cc == null ? '(assente)' : cc, ok: cc === 'SI' }); }
+  // le formazioni: il CSV deve riportare gli indici che lo Scanner ha calcolato
+  const LU = "--- FORMAZIONI (misura: non entrano nelle probabilita') ---", L = S.lineup;
+  const sn = v => v == null ? 'N/D' : (v ? 'SI' : 'no');
+  const eqs = (what, sv, cv) => out.push({ what, scanner: sv, csv: cv == null ? '(assente)' : cv, ok: sv === cv });
+  if (!L) out.push({ what: 'formazioni', scanner: '(__LINEUP_DEBUG assente)', csv: '-', ok: false });
+  else for (const [k, nome] of [['H', 'casa'], ['A', 'trasf.']]) {
+    const F = L[k] || {}, c = lbl => cell('Formazioni ' + nome + ': ' + lbl, 0, LU);
+    eqs('formazione ' + nome + ': disponibile', sn(F.disponibile), c('disponibile'));
+    eqs('formazione ' + nome + ': confermata', sn(F.confermata), c('confermata'));
+    cmp('formazione ' + nome + ': formazioni nello storico', F.nStorico, c('formazioni nello storico'));
+    cmp('formazione ' + nome + ': titolari abituali assenti', F.abitualiAssenti, c('titolari abituali assenti'));
+    cmp('formazione ' + nome + ': peso degli assenti', F.pesoAssenti, c('peso degli assenti'), 0.00005);
+    cmp('formazione ' + nome + ': gol degli assenti', F.golAssenti, c('gol degli assenti'), 0.00005);
+    cmp('formazione ' + nome + ': cambi dall ultima', F.cambi, c('cambi dall ultima'));
+    eqs('formazione ' + nome + ': capitano assente', sn(F.capitanoAssente), c('capitano assente'));
+    eqs('formazione ' + nome + ': allenatore nuovo', sn(F.allenatoreNuovo), c('allenatore nuovo'));
+    cmp('formazione ' + nome + ': partite con l allenatore', F.partiteAllenatore, c('partite con l allenatore'));
+  }
+  const ST = "--- STANCHEZZA (misura: non entra nelle probabilita') ---", T = S.fatigue;
+  if (!T) out.push({ what: 'stanchezza', scanner: '(__FATIGUE_DEBUG assente)', csv: '-', ok: false });
+  else {
+    eqs('stanchezza: stagione delle coppe', T.stagione, cell('Stanchezza: stagione delle coppe', 0, ST));
+    cmp('stanchezza: partite europee in archivio', T.partiteCoppe, cell('Stanchezza: partite europee in archivio', 0, ST));
+    for (const [k, nome] of [['H', 'casa'], ['A', 'trasf.']]) {
+      const F = T[k] || {}, c = lbl => cell('Stanchezza ' + nome + ': ' + lbl, 0, ST), nd = v => v == null ? 'N/D' : String(v);
+      eqs('stanchezza ' + nome + ': giorni di riposo', nd(F.riposo), c('giorni di riposo'));
+      eqs('stanchezza ' + nome + ': giorni di riposo dalla lega', nd(F.riposoLega), c('giorni di riposo dalla lega'));
+      eqs('stanchezza ' + nome + ': partite in 14 giorni', nd(F.partite14), c('partite in 14 giorni'));
+      eqs('stanchezza ' + nome + ': giorni dalla coppa europea', nd(F.coppaPrima), c('giorni dalla coppa europea'));
+      eqs('stanchezza ' + nome + ': giorni alla coppa europea', nd(F.coppaDopo), c('giorni alla coppa europea'));
+      eqs('stanchezza ' + nome + ': in Europa', sn(F.inEuropa), c('in Europa'));
+    }
+  }
   // il tabellone: la sezione deve esistere e riportare le stesse proposte nello stesso ordine
   const tab = csv.sec['--- TABELLONE (come lo stampa lo Scanner) ---'];
   if (!tab) out.push({ what: 'tabellone', scanner: (S.verd || []).length + ' proposte', csv: '(sezione assente)', ok: false });
@@ -417,7 +514,16 @@ function csvChecks(S, csv, col) {
   console.log(`Scanner: ${day.length} partite in ${Math.round((Date.now() - t0) / 1000)}s · log ${sLog.slice(0, 5).join(' | ') || 'pulito'}`
             + (process.env.MOBILE ? ` · scorrimento laterale ${scanner.scroll}px` : ''));
   console.log('   sottotitolo:', recMap(scanner.runs[day[0].id].rec)['ui-subtitle']);
-  let fail = (sLog.length || (process.env.MOBILE && scanner.scroll > 0)) ? 1 : 0;
+  const G = scanner.giocatori;
+  const gRotti = G ? G.per.filter(x => x.rotto || x.righe < 2) : null;
+  console.log('   giocatori: ' + (G ? `statistiche per ${G.dati[0]}/${G.partite[0]} e ${G.dati[1]}/${G.partite[1]} partite, ${G.per.length} mercati, righe per mercato ${Math.min(...G.per.map(x => x.righe))}-${Math.max(...G.per.map(x => x.righe))}`
+    + (gRotti.length ? ' · ROTTI: ' + gRotti.map(x => x.m).join(', ') : ' · nessun NaN') : 'bottone assente'));
+  // le formazioni devono avere valori veri, non tutti nulli: altrimenti il confronto non prova niente
+  for (const m of day) { const L = scanner.runs[m.id].lineup, f = F => F ? `assenti ${F.abitualiAssenti} (peso ${F.pesoAssenti == null ? '-' : F.pesoAssenti.toFixed(2)}, gol ${F.golAssenti == null ? '-' : F.golAssenti.toFixed(2)}), cambi ${F.cambi}, allenatore ${F.allenatoreNuovo ? 'nuovo' : F.partiteAllenatore + '+'}` : '-';
+    console.log(`   formazioni ${m.id}: casa ${f(L && L.H)} | trasf. ${f(L && L.A)}`);
+    const T = scanner.runs[m.id].fatigue, g = F => F ? `riposo ${F.riposo} (lega ${F.riposoLega}), ${F.partite14} in 14 gg, coppa ${F.coppaPrima == null ? '-' : F.coppaPrima + ' fa'} / ${F.coppaDopo == null ? '-' : 'fra ' + F.coppaDopo}` : '-';
+    console.log(`   stanchezza ${m.id}: casa ${g(T && T.H)} | trasf. ${g(T && T.A)}`); }
+  let fail = (sLog.length || (process.env.MOBILE && scanner.scroll > 0) || !G || gRotti.length) ? 1 : 0;
 
   const results = {};
   await Promise.all(MODES.map(async mode => { results[mode] = await runComparatore(browser, base, mode, date); }));
