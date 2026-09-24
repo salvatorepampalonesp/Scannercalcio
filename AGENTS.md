@@ -48,7 +48,7 @@ competizioni UEFA; nessuna quota dei bookmaker.
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b45`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b46`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -225,7 +225,7 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b45`)
+## Stato attuale (`b46`)
 
 **1X2.** Pick azzeccato 52.9% (±3.0) contro il 40.2% del «gioca sempre in casa» in Serie
 A, 52.8% contro 43.1% in Premier, 54.2% contro 45.8% in LaLiga, 51.8% contro 42.0% in
@@ -260,6 +260,9 @@ fra modello ed Elo, +0.57 punti di prese. Il margine vero è la selezione: gioca
 abituale, dal `b44` quanti giorni di riposo ha ogni squadra contando le coppe europee (card
 «Formazioni e stanchezza», sezioni CSV `FORMAZIONI` e `STANCHEZZA`). Non li usa ancora: sono in
 misura, con le regole scritte prima del batch. Vedi *Formazioni e assenze* e *La stanchezza*.
+Dal `b46` la card dice quando la formazione probabile è solo l'ultimo undici, e con la
+confermata mostra chi è cambiato rispetto alla probabile vista prima (vedi *La formazione
+probabile*).
 
 **Giocatori.** Dal `b45` una card mostra, per i giocatori della rosa di oggi, quante volte hanno
 superato una soglia (falli subiti e commessi, tiri, tiri in porta, gialli, gol, assist,
@@ -700,7 +703,7 @@ indici di ogni partita: se fossero tutti vuoti il confronto non proverebbe nient
 dello Scanner preme anche il bottone dei giocatori e passa tutti e 15 i mercati: fallisce se una
 tabella è vuota o contiene `NaN`, `undefined` o `Infinity`.
 
-Esito al `b45` (storico 30), a 390px:
+Esito al `b46` (storico 30), a 390px:
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
@@ -708,7 +711,7 @@ Esito al `b45` (storico 30), a 390px:
 | batch per stagioni, sweep | 89/89, solo la stagione caricata | 0 su 190 | 0 su 115 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
 | `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 123-154 | 71-82 | 0 |
-| `vecchio`: motore `b44` caricato (controllo) | 0/3, «motore caricato diverso ...» | 1 | 1 | 0 |
+| `vecchio`: motore `b45` caricato (controllo) | 0/3, «motore caricato diverso ...» | 1 | 1 | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -720,7 +723,8 @@ loro riga nel tabellone e il certificato. Al `b43` il controllo col `b42` vede s
 delle formazioni, le venti righe nuove del CSV e il certificato: le probabilità non si muovono.
 Al `b44` il controllo col `b43` vede solo la card (ora con la stanchezza), le righe della
 stanchezza che cambiano e il certificato. Al `b45` il controllo col `b44` vede solo il
-messaggio iniziale della card dei giocatori e il certificato.
+messaggio iniziale della card dei giocatori e il certificato. Al `b46` il controllo col
+`b45` vede solo la card delle formazioni (la riga «Rispetto alla probabile») e il certificato.
 
 **Cosa resta fuori, e va saputo:**
 
@@ -1135,6 +1139,32 @@ tre prove in più, quindi contano solo con `z ≤ −3`. Sui mercati gol (Over e
 assenti) è solo descrittivo. Se passa, entra nel motore con il `b` stimato, e **solo con la
 formazione confermata**: con quella probabile l'indice resta a schermo e non sposta niente.
 Se non passa, la card resta come informazione e questa sezione dice perché.
+
+### La formazione probabile
+
+**Cosa dà l'API prima della confermata.** Fino a 48 ore prima una formazione con
+`confirmed: false` e un `lineup_type`; la documentazione cita come esempio `lastStarting11`,
+cioè l'undici dell'ultima partita ricopiato. Con quella «chi manca» mostra solo chi mancava
+già l'ultima volta: un infortunio o una squalifica arrivati dopo non ci sono. Gli indici si
+calcolano lo stesso, ma dal `b46` la card lo dice: «probabile: è l'ultimo undici», con una
+nota che invita a rilanciare l'analisi a ridosso del calcio d'inizio. Con una probabile di
+altro tipo la card dice che gli indici sono indicativi, perché il backtest li misura solo
+sulle confermate (per le partite giocate l'API restituisce solo la formazione reale).
+
+**Il confronto con la probabile.** `ricordaProbabile` salva nel browser
+(`localStorage`, chiave `scanner_prob_<id partita>`, dieci giorni) i titolari di ogni lato
+ancora non confermato. Quando lo stesso lato arriva confermato, `confrontoProbabile` dice chi
+era nella probabile e non parte (**fuori**) e chi parte senza esserci (**dentro**), con quante
+ore prima era stata vista: sono i cambi dell'ultimo momento, cioè le sorprese che il resto
+del motore non può vedere. La riga «Rispetto alla probabile» scrive «salvata» finché la
+formazione è probabile, e `--` se la probabile non era mai stata vista.
+
+**Solo a schermo, mai nel CSV né in `__LINEUP_DEBUG`**: dipende da quando e su quale
+dispositivo si è aperto lo Scanner, quindi non è riproducibile, e un backtest non può
+misurarlo. Verificato su un banco modificato in cui la prima risposta di `/lineups` è una
+probabile `lastStarting11` e la seconda la confermata: al primo giro «probabile: è l'ultimo
+undici» e «salvata», al secondo «fuori … · dentro …», a 390px nessuno scorrimento laterale. Il
+banco di parità normale non lo esercita (le sue formazioni sono tutte confermate).
 
 ### La stanchezza
 
@@ -2120,3 +2150,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b43` | le formazioni: chi manca rispetto all'undici abituale, capitano, allenatore nuovo, dalla formazione della partita e dai `/lineups` dello storico. Card e CSV, probabilità invariate; regola del test scritta prima del batch |
 | `b44` | la stanchezza: giorni di riposo contando Champions, Europa e Conference League, partite in 14 giorni, coppa europea prima e dopo. Card e CSV, probabilità invariate; regola scritta prima del batch, da misurare sopra le formazioni |
 | `b45` | la card dei giocatori: falli subiti e commessi, tiri, tiri in porta, gialli, gol, assist e contrasti per giocatore sulle ultime 30 partite, ultime 5 e tutte, da `/players` a richiesta. Fuori dal giro del motore; frequenze descrittive, non ancora misurate |
+| `b46` | la formazione probabile: la card dice quando è solo l'ultimo undici, la salva nel browser e, con la confermata, mostra chi è uscito e chi è entrato rispetto alla probabile. Solo a schermo |
