@@ -35,7 +35,9 @@ che li mette in `RAW_CACHE`. Dal `b43` il motore chiede anche la formazione dell
 prevedere (`/matches/{id}/lineups`) e, se la partita non è nell'archivio di lega perché non
 è ancora giocata, la cerca con `/date/{giorno}?status=all`. Dal `b44` carica anche gli
 archivi di Champions, Europa e Conference League della stagione (tre chiamate, in memoria per
-la sessione), per contare il riposo vero. La documentazione dell'API
+la sessione), per contare il riposo vero. Dal `b45` lo Scanner chiede anche `/players` delle
+partite dello storico, ma solo quando si preme il bottone della card dei giocatori (una chiamata
+per partita, in memoria per la sessione): non fa parte del giro del motore. La documentazione dell'API
 (51 pagine, settembre 2026) elenca anche statistiche per giocatore (`/players`,
 `/advanced/players`), tiri (`/shots`), `/h2h`, arbitro, heatmap e 42 leghe fra cui coppe e
 competizioni UEFA; nessuna quota dei bookmaker.
@@ -46,7 +48,7 @@ competizioni UEFA; nessuna quota dei bookmaker.
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b44`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b45`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -186,6 +188,16 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   (vedi *La stanchezza*). Coppa Italia, FA Cup, Pokal, Copa del Rey e Coupe de France non sono
   in `leghe.json`, anche se la documentazione dell'API parla di coppe: va verificato con
   `/v1/leagues` se esistono, e con quali id.
+- [ ] **Le chiavi di `/players` sulla API vera.** La card dei giocatori (`b45`) cerca ogni dato
+  per chiave e per etichetta, ma le chiavi dei falli e dei contrasti non sono nella
+  documentazione e sono state provate solo sul banco. Al primo uso vero, se la card dice
+  «il dato … c'è solo su N righe», la chiave è diversa: leggerla dalla risposta e aggiungerla
+  a `PLAYER_STATS`. Vedi *Le statistiche dei giocatori*.
+- [ ] **Le frequenze dei giocatori contro il reale.** La card mostra quante volte un giocatore
+  ha superato una soglia, non una probabilità. Misurarla: esportare nel CSV, per i titolari
+  della partita, la frequenza su tutte e sulle ultime 5 e il dato reale, e vedere quanto
+  prevede e quanto va ristretta. Poi l'avversario: i falli subiti dipendono da quanti falli fa
+  l'altra squadra, che il motore prevede già.
 - [ ] **I parametri interni di Markov**: verificati solo gli invarianti.
 
 ### 5. UI e pulizie
@@ -213,7 +225,7 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b44`)
+## Stato attuale (`b45`)
 
 **1X2.** Pick azzeccato 52.9% (±3.0) contro il 40.2% del «gioca sempre in casa» in Serie
 A, 52.8% contro 43.1% in Premier, 54.2% contro 45.8% in LaLiga, 51.8% contro 42.0% in
@@ -248,6 +260,11 @@ fra modello ed Elo, +0.57 punti di prese. Il margine vero è la selezione: gioca
 abituale, dal `b44` quanti giorni di riposo ha ogni squadra contando le coppe europee (card
 «Formazioni e stanchezza», sezioni CSV `FORMAZIONI` e `STANCHEZZA`). Non li usa ancora: sono in
 misura, con le regole scritte prima del batch. Vedi *Formazioni e assenze* e *La stanchezza*.
+
+**Giocatori.** Dal `b45` una card mostra, per i giocatori della rosa di oggi, quante volte hanno
+superato una soglia (falli subiti e commessi, tiri, tiri in porta, gialli, gol, assist,
+contrasti) nelle ultime 30 partite di campionato e nelle loro ultime 5 da titolare. Sono
+frequenze descrittive, non misurate contro il reale. Vedi *Le statistiche dei giocatori*.
 
 **La selezione vale più dell'accuratezza.** Prima di aggiungere una feature, chiedersi se
 il segnale non sia già nell'output, solo mal etichettato.
@@ -669,25 +686,29 @@ dall'id della partita e servita al posto di PitchAPI, con una neopromossa e senz
 `/advanced` sulla stagione piu' vecchia come l'API vera. Lo Scanner si guida come lo usa
 l'utente (`caricaSquadreLega` e `avviaScanner` sulle partite di una data), il Comparatore gira
 in ogni modalita', e si confrontano **ogni scrittura a schermo del motore** (`safeTxt` e
-`safeHtml`, strumentate nei due file allo stesso modo: 189 per partita) e **115 righe del CSV**
+`safeHtml`, strumentate nei due file allo stesso modo: 190 per partita) e **115 righe del CSV**
 che riportano un numero dello Scanner (1X2, confidence di tutti i mercati, i sei modelli,
 GG e Over, corner/tiri/gialli e le loro linee, handicap, multigol, Elo, tabellone voce per
 voce, certificato, dal `b43` gli indici delle formazioni e dal `b44` quelli della stanchezza). Tre modalita' sono controlli di
 potenza, e passano solo se il certificato dice NO col motivo giusto. Dal `b43` la lega finta ha
 anche le formazioni (rosa di 18, ogni titolare abituale riposa col 15%, la squadra 3 cambia
 allenatore a stagione in corso) e i marcatori presi dai titolari; dal `b44` una Champions finta
-(le squadre 0 e 1 giocano 3 giorni prima e 4 dopo ogni giornata, la 2 solo dopo). Il banco
-stampa gli indici di ogni partita: se fossero tutti vuoti il confronto non proverebbe niente.
+(le squadre 0 e 1 giocano 3 giorni prima e 4 dopo ogni giornata, la 2 solo dopo); dal `b45`
+statistiche per giocatore come `/players` (gol e assist omessi quando valgono zero, il
+portiere senza il gruppo dei duelli) e gialli per giocatore negli eventi. Il banco stampa gli
+indici di ogni partita: se fossero tutti vuoti il confronto non proverebbe niente. Dopo il giro
+dello Scanner preme anche il bottone dei giocatori e passa tutti e 15 i mercati: fallisce se una
+tabella è vuota o contiene `NaN`, `undefined` o `Infinity`.
 
-Esito al `b44` (storico 30), a 390px:
+Esito al `b45` (storico 30), a 390px:
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
-| una partita, tutte del giorno, intervallo | 3/3 | 0 su 189 | 0 su 115 | 0 |
-| batch per stagioni, sweep | 89/89, solo la stagione caricata | 0 su 189 | 0 su 115 | 0 |
+| una partita, tutte del giorno, intervallo | 3/3 | 0 su 190 | 0 su 115 | 0 |
+| batch per stagioni, sweep | 89/89, solo la stagione caricata | 0 su 190 | 0 su 115 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
 | `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 123-154 | 71-82 | 0 |
-| `vecchio`: motore `b43` caricato (controllo) | 0/3, «motore caricato diverso ...» | 1 | 11-13 | 0 |
+| `vecchio`: motore `b44` caricato (controllo) | 0/3, «motore caricato diverso ...» | 1 | 1 | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -698,7 +719,8 @@ numeri. Al `b42` il controllo col `b41` vede solo i tiri in porta: le quattro li
 loro riga nel tabellone e il certificato. Al `b43` il controllo col `b42` vede solo la card
 delle formazioni, le venti righe nuove del CSV e il certificato: le probabilità non si muovono.
 Al `b44` il controllo col `b43` vede solo la card (ora con la stanchezza), le righe della
-stanchezza che cambiano e il certificato.
+stanchezza che cambiano e il certificato. Al `b45` il controllo col `b44` vede solo il
+messaggio iniziale della card dei giocatori e il certificato.
 
 **Cosa resta fuori, e va saputo:**
 
@@ -1155,6 +1177,45 @@ contro 2 migliore in almeno quattro leghe su cinque, `z ≤ −2` sull'insieme, 
 in calo. Secondari, con `z ≤ −3`: partite in 14 giorni (differenza), coppa europea entro 4
 giorni prima, coppa europea entro 4 giorni dopo (il turnover preventivo). Sui gol solo
 descrittivo.
+
+## Le statistiche dei giocatori
+
+**Cosa mostra.** La card «Giocatori — le ultime 30 partite», col bottone: per ogni giocatore
+della rosa di oggi e per un mercato scelto dal menu (falli subiti ≥ 1/2/3, falli commessi
+≥ 1/2, tiri ≥ 1/2/3, tiri in porta ≥ 1/2, ammonito, segna, assist, gol o assist, contrasti
+vinti ≥ 2) le partite da titolare sulle ultime 30 di campionato della squadra, la media, e
+quante volte ha raggiunto la soglia nelle sue ultime 5 da titolare e in tutte. Le partite
+sono le stesse 30 dello storico del motore (`matchList` di `aggregaTeam`), quindi solo
+campionato, e passano da `_isPast` come tutto il resto.
+
+**Da dove.** `/matches/{id}/players` per ogni partita dello storico (`fetchPlayersRaw`, in
+memoria per la sessione, circa 60 chiamate la prima volta); titolari dai `/lineups` e gialli
+dagli `/events` già in `RAW_CACHE`. La risposta è un elenco di giocatori con gruppi di
+statistiche (`top_stats`, `attack`, `defense`, `duels`); `_statiGiocatore` li appiattisce e
+`PLAYER_STATS` cerca ogni dato per chiave e, se manca, per etichetta. Le chiavi dei tiri
+(`total_shots`, `shot_accuracy`, dove `value` sono i tiri in porta) vengono dalla
+documentazione; quelle di falli e contrasti (`fouls`, `was_fouled`, `tackles_won` e varianti)
+**no**: sono le più probabili, e la card avvisa se un dato c'è su meno di metà delle righe.
+Valori mancanti come nel resto del motore: un conteggio assente con il suo gruppo presente è
+0, con il gruppo assente (il portiere non ha `duels`) la riga esce dalla media.
+
+**Su quali partite si conta.** Solo quelle da titolare (se la formazione della partita manca,
+quelle con almeno 45 minuti): una scommessa sul giocatore si fa su un titolare, e un ingresso
+al 80' abbassa la frequenza senza dire niente. Solo la rosa di oggi: chi è nella formazione
+della partita (●) o ha giocato in una delle ultime 5. L'ordine usa `(riusciti + 1) / (partite +
+2)`, perché un 2 su 3 non passi davanti a un 15 su 24; la percentuale a schermo resta quella
+grezza.
+
+**Cosa non è.** Una frequenza, non una probabilità: non sa niente dell'avversario, dei minuti
+che giocherà, della posizione. Le ultime 5 sono cinque partite, e nel motore le medie brevi
+non hanno mai previsto meglio della lunga (47 metriche su 47, vedi *Scanner in uso*): la card
+lo dice, e la colonna da guardare è quella di tutte. Non è misurata contro il reale (vedi *Da
+fare*).
+
+**Fuori dal giro del motore, apposta.** Il bottone chiama `caricaGiocatori()` dopo l'analisi,
+che lascia in `window.__PLAYER_CTX` le partite e le formazioni: il Comparatore non la esegue,
+quindi i batch non pagano le chiamate e il confronto Scanner/Comparatore non cambia (una sola
+scrittura nuova, il messaggio iniziale). Il banco la verifica a parte, premendo il bottone.
 
 ## Registro delle costanti
 
@@ -2058,3 +2119,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b42` | lo squilibrio sui tiri in porta (`SOT_ELO_B = 0.0030`), l'unico dei due candidati che ha passato il test. Il peso dell'Elo resta 0.75 / 1.25 |
 | `b43` | le formazioni: chi manca rispetto all'undici abituale, capitano, allenatore nuovo, dalla formazione della partita e dai `/lineups` dello storico. Card e CSV, probabilità invariate; regola del test scritta prima del batch |
 | `b44` | la stanchezza: giorni di riposo contando Champions, Europa e Conference League, partite in 14 giorni, coppa europea prima e dopo. Card e CSV, probabilità invariate; regola scritta prima del batch, da misurare sopra le formazioni |
+| `b45` | la card dei giocatori: falli subiti e commessi, tiri, tiri in porta, gialli, gol, assist e contrasti per giocatore sulle ultime 30 partite, ultime 5 e tutte, da `/players` a richiesta. Fuori dal giro del motore; frequenze descrittive, non ancora misurate |

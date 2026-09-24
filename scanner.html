@@ -174,7 +174,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b44</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b45</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -297,6 +297,22 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <b>Niente di questo entra ancora nelle probabilit&agrave;</b>: si sta misurando sul backtest.
     </div>
     <div id="formazioni-box" style="font-size:12px;color:var(--dim)">--</div>
+  </div>
+
+  <div class="card" id="card-giocatori" style="border-top:3px solid var(--purple)">
+    <div class="section-title" style="color:var(--purple)">&#128100; Giocatori &mdash; le ultime 30 partite</div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:10px">
+      Per ogni giocatore della rosa di oggi: in quante delle ultime 30 partite di campionato della squadra
+      &egrave; partito titolare, la media, e quante volte ha raggiunto la soglia nelle sue <b>ultime 5</b> da
+      titolare e in <b>tutte</b>. Sono <b>frequenze, non probabilit&agrave;</b>: non sanno niente dell'avversario.
+      Cinque partite sono poche, e nel motore le medie brevi non hanno mai previsto meglio della lunga: la
+      colonna da guardare &egrave; <b>Tutte</b>, e l'ordine tiene conto di quante partite ci sono dietro
+      (un 2 su 3 non passa davanti a un 15 su 24). &#9679; = titolare nella formazione di oggi. La prima volta
+      costa una chiamata per partita (circa 60).
+    </div>
+    <button class="btn btn-sm" id="btn-giocatori" onclick="caricaGiocatori()">&#128100; Carica le statistiche dei giocatori</button>
+    <select id="sel-mercato-giocatori" onchange="renderGiocatori()" style="margin:10px 0;width:100%"></select>
+    <div id="giocatori-box" style="font-size:12px;color:var(--dim)">--</div>
   </div>
 
 
@@ -1370,6 +1386,128 @@ function indiciStanchezza(teamId, dateStr, leagueMatches, coppe) {
            coppaPrima: minG(pc), coppaDopo: dopo, inEuropa: pc.length > 0 || dopo !== null };
 }
 
+const _escHtml = t => String(t).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
+const PLAYER_CACHE = {};
+async function fetchPlayersRaw(id) {
+  if (PLAYER_CACHE[id]) return PLAYER_CACHE[id];
+  const res = await apiCall(`/matches/${id}/players`, true);
+  if (res && res.data) PLAYER_CACHE[id] = res;
+  await sleep(120);
+  return res;
+}
+
+function _statiGiocatore(entry) {
+  const out = {};
+  (Array.isArray(entry.stats) ? entry.stats : []).forEach(g => {
+    if (!g) return; out['#' + String(g.key || '').toLowerCase()] = true;
+    Object.entries(g.stats || {}).forEach(([label, it]) => {
+      const st = it && it.stat; if (!st) return; const v = +st.value; if (!isFinite(v)) return;
+      const k = String(it.key || '').toLowerCase(), l = '@' + String(label).toLowerCase();
+      if (k) out[k] = v; out[l] = v;
+    });
+  });
+  return out;
+}
+
+const PLAYER_STATS = {
+  min:    { g: 'top_stats', k: ['minutes_played'], l: ['minutes played'], zero: false },
+  gol:    { g: 'top_stats', k: ['goals'], l: ['goals'], zero: true },
+  ast:    { g: 'top_stats', k: ['assists', 'goal_assist'], l: ['assists'], zero: true },
+  tiri:   { g: 'top_stats', k: ['total_shots'], l: ['total shots'], zero: true },
+  porta:  { g: null, k: ['shots_on_target', 'shotsontarget', 'shot_accuracy'], l: ['shots on target', 'shot accuracy'], zero: false },
+  falliF: { g: 'duels', k: ['fouls', 'fouls_committed'], l: ['fouls committed', 'fouls'], zero: true },
+  falliS: { g: 'duels', k: ['was_fouled', 'fouls_won', 'fouled'], l: ['was fouled', 'fouls won'], zero: true },
+  contr:  { g: 'defense', k: ['tackles_won', 'tackles_succeeded', 'tackles'], l: ['tackles won', 'tackles'], zero: true }
+};
+const MERCATI_GIOCATORI = [
+  ['falliS', 1, 'Falli subiti: almeno 1'], ['falliS', 2, 'Falli subiti: almeno 2'], ['falliS', 3, 'Falli subiti: almeno 3'],
+  ['falliF', 1, 'Falli commessi: almeno 1'], ['falliF', 2, 'Falli commessi: almeno 2'],
+  ['tiri', 1, 'Tiri: almeno 1'], ['tiri', 2, 'Tiri: almeno 2'], ['tiri', 3, 'Tiri: almeno 3'],
+  ['porta', 1, 'Tiri in porta: almeno 1'], ['porta', 2, 'Tiri in porta: almeno 2'],
+  ['giallo', 1, 'Ammonito'], ['gol', 1, 'Segna'], ['ast', 1, 'Fa un assist'], ['golast', 1, 'Gol o assist'],
+  ['contr', 2, 'Contrasti vinti: almeno 2']
+];
+
+function _rigaGiocatore(s, trovati) {
+  const r = {};
+  Object.keys(PLAYER_STATS).forEach(m => {
+    const d = PLAYER_STATS[m]; let v = null;
+    for (const k of d.k) if (s[k] != null) { v = s[k]; break; }
+    if (v == null) for (const l of d.l) if (s['@' + l] != null) { v = s['@' + l]; break; }
+    if (v != null) trovati[m] = (trovati[m] || 0) + 1;
+    else if (d.zero && s['#' + d.g]) v = 0;
+    r[m] = v;
+  });
+  if (r.porta == null && r.tiri === 0) r.porta = 0;
+  return r;
+}
+
+async function caricaGiocatori() {
+  const C = window.__PLAYER_CTX;
+  if (!C) return alert("Prima lancia l'analisi della partita.");
+  const btn = document.getElementById('btn-giocatori'); if (btn) btn.disabled = true;
+  const out = {};
+  for (const side of ['H', 'A']) {
+    const T = C[side], rec = {}, trovati = {}; let nDati = 0, nRighe = 0;
+    for (let i = 0; i < T.partite.length; i++) {
+      const pm = T.partite[i];
+      safeHtml('giocatori-box', 'Scarico ' + _escHtml(T.nome) + ': partita ' + (i + 1) + ' di ' + T.partite.length + '...');
+      const res = await fetchPlayersRaw(pm.id);
+      const list = res ? (Array.isArray(res.data) ? res.data : (res.data && Array.isArray(res.data.players) ? res.data.players : null)) : null;
+      if (!list) continue;
+      nDati++;
+      const raw = RAW_CACHE[pm.id], lu = raw && raw[1] ? _luSide(raw[1], pm.isH) : null;
+      const xi = lu ? new Set(lu.xi) : null, rosa = lu ? new Set(lu.xi.concat(lu.subs)) : null;
+      const evs = raw && raw[3] ? (raw[3].data?.events || raw[3].events || null) : null, gialli = {};
+      if (Array.isArray(evs)) evs.forEach(ev => { if (ev && String(ev.event_type || '').toLowerCase() === 'yellowcard' && ev.player && ev.player.id) gialli[ev.player.id] = (gialli[ev.player.id] || 0) + 1; });
+      list.forEach(e => {
+        const pid = _pid(e.player || e); if (!pid) return;
+        if (e.team_id ? e.team_id !== T.id : !(rosa && rosa.has(pid))) return;
+        const r = _rigaGiocatore(_statiGiocatore(e), trovati); nRighe++;
+        r.giallo = Array.isArray(evs) ? (gialli[pid] || 0) : null;
+        r.golast = (r.gol == null && r.ast == null) ? null : (r.gol || 0) + (r.ast || 0);
+        r.tit = xi ? xi.has(pid) : null; r.recente = i < 5;
+        r.base = r.tit === true || (r.tit === null && r.min != null && r.min >= 45);
+        (rec[pid] = rec[pid] || { id: pid, nome: (e.player && e.player.name) || pid, righe: [] }).righe.push(r);
+      });
+    }
+    out[side] = { nome: T.nome, nPartite: T.partite.length, nDati, nRighe, trovati, xi: T.xi, giocatori: Object.values(rec) };
+  }
+  window.__PLAYER_DATA = out;
+  if (btn) btn.disabled = false;
+  renderGiocatori();
+}
+
+function renderGiocatori() {
+  const sel = document.getElementById('sel-mercato-giocatori');
+  if (sel && !sel.options.length) { MERCATI_GIOCATORI.forEach((m, i) => sel.add(new Option(m[2], String(i)))); sel.value = '1'; }
+  const D = window.__PLAYER_DATA; if (!D) return;
+  const [met, soglia, nomeM] = MERCATI_GIOCATORI[+(sel ? sel.value : 1) || 0];
+  const esc = _escHtml;
+  const tab = S => {
+    const oggi = new Set(S.xi || []);
+    const righe = S.giocatori.map(g => {
+      const base = g.righe.filter(r => r.base && r[met] != null);
+      if (!(oggi.has(g.id) || g.righe.some(r => r.recente)) || base.length < 3) return null;
+      const u5 = base.slice(0, 5), ok = r => r[met] >= soglia;
+      return { g, oggi: oggi.has(g.id), tit: g.righe.filter(r => r.tit === true).length,
+               media: base.reduce((a, r) => a + r[met], 0) / base.length,
+               u5: u5.filter(ok).length, n5: u5.length, tot: base.filter(ok).length, n: base.length };
+    }).filter(Boolean).sort((a, b) => (b.tot + 1) / (b.n + 2) - (a.tot + 1) / (a.n + 2) || b.n - a.n).slice(0, 12);
+    if (!righe.length) return '<div style="margin:6px 0">Nessun giocatore con almeno 3 partite da titolare su questo dato.</div>';
+    return '<div class="tbl-scroll"><table class="table-ui table-compact"><thead><tr><th style="text-align:left">' + esc(S.nome) + '</th><th>Tit.</th><th>Media</th><th>Ult. 5</th><th>Tutte</th></tr></thead><tbody>'
+      + righe.map(x => { const pc = Math.round(100 * x.tot / x.n);
+          return '<tr><td style="text-align:left;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap' + (x.oggi ? ';font-weight:bold' : '') + '">' + (x.oggi ? '&#9679; ' : '') + esc(x.g.nome) + '</td>'
+            + '<td>' + x.tit + '/' + S.nPartite + '</td><td>' + x.media.toFixed(1) + '</td><td>' + x.u5 + '/' + x.n5 + '</td>'
+            + '<td style="font-weight:bold;color:' + (pc >= 70 ? 'var(--ok)' : pc >= 50 ? 'var(--txt)' : 'var(--dim)') + '">' + pc + '% <span style="font-weight:normal;color:var(--dim)">(' + x.tot + '/' + x.n + ')</span></td></tr>'; }).join('')
+      + '</tbody></table></div>';
+  };
+  const cop = S => { const m = met === 'golast' ? 'gol' : met; if (m === 'giallo') return ''; const n = S.trovati[m] || 0;
+    return S.nRighe && n / S.nRighe < 0.5 ? '<div style="color:var(--orange);margin:4px 0">' + esc(S.nome) + ': il dato &laquo;' + esc(nomeM) + '&raquo; c\'&egrave; solo su ' + n + ' righe su ' + S.nRighe + '.</div>' : ''; };
+  safeHtml('giocatori-box', '<div style="margin:4px 0 8px">' + esc(nomeM) + ' &middot; statistiche giocatori trovate per ' + D.H.nDati + '/' + D.H.nPartite + ' e ' + D.A.nDati + '/' + D.A.nPartite + ' partite</div>'
+    + cop(D.H) + tab(D.H) + '<div style="height:10px"></div>' + cop(D.A) + tab(D.A));
+}
+
 // Il campione di ruolo e' un SOTTOINSIEME delle ultime `limit` complessive: con
 // limit=15 restano 8 partite, misurate. A 1 diventa indipendente, cioe' le ultime
 // `limit` giocate nel ruolo, che e' quello che AGENTS.md ha descritto per parecchie
@@ -1733,7 +1871,8 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
     logHtml += `<tr><td>${det.dateShort}</td><td>${det.isH ? 'vs' : '@'} ${det.avv.substring(0,12)}</td><td>${esito}</td><td><b>${det.gf}-${det.ga}</b></td><td style="color:var(--dim)">${safeN != null ? safeN.toFixed(1) : '-'}</td><td>${det.oppModulo}</td></tr>`;
   });
   return { overall: outOverall, role: outRole, logHtml, teamName, isHomeTeamUI,
-           lineupHist: storicoFormazioni(overallMatches, matchDetails) };
+           lineupHist: storicoFormazioni(overallMatches, matchDetails),
+           matchList: overallMatches.map(m => ({ id: m.id, isH: m.home_team.id === teamId })) };
 }
 
 function _shrunkMean(roleArr, overallArr, fallback, k = 5) {
@@ -2038,7 +2177,7 @@ function renderVerdetti(mk, base, adv) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b44';
+window.__SCANNER_BUILD = '0905-b45';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -2364,6 +2503,9 @@ async function avviaScanner() {
     const _lgM = globalLeagueMatchesCache.filter(m => !lId || m.league_id === lId);
     const _SH = indiciStanchezza(hId, dateInput, _lgM, _coppe), _SA = indiciStanchezza(aId, dateInput, _lgM, _coppe);
     window.__FATIGUE_DEBUG = { stagione: _coppe.season, competizioni: _coppe.ok, partiteCoppe: _coppe.n, H: _SH, A: _SA };
+    window.__PLAYER_CTX = { H: { id: hId, nome: hName, partite: dH.matchList, xi: _luT && _luT.home ? _luT.home.xi : null },
+                            A: { id: aId, nome: aName, partite: dA.matchList, xi: _luT && _luT.away ? _luT.away.xi : null } };
+    window.__PLAYER_DATA = null;
     const targetMs = new Date(matchTime).getTime();
     const ELO = buildGlobalElo(targetMs);
     const eloSeriesH = ELO.series[hId] || []; const eloSeriesA = ELO.series[aId] || [];
@@ -2862,6 +3004,7 @@ async function avviaScanner() {
     renderVerdetti({ p1:m1, pX:mX, p2:m2, p1X:m1+mX, pX2:mX+m2, p12:m1+m2,
                      pOv:dcOv, pUn:dcUn, pGG:dcGG, pNG:dcNG }, _LGBASE, advRole);
     renderFormazioni(_FH, _FA, _SH, _SA);
+    safeHtml('giocatori-box', 'Premi il bottone per le statistiche dei giocatori di ' + _escHtml(hName) + ' e ' + _escHtml(aName) + '.');
     const odd1 = probsRole.p1 > 0 ? (1/probsRole.p1).toFixed(2) : "N/A"; const oddX = probsRole.pX > 0 ? (1/probsRole.pX).toFixed(2) : "N/A"; const odd2 = probsRole.p2 > 0 ? (1/probsRole.p2).toFixed(2) : "N/A";
     const oddM1 = m1 > 0 ? (1/m1).toFixed(2) : "N/A"; const oddMX = mX > 0 ? (1/mX).toFixed(2) : "N/A"; const oddM2 = m2 > 0 ? (1/m2).toFixed(2) : "N/A";
     safeTxt('m-odd-1', oddM1); safeTxt('m-odd-x', oddMX); safeTxt('m-odd-2', oddM2);
