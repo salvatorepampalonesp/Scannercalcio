@@ -31,7 +31,12 @@ manager, nessun test runner: si aprono i file nel browser. Tutto il codice sta i
 
 Dati da PitchAPI via proxy Cloudflare (`PITCH_BASE` in `scanner.html`). Endpoint per
 partita: `/stats`, `/lineups`, `/advanced`, `/events`, tutti attraverso `fetchMatchRaw`,
-che li mette in `RAW_CACHE`.
+che li mette in `RAW_CACHE`. Dal `b43` il motore chiede anche la formazione della partita da
+prevedere (`/matches/{id}/lineups`) e, se la partita non è nell'archivio di lega perché non
+è ancora giocata, la cerca con `/date/{giorno}?status=all`. La documentazione dell'API
+(51 pagine, settembre 2026) elenca anche statistiche per giocatore (`/players`,
+`/advanced/players`), tiri (`/shots`), `/h2h`, arbitro, heatmap e 42 leghe fra cui coppe e
+competizioni UEFA; nessuna quota dei bookmaker.
 
 ## Regole di lavoro
 
@@ -39,7 +44,7 @@ che li mette in `RAW_CACHE`.
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b42`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b43`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -90,6 +95,10 @@ spostala in *Cosa è già stato provato* con i numeri, e aggiorna *Stato attuale
 
 Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export recente.
 
+- [ ] **Le formazioni (`b43`).** Rifare le cinque leghe col `b43` (stesse stagioni, una per
+  file, in copia conforme: la formazione della partita costa una chiamata in più) e applicare
+  la regola scritta prima di vederle. È l'unica strada rimasta per anticipare le sorprese.
+  Vedi *Formazioni e assenze*.
 - [ ] **Il candidato Elo, secondo giro, se si vuole.** `ELO_1X2_W` 0.40 con `ELO_SCALE`
   2.00 **non ha passato** il test registrato: LaLiga −0.0042 e Bundesliga −0.0078, ma Ligue 1
   +0.0004, e la regola chiedeva un miglioramento in ciascuna lega. Resta 0.75 / 1.25. Il
@@ -167,12 +176,12 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   probabili *in questa partita che nella partita tipo della lega*. Un 3-1 a 1.8× la sua
   frequenza dice qualcosa, un 1-1 al 12% no. È la parte sopravvissuta dell'idea dello
   «scenario singolo».
-- [ ] **Formazioni e assenze** (`/lineups` della partita, se esce prima del calcio d'inizio):
-  l'unica fonte rimasta per anticipare le sorprese, perché forma, riposo e fortuna non le
-  vedono (vedi *Cosa è già stato provato*). L'undici abituale si ricava a costo zero dai
-  `/lineups` dello storico, già scaricati; serve una chiamata per la partita, e solo i
-  titolari (le sostituzioni sono dopo il fischio). Da misurare prima: se l'API la dà in
-  anticipo, e quanto sposta.
+- [ ] **Assenze pesate per valore**, se l'indice per presenze del `b43` mostra il segnale:
+  il peso di ogni giocatore da xG+xA o VAEP (`/advanced/players`) invece che dalle presenze.
+  Una chiamata in più per ogni partita dello storico.
+- [ ] **Il riposo vero, con coppe ed Europa.** Il riposo misurato finora conta solo la lega
+  (vedi *Cosa è già stato provato*). PitchAPI ha coppe e competizioni UEFA, con gli stessi id
+  di squadra: pochi archivi in più danno i giorni di riposo veri e il turno infrasettimanale.
 - [ ] **I parametri interni di Markov**: verificati solo gli invarianti.
 
 ### 5. UI e pulizie
@@ -200,7 +209,7 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b42`)
+## Stato attuale (`b43`)
 
 **1X2.** Pick azzeccato 52.9% (±3.0) contro il 40.2% del «gioca sempre in casa» in Serie
 A, 52.8% contro 43.1% in Premier, 54.2% contro 45.8% in LaLiga, 51.8% contro 42.0% in
@@ -230,6 +239,10 @@ riposo o fortuna sotto-xG (vedi *Cosa è già stato provato*): l'unico segnale �
 fra modello ed Elo, +0.57 punti di prese. Il margine vero è la selezione: giocando il
 100 / 50 / 30 / 20 / 10% del calendario, in ordine di probabilità del pick, si prende il
 52.8 / 62.0 / 68.6 / 72.8 / 78.2%.
+
+**Formazioni.** Dal `b43` il motore sa chi manca oggi rispetto all'undici abituale (card
+«Formazioni — chi manca oggi», sezione CSV `FORMAZIONI`), ma non lo usa ancora: è in misura,
+con la regola scritta prima del batch. Vedi *Formazioni e assenze*.
 
 **La selezione vale più dell'accuratezza.** Prima di aggiungere una feature, chiedersi se
 il segnale non sia già nell'output, solo mal etichettato.
@@ -568,7 +581,7 @@ testo, lo modifica con delle regex e lo esegue con `new Function`. Dipende quind
    `/(const\s+confidence\s*=\s*Math\.round\([^;]*;)/`. Non riscriverla e non citarla
    testualmente altrove nel file. Tutto ciò che l'hook legge va prodotto **prima**:
    `__PRED_STATS`, `__PRED_DEBUG`, `__RESID_DEBUG`, `__GOALS_DEBUG`, `__ELO_DEBUG`,
-   `__ELO_DEBUG_OVER`, `__UNIT_DEBUG`, `__ENS_DEBUG`, `__SCOPE_DEBUG`, `m1/mX/m2`, `probsRole`,
+   `__ELO_DEBUG_OVER`, `__UNIT_DEBUG`, `__ENS_DEBUG`, `__SCOPE_DEBUG`, `__LINEUP_DEBUG`, `m1/mX/m2`, `probsRole`,
    `probsOver`, `probsOL`, `mk_ro`, `mk_ov`, `dcMat`, `lamH_mix/lamA_mix`,
    `lamH_over/lamA_over`. Una variabile dichiarata dopo finisce a `null` senza errori (una
    colonna di `N/D` nel CSV). Aggancio di riserva: le tre righe `const m1 = …; const mX = …;
@@ -651,21 +664,24 @@ dall'id della partita e servita al posto di PitchAPI, con una neopromossa e senz
 `/advanced` sulla stagione piu' vecchia come l'API vera. Lo Scanner si guida come lo usa
 l'utente (`caricaSquadreLega` e `avviaScanner` sulle partite di una data), il Comparatore gira
 in ogni modalita', e si confrontano **ogni scrittura a schermo del motore** (`safeTxt` e
-`safeHtml`, strumentate nei due file allo stesso modo: 188 per partita) e **81 righe del CSV**
+`safeHtml`, strumentate nei due file allo stesso modo: 189 per partita) e **101 righe del CSV**
 che riportano un numero dello Scanner (1X2, confidence di tutti i mercati, i sei modelli,
 GG e Over, corner/tiri/gialli e le loro linee, handicap, multigol, Elo, tabellone voce per
-voce, certificato). Tre modalita' sono controlli di potenza, e passano solo se il certificato
-dice NO col motivo giusto.
+voce, certificato, e dal `b43` gli indici delle formazioni). Tre modalita' sono controlli di
+potenza, e passano solo se il certificato dice NO col motivo giusto. Dal `b43` la lega finta ha
+anche le formazioni (rosa di 18, ogni titolare abituale riposa col 15%, la squadra 3 cambia
+allenatore a stagione in corso) e i marcatori presi dai titolari, e il banco stampa gli indici
+di ogni partita: se fossero tutti vuoti il confronto non proverebbe niente.
 
-Esito al `b42` (storico 30), a 390px:
+Esito al `b43` (storico 30), a 390px:
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
-| una partita, tutte del giorno, intervallo | 3/3 | 0 su 188 | 0 su 81 | 0 |
-| batch per stagioni, sweep | 89/89, solo la stagione caricata | 0 su 188 | 0 su 81 | 0 |
+| una partita, tutte del giorno, intervallo | 3/3 | 0 su 189 | 0 su 101 | 0 |
+| batch per stagioni, sweep | 89/89, solo la stagione caricata | 0 su 189 | 0 su 101 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
-| `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 122-153 | 69-76 | 0 |
-| `vecchio`: motore `b41` caricato (controllo) | 0/3, «motore caricato diverso ...» | 2-5 | 6-7 | 0 |
+| `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 123-154 | 71-82 | 0 |
+| `vecchio`: motore `b42` caricato (controllo) | 0/3, «motore caricato diverso ...» | 1 | 21 | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -673,7 +689,8 @@ Comparatore. Al `b40` il motore cambia davvero (lo storico passa a 30, 131-152 s
 diverse col `b39`). Al `b41` il controllo col `b40` vede solo le due correzioni: le confidence
 degli esiti non scelti (36/36/36 → 34/30/33) e il tabellone, dove sale in cima un mercato sui
 numeri. Al `b42` il controllo col `b41` vede solo i tiri in porta: le quattro linee Over, la
-loro riga nel tabellone e il certificato.
+loro riga nel tabellone e il certificato. Al `b43` il controllo col `b42` vede solo la card
+delle formazioni, le venti righe nuove del CSV e il certificato: le probabilità non si muovono.
 
 **Cosa resta fuori, e va saputo:**
 
@@ -1031,6 +1048,64 @@ dopo il test, ha la stessa cresta: il minimo sta vicino
 al candidato (−0.0042 a 0.40 / 2.00, −0.0045 a 0.30 / 2.50, sulla stessa cresta), e la pendenza del prodotto
 finito passa da 1.163 a 1.051.
 
+## Formazioni e assenze
+
+**Perché.** Il pick sbaglia il 47.2% delle partite: 25.6 punti sono pareggi, 21.6 vittorie
+dello sfavorito. Forma, riposo, momento dell'Elo e fortuna sotto-xG non anticipano niente
+(vedi *Cosa è già stato provato*): quello che il motore sa già dal passato, le probabilità lo
+contengono. L'informazione nuova, se c'è, è chi scende in campo. PitchAPI dà la formazione
+della partita prima del fischio: probabile fino a 48 ore prima (`confirmed: false`, con un
+`lineup_type` come `lastStarting11`), confermata a ridosso del calcio d'inizio
+(`confirmed: true`); per le 26 leghe ricostruite da Opta solo quella confermata, circa 30
+minuti prima. Nel backtest la formazione di una partita giocata è quella reale, cioè quella
+confermata: si prendono **solo i titolari**, perché panchina, cambi e marcatori sono dopo il
+fischio.
+
+**Cosa calcola il `b43`.** I `/lineups` dello storico il motore li scaricava già e ne usava
+solo il modulo, quindi l'undici abituale costa zero chiamate. Per ogni squadra
+`storicoFormazioni` tiene, dalle partite di `overall`: la quota di presenze da titolare di
+ogni giocatore nelle ultime 10 formazioni (`LINEUP_WINDOW`), la rosa (in campo o in panchina
+nelle ultime 5, `LINEUP_SQUAD_WINDOW`), i gol di ogni giocatore dagli `/events` dello storico,
+il capitano più frequente, l'allenatore dell'ultima formazione e da quante partite c'è.
+`partitaBersaglio` trova l'id della partita nell'archivio di lega, o con `/date/{giorno}?status=all`
+se non c'è (le partite da giocare); `formazioneBersaglio` ne legge i titolari (dalla
+`RAW_CACHE` se c'è, altrimenti una chiamata, tenuta in cache solo se confermata).
+`indiciFormazione`:
+
+| indice | definizione |
+|---|---|
+| titolari abituali assenti | giocatori con quota ≥ 0.5 (`LINEUP_REGULAR`) ancora in rosa che oggi non partono |
+| peso degli assenti | la quota degli assenti divisa per quella di tutti gli abituali: 0 è l'undici tipo, 0.4 mezza squadra cambiata |
+| gol degli assenti | quota dei gol di squadra dello storico segnati dagli abituali assenti |
+| cambi dall'ultima | titolari dell'ultima partita che oggi non partono |
+| capitano assente, allenatore nuovo, partite con l'allenatore | dall'ultima formazione dello storico contro quella di oggi |
+
+Sotto le 5 formazioni in archivio (`LINEUP_MIN_HIST`) gli indici restano vuoti. Un titolare
+fuori da cinque partite non è più in rosa, quindi non conta come assente: la squadra si è già
+adattata, e l'Elo e gli xG lo sanno. Conta chi manca **oggi**.
+
+**Non entrano nelle probabilità.** Il `b43` li mostra (card «Formazioni — chi manca oggi»,
+che dice se la formazione è probabile o confermata) e li esporta (sezione CSV `FORMAZIONI`),
+niente altro. Col motore `b42` caricato il banco vede diverse solo quella card, le venti righe
+del CSV e il certificato.
+
+**Il leakage.** La partita bersaglio entra solo coi titolari, l'allenatore e `confirmed`.
+Sul banco, drogando panchina e marcatori della partita bersaglio (quattro gol di un giocatore
+di panchina) gli indici e l'1X2 restano identici al bit; drogando tre titolari e l'allenatore
+gli indici cambiano (assenti 1 → 4, peso 0.08 → 0.35, allenatore nuovo) e l'1X2 resta
+identico, come deve finché non li usa.
+
+**La regola, scritta prima del batch.** Si rifanno le cinque leghe col `b43`, stesse stagioni,
+una per file, in copia conforme. **Un solo indice primario**: la differenza fra il peso degli
+assenti di casa e di trasferta, aggiunta al log-odds bersaglio, `lgTarget + b·(pesoH − pesoA)`,
+con `b` stimato fuori lega (su quattro leghe, misurato sulla quinta). **Passa** se la logloss
+1 contro 2 migliora in almeno quattro leghe su cinque, sull'insieme con `z ≤ −2`, e le prese
+del pick non scendono. Gol degli assenti, cambi dall'ultima e allenatore nuovo sono secondari:
+tre prove in più, quindi contano solo con `z ≤ −3`. Sui mercati gol (Over e GG col gol degli
+assenti) è solo descrittivo. Se passa, entra nel motore con il `b` stimato, e **solo con la
+formazione confermata**: con quella probabile l'indice resta a schermo e non sposta niente.
+Se non passa, la card resta come informazione e questa sezione dice perché.
+
 ## Registro delle costanti
 
 | costante | valore | tipo | da dove viene |
@@ -1069,6 +1144,7 @@ finito passa da 1.163 a 1.051.
 | `LEAGUE_HALFLIFE_DAYS` | 0 | non stimata, dichiarata | un backtest decide: vedi *Da fare* |
 | `ROLE_SCOPE_INDEPENDENT` | 0 | misurata `b26` | A/B appaiato, 1133 partite: 0.0002 di logloss |
 | `CMP_K_LIST` (Comparatore) | [4, 2, 1] | strumento `b36` | il primo valore deve restare il `SHRINK_K` del motore |
+| `LINEUP_WINDOW` / `LINEUP_SQUAD_WINDOW` / `LINEUP_REGULAR` / `LINEUP_MIN_HIST` | 10 / 5 / 0.5 / 5 | definizione di una misura (`b43`) | non entrano nelle probabilità: dicono chi è un titolare abituale e chi è ancora in rosa. Se l'indice passa la regola, vanno rimisurati prima di diventare costanti del motore. Vedi *Formazioni e assenze* |
 
 ## Le costanti messe a mano
 
@@ -1734,6 +1810,12 @@ di lega, Reale = SI/NO, Esito = scarto e verdetto. La vecchia riga `GIOCABILE (>
 chiama ora `PICK >=55% (regola del backtest, non il tabellone)`: era la soglia del file, e
 aveva lo stesso nome di un verdetto del tabellone che vuol dire un'altra cosa.
 
+La sezione `FORMAZIONI` (dal `b43`) dice per ogni squadra se la formazione della partita
+c'era e se era confermata, quante formazioni dello storico l'hanno misurata, e gli indici di
+*Formazioni e assenze*. `Formazioni: partita bersaglio trovata` a `no` vuol dire che la
+partita non è stata trovata nell'archivio né per data; `disponibile` a `no` che l'API non aveva
+i titolari; `N/D` dappertutto che il motore caricato è precedente al `b43`.
+
 Poi: ogni partita occupa **4 colonne** (Previsto, Confidence, Reale, Esito); le sezioni CASA e
 TRASFERTA ripetono le stesse etichette (la seconda occorrenza è la trasferta); le
 probabilità hanno una cifra decimale. Per ricostruire qualcosa fuori dal motore, fare **per
@@ -1918,3 +2000,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b41` | il campione in copia conforme (Serie A 2023/24–2025/26, 1134 su 1134): tarature `b30`–`b38` riconfermate, il clamp dell'HFA non morde mai (il 27.6% erano archivi corti). Due difetti corretti: i mercati sui numeri senza base quando la coppia non è sovradispersa (gialli sul 73% delle partite; proposta migliore +17.6 → +18.9), e `CONF_1X2_TABLE` piatta a 36 sugli esiti non scelti (ora parte da `[0,0]`) |
 | — | le altre quattro leghe in copia conforme (5230 partite in tutto): tarature riconfermate in cinque leghe su cinque; due candidati registrati prima di vedere tre leghe; il riferimento dei mercati sui numeri sbaglia da lega a lega; il muro dei gol segue i gol per NPxG |
 | `b42` | lo squilibrio sui tiri in porta (`SOT_ELO_B = 0.0030`), l'unico dei due candidati che ha passato il test. Il peso dell'Elo resta 0.75 / 1.25 |
+| `b43` | le formazioni: chi manca rispetto all'undici abituale, capitano, allenatore nuovo, dalla formazione della partita e dai `/lineups` dello storico. Card e CSV, probabilità invariate; regola del test scritta prima del batch |
