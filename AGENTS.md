@@ -167,7 +167,12 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   probabili *in questa partita che nella partita tipo della lega*. Un 3-1 a 1.8× la sua
   frequenza dice qualcosa, un 1-1 al 12% no. È la parte sopravvissuta dell'idea dello
   «scenario singolo».
-- [ ] **Probabili formazioni** (`/lineups` in versione prevista): da valutare.
+- [ ] **Formazioni e assenze** (`/lineups` della partita, se esce prima del calcio d'inizio):
+  l'unica fonte rimasta per anticipare le sorprese, perché forma, riposo e fortuna non le
+  vedono (vedi *Cosa è già stato provato*). L'undici abituale si ricava a costo zero dai
+  `/lineups` dello storico, già scaricati; serve una chiamata per la partita, e solo i
+  titolari (le sostituzioni sono dopo il fischio). Da misurare prima: se l'API la dà in
+  anticipo, e quanto sposta.
 - [ ] **I parametri interni di Markov**: verificati solo gli invarianti.
 
 ### 5. UI e pulizie
@@ -216,6 +221,15 @@ In Premier (1135 partite, stesse regole): ≥50 / 55 / 60 / 65 / 70 azzeccano 62
 75.0 / 80.7 / 84.1%, su 47 / 34 / 23 / 15 / 9%. In Bundesliga (912) 62.6 / 69.2 / 73.7 /
 77.4 / 81.8%, su 47 / 34 / 22 / 15 / 8%. In Ligue 1 (915) 59.8 / 66.5 / 69.8 / 72.6 / 78.0%,
 su 46 / 29 / 19 / 10 / 4%.
+
+**Dove vanno gli errori, e dove sta il margine.** Sulle cinque leghe (5230 partite) il pick
+sbaglia il 47.2%: 25.6 punti sono pareggi (il pick non gioca mai `X`, e `pX` non si prevede)
+e 21.6 sono vittorie dello sfavorito. Anche indovinando sempre chi vince fra le partite non
+pari si arriverebbe al 74.4%. Le sorprese non si anticipano con forma, momento dell'Elo,
+riposo o fortuna sotto-xG (vedi *Cosa è già stato provato*): l'unico segnale è il disaccordo
+fra modello ed Elo, +0.57 punti di prese. Il margine vero è la selezione: giocando il
+100 / 50 / 30 / 20 / 10% del calendario, in ordine di probabilità del pick, si prende il
+52.8 / 62.0 / 68.6 / 72.8 / 78.2%.
 
 **La selezione vale più dell'accuratezza.** Prima di aggiungere una feature, chiedersi se
 il segnale non sia già nell'output, solo mal etichettato.
@@ -1280,6 +1294,8 @@ misurate.
 | Ricalibrare la confidence a retta | **sostituita da una tabella** | vedi *La confidence* |
 | Arretrare il taglio temporale a `x-1` | **no** | vedi *L'orario non è affidabile* |
 | Ordinare il tabellone per probabilità grezza | **no** | guadagno piatto (+1.4 … +7.1) contro monotono per scarto |
+| Anticipare le sorprese con forma (punti nelle ultime 5), momento dell'Elo (ultime 5), giorni di riposo, fortuna (gol − NPxG, ultime 10), NPxG recenti | **no** (`b42`) | 5230 partite, fuori lega (stimato su quattro leghe, misurato sulla quinta), sopra `lgTarget`: logloss 1 contro 2 −0.0000 / −0.0001 / +0.0001 / −0.0012 (`z = −1.40`) / −0.0020 (`z = −1.85`), prese +0.13 / +0.10 / +0.04 / +0.17 / +0.06 punti; tutte insieme +0.31. Il riposo conta solo le partite di lega: le coppe non sono nell'archivio |
+| Il disaccordo fra modello ed Elo come segnale di sorpresa | **è il candidato Elo visto da un'altra parte** (`b42`) | fuori lega −0.0037 (`z = −2.47`), prese +0.57 punti, Ligue 1 di nuovo contraria (+0.0020). Nelle 717 partite (14%) in cui modello ed Elo indicano favoriti diversi il pick prende il 37.7% (41.4% col disaccordo in regressione), contro il 55.2% delle altre. A parità di partite giocate la selezione non migliora (top 20%: 72.8 contro 73.2%) |
 
 **Le cose che hanno retto**, in ordine di quanto valgono:
 
