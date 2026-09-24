@@ -174,7 +174,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b43</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b44</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -287,12 +287,14 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
   </div>
 
   <div class="card" id="card-formazioni" style="border-top:3px solid var(--blue)">
-    <div class="section-title" style="color:var(--blue)">&#128101; Formazioni &mdash; chi manca oggi</div>
+    <div class="section-title" style="color:var(--blue)">&#128101; Formazioni e stanchezza &mdash; chi manca, chi &egrave; stanco</div>
     <div style="font-size:11px;color:var(--dim);margin-bottom:10px">
       <b>Titolari abituali</b> = chi &egrave; partito titolare in almeno met&agrave; delle ultime 10 partite ed &egrave;
       ancora in rosa (in campo o in panchina nelle ultime 5). Gli indici valgono solo con la formazione
       <b>confermata</b>, che l'API pubblica a ridosso del calcio d'inizio: prima c'&egrave; solo quella probabile.
-      <b>Non entrano ancora nelle probabilit&agrave;</b>: si stanno misurando sul backtest.
+      Il <b>riposo</b> conta campionato e coppe europee (Champions, Europa e Conference League), non le
+      coppe nazionali n&eacute; le nazionali.
+      <b>Niente di questo entra ancora nelle probabilit&agrave;</b>: si sta misurando sul backtest.
     </div>
     <div id="formazioni-box" style="font-size:12px;color:var(--dim)">--</div>
   </div>
@@ -1333,6 +1335,41 @@ async function formazioneBersaglio(id) {
   return out;
 }
 
+const UEFA_IDS = ['l_0bfbkO', 'l_38d9HA', 'l_2WZ2tt'];
+const COPPE_CACHE = {};
+async function archivioCoppe(dateStr) {
+  const y = +dateStr.slice(0, 4), mo = +dateStr.slice(5, 7);
+  const season = mo >= 7 ? `${y}/${y + 1}` : `${y - 1}/${y}`;
+  if (COPPE_CACHE[season]) return COPPE_CACHE[season];
+  let all = [], ok = 0;
+  for (const lid of UEFA_IDS) {
+    const json = await apiCall(`/leagues/${lid}/matches?season=${encodeURIComponent(season)}&status=all`, true);
+    const m = json ? (json.data?.matches || json.matches || null) : null;
+    if (Array.isArray(m)) { ok++; all = all.concat(m); }
+  }
+  const out = { season, ok, n: all.length, matches: all };
+  if (ok === UEFA_IDS.length) COPPE_CACHE[season] = out;
+  return out;
+}
+
+function indiciStanchezza(teamId, dateStr, leagueMatches, coppe) {
+  const tMs = Date.parse(dateStr + 'T00:00:00Z');
+  const gg = m => Math.round((tMs - Date.parse(m.time_utc.slice(0, 10) + 'T00:00:00Z')) / 86400000);
+  const mine = m => m && m.home_team && m.away_team && typeof m.time_utc === 'string' && (m.home_team.id === teamId || m.away_team.id === teamId);
+  const prima = []; let dopo = null;
+  leagueMatches.forEach(m => { if (mine(m) && m.status === 'finished' && _isPast(m.time_utc, tMs, dateStr)) prima.push({ g: gg(m), coppa: false }); });
+  (coppe ? coppe.matches : []).forEach(m => {
+    if (!mine(m)) return;
+    if (_isPast(m.time_utc, tMs, dateStr)) { if (m.status === 'finished') prima.push({ g: gg(m), coppa: true }); }
+    else if (m.time_utc.slice(0, 10) > dateStr) { const g = -gg(m); if (dopo === null || g < dopo) dopo = g; }
+  });
+  const minG = arr => arr.length ? Math.min(...arr.map(x => x.g)) : null;
+  const pc = prima.filter(x => x.coppa);
+  return { riposo: minG(prima), riposoLega: minG(prima.filter(x => !x.coppa)),
+           partite14: prima.filter(x => x.g <= 14).length,
+           coppaPrima: minG(pc), coppaDopo: dopo, inEuropa: pc.length > 0 || dopo !== null };
+}
+
 // Il campione di ruolo e' un SOTTOINSIEME delle ultime `limit` complessive: con
 // limit=15 restano 8 partite, misurate. A 1 diventa indipendente, cioe' le ultime
 // `limit` giocate nel ruolo, che e' quello che AGENTS.md ha descritto per parecchie
@@ -1860,12 +1897,14 @@ function _leagueKey() {
   return null;
 }
 
-function renderFormazioni(FH, FA) {
+function renderFormazioni(FH, FA, SH, SA) {
   const esc = t => String(t).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
   const st = F => !F.disponibile ? 'non disponibile' : (F.confermata ? 'confermata' : 'probabile' + (F.tipo ? ' (' + esc(F.tipo) + ')' : ''));
   const pc = v => v == null ? '--' : Math.round(100 * v) + '%';
   const ab = F => F.abitualiAssenti == null ? '--' : F.abitualiAssenti + ' (' + pc(F.pesoAssenti) + ' del peso)';
   const sn = v => v == null ? '--' : (v ? 'SI' : 'no');
+  const gi = v => v == null ? '--' : String(v);
+  const eu = S => !S.inEuropa ? 'no' : [S.coppaPrima != null ? S.coppaPrima + ' gg fa' : null, S.coppaDopo != null ? 'fra ' + S.coppaDopo + ' gg' : null].filter(Boolean).join(' &middot; ');
   const al = F => !F.allenatore ? '--' : (esc(F.allenatore) + (F.allenatoreNuovo ? ' &middot; <b>NUOVO</b>' : (F.partiteAllenatore != null ? ' &middot; ' + F.partiteAllenatore + '+ partite' : '')));
   const rows = [
     ['Formazione', st(FH), st(FA)],
@@ -1874,7 +1913,10 @@ function renderFormazioni(FH, FA) {
     ['Cambi dall\'ultima', FH.cambi == null ? '--' : FH.cambi, FA.cambi == null ? '--' : FA.cambi],
     ['Capitano assente', sn(FH.capitanoAssente), sn(FA.capitanoAssente)],
     ['Allenatore', al(FH), al(FA)],
-    ['Formazioni nello storico', FH.nStorico, FA.nStorico]
+    ['Formazioni nello storico', FH.nStorico, FA.nStorico],
+    ['Giorni di riposo', gi(SH.riposo) + (SH.riposo !== SH.riposoLega ? ' (lega ' + gi(SH.riposoLega) + ')' : ''), gi(SA.riposo) + (SA.riposo !== SA.riposoLega ? ' (lega ' + gi(SA.riposoLega) + ')' : '')],
+    ['Partite in 14 giorni', SH.partite14, SA.partite14],
+    ['Coppa europea', eu(SH), eu(SA)]
   ];
   safeHtml('formazioni-box', '<div class="tbl-scroll"><table class="table-ui table-compact"><thead><tr><th style="text-align:left"></th><th>Casa</th><th>Trasf.</th></tr></thead><tbody>'
     + rows.map(r => '<tr><td style="text-align:left">' + r[0] + '</td><td>' + r[1] + '</td><td>' + r[2] + '</td></tr>').join('')
@@ -1996,7 +2038,7 @@ function renderVerdetti(mk, base, adv) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b43';
+window.__SCANNER_BUILD = '0905-b44';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -2311,13 +2353,17 @@ async function avviaScanner() {
     document.getElementById('console-loader').style.display = 'none'; document.getElementById('btn-avvia').disabled = false; document.getElementById('btn-avvia').innerHTML = "🚀 2. ESTRAI DATI E SIMULA MODELLI";
     if(dH.overall.n === 0 || dA.overall.n === 0) return alert("Storico insufficiente per una delle due squadre prima della data target.");
 
+    const lId = document.getElementById('sel-league').value;
+
     const _tgtId = await partitaBersaglio(hId, aId, dateInput);
     const _luT = await formazioneBersaglio(_tgtId);
     const _FH = indiciFormazione(dH.lineupHist, _luT && _luT.home);
     const _FA = indiciFormazione(dA.lineupHist, _luT && _luT.away);
     window.__LINEUP_DEBUG = { id: _tgtId, H: _FH, A: _FA };
-
-    const lId = document.getElementById('sel-league').value;
+    const _coppe = await archivioCoppe(dateInput);
+    const _lgM = globalLeagueMatchesCache.filter(m => !lId || m.league_id === lId);
+    const _SH = indiciStanchezza(hId, dateInput, _lgM, _coppe), _SA = indiciStanchezza(aId, dateInput, _lgM, _coppe);
+    window.__FATIGUE_DEBUG = { stagione: _coppe.season, competizioni: _coppe.ok, partiteCoppe: _coppe.n, H: _SH, A: _SA };
     const targetMs = new Date(matchTime).getTime();
     const ELO = buildGlobalElo(targetMs);
     const eloSeriesH = ELO.series[hId] || []; const eloSeriesA = ELO.series[aId] || [];
@@ -2815,7 +2861,7 @@ async function avviaScanner() {
     window.__BASE_DEBUG = _LGBASE;
     renderVerdetti({ p1:m1, pX:mX, p2:m2, p1X:m1+mX, pX2:mX+m2, p12:m1+m2,
                      pOv:dcOv, pUn:dcUn, pGG:dcGG, pNG:dcNG }, _LGBASE, advRole);
-    renderFormazioni(_FH, _FA);
+    renderFormazioni(_FH, _FA, _SH, _SA);
     const odd1 = probsRole.p1 > 0 ? (1/probsRole.p1).toFixed(2) : "N/A"; const oddX = probsRole.pX > 0 ? (1/probsRole.pX).toFixed(2) : "N/A"; const odd2 = probsRole.p2 > 0 ? (1/probsRole.p2).toFixed(2) : "N/A";
     const oddM1 = m1 > 0 ? (1/m1).toFixed(2) : "N/A"; const oddMX = mX > 0 ? (1/mX).toFixed(2) : "N/A"; const oddM2 = m2 > 0 ? (1/m2).toFixed(2) : "N/A";
     safeTxt('m-odd-1', oddM1); safeTxt('m-odd-x', oddMX); safeTxt('m-odd-2', oddM2);

@@ -67,6 +67,17 @@ SEASONS.forEach((s, si) => {
   }));
 });
 
+// coppe europee finte: le squadre 0 e 1 giocano 3 giorni prima e 4 dopo ogni giornata, la 2 solo dopo
+const UEFA = { l_0bfbkO: {}, l_38d9HA: {}, l_2WZ2tt: {} };
+SEASONS.forEach((s, si) => {
+  const t0 = Date.UTC(2023 + si, 7, 19); UEFA.l_0bfbkO[s] = [];
+  for (let ri = 0; ri < 18; ri++) for (const [t, off] of [[0, -3], [1, -3], [0, 4], [1, 4], [2, 4]]) {
+    const day = new Date(t0 + (ri * 14 + off) * 86400000).toISOString().slice(0, 10), r = rng(`u${si}r${ri}t${t}${off}`);
+    UEFA.l_0bfbkO[s].push({ id: `u${si}r${ri}t${t}${off < 0 ? 'a' : 'b'}`, home_team: team(t), away_team: { id: 't_9' + t, name: 'Estero ' + t },
+      status: 'finished', time_utc: `${day}T20:00:00Z`, score_home: pois(1.3, r), score_away: pois(1.1, r) });
+  }
+});
+
 const PEND = new Set(process.env.PENDENTI ? ['m2r10k0', 'm2r10k1'] : []);
 const pub = m => PEND.has(m.id) ? ({ id: m.id, home_team: { ...m.home_team }, away_team: { ...m.away_team }, status: 'scheduled',
                     time_utc: m.time_utc, score_home: null, score_away: null })
@@ -162,6 +173,7 @@ function api(url) {
   if (mm) {
     const s = u.searchParams.get('season');
     if (mm[1] === LEAGUE && BY_SEASON[s]) return { data: { matches: BY_SEASON[s].map(pub) } };
+    if (UEFA[mm[1]]) return { data: { matches: (UEFA[mm[1]][s] || []).map(m => ({ ...m })) } };
     return { data: { matches: [] } };
   }
   mm = p.match(/^\/date\/(\d{4}-\d{2}-\d{2})$/);
@@ -228,7 +240,8 @@ async function newPage(browser, base) {
 // Lo stato del motore dopo un giro: le scritture a schermo e quello che il motore espone
 const SNAP = `(() => ({ rec: window.__REC_CUR || [], verd: JSON.parse(JSON.stringify(window.__VERDETTI || null)),
   verdTxt: window.__VERDETTI_TXT || null, master: JSON.parse(JSON.stringify(window.__MASTER || null)),
-  confMk: JSON.parse(JSON.stringify(window.__CONF_MK || null)), lineup: JSON.parse(JSON.stringify(window.__LINEUP_DEBUG || null)) }))()`;
+  confMk: JSON.parse(JSON.stringify(window.__CONF_MK || null)), lineup: JSON.parse(JSON.stringify(window.__LINEUP_DEBUG || null)),
+  fatigue: JSON.parse(JSON.stringify(window.__FATIGUE_DEBUG || null)) }))()`;
 
 async function runScanner(browser, base, matches, limit) {
   const page = await newPage(browser, base);
@@ -428,6 +441,21 @@ function csvChecks(S, csv, col) {
     eqs('formazione ' + nome + ': allenatore nuovo', sn(F.allenatoreNuovo), c('allenatore nuovo'));
     cmp('formazione ' + nome + ': partite con l allenatore', F.partiteAllenatore, c('partite con l allenatore'));
   }
+  const ST = "--- STANCHEZZA (misura: non entra nelle probabilita') ---", T = S.fatigue;
+  if (!T) out.push({ what: 'stanchezza', scanner: '(__FATIGUE_DEBUG assente)', csv: '-', ok: false });
+  else {
+    eqs('stanchezza: stagione delle coppe', T.stagione, cell('Stanchezza: stagione delle coppe', 0, ST));
+    cmp('stanchezza: partite europee in archivio', T.partiteCoppe, cell('Stanchezza: partite europee in archivio', 0, ST));
+    for (const [k, nome] of [['H', 'casa'], ['A', 'trasf.']]) {
+      const F = T[k] || {}, c = lbl => cell('Stanchezza ' + nome + ': ' + lbl, 0, ST), nd = v => v == null ? 'N/D' : String(v);
+      eqs('stanchezza ' + nome + ': giorni di riposo', nd(F.riposo), c('giorni di riposo'));
+      eqs('stanchezza ' + nome + ': giorni di riposo dalla lega', nd(F.riposoLega), c('giorni di riposo dalla lega'));
+      eqs('stanchezza ' + nome + ': partite in 14 giorni', nd(F.partite14), c('partite in 14 giorni'));
+      eqs('stanchezza ' + nome + ': giorni dalla coppa europea', nd(F.coppaPrima), c('giorni dalla coppa europea'));
+      eqs('stanchezza ' + nome + ': giorni alla coppa europea', nd(F.coppaDopo), c('giorni alla coppa europea'));
+      eqs('stanchezza ' + nome + ': in Europa', sn(F.inEuropa), c('in Europa'));
+    }
+  }
   // il tabellone: la sezione deve esistere e riportare le stesse proposte nello stesso ordine
   const tab = csv.sec['--- TABELLONE (come lo stampa lo Scanner) ---'];
   if (!tab) out.push({ what: 'tabellone', scanner: (S.verd || []).length + ' proposte', csv: '(sezione assente)', ok: false });
@@ -456,7 +484,9 @@ function csvChecks(S, csv, col) {
   console.log('   sottotitolo:', recMap(scanner.runs[day[0].id].rec)['ui-subtitle']);
   // le formazioni devono avere valori veri, non tutti nulli: altrimenti il confronto non prova niente
   for (const m of day) { const L = scanner.runs[m.id].lineup, f = F => F ? `assenti ${F.abitualiAssenti} (peso ${F.pesoAssenti == null ? '-' : F.pesoAssenti.toFixed(2)}, gol ${F.golAssenti == null ? '-' : F.golAssenti.toFixed(2)}), cambi ${F.cambi}, allenatore ${F.allenatoreNuovo ? 'nuovo' : F.partiteAllenatore + '+'}` : '-';
-    console.log(`   formazioni ${m.id}: casa ${f(L && L.H)} | trasf. ${f(L && L.A)}`); }
+    console.log(`   formazioni ${m.id}: casa ${f(L && L.H)} | trasf. ${f(L && L.A)}`);
+    const T = scanner.runs[m.id].fatigue, g = F => F ? `riposo ${F.riposo} (lega ${F.riposoLega}), ${F.partite14} in 14 gg, coppa ${F.coppaPrima == null ? '-' : F.coppaPrima + ' fa'} / ${F.coppaDopo == null ? '-' : 'fra ' + F.coppaDopo}` : '-';
+    console.log(`   stanchezza ${m.id}: casa ${g(T && T.H)} | trasf. ${g(T && T.A)}`); }
   let fail = (sLog.length || (process.env.MOBILE && scanner.scroll > 0)) ? 1 : 0;
 
   const results = {};

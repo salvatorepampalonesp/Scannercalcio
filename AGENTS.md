@@ -33,7 +33,9 @@ Dati da PitchAPI via proxy Cloudflare (`PITCH_BASE` in `scanner.html`). Endpoint
 partita: `/stats`, `/lineups`, `/advanced`, `/events`, tutti attraverso `fetchMatchRaw`,
 che li mette in `RAW_CACHE`. Dal `b43` il motore chiede anche la formazione della partita da
 prevedere (`/matches/{id}/lineups`) e, se la partita non è nell'archivio di lega perché non
-è ancora giocata, la cerca con `/date/{giorno}?status=all`. La documentazione dell'API
+è ancora giocata, la cerca con `/date/{giorno}?status=all`. Dal `b44` carica anche gli
+archivi di Champions, Europa e Conference League della stagione (tre chiamate, in memoria per
+la sessione), per contare il riposo vero. La documentazione dell'API
 (51 pagine, settembre 2026) elenca anche statistiche per giocatore (`/players`,
 `/advanced/players`), tiri (`/shots`), `/h2h`, arbitro, heatmap e 42 leghe fra cui coppe e
 competizioni UEFA; nessuna quota dei bookmaker.
@@ -44,7 +46,7 @@ competizioni UEFA; nessuna quota dei bookmaker.
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b43`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b44`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -95,10 +97,11 @@ spostala in *Cosa è già stato provato* con i numeri, e aggiorna *Stato attuale
 
 Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export recente.
 
-- [ ] **Le formazioni (`b43`).** Rifare le cinque leghe col `b43` (stesse stagioni, una per
-  file, in copia conforme: la formazione della partita costa una chiamata in più) e applicare
-  la regola scritta prima di vederle. È l'unica strada rimasta per anticipare le sorprese.
-  Vedi *Formazioni e assenze*.
+- [ ] **Le formazioni e la stanchezza (`b44`).** Rifare le cinque leghe col `b44` (stesse
+  stagioni, una per file, in copia conforme: la formazione della partita costa una chiamata in
+  più, le coppe europee tre per stagione) e applicare le due regole scritte prima di vederle.
+  È l'unica strada rimasta per anticipare le sorprese. Vedi *Formazioni e assenze* e *La
+  stanchezza*.
 - [ ] **Il candidato Elo, secondo giro, se si vuole.** `ELO_1X2_W` 0.40 con `ELO_SCALE`
   2.00 **non ha passato** il test registrato: LaLiga −0.0042 e Bundesliga −0.0078, ma Ligue 1
   +0.0004, e la regola chiedeva un miglioramento in ciascuna lega. Resta 0.75 / 1.25. Il
@@ -179,9 +182,10 @@ qui ha bisogno di dati nuovi, non di rifare questi.
 - [ ] **Assenze pesate per valore**, se l'indice per presenze del `b43` mostra il segnale:
   il peso di ogni giocatore da xG+xA o VAEP (`/advanced/players`) invece che dalle presenze.
   Una chiamata in più per ogni partita dello storico.
-- [ ] **Il riposo vero, con coppe ed Europa.** Il riposo misurato finora conta solo la lega
-  (vedi *Cosa è già stato provato*). PitchAPI ha coppe e competizioni UEFA, con gli stessi id
-  di squadra: pochi archivi in più danno i giorni di riposo veri e il turno infrasettimanale.
+- [ ] **Le coppe nazionali nel riposo.** Dal `b44` il riposo conta lega e coppe europee
+  (vedi *La stanchezza*). Coppa Italia, FA Cup, Pokal, Copa del Rey e Coupe de France non sono
+  in `leghe.json`, anche se la documentazione dell'API parla di coppe: va verificato con
+  `/v1/leagues` se esistono, e con quali id.
 - [ ] **I parametri interni di Markov**: verificati solo gli invarianti.
 
 ### 5. UI e pulizie
@@ -209,7 +213,7 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b43`)
+## Stato attuale (`b44`)
 
 **1X2.** Pick azzeccato 52.9% (±3.0) contro il 40.2% del «gioca sempre in casa» in Serie
 A, 52.8% contro 43.1% in Premier, 54.2% contro 45.8% in LaLiga, 51.8% contro 42.0% in
@@ -240,9 +244,10 @@ fra modello ed Elo, +0.57 punti di prese. Il margine vero è la selezione: gioca
 100 / 50 / 30 / 20 / 10% del calendario, in ordine di probabilità del pick, si prende il
 52.8 / 62.0 / 68.6 / 72.8 / 78.2%.
 
-**Formazioni.** Dal `b43` il motore sa chi manca oggi rispetto all'undici abituale (card
-«Formazioni — chi manca oggi», sezione CSV `FORMAZIONI`), ma non lo usa ancora: è in misura,
-con la regola scritta prima del batch. Vedi *Formazioni e assenze*.
+**Formazioni e stanchezza.** Dal `b43` il motore sa chi manca oggi rispetto all'undici
+abituale, dal `b44` quanti giorni di riposo ha ogni squadra contando le coppe europee (card
+«Formazioni e stanchezza», sezioni CSV `FORMAZIONI` e `STANCHEZZA`). Non li usa ancora: sono in
+misura, con le regole scritte prima del batch. Vedi *Formazioni e assenze* e *La stanchezza*.
 
 **La selezione vale più dell'accuratezza.** Prima di aggiungere una feature, chiedersi se
 il segnale non sia già nell'output, solo mal etichettato.
@@ -581,7 +586,7 @@ testo, lo modifica con delle regex e lo esegue con `new Function`. Dipende quind
    `/(const\s+confidence\s*=\s*Math\.round\([^;]*;)/`. Non riscriverla e non citarla
    testualmente altrove nel file. Tutto ciò che l'hook legge va prodotto **prima**:
    `__PRED_STATS`, `__PRED_DEBUG`, `__RESID_DEBUG`, `__GOALS_DEBUG`, `__ELO_DEBUG`,
-   `__ELO_DEBUG_OVER`, `__UNIT_DEBUG`, `__ENS_DEBUG`, `__SCOPE_DEBUG`, `__LINEUP_DEBUG`, `m1/mX/m2`, `probsRole`,
+   `__ELO_DEBUG_OVER`, `__UNIT_DEBUG`, `__ENS_DEBUG`, `__SCOPE_DEBUG`, `__LINEUP_DEBUG`, `__FATIGUE_DEBUG`, `m1/mX/m2`, `probsRole`,
    `probsOver`, `probsOL`, `mk_ro`, `mk_ov`, `dcMat`, `lamH_mix/lamA_mix`,
    `lamH_over/lamA_over`. Una variabile dichiarata dopo finisce a `null` senza errori (una
    colonna di `N/D` nel CSV). Aggancio di riserva: le tre righe `const m1 = …; const mX = …;
@@ -664,24 +669,25 @@ dall'id della partita e servita al posto di PitchAPI, con una neopromossa e senz
 `/advanced` sulla stagione piu' vecchia come l'API vera. Lo Scanner si guida come lo usa
 l'utente (`caricaSquadreLega` e `avviaScanner` sulle partite di una data), il Comparatore gira
 in ogni modalita', e si confrontano **ogni scrittura a schermo del motore** (`safeTxt` e
-`safeHtml`, strumentate nei due file allo stesso modo: 189 per partita) e **101 righe del CSV**
+`safeHtml`, strumentate nei due file allo stesso modo: 189 per partita) e **115 righe del CSV**
 che riportano un numero dello Scanner (1X2, confidence di tutti i mercati, i sei modelli,
 GG e Over, corner/tiri/gialli e le loro linee, handicap, multigol, Elo, tabellone voce per
-voce, certificato, e dal `b43` gli indici delle formazioni). Tre modalita' sono controlli di
+voce, certificato, dal `b43` gli indici delle formazioni e dal `b44` quelli della stanchezza). Tre modalita' sono controlli di
 potenza, e passano solo se il certificato dice NO col motivo giusto. Dal `b43` la lega finta ha
 anche le formazioni (rosa di 18, ogni titolare abituale riposa col 15%, la squadra 3 cambia
-allenatore a stagione in corso) e i marcatori presi dai titolari, e il banco stampa gli indici
-di ogni partita: se fossero tutti vuoti il confronto non proverebbe niente.
+allenatore a stagione in corso) e i marcatori presi dai titolari; dal `b44` una Champions finta
+(le squadre 0 e 1 giocano 3 giorni prima e 4 dopo ogni giornata, la 2 solo dopo). Il banco
+stampa gli indici di ogni partita: se fossero tutti vuoti il confronto non proverebbe niente.
 
-Esito al `b43` (storico 30), a 390px:
+Esito al `b44` (storico 30), a 390px:
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
-| una partita, tutte del giorno, intervallo | 3/3 | 0 su 189 | 0 su 101 | 0 |
-| batch per stagioni, sweep | 89/89, solo la stagione caricata | 0 su 189 | 0 su 101 | 0 |
+| una partita, tutte del giorno, intervallo | 3/3 | 0 su 189 | 0 su 115 | 0 |
+| batch per stagioni, sweep | 89/89, solo la stagione caricata | 0 su 189 | 0 su 115 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
 | `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 123-154 | 71-82 | 0 |
-| `vecchio`: motore `b42` caricato (controllo) | 0/3, «motore caricato diverso ...» | 1 | 21 | 0 |
+| `vecchio`: motore `b43` caricato (controllo) | 0/3, «motore caricato diverso ...» | 1 | 11-13 | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -691,6 +697,8 @@ degli esiti non scelti (36/36/36 → 34/30/33) e il tabellone, dove sale in cima
 numeri. Al `b42` il controllo col `b41` vede solo i tiri in porta: le quattro linee Over, la
 loro riga nel tabellone e il certificato. Al `b43` il controllo col `b42` vede solo la card
 delle formazioni, le venti righe nuove del CSV e il certificato: le probabilità non si muovono.
+Al `b44` il controllo col `b43` vede solo la card (ora con la stanchezza), le righe della
+stanchezza che cambiano e il certificato.
 
 **Cosa resta fuori, e va saputo:**
 
@@ -1084,7 +1092,7 @@ Sotto le 5 formazioni in archivio (`LINEUP_MIN_HIST`) gli indici restano vuoti. 
 fuori da cinque partite non è più in rosa, quindi non conta come assente: la squadra si è già
 adattata, e l'Elo e gli xG lo sanno. Conta chi manca **oggi**.
 
-**Non entrano nelle probabilità.** Il `b43` li mostra (card «Formazioni — chi manca oggi»,
+**Non entrano nelle probabilità.** Il `b43` li mostra (card «Formazioni e stanchezza»,
 che dice se la formazione è probabile o confermata) e li esporta (sezione CSV `FORMAZIONI`),
 niente altro. Col motore `b42` caricato il banco vede diverse solo quella card, le venti righe
 del CSV e il certificato.
@@ -1105,6 +1113,48 @@ tre prove in più, quindi contano solo con `z ≤ −3`. Sui mercati gol (Over e
 assenti) è solo descrittivo. Se passa, entra nel motore con il `b` stimato, e **solo con la
 formazione confermata**: con quella probabile l'indice resta a schermo e non sposta niente.
 Se non passa, la card resta come informazione e questa sezione dice perché.
+
+### La stanchezza
+
+**Perché le coppe.** Il riposo misurato nel `b42` contava solo le partite di lega, e non diceva
+niente (+0.04 punti di prese): una squadra che ha giocato in Champions il mercoledì risultava
+riposata da una settimana. Dal `b44` `archivioCoppe` carica Champions, Europa e Conference
+League della stagione della partita (`UEFA_IDS`, tre chiamate con `status=all`, in memoria per
+la sessione; se un archivio non arriva non si mette in cache e la riga del CSV lo dice). Gli id
+delle squadre sono gli stessi fra le leghe, quindi le partite europee si agganciano da sole.
+
+**Cosa calcola** `indiciStanchezza`, per squadra, da date e stato delle partite (mai dai
+punteggi):
+
+| indice | definizione |
+|---|---|
+| giorni di riposo | dall'ultima partita ufficiale conclusa, lega o coppa europea, filtrata con `_isPast` |
+| giorni di riposo dalla lega | lo stesso contando solo la lega: è la misura vecchia, per confronto |
+| partite in 14 giorni | partite ufficiali concluse nei 14 giorni prima |
+| giorni dalla coppa europea | dall'ultima partita europea conclusa della stagione |
+| giorni alla coppa europea | alla prossima partita europea in calendario |
+
+**Il calendario è un'informazione legittima, il risultato no.** La prossima partita europea
+si usa solo per la data, che è pubblica prima. Resta un caso limite: una partita a eliminazione
+diretta esiste solo se la squadra si è qualificata, e il sorteggio può essere arrivato dopo la
+data da prevedere. Dentro 5 giorni non può succedere (fra l'ultima partita di un turno e la
+prima del successivo passano settimane), quindi nella regola l'indice «dopo» si usa solo come
+flag entro 4 giorni.
+
+**Cosa non vede.** Le coppe nazionali, che non sono in `leghe.json` (vedi *Da fare*), e le
+nazionali: dopo una sosta il riposo di lega è lungo, ma i titolari hanno giocato.
+
+**La regola, scritta prima del batch.** Indice primario, uno solo: il vantaggio di riposo,
+`min(riposoH, 7) − min(riposoA, 7)` (oltre una settimana non c'è stanchezza da recuperare: il
+tetto è una definizione, fissata adesso), aggiunto al log-odds bersaglio con un coefficiente
+stimato fuori lega. **Si misura sopra le formazioni**: se l'indice delle formazioni passa, la
+stanchezza deve migliorare il modello che lo contiene già, perché una squadra stanca ruota, e
+la rotazione la formazione confermata la vede; contarla due volte sarebbe l'errore del
+vantaggio campo contato due volte. Passa con le stesse soglie delle formazioni: logloss 1
+contro 2 migliore in almeno quattro leghe su cinque, `z ≤ −2` sull'insieme, prese del pick non
+in calo. Secondari, con `z ≤ −3`: partite in 14 giorni (differenza), coppa europea entro 4
+giorni prima, coppa europea entro 4 giorni dopo (il turnover preventivo). Sui gol solo
+descrittivo.
 
 ## Registro delle costanti
 
@@ -1370,7 +1420,7 @@ misurate.
 | Ricalibrare la confidence a retta | **sostituita da una tabella** | vedi *La confidence* |
 | Arretrare il taglio temporale a `x-1` | **no** | vedi *L'orario non è affidabile* |
 | Ordinare il tabellone per probabilità grezza | **no** | guadagno piatto (+1.4 … +7.1) contro monotono per scarto |
-| Anticipare le sorprese con forma (punti nelle ultime 5), momento dell'Elo (ultime 5), giorni di riposo, fortuna (gol − NPxG, ultime 10), NPxG recenti | **no** (`b42`) | 5230 partite, fuori lega (stimato su quattro leghe, misurato sulla quinta), sopra `lgTarget`: logloss 1 contro 2 −0.0000 / −0.0001 / +0.0001 / −0.0012 (`z = −1.40`) / −0.0020 (`z = −1.85`), prese +0.13 / +0.10 / +0.04 / +0.17 / +0.06 punti; tutte insieme +0.31. Il riposo conta solo le partite di lega: le coppe non sono nell'archivio |
+| Anticipare le sorprese con forma (punti nelle ultime 5), momento dell'Elo (ultime 5), giorni di riposo **di sola lega**, fortuna (gol − NPxG, ultime 10), NPxG recenti | **no** (`b42`); il riposo si rifà con le coppe europee (`b44`, vedi *La stanchezza*) | 5230 partite, fuori lega (stimato su quattro leghe, misurato sulla quinta), sopra `lgTarget`: logloss 1 contro 2 −0.0000 / −0.0001 / +0.0001 / −0.0012 (`z = −1.40`) / −0.0020 (`z = −1.85`), prese +0.13 / +0.10 / +0.04 / +0.17 / +0.06 punti; tutte insieme +0.31. Il riposo conta solo le partite di lega: le coppe non sono nell'archivio |
 | Il disaccordo fra modello ed Elo come segnale di sorpresa | **è il candidato Elo visto da un'altra parte** (`b42`) | fuori lega −0.0037 (`z = −2.47`), prese +0.57 punti, Ligue 1 di nuovo contraria (+0.0020). Nelle 717 partite (14%) in cui modello ed Elo indicano favoriti diversi il pick prende il 37.7% (41.4% col disaccordo in regressione), contro il 55.2% delle altre. A parità di partite giocate la selezione non migliora (top 20%: 72.8 contro 73.2%) |
 
 **Le cose che hanno retto**, in ordine di quanto valgono:
@@ -1816,6 +1866,12 @@ c'era e se era confermata, quante formazioni dello storico l'hanno misurata, e g
 partita non è stata trovata nell'archivio né per data; `disponibile` a `no` che l'API non aveva
 i titolari; `N/D` dappertutto che il motore caricato è precedente al `b43`.
 
+La sezione `STANCHEZZA` (dal `b44`) dice quale stagione delle coppe europee è stata caricata,
+quante competizioni su tre hanno risposto e quante partite c'erano, e per squadra i giorni di
+riposo (tutte le gare e solo la lega), le partite nei 14 giorni prima, i giorni dall'ultima e
+alla prossima partita europea. `competizioni europee caricate` sotto 3 vuol dire che un
+archivio non è arrivato: quelle righe contano meno partite del vero.
+
 Poi: ogni partita occupa **4 colonne** (Previsto, Confidence, Reale, Esito); le sezioni CASA e
 TRASFERTA ripetono le stesse etichette (la seconda occorrenza è la trasferta); le
 probabilità hanno una cifra decimale. Per ricostruire qualcosa fuori dal motore, fare **per
@@ -2001,3 +2057,4 @@ invece di dichiarare verificato quello che non lo è.
 | — | le altre quattro leghe in copia conforme (5230 partite in tutto): tarature riconfermate in cinque leghe su cinque; due candidati registrati prima di vedere tre leghe; il riferimento dei mercati sui numeri sbaglia da lega a lega; il muro dei gol segue i gol per NPxG |
 | `b42` | lo squilibrio sui tiri in porta (`SOT_ELO_B = 0.0030`), l'unico dei due candidati che ha passato il test. Il peso dell'Elo resta 0.75 / 1.25 |
 | `b43` | le formazioni: chi manca rispetto all'undici abituale, capitano, allenatore nuovo, dalla formazione della partita e dai `/lineups` dello storico. Card e CSV, probabilità invariate; regola del test scritta prima del batch |
+| `b44` | la stanchezza: giorni di riposo contando Champions, Europa e Conference League, partite in 14 giorni, coppa europea prima e dopo. Card e CSV, probabilità invariate; regola scritta prima del batch, da misurare sopra le formazioni |
