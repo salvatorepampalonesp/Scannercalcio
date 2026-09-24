@@ -174,7 +174,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b45</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b46</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -1276,10 +1276,11 @@ function _luSide(res, isH) {
   if (!s || !Array.isArray(s.starters)) return null;
   const xi = s.starters.map(_pid).filter(Boolean);
   if (xi.length < 10) return null;
-  const cap = s.starters.find(p => p && p.is_captain);
+  const cap = s.starters.find(p => p && p.is_captain), nomi = {};
+  s.starters.forEach(p => { const id = _pid(p); if (id) nomi[id] = (p && (p.name || (p.player && p.player.name))) || id; });
   return { xi, subs: (Array.isArray(s.subs) ? s.subs : []).map(_pid).filter(Boolean),
            captain: cap ? _pid(cap) : null, coach: (s.coach && s.coach.name) || null,
-           confirmed: s.confirmed !== false, type: s.lineup_type || null };
+           confirmed: s.confirmed !== false, type: s.lineup_type || null, nomi };
 }
 
 function storicoFormazioni(matchList, details) {
@@ -1347,8 +1348,41 @@ async function formazioneBersaglio(id) {
   const res = (raw && raw[1] && raw[1].data) ? raw[1] : await apiCall(`/matches/${id}/lineups`, true);
   if (!res || !res.data) return null;
   const out = { home: _luSide(res, true), away: _luSide(res, false) };
+  ricordaProbabile(id, out);
   if (out.home && out.home.confirmed && out.away && out.away.confirmed) LINEUP_CACHE[id] = out;
   return out;
+}
+
+// la probabile vista prima resta nel browser per il confronto con la confermata: e' solo a
+// schermo, mai nel CSV, perche' dipende da quando e da dove si e' aperto lo Scanner
+const PROB_KEY = id => 'scanner_prob_' + id, PROB_TTL_MS = 10 * 24 * 3600 * 1000;
+function ricordaProbabile(id, out) {
+  try {
+    const k = PROB_KEY(id), prev = JSON.parse(localStorage.getItem(k) || 'null') || {};
+    let scritto = false;
+    ['home', 'away'].forEach(lato => {
+      const L = out[lato]; if (!L) return;
+      if (!L.confirmed) { prev[lato] = { xi: L.xi, nomi: L.nomi, tipo: L.type, t: Date.now() }; scritto = true; }
+      else if (prev[lato]) L.probabile = prev[lato];
+    });
+    if (!scritto) return;
+    localStorage.setItem(k, JSON.stringify(prev));
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const kk = localStorage.key(i); if (!kk || kk.indexOf('scanner_prob_') !== 0) continue;
+      const v = JSON.parse(localStorage.getItem(kk) || 'null'), t = v && Math.max((v.home && v.home.t) || 0, (v.away && v.away.t) || 0);
+      if (!t || Date.now() - t > PROB_TTL_MS) localStorage.removeItem(kk);
+    }
+  } catch (e) {}
+}
+
+function confrontoProbabile(L) {
+  if (!L) return null;
+  if (!L.confirmed) return { stato: 'salvata' };
+  const P = L.probabile; if (!P || !Array.isArray(P.xi)) return null;
+  const oggi = new Set(L.xi), prev = new Set(P.xi);
+  return { stato: 'confronto', ore: Math.max(0, Math.round((Date.now() - (P.t || Date.now())) / 3600000)),
+           fuori: P.xi.filter(p => !oggi.has(p)).map(p => (P.nomi && P.nomi[p]) || p),
+           dentro: L.xi.filter(p => !prev.has(p)).map(p => (L.nomi && L.nomi[p]) || p) };
 }
 
 const UEFA_IDS = ['l_0bfbkO', 'l_38d9HA', 'l_2WZ2tt'];
@@ -2036,9 +2070,16 @@ function _leagueKey() {
   return null;
 }
 
-function renderFormazioni(FH, FA, SH, SA) {
-  const esc = t => String(t).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
-  const st = F => !F.disponibile ? 'non disponibile' : (F.confermata ? 'confermata' : 'probabile' + (F.tipo ? ' (' + esc(F.tipo) + ')' : ''));
+function renderFormazioni(FH, FA, SH, SA, VP) {
+  const esc = _escHtml;
+  const ultimo = F => F.disponibile && !F.confermata && /last.?start/i.test(F.tipo || '');
+  const st = F => !F.disponibile ? 'non disponibile' : (F.confermata ? 'confermata'
+    : (ultimo(F) ? 'probabile: <b>&egrave; l\'ultimo undici</b>' : 'probabile' + (F.tipo ? ' (' + esc(F.tipo) + ')' : '')));
+  const quando = V => 'probabile vista ' + (V.ore < 1 ? 'meno di un\'ora fa' : V.ore + (V.ore === 1 ? ' ora fa' : ' ore fa'));
+  const vp = V => !V ? '--' : (V.stato === 'salvata' ? 'salvata: la confronto con la confermata'
+    : (!V.fuori.length ? 'nessun cambio (' + quando(V) + ')'
+      : '<b>fuori</b> ' + V.fuori.map(esc).join(', ') + ' &middot; <b>dentro</b> ' + V.dentro.map(esc).join(', ') + ' (' + quando(V) + ')'));
+  VP = VP || {};
   const pc = v => v == null ? '--' : Math.round(100 * v) + '%';
   const ab = F => F.abitualiAssenti == null ? '--' : F.abitualiAssenti + ' (' + pc(F.pesoAssenti) + ' del peso)';
   const sn = v => v == null ? '--' : (v ? 'SI' : 'no');
@@ -2047,6 +2088,7 @@ function renderFormazioni(FH, FA, SH, SA) {
   const al = F => !F.allenatore ? '--' : (esc(F.allenatore) + (F.allenatoreNuovo ? ' &middot; <b>NUOVO</b>' : (F.partiteAllenatore != null ? ' &middot; ' + F.partiteAllenatore + '+ partite' : '')));
   const rows = [
     ['Formazione', st(FH), st(FA)],
+    ['Rispetto alla probabile', vp(VP.H), vp(VP.A)],
     ['Titolari abituali assenti', ab(FH), ab(FA)],
     ['Gol dei titolari assenti', pc(FH.golAssenti), pc(FA.golAssenti)],
     ['Cambi dall\'ultima', FH.cambi == null ? '--' : FH.cambi, FA.cambi == null ? '--' : FA.cambi],
@@ -2057,9 +2099,13 @@ function renderFormazioni(FH, FA, SH, SA) {
     ['Partite in 14 giorni', SH.partite14, SA.partite14],
     ['Coppa europea', eu(SH), eu(SA)]
   ];
+  const nota = (ultimo(FH) || ultimo(FA))
+    ? '<div style="margin-top:8px;padding:8px;border:1px solid var(--orange);border-radius:6px;color:var(--txt)">La formazione probabile dell\'API qui &egrave; <b>l\'undici dell\'ultima partita</b>: chi si &egrave; fatto male o &egrave; squalificato da allora non risulta assente, e i cambi dall\'ultima non dicono niente. Rilancia l\'analisi a ridosso del calcio d\'inizio: con la confermata la riga &laquo;Rispetto alla probabile&raquo; dice chi &egrave; cambiato.</div>'
+    : ((FH.disponibile && !FH.confermata) || (FA.disponibile && !FA.confermata)
+      ? '<div style="margin-top:8px;color:var(--dim)">Con la formazione probabile gli indici sono indicativi: il backtest li misura solo sulle confermate.</div>' : '');
   safeHtml('formazioni-box', '<div class="tbl-scroll"><table class="table-ui table-compact"><thead><tr><th style="text-align:left"></th><th>Casa</th><th>Trasf.</th></tr></thead><tbody>'
     + rows.map(r => '<tr><td style="text-align:left">' + r[0] + '</td><td>' + r[1] + '</td><td>' + r[2] + '</td></tr>').join('')
-    + '</tbody></table></div>');
+    + '</tbody></table></div>' + nota);
 }
 
 function renderLeagueNote() {
@@ -2177,7 +2223,7 @@ function renderVerdetti(mk, base, adv) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b45';
+window.__SCANNER_BUILD = '0905-b46';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -2499,6 +2545,7 @@ async function avviaScanner() {
     const _FH = indiciFormazione(dH.lineupHist, _luT && _luT.home);
     const _FA = indiciFormazione(dA.lineupHist, _luT && _luT.away);
     window.__LINEUP_DEBUG = { id: _tgtId, H: _FH, A: _FA };
+    const _VP = { H: confrontoProbabile(_luT && _luT.home), A: confrontoProbabile(_luT && _luT.away) };
     const _coppe = await archivioCoppe(dateInput);
     const _lgM = globalLeagueMatchesCache.filter(m => !lId || m.league_id === lId);
     const _SH = indiciStanchezza(hId, dateInput, _lgM, _coppe), _SA = indiciStanchezza(aId, dateInput, _lgM, _coppe);
@@ -3003,7 +3050,7 @@ async function avviaScanner() {
     window.__BASE_DEBUG = _LGBASE;
     renderVerdetti({ p1:m1, pX:mX, p2:m2, p1X:m1+mX, pX2:mX+m2, p12:m1+m2,
                      pOv:dcOv, pUn:dcUn, pGG:dcGG, pNG:dcNG }, _LGBASE, advRole);
-    renderFormazioni(_FH, _FA, _SH, _SA);
+    renderFormazioni(_FH, _FA, _SH, _SA, _VP);
     safeHtml('giocatori-box', 'Premi il bottone per le statistiche dei giocatori di ' + _escHtml(hName) + ' e ' + _escHtml(aName) + '.');
     const odd1 = probsRole.p1 > 0 ? (1/probsRole.p1).toFixed(2) : "N/A"; const oddX = probsRole.pX > 0 ? (1/probsRole.pX).toFixed(2) : "N/A"; const odd2 = probsRole.p2 > 0 ? (1/probsRole.p2).toFixed(2) : "N/A";
     const oddM1 = m1 > 0 ? (1/m1).toFixed(2) : "N/A"; const oddMX = mX > 0 ? (1/mX).toFixed(2) : "N/A"; const oddM2 = m2 > 0 ? (1/m2).toFixed(2) : "N/A";
