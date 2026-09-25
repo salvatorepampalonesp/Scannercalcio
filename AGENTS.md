@@ -107,6 +107,7 @@ Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export rec
   assenze*, *La stanchezza*); l'ingresso delle neopromosse nell'Elo (*Le neopromosse*); il peso
   e la scala dell'Elo sull'Elo corretto (*Peso e scala dell'Elo insieme*, «Il 4 su 5»). Le tre
   leghe nuove servono all'Elo: non vanno aperte prima che le regole siano nel repository.
+  I file si possono fare anche da qui, con *Il batch automatico*.
 - [ ] **Il candidato Elo, secondo giro.** `ELO_1X2_W` 0.40 con `ELO_SCALE` 2.00 **non ha
   passato** il test registrato (LaLiga −0.0042, Bundesliga −0.0078, Ligue 1 +0.0004, e la
   regola chiedeva un miglioramento in ciascuna). Resta 0.75 / 1.25. Il secondo giro si fa sulle
@@ -1816,7 +1817,8 @@ da una a tre partite per stagione, e dal 16 al 36% dei rating esce diverso (medi
 90° percentile 5–6). Una correzione che sta dentro il ciclo dell'Elo non si misura così. Dal
 `b47` il CSV porta in fondo l'archivio del database (sezione `ARCHIVIO DI LEGA`): sul banco
 l'Elo rifatto da lì coincide su 89 partite su 89, col `buildGlobalElo` del motore e con
-`strumenti/elo-archivio.py` (anche la pendenza, entro l'arrotondamento). Lo strumento è la
+`strumenti/elo-archivio.py` (anche la pendenza, entro l'arrotondamento); sul primo file vero
+(Serie A 2023/24, archivio di 1141 partite) coincide su 379 partite su 379. Lo strumento è la
 replica in Python con le manopole libere: `python3 strumenti/elo-archivio.py <csv>` fa la prova
 di coincidenza, da rifare su ogni file prima di ricostruire qualcosa (un CSV senza archivio
 risponde «NON COINCIDE»).
@@ -2033,6 +2035,40 @@ anche otto variabili riempite dal payload e mai usate e una funzione mai chiamat
 **`lamH_mix` e `lamA_mix` sembrano morte al linter e non lo sono**: le legge l'hook iniettato.
 Prima di cancellare qualcosa segnalato come inutilizzato, cercarlo nell'hook e negli `onclick`
 dei due `.html`. Controlli J e K.
+
+## Il batch automatico
+
+`strumenti/batch-auto.js` fa i batch senza telefono: apre `comparatore.html` in Chromium senza
+schermo, da un server locale col `scanner.html` del repository accanto, restringe l'elenco delle
+leghe a quelle chieste e lancia lo sweep del Comparatore. È il Comparatore vero, quindi ogni
+riga porta il suo certificato di copia conforme come a mano. Le chiamate alla PitchAPI le
+intercetta Node e le fa lui, con la chiave di `PITCHAPI_KEY`: la chiave non entra mai nella
+pagina.
+
+```bash
+node strumenti/batch-auto.js --leghe "Serie A,Eredivisie,ENG:Championship" --stagioni 2023/2024,2024/2025,2025/2026
+```
+
+- `--leghe`: id o nomi di `leghe.json`, `PAESE:Nome` se il nome è ambiguo (`GER:Bundesliga`).
+  `--stagioni` di default sono le tre con due stagioni alle spalle. `--out` di default è
+  `batch/`, fuori da git.
+- Ogni CSV si salva appena la sua stagione finisce, col nome che gli dà il Comparatore; una
+  stagione che ha già il file si salta, quindi rilanciare riprende da dove era. Tutto il log del
+  Comparatore va in `batch.log` nella stessa cartella; a schermo le righe che contano e, ogni
+  minuto, a che partita è arrivato.
+- **Serve la rete.** Il dominio del proxy (`PITCH_BASE`) va permesso nella rete dell'ambiente e
+  la chiave messa nella variabile d'ambiente `PITCHAPI_KEY`; valgono dalla sessione dopo. Prima
+  di aprire il browser lo script prova una chiamata e dice quale delle due manca. Dentro questo
+  ambiente Node esce dal proxy dell'ambiente (lo script si rilancia da solo con
+  `NODE_USE_ENV_PROXY=1`).
+- Il motore è quello della cartella di lavoro: su un branch che cambia `scanner.html` il batch
+  misura il branch. La build è in testa al log e in ogni CSV.
+- Una stagione vera dura ore: si lancia in background e si legge `batch.log`. Dopo ogni file,
+  `python3 strumenti/elo-archivio.py <csv>` deve dire COINCIDE.
+- `--finto` sostituisce la PitchAPI con la lega finta del banco (`banco-parita.js` si può
+  importare, ed esporta la sua `api`). Verificato così: il CSV di Serie A 2025/26 finto è
+  identico riga per riga a quello del batch del banco, tranne l'ora di generazione, e l'Elo
+  rifatto dal suo archivio coincide; la ripresa salta la stagione già fatta.
 
 ## Leggere un CSV del Comparatore
 

@@ -543,7 +543,9 @@ function csvChecks(S, csv, col) {
   return out;
 }
 
-(async () => {
+module.exports = { api, PITCH, LEAGUE, COUNTRY, SEASONS };
+
+if (require.main === module) (async () => {
   const srv = await serve(); const base = 'http://127.0.0.1:' + srv.address().port;
   const browser = await chromium.launch(process.env.CHROMIUM ? { executablePath: process.env.CHROMIUM } : {});
   const cur = BY_SEASON['2025/2026'].filter(m => m._ri === ROUND_TARGET);
