@@ -104,7 +104,8 @@ Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export rec
   formazione della partita costa una chiamata in più, le coppe europee tre per stagione) e in
   più **Eredivisie, Liga Portugal e Championship**, 2023/24–2025/26, mai guardate. Poi, in
   quest'ordine e con le regole scritte prima di vederle: formazioni e stanchezza (*Formazioni e
-  assenze*, *La stanchezza*); l'ingresso delle neopromosse nell'Elo (*Le neopromosse*); il peso
+  assenze*, *La stanchezza*: **fatto, non passano**; resta il secondo giro delle formazioni sulle
+  tre leghe nuove); l'ingresso delle neopromosse nell'Elo (*Le neopromosse*); il peso
   e la scala dell'Elo sull'Elo corretto (*Peso e scala dell'Elo insieme*, «Il 4 su 5»). Le tre
   leghe nuove servono all'Elo: non vanno aperte prima che le regole siano nel repository.
   I file si possono fare anche da qui, con *Il batch automatico*.
@@ -263,8 +264,11 @@ fra modello ed Elo, +0.57 punti di prese. Il margine vero è la selezione: gioca
 
 **Formazioni e stanchezza.** Dal `b43` il motore sa chi manca oggi rispetto all'undici
 abituale, dal `b44` quanti giorni di riposo ha ogni squadra contando le coppe europee (card
-«Formazioni e stanchezza», sezioni CSV `FORMAZIONI` e `STANCHEZZA`). Non li usa ancora: sono in
-misura, con le regole scritte prima del batch. Vedi *Formazioni e assenze* e *La stanchezza*.
+«Formazioni e stanchezza», sezioni CSV `FORMAZIONI` e `STANCHEZZA`). Col batch `b47` le due
+regole scritte prima **non sono passate**: l'indice delle formazioni ha il segno giusto in tutte
+le leghe ma vale −0.0004 di logloss (`z = −0.72`) e abbassa le prese; la stanchezza peggiora fuori
+lega. Restano a schermo come informazione; un secondo giro delle formazioni, dalla sesta
+giornata, è registrato sulle tre leghe nuove. Vedi *Formazioni e assenze* e *La stanchezza*.
 Dal `b46` la card dice quando la formazione probabile è solo l'ultimo undici, e con la
 confermata mostra chi è cambiato rispetto alla probabile vista prima (vedi *La formazione
 probabile*).
@@ -1181,6 +1185,31 @@ assenti) è solo descrittivo. Se passa, entra nel motore con il `b` stimato, e *
 formazione confermata**: con quella probabile l'indice resta a schermo e non sposta niente.
 Se non passa, la card resta come informazione e questa sezione dice perché.
 
+**Esito (batch `b47`, cinque leghe, 5230 partite, 3891 senza pari): non passa.** Il
+coefficiente ha lo stesso segno in tutti e cinque i fold (−0.25 … −0.46: la squadra che manca
+di più rende di meno), ma l'effetto è quasi nullo:
+
+| indice | Serie A | Premier | LaLiga | Bundesliga | Ligue 1 | insieme | prese |
+|---|---|---|---|---|---|---|---|
+| **peso degli assenti** (primario) | −0.00001 | −0.00156 (`z = −2.25`) | −0.00012 | −0.00009 | −0.00014 | −0.00041, `z = −0.72`, 5 su 5 | 52.79 → 52.52% |
+| gol degli assenti | −0.00065 | −0.00236 | +0.00023 | −0.00199 | −0.00095 | −0.00112, `z = −1.41` | 52.79 → 52.87% |
+| cambi dall'ultima | +0.00026 | −0.00070 | −0.00047 | −0.00026 | −0.00003 | −0.00025, `z = −0.64` | 52.79 → 52.56% |
+| allenatore nuovo | +0.00013 | +0.00088 | −0.00004 | +0.00002 | −0.00007 | +0.00020, `z = +1.29` | invariate |
+
+La soglia d'insieme (`z ≤ −2`) è lontana e le prese scendono; i secondari non arrivano a −3. La
+card resta come informazione. **Descrittivo, trovato dopo:** nelle prime cinque giornate gli
+«abituali assenti» sono anche i ceduti d'estate (4.5 a partita contro 3.5 dopo, indice più
+disperso: sd 0.256 contro 0.179). Dalla sesta giornata, in campione, il coefficiente è −0.81 e
+la logloss −0.0021 (`z = −1.88`): meglio, ma stimato sugli stessi dati.
+
+**Il secondo giro, registrato prima di aprire le tre leghe nuove.** Lo stesso indice primario,
+usato solo quando tutte e due le squadre hanno già giocato cinque partite di lega della
+stagione (prima, correzione zero), col coefficiente fissato adesso a **−0.81** (le cinque leghe,
+dalla sesta giornata). Si prova su Eredivisie, Liga Portugal e Championship 2023/24–2025/26,
+batch `b47`, di cui finora sono stati guardati solo copia conforme ed Elo: passa se la logloss
+1 contro 2 migliora in almeno due leghe su tre, `z ≤ −2` sull'insieme, prese del pick non in
+calo. Niente secondari. Se passa, entra nel motore solo con la formazione confermata.
+
 ### La formazione probabile
 
 **Cosa dà l'API prima della confermata.** Fino a 48 ore prima una formazione con
@@ -1248,6 +1277,15 @@ contro 2 migliore in almeno quattro leghe su cinque, `z ≤ −2` sull'insieme, 
 in calo. Secondari, con `z ≤ −3`: partite in 14 giorni (differenza), coppa europea entro 4
 giorni prima, coppa europea entro 4 giorni dopo (il turnover preventivo). Sui gol solo
 descrittivo.
+
+**Esito (batch `b47`, cinque leghe): non passa, nemmeno per poco.** Le formazioni non sono
+entrate, quindi si è misurata sopra `lgTarget`. Il vantaggio di riposo peggiora la logloss
+fuori lega in tutte e cinque le leghe (+0.00007 / +0.00009 / +0.00010 / +0.00060 / +0.00111;
+insieme +0.00036, `z = +2.68`), col coefficiente che cambia segno da un fold all'altro (−0.016
+… +0.021). Secondari: partite in 14 giorni +0.00038 (`z = +1.43`), coppa entro 4 giorni prima
++0.00035 (`z = +1.86`), dopo +0.00016 (`z = +0.75`). Il riposo di sola lega, rifatto per
+confronto, +0.00088 (`z = +3.26`). Contare le coppe europee non ha acceso nessun segnale: il
+calendario, nelle cinque leghe, le probabilità lo sanno già o non conta.
 
 ## Le statistiche dei giocatori
 
@@ -1553,6 +1591,8 @@ misurate.
 | Arretrare il taglio temporale a `x-1` | **no** | vedi *L'orario non è affidabile* |
 | Ordinare il tabellone per probabilità grezza | **no** | guadagno piatto (+1.4 … +7.1) contro monotono per scarto |
 | Anticipare le sorprese con forma (punti nelle ultime 5), momento dell'Elo (ultime 5), giorni di riposo **di sola lega**, fortuna (gol − NPxG, ultime 10), NPxG recenti | **no** (`b42`); il riposo si rifà con le coppe europee (`b44`, vedi *La stanchezza*) | 5230 partite, fuori lega (stimato su quattro leghe, misurato sulla quinta), sopra `lgTarget`: logloss 1 contro 2 −0.0000 / −0.0001 / +0.0001 / −0.0012 (`z = −1.40`) / −0.0020 (`z = −1.85`), prese +0.13 / +0.10 / +0.04 / +0.17 / +0.06 punti; tutte insieme +0.31. Il riposo conta solo le partite di lega: le coppe non sono nell'archivio |
+| L'indice delle formazioni (peso dei titolari abituali assenti, `b43`) | **no** (`b47`) | 5230 partite, fuori lega: −0.00041 di logloss, `z = −0.72`, stesso segno in 5 leghe su 5 ma prese 52.79 → 52.52%. Dalla sesta giornata −0.0021 in campione (`z = −1.88`): secondo giro registrato sulle tre leghe nuove. Vedi *Formazioni e assenze* |
+| La stanchezza con le coppe europee (`b44`) | **no** (`b47`) | vantaggio di riposo peggiore fuori lega in 5 leghe su 5 (+0.00036, `z = +2.68`); partite in 14 giorni e coppa entro 4 giorni prima o dopo, niente. Vedi *La stanchezza* |
 | Il disaccordo fra modello ed Elo come segnale di sorpresa | **è il candidato Elo visto da un'altra parte** (`b42`) | fuori lega −0.0037 (`z = −2.47`), prese +0.57 punti, Ligue 1 di nuovo contraria (+0.0020). Nelle 717 partite (14%) in cui modello ed Elo indicano favoriti diversi il pick prende il 37.7% (41.4% col disaccordo in regressione), contro il 55.2% delle altre. A parità di partite giocate la selezione non migliora (top 20%: 72.8 contro 73.2%) |
 
 **Le cose che hanno retto**, in ordine di quanto valgono:
