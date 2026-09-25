@@ -1979,11 +1979,12 @@ Nessuna lega oltre `z = +1`, l'insieme non peggiora, le prese −0.03 punti cont
   neopromosse»; il CSV le righe `Elo: ingresso delle neopromosse (livello della stagione)` e
   `Elo: regola d ingresso / pendenza`. `strumenti/elo-archivio.py` segue la regola nuova e
   riconosce da sola i CSV del `b47`.
-- Verificato sul batch vero (`b48`, Championship 2025/26, 553 partite): l'Elo rifatto
-  dall'archivio coincide col motore su ogni partita, e la differenza di rating prevista dai CSV
-  `b47` con la replica è quella del motore al punto. Il `lgModel` previsto con la derivata della
-  pendenza sbaglia al massimo di 0.030, il `lgTarget` di 0.0076: le misure sopra sono quelle del
-  motore vero.
+- Verificato sul batch vero (`b48`, Championship, Premier e Serie A 2025/26, 1309 partite in
+  copia conforme): l'Elo rifatto dall'archivio coincide col motore su ogni partita, e la
+  differenza di rating prevista dai CSV `b47` con la replica è quella del motore al punto. Il
+  `lgModel` previsto con la derivata della pendenza sbaglia al massimo di 0.030, il `lgTarget`
+  di 0.0076: le misure sopra sono quelle del motore vero. Il `lgTarget` cambia sul 80–98% delle
+  partite (tutti i rating si spostano quando una squadra entra più in basso).
 
 ## Ruolo o completo
 
