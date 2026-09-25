@@ -1121,6 +1121,14 @@ non in calo. Se passa, entra con `CONF_1X2_TABLE`, soglie del pick e scarti dell
 sulle probabilità ricostruite. **Il test del `b41` resta non passato**: questo è un test nuovo
 su dati nuovi, non una rilettura del primo.
 
+**Fissato prima di aprire le tre leghe (batch `b47`).** Sulle cinque leghe note la griglia dà lo
+stesso punto sia con l'Elo in uso sia con B + C: **`w` 0.40, `S` 2.00**, dentro la griglia.
+Con l'Elo in uso fuori lega −0.00492 (`z = −4.07`, scelto 0.40 / 2.00 in cinque fold su cinque),
+prese 52.79 → 53.06%; sopra B + C −0.00262 (`z = −2.29`), prese 52.72 → 53.15%. La coppia si
+prova sopra l'Elo che esce dal secondo passo delle neopromosse (B + C se passa, altrimenti
+quello in uso), contro 0.75 / 1.25 sullo stesso Elo. «Prese non in calo» vuol dire, anche qui,
+differenza appaiata non sotto −2 errori standard.
+
 In Bundesliga, a `S` fisso, anche il vecchio sweep di `w` dice 0.50 meglio di 0.75 (`z =
 −1.75`); in Ligue 1 è piatto (0.5945 contro 0.5943). Su LaLiga la griglia, guardata solo
 dopo il test, ha la stessa cresta: il minimo sta vicino
@@ -1209,6 +1217,10 @@ dalla sesta giornata). Si prova su Eredivisie, Liga Portugal e Championship 2023
 batch `b47`, di cui finora sono stati guardati solo copia conforme ed Elo: passa se la logloss
 1 contro 2 migliora in almeno due leghe su tre, `z ≤ −2` sull'insieme, prese del pick non in
 calo. Niente secondari. Se passa, entra nel motore solo con la formazione confermata.
+
+**Esito del secondo giro: non passa.** Eredivisie +0.00032, Liga Portugal −0.00016,
+Championship +0.00031; insieme +0.00019 (`z = +0.16`), una lega su tre. L'indice delle
+formazioni è chiuso: con la formazione confermata in mano il motore non prevede meglio.
 
 ### La formazione probabile
 
@@ -1894,6 +1906,30 @@ gol per intero. Dal `b47` il CSV esporta trend, `penH`/`penA` e la lunghezza del
    `z > +1`, e sull'insieme una differenza non positiva.
 5. Se A e B passano tutte e due, si spedisce B. Solo dopo si rifanno i pesi (vedi *Peso e scala
    dell'Elo insieme*, «Il secondo giro»).
+
+**Esito sulle cinque leghe (batch `b47`, 5230 partite, Elo rifatto dall'archivio).** Prova di
+coincidenza col motore in uso: differenza Elo e HFA identiche su 8725 partite su 8725,
+`lgTarget` entro 0.00012, pendenza entro 0.00005. Il residuo delle neopromosse col motore in
+uso è −7.3 ±2.6 punti (977 partite senza pari con una sola neopromossa in campo).
+
+| correzione | Serie A | Premier | LaLiga | Bundesliga | Ligue 1 | insieme | prese (appaiate) | residuo neopromosse |
+|---|---|---|---|---|---|---|---|---|
+| A, δ fuori lega (150–200) | −0.00359 | −0.00732 | −0.00264 | −0.00557 | +0.00205 | −0.00354, `z = −2.48`, 4 su 5 | −0.10 (±0.48) | −0.4 ±2.6 |
+| **B**, livello delle uscite | −0.00363 | −0.00677 | −0.00258 | −0.00545 | +0.00022 | −0.00372, `z = −2.61`, 4 su 5 | −0.08 (±0.45) | −0.4 ±2.6 |
+| C, pendenza senza salti | −0.00002 | −0.00006 | −0.00013 | −0.00009 | −0.00000 | −0.00006, `z = −2.48`, 5 su 5 | −0.02 (±0.04) | −7.3 |
+| B + C | −0.00368 | −0.00674 | −0.00260 | −0.00552 | +0.00018 | −0.00375, `z = −2.64`, 4 su 5 | −0.08 (±0.45) | −0.5 ±2.6 |
+
+Il δ di A sulle cinque sarebbe 175. Logloss, leghe e residuo passano; **le prese no, alla
+lettera**: la regola diceva «non in calo» senza margine, e con B il pick cambia esito in 140
+partite su 5230 con saldo −4. È rumore (±0.45 punti), ma cambiare la regola dopo averlo visto
+non si fa: **sulle cinque leghe non passa.**
+
+**Il secondo passo, registrato prima di aprire l'Elo delle tre leghe nuove.** Candidato unico
+**B + C**. Si prova su Eredivisie, Liga Portugal e Championship 2023/24–2025/26 contro l'Elo in
+uso, peso e scala 0.75 / 1.25: passa se nessuna lega ha `z > +1`, la logloss 1 contro 2
+d'insieme non peggiora, e le prese non calano **oltre il rumore**, cioè la differenza appaiata
+delle prese è almeno −2 errori standard. Il residuo delle neopromosse lì è solo descrittivo: in
+Championship si entra anche dalla Premier. Se passa, B + C entra nel motore.
 
 ## Ruolo o completo
 
