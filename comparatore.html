@@ -165,7 +165,7 @@ select{cursor:pointer}
   <div class="topbar">
     <div class="brand">
       <h1>Comparatore V9.7</h1>
-      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b46</span>
+      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b47</span>
       <span class="badge" id="engine-badge">motore non caricato</span>
     </div>
     <span class="badge">previsioni vs realtà</span>
@@ -478,6 +478,9 @@ let cmpPredSource = '';
 // La stagione per cui e' stato caricato il database (s1): lo Scanner la carica con le due
 // precedenti, quindi una partita e' copia conforme solo se e' di questa stagione.
 let cmpLoadedSeason = '';
+// Il database di ogni caricamento, per chiave lega|stagione: finisce in fondo al CSV (b47),
+// perche' l'Elo si rifaccia fuori dal motore identico al bit.
+const cmpArchivi = {};
 
 // Le manopole del motore coi loro default, lette dal sorgente nelle due forme che usa:
 // `window.X = (typeof window.X === 'number') ? window.X : <default>` e
@@ -711,6 +714,7 @@ async function loadEngineFromText(text, fileName) {
         scopeDebug:  (typeof window.__SCOPE_DEBUG !== 'undefined') ? window.__SCOPE_DEBUG : null,
         lineupDebug: (typeof window.__LINEUP_DEBUG !== 'undefined') ? window.__LINEUP_DEBUG : null,
         fatigueDebug: (typeof window.__FATIGUE_DEBUG !== 'undefined') ? window.__FATIGUE_DEBUG : null,
+        eloTrend: (typeof window.__ELO_TREND !== 'undefined') ? window.__ELO_TREND : null,
         m1: (typeof m1!=='undefined')?m1:null, mX: (typeof mX!=='undefined')?mX:null, m2: (typeof m2!=='undefined')?m2:null,
         confidence:  (typeof confidence  !== 'undefined') ? confidence  : null,
         sampleFactor:(typeof sampleFactor!== 'undefined') ? sampleFactor: null,
@@ -857,7 +861,7 @@ async function loadEngineFromText(text, fileName) {
     <p><code>${fileName}</code> — clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
 
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b46';
+  const _bComp = '0905-b47';
   window.__CMP_BUILD = _bComp;
   const _el = document.getElementById('engine-build');
   if (_el) {
@@ -1339,6 +1343,11 @@ async function cmpCaricaDatabase() {
     globalThis.globalLeagueMatchesCache = allMatches;
     cmpAllMatches = allMatches;
     cmpLoadedSeason = s1;
+    cmpArchivi[lId + '|' + s1] = { lega: lId, stagione: s1, partite: allMatches.map(m => ({
+      id: m.id, s: m._season, t: m.time_utc, st: m.status,
+      h: m.home_team ? m.home_team.id : null, hn: m.home_team ? m.home_team.name : null,
+      a: m.away_team ? m.away_team.id : null, an: m.away_team ? m.away_team.name : null,
+      gh: m.score_home, ga: m.score_away })) };
 
     // Un time_utc senza Z (o senza offset) viene letto come ora LOCALE: in un fuso avanti
     // rispetto a UTC le partite del giorno bersaglio scivolano prima del taglio. Il motore
@@ -2297,6 +2306,7 @@ function cmpBuildResult(match, R, actH, actA) {
     scopeDebug: R.scopeDebug || null,
     lineupDebug: R.lineupDebug || null,
     fatigueDebug: R.fatigueDebug || null,
+    eloTrend: R.eloTrend || null,
     predStats: R.predStats || null,
     goalsMarket: gm,
     realTotals: { cor: (actH.cor!=null&&actA.cor!=null)?actH.cor+actA.cor:null,
@@ -2462,6 +2472,7 @@ function cmpExportCSV() {
   rows.push('Sezioni METRICHE 0905-b4: le 34 metriche aggiunte al motore, previste col modello moltiplicativo e reali.' + pad);
   rows.push('Sezione FORMAZIONI (dal b43): i titolari della partita contro quelli abituali (titolari in almeno meta\' delle ultime 10, ancora in rosa nelle ultime 5). '
            + 'Peso = quota delle presenze da titolare che manca oggi; gol = quota dei gol di squadra segnati dai titolari assenti. Solo misura: le probabilita\' non la usano.' + pad);
+  rows.push('Sezione ARCHIVIO DI LEGA (dal b47), in fondo al file: tutte le partite del database (tre stagioni) con data, squadre e punteggio. Serve a rifare l Elo fuori dal motore con qualunque curva dello stacco, livello delle neopromosse, scala e peso. Le righe Elo: pendenza dicono quanto il trend dell Elo sposta i lambda.' + pad);
   rows.push('Sezione STANCHEZZA (dal b44): giorni dall ultima partita ufficiale (lega e coppe europee), partite negli ultimi 14 giorni, giorni dall ultima e alla prossima coppa europea. Coppe nazionali escluse. Solo misura.' + pad);
   rows.push('Sezione INCLINAZIONE DALL ELO: l Elo ribilancia casa e trasferta lasciando fermo il totale gol (peso w, e scala ELO_SCALE sulla differenza di rating).\nSezione LAMBDA DAI TIRI: i tiri in porta previsti danno una SECONDA stima del totale gol, mediata col Dixon-Coles (peso w 0.50).' + pad);
   rows.push('');
@@ -2774,6 +2785,18 @@ function cmpExportCSV() {
             .concat(Array(M.length * 4).fill('')).join(';'));
   rows.push(['Curva stacco: 2 mesi / 8 mesi / 2 anni', `${_st(83)} / ${_st(240)} / ${_st(826)}`]
             .concat(Array(M.length * 4).fill('')).join(';'));
+  const _trF = v => (v == null || !isFinite(v)) ? 'N/D' : v.toFixed(2).replace('.', ',');
+  const _trN = v => (v == null || !isFinite(v)) ? 'N/D' : String(v);
+  [['Elo: pendenza casa (media ultime 5 meno 6-15, punti)',       'trendH', _trF],
+   ['Elo: pendenza trasferta (media ultime 5 meno 6-15, punti)',  'trendA', _trF],
+   ['Elo: pendenza casa sul lambda (penH, cap 8%)',               'penH',   _g4],
+   ['Elo: pendenza trasferta sul lambda (penA, cap 8%)',          'penA',   _g4],
+   ['Elo: partite nella serie casa',                              'nH',     _trN],
+   ['Elo: partite nella serie trasferta',                         'nA',     _trN]].forEach(([lbl, k, f]) => {
+    const r = [lbl];
+    M.forEach(m => r.push(f(m.eloTrend ? m.eloTrend[k] : null), '', '', ''));
+    rows.push(r.join(';'));
+  });
 
   const fmtN = v => v==null||isNaN(v) ? 'N/D' : Number(v).toFixed(3).replace('.',',');
   const scartoN = (prev, real) => {
@@ -3186,6 +3209,28 @@ function cmpExportCSV() {
     M.forEach(m => r.push(fn(m) || 'N/D', '', '', ''));
     rows.push(r.join(';'));
   });
+
+  {
+    const _cella = v => v == null ? '' : String(v).replace(/[;\r\n]/g, ',');
+    const chiavi = [...new Set(M.map(m => (m.ids?.leagueId || '') + '|' + (m.dbSeason || '')))];
+    let nArch = 0;
+    chiavi.forEach(k => {
+      const A = cmpArchivi[k];
+      rows.push('');
+      if (!A) {
+        rows.push(`=== ARCHIVIO DI LEGA ${_cella(k)}: NON DISPONIBILE (database caricato da un Comparatore precedente al b47) ===`);
+        return;
+      }
+      rows.push(`=== ARCHIVIO DI LEGA (per rifare l Elo fuori dal motore): ${_cella(cmpLeagueName(A.lega))} ${A.lega}, database ${A.stagione}, ${A.partite.length} partite ===`);
+      rows.push([`ARCHIVIO ${A.lega} ${A.stagione}`, 'ID PARTITA', 'STAGIONE', 'DATA ISO (UTC)', 'STATO', 'ID CASA', 'CASA',
+                 'ID TRASFERTA', 'TRASFERTA', 'GOL CASA', 'GOL TRASFERTA'].map(_cella).join(';'));
+      A.partite.forEach(p => {
+        nArch++;
+        rows.push([`ARCHIVIO #${nArch}`, p.id, p.s, p.t, p.st, p.h, p.hn, p.a, p.an, p.gh, p.ga].map(_cella).join(';'));
+      });
+    });
+    cmpLog(`   Archivio di lega in fondo al file: ${nArch} partite (${chiavi.length} database).`);
+  }
 
   const csv = '\uFEFF' + rows.join('\r\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });

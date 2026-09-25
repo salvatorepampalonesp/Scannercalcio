@@ -8,6 +8,7 @@
 //
 //   node strumenti/banco-parita.js                      tutte le modalita', ~3 minuti
 //   MODES=singola,batch node strumenti/banco-parita.js  solo alcune
+//   SALVA_CSV=<cartella> ...                            salva l'ultimo CSV di ogni modalita'
 //   MOBILE=1 ...                                        pagine a 390px, e si misura lo scorrimento laterale
 //   VECCHIO=/percorso/scanner-vecchio.html MODES=vecchio ...   il Comparatore con un motore diverso dal pubblicato
 //   PENDENTI=1 ...                                      due partite prima della data risultano non concluse
@@ -263,7 +264,8 @@ async function newPage(browser, base) {
 const SNAP = `(() => ({ rec: window.__REC_CUR || [], verd: JSON.parse(JSON.stringify(window.__VERDETTI || null)),
   verdTxt: window.__VERDETTI_TXT || null, master: JSON.parse(JSON.stringify(window.__MASTER || null)),
   confMk: JSON.parse(JSON.stringify(window.__CONF_MK || null)), lineup: JSON.parse(JSON.stringify(window.__LINEUP_DEBUG || null)),
-  fatigue: JSON.parse(JSON.stringify(window.__FATIGUE_DEBUG || null)) }))()`;
+  fatigue: JSON.parse(JSON.stringify(window.__FATIGUE_DEBUG || null)),
+  trend: JSON.parse(JSON.stringify(window.__ELO_TREND || null)) }))()`;
 
 async function runScanner(browser, base, matches, limit) {
   const page = await newPage(browser, base);
@@ -381,11 +383,44 @@ async function runComparatore(browser, base, mode, date) {
     }, LEAGUE);
   }
   await page.waitForTimeout(300);
+  // l'archivio in fondo al CSV (b47) deve bastare a rifare l'Elo del motore identico:
+  // lo si rilegge dal TESTO esportato e si fa girare buildGlobalElo del motore su quello
+  const archivio = (mode === 'batch' || mode === 'sweep') ? await page.evaluate(() => {
+    const txt = (window.__CSVS || []).slice(-1)[0] || '';
+    const L = txt.replace(/^\uFEFF/, '').split(/\r?\n/).map(l => l.split(';'));
+    const head = L.find(c => /^ARCHIVIO \S+ \S+$/.test(c[0]));
+    if (!head) return { righe: 0, database: cmpAllMatches.length, partite: 0, diversi: -1, esempi: ['sezione ARCHIVIO assente'] };
+    const lega = head[0].split(' ')[1];
+    const arch = L.filter(c => /^ARCHIVIO #\d+$/.test(c[0])).map(c => ({ id: c[1], _season: c[2], time_utc: c[3], status: c[4],
+      home_team: { id: c[5], name: c[6] }, away_team: { id: c[7], name: c[8] },
+      score_home: c[9] === '' ? null : Number(c[9]), score_away: c[10] === '' ? null : Number(c[10]), league_id: lega }));
+    const riga = n => L.find(c => c[0] === n) || [];
+    const ids = riga('ID PARTITA'), t = riga('DATA ISO (UTC)'), hid = riga('ID SQUADRA CASA'), aid = riga('ID SQUADRA TRASFERTA');
+    const eh = riga('ELO Casa'), ea = riga('ELO Trasferta'), hf = riga('HFA Lega');
+    const salva = window.__ENGINE_CACHE;
+    const giro = A => { window.__ENGINE_CACHE = A; let n = 0; const d = [];
+      for (let i = 1; i < ids.length; i += 4) {
+        if (!ids[i]) continue;
+        const E = buildGlobalElo(new Date(t[i]).getTime());
+        const v = [E.table[hid[i]] ?? 1500, E.table[aid[i]] ?? 1500, E._hfa].map(x => String(Math.round(x)));
+        n++;
+        if (v[0] !== eh[i] || v[1] !== ea[i] || v[2] !== hf[i]) d.push(`${ids[i]}: ${v.join('/')} contro ${eh[i]}/${ea[i]}/${hf[i]}`);
+      }
+      return { n, d }; };
+    let G, P;
+    try {
+      G = giro(arch);
+      // controllo di potenza: senza la prima partita conclusa dell'archivio l'Elo non deve piu' coincidere
+      const i0 = arch.findIndex(m => m.status === 'finished');
+      P = giro(arch.filter((m, i) => i !== i0));
+    } finally { window.__ENGINE_CACHE = salva; }
+    return { righe: arch.length, database: cmpAllMatches.length, partite: G.n, diversi: G.d.length, esempi: G.d.slice(0, 3), potenza: P.d.length };
+  }) : null;
   const res = await page.evaluate(() => ({ runs: window.__RUNS, csvs: window.__CSVS, dl: window.__DL || [],
     saved: (cmpSavedMatches || []).map(m => ({ id: m.ids && m.ids.matchId, conf: m.conf, R: { m1: m.R.m1, confidence: m.R.confidence } })),
     consoleTxt: (document.getElementById('console') || {}).innerText || '',
     scroll: document.documentElement.scrollWidth - window.innerWidth }));
-  res.log = page.__log.slice(); res.sec = Math.round((Date.now() - t0) / 1000);
+  res.log = page.__log.slice(); res.sec = Math.round((Date.now() - t0) / 1000); res.archivio = archivio;
   await page.context().close();
   return res;
 }
@@ -452,6 +487,14 @@ function csvChecks(S, csv, col) {
   const mg = [...(R['mg-tot'] || '').matchAll(/>([0-9]-[0-9]) Gol<\/span><span[^>]*>([^<]*)</g)];
   for (const [, k, v] of mg) cmp('MG ' + k, v, cell('MG ' + k, 0));
   cmp('Elo casa', R['elo-h-ov'], cell('ELO Casa', 0)); cmp('Elo trasferta', R['elo-a-ov'], cell('ELO Trasferta', 0));
+  // la pendenza dell'Elo (b47): il trend che sposta i lambda del modello
+  if (!S.trend) out.push({ what: 'pendenza Elo', scanner: '(__ELO_TREND assente)', csv: '-', ok: false });
+  else for (const [k, lbl, tol] of [['trendH', 'Elo: pendenza casa (media ultime 5 meno 6-15, punti)', 0.0051],
+                                    ['trendA', 'Elo: pendenza trasferta (media ultime 5 meno 6-15, punti)', 0.0051],
+                                    ['penH', 'Elo: pendenza casa sul lambda (penH, cap 8%)', 0.00005],
+                                    ['penA', 'Elo: pendenza trasferta sul lambda (penA, cap 8%)', 0.00005],
+                                    ['nH', 'Elo: partite nella serie casa', 0], ['nA', 'Elo: partite nella serie trasferta', 0]])
+    cmp('Elo ' + k, S.trend[k], cell(lbl, 0), tol);
   cmp('Over 2.5 (multi-linea)', R['mdl-dc-ov'], cell('Over 2.5', 0, '--- OVER/UNDER MULTI-LINEA (prob DC vs reale) ---'));
   cmp('GG (da matrice)', R['mdl-dc-gg'], cell('GG (da matrice)', 0));
   { const cc = cell('COPIA CONFORME DELLO SCANNER', 0); out.push({ what: 'certificato di copia conforme', scanner: 'SI', csv: cc == null ? '(assente)' : cc, ok: cc === 'SI' }); }
@@ -532,6 +575,7 @@ function csvChecks(S, csv, col) {
   for (const mode of MODES) {
     const R = results[mode]; const mr = { sec: R.sec, csvs: R.csvs.length, dl: R.dl, log: R.log.slice(0, 12), perMatch: {} };
     const csvTxt = R.csvs[R.csvs.length - 1] || '';
+    if (process.env.SALVA_CSV && csvTxt) fs.writeFileSync(path.join(process.env.SALVA_CSV, 'banco-' + mode + '.csv'), csvTxt);
     const csv = csvTxt ? parseCSV(csvTxt) : null;
     const colonne = row => (row || []).filter((x, i) => i > 0 && (i - 1) % 4 === 0);
     if (csv) {
@@ -570,7 +614,9 @@ function csvChecks(S, csv, col) {
         && cc.tot > 0 && cc.si === cc.tot
         && Object.keys(mr.stagioniNelCSV || {}).every(k => k === '2025/2026')
         && (!process.env.MOBILE || R.scroll <= 0)
-        && (mode !== 'sconfina' || /le salto/.test(logTxt));
+        && (mode !== 'sconfina' || /le salto/.test(logTxt))
+        && (!R.archivio || (R.archivio.righe > 0 && R.archivio.righe === R.archivio.database
+                            && R.archivio.partite === cc.tot && R.archivio.diversi === 0 && R.archivio.potenza > 0));
     }
     if (!mr.ok) fail++;
     report.modes[mode] = mr;
@@ -582,6 +628,8 @@ function csvChecks(S, csv, col) {
     console.log(`   CSV: stagioni ${JSON.stringify(mr.stagioniNelCSV)} · copia conforme ${cc.si}/${cc.tot}${cc.no.length ? ' ' + JSON.stringify(cc.no) : ''}`);
     console.log(`   scritture a schermo del motore diverse dallo Scanner: ${eng.join(' / ')} su ${pms[0] && pms[0].scrittureMotore}`);
     console.log(`   righe del CSV diverse dallo Scanner: ${cs.join(' / ')} su ${pms[0] && pms[0].csvControlli}`);
+    if (R.archivio) { const A = R.archivio; mr.archivio = A;
+      console.log(`   archivio in fondo al CSV: ${A.righe} partite su ${A.database} del database · Elo rifatto dall'archivio su ${A.partite} partite: ${A.diversi} diverse${A.esempi.length ? ' ' + JSON.stringify(A.esempi) : ''} · senza una partita: ${A.potenza} diverse (potenza)`); }
     const ex = pms.find(p => p.esempi && p.esempi.length); if (ex) console.log('   es. motore:', JSON.stringify(ex.esempi.slice(0, 3)));
     const ec = pms.find(p => p.csvEsempi && p.csvEsempi.length); if (ec) console.log('   es. CSV:', JSON.stringify(ec.csvEsempi.slice(0, 6)));
     const note = pms.find(p => p.engine || p.csv); if (note) console.log('   nota:', note.engine || note.csv);
