@@ -62,7 +62,7 @@ for (const l of richieste.map(risolvi)) for (const s of STAGIONI) {
 if (!lavori.length) { console.log('Niente da fare: tutte le stagioni richieste hanno gia\' il loro file.'); process.exit(0); }
 
 // la PitchAPI: vera (Node, con la chiave) o quella finta del banco
-const conta = { chiamate: 0, errori: 0, riprovate: 0 };
+const conta = { chiamate: 0, assenti: 0, errori: 0, riprovate: 0 };
 let finta = null;
 if (FINTO) finta = require('./banco-parita.js');
 async function pitch(url) {
@@ -75,7 +75,7 @@ async function pitch(url) {
     try {
       const r = await fetch(url, { headers: KEY ? { 'X-API-KEY': KEY } : {}, signal: AbortSignal.timeout(45000) });
       if ((r.status === 429 || r.status >= 500) && t < 3) { conta.riprovate++; await sleep(3000 * 2 ** t); continue; }
-      if (!r.ok) conta.errori++;
+      if (r.status === 404) conta.assenti++; else if (!r.ok) conta.errori++;
       return { status: r.status, body: await r.text() };
     } catch (e) {
       if (t < 3) { conta.riprovate++; await sleep(3000 * 2 ** t); continue; }
@@ -104,7 +104,7 @@ function serve() {
   if (!FINTO) {
     const l0 = lavori[0];
     const prova = await pitch(`${PITCH}/leagues/${l0.l.id}/matches?season=${encodeURIComponent(l0.s)}`);
-    conta.chiamate = 0; conta.errori = 0; conta.riprovate = 0;
+    conta.chiamate = 0; conta.assenti = 0; conta.errori = 0; conta.riprovate = 0;
     const dove = 'serve la credenziale API dell\'ambiente sul sito pitchapi-proxy.salvatorepampalone-sp.workers.dev, header X-API-KEY senza prefisso';
     if (prova.status === 599) esci(`La PitchAPI non si raggiunge (${prova.body}): ${dove}.`);
     if (prova.status === 401 || prova.status === 403) esci(`La PitchAPI rifiuta la richiesta (HTTP ${prova.status}): la chiave manca o e' sbagliata; ${dove}.`);
@@ -166,7 +166,7 @@ function serve() {
   const timer = setInterval(async () => {
     const st = await page.evaluate(() => { const b = document.getElementById('cmp-sweep-progress'); return b ? b.innerText : ''; }).catch(() => '');
     const riga = st.split('\n').find(x => /partita \d+\/\d+/.test(x)) || '';
-    if (riga && riga !== ultimoStato) { ultimoStato = riga; scrivi(`${riga.replace(/^⏳\s*/, '')} · API ${conta.chiamate} chiamate, ${conta.errori} errori`, true); }
+    if (riga && riga !== ultimoStato) { ultimoStato = riga; scrivi(`${riga.replace(/^⏳\s*/, '')} · API ${conta.chiamate} chiamate, ${conta.assenti} senza dati (404), ${conta.errori} errori`, true); }
   }, 60000);
 
   const idLeghe = [...new Set(lavori.map(j => j.l.id))];
@@ -184,7 +184,7 @@ function serve() {
 
   const mancano = lavori.filter(j => !fs.existsSync(path.join(OUT, nomeFile(j.l, j.s))));
   scrivi(`=== fine in ${((Date.now() - t0) / 60000).toFixed(1)} minuti: ${salvati.length} file salvati, API ${conta.chiamate} chiamate `
-       + `(${conta.errori} fallite, ${conta.riprovate} riprovate)${mancano.length ? ' · SENZA FILE: ' + mancano.map(j => `${j.l.name} ${j.s}`).join(', ') : ''}`, true);
+       + `(${conta.assenti} senza dati, ${conta.errori} fallite, ${conta.riprovate} riprovate)${mancano.length ? ' · SENZA FILE: ' + mancano.map(j => `${j.l.name} ${j.s}`).join(', ') : ''}`, true);
   await browser.close(); srv.close(); logFile.end();
   process.exit(mancano.length ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(2); });

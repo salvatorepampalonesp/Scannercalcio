@@ -2065,8 +2065,13 @@ node strumenti/batch-auto.js --leghe "Serie A,Eredivisie,ENG:Championship" --sta
   dell'ambiente perché lo script si rilancia da solo con `NODE_USE_ENV_PROXY=1`.
 - Il motore è quello della cartella di lavoro: su un branch che cambia `scanner.html` il batch
   misura il branch. La build è in testa al log e in ogni CSV.
-- Una stagione vera dura ore: si lancia in background e si legge `batch.log`. Dopo ogni file,
-  `python3 strumenti/elo-archivio.py <csv>` deve dire COINCIDE.
+- Una stagione vera dura ore (la Championship 2023/24, 557 partite, ne stimava quasi tre alla
+  partenza): si lancia in background e si legge `batch.log`. Dopo ogni file,
+  `python3 strumenti/elo-archivio.py <csv>` deve dire COINCIDE. I 404 si contano a parte
+  («senza dati»): sono le `/advanced` delle stagioni che non le hanno, una chiamata su quattro,
+  e quelle righe escono `riserva-k-motore` come a mano.
+- Il batch vive nel computer della sessione: se la sessione resta inattiva il computer può
+  essere spento, e con lui `batch/`. Ogni file finito va mandato all'utente appena salvato.
 - `--finto` sostituisce la PitchAPI con la lega finta del banco (`banco-parita.js` si può
   importare, ed esporta la sua `api`). Verificato così: il CSV di Serie A 2025/26 finto è
   identico riga per riga a quello del batch del banco, tranne l'ora di generazione, e l'Elo
