@@ -48,7 +48,7 @@ competizioni UEFA; nessuna quota dei bookmaker.
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b47`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b48`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -99,20 +99,27 @@ spostala in *Cosa è già stato provato* con i numeri, e aggiorna *Stato attuale
 
 Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export recente.
 
-- [ ] **Il batch del `b47`: formazioni, stanchezza, Elo.** Un solo giro di export serve a tre
+- [x] ~~**Il batch del `b47`: formazioni, stanchezza, Elo.**~~ — **fatto (`b48`).** Formazioni e
+  stanchezza non passano, nemmeno il secondo giro delle formazioni; l'ingresso delle
+  neopromosse passa ed è nel motore; il peso e la scala dell'Elo non passano nemmeno al secondo
+  giro. Il racconto sotto resta per la storia. Un solo giro di export serve a tre
   decisioni. Le cinque leghe di sempre (stesse stagioni, una per file, in copia conforme: la
   formazione della partita costa una chiamata in più, le coppe europee tre per stagione) e in
   più **Eredivisie, Liga Portugal e Championship**, 2023/24–2025/26, mai guardate. Poi, in
   quest'ordine e con le regole scritte prima di vederle: formazioni e stanchezza (*Formazioni e
-  assenze*, *La stanchezza*); l'ingresso delle neopromosse nell'Elo (*Le neopromosse*); il peso
+  assenze*, *La stanchezza*: **fatto, non passano**; resta il secondo giro delle formazioni sulle
+  tre leghe nuove); l'ingresso delle neopromosse nell'Elo (*Le neopromosse*); il peso
   e la scala dell'Elo sull'Elo corretto (*Peso e scala dell'Elo insieme*, «Il 4 su 5»). Le tre
   leghe nuove servono all'Elo: non vanno aperte prima che le regole siano nel repository.
-- [ ] **Il candidato Elo, secondo giro.** `ELO_1X2_W` 0.40 con `ELO_SCALE` 2.00 **non ha
-  passato** il test registrato (LaLiga −0.0042, Bundesliga −0.0078, Ligue 1 +0.0004, e la
-  regola chiedeva un miglioramento in ciascuna). Resta 0.75 / 1.25. Il secondo giro si fa sulle
-  tre leghe nuove del batch `b47`, **dopo** aver corretto l'ingresso delle neopromosse, perché
-  i pesi dipendono dall'Elo che pesano. Vedi *Peso e scala dell'Elo insieme: il candidato
-  registrato*.
+  I file si possono fare anche da qui, con *Il batch automatico*.
+- [x] ~~**Il candidato Elo, secondo giro.**~~ — **non passato nemmeno sulle tre leghe nuove**
+  (`b48`): sopra l'Elo corretto −0.00135, `z = −0.89`, la Championship peggiora. Resta 0.75 /
+  1.25. L'alternativa rimasta è una temperatura sul prodotto stimata sulla lega stessa. Vedi
+  *Peso e scala dell'Elo insieme: il candidato registrato*.
+- [ ] **Riconfermare le tabelle col `b48`.** L'ingresso delle neopromosse sposta le
+  probabilità delle partite con una neopromossa (una su quattro): `CONF_1X2_TABLE`, soglie del
+  pick e scarti dell'1X2 sono misurati sul motore di prima. Un batch automatico delle cinque
+  leghe li rifà (vedi *Il batch automatico*).
 - [ ] **Il riferimento di lega dei mercati sui numeri è sbagliato da lega a lega.** Corner,
   tiri e gialli si ancorano a `MARKET_PER_GOAL × gol di lega`, ma corner e gialli non
   crescono coi gol: per gol i gialli vanno da 1.18 (Bundesliga) a 1.67 (LaLiga), i corner
@@ -229,7 +236,7 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b47`)
+## Stato attuale (`b48`)
 
 **1X2.** Pick azzeccato 52.9% (±3.0) contro il 40.2% del «gioca sempre in casa» in Serie
 A, 52.8% contro 43.1% in Premier, 54.2% contro 45.8% in LaLiga, 51.8% contro 42.0% in
@@ -262,19 +269,24 @@ fra modello ed Elo, +0.57 punti di prese. Il margine vero è la selezione: gioca
 
 **Formazioni e stanchezza.** Dal `b43` il motore sa chi manca oggi rispetto all'undici
 abituale, dal `b44` quanti giorni di riposo ha ogni squadra contando le coppe europee (card
-«Formazioni e stanchezza», sezioni CSV `FORMAZIONI` e `STANCHEZZA`). Non li usa ancora: sono in
-misura, con le regole scritte prima del batch. Vedi *Formazioni e assenze* e *La stanchezza*.
+«Formazioni e stanchezza», sezioni CSV `FORMAZIONI` e `STANCHEZZA`). Col batch `b47` le due
+regole scritte prima **non sono passate**: l'indice delle formazioni ha il segno giusto in tutte
+le leghe ma vale −0.0004 di logloss (`z = −0.72`) e abbassa le prese; la stanchezza peggiora fuori
+lega. Restano a schermo come informazione. Il secondo giro delle formazioni, dalla sesta
+giornata e su tre leghe mai viste, non passa neppure (+0.00019). Vedi *Formazioni e assenze* e
+*La stanchezza*.
 Dal `b46` la card dice quando la formazione probabile è solo l'ultimo undici, e con la
 confermata mostra chi è cambiato rispetto alla probabile vista prima (vedi *La formazione
 probabile*).
 
-**Neopromosse.** Sono sopravvalutate, dal modello e dall'Elo. A parità di attesa fanno 0.046
-punti a partita meno del previsto (`z ≈ −3.3`), e nell'1 contro 2 la loro vittoria è stimata
-5.9 punti sopra il vero (8.3 nelle prime dieci partite, 4.8 dopo la ventesima), in Serie A,
-Premier, LaLiga e Bundesliga; in Ligue 1 no. Sono il 26% del calendario. L'Elo le fa entrare a
-1500 o le tira verso 1500, cioè verso la squadra media. Il `b47` non cambia le probabilità:
-porta nel CSV l'archivio di lega, per decidere la correzione fuori dal motore. Vedi *Le
-neopromosse*.
+**Neopromosse.** Fino al `b47` l'Elo le faceva entrare a 1500 o le tirava verso 1500, cioè
+verso la squadra media, e la loro vittoria (1 contro 2) usciva 7.3 punti sopra il vero. Dal
+`b48` una squadra che entra nella lega parte dalla media dei rating finali delle squadre uscite
+la stagione prima, chi torna dopo più di 180 giorni regredisce verso quel livello, e la
+pendenza dell'Elo non legge più i salti della regressione come forma. Sulle cinque leghe il
+residuo va a −0.5 ±2.6 punti e la logloss 1 contro 2 migliora di 0.0037 (`z = −2.64`); sulle tre
+leghe nuove non peggiora (−0.00076). Le prese non si muovono: il pick contro una neopromossa era
+già il pick. Vedi *Le neopromosse*.
 
 **Giocatori.** Dal `b45` una card mostra, per i giocatori della rosa di oggi, quante volte hanno
 superato una soglia (falli subiti e commessi, tiri, tiri in porta, gialli, gol, assist,
@@ -295,8 +307,9 @@ Ligue 1. La timidezza sta nel modello (`lgModel` 1.637 / 1.309 / 1.481 / 1.374 /
 nell'Elo (1.119 / 1.018 / 1.017 / 1.035 / 0.957). Pesare di più il modello e scalare di più
 l'Elo (0.40 / 2.00) la toglie dove c'è, −0.005 di logloss sulle cinque leghe (`z = −4.07`),
 ma **non ha passato il test registrato**: in Ligue 1, dove il prodotto è già calibrato, non
-migliora (+0.0004). Resta 0.75 / 1.25. Vedi *Peso e scala dell'Elo insieme: il candidato
-registrato*.
+migliora (+0.0004). Il secondo giro, sopra l'Elo corretto del `b48` e su tre leghe mai viste,
+non passa neppure (`z = −0.89`). Resta 0.75 / 1.25. Vedi *Peso e scala dell'Elo insieme: il
+candidato registrato*.
 
 **Mercati gol.** Due muri distinti. *Ordinamento*: AUC dell'Over 2.5 fra 0.51 e 0.60 a
 seconda del campione (0.552 in copia conforme, GG 0.532), e l'unica feature che l'ha spostato
@@ -676,7 +689,7 @@ niente. Controlla:
   testo; all'apertura il Comparatore ripristina la copia salvata in localStorage, che puo'
   essere vecchia) e che le build coincidano;
 - **ogni** manopola del motore contro il suo default letto dal sorgente
-  (`cmpEngineDefaults`, 27 manopole dal `b42`), piu' `CMP_K_LIST[0]` contro `SHRINK_K`;
+  (`cmpEngineDefaults`, 30 manopole dal `b48`), piu' `CMP_K_LIST[0]` contro `SHRINK_K`;
 - lo storico per squadra contro quello dello Scanner (`window.__ENGINE_LIMIT`);
 - che la partita sia della stagione per cui e' caricato il database.
 
@@ -701,11 +714,11 @@ dall'id della partita e servita al posto di PitchAPI, con una neopromossa e senz
 `/advanced` sulla stagione piu' vecchia come l'API vera. Lo Scanner si guida come lo usa
 l'utente (`caricaSquadreLega` e `avviaScanner` sulle partite di una data), il Comparatore gira
 in ogni modalita', e si confrontano **ogni scrittura a schermo del motore** (`safeTxt` e
-`safeHtml`, strumentate nei due file allo stesso modo: 190 per partita) e **121 righe del CSV**
+`safeHtml`, strumentate nei due file allo stesso modo: 190 per partita) e **122 righe del CSV**
 che riportano un numero dello Scanner (1X2, confidence di tutti i mercati, i sei modelli,
 GG e Over, corner/tiri/gialli e le loro linee, handicap, multigol, Elo, tabellone voce per
 voce, certificato, dal `b43` gli indici delle formazioni, dal `b44` quelli della stanchezza, dal
-`b47` la pendenza dell'Elo). Tre modalita' sono controlli di
+`b47` la pendenza dell'Elo, dal `b48` il livello d'ingresso delle neopromosse). Tre modalita' sono controlli di
 potenza, e passano solo se il certificato dice NO col motivo giusto. Dal `b43` la lega finta ha
 anche le formazioni (rosa di 18, ogni titolare abituale riposa col 15%, la squadra 3 cambia
 allenatore a stagione in corso) e i marcatori presi dai titolari; dal `b44` una Champions finta
@@ -719,15 +732,15 @@ rilegge l'archivio di lega dal **testo** del CSV esportato, ci fa girare `buildG
 motore e confronta Elo e HFA con le righe del CSV, partita per partita; il controllo di potenza
 toglie una partita dall'archivio e deve vedere l'Elo cambiare.
 
-Esito al `b47` (storico 30), a 390px:
+Esito al `b48` (storico 30), a 390px:
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
-| una partita, tutte del giorno, intervallo | 3/3 | 0 su 190 | 0 su 121 | 0 |
-| batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 190 | 0 su 121 | 0 |
+| una partita, tutte del giorno, intervallo | 3/3 | 0 su 190 | 0 su 122 | 0 |
+| batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 190 | 0 su 122 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
-| `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 123-154 | 71-82 | 0 |
-| `vecchio`: motore `b46` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 | 7 | 0 |
+| `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 127-155 | 74-82 | 0 |
+| `vecchio`: motore `b47` caricato (controllo) | 0/3, «motore caricato diverso ...» | 19-76 | 24-67 | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -742,7 +755,9 @@ stanchezza che cambiano e il certificato. Al `b45` il controllo col `b44` vede s
 messaggio iniziale della card dei giocatori e il certificato. Al `b46` il controllo col
 `b45` vede solo la card delle formazioni (la riga «Rispetto alla probabile») e il certificato.
 Al `b47` il controllo col `b46` non vede nessuna scrittura diversa: solo le sei righe della
-pendenza (a `N/D`, il `b46` non la espone) e il certificato.
+pendenza (a `N/D`, il `b46` non la espone) e il certificato. Al `b48` il controllo col `b47`
+vede 19-76 scritture diverse: la lega finta ha squadre che entrano e escono, quindi cambiano
+rating, pendenze e tutto quello che ne discende.
 
 **Cosa resta fuori, e va saputo:**
 
@@ -1116,6 +1131,21 @@ non in calo. Se passa, entra con `CONF_1X2_TABLE`, soglie del pick e scarti dell
 sulle probabilità ricostruite. **Il test del `b41` resta non passato**: questo è un test nuovo
 su dati nuovi, non una rilettura del primo.
 
+**Fissato prima di aprire le tre leghe (batch `b47`).** Sulle cinque leghe note la griglia dà lo
+stesso punto sia con l'Elo in uso sia con B + C: **`w` 0.40, `S` 2.00**, dentro la griglia.
+Con l'Elo in uso fuori lega −0.00492 (`z = −4.07`, scelto 0.40 / 2.00 in cinque fold su cinque),
+prese 52.79 → 53.06%; sopra B + C −0.00262 (`z = −2.29`), prese 52.72 → 53.15%. La coppia si
+prova sopra l'Elo che esce dal secondo passo delle neopromosse (B + C se passa, altrimenti
+quello in uso), contro 0.75 / 1.25 sullo stesso Elo. «Prese non in calo» vuol dire, anche qui,
+differenza appaiata non sotto −2 errori standard.
+
+**Esito del secondo giro (sopra B + C, che è passato): non passa.** Eredivisie −0.00272 (`z =
+−1.00`), Liga Portugal −0.00467 (`z = −1.70`), Championship +0.00125 (`z = +0.52`); insieme
+−0.00135, `z = −0.89` contro il −2 richiesto; prese +0.09. Il verso è lo stesso delle cinque
+leghe, ma su leghe mai viste l'effetto è la metà e non si distingue dal rumore. **Resta 0.75 /
+1.25.** Il motore corretto per intero (B + C con 0.40 / 2.00) contro quello del `b47`, solo
+descrittivo: −0.00211, `z = −1.06`.
+
 In Bundesliga, a `S` fisso, anche il vecchio sweep di `w` dice 0.50 meglio di 0.75 (`z =
 −1.75`); in Ligue 1 è piatto (0.5945 contro 0.5943). Su LaLiga la griglia, guardata solo
 dopo il test, ha la stessa cresta: il minimo sta vicino
@@ -1179,6 +1209,35 @@ tre prove in più, quindi contano solo con `z ≤ −3`. Sui mercati gol (Over e
 assenti) è solo descrittivo. Se passa, entra nel motore con il `b` stimato, e **solo con la
 formazione confermata**: con quella probabile l'indice resta a schermo e non sposta niente.
 Se non passa, la card resta come informazione e questa sezione dice perché.
+
+**Esito (batch `b47`, cinque leghe, 5230 partite, 3891 senza pari): non passa.** Il
+coefficiente ha lo stesso segno in tutti e cinque i fold (−0.25 … −0.46: la squadra che manca
+di più rende di meno), ma l'effetto è quasi nullo:
+
+| indice | Serie A | Premier | LaLiga | Bundesliga | Ligue 1 | insieme | prese |
+|---|---|---|---|---|---|---|---|
+| **peso degli assenti** (primario) | −0.00001 | −0.00156 (`z = −2.25`) | −0.00012 | −0.00009 | −0.00014 | −0.00041, `z = −0.72`, 5 su 5 | 52.79 → 52.52% |
+| gol degli assenti | −0.00065 | −0.00236 | +0.00023 | −0.00199 | −0.00095 | −0.00112, `z = −1.41` | 52.79 → 52.87% |
+| cambi dall'ultima | +0.00026 | −0.00070 | −0.00047 | −0.00026 | −0.00003 | −0.00025, `z = −0.64` | 52.79 → 52.56% |
+| allenatore nuovo | +0.00013 | +0.00088 | −0.00004 | +0.00002 | −0.00007 | +0.00020, `z = +1.29` | invariate |
+
+La soglia d'insieme (`z ≤ −2`) è lontana e le prese scendono; i secondari non arrivano a −3. La
+card resta come informazione. **Descrittivo, trovato dopo:** nelle prime cinque giornate gli
+«abituali assenti» sono anche i ceduti d'estate (4.5 a partita contro 3.5 dopo, indice più
+disperso: sd 0.256 contro 0.179). Dalla sesta giornata, in campione, il coefficiente è −0.81 e
+la logloss −0.0021 (`z = −1.88`): meglio, ma stimato sugli stessi dati.
+
+**Il secondo giro, registrato prima di aprire le tre leghe nuove.** Lo stesso indice primario,
+usato solo quando tutte e due le squadre hanno già giocato cinque partite di lega della
+stagione (prima, correzione zero), col coefficiente fissato adesso a **−0.81** (le cinque leghe,
+dalla sesta giornata). Si prova su Eredivisie, Liga Portugal e Championship 2023/24–2025/26,
+batch `b47`, di cui finora sono stati guardati solo copia conforme ed Elo: passa se la logloss
+1 contro 2 migliora in almeno due leghe su tre, `z ≤ −2` sull'insieme, prese del pick non in
+calo. Niente secondari. Se passa, entra nel motore solo con la formazione confermata.
+
+**Esito del secondo giro: non passa.** Eredivisie +0.00032, Liga Portugal −0.00016,
+Championship +0.00031; insieme +0.00019 (`z = +0.16`), una lega su tre. L'indice delle
+formazioni è chiuso: con la formazione confermata in mano il motore non prevede meglio.
 
 ### La formazione probabile
 
@@ -1248,6 +1307,15 @@ in calo. Secondari, con `z ≤ −3`: partite in 14 giorni (differenza), coppa e
 giorni prima, coppa europea entro 4 giorni dopo (il turnover preventivo). Sui gol solo
 descrittivo.
 
+**Esito (batch `b47`, cinque leghe): non passa, nemmeno per poco.** Le formazioni non sono
+entrate, quindi si è misurata sopra `lgTarget`. Il vantaggio di riposo peggiora la logloss
+fuori lega in tutte e cinque le leghe (+0.00007 / +0.00009 / +0.00010 / +0.00060 / +0.00111;
+insieme +0.00036, `z = +2.68`), col coefficiente che cambia segno da un fold all'altro (−0.016
+… +0.021). Secondari: partite in 14 giorni +0.00038 (`z = +1.43`), coppa entro 4 giorni prima
++0.00035 (`z = +1.86`), dopo +0.00016 (`z = +0.75`). Il riposo di sola lega, rifatto per
+confronto, +0.00088 (`z = +3.26`). Contare le coppe europee non ha acceso nessun segnale: il
+calendario, nelle cinque leghe, le probabilità lo sanno già o non conta.
+
 ## Le statistiche dei giocatori
 
 **Cosa mostra.** La card «Giocatori — le ultime 30 partite», col bottone: per ogni giocatore
@@ -1295,6 +1363,7 @@ scrittura nuova, il messaggio iniziale). Il banco la verifica a parte, premendo 
 | `ENS_SCOPE_W` | 1 | stimata `b21` | 1133 partite, logloss 1.0113 → 1.0071, monotono in 3 leghe su 3, `z = −3.96`, fuori campione 1.0 in 3 fold su 3. Solo 1X2 |
 | `ELO_1X2_W` | 0.75 | stimata `b14`, riconfermata `b35` e `b41` a `S` fisso | 5 leghe, 1743 partite: w 0 → 0.50 a +5.02σ, ottimo a 0.75. `b35` (Serie A 1882, ramo giusto): ottimo interno piatto fra 0.50 e 0.75, estremi peggiori a 2σ. `b41` (1134 in copia conforme): idem. Spazzata **insieme a `ELO_SCALE`** su Serie A e Premier la coppia 0.40 / 2.00 vale −0.0063 (`z = −3.53`), 6 stagioni su 6, ma nel test registrato Ligue 1 non migliora (+0.0004): non passa. Vedi *Peso e scala dell'Elo insieme* |
 | `ELO_SCALE` | 1.25 | stimata `b30`, confermata `b35` e `b41` a `w` fisso; la coppia con `w` non ha passato il test (`b41`) | pendenza di calibrazione dell'Elo 1.235 (`z = 3.13`); fuori campione 1.20–1.35 in 7 fold su 7; `b35`: 1.25 batte 1.00 a `z = 3.92`; `b41`: a `z = 3.55`, Elo a 1.119 ±0.089. Applicata alla sola differenza di rating, non all'HFA |
+| `ELO_INGRESSO` / `ELO_RITORNO` / `ELO_PENDENZA` | `'uscite'` / 180 / `'netta'` | procedura senza parametri stimati (`b48`); 180 è una definizione | registrata prima del batch `b47`; cinque leghe −0.00375, `z = −2.64`, residuo delle neopromosse da −7.3 a −0.5 punti; tre leghe nuove −0.00076, nessuna oltre `z = +1`. 180 sta fra la pausa più lunga dentro una lega (106 giorni) e il ritorno più breve (454). Vedi *Le neopromosse* |
 | `ELO_GAP_THRESHOLD` / `TAU` / `ASY` | 45 / 360 / 0.9 | `τ` scelto dove smette di costare (`b30`) | la logloss cala in modo monotono fino a τ infinito; da 360 in su il guadagno residuo è 0.0005. Non misurato sulla pausa estiva (33 partite) |
 | K dell'Elo | 30 sotto le 15 partite, poi 20 | a mano, verificato `b30` | alzare K porta la pendenza a 1 ma peggiora la logloss oltre 40/28: si tara la conversione, non il rating |
 | clamp dell'HFA | [30, 100], con ≥50 partite | paracadute misurato, inerte (`b41`) | 0 righe su 1134 in copia conforme (`lgN` ≥ 760). Il 27.6% del `b35` erano archivi corti (< 600 partite), che lo Scanner in produzione non ha. Alternativa esposta e inutile: `ELO_HFA_MODE = 'shrink'`, `ELO_HFA_PRIOR` 65, `ELO_HFA_K` 200 (−0.00027, `z = −1.25`) |
@@ -1376,7 +1445,7 @@ di questo elenco è stata a lungo falsa proprio perché nessuno sapeva dove cont
 - **Il vantaggio campo contato due volte**: dati di sola casa più un moltiplicatore 1.10
   (v9.4), poi di nuovo nell'Ordered Logit (`b20`). Vedi *Convenzioni del motore*.
 - **Elo calcolato a ritroso**: il trend usciva col segno invertito. Ora è cronologico, di
-  lega, a somma zero (controllo M: media esatta 1500).
+  lega, a somma zero (controllo M: media 1500 senza pause e senza squadre entrate).
 - **1X2 in Poisson senza `rho`** mentre i risultati esatti usavano Dixon-Coles: ora una
   matrice sola.
 - **Una correzione espressa come rapporto non si trasporta su un'altra baseline.**
@@ -1552,6 +1621,9 @@ misurate.
 | Arretrare il taglio temporale a `x-1` | **no** | vedi *L'orario non è affidabile* |
 | Ordinare il tabellone per probabilità grezza | **no** | guadagno piatto (+1.4 … +7.1) contro monotono per scarto |
 | Anticipare le sorprese con forma (punti nelle ultime 5), momento dell'Elo (ultime 5), giorni di riposo **di sola lega**, fortuna (gol − NPxG, ultime 10), NPxG recenti | **no** (`b42`); il riposo si rifà con le coppe europee (`b44`, vedi *La stanchezza*) | 5230 partite, fuori lega (stimato su quattro leghe, misurato sulla quinta), sopra `lgTarget`: logloss 1 contro 2 −0.0000 / −0.0001 / +0.0001 / −0.0012 (`z = −1.40`) / −0.0020 (`z = −1.85`), prese +0.13 / +0.10 / +0.04 / +0.17 / +0.06 punti; tutte insieme +0.31. Il riposo conta solo le partite di lega: le coppe non sono nell'archivio |
+| L'indice delle formazioni (peso dei titolari abituali assenti, `b43`) | **no** (`b47`) | 5230 partite, fuori lega: −0.00041 di logloss, `z = −0.72`, stesso segno in 5 leghe su 5 ma prese 52.79 → 52.52%. Dalla sesta giornata −0.0021 in campione (`z = −1.88`): secondo giro registrato sulle tre leghe nuove. Vedi *Formazioni e assenze* |
+| La stanchezza con le coppe europee (`b44`) | **no** (`b47`) | vantaggio di riposo peggiore fuori lega in 5 leghe su 5 (+0.00036, `z = +2.68`); partite in 14 giorni e coppa entro 4 giorni prima o dopo, niente. Vedi *La stanchezza* |
+| Peso e scala dell'Elo, secondo giro (0.40 / 2.00 sopra l'Elo corretto) | **no** (`b48`) | tre leghe mai viste: −0.00135, `z = −0.89`, Championship peggiore. Vedi *Peso e scala dell'Elo insieme* |
 | Il disaccordo fra modello ed Elo come segnale di sorpresa | **è il candidato Elo visto da un'altra parte** (`b42`) | fuori lega −0.0037 (`z = −2.47`), prese +0.57 punti, Ligue 1 di nuovo contraria (+0.0020). Nelle 717 partite (14%) in cui modello ed Elo indicano favoriti diversi il pick prende il 37.7% (41.4% col disaccordo in regressione), contro il 55.2% delle altre. A parità di partite giocate la selezione non migliora (top 20%: 72.8 contro 73.2%) |
 
 **Le cose che hanno retto**, in ordine di quanto valgono:
@@ -1564,6 +1636,7 @@ misurate.
 | **`ENS_SCOPE_W = 1`** (`b21`) | −0.0042 di logloss, `z = −3.96`, 3 leghe su 3 |
 | **Lo squilibrio sui cartellini** (`b16`) | AUC 0.562 → 0.593, stesso segno in 5 leghe |
 | **`sum_sot` sull'Over 2.5** (`b9`–`b12`) | l'unica feature sopravvissuta a tre leghe |
+| **L'ingresso delle neopromosse nell'Elo** (`b48`) | residuo delle neopromosse da −7.3 ±2.6 a −0.5 punti; logloss 1 contro 2 −0.0037 (`z = −2.64`) su cinque leghe, confermato non peggiore su tre leghe mai viste |
 | **Lo squilibrio sui tiri in porta** (`b42`) | registrato prima di vedere due leghe e passato su tutte e due; cinque leghe −0.0029 di logloss dell'Over 8.5, `z = −3.10`, positivo in 14 stagioni su 15 |
 
 ## La baseline di coppia
@@ -1699,8 +1772,9 @@ vittoria casa 0.689 contro 0.662). Non è informazione nuova: è la stessa stori
 meglio, perché l'Elo propaga i risultati di tutta la lega in modo transitivo.
 
 `buildGlobalElo`: cronologico, a somma zero, K 30 sotto le 15 partite e poi 20,
-moltiplicatore per scarto di gol, e **di lega** (filtra `_chosenLeagueId`: una neopromossa
-parte da 1500). Usa tutte e tre le stagioni caricate.
+moltiplicatore per scarto di gol, e **di lega** (filtra `_chosenLeagueId`). Usa tutte e tre le
+stagioni caricate. Dal `b48` una squadra che entra nella lega dopo la prima stagione in archivio
+parte dal livello delle squadre uscite (vedi *Le neopromosse*).
 
 Si collega **inclinando il rapporto fra i lambda a totale fisso**:
 
@@ -1816,7 +1890,8 @@ da una a tre partite per stagione, e dal 16 al 36% dei rating esce diverso (medi
 90° percentile 5–6). Una correzione che sta dentro il ciclo dell'Elo non si misura così. Dal
 `b47` il CSV porta in fondo l'archivio del database (sezione `ARCHIVIO DI LEGA`): sul banco
 l'Elo rifatto da lì coincide su 89 partite su 89, col `buildGlobalElo` del motore e con
-`strumenti/elo-archivio.py` (anche la pendenza, entro l'arrotondamento). Lo strumento è la
+`strumenti/elo-archivio.py` (anche la pendenza, entro l'arrotondamento); sul primo file vero
+(Serie A 2023/24, archivio di 1141 partite) coincide su 379 partite su 379. Lo strumento è la
 replica in Python con le manopole libere: `python3 strumenti/elo-archivio.py <csv>` fa la prova
 di coincidenza, da rifare su ogni file prima di ricostruire qualcosa (un CSV senza archivio
 risponde «NON COINCIDE»).
@@ -1852,6 +1927,64 @@ gol per intero. Dal `b47` il CSV esporta trend, `penH`/`penA` e la lunghezza del
    `z > +1`, e sull'insieme una differenza non positiva.
 5. Se A e B passano tutte e due, si spedisce B. Solo dopo si rifanno i pesi (vedi *Peso e scala
    dell'Elo insieme*, «Il secondo giro»).
+
+**Esito sulle cinque leghe (batch `b47`, 5230 partite, Elo rifatto dall'archivio).** Prova di
+coincidenza col motore in uso: differenza Elo e HFA identiche su 8725 partite su 8725,
+`lgTarget` entro 0.00012, pendenza entro 0.00005. Il residuo delle neopromosse col motore in
+uso è −7.3 ±2.6 punti (977 partite senza pari con una sola neopromossa in campo).
+
+| correzione | Serie A | Premier | LaLiga | Bundesliga | Ligue 1 | insieme | prese (appaiate) | residuo neopromosse |
+|---|---|---|---|---|---|---|---|---|
+| A, δ fuori lega (150–200) | −0.00359 | −0.00732 | −0.00264 | −0.00557 | +0.00205 | −0.00354, `z = −2.48`, 4 su 5 | −0.10 (±0.48) | −0.4 ±2.6 |
+| **B**, livello delle uscite | −0.00363 | −0.00677 | −0.00258 | −0.00545 | +0.00022 | −0.00372, `z = −2.61`, 4 su 5 | −0.08 (±0.45) | −0.4 ±2.6 |
+| C, pendenza senza salti | −0.00002 | −0.00006 | −0.00013 | −0.00009 | −0.00000 | −0.00006, `z = −2.48`, 5 su 5 | −0.02 (±0.04) | −7.3 |
+| B + C | −0.00368 | −0.00674 | −0.00260 | −0.00552 | +0.00018 | −0.00375, `z = −2.64`, 4 su 5 | −0.08 (±0.45) | −0.5 ±2.6 |
+
+Il δ di A sulle cinque sarebbe 175. Logloss, leghe e residuo passano; **le prese no, alla
+lettera**: la regola diceva «non in calo» senza margine, e con B il pick cambia esito in 140
+partite su 5230 con saldo −4. È rumore (±0.45 punti), ma cambiare la regola dopo averlo visto
+non si fa: **sulle cinque leghe non passa.**
+
+**Il secondo passo, registrato prima di aprire l'Elo delle tre leghe nuove.** Candidato unico
+**B + C**. Si prova su Eredivisie, Liga Portugal e Championship 2023/24–2025/26 contro l'Elo in
+uso, peso e scala 0.75 / 1.25: passa se nessuna lega ha `z > +1`, la logloss 1 contro 2
+d'insieme non peggiora, e le prese non calano **oltre il rumore**, cioè la differenza appaiata
+delle prese è almeno −2 errori standard. Il residuo delle neopromosse lì è solo descrittivo: in
+Championship si entra anche dalla Premier. Se passa, B + C entra nel motore.
+
+**Esito sulle tre leghe nuove: passa.**
+
+| lega | partite senza pari | differenza | `z` |
+|---|---|---|---|
+| Eredivisie | 690 | +0.00037 | +0.10 |
+| Liga Portugal | 677 | −0.00271 | −0.85 |
+| Championship | 1226 | −0.00031 | −0.62 |
+| insieme | 2593 | −0.00076 | −0.58 |
+
+Nessuna lega oltre `z = +1`, l'insieme non peggiora, le prese −0.03 punti contro un rumore di
+−0.53. **Nel motore dal `b48`**:
+
+- `buildGlobalElo` conosce la stagione di ogni partita (`_season`, messo al caricamento dallo
+  Scanner come già dal Comparatore; un database in memoria salvato senza si riscarica). La
+  prima stagione dell'archivio parte a 1500 come prima; una squadra che compare dopo parte da
+  `livelloIngresso(stagione)`, la media dei rating finali delle squadre della stagione prima che
+  non sono in questa (dal calendario, noto in anticipo); chi torna dopo più di `ELO_RITORNO` =
+  180 giorni regredisce, con la curva di sempre, verso quel livello invece che verso 1500. Una
+  squadra mai vista che non ha ancora giocato vale il livello della stagione più recente
+  (`ELO._ingresso`), non 1500.
+- La pendenza (`calcTrend`) legge `seriesTrend`, la serie dei rating tolte le regressioni;
+  `series` resta quella di sempre per quello che la mostra.
+- Manopole: `ELO_INGRESSO` (`'uscite'`; `'1500'` torna al `b47`), `ELO_RITORNO` (180),
+  `ELO_PENDENZA` (`'netta'`; `'grezza'` torna al `b47`). La card dell'Elo ha la riga «Ingresso
+  neopromosse»; il CSV le righe `Elo: ingresso delle neopromosse (livello della stagione)` e
+  `Elo: regola d ingresso / pendenza`. `strumenti/elo-archivio.py` segue la regola nuova e
+  riconosce da sola i CSV del `b47`.
+- Verificato sul batch vero (`b48`, Championship, Premier e Serie A 2025/26, 1309 partite in
+  copia conforme): l'Elo rifatto dall'archivio coincide col motore su ogni partita, e la
+  differenza di rating prevista dai CSV `b47` con la replica è quella del motore al punto. Il
+  `lgModel` previsto con la derivata della pendenza sbaglia al massimo di 0.030, il `lgTarget`
+  di 0.0076: le misure sopra sono quelle del motore vero. Il `lgTarget` cambia sul 80–98% delle
+  partite (tutti i rating si spostano quando una squadra entra più in basso).
 
 ## Ruolo o completo
 
@@ -2034,6 +2167,47 @@ anche otto variabili riempite dal payload e mai usate e una funzione mai chiamat
 Prima di cancellare qualcosa segnalato come inutilizzato, cercarlo nell'hook e negli `onclick`
 dei due `.html`. Controlli J e K.
 
+## Il batch automatico
+
+`strumenti/batch-auto.js` fa i batch senza telefono: apre `comparatore.html` in Chromium senza
+schermo, da un server locale col `scanner.html` del repository accanto, restringe l'elenco delle
+leghe a quelle chieste e lancia lo sweep del Comparatore. È il Comparatore vero, quindi ogni
+riga porta il suo certificato di copia conforme come a mano. Le chiamate alla PitchAPI le
+intercetta Node e le fa lui: la pagina non vede mai la chiave, e nemmeno lo script.
+
+```bash
+node strumenti/batch-auto.js --leghe "Serie A,Eredivisie,ENG:Championship" --stagioni 2023/2024,2024/2025,2025/2026
+```
+
+- `--leghe`: id o nomi di `leghe.json`, `PAESE:Nome` se il nome è ambiguo (`GER:Bundesliga`).
+  `--stagioni` di default sono le tre con due stagioni alle spalle. `--out` di default è
+  `batch/`, fuori da git.
+- Ogni CSV si salva appena la sua stagione finisce, col nome che gli dà il Comparatore; una
+  stagione che ha già il file si salta, quindi rilanciare riprende da dove era. Tutto il log del
+  Comparatore va in `batch.log` nella stessa cartella; a schermo le righe che contano e, ogni
+  minuto, a che partita è arrivato.
+- **Serve la chiave, come credenziale API dell'ambiente**, non come variabile d'ambiente (quelle
+  le legge chiunque usi l'ambiente). Nelle impostazioni dell'ambiente, *Credenziali API* →
+  *Aggiungi credenziale*: tipo Bearer, sito `pitchapi-proxy.salvatorepampalone-sp.workers.dev`,
+  header `X-API-KEY` **senza** prefisso, valore la chiave. Il proxy dell'ambiente la aggiunge a
+  ogni richiesta verso quel sito, e il sito diventa raggiungibile anche con la rete su
+  *Attendibili*. Fuori da un ambiente cloud la chiave si passa con `PITCHAPI_KEY`. Prima di
+  aprire il browser lo script prova una chiamata e dice cosa manca. Node esce dal proxy
+  dell'ambiente perché lo script si rilancia da solo con `NODE_USE_ENV_PROXY=1`.
+- Il motore è quello della cartella di lavoro: su un branch che cambia `scanner.html` il batch
+  misura il branch. La build è in testa al log e in ogni CSV.
+- Una stagione vera dura ore (la Championship 2023/24, 557 partite, ne stimava quasi tre alla
+  partenza): si lancia in background e si legge `batch.log`. Dopo ogni file,
+  `python3 strumenti/elo-archivio.py <csv>` deve dire COINCIDE. I 404 si contano a parte
+  («senza dati»): sono le `/advanced` delle stagioni che non le hanno, una chiamata su quattro,
+  e quelle righe escono `riserva-k-motore` come a mano.
+- Il batch vive nel computer della sessione: se la sessione resta inattiva il computer può
+  essere spento, e con lui `batch/`. Ogni file finito va mandato all'utente appena salvato.
+- `--finto` sostituisce la PitchAPI con la lega finta del banco (`banco-parita.js` si può
+  importare, ed esporta la sua `api`). Verificato così: il CSV di Serie A 2025/26 finto è
+  identico riga per riga a quello del batch del banco, tranne l'ora di generazione, e l'Elo
+  rifatto dal suo archivio coincide; la ripresa salta la stagione già fatta.
+
 ## Leggere un CSV del Comparatore
 
 Prima di analizzare, sempre, in quest'ordine:
@@ -2161,7 +2335,7 @@ trovato un bug vero.
 | J | le costanti scritte in questo file esistono nel motore con quel valore | si tocca una costante |
 | K | `eslint` con `no-unused-vars` e `no-undef` sul JS estratto (attenzione a `onclick` e all'hook) | pulizie |
 | L | leakage col controllo di potenza (ricetta sotto) | si tocca un filtro temporale o una fonte di dati |
-| M | la curva dello stacco dà 0% / 9.0% / 37.6% / 79.7% a 30 / 83 / 240 / 826 giorni, e la tabella Elo ha media esatta 1500 | si tocca l'Elo |
+| M | la curva dello stacco dà 0% / 9.0% / 37.6% / 79.7% a 30 / 83 / 240 / 826 giorni, e la tabella Elo ha media 1500 quando non ci sono pause né squadre entrate | si tocca l'Elo |
 | N | da `__ELO_DEBUG_OVER`, `lamH0 + lamA0` identico al bit a `lamH + lamA` | si tocca l'inclinazione |
 | O | gli strumenti del Comparatore leggono il ramo che il motore usa (`__ELO_DEBUG.lgModel` contro `__ELO_DEBUG_OVER.lgModel`) | si tocca una costante che sceglie un ramo |
 | P | ogni clamp espone il grezzo e quante volte ha morso (HFA, `ELO_TILT_MAX`, `GOALS_SOT_CAP`) | clamp nuovo o toccato |
@@ -2275,3 +2449,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b45` | la card dei giocatori: falli subiti e commessi, tiri, tiri in porta, gialli, gol, assist e contrasti per giocatore sulle ultime 30 partite, ultime 5 e tutte, da `/players` a richiesta. Fuori dal giro del motore; frequenze descrittive, non ancora misurate |
 | `b46` | la formazione probabile: la card dice quando è solo l'ultimo undici, la salva nel browser e, con la confermata, mostra chi è uscito e chi è entrato rispetto alla probabile. Solo a schermo |
 | `b47` | le neopromosse sono sopravvalutate (−5.9 punti di vittoria 1 contro 2, quattro leghe su cinque): il CSV porta l'archivio di lega e la pendenza dell'Elo, per rifare l'Elo fuori dal motore identico al bit. Probabilità invariate; regole per l'ingresso delle neopromosse e per i pesi dell'Elo scritte prima del batch |
+| `b48` | l'ingresso delle neopromosse nell'Elo: entrano al livello delle squadre uscite, chi torna dalla serie inferiore regredisce verso quel livello, la pendenza non legge più le regressioni. Registrato prima del batch, passato sulle cinque leghe e sulle tre nuove. Formazioni e stanchezza non passano; il peso dell'Elo resta 0.75 / 1.25. Batch automatico da `strumenti/batch-auto.js` |

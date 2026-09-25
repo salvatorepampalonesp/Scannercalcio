@@ -165,7 +165,7 @@ select{cursor:pointer}
   <div class="topbar">
     <div class="brand">
       <h1>Comparatore V9.7</h1>
-      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b47</span>
+      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b48</span>
       <span class="badge" id="engine-badge">motore non caricato</span>
     </div>
     <span class="badge">previsioni vs realtà</span>
@@ -861,7 +861,7 @@ async function loadEngineFromText(text, fileName) {
     <p><code>${fileName}</code> — clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
 
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b47';
+  const _bComp = '0905-b48';
   window.__CMP_BUILD = _bComp;
   const _el = document.getElementById('engine-build');
   if (_el) {
@@ -2792,9 +2792,11 @@ function cmpExportCSV() {
    ['Elo: pendenza casa sul lambda (penH, cap 8%)',               'penH',   _g4],
    ['Elo: pendenza trasferta sul lambda (penA, cap 8%)',          'penA',   _g4],
    ['Elo: partite nella serie casa',                              'nH',     _trN],
-   ['Elo: partite nella serie trasferta',                         'nA',     _trN]].forEach(([lbl, k, f]) => {
+   ['Elo: partite nella serie trasferta',                         'nA',     _trN],
+   ['Elo: ingresso delle neopromosse (livello della stagione)',   'ingresso', _trF],
+   ['Elo: regola d ingresso / pendenza',                          'regola', v => v || 'N/D']].forEach(([lbl, k, f]) => {
     const r = [lbl];
-    M.forEach(m => r.push(f(m.eloTrend ? m.eloTrend[k] : null), '', '', ''));
+    M.forEach(m => r.push(f(!m.eloTrend ? null : (k === 'regola' ? (m.eloTrend.modo ? m.eloTrend.modo + ' / ' + m.eloTrend.pendenza : null) : m.eloTrend[k])), '', '', ''));
     rows.push(r.join(';'));
   });
 
