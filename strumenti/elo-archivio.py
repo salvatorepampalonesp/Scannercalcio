@@ -11,8 +11,14 @@
 # della stessa costante divergono, sempre): la prova di coincidenza lo dice.
 import csv, io, math, sys, datetime as dt
 
-DEFAULT = dict(soglia=45, tau=360, asintoto=0.9, bersaglio=1500, ingresso=1500,
+# ingresso 'uscite' (dal b48): chi entra nella lega parte dalla media dei rating finali delle
+# squadre uscite la stagione prima, e chi torna dopo piu' di `ritorno` giorni regredisce verso
+# quel livello; '1500' e' la regola fino al b47. pendenza 'netta' toglie dalla serie i salti
+# della regressione; 'grezza' e' quella fino al b47.
+DEFAULT = dict(soglia=45, tau=360, asintoto=0.9, ingresso='uscite', ritorno=180, pendenza='netta',
                k_basso=30, k_alto=20, k_soglia=15)
+B47 = dict(DEFAULT, ingresso='1500', pendenza='grezza')
+jsr = lambda x: math.floor(x + 0.5)
 
 
 def leggi(path):
@@ -34,7 +40,14 @@ def _ms(t):
 
 
 def elo(archivio, orario_bersaglio, P=DEFAULT):
+    """Ritorna (rating, serie per la pendenza, hfa, livello d'ingresso della stagione piu' recente o None)."""
     giorno, tms = orario_bersaglio[:10], _ms(orario_bersaglio)
+    stag = sorted(set(m['stagione'] for m in archivio if m['stagione']))
+    squadre = {}
+    for m in archivio:
+        for t in (m['h'], m['a']):
+            if t and m['stagione']: squadre.setdefault(m['stagione'], set()).add(t)
+    con = P['ingresso'] == 'uscite' and len(stag) > 1 and all(m['stagione'] for m in archivio)
     passate = [m for m in archivio if m['stato'] == 'finished' and m['t'] and m['h'] and m['a']
                and m['t'][:10] < giorno and _ms(m['t']) < tms]
     visti, vc, vf, n = set(), 0, 0, 0
@@ -49,7 +62,12 @@ def elo(archivio, orario_bersaglio, P=DEFAULT):
     hfa = 65
     if n >= 50 and vc > 0 and vf > 0:
         hfa = max(30, min(100, round(400 * math.log10(vc / vf))))
-    tab, serie, ultima, giocate, visti = {}, {}, {}, {}, set()
+    tab, serie, netta, reg, ultima, giocate, visti = {}, {}, {}, {}, {}, {}, set()
+    def livello(s):
+        i = stag.index(s) if s in stag else -1
+        if not con or i < 1: return 1500
+        L = [tab[t] for t in squadre.get(stag[i - 1], set()) - squadre.get(s, set()) if t in tab]
+        return sum(L) / len(L) if L else 1500
     for m in sorted(passate, key=lambda m: _ms(m['t'])):
         if m['id'] in visti:
             continue
@@ -57,13 +75,17 @@ def elo(archivio, orario_bersaglio, P=DEFAULT):
         h, a, t = m['h'], m['a'], _ms(m['t'])
         for x in (h, a):
             if x not in tab:
-                tab[x], serie[x], giocate[x] = P['ingresso'], [], 0
+                tab[x] = livello(m['stagione']) if (con and m['stagione'] != stag[0]) else 1500
+                serie[x], netta[x], reg[x], giocate[x] = [], [], 0.0, 0
         for x in (h, a):
             if x in ultima:
                 g = (t - ultima[x]) / 86400000
                 if g > P['soglia']:
                     s = P['asintoto'] * (1 - math.exp(-(g - P['soglia']) / P['tau']))
-                    tab[x] = (1 - s) * tab[x] + s * P['bersaglio']
+                    verso = livello(m['stagione']) if (con and g > P['ritorno']) else 1500
+                    prima = tab[x]
+                    tab[x] = (1 - s) * tab[x] + s * verso
+                    reg[x] += tab[x] - prima
         gh, ga = m['gh'] or 0, m['ga'] or 0
         esito = 1 if gh > ga else (0 if gh < ga else 0.5)
         d = abs(gh - ga)
@@ -76,9 +98,11 @@ def elo(archivio, orario_bersaglio, P=DEFAULT):
         giocate[h] += 1
         giocate[a] += 1
         ultima[h] = ultima[a] = t
-        serie[h].insert(0, round(tab[h]))
-        serie[a].insert(0, round(tab[a]))
-    return tab, serie, hfa
+        for x in (h, a):
+            serie[x].insert(0, jsr(tab[x]))
+            netta[x].insert(0, jsr(tab[x] - reg[x]))
+    ingr = livello(stag[-1]) if con else None
+    return tab, (netta if P['pendenza'] == 'netta' else serie), hfa, ingr
 
 
 def pendenza(s):
@@ -94,23 +118,26 @@ def coincidenza(path):
     eh, ea, hf = col('ELO Casa'), col('ELO Trasferta'), col('HFA Lega')
     trH = col('Elo: pendenza casa (media ultime 5 meno 6-15, punti)')
     trA = col('Elo: pendenza trasferta (media ultime 5 meno 6-15, punti)')
+    Pm = DEFAULT if 'Elo: ingresso delle neopromosse (livello della stagione)' in P else B47
     n = diversi = diversa_pend = 0
     for i in range(1, len(ids), 4):
         if not ids[i]:
             continue
-        tab, serie, hfa = elo(archivio, t[i])
+        tab, serie, hfa, ingr = elo(archivio, t[i], Pm)
         n += 1
-        v = (str(round(tab.get(hid[i], 1500))), str(round(tab.get(aid[i], 1500))), str(hfa))
+        d = 1500 if ingr is None else ingr
+        v = (str(jsr(tab.get(hid[i], d))), str(jsr(tab.get(aid[i], d))), str(hfa))
         diversi += v != (eh[i], ea[i], hf[i])
         for sq, tr in ((hid[i], trH[i] if trH else ''), (aid[i], trA[i] if trA else '')):
             if tr and tr != 'N/D':
                 diversa_pend += abs(pendenza(serie.get(sq, [])) - float(tr.replace(',', '.'))) > 0.0051
-    return dict(archivio=len(archivio), partite=n, elo_diversi=diversi, pendenza_diversa=diversa_pend)
+    return dict(archivio=len(archivio), partite=n, elo_diversi=diversi, pendenza_diversa=diversa_pend,
+                regola='b48' if Pm is DEFAULT else 'b47')
 
 
 if __name__ == '__main__':
     for f in sys.argv[1:]:
         r = coincidenza(f)
         esito = 'COINCIDE' if r['archivio'] and r['partite'] and not r['elo_diversi'] and not r['pendenza_diversa'] else 'NON COINCIDE'
-        print(f"{f}: archivio {r['archivio']} partite · {r['partite']} partite nel file · "
+        print(f"{f}: regola {r['regola']} · archivio {r['archivio']} partite · {r['partite']} partite nel file · "
               f"Elo/HFA diversi {r['elo_diversi']} · pendenza diversa {r['pendenza_diversa']} · {esito}")

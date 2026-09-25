@@ -493,7 +493,8 @@ function csvChecks(S, csv, col) {
                                     ['trendA', 'Elo: pendenza trasferta (media ultime 5 meno 6-15, punti)', 0.0051],
                                     ['penH', 'Elo: pendenza casa sul lambda (penH, cap 8%)', 0.00005],
                                     ['penA', 'Elo: pendenza trasferta sul lambda (penA, cap 8%)', 0.00005],
-                                    ['nH', 'Elo: partite nella serie casa', 0], ['nA', 'Elo: partite nella serie trasferta', 0]])
+                                    ['nH', 'Elo: partite nella serie casa', 0], ['nA', 'Elo: partite nella serie trasferta', 0],
+                                    ['ingresso', 'Elo: ingresso delle neopromosse (livello della stagione)', 0.0051]])
     cmp('Elo ' + k, S.trend[k], cell(lbl, 0), tol);
   cmp('Over 2.5 (multi-linea)', R['mdl-dc-ov'], cell('Over 2.5', 0, '--- OVER/UNDER MULTI-LINEA (prob DC vs reale) ---'));
   cmp('GG (da matrice)', R['mdl-dc-gg'], cell('GG (da matrice)', 0));

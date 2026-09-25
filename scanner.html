@@ -174,7 +174,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b47</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b48</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -905,6 +905,9 @@ window.ELO_HFA_K     = (typeof window.ELO_HFA_K     === 'number') ? window.ELO_H
 window.ELO_GAP_THRESHOLD = (typeof window.ELO_GAP_THRESHOLD === 'number') ? window.ELO_GAP_THRESHOLD : 45;
 window.ELO_GAP_TAU       = (typeof window.ELO_GAP_TAU       === 'number') ? window.ELO_GAP_TAU       : 360;
 window.ELO_GAP_ASY       = (typeof window.ELO_GAP_ASY       === 'number') ? window.ELO_GAP_ASY       : 0.9;
+window.ELO_INGRESSO      = (typeof window.ELO_INGRESSO      === 'string') ? window.ELO_INGRESSO      : 'uscite';
+window.ELO_RITORNO       = (typeof window.ELO_RITORNO       === 'number') ? window.ELO_RITORNO       : 180;
+window.ELO_PENDENZA      = (typeof window.ELO_PENDENZA      === 'string') ? window.ELO_PENDENZA      : 'netta';
 
 function buildGlobalElo(targetTimeMs) {
   const _tDay = _dayUTC(targetTimeMs);
@@ -971,6 +974,24 @@ function buildGlobalElo(targetTimeMs) {
   const K_THRESHOLD = 15;
 
   const table = {}, series = {}, lastMatchTime = {}, nMatchesPlayed = {};
+  const seriesNetta = {}, regCum = {};
+  const _lega = globalLeagueMatchesCache.filter(m => !_chosenLeagueId || m.league_id === _chosenLeagueId);
+  const _stag = [...new Set(_lega.map(m => m._season).filter(Boolean))].sort();
+  const _squadre = {};
+  for (const m of _lega) {
+    if (!m._season) continue;
+    const S = _squadre[m._season] = _squadre[m._season] || new Set();
+    if (m.home_team && m.home_team.id) S.add(m.home_team.id);
+    if (m.away_team && m.away_team.id) S.add(m.away_team.id);
+  }
+  const _conIngresso = window.ELO_INGRESSO === 'uscite' && _stag.length > 1 && !_lega.some(m => !m._season);
+  const livelloIngresso = s => {
+    const i = _stag.indexOf(s);
+    if (!_conIngresso || i < 1) return 1500;
+    const ora = _squadre[s] || new Set();
+    const L = [...(_squadre[_stag[i - 1]] || [])].filter(t => !ora.has(t) && table[t] !== undefined).map(t => table[t]);
+    return L.length ? L.reduce((a, b) => a + b, 0) / L.length : 1500;
+  };
   // Ogni regressione che il rating ha GIA' subito, squadra per squadra. L'Elo si
   // costruisce in ordine cronologico, quindi la pausa estiva di agosto e' gia' dentro
   // il rating che leggi ad aprile: senza questo registro la card non puo' dirlo, e
@@ -988,8 +1009,10 @@ function buildGlobalElo(targetTimeMs) {
     const h = m.home_team.id, a = m.away_team.id; if (!h || !a) continue;
     const matchMs = new Date(m.time_utc).getTime();
 
-    if (table[h] === undefined) { table[h] = 1500; series[h] = []; nMatchesPlayed[h] = 0; }
-    if (table[a] === undefined) { table[a] = 1500; series[a] = []; nMatchesPlayed[a] = 0; }
+    for (const x of [h, a]) if (table[x] === undefined) {
+      table[x] = (_conIngresso && m._season !== _stag[0]) ? livelloIngresso(m._season) : 1500;
+      series[x] = []; seriesNetta[x] = []; regCum[x] = 0; nMatchesPlayed[x] = 0;
+    }
 
     for (const teamId of [h, a]) {
       if (lastMatchTime[teamId] !== undefined) {
@@ -998,9 +1021,11 @@ function buildGlobalElo(targetTimeMs) {
         if (gapDays > GAP_THRESHOLD_DAYS) {
           const strength = ELO_GAP_ASY * (1 - Math.exp(-(gapDays - GAP_THRESHOLD_DAYS) / ELO_GAP_TAU));
           const prima = table[teamId];
-          table[teamId] = (1 - strength) * table[teamId] + strength * 1500;
+          const verso = (_conIngresso && gapDays > window.ELO_RITORNO) ? livelloIngresso(m._season) : 1500;
+          table[teamId] = (1 - strength) * table[teamId] + strength * verso;
+          regCum[teamId] += table[teamId] - prima;
           (gapLog[teamId] = gapLog[teamId] || []).push(
-            { t: matchMs, days: gapDays, strength, prima, dopo: table[teamId] });
+            { t: matchMs, days: gapDays, strength, prima, dopo: table[teamId], verso });
         }
       }
     }
@@ -1020,8 +1045,11 @@ function buildGlobalElo(targetTimeMs) {
     nMatchesPlayed[h]++; nMatchesPlayed[a]++;
     lastMatchTime[h] = matchMs; lastMatchTime[a] = matchMs;
     series[h].unshift(Math.round(table[h])); series[a].unshift(Math.round(table[a]));
+    seriesNetta[h].unshift(Math.round(table[h] - regCum[h])); seriesNetta[a].unshift(Math.round(table[a] - regCum[a]));
   }
-  return { table, series, _hfa: HFA_ELO, _nHfa: _n_hfa, lastPlayed: lastMatchTime,
+  const _ingressoOggi = _conIngresso ? livelloIngresso(_stag[_stag.length - 1]) : null;
+  return { table, series, seriesTrend: window.ELO_PENDENZA === 'netta' ? seriesNetta : series,
+           _ingresso: _ingressoOggi, _hfa: HFA_ELO, _nHfa: _n_hfa, lastPlayed: lastMatchTime,
            _hfaRaw, _hfaClamp, _hfaShrunk, _hW: _h_w, _aW: _a_w,
            gapLog,
            _gap: { thr: GAP_THRESHOLD_DAYS, tau: ELO_GAP_TAU, asy: ELO_GAP_ASY } };
@@ -1166,6 +1194,7 @@ function leggiDbLega(lId, season) {
     const o = JSON.parse(raw);
     if (!o || !Array.isArray(o.m) || !o.m.length) return null;
     if (Date.now() - (o.t || 0) > DB_TTL_MS) return null;
+    if (o.m.some(x => !x._season)) return null;
     return o;
   } catch (e) { return null; }
 }
@@ -1216,7 +1245,7 @@ async function caricaSquadreLega() {
             if (!json || (!json.data && !json.matches)) json = await apiCall(`/leagues/${lid}/matches?season=${encodeURIComponent(s.split('/')[0])}`, true);
             if(json) {
               const m = json.data?.matches || json.matches || [];
-              m.forEach(match => match.league_id = lid);
+              m.forEach(match => { match.league_id = lid; match._season = s; });
               allMatches = allMatches.concat(m);
               logConsole(`      ${m.length} partite`);
             } else {
@@ -2223,7 +2252,7 @@ function renderVerdetti(mk, base, adv) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b47';
+window.__SCANNER_BUILD = '0905-b48';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -2555,13 +2584,14 @@ async function avviaScanner() {
     window.__PLAYER_DATA = null;
     const targetMs = new Date(matchTime).getTime();
     const ELO = buildGlobalElo(targetMs);
-    const eloSeriesH = ELO.series[hId] || []; const eloSeriesA = ELO.series[aId] || [];
-    const eloH_ov = Math.round(ELO.table[hId] ?? 1500); const eloA_ov = Math.round(ELO.table[aId] ?? 1500);
+    const eloSeriesH = ELO.seriesTrend[hId] || []; const eloSeriesA = ELO.seriesTrend[aId] || [];
+    const eloH_ov = Math.round(ELO.table[hId] ?? ELO._ingresso ?? 1500); const eloA_ov = Math.round(ELO.table[aId] ?? ELO._ingresso ?? 1500);
     const calcTrend = (series) => { if(series.length < 10) return 0; return _mean(series.slice(0,5)) - _mean(series.slice(5,15)); };
     const trendH = calcTrend(eloSeriesH); const trendA = calcTrend(eloSeriesA);
 
     const penH = Math.max(-0.08, Math.min(0.08, trendH / 1200)); const penA = Math.max(-0.08, Math.min(0.08, trendA / 1200));
-    window.__ELO_TREND = { trendH, trendA, penH, penA, nH: eloSeriesH.length, nA: eloSeriesA.length };
+    window.__ELO_TREND = { trendH, trendA, penH, penA, nH: eloSeriesH.length, nA: eloSeriesA.length,
+                           ingresso: ELO._ingresso, modo: window.ELO_INGRESSO, pendenza: window.ELO_PENDENZA };
 
     const LG = computeLeagueParams(lId, targetMs); const RHO = estimateRho(lId, targetMs, LG);
     // le due alternative, calcolate ma NON usate: servono al CSV per misurare se conviene
@@ -3389,6 +3419,11 @@ async function avviaScanner() {
         + riga('Pause scontate &middot; ' + hName, assorb(lH), ultima(lH))
         + riga('Pause scontate &middot; ' + aName, assorb(lA), ultima(lA))
         + riga('Da allora a oggi', gTxt(gH) + ' &middot; ' + gTxt(gA), lungo ? 'regressione applicata ora' : 'nessuna pausa in questo tratto')
+        + (ELO._ingresso != null
+           ? riga('Ingresso neopromosse', String(Math.round(ELO._ingresso)),
+                  'media delle squadre uscite la stagione prima: chi arriva entra qui, chi torna dopo pi&ugrave; di '
+                  + window.ELO_RITORNO + ' giorni ci regredisce')
+           : '')
         + `<div style="font-size:11px;color:var(--dim);margin-top:8px;line-height:1.5">`
         + `L'Elo si costruisce <strong>partita per partita in ordine di data</strong> su tutte e tre `
         + `le stagioni in cache: ogni pausa viene scontata quando la squadra rientra, quindi &egrave; `
