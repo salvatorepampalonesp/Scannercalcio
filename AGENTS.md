@@ -2042,8 +2042,7 @@ dei due `.html`. Controlli J e K.
 schermo, da un server locale col `scanner.html` del repository accanto, restringe l'elenco delle
 leghe a quelle chieste e lancia lo sweep del Comparatore. È il Comparatore vero, quindi ogni
 riga porta il suo certificato di copia conforme come a mano. Le chiamate alla PitchAPI le
-intercetta Node e le fa lui, con la chiave di `PITCHAPI_KEY`: la chiave non entra mai nella
-pagina.
+intercetta Node e le fa lui: la pagina non vede mai la chiave, e nemmeno lo script.
 
 ```bash
 node strumenti/batch-auto.js --leghe "Serie A,Eredivisie,ENG:Championship" --stagioni 2023/2024,2024/2025,2025/2026
@@ -2056,11 +2055,14 @@ node strumenti/batch-auto.js --leghe "Serie A,Eredivisie,ENG:Championship" --sta
   stagione che ha già il file si salta, quindi rilanciare riprende da dove era. Tutto il log del
   Comparatore va in `batch.log` nella stessa cartella; a schermo le righe che contano e, ogni
   minuto, a che partita è arrivato.
-- **Serve la rete.** Il dominio del proxy (`PITCH_BASE`) va permesso nella rete dell'ambiente e
-  la chiave messa nella variabile d'ambiente `PITCHAPI_KEY`; valgono dalla sessione dopo. Prima
-  di aprire il browser lo script prova una chiamata e dice quale delle due manca. Dentro questo
-  ambiente Node esce dal proxy dell'ambiente (lo script si rilancia da solo con
-  `NODE_USE_ENV_PROXY=1`).
+- **Serve la chiave, come credenziale API dell'ambiente**, non come variabile d'ambiente (quelle
+  le legge chiunque usi l'ambiente). Nelle impostazioni dell'ambiente, *Credenziali API* →
+  *Aggiungi credenziale*: tipo Bearer, sito `pitchapi-proxy.salvatorepampalone-sp.workers.dev`,
+  header `X-API-KEY` **senza** prefisso, valore la chiave. Il proxy dell'ambiente la aggiunge a
+  ogni richiesta verso quel sito, e il sito diventa raggiungibile anche con la rete su
+  *Attendibili*. Fuori da un ambiente cloud la chiave si passa con `PITCHAPI_KEY`. Prima di
+  aprire il browser lo script prova una chiamata e dice cosa manca. Node esce dal proxy
+  dell'ambiente perché lo script si rilancia da solo con `NODE_USE_ENV_PROXY=1`.
 - Il motore è quello della cartella di lavoro: su un branch che cambia `scanner.html` il batch
   misura il branch. La build è in testa al log e in ogni CSV.
 - Una stagione vera dura ore: si lancia in background e si legge `batch.log`. Dopo ogni file,

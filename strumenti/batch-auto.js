@@ -2,8 +2,9 @@
 //
 // Apre comparatore.html da un server locale, col scanner.html del repository accanto (quindi
 // la copia conforme si certifica riga per riga come a mano), sceglie leghe e stagioni e lancia
-// lo sweep del Comparatore. Le chiamate alla PitchAPI le fa Node con la chiave di PITCHAPI_KEY:
-// la chiave non entra mai nella pagina. Ogni CSV si salva appena la sua stagione finisce, e una
+// lo sweep del Comparatore. Le chiamate alla PitchAPI le fa Node, mai la pagina: la chiave la
+// aggiunge il proxy dell'ambiente (credenziale API sul sito della PitchAPI, header X-API-KEY),
+// oppure, fuori da un ambiente cloud, la variabile PITCHAPI_KEY. Ogni CSV si salva appena la sua stagione finisce, e una
 // stagione che ha gia' il suo file nella cartella si salta: rilanciare riprende da dove era.
 //
 //   node strumenti/batch-auto.js --leghe "Serie A,Eredivisie" --stagioni 2024/2025,2025/2026
@@ -13,7 +14,7 @@
 // --leghe: id di leghe.json o nomi; se un nome e' ambiguo, PAESE:Nome (GER:Bundesliga).
 // --stagioni: di default 2023/2024, 2024/2025 e 2025/2026 (le stagioni con due alle spalle).
 // --out: di default batch/ nella radice del repository (fuori da git).
-// Serve la rete verso la PitchAPI e la variabile PITCHAPI_KEY: AGENTS.md, Il batch automatico.
+// AGENTS.md, Il batch automatico.
 'use strict';
 const { spawnSync } = require('child_process');
 if (process.env.HTTPS_PROXY && !process.env.NODE_USE_ENV_PROXY && !process.argv.includes('--finto')) {
@@ -72,7 +73,7 @@ async function pitch(url) {
   }
   for (let t = 0; ; t++) {
     try {
-      const r = await fetch(url, { headers: { 'X-API-KEY': KEY }, signal: AbortSignal.timeout(45000) });
+      const r = await fetch(url, { headers: KEY ? { 'X-API-KEY': KEY } : {}, signal: AbortSignal.timeout(45000) });
       if ((r.status === 429 || r.status >= 500) && t < 3) { conta.riprovate++; await sleep(3000 * 2 ** t); continue; }
       if (!r.ok) conta.errori++;
       return { status: r.status, body: await r.text() };
@@ -101,12 +102,12 @@ function serve() {
 
 (async () => {
   if (!FINTO) {
-    if (!KEY) esci('Manca la variabile PITCHAPI_KEY: va messa fra le variabili d\'ambiente della sessione.');
     const l0 = lavori[0];
     const prova = await pitch(`${PITCH}/leagues/${l0.l.id}/matches?season=${encodeURIComponent(l0.s)}`);
     conta.chiamate = 0; conta.errori = 0; conta.riprovate = 0;
-    if (prova.status === 599) esci(`La PitchAPI non si raggiunge (${prova.body}): il dominio va permesso nella rete dell'ambiente.`);
-    if (prova.status === 401 || prova.status === 403) esci(`La PitchAPI rifiuta la chiave (HTTP ${prova.status}).`);
+    const dove = 'serve la credenziale API dell\'ambiente sul sito pitchapi-proxy.salvatorepampalone-sp.workers.dev, header X-API-KEY senza prefisso';
+    if (prova.status === 599) esci(`La PitchAPI non si raggiunge (${prova.body}): ${dove}.`);
+    if (prova.status === 401 || prova.status === 403) esci(`La PitchAPI rifiuta la richiesta (HTTP ${prova.status}): la chiave manca o e' sbagliata; ${dove}.`);
     if (prova.status !== 200) esci(`La PitchAPI risponde HTTP ${prova.status} alla prova: ${prova.body.slice(0, 200)}`);
   }
   fs.mkdirSync(OUT, { recursive: true });
