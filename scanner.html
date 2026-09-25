@@ -174,7 +174,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b48</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b49</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -381,20 +381,20 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
           </div>
           <div style="font-size:9px; color:var(--dim); margin-top:5px">
             Non &egrave; pi&ugrave; una retta: &egrave; la <b>resa misurata</b> del pick, fascia per fascia, su
-            <b>1.882 partite</b> (b38), riconfermata su <b>1.134</b> in copia conforme dello Scanner (b41). La vecchia retta (6.26 + 0.880 &times; p, stimata su un
+            <b>1.882 partite</b> (b38), riconfermata su <b>1.134</b> in copia conforme dello Scanner (b41) e su <b>5.230</b> di cinque leghe col motore b48. La vecchia retta (6.26 + 0.880 &times; p, stimata su un
             motore precedente) <b>comprimeva</b>: a 62 mostrava 61 dove il vero &egrave; 67.5, a 74 mostrava 71
             dove il vero &egrave; 79. Il numero qui sotto ora si legge com'&egrave;.
           </div>
           <div style="font-size:9px; color:var(--dim); margin-top:6px; background:var(--panel2); border-radius:6px; padding:6px 8px; line-height:1.5">
-            <b>Come usarla &mdash; resa del pick per soglia, in copia conforme dello Scanner (1.134 partite di Serie A, 2023/24&ndash;2025/26):</b><br>
-            <span style="color:var(--green)">pick &ge;65% &rarr; azzecca il <b>73.7%</b></span> (1 partita su 10) &middot;
-            <span style="color:var(--green)">&ge;60% &rarr; <b>70.1%</b></span> (1 su 5.1) &middot;
-            <span style="color:var(--green)">&ge;55% &rarr; <b>64.9%</b></span> (1 su 3.2) &middot;
-            <span style="color:var(--orange)">&ge;50% &rarr; <b>61.3%</b></span> (1 su 2.2) &middot;
+            <b>Come usarla &mdash; resa del pick per soglia, in copia conforme dello Scanner (motore b48, 5.230 partite di Serie A, Premier, LaLiga, Bundesliga e Ligue 1, 2023/24&ndash;2025/26):</b><br>
+            <span style="color:var(--green)">pick &ge;65% &rarr; azzecca il <b>73.2%</b></span> (1 partita su 6.1) &middot;
+            <span style="color:var(--green)">&ge;60% &rarr; <b>69.3%</b></span> (1 su 3.8) &middot;
+            <span style="color:var(--green)">&ge;55% &rarr; <b>66.0%</b></span> (1 su 2.6) &middot;
+            <span style="color:var(--orange)">&ge;50% &rarr; <b>61.7%</b></span> (1 su 1.9) &middot;
             <span style="color:var(--red)">&lt;45% &rarr; non selezionare</span>.<br>
-            Su tutte le partite il pick azzecca il <b>52.9%</b> contro il 40.2% del &laquo;gioca sempre in
-            casa&raquo;. Le soglie alte rendono di pi&ugrave; <b>e</b> coprono pi&ugrave; calendario di quanto
-            dicesse la stima vecchia. Una lega sola: l'intervallo a &ge;65% &egrave; &plusmn;8.1 punti.
+            Su tutte le partite il pick azzecca il <b>52.7%</b> contro il 43.0% del &laquo;gioca sempre in
+            casa&raquo;. Le soglie cambiano di qualche punto da lega a lega: a &ge;65% dal 69.5% della Premier
+            e 70.4% della Serie A al 79.3% della LaLiga. Sulle cinque leghe l'intervallo a &ge;65% &egrave; &plusmn;3.0 punti.
           </div>
         </div>
 
@@ -438,7 +438,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
                     <td id="conf-p2" style="font-weight:bold;font-size:11px">--</td>
                   </tr>
                 </table>
-                <div style="font-size:9px; color:var(--dim); margin-top:4px">Confidence per esito = probabilita' calibrata di indovinare quell'esito. Sull'1X2 viene da una TABELLA misurata su 1882 partite e riconfermata su 1134 in copia conforme (la vecchia retta 6.26 + 0.880 x p comprimeva: a 62 mostrava 61 dove il vero e' 67.5); sui mercati binari resta la retta -5.06 + 1.091 x p, rimisurata e giusta entro 2 punti. Non misura l'accordo fra i modelli: sui backtest quello correlava zero con l'azzeccare.</div>
+                <div style="font-size:9px; color:var(--dim); margin-top:4px">Confidence per esito = probabilita' calibrata di indovinare quell'esito. Sull'1X2 viene da una TABELLA misurata su 1882 partite e riconfermata su 1134 in copia conforme e su 5230 di cinque leghe col b48 (la vecchia retta 6.26 + 0.880 x p comprimeva: a 62 mostrava 61 dove il vero e' 67.5); sui mercati binari resta la retta -5.06 + 1.091 x p, rimisurata e giusta entro 2 punti. Non misura l'accordo fra i modelli: sui backtest quello correlava zero con l'azzeccare.</div>
               </div>
               <div style="background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:10px; margin-top:12px">
                 <div style="font-size:11px;font-weight:bold;color:var(--dim);margin-bottom:6px">🎯 Doppie Chance & Gol (con confidence)</div>
@@ -2252,7 +2252,7 @@ function renderVerdetti(mk, base, adv) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b48';
+window.__SCANNER_BUILD = '0905-b49';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
