@@ -450,7 +450,7 @@ perché sui gol il completo peggiora la calibrazione ovunque. Non «sistemarlo»
 
 - **Ordered Logit**: `y* = OL_BETA·(olH − olA)` tagliato da due soglie, con
   `ol = 0.7·NPxG + 0.3·NPxGA avversario` di ruolo. Calcolato e mostrato ma **peso 0**: va
-  tenuto giusto lo stesso, perché è a schermo e nel prompt.
+  tenuto giusto lo stesso, perché è a schermo (dal `b51` non è più nel mega-prompt).
 - **KNN**: calcolato e mostrato come riferimento tattico, **non entra nell'ensemble**. Non
   descriverlo come se ci fosse.
 - **Markov** (`markovFlow`, rate dipendenti dal punteggio): da solo fa logloss 1.0091,
