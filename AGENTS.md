@@ -274,6 +274,13 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   50.8%), 2–6 punti sotto in ogni fascia sotto il 60%. È la matrice di Dixon-Coles col `rho` del motore:
   a pari Over e pari 1X2 dà troppo pochi Goal. Una ricalibrazione va registrata e provata su leghe
   nuove.
+- [ ] **Quote storiche di corner e cartellini.** La ricerca per battere il bookmaker (`b58`, vedi
+  *Battere il bookmaker: la regola della ricerca*) non ha trovato niente su 1X2 e Over/Under, dove il
+  mercato è il più preciso. Il motore discrimina di più su gialli e corner, mercati che i file storici
+  non quotano. Servono quote storiche (fonti a pagamento, per esempio The Odds API dichiara mercati
+  aggiuntivi dal maggio 2023: da verificare cosa c'è davvero per il calcio europeo). Con quelle, lo
+  stesso schema: regola scritta prima, esplorazione e conferma per stagione, CLV sulla chiusura
+  ricalibrata.
 - [ ] **Quote fino al fischio.** Le quote automatiche del `b55` sono quelle di quando football-data
   pubblica il file (per il weekend di solito il venerdì): valgono +1.4 punti di prese invece dei +2.0
   della chiusura. The Odds API le dà aggiornate, con una chiave gratuita (500 richieste al mese) da
@@ -389,6 +396,13 @@ del motore (11.222 partite, logloss meglio in 11 leghe su 11), e con anche l'1X2
 allineata al mercato dà Goal, Over 1.5 e 3.5 migliori del motore in 11 leghe su 11 (l'Over 3.5 in
 10). Anche qui è il mercato: dato il mercato il motore pesa zero. Vedi *Le quote per gli altri
 mercati: la regola*.
+
+**Battere il bookmaker** (ricerca registrata, `b58`): con questi dati no. Il mercato non va dove dice
+il motore; giocare il motore alle quote di qualche giorno prima perde in CLV (−6.5% alla media, −1.3%
+al prezzo migliore); il prezzo migliore contro il consenso sembra valere solo col CLV calcolato in
+proporzione, che sopravvaluta gli sfavoriti (ricalibrato −8.7%, ROI −34%); in nessuna delle 27 fette
+scritte prima il motore, dato il mercato, pesa più di zero. La strada che resta sono i mercati senza
+quote storiche nei file (corner, cartellini). Vedi *Battere il bookmaker: la regola della ricerca*.
 
 **Formazioni e stanchezza.** Dal `b43` il motore sa chi manca oggi rispetto all'undici
 abituale, dal `b44` quanti giorni di riposo ha ogni squadra contando le coppe europee (card
@@ -2128,6 +2142,43 @@ sull'esplorazione, la risposta è «da nessuna parte, con questi dati».
 nei file (servirebbero fonti a pagamento, da verificare). Le quote di pochi minuti prima del fischio:
 football-data ha quella di chiusura e una di qualche giorno prima.
 
+**Esito: nessun vantaggio sul bookmaker.** `python3 strumenti/quote-valore.py batch48 batch4` rifà
+tutto in mezzo minuto. Esplorazione 7.934 partite, conferma 3.968; con le quote di prima e di
+chiusura 11.222.
+
+| domanda | scelto sull'esplorazione | conferma 2025/26 | esito |
+|---|---|---|---|
+| 1a, il mercato va dove dice il motore (1 contro 2) | pendenza +0.0038 (`z = +0.57`) | +0.0098 (`z = +1.10`) | non passa |
+| 1a, idem sull'Over | −0.0128 (`z = −2.41`) | +0.0139 (`z = +1.97`) | non passa (e cambia segno) |
+| 1b, giocare il motore alle quote medie di prima | `t` = 3: CLV −5.27% | CLV −6.54% (`z = −67`), ROI −10.4% | non passa |
+| 1b, idem al prezzo migliore | `t` = 12: CLV −0.99% | CLV −1.28% (`z = −3.2`), ROI −2.5% | non passa |
+| 2, prezzo migliore contro consenso, alle quote di prima | `m` = 6%: CLV +11.0%, ROI −22.3% | CLV +15.1% (`z = +12.4`), **ROI −34.1%** (`z = −2.1`) | passa alla lettera, **smentito** (sotto) |
+| 2, idem alla chiusura | `m` = 0: ROI −2.4% | ROI −9.9% (`z = −2.5`) | non passa |
+| 3, sottoinsiemi col peso del motore > 0 | nessuno a `z ≥ 3` (il più alto: 2. Bundesliga +0.15, `z = +0.51`) | — | da nessuna parte |
+
+**La domanda 2 «passa» per un difetto del metro.** Le giocate scelte sono quasi tutte sfavoriti (quota
+mediana 11, il 91% sopra 5.0), e la probabilità equa di chiusura tolta in proporzione li sopravvaluta:
+è il bias favorito-sfavorito che il `b54` aveva già misurato (il mercato va allargato ×1.34). Rifatto
+dopo, con la chiusura ricalibrata fuori lega come il mercato ricalibrato del `b54`: CLV **−8.7%**
+invece di +15.1%; uscite 26 contro 27.5 attese dalla chiusura ricalibrata e 32.4 da quella in
+proporzione. In esplorazione il ROI peggiora quanto più il «valore» sale (m = 0 / 2 / 4 / 6%: −7.5 /
+−15.9 / −13.9 / −22.3%). È una spiegazione trovata dopo, ma i numeri non lasciano dubbi: non è un
+vantaggio. Il prezzo migliore di prima coincide con l'exchange (`BFE`) nel 13% dei casi.
+
+**Sottoinsiemi** (esplorazione, peso del motore dato il mercato su 1 contro 2): tutti negativi o dentro
+il rumore; sull'insieme −0.166 (`z = −1.95`). I più negativi: nessuna neopromossa −0.274 (`z =
+−2.56`), motore e mercato distanti 5–10 punti −0.389 (`z = −2.49`), giornate 6–19 −0.320 (`z =
+−2.19`), statistiche avanzate assenti −0.318 (`z = −2.11`). Dove il motore sembra fare meglio delle
+quote è il caso: su 1 contro 2 dato il mercato il suo peso non è positivo in nessuna delle 27 fette
+scritte prima.
+
+**Cosa resta, per battere il bookmaker.** Con questi dati niente. Restano da provare, e servono dati
+che non abbiamo: i mercati che nessun file storico quota (corner, cartellini, tiri: sono quelli dove il
+motore discrimina di più rispetto ai gol, gialli AUC 0.57–0.65, e dove i bookmaker potrebbero essere
+meno precisi), con quote storiche a pagamento; le quote a pochi minuti dal fischio contro la
+formazione confermata. Ogni prova con la sua regola, e col CLV calcolato sulla chiusura
+**ricalibrata**, non in proporzione.
+
 ## Formazioni e assenze
 
 **Perché.** Il pick sbaglia il 47.2% delle partite: 25.6 punti sono pareggi, 21.6 vittorie
@@ -2534,6 +2585,10 @@ di questo elenco è stata a lungo falsa proprio perché nessuno sapeva dove cont
   contro il 52.7% del `b48` e una confidence che dal `b53` è la probabilità. E la nota della
   confidence, HTML fisso, diceva ancora «viene da una TABELLA». Dal `b56` la nota di lega legge
   `PICK_RESA`, la stessa costante della card delle soglie e del mega-prompt.
+- **Il CLV si calcola sulla chiusura ricalibrata, non in proporzione.** Togliere il margine in
+  proporzione dà agli sfavoriti troppa probabilità: nella ricerca sul prezzo migliore le giocate a
+  quota 11 avevano CLV +15.1% in proporzione e −8.7% ricalibrato, con ROI −34%. Un metro scritto
+  prima può essere sbagliato: se il risultato lo contraddice, lo si dice e si guarda perché.
 - **Una misura nuova si rifà prima su un numero vecchio.** Le rese per fascia del `b58` davano ai
   gol del motore +15.4 dove il `b49` aveva +1.0: in Python una `lambda` definita in un ciclo legge la
   variabile del ciclo quando la si chiama, non quando la si scrive, e prendeva la frequenza alla cieca
@@ -2639,6 +2694,7 @@ misurate.
 | La coda alta della selezione contro le neopromosse (col `b48` il 10% più alto perde 2.9 punti sulle cinque leghe) | **non decisa, chiusa** (`b52`) | regola registrata sulle tre leghe nuove: −0.3 ±2.0 (confermata sotto −2se, smentita da 0 in su); otto leghe insieme −1.8 ±1.8, solo descrittivo. L'ingresso del `b48` resta. Vedi *Le tre leghe nuove col `b48`: la regola* |
 | Indovinare più risultati combinando tutto quello che il motore calcola (stacking, `b53`) | **no** (`b53`) | 12 leghe, 11.927 partite, addestrato su undici e misurato sulla dodicesima. Logistica sulle sole probabilità: +0.08 ±0.18 punti di prese; coi sei modelli, `lgModel`, `lgElo`, ΔElo e HFA (19 feature): +0.22 ±0.40, ma logloss −0.0029 (`z = −2.89`, una calibrazione, non prese); con 67 feature (lambda, tiri, pendenze, neopromosse, formazioni, riposo, classifica della stagione): −0.13 ±0.51, e comincia a giocare `X` (388 volte) perdendo; gradient boosting +0.30 ±0.55. La selezione nemmeno: 10 / 20 / 30 / 50% più sicuro +0.5 / +0.7 / −0.1 / +0.6 (±1.7 / 1.2 / 0.9 / 0.7). Il modello è calibrato (probabilità media del pick 51.7%, prese 51.0%): l'informazione del motore è sfruttata |
 | Il Goal con le sole quote dell'1X2 (matrice del motore inclinata a totale fermo) | **no** (`b57`) | registrato prima, dodici leghe: +0.00355 di logloss, `z = +4.36`, peggio in 9 leghe su 12. Senza le quote dell'Over il Goal resta del motore |
+| Battere il bookmaker con le quote di prima, il prezzo migliore o un sottoinsieme in cui il motore sa di più (ricerca registrata) | **no** | esplorazione 2023/24–2024/25, conferma 2025/26: il mercato non va dove dice il motore (pendenza 1 contro 2 +0.0098, `z = +1.10`); giocare il motore alle quote di prima CLV −6.5% (al prezzo migliore −1.3%); il prezzo migliore contro il consenso «passa» col CLV in proporzione (+15.1%) ma ricalibrato è −8.7%, ROI −34%; nessuna delle 27 fette ha il peso del motore positivo a `z ≥ 3`. Vedi *Battere il bookmaker: la regola della ricerca* |
 | Giocare l'Over o l'Under dove il motore si discosta dal mercato | **no** (`b57`) | 11.222 partite, chiusura: scarto 3+ punti 7.354 giocate, −7.5% della posta; 5+ −9.9%; 8+ −8.7%. Il lato più probabile sempre giocato: motore −5.6%, mercato −3.5%, con le quote −3.7% (margine 5.8%) |
 | Giocare dove il motore dà a un esito più del mercato (le «value bet» del motore) | **no** (`b54`) | 11.902 partite, quote medie di chiusura: motore sopra il mercato di 3+ punti 7.504 giocate, escono il 32.6% contro il 34.2% del mercato, −11.6% della posta; 5+ −15.8%, 8+ −13.0%, 12+ −16.0%. Dato il mercato il motore pesa −0.19 ±0.08 (1 contro 2), negativo in 12 leghe su 12. Anche il pick sempre giocato perde: motore −6.0%, mercato −3.2%, con le quote −2.9% (margine medio 5.7%) |
 | Il disaccordo fra modello ed Elo come segnale di sorpresa | **è il candidato Elo visto da un'altra parte** (`b42`) | fuori lega −0.0037 (`z = −2.47`), prese +0.57 punti, Ligue 1 di nuovo contraria (+0.0020). Nelle 717 partite (14%) in cui modello ed Elo indicano favoriti diversi il pick prende il 37.7% (41.4% col disaccordo in regressione), contro il 55.2% delle altre. A parità di partite giocate la selezione non migliora (top 20%: 72.8 contro 73.2%) |

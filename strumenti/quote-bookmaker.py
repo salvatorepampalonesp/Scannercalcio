@@ -40,7 +40,9 @@ def leggi_csv(f):
                     'hg': hg, 'ag': ag, 'out': 0 if hg > ag else (1 if hg == ag else 2), 'p': [num(v(k)) / 100 for k in ('1', 'X', '2')],
                     'lam': [num(v('Ambito: lambda casa (ruolo)')), num(v('Ambito: lambda trasf. (ruolo)'))], 'rho': num(v('Unita: rho stimato')),
                     'gol': {k: num(v(k)) for k in ('Over 1.5', 'Over 2.5', 'Over 3.5', 'GG (da matrice)')},
-                    'file': os.path.basename(f), 'tab': tabellone(g, c)})
+                    'file': os.path.basename(f), 'tab': tabellone(g, c),
+                    'lgModel': num(v('Elo: log-odds modello [completo \u2192 1X2]')), 'lgElo': num(v('Elo: log-odds Elo [completo \u2192 1X2]')),
+                    'origine': v('Origine metriche avanzate'), 'ora': v('DATA ISO (UTC)')})
     return out
 
 TAB_CHIAVI = {'1 (Casa)': 'p1', 'X (Pari)': 'pX', '2 (Trasf.)': 'p2', '1X': 'p1X', 'X2': 'pX2', '12': 'p12', 'Over 2.5': 'pOv', 'Under 2.5': 'pUn',
