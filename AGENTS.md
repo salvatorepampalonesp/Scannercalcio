@@ -40,7 +40,9 @@ partite dello storico, ma solo quando si preme il bottone della card dei giocato
 per partita, in memoria per la sessione): non fa parte del giro del motore. La documentazione dell'API
 (51 pagine, settembre 2026) elenca anche statistiche per giocatore (`/players`,
 `/advanced/players`), tiri (`/shots`), `/h2h`, arbitro, heatmap e 42 leghe fra cui coppe e
-competizioni UEFA; nessuna quota dei bookmaker.
+competizioni UEFA; nessuna quota dei bookmaker. Le quote 1X2, dal `b54`, le scrive l'utente nella
+card «Con le quote del mercato» (facoltative); per misurarle si usano quelle di football-data.co.uk
+(`strumenti/quote-bookmaker.py`).
 
 ## Regole di lavoro
 
@@ -48,7 +50,7 @@ competizioni UEFA; nessuna quota dei bookmaker.
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b53`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b54`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -249,9 +251,16 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   prevede e quanto va ristretta. Poi l'avversario: i falli subiti dipendono da quanti falli fa
   l'altra squadra, che il motore prevede già.
 - [ ] **I parametri interni di Markov**: verificati solo gli invarianti.
-- [ ] **Le quote dei bookmaker.** L'informazione che il motore non ha (vedi *Stato attuale*, «Il
-  tetto»). La PitchAPI non le dà; football-data.co.uk sì, gratis, per le dodici leghe. **Regola
-  registrata**: vedi *Le quote dei bookmaker: la regola*.
+- [x] ~~**Le quote dei bookmaker.**~~ — **passato, nello Scanner dal `b54`.** Su 11.902 partite
+  di dodici leghe, stimata su undici e misurata sulla dodicesima, la combinazione motore + mercato
+  prende il 52.99% contro il 51.04% del motore (+1.95, `z = +7.00`), logloss meglio in 12 leghe su
+  12. Il merito è tutto del mercato: dato il mercato il motore pesa meno di zero, in 12 leghe su 12.
+  Vedi *Le quote dei bookmaker: la regola*, «Esito».
+- [ ] **Le quote dei mercati gol.** football-data.co.uk ha anche le quote di chiusura dell'Over e
+  dell'Under 2.5 (`AvgC>2.5`, `AvgC<2.5`). I mercati gol sono il muro più duro (AUC dell'Over fra
+  0.51 e 0.60, livello sotto il vero di 1–7 punti): la stessa prova dell'1X2, con la regola scritta
+  prima, direbbe se un campo per quelle quote alza Over/Under e Goal. `strumenti/quote-bookmaker.py`
+  aggancia già le partite: va esteso a leggere quelle colonne.
 
 ### 5. UI e pulizie
 
@@ -278,7 +287,7 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b53`)
+## Stato attuale (`b54`)
 
 **1X2.** Col motore `b48` il pick azzecca il 52.7% (±1.4) contro il 43.0% del «gioca sempre in
 casa» sulle cinque leghe: 52.7% contro 40.2% in Serie A, 52.7% contro 43.1% in Premier, 53.2%
@@ -345,6 +354,16 @@ probabilità, `lgModel`, `lgElo`, i sei modelli, lambda, tiri, pendenze, neoprom
 riposo, classifica della stagione), addestrato su undici leghe e misurato sulla dodicesima, non
 indovina di più: +0.2 ±0.4 punti (vedi *Cosa è già stato provato*). Per indovinare di più serve
 informazione che il motore non ha.
+
+**Con le quote** (dal `b54`). Le quote del bookmaker sono quell'informazione. Scritte nella card
+«Con le quote del mercato», il pick prende il **53.0%** invece del 51.0% sulle stesse 11.902 partite
+(+1.95 ±0.56, `z = +7.00`, meglio in dodici leghe su dodici), e le soglie diventano ≥55 / 60 / 65 /
+70: 67.5 / 71.1 / 74.7 / 78.6% su 37 / 27 / 20 / 14% del calendario, **uguali dentro e fuori dai
+cinque campionati**. Ma è il mercato: da solo prende il 52.9%, e dato il mercato il motore pesa
+meno di zero (−0.19 ±0.08 su 1 contro 2, negativo in 12 leghe su 12). Dove motore e mercato non
+sono d'accordo (11% delle partite) il motore prende il 26.3%, il mercato il 43.1%. E non batte il
+bookmaker: il pick con le quote, giocato sempre alla quota di chiusura, perde il 2.9% della posta;
+dove il motore dà più del mercato si perde l'11–16%. Vedi *Le quote dei bookmaker: la regola*.
 
 **Formazioni e stanchezza.** Dal `b43` il motore sa chi manca oggi rispetto all'undici
 abituale, dal `b44` quanti giorni di riposo ha ogni squadra contando le coppe europee (card
@@ -719,13 +738,23 @@ tabellone sono misurate su quelli) o «Lega mai misurata», e la regola sul non 
 cita la resa «nei cinque campionati misurati». Dal `b53` la confidence è spiegata come «la
 probabilità del pick, già calibrata dal motore».
 
+**Con le quote** (dal `b54`). Se l'utente scrive le quote, `aggiornaQuote` mette dopo il pick un
+blocco «CON LE QUOTE DEL MERCATO»: le quote e il margine, il mercato senza margine, le probabilità
+con le quote, il pick con le quote con la sua soglia (`QUOTE_RESA`), l'avviso se motore e mercato
+indicano esiti diversi, che le proposte 1X2 del tabellone sono del solo motore, e che non è un
+vantaggio sul bookmaker (il motore dato il mercato non aggiunge niente; giocare dove il motore dà
+più del mercato ha perso l'11–16%). In *IN SINTESI* il pick da citare diventa quello con le quote.
+Il prompt si ricostruisce da `window.__PROMPT_BASE` a ogni quota scritta, sostituendo i segnaposto
+`@@QUOTE@@` e `@@QUOTE_SINTESI@@` (vuoti senza quote: il prompt resta quello del `b53`).
+
 **Controllo.** Il banco (dal `b51`) guarda il prompt di ogni partita dello Scanner: non vuoto,
 niente `NaN`, `undefined`, `Infinity`; col controllo di potenza (un `NaN` messo apposta) fallisce.
 Il contenuto va riletto a mano quando cambia: il banco non sa se una frase è giusta. La lega finta
 del banco usa l'id della Serie A, quindi il ramo «fuori dai cinque» il banco non lo passa: al
 `b52` è stato verificato a parte, sulla stessa partita, togliendo la lega da `PICK_RESA.leghe`
 (e mettendola in `PICK_RESA.fuori`): le due frasi e il rischio compaiono, niente `NaN`, 0 px di
-scorrimento.
+scorrimento. Il blocco delle quote il banco lo passa dal `b54` (vedi *Il Comparatore stampa come
+lo Scanner*).
 
 ## Politica sui valori mancanti
 
@@ -896,7 +925,7 @@ rilegge l'archivio di lega dal **testo** del CSV esportato, ci fa girare `buildG
 motore e confronta Elo e HFA con le righe del CSV, partita per partita; il controllo di potenza
 toglie una partita dall'archivio e deve vedere l'Elo cambiare.
 
-Esito al `b53` (storico 30), a 390px (anche nessuna tabella compatta che esce dal suo riquadro, e il mega-prompt dello Scanner mai vuoto né rotto):
+Esito al `b54` (storico 30), a 390px (anche nessuna tabella compatta che esce dal suo riquadro, il mega-prompt dello Scanner mai vuoto né rotto, e i sei casi delle quote a posto):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
@@ -904,7 +933,7 @@ Esito al `b53` (storico 30), a 390px (anche nessuna tabella compatta che esce da
 | batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 190 | 0 su 122 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
 | `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 127-155 | 74-82 | 0 |
-| `vecchio`: motore `b52` caricato (controllo) | 0/3, «motore caricato diverso ...» | 4 (le confidence dell'1X2) | 5 (le quattro confidence e il certificato) | 0 |
+| `vecchio`: motore `b53` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 | 1 (il certificato) | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -930,7 +959,16 @@ delle soglie, che è testo fisso scritto una volta all'apertura. Al `b52` lo ste
 il mega-prompt fuori dai cinque campionati e il testo fisso delle card della confidence e delle
 soglie. Al `b53` il controllo col `b52` vede solo le confidence dell'1X2: quelle di `1`, `X`, `2` e la
 globale a schermo (4 scritture), le stesse quattro righe del CSV e il certificato; le probabilità,
-le doppie chance e i mercati binari non cambiano.
+le doppie chance e i mercati binari non cambiano. Al `b54` il controllo col `b53` non vede nessuna
+scrittura diversa e una sola riga del CSV, il certificato: la card delle quote non passa da
+`safeHtml` e senza quote il prompt è quello di prima.
+
+**Le quote sul banco (dal `b54`).** Dopo il giro dello Scanner il banco scrive le quote nella card
+dell'ultima partita, in sei casi: vuote (niente tabella, niente blocco nel prompt), valide con la
+virgola, contrarie al motore (l'avviso deve comparire: è il controllo di potenza), incomplete
+(nessun blocco), una favorita netta, e «Cambia partita» (campi, contesto e card svuotati). In ogni
+caso card e prompt senza `NaN`, `undefined`, `Infinity` né segnaposto rimasti; lo scorrimento a 390px
+si misura con la card piena.
 
 **Cosa resta fuori, e va saputo:**
 
@@ -946,9 +984,12 @@ le doppie chance e i mercati binari non cambiano.
   che il motore non prevede (tiri totali, big chances, dribbling...): e' una media calcolata
   dal Comparatore.
 - Il banco confronta cio' che il motore scrive con `safeTxt`/`safeHtml`. Le poche card
-  scritte con `innerHTML` diretto (la card dell'Elo, la nota di lega) e il mega-prompt non
-  sono nel confronto; del mega-prompt, dal `b51`, il banco controlla solo che non sia vuoto o
-  rotto.
+  scritte con `innerHTML` diretto (la card dell'Elo, la nota di lega, la card delle quote) e il
+  mega-prompt non sono nel confronto; del mega-prompt, dal `b51`, il banco controlla solo che non
+  sia vuoto o rotto, e dal `b54` il blocco delle quote nei sei casi.
+- **Le quote il Comparatore non le ha**: niente campi, niente combinazione nel CSV. Le rese con le
+  quote sono misurate fuori dal motore, da `strumenti/quote-bookmaker.py` sui CSV e le quote di
+  football-data.co.uk.
 
 **Come si rifa'.** `node strumenti/banco-parita.js` (tutte le modalita' e i controlli, circa
 tre minuti); `MOBILE=1` misura lo scorrimento laterale a 390px; `VECCHIO=<scanner vecchio>`
@@ -1680,6 +1721,58 @@ mercato da solo (se il modello aggiunge qualcosa alle quote); la selezione al 10
 del calendario per modello, mercato e combinazione; le quote di qualche giorno prima al posto
 della chiusura.
 
+**Esito (`b54`): passa, con margine largo.** `python3 strumenti/quote-bookmaker.py batch48 batch4`
+rifà tutto in pochi secondi (scarica le quote se mancano). Delle 11.927 partite se ne agganciano
+11.902 (25 non trovate), col punteggio uguale sul 100%; quote di chiusura `AvgC` su tutte e 11.902.
+
+| | prese | differenza | `z` | logloss 1X2 | `z` | leghe meglio |
+|---|---|---|---|---|---|---|
+| motore | 51.04% | | | 0.99377 | | |
+| **combinazione contro motore** (il test) | **52.99%** | **+1.95 ±0.56** | **+7.00** | −0.01772 | −10.14 | **12 su 12** |
+| mercato da solo contro motore | 52.91% | +1.87 | +7.35 | −0.01660 | −12.21 | 12 su 12 |
+| combinazione contro mercato | | +0.08 | +0.67 | −0.00113 | −1.93 | 7 su 12 |
+| combinazione contro mercato ricalibrato | | +0.16 | +1.45 | −0.00009 | −0.33 | 8 su 12 |
+
+Per lega, prese motore / mercato / combinazione: Serie A 52.8 / 54.5 / 54.7, Premier 52.8 / 54.9 /
+55.0, LaLiga 53.2 / 55.3 / 54.7, Bundesliga 52.4 / 55.4 / 55.3, Ligue 1 52.3 / 53.3 / 53.6,
+Championship 46.3 / 48.0 / 48.3, Eredivisie 53.6 / 55.6 / 55.9, Liga Portugal 55.1 / 57.3 / 57.6,
+2. Bundesliga 45.4 / 48.1 / 48.2, First Division A 50.2 / 51.1 / 51.1, Premiership 53.3 / 53.6 /
+53.4, Super League 47.1 / 49.7 / 50.0. Con le quote di qualche giorno prima (`Avg`, 11.222 partite,
+la Svizzera non le ha): mercato +1.39, combinazione +1.57 (+1.44 coi coefficienti della chiusura).
+
+**Il merito è del mercato, e il motore dato il mercato pesa meno di zero.** La combinazione vale
+quanto il mercato ricalibrato da solo (logloss −0.00009, `z = −0.33`). Su 1 contro 2, dato il
+mercato, il peso del motore è **−0.19 ±0.08** e quello del mercato 1.34 ±0.08, e il motore è
+negativo in **12 leghe su 12**: dove il motore si discosta dal mercato, il risultato va ancora un
+po' più dalla parte del mercato. Il mercato si allarga (1.34) perché togliere il margine in
+proporzione sottostima i favoriti. Nelle 1.321 partite (11%) in cui motore e mercato indicano
+esiti diversi il motore prende il 26.3%, il mercato il 43.1%, la combinazione il 42.6%; la
+combinazione lì è calibrata (dice 41.0%, esce il 42.6%), come nelle altre (54.1 e 54.3%).
+
+**Selezione** (prese nel 10 / 20 / 30 / 50% più sicuro, ordinando dentro ogni file di stagione):
+motore 75.7 / 70.6 / 67.2 / 60.7%, mercato 79.0 / 73.2 / 69.0 / 63.4%, combinazione 78.1 / 73.2 /
+69.2 / 63.2%. **Soglie con le quote** (fuori lega), con ±2se e quota del calendario: ≥70 78.6% ±2.0
+su 14%, ≥65 74.7% ±1.8 su 20%, ≥60 71.1% ±1.6 su 27%, ≥55 67.5% ±1.4 su 37%, ≥50 64.0% ±1.3 su 49%;
+su tutte 53.0% (probabilità media del pick 52.7%), «sempre in casa» 43.6%. **Valgono uguali dentro e
+fuori dai cinque campionati** (≥55: 67.9 e 67.1%; ≥70: 78.7 e 78.4%), a differenza di quelle del
+motore da solo. Per fascia la combinazione è calibrata: < 40 37.4 → 39.5, 40–45 42.4 → 43.2,
+45–50 47.4 → 46.1, 50–55 52.4 → 52.6, 55–60 57.4 → 57.8, 60–65 62.4 → 61.5, 65–70 67.4 → 66.0,
+≥ 70 78.1 → 78.6: la confidence con le quote è la probabilità combinata, senza tabella.
+
+**Non batte il bookmaker.** Il margine medio sulle quote di chiusura è 5.7% (4.1–7.9%). Giocando
+sempre il pick alla quota media di chiusura: motore −6.0% della posta, mercato −3.2%, combinazione
+−2.9%. Giocando dove il motore dà a un esito più del mercato: 3+ punti 7.504 giocate, escono il
+32.6% contro il 34.2% del mercato, −11.6%; 5+ punti −15.8%; 8+ punti −13.0%; 12+ punti −16.0%.
+
+**Nel motore (`b54`).** Card «Con le quote del mercato» sotto l'Ensemble: tre campi (1, X, 2; la
+virgola vale come punto), la tabella motore / mercato senza margine / con le quote, il pick con la
+confidence e la soglia (`QUOTE_RESA`), l'avviso quando motore e mercato indicano esiti diversi, il
+margine. Nel mega-prompt un blocco dopo il pick (vedi *Il mega-prompt*). La combinazione è
+`QUOTE_COMB` (`W`, `b` sulle quattro variabili grezze, softmax; lo script li stampa e il JS li
+riproduce al bit, scarto 6e-17). Senza quote non cambia niente: probabilità, tabellone, confidence
+dell'1X2 e CSV restano quelli del motore, e il Comparatore non ha i campi. `aggiornaQuote` gira a
+fine analisi e a ogni carattere scritto nei campi; «Cambia partita» li svuota.
+
 ## Formazioni e assenze
 
 **Perché.** Il pick sbaglia il 47.2% delle partite: 25.6 punti sono pareggi, 21.6 vittorie
@@ -1911,6 +2004,8 @@ scrittura nuova, il messaggio iniziale). Il banco la verifica a parte, premendo 
 | `STAT_SHRINK_LEGACY` | 0.35 | storica | il `k` a cui valgono OL e correzione residuale |
 | `CONF_1X2_TABLE` | `[0,0]` + 8 fasce | stimata `b38`, riconfermata `b41` e `b49` | resa del pick per fascia, 1882 partite di Serie A post-`b30`; `b41`, 1134 in copia conforme: 8 fasce su 8 dentro 2se; Premier χ² 11.2 su 8, LaLiga 7.7, Bundesliga 7.1, Ligue 1 5.2. Il punto `[0,0]` (`b41`) serve gli esiti non scelti: hit/p 0.939 / 1.000 / 0.943 / 0.993 / 0.963 in Serie A / Premier / LaLiga / Bundesliga / Ligue 1, contro 0.960 della tabella. `b49` (motore `b48`, 5230 partite): χ² 16.2 su 8, ma fuori lega né le probabilità nude (−0.00043 di Brier, `z = −1.01`) né una tabella rifatta (+0.00007) la battono; esiti non scelti hit/p 0.996. Vedi *Le tabelle col `b48`*. `b52`, tre leghe nuove: χ² 32.2 su 8, **non regge** fuori dai cinque campionati, e la probabilità nuda la batte (Brier +0.00137 per la tabella, `z = +2.68`). **Dal `b53` non è in uso**: resta come manopola (`CONF_1X2_MODE = 'tabella'`) |
 | `CONF_1X2_MODE` | `'nuda'` | procedura, decisa da un test registrato (`b53`) | la confidence dell'1X2 è la probabilità del motore. Registrato prima di aprire 2. Bundesliga, First Division A, Premiership e Super League: la nuda batte la tabella in quattro leghe su quattro, −0.00220 di Brier, `z = −4.09`. `'tabella'` torna a `CONF_1X2_TABLE`, `'retta'` alla retta del `b37` |
+| `QUOTE_COMB` | `W` 3×4, `b` 3 | stimata `b54` | logistica multinomiale sulle quattro variabili grezze `log(p1/pX)`, `log(p2/pX)` del motore e del mercato (quote di chiusura `AvgC`, margine tolto in proporzione), 11.902 partite di dodici leghe, `C = 1` sulle variabili standardizzate e riportata alla scala grezza. Il test registrato (fuori lega): prese +1.95, `z = +7.00`, logloss meglio in 12 leghe su 12. Si rifà con `strumenti/quote-bookmaker.py`, che stampa `W` e `b` identici. Usata solo quando l'utente scrive le quote |
+| `QUOTE_RESA` | tutte 53.0 · soglie ≥70 / 65 / 60 / 55 / 50: 78.6 / 74.7 / 71.1 / 67.5 / 64.0% su 14 / 20 / 27 / 37 / 49% del calendario · disaccordo 1321 partite, motore 26.3%, mercato 43.1% | misurata `b54` | combinazione stimata su undici leghe e misurata sulla dodicesima, 11.902 partite; soglie uguali nei cinque campionati e nelle altre sette (≥55: 67.9 e 67.1%). La card delle quote e il mega-prompt la leggono da qui |
 | `PICK_RESA` | tutte 52.7 · casa 43.0 · soglie ≥70 / 65 / 60 / 55 / 50: 77.1 / 73.2 / 69.3 / 66.0 / 61.7% su 9 / 16 / 26 / 38 / 52% del calendario | misurata `b49` | cinque leghe col motore `b48`, 5230 partite (tabella in *Stato attuale*). Dal `b51` una sola copia: la card delle soglie e il mega-prompt la leggono da qui. Si rifà con le tabelle, a ogni motore che sposta l'1X2. Dal `b52` porta `leghe` (le cinque, per id) e `fuori` (Championship 46.3 e 64.8% su 17%, Eredivisie 53.7 e 68.7% su 47%, Liga Portugal 55.0 e 72.4% su 43%: pick su tutte e a ≥55, 3495 partite col `b48`), perché sulle tre leghe nuove le soglie ≥55 / 60 / 65 / 70 escono dai 2se (vedi *Le tre leghe nuove col `b48`: la regola*). Dal `b53` `fuori` ha anche 2. Bundesliga (45.4 e 62.8% su 16%), First Division A (50.2 e 65.5% su 35%), Premiership scozzese (53.3 e 68.9% su 41%) e Super League svizzera (47.1 e 66.1% su 26%), 3202 partite col motore `b52` |
 | retta dei mercati binari | −5.06 + 1.091·p | stimata, riconfermata `b38` e `b41` | 22.584 proposte, errore massimo 2.4 punti; `b41` 7938 proposte, 2.5 |
 | `EDGE_BANDS` | ≥20 / ≥10 / ≥5, guadagno per famiglia (`b50`) | stimata `b38`, riconfermata `b41` e `b49`, per famiglia dal `b50` | 28.230 proposte: +24.6 / +14.8 / +6.3 punti, monotono, segno concorde in 5 stagioni su 5. `b41` (copia conforme): +25.6 / +15.6 / +4.8 sulle 13.148 proposte con base del `b40`, +25.0 / +14.9 / +5.7 sulle 14.742 del `b41`, monotono in 3 stagioni su 3; Premier (≥20 / 10–20 / 5–10) +27.4 / +10.7 / +6.0, LaLiga +25.0 / +13.7 / +7.3, Bundesliga +28.7 / +14.0 / +5.5, Ligue 1 +26.4 / +13.4 / +5.0. `b49` (motore `b48`, cinque leghe): +25.8 / +12.2 / +6.1, monotono in 5 leghe su 5; per famiglia 1X2 +27.5 / +15.5 / +8.0, gol +1.0 / +7.2 / +3.5, numeri +7.2 / +10.2 / +8.2. Dal `b50` l'etichetta mostra questi, per famiglia, con ±2se: 1X2 ±1.6 / ±1.6 / ±1.9 (2891 / 3573 / 2680 proposte), gol ±10.4 / ±2.3 / ±1.7 (92 / 1881 / 3457), numeri ±8.0 / ±2.9 / ±2.4 (133 / 1058 / 1628). Ordinare per guadagno atteso invece che per scarto: no (vedi *Il tabellone per famiglia di mercato: la regola*) |
@@ -2094,6 +2189,10 @@ di questo elenco è stata a lungo falsa proprio perché nessuno sapeva dove cont
   controllo.
 - **Il profilo di stile di un avversario va calcolato escludendo la partita in esame**:
   `poss` e `field_tilt` delle due squadre sono complementari.
+- **Calibrato non vuol dire informativo contro il mercato.** Il motore è calibrato (pick al 51.7%,
+  esce il 51.0%), eppure dato il mercato il suo peso è negativo in 12 leghe su 12: dove si discosta
+  dalle quote sbaglia più delle quote. Una differenza fra motore e mercato non è un valore da
+  giocare (−11 / −16% della posta).
 
 ## Disciplina di calibrazione
 
@@ -2166,6 +2265,7 @@ misurate.
 | Peso e scala dell'Elo, secondo giro (0.40 / 2.00 sopra l'Elo corretto) | **no** (`b48`) | tre leghe mai viste: −0.00135, `z = −0.89`, Championship peggiore. Vedi *Peso e scala dell'Elo insieme* |
 | La coda alta della selezione contro le neopromosse (col `b48` il 10% più alto perde 2.9 punti sulle cinque leghe) | **non decisa, chiusa** (`b52`) | regola registrata sulle tre leghe nuove: −0.3 ±2.0 (confermata sotto −2se, smentita da 0 in su); otto leghe insieme −1.8 ±1.8, solo descrittivo. L'ingresso del `b48` resta. Vedi *Le tre leghe nuove col `b48`: la regola* |
 | Indovinare più risultati combinando tutto quello che il motore calcola (stacking, `b53`) | **no** (`b53`) | 12 leghe, 11.927 partite, addestrato su undici e misurato sulla dodicesima. Logistica sulle sole probabilità: +0.08 ±0.18 punti di prese; coi sei modelli, `lgModel`, `lgElo`, ΔElo e HFA (19 feature): +0.22 ±0.40, ma logloss −0.0029 (`z = −2.89`, una calibrazione, non prese); con 67 feature (lambda, tiri, pendenze, neopromosse, formazioni, riposo, classifica della stagione): −0.13 ±0.51, e comincia a giocare `X` (388 volte) perdendo; gradient boosting +0.30 ±0.55. La selezione nemmeno: 10 / 20 / 30 / 50% più sicuro +0.5 / +0.7 / −0.1 / +0.6 (±1.7 / 1.2 / 0.9 / 0.7). Il modello è calibrato (probabilità media del pick 51.7%, prese 51.0%): l'informazione del motore è sfruttata |
+| Giocare dove il motore dà a un esito più del mercato (le «value bet» del motore) | **no** (`b54`) | 11.902 partite, quote medie di chiusura: motore sopra il mercato di 3+ punti 7.504 giocate, escono il 32.6% contro il 34.2% del mercato, −11.6% della posta; 5+ −15.8%, 8+ −13.0%, 12+ −16.0%. Dato il mercato il motore pesa −0.19 ±0.08 (1 contro 2), negativo in 12 leghe su 12. Anche il pick sempre giocato perde: motore −6.0%, mercato −3.2%, con le quote −2.9% (margine medio 5.7%) |
 | Il disaccordo fra modello ed Elo come segnale di sorpresa | **è il candidato Elo visto da un'altra parte** (`b42`) | fuori lega −0.0037 (`z = −2.47`), prese +0.57 punti, Ligue 1 di nuovo contraria (+0.0020). Nelle 717 partite (14%) in cui modello ed Elo indicano favoriti diversi il pick prende il 37.7% (41.4% col disaccordo in regressione), contro il 55.2% delle altre. A parità di partite giocate la selezione non migliora (top 20%: 72.8 contro 73.2%) |
 
 **Le cose che hanno retto**, in ordine di quanto valgono:
@@ -2179,6 +2279,7 @@ misurate.
 | **Lo squilibrio sui cartellini** (`b16`) | AUC 0.562 → 0.593, stesso segno in 5 leghe |
 | **`sum_sot` sull'Over 2.5** (`b9`–`b12`) | l'unica feature sopravvissuta a tre leghe |
 | **L'ingresso delle neopromosse nell'Elo** (`b48`) | residuo delle neopromosse da −7.3 ±2.6 a −0.5 punti; logloss 1 contro 2 −0.0037 (`z = −2.64`) su cinque leghe, confermato non peggiore su tre leghe mai viste |
+| **Le quote del mercato nell'1X2** (`b54`) | registrata prima, 11.902 partite di dodici leghe, fuori lega: prese 51.04 → 52.99% (+1.95, `z = +7.00`), logloss −0.01772, dodici leghe su dodici. Il guadagno è del mercato: il motore, dato il mercato, pesa meno di zero |
 | **La confidence dell'1X2 uguale alla probabilità** (`b53`) | registrata prima, su quattro leghe mai aperte: Brier −0.00220, `z = −4.09`, quattro leghe su quattro; sulle tre leghe del `b52` −0.00137 (`z = −2.68`) |
 | **Lo squilibrio sui tiri in porta** (`b42`) | registrato prima di vedere due leghe e passato su tutte e due; cinque leghe −0.0029 di logloss dell'Over 8.5, `z = −3.10`, positivo in 14 stagioni su 15 |
 
@@ -3002,3 +3103,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b51` | il mega-prompt riscritto per le due cose che servono all'utente, decidere cosa giocare e capire la partita: sintesi in cima, poi la partita, il perché delle proposte e i rischi. Aggiunti il pick con la sua fascia, i rischi calcolati e la stanchezza come contesto; tolti Ordered Logit, KNN e correzione residuale (peso 0), numeri vecchi e una frase rotta. Le soglie del pick in una costante sola (`PICK_RESA`) per card e prompt. Il banco controlla che il prompt non sia vuoto né rotto. Probabilità e CSV invariati |
 | `b52` | le tre leghe nuove col `b48` (3495 partite in copia conforme): la coda alta contro le neopromosse non si ripete (−0.3 ±2.0, voce chiusa); le soglie del pick e `CONF_1X2_TABLE` non reggono fuori dai cinque campionati, quindi card e mega-prompt lo dicono e per Championship, Eredivisie e Liga Portugal danno le rese misurate a parte (`PICK_RESA.leghe` / `fuori`); il `b48` sul motore vero fa quello che la ricostruzione prevedeva; i due muri dei gol e il riferimento dei mercati sui numeri si ripetono. Registrato il test della confidence nuda su quattro leghe mai aperte. Probabilità e CSV invariati |
 | `b53` | la confidence dell'1X2 è la probabilità del motore (`CONF_1X2_MODE = 'nuda'`): registrato prima, sulle quattro leghe mai aperte (2. Bundesliga, First Division A, Premiership scozzese, Super League svizzera, 3202 partite in copia conforme) batte la tabella del `b38` in quattro su quattro, −0.00220 di Brier (`z = −4.09`). Le quattro leghe entrano in `PICK_RESA.fuori`. Probabilità invariate; nel CSV cambiano solo le confidence dell'1X2 |
+| `b54` | le quote del bookmaker: regola registrata prima di scaricarle, e passata. Su 11.902 partite di dodici leghe (quote di chiusura di football-data.co.uk), stimata su undici leghe e misurata sulla dodicesima, la combinazione motore + mercato prende il 52.99% contro il 51.04% del motore (+1.95, `z = +7.00`), logloss meglio in 12 leghe su 12; il merito è del mercato, e dato il mercato il motore pesa meno di zero. Card «Con le quote del mercato» (facoltativa), soglie con le quote uguali in tutte le leghe, blocco nel mega-prompt, sei casi nel banco, `strumenti/quote-bookmaker.py`. Senza quote probabilità, tabellone e CSV invariati |
