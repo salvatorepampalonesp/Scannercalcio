@@ -2075,6 +2075,59 @@ sotto il nome. Cancellate le quote torna il tabellone del motore. `window.__VERD
 motore (lo legge il Comparatore); quello con le quote sta in `window.__VERDETTI_QUOTE`. Con le sole
 quote dell'Over il tabellone resta del motore: il test aveva sempre anche l'1X2.
 
+### Battere il bookmaker: la regola della ricerca
+
+Scritta prima di guardare le quote di prima della partita e le quote massime accanto ai risultati,
+e prima di cercare sottoinsiemi. Chiesta dall'utente: «noi dobbiamo fare meglio dei bookmaker».
+
+**Da dove si parte.** Contro le quote di chiusura il motore non aggiunge niente: dato il mercato pesa
+meno di zero sull'1X2 (12 leghe su 12) e zero sull'Over; giocare dove si discosta ha perso l'11–16%
+(1X2) e il 7.5–9.9% (Over/Under); anche le proposte migliori con le quote perdono l'1.8% alla
+chiusura. Battere il bookmaker vuol dire una giocata con valore atteso positivo **al prezzo che si
+prende**. Restano tre strade, e con questi dati si possono provare.
+
+**I dati.** Le 11.902 partite del `b54`, probabilità del motore `b48` (1X2, e Over 2.5 dalla sua
+matrice). Dai file di football-data: quote di qualche giorno prima (`Avg`, media; `Max`, la migliore;
+per 1X2 e Over/Under, undici leghe: la Svizzera non le ha) e di chiusura (`AvgC`, `MaxC`). Probabilità
+eque tolto il margine in proporzione. **Esplorazione sulle stagioni 2023/24 e 2024/25, conferma sul
+2025/26**, che per nessuna di queste domande si guarda prima della conferma. Il valore di una giocata
+alla chiusura, `CLV = p_chiusura_equa × prezzo − 1`, è il guadagno atteso se la chiusura è giusta: ha
+molto meno rumore del risultato, e un CLV positivo è il segno di un vantaggio vero. Il risultato
+(ROI) si riporta sempre accanto.
+
+**Domanda 1: il motore anticipa il mercato?** Fra le quote di qualche giorno prima e la chiusura il
+mercato si muove. Se il motore sa qualcosa che le quote di prima non sanno, il mercato gli va dietro.
+- *1a, l'informazione*: la pendenza della mossa del mercato, `log(pC1/pC2) − log(pE1/pE2)`, su
+  `log(pM1/pM2) − log(pE1/pE2)` (M il motore, E le quote di prima, C la chiusura); lo stesso
+  sull'Over coi logit. **Passa** se sul 2025/26 la pendenza è positiva con `z ≥ 2` (1X2 e Over
+  sono due test).
+- *1b, i soldi*: si gioca, alle quote medie di prima, l'esito (uno per partita fra `1`, `X`, `2`,
+  e uno fra Over e Under) a cui il motore dà almeno `t` punti più delle quote di prima; `t` fra 3, 5,
+  8 e 12, scelto sull'esplorazione col CLV medio più alto. **Passa** se sul 2025/26 il CLV medio è
+  positivo con `z ≥ 2`. Lo stesso al prezzo migliore (`Max`) è un secondo test.
+
+**Domanda 2: il prezzo migliore, senza motore.** Il consenso dei bookmaker (le quote medie senza
+margine) è quasi calibrato; il prezzo migliore fra tutti a volte lo supera. Si gioca l'esito quando
+`Max × p_consenso_equa − 1 ≥ m`, con `m` fra 0, 2, 4 e 6%, scelto sull'esplorazione. Due test: alle
+quote di prima (CLV rispetto alla chiusura, **passa** con CLV medio positivo e `z ≥ 2` sul 2025/26), e
+alla chiusura (`MaxC` contro il consenso `AvgC`: lì il CLV non esiste, **passa** con ROI positivo e
+`z ≥ 2` sul 2025/26). Si dice anche quanto spesso `Max` coincide con l'exchange (`BFE`), che si paga
+con una commissione.
+
+**Domanda 3: dove il motore sa qualcosa che la chiusura non sa.** Sottoinsiemi scritti adesso:
+lega; parte della stagione (prime 5 giornate, 6–19, dalla 20ª); una neopromossa in campo; la
+favorita del mercato (sotto il 45%, 45–60, oltre il 60%); quanto motore e mercato sono lontani su 1
+contro 2 (sotto 5 punti, 5–10, oltre 10); motore ed Elo d'accordo o no sul favorito; `/advanced`
+presente o no. Per ognuno, sull'esplorazione, il peso del motore dato il mercato su 1 contro 2
+(logistica a due variabili, come nel `b54`). Un sottoinsieme passa all'esame se il peso è positivo con
+`z ≥ 3`; **è confermato** se sul 2025/26 il peso resta positivo con `z ≥ 2`. Per i confermati si
+riportano CLV e ROI giocando il lato del motore alla chiusura. Se nessuno arriva a `z ≥ 3`
+sull'esplorazione, la risposta è «da nessuna parte, con questi dati».
+
+**Cosa non si può provare qui.** Corner, tiri, cartellini, falli, Goal/NoGoal: nessuna quota storica
+nei file (servirebbero fonti a pagamento, da verificare). Le quote di pochi minuti prima del fischio:
+football-data ha quella di chiusura e una di qualche giorno prima.
+
 ## Formazioni e assenze
 
 **Perché.** Il pick sbaglia il 47.2% delle partite: 25.6 punti sono pareggi, 21.6 vittorie
