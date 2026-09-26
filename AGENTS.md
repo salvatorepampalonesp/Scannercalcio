@@ -274,7 +274,9 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   50.8%), 2–6 punti sotto in ogni fascia sotto il 60%. È la matrice di Dixon-Coles col `rho` del motore:
   a pari Over e pari 1X2 dà troppo pochi Goal. Una ricalibrazione va registrata e provata su leghe
   nuove.
-- [ ] **Quote storiche di corner e cartellini.** La ricerca per battere il bookmaker (`b58`, vedi
+- [ ] **Quote storiche di corner e cartellini.** Fonte trovata: Footiqo (1xBet, chiusura), bloccata
+  dalla rete dell'ambiente finché `footiqo.com` non è fra i domini consentiti. Regola registrata: vedi
+  *Le quote di corner e cartellini: la regola*. La ricerca per battere il bookmaker (`b58`, vedi
   *Battere il bookmaker: la regola della ricerca*) non ha trovato niente su 1X2 e Over/Under, dove il
   mercato è il più preciso. Il motore discrimina di più su gialli e corner, mercati che i file storici
   non quotano. Servono quote storiche (fonti a pagamento, per esempio The Odds API dichiara mercati
@@ -2178,6 +2180,40 @@ motore discrimina di più rispetto ai gol, gialli AUC 0.57–0.65, e dove i book
 meno precisi), con quote storiche a pagamento; le quote a pochi minuti dal fischio contro la
 formazione confermata. Ogni prova con la sua regola, e col CLV calcolato sulla chiusura
 **ricalibrata**, non in proporzione.
+
+### Le quote di corner e cartellini: la regola
+
+Scritta prima di avere le quote. **La fonte**: Footiqo (quote di chiusura di 1xBet per corner e
+cartellini, 60+ leghe, fino a cinque stagioni; gratis per lega dal sito, o in un file a pagamento).
+Le colonne esatte (quali linee, come conta i cartellini) si leggono all'arrivo, senza guardare i
+risultati accanto alle quote.
+
+**I dati.** Le 11.927 partite delle dodici leghe (motore `b48`), agganciate per data e nomi come le
+quote di football-data. Prova di coincidenza: i corner totali di Footiqo uguali ai nostri su almeno il
+95% delle partite agganciate; per i cartellini si dice quante coincidono coi nostri gialli, e se Footiqo
+conta anche i rossi. Probabilità del motore su qualunque linea: `1 − BN(floor(linea); atteso, k)` dalle
+righe `Corner tot (atteso)`, `Dispersione corner (k)`, `Gialli tot (atteso)`, `Dispersione gialli (k)`
+(`--` è Poisson), con la prova di coincidenza sulle linee che il CSV già riporta. Probabilità del
+mercato: Over e Under tolto il margine in proporzione, poi **ricalibrata** fuori lega (una logistica sul
+logit del mercato). Una linea per partita e per mercato: quella con le quote più vicine alla pari.
+
+**Primo test, l'informazione** (corner e cartellini separati, due test): logistica su logit del
+mercato e logit del motore, stimata su undici leghe e misurata sulla dodicesima, contro il mercato
+ricalibrato da solo. **Passa** se la logloss migliora con `z ≤ −2` sull'insieme e in almeno otto leghe
+su dodici.
+
+**Secondo test, i soldi** (solo se il primo passa, per quel mercato): esplorazione sulle stagioni
+2023/24 e 2024/25, conferma sul 2025/26. Si gioca il lato (Over o Under) a cui la combinazione del
+primo test dà almeno `t` punti più del mercato ricalibrato, `t` fra 3, 5 e 8, scelto sull'esplorazione
+col ROI più alto, alla quota di chiusura di 1xBet. **Passa** se sul 2025/26 il ROI è positivo con `z ≥
+2`. Alla chiusura il CLV non esiste: conta il ROI.
+
+**Descrittivi**: AUC del motore e del mercato per lega; peso del motore dato il mercato; margine
+medio di 1xBet su questi mercati; lo stesso sui tiri in porta, se Footiqo li quota.
+
+Se il primo test non passa, anche corner e cartellini sono un mercato in cui il bookmaker sa più del
+motore, e la ricerca con questi strumenti è finita; se passano tutti e due, lo Scanner avrà i campi
+per le quote di corner e cartellini, come per l'1X2.
 
 ## Formazioni e assenze
 
