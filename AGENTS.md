@@ -249,6 +249,9 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   prevede e quanto va ristretta. Poi l'avversario: i falli subiti dipendono da quanti falli fa
   l'altra squadra, che il motore prevede già.
 - [ ] **I parametri interni di Markov**: verificati solo gli invarianti.
+- [ ] **Le quote dei bookmaker.** L'informazione che il motore non ha (vedi *Stato attuale*, «Il
+  tetto»). La PitchAPI non le dà; football-data.co.uk sì, gratis, per le dodici leghe. **Regola
+  registrata**: vedi *Le quote dei bookmaker: la regola*.
 
 ### 5. UI e pulizie
 
@@ -1641,6 +1644,41 @@ Le leghe equilibrate (2. Bundesliga, Super League) hanno l'1X2 che distingue poc
 Championship. L'Over resta sotto il vero in tre leghe su quattro (−4.2 / −6.1 / −5.1; il Belgio
 +1.5), e in 2. Bundesliga non distingue niente (AUC 0.509). I corner non si prevedono in due leghe
 su quattro (AUC sotto 0.5 in 2. Bundesliga e Belgio).
+
+### Le quote dei bookmaker: la regola
+
+Scritta prima di scaricare le quote e di confrontarle con qualunque risultato (dal file di Serie
+A 2024/25 è stata letta solo l'intestazione).
+
+**Perché.** Sulle dodici leghe il motore è calibrato e combinare tutto quello che calcola non
+indovina di più (vedi *Cosa è già stato provato*, lo stacking): serve informazione nuova. Le quote
+sono la candidata più forte, e sono pubbliche prima della partita. Lo Scanner non le ha: se
+servono, l'utente le scrive a mano prima dell'analisi.
+
+**I dati.** football-data.co.uk, 2023/24–2025/26: `mmz4281/{2324,2425,2526}/{I1,E0,SP1,D1,F1,E1,
+N1,P1,B1,D2,SC0}.csv` e `new/SWZ.csv`. Ogni riga si aggancia a una partita dei CSV del Comparatore
+(le 11.927 delle dodici leghe, probabilità del `b48`) per data, entro un giorno, e nomi delle
+squadre; la prova di coincidenza è il punteggio, che deve essere uguale su almeno il 99% delle
+partite agganciate, e si dice quante non si agganciano. Probabilità del mercato: la media delle
+quote di chiusura (`AvgCH/AvgCD/AvgCA`; se manca, Pinnacle di chiusura `PSC*`, poi Bet365 di
+chiusura `B365C*`), tolto il margine in proporzione (`1/quota` normalizzato). La chiusura è la
+sola presente in tutte e dodici le leghe (la Svizzera ha solo quella) ed è quella che si vede a
+ridosso del calcio d'inizio. Le quote di qualche giorno prima (`Avg*`) sono solo descrittive.
+
+**Il test.** La combinazione del modello e del mercato: una logistica multinomiale su quattro
+variabili, `log(p1/pX)` e `log(p2/pX)` del motore e del mercato, stimata su undici leghe e misurata
+sulla dodicesima, contro il motore da solo sulle stesse partite. **Passa** se le prese del pick
+migliorano con `z ≥ +2` sull'insieme (differenza appaiata partita per partita) e la logloss 1X2
+migliora in almeno otto leghe su dodici. Se passa, lo Scanner avrà un campo per le quote (facoltativo:
+senza quote il motore resta quello di oggi), e combinazione, soglie del pick e confidence si
+rifanno sulle probabilità combinate. Se non passa, niente campo, e questa sezione dice perché.
+Stimare su undici leghe e misurare sulla dodicesima basta: l'idea non viene da queste leghe, e la
+combinazione ha nove parametri stimati su diecimila partite.
+
+**Descrittivi**, detti comunque: le prese del pick del mercato da solo; la combinazione contro il
+mercato da solo (se il modello aggiunge qualcosa alle quote); la selezione al 10 / 20 / 30 / 50%
+del calendario per modello, mercato e combinazione; le quote di qualche giorno prima al posto
+della chiusura.
 
 ## Formazioni e assenze
 
