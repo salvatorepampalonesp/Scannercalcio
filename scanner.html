@@ -174,7 +174,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b49</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b50</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -271,16 +271,17 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       Ordinato per <b>scarto dal base rate della lega</b>, non per percentuale. Il base rate &egrave; quanto
       rende giocare quel mercato <b>sempre, alla cieca</b>, contato sull'archivio di questa lega: un
       <code>12</code> al 73% non &egrave; una trovata, &egrave; il base rate. Quello che conta &egrave; di quanto lo batte.
-      Misurato su <b>1.882 partite</b> di Serie A, cinque stagioni, solo backtest del motore attuale:
-      con scarto <b>+5&hellip;+10</b> si rende +6 punti sopra il giocarlo sempre, <b>+10&hellip;+20</b> +15 punti,
-      <b>+20 e oltre</b> +25. Il segno regge in tutte e cinque le stagioni.
-      Sotto +5 non c'&egrave; verdetto: il guadagno misurato sta dentro il rumore.
+      Misurato su <b>5.230 partite</b> di Serie A, Premier, LaLiga, Bundesliga e Ligue 1, motore b48:
+      nell'<b>1X2</b> uno scarto <b>+5&hellip;+10</b> rende +8 punti sopra il giocarlo sempre, <b>+10&hellip;+20</b> +15,
+      <b>+20 e oltre</b> +27, in tutte e cinque le leghe. Nei <b>mercati gol</b> (Over, Under, Goal, NoGoal) e
+      in quelli <b>sui numeri</b> lo stesso scarto rende molto meno, fra +1 e +10: ogni riga dice quanto rende
+      il suo tipo di mercato. Sotto +5 non c'&egrave; verdetto: il guadagno misurato sta dentro il rumore.
     </div>
     <div id="league-note"></div>
     <div class="tbl-scroll"><table class="table-ui table-compact">
       <thead><tr>
         <th style="text-align:left">Mercato</th><th>Prob. &middot; lega</th>
-        <th style="text-align:left">Scarto &middot; quanto rende</th>
+        <th style="text-align:left;white-space:normal">Scarto &middot; quanto rende</th>
       </tr></thead>
       <tbody id="verdetti-body"></tbody>
     </table></div>
@@ -2160,17 +2161,17 @@ function renderLeagueNote() {
     + '<span style="color:var(--dim)"> Misurato su ' + s.n + ' partite.</span></div>';
 }
 
-// SCARTI misurati su 1882 partite di Serie A, cinque stagioni, SOLO export post-b30
-// (gli altri undici CSV sono un motore diverso). Lo scarto e' la probabilita' meno il
-// base rate DI QUEL mercato NELLA SUA LEGA: quanto batte il giocarlo sempre alla cieca.
-// Il guadagno cresce con lo scarto (+6.3 / +14.1 / +16.0 / +24.6 punti) e resta piatto
-// con la probabilita' grezza (+1.4 / +3.3 / +7.1 / +6.1 / +5.1): e' il motivo per cui
-// il tabellone proponeva sempre 1X / X2 / 12. Il 12 supera la sua vecchia soglia sul
-// 90% delle partite e vale +0.5 punti. Il segno regge in tutte e cinque le stagioni.
+// Per fascia di scarto e famiglia di mercato: [guadagno sopra il giocarlo sempre, 2se, proposte],
+// cinque leghe col b48. Lo stesso scarto rende molto meno nei gol che nell'1X2, ma ordinare
+// per guadagno atteso non sceglie proposte migliori: l'ordine resta per scarto.
+// Vedi AGENTS.md, Il tabellone per famiglia di mercato.
 window.EDGE_BANDS = window.EDGE_BANDS ||
-  [[20, 'FORTE',      24.6, 765],
-   [10, 'GIOCABILE',  14.8, 2613],
-   [5,  'MARGINALE',   6.3, 3436]];
+  [[20, 'FORTE',     { '1x2': [27.5, 1.6, 2891], gol: [1.0, 10.4, 92],  numeri: [7.2, 8.0, 133] }],
+   [10, 'GIOCABILE', { '1x2': [15.5, 1.6, 3573], gol: [7.2, 2.3, 1881], numeri: [10.2, 2.9, 1058] }],
+   [5,  'MARGINALE', { '1x2': [8.0, 1.9, 2680],  gol: [3.5, 1.7, 3457], numeri: [8.2, 2.4, 1628] }]];
+const EDGE_FAMIGLIA = { pOv: 'gol', pUn: 'gol', pGG: 'gol', pNG: 'gol',
+  'cor9.5': 'numeri', 'sot8.5': 'numeri', 'yel3.5': 'numeri' };
+const EDGE_FAMIGLIA_TXT = { '1x2': "dell'1X2", gol: 'dei mercati gol', numeri: 'dei mercati sui numeri' };
 
 function renderVerdetti(mk, base, adv) {
   const over = (line, lam, k) => 1 - negBinCDF(Math.floor(line), lam, k);
@@ -2208,11 +2209,12 @@ function renderVerdetti(mk, base, adv) {
   for (const [nome, p, b, desc, key] of R) {
     if (p == null || isNaN(p)) continue;
     const edge = (b == null || isNaN(b)) ? null : (p - b) * 100;
-    let verdetto = 'NESSUN VERDETTO', guad = null, nOss = null;
+    const fam = EDGE_FAMIGLIA[key] || '1x2';
+    let verdetto = 'NESSUN VERDETTO', guad = null, guadErr = null, nOss = null;
     if (edge == null) verdetto = 'BASE DI LEGA ASSENTE';
-    else for (const [soglia, v, g, n] of window.EDGE_BANDS)
-      if (edge >= soglia) { verdetto = v; guad = g; nOss = n; break; }
-    voci.push({ nome, p, b, edge, verdetto, guad, nOss, desc, key });
+    else for (const [soglia, v, perFam] of window.EDGE_BANDS)
+      if (edge >= soglia) { verdetto = v; [guad, guadErr, nOss] = perFam[fam]; break; }
+    voci.push({ nome, p, b, edge, verdetto, guad, guadErr, nOss, fam, desc, key });
   }
   // ordinati per scarto: in cima quello che batte di piu' il giocarlo alla cieca,
   // non quello con la percentuale piu' grossa.
@@ -2226,7 +2228,7 @@ function renderVerdetti(mk, base, adv) {
     const eTxt = v.edge == null ? '--' : (v.edge >= 0 ? '+' : '') + v.edge.toFixed(1);
     righe.push(`- ${v.nome}: ${(v.p*100).toFixed(1)}% contro un base rate di lega `
       + `${v.b == null ? 'ignoto' : (v.b*100).toFixed(1) + '%'} -> scarto ${eTxt} -> ${v.verdetto}`
-      + (v.guad != null ? ` (chi gioca con questo scarto rende +${v.guad} punti sopra il giocarlo sempre, misurato su ${v.nOss} proposte)` : ''));
+      + (v.guad != null ? ` (nei mercati ${EDGE_FAMIGLIA_TXT[v.fam]} chi gioca con questo scarto rende ${v.guad >= 0 ? '+' : ''}${v.guad.toFixed(1)} punti, +/-${v.guadErr.toFixed(1)}, sopra il giocarlo sempre, misurato su ${v.nOss} proposte)` : ''));
     html += '<tr' + (ok ? ' style="background:rgba(34,197,94,.10)"' : '') + '>'
       + '<td style="text-align:left;font-weight:bold;white-space:nowrap">' + v.nome
       +   '<div style="font-size:9px;color:var(--dim);font-weight:normal">' + v.desc + '</div></td>'
@@ -2237,9 +2239,10 @@ function renderVerdetti(mk, base, adv) {
       +   'border-radius:4px;font-size:10px;font-weight:bold;white-space:nowrap">'
       +   (v.edge == null ? v.verdetto : 'scarto ' + eTxt) + '</span>'
       +   (v.guad != null
-           ? '<div style="font-size:11px;margin-top:3px"><b>' + v.verdetto + '</b> &middot; rende <b>+'
-             + v.guad + '</b> punti sopra il giocarlo sempre'
-             + ' <span style="color:var(--dim)">(' + v.nOss + ' proposte)</span></div>'
+           ? '<div style="font-size:11px;margin-top:3px"><b>' + v.verdetto + '</b> &middot; rende <b>'
+             + (v.guad >= 0 ? '+' : '') + v.guad.toFixed(1) + '</b> punti <span style="color:var(--dim)">(&plusmn;'
+             + v.guadErr.toFixed(1) + ')</span> sopra il giocarlo sempre'
+             + ' <span style="color:var(--dim)">(' + v.nOss + ' proposte ' + EDGE_FAMIGLIA_TXT[v.fam] + ')</span></div>'
            : '<div style="font-size:10px;color:var(--dim);margin-top:3px">'
              + (v.edge == null ? 'archivio di lega troppo corto per un base rate'
                                : 'sotto +5 di scarto il guadagno misurato e\' dentro il rumore')
@@ -2252,7 +2255,7 @@ function renderVerdetti(mk, base, adv) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b49';
+window.__SCANNER_BUILD = '0905-b50';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
