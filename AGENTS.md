@@ -48,7 +48,7 @@ competizioni UEFA; nessuna quota dei bookmaker.
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b48`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b50`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -116,10 +116,32 @@ Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export rec
   (`b48`): sopra l'Elo corretto −0.00135, `z = −0.89`, la Championship peggiora. Resta 0.75 /
   1.25. L'alternativa rimasta è una temperatura sul prodotto stimata sulla lega stessa. Vedi
   *Peso e scala dell'Elo insieme: il candidato registrato*.
-- [ ] **Riconfermare le tabelle col `b48`.** L'ingresso delle neopromosse sposta le
-  probabilità delle partite con una neopromossa (una su quattro): `CONF_1X2_TABLE`, soglie del
-  pick e scarti dell'1X2 sono misurati sul motore di prima. Un batch automatico delle cinque
-  leghe li rifà (vedi *Il batch automatico*).
+- [x] ~~**Riconfermare le tabelle col `b48`.**~~ — **fatto (`b49`)**: batch automatico delle
+  cinque leghe, 5230 partite su 5230 in copia conforme, Elo rifatto dall'archivio identico su
+  ogni file. `CONF_1X2_TABLE` resta (fuori lega né le probabilità nude né una tabella rifatta la
+  battono); le soglie del pick si riscrivono nella card, perché col `b48` le probabilità sono più
+  aperte (più calendario sopra ogni soglia, un paio di punti in meno di resa); `EDGE_BANDS` 20 /
+  10 / 5 restano monotone in cinque leghe su cinque. Vedi *Le tabelle col `b48`*.
+- [x] ~~**Il guadagno di una fascia del tabellone dipende dal mercato.**~~ — **l'ordine resta,
+  l'etichetta cambia (`b50`).** Ordinare per guadagno atteso non sceglie proposte migliori (fuori
+  lega +0.12 ±0.29 sulla prima proposta, `z = +0.42`, tre leghe su cinque): la regola si ferma al
+  primo passo. Dal `b50` ogni riga dice quanto rende il suo tipo di mercato. Vedi *Il tabellone
+  per famiglia di mercato: la regola*. Il racconto sotto resta per la storia. L'etichetta dice un numero
+  solo per fascia (FORTE +24.6, GIOCABILE +14.8, MARGINALE +6.3), ma col `b48` sulle cinque leghe
+  l'1X2 rende +27.5 / +15.5 / +8.0, i mercati gol +1.0 (92 proposte) / +7.2 / +3.5, quelli sui
+  numeri +7.2 (133) / +10.2 / +8.2. Un Over 2.5 con scarto +20 è FORTE e rende quanto un
+  MARGINALE: lo scarto dei mercati gol vale meno perché la loro probabilità discrimina poco (AUC
+  0.55). Il candidato è ordinare e classificare le proposte per **guadagno atteso della famiglia**
+  invece che per scarto grezzo; si ricostruisce tutto dalla sezione `TABELLONE` del CSV (mercato,
+  probabilità, base, reale), senza rilanciare il motore. **Regola registrata**: vedi *Il
+  tabellone per famiglia di mercato: la regola*.
+- [ ] **La coda alta della selezione contro le neopromosse.** Col `b48` il 10% del calendario
+  col pick più probabile prende il 76.2% contro il 79.1% del `b47` sulle stesse partite (−2.9,
+  ±2.4); al 50 / 30 / 20% la differenza è 0.0 / +0.5 / −0.7. Delle 72 partite che entrano in
+  quel 10%, 69 sono contro una neopromossa: previste al 70.7%, vinte al 55.1%. Trovato dopo e su
+  quattro quote guardate insieme, quindi non è una prova: si rifà sulle tre leghe nuove (serve il
+  batch `b48` di Eredivisie, Liga Portugal e Championship 2023/24–2024/25, circa un'ora col batch
+  automatico) prima di toccare l'ingresso delle neopromosse. Vedi *Le tabelle col `b48`*.
 - [ ] **Il riferimento di lega dei mercati sui numeri è sbagliato da lega a lega.** Corner,
   tiri e gialli si ancorano a `MARKET_PER_GOAL × gol di lega`, ma corner e gialli non
   crescono coi gol: per gol i gialli vanno da 1.18 (Bundesliga) a 1.67 (LaLiga), i corner
@@ -236,36 +258,40 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b48`)
+## Stato attuale (`b50`)
 
-**1X2.** Pick azzeccato 52.9% (±3.0) contro il 40.2% del «gioca sempre in casa» in Serie
-A, 52.8% contro 43.1% in Premier, 54.2% contro 45.8% in LaLiga, 51.8% contro 42.0% in
-Bundesliga, 51.9% contro 43.9% in Ligue 1, fermo da venti build. Il valore sta nella **fascia alta**, che la card mostra con la tabella misurata
-in copia conforme dello Scanner (1134 partite di Serie A, 2023/24–2025/26, una stagione per
-file; vedi *Il campione di riferimento in copia conforme*):
+**1X2.** Col motore `b48` il pick azzecca il 52.7% (±1.4) contro il 43.0% del «gioca sempre in
+casa» sulle cinque leghe: 52.7% contro 40.2% in Serie A, 52.7% contro 43.1% in Premier, 53.2%
+contro 45.8% in LaLiga, 52.5% contro 42.0% in Bundesliga, 52.3% contro 43.9% in Ligue 1, fermo da
+venti build. Il valore sta nella **fascia alta**, che la card mostra con la resa misurata in
+copia conforme dello Scanner (dal `b49`: 5230 partite delle cinque leghe, 2023/24–2025/26, una
+stagione per file, motore `b48`; vedi *Le tabelle col `b48`*):
 
-| soglia sul pick | partite | quota del calendario | azzecca | ±2se | `b38` (1882, non conforme) |
+| soglia sul pick | partite | quota del calendario | azzecca | ±2se | `b47`, stesse partite |
 |---|---|---|---|---|---|
-| ≥50% | 522 | 46% | 61.3% | 4.3 | 62.0% |
-| ≥55% | 359 | 32% | 64.9% | 5.0 | 65.3% |
-| ≥60% | 221 | 19% | 70.1% | 6.2 | 71.1% |
-| ≥65% | 118 | 10% | 73.7% | 8.1 | 74.3% |
-| ≥70% | 52 | 5% | 73.1% | 12.3 | 79.0% |
+| ≥50% | 2738 | 52% | 61.7% | 1.9 | 62.5% su 48% |
+| ≥55% | 1983 | 38% | 66.0% | 2.1 | 67.6% su 33% |
+| ≥60% | 1379 | 26% | 69.3% | 2.5 | 71.3% su 22% |
+| ≥65% | 854 | 16% | 73.2% | 3.0 | 75.6% su 13% |
+| ≥70% | 480 | 9% | 77.1% | 3.8 | 80.6% su 7% |
 
-In Premier (1135 partite, stesse regole): ≥50 / 55 / 60 / 65 / 70 azzeccano 62.8 / 66.3 /
-68.2 / 72.3 / 80.9%, su 52 / 37 / 25 / 16 / 8% del calendario. In LaLiga (1134) 65.3 / 71.1 /
-75.0 / 80.7 / 84.1%, su 47 / 34 / 23 / 15 / 9%. In Bundesliga (912) 62.6 / 69.2 / 73.7 /
-77.4 / 81.8%, su 47 / 34 / 22 / 15 / 8%. In Ligue 1 (915) 59.8 / 66.5 / 69.8 / 72.6 / 78.0%,
-su 46 / 29 / 19 / 10 / 4%.
+Per lega, ≥50 / 55 / 60 / 65 / 70: Serie A 61.2 / 64.2 / 67.7 / 70.4 / 71.4% su 50 / 37 / 25 /
+13 / 6% del calendario; Premier 61.2 / 65.2 / 66.6 / 69.5 / 77.1% su 59 / 43 / 31 / 21 / 12%;
+LaLiga 63.8 / 68.8 / 74.3 / 79.3 / 83.9% su 51 / 38 / 26 / 17 / 11%; Bundesliga 62.8 / 67.9 /
+71.1 / 75.8 / 78.9% su 50 / 37 / 25 / 17 / 10%; Ligue 1 59.0 / 63.7 / 67.0 / 70.8 / 66.1% su 51 /
+33 / 23 / 13 / 6%. Sopra ogni soglia c'è più calendario e un paio di punti in meno di resa: le
+probabilità del `b48` sono più aperte (vedi *Calibrazione 1X2* qui sotto), non peggiori.
 
 **Dove vanno gli errori, e dove sta il margine.** Sulle cinque leghe (5230 partite) il pick
-sbaglia il 47.2%: 25.6 punti sono pareggi (il pick non gioca mai `X`, e `pX` non si prevede)
+sbaglia il 47.2% (47.3% col `b48`): 25.6 punti sono pareggi (il pick non gioca mai `X`, e `pX` non si prevede)
 e 21.6 sono vittorie dello sfavorito. Anche indovinando sempre chi vince fra le partite non
 pari si arriverebbe al 74.4%. Le sorprese non si anticipano con forma, momento dell'Elo,
 riposo o fortuna sotto-xG (vedi *Cosa è già stato provato*): l'unico segnale è il disaccordo
 fra modello ed Elo, +0.57 punti di prese. Il margine vero è la selezione: giocando il
 100 / 50 / 30 / 20 / 10% del calendario, in ordine di probabilità del pick, si prende il
-52.8 / 62.0 / 68.6 / 72.8 / 78.2%.
+52.8 / 62.0 / 68.6 / 72.8 / 78.2%. Col `b48`, ordinando dentro ogni file di stagione, 52.7 / 62.0 /
+69.3 / 71.8 / 76.2% contro 52.8 / 62.0 / 68.8 / 72.4 / 79.1% del `b47` sulle stesse partite: il 10%
+più alto perde 2.9 punti (±2.4), quasi tutti su partite contro una neopromossa (vedi *Da fare*).
 
 **Formazioni e stanchezza.** Dal `b43` il motore sa chi manca oggi rispetto all'undici
 abituale, dal `b44` quanti giorni di riposo ha ogni squadra contando le coppe europee (card
@@ -299,17 +325,26 @@ il segnale non sia già nell'output, solo mal etichettato.
 **Tabellone.** Ordina per **scarto dal base rate della lega**. Sulla proposta migliore di
 ogni partita rende +17.6 punti sopra il giocarla alla cieca come la stampava il `b40`, +18.9
 col `b41` (che ridà la base ai mercati sui numeri), contro +11.7 del vecchio ordinamento per
-probabilità. Vedi *Il tabellone ordinava per la colonna sbagliata*.
+probabilità. Col `b48` sulle cinque leghe +16.8 (±1.3; `b47` sulle stesse partite +16.4). Lo
+stesso scarto rende molto di più nell'1X2 (FORTE +27.5) che nei mercati gol (+1.0) o sui numeri
+(+7.2): dal `b50` l'etichetta di ogni riga dice quanto rende il suo tipo di mercato, mentre
+l'ordine resta per scarto, perché ordinare per guadagno atteso non sceglie meglio (vedi *Il
+tabellone per famiglia di mercato: la regola*). Vedi *Il tabellone ordinava per la colonna
+sbagliata*.
 
-**Calibrazione 1X2.** Probabilità ancora un po' timide: pendenza 1.249 ±0.098 (1 contro 2)
+**Calibrazione 1X2.** Col `b48` la timidezza è quasi sparita: pendenza 1 contro 2 del prodotto
+finito 1.053 ±0.041 sulle cinque leghe (Serie A 1.151, Premier 1.012, LaLiga 1.064, Bundesliga
+1.086, Ligue 1 0.948), contro 1.143 ±0.045 del `b47` sulle stesse partite. Buona parte veniva
+dalle neopromosse sopravvalutate: il pick contro di loro rendeva più del previsto in tre fasce su
+quattro (+5.8, +5.1 e +10.6 punti sotto il 55%, fra 55 e 65 e sopra il 70%). Prima del `b48`: pendenza 1.249 ±0.098 (1 contro 2)
 sul prodotto finito in Serie A, 1.120 in Premier, 1.150 in LaLiga e Bundesliga, 1.038 in
 Ligue 1. La timidezza sta nel modello (`lgModel` 1.637 / 1.309 / 1.481 / 1.374 / 1.149), non
 nell'Elo (1.119 / 1.018 / 1.017 / 1.035 / 0.957). Pesare di più il modello e scalare di più
 l'Elo (0.40 / 2.00) la toglie dove c'è, −0.005 di logloss sulle cinque leghe (`z = −4.07`),
 ma **non ha passato il test registrato**: in Ligue 1, dove il prodotto è già calibrato, non
 migliora (+0.0004). Il secondo giro, sopra l'Elo corretto del `b48` e su tre leghe mai viste,
-non passa neppure (`z = −0.89`). Resta 0.75 / 1.25. Vedi *Peso e scala dell'Elo insieme: il
-candidato registrato*.
+non passa neppure (`z = −0.89`): sopra l'Elo corretto non c'è quasi più niente da raddrizzare.
+Resta 0.75 / 1.25. Vedi *Peso e scala dell'Elo insieme: il candidato registrato*.
 
 **Mercati gol.** Due muri distinti. *Ordinamento*: AUC dell'Over 2.5 fra 0.51 e 0.60 a
 seconda del campione (0.552 in copia conforme, GG 0.532), e l'unica feature che l'ha spostato
@@ -337,6 +372,7 @@ non passa mai +7.1. Trascina con sé il `12`.
 
 | campione | partite | note |
 |---|---|---|
+| **Le cinque leghe col `b48`** | **5230** | **il riferimento dal `b49`** per soglie, confidence e tabellone: batch automatico `b48`, stesse stagioni e partite delle righe sotto, 5230 su 5230 in copia conforme, Elo rifatto dall'archivio identico su ogni file |
 | **Serie A 2023/24 → 2025/26** | **1134** | **il riferimento**: export `b40`, 1134 su 1134 in copia conforme, una stagione per file, storico 30, `lgN` ≥ 760; `/advanced` assente sul 2023/24 (`riserva-k-motore`) |
 | **Premier 2023/24 → 2025/26** | **1135** | **il riferimento**: export `b41`, 1135 su 1135 in copia conforme, una stagione per file, storico 30, `lgN` ≥ 760, `/advanced` su tutte e tre le stagioni |
 | **LaLiga 2023/24 → 2025/26** | **1134** | **prima lega di prova del candidato Elo**: export `b41`, 1134 su 1134 in copia conforme, `lgN` ≥ 759; `/advanced` assente sul 2023/24 |
@@ -430,7 +466,8 @@ all'1X2 divisa per quattro.
 (l'accordo correlava −0.007 con l'azzeccare).
 
 - **1X2**: `CONF_1X2_TABLE`, tabella empirica per fascia (`b38`, 1882 partite),
-  riconfermata in copia conforme nel `b41` (8 fasce su 8 dentro 2se). Con
+  riconfermata in copia conforme nel `b41` (8 fasce su 8 dentro 2se) e col `b48` sulle cinque
+  leghe (fuori lega né le probabilità nude né una tabella rifatta la battono). Con
   `window.CONF_1X2_MODE = 'retta'` si torna alla vecchia `6.26 + 0.880·p`, che sottostimava
   fino a 8 punti dove si decide (a 62 mostrava 61, il vero era 67.5).
 - **La tabella serve anche gli esiti non scelti** (le confidence di `1`, `X` e `2` a schermo
@@ -453,8 +490,10 @@ gialli il base rate è il riferimento ancorato ai gol di lega (`MARKET_PER_GOAL 
 (avgH+avgA)`) passato per la stessa binomiale negativa, **anche quando la `k` della coppia è
 infinita** (Poisson): fino al `b40` una guardia `isFinite(kk)` lasciava il mercato senza base
 e fuori dall'ordinamento sul 73% delle partite per i gialli, 44% per i tiri, 23% per i
-corner. Fasce (`EDGE_BANDS`): ≥20 FORTE, ≥10 GIOCABILE, ≥5 MARGINALE. Ogni riga dice su
-quanti casi è misurato il suo hit.
+corner. Fasce (`EDGE_BANDS`): ≥20 FORTE, ≥10 GIOCABILE, ≥5 MARGINALE. Dal `b50` ogni fascia
+porta il guadagno misurato **per famiglia di mercato** (1X2, gol, numeri: `EDGE_FAMIGLIA` dice
+di quale famiglia è ogni chiave), con ±2se e numero di proposte, e ogni riga mostra quello della
+sua famiglia.
 
 ### Le statistiche previste: `predictStat`
 
@@ -732,7 +771,7 @@ rilegge l'archivio di lega dal **testo** del CSV esportato, ci fa girare `buildG
 motore e confronta Elo e HFA con le righe del CSV, partita per partita; il controllo di potenza
 toglie una partita dall'archivio e deve vedere l'Elo cambiare.
 
-Esito al `b48` (storico 30), a 390px:
+Esito al `b50` (storico 30), a 390px (anche nessuna tabella compatta che esce dal suo riquadro):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
@@ -740,7 +779,7 @@ Esito al `b48` (storico 30), a 390px:
 | batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 190 | 0 su 122 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
 | `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 127-155 | 74-82 | 0 |
-| `vecchio`: motore `b47` caricato (controllo) | 0/3, «motore caricato diverso ...» | 19-76 | 24-67 | 0 |
+| `vecchio`: motore `b49` caricato (controllo) | 0/3, «motore caricato diverso ...» | 1 (il tabellone) | 1 (il certificato) | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -757,7 +796,10 @@ messaggio iniziale della card dei giocatori e il certificato. Al `b46` il contro
 Al `b47` il controllo col `b46` non vede nessuna scrittura diversa: solo le sei righe della
 pendenza (a `N/D`, il `b46` non la espone) e il certificato. Al `b48` il controllo col `b47`
 vede 19-76 scritture diverse: la lega finta ha squadre che entrano e escono, quindi cambiano
-rating, pendenze e tutto quello che ne discende.
+rating, pendenze e tutto quello che ne discende. Al `b49` il controllo col `b48` non vede
+nessuna scrittura diversa e una sola riga del CSV, il certificato: cambia solo il testo fisso
+della card delle soglie. Al `b50` il controllo col `b49` vede una scrittura diversa, il
+tabellone (le etichette per famiglia), e il certificato.
 
 **Cosa resta fuori, e va saputo:**
 
@@ -1152,6 +1194,160 @@ dopo il test, ha la stessa cresta: il minimo sta vicino
 al candidato (−0.0042 a 0.40 / 2.00, −0.0045 a 0.30 / 2.50, sulla stessa cresta), e la pendenza del prodotto
 finito passa da 1.163 a 1.051.
 
+### Le tabelle col `b48`
+
+Il `b48` sposta l'Elo di tutte le squadre quando una neopromossa entra più in basso, e con lui
+tutte le probabilità dell'1X2 (il pick cambia in 202 partite su 5230). `CONF_1X2_TABLE`, le soglie
+del pick e le fasce del tabellone erano misurate sul motore di prima: si rifanno col batch
+automatico delle cinque leghe, stesse stagioni e stesse partite dei file `b41`/`b47`. **5230
+partite su 5230 in copia conforme**, l'Elo rifatto dall'archivio identico su ogni file, 13 file in
+71 minuti (più Premier e Serie A 2025/26 già fatti), nessuna chiamata fallita.
+
+**Il `b48` sul motore vero**, contro il `b47` sulle stesse partite:
+
+| lega | logloss 1 contro 2 | logloss 1X2 | prese | pendenza 1 contro 2 |
+|---|---|---|---|---|
+| Serie A | −0.00363 | −0.00218 | 52.91 → 52.73 | 1.249 → 1.151 |
+| Premier | −0.00653 | −0.00394 | 52.78 → 52.69 | 1.120 → 1.012 |
+| LaLiga | −0.00252 | −0.00182 | 54.23 → 53.17 | 1.150 → 1.064 |
+| Bundesliga | −0.00558 | −0.00389 | 51.75 → 52.52 | 1.150 → 1.086 |
+| Ligue 1 | +0.00026 | +0.00050 | 51.91 → 52.35 | 1.038 → 0.948 |
+| insieme | −0.00367 (`z = −2.56`) | −0.00231 (`z = −2.08`) | 52.79 → 52.72 (±0.45) | 1.143 → 1.053 |
+
+È quello che la ricostruzione dall'archivio aveva previsto (−0.00375, `z = −2.64`, Ligue 1 la sola
+contraria): le misure del test erano quelle del motore.
+
+**`CONF_1X2_TABLE`: resta.** Per fascia sulle cinque leghe (pick, p media, tabella, hit, ±2se):
+< 40 756 / 37.8 / 37.0 / 36.4 / 3.5; 40–45 928 / 42.4 / 45.1 / 41.8 / 3.2; 45–50 808 / 47.4 /
+51.9 / 50.2 / 3.5; 50–55 755 / 52.4 / 54.8 / 50.2 / 3.6; 55–60 604 / 57.3 / 57.6 / 58.4 / 4.0;
+60–65 525 / 62.4 / 66.5 / 63.0 / 4.2; 65–70 374 / 67.3 / 71.0 / 68.2 / 4.8; ≥ 70 480 / 75.8 /
+78.0 / 77.1 / 3.8. χ² 16.2 su 8 (`b47` sulle stesse partite 11.6); per lega 7.9 / 18.1 / 8.4 /
+5.0 / 9.6, con la Premier fuori nella fascia 65–70 (58.3 contro 71.1). Le probabilità del `b48`
+sono quasi calibrate da sole, e la tabella, che le alzava fra 40 e 55, ora le alza un po' troppo.
+Ma fuori lega (tabella stimata su quattro leghe, Brier della confidence sulla quinta) nessuna
+alternativa la batte: le probabilità nude −0.00043 (`z = −1.01`), una tabella rifatta +0.00007
+(`z = +0.18`). Gli esiti non scelti sotto 37.6: hit/p 0.996 su 10.452 probabilità (`b47` 0.968),
+contro lo 0.960 della tabella: un 11% mostra 10.6, trascurabile.
+
+**Le soglie del pick: riscritte nella card.** Sopra ogni soglia c'è più calendario e un paio di
+punti in meno di resa (tabella in *Stato attuale*). La card mostrava i numeri della Serie A del
+`b41` (≥65 → 73.7%, 1 partita su 10); dal `b49` mostra le cinque leghe col `b48` (≥65 → 73.2%, 1
+su 6.1). La selezione a pari quota del calendario (ordinando dentro ogni file di stagione) non
+cambia fino al 20%: 62.0 / 69.3 / 71.8% contro 62.0 / 68.8 / 72.4% al 50 / 30 / 20% (bootstrap
+appaiato 0.0 ±0.9, +0.5 ±1.3, −0.7 ±1.8). Al 10% sì: 76.2 contro 79.1% (−2.9 ±2.4). Le 72 partite
+che entrano in quel 10% col `b48` sono per 69 contro una neopromossa, previste al 70.7% e vinte
+al 55.1%; le 72 che escono sono per 70 senza neopromosse, previste al 67.1% dal `b47` e vinte al
+75.7%. Su tutte le partite col pick contro una neopromossa il `b48` è calibrato per fascia (sotto
+55: 46.5 previsto, 44.7 reale; 55–65: 59.9 e 61.0; ≥70: 76.6 e 77.7) tranne 65–70 (67.2 e 58.0,
+119 partite, ±9.0), dove il `b47` era sotto in tre fasce su quattro. È un'osservazione trovata
+dopo, su quattro quote guardate insieme: si rifà sulle tre leghe nuove prima di toccare niente
+(vedi *Da fare*).
+
+**`EDGE_BANDS`: le soglie restano, l'etichetta è da rifare per mercato.** Sulle cinque leghe,
+guadagno sopra il giocarlo alla cieca (±2se, proposte):
+
+| fascia | tutti | 1X2 | gol | numeri | `b47`, tutti |
+|---|---|---|---|---|---|
+| MARGINALE 5–10 | +6.1 ±1.1 (7765) | +8.0 ±1.9 (2680) | +3.5 ±1.7 (3457) | +8.2 ±2.4 (1628) | +6.1 |
+| GIOCABILE 10–20 | +12.2 ±1.2 (6512) | +15.5 ±1.6 (3573) | +7.2 ±2.3 (1881) | +10.2 ±2.9 (1058) | +13.4 |
+| FORTE ≥ 20 | +25.8 ±1.6 (3116) | +27.5 ±1.6 (2891) | +1.0 ±10.4 (92) | +7.2 ±8.0 (133) | +26.8 |
+
+Monotone in tutte e cinque le leghe (FORTE / GIOCABILE / MARGINALE: Serie A +25.7 / +14.0 / +5.8,
+Premier +25.5 / +9.5 / +6.1, LaLiga +25.4 / +12.3 / +7.3, Bundesliga +28.1 / +13.2 / +6.4, Ligue 1
++24.7 / +12.4 / +4.4). La proposta migliore di ogni partita rende +16.8 (±1.3; Serie A +18.8,
+Premier +16.2, LaLiga +16.8, Bundesliga +16.9, Ligue 1 +15.0), in cima `1` 26%, `X2` 21%, gialli
+16%, `2` 14%, Under 13%, `1X` 7%; almeno una FORTE o GIOCABILE nell'80% delle partite. I numeri
+che l'etichetta mostrava (+24.6 / +14.8 / +6.3, Serie A `b38`) nel `b49` sono rimasti: rimpiazzarli
+con la media delle cinque leghe (+25.8 / +12.2 / +6.1) avrebbe avvicinato i mercati gol e
+allontanato l'1X2, e la media non è giusta per nessuno dei due. Dal `b50` l'etichetta è per
+famiglia (vedi *Il tabellone per famiglia di mercato: la regola*).
+
+### Il tabellone per famiglia di mercato: la regola
+
+**Perché.** Col `b48` sulle cinque leghe, a parità di scarto il guadagno dipende dal mercato
+(tabella in *Le tabelle col `b48`*): l'1X2 rende quanto lo scarto promette, i mercati gol la metà
+o meno, quelli sui numeri in mezzo. Lo scarto dei gol è gonfiato perché le loro probabilità
+discriminano poco (AUC 0.55), e quello dell'Under anche perché il livello dei gol è basso (l'Over
+previsto sta sotto il reale). Il tabellone ordina e classifica per scarto grezzo: mette in cima
+proposte che rendono meno di altre più in basso, e le etichetta con un guadagno che non hanno.
+
+**Il candidato.** Il **guadagno atteso** di ogni proposta, `g = α + β·scarto` in punti, al posto
+dello scarto: per ordinare, per le fasce (FORTE ≥ 20, GIOCABILE ≥ 10, MARGINALE ≥ 5, le stesse
+soglie, ora sul guadagno atteso) e per l'etichetta, che dice il guadagno atteso di quella
+proposta. `α` e `β` si stimano a minimi quadrati di `reale − base di lega` (in punti) su `scarto`,
+dentro ogni gruppo. Due forme, e nient'altro:
+
+- **F**, per famiglia: 1X2 (`1`, `X`, `2`, `1X`, `X2`, `12`), gol (Over 2.5, Under 2.5, Goal,
+  NoGoal), numeri (corner, tiri in porta, gialli). Sei parametri.
+- **M**, per mercato: una coppia (`α`, `β`) per ognuno dei tredici mercati. Ventisei parametri.
+
+**Il metro.** Il guadagno della proposta in cima a ogni partita: reale meno la frequenza di quel
+mercato nella stagione del file (il metro di *Il tabellone ordinava per la colonna sbagliata*;
+col `b48` oggi +16.8 sulle cinque leghe). La differenza col tabellone di oggi si misura appaiata,
+partita per partita. Descrittivi: guadagno delle proposte FORTE e GIOCABILE, quante partite ne
+hanno almeno una, guadagno per fascia e famiglia.
+
+**Primo passo, sulle cinque leghe (`b48`), fuori lega.** Parametri stimati su quattro leghe,
+misurati sulla quinta. Fra F e M si sceglie quella col guadagno d'insieme più alto, ma M solo se
+batte F di almeno un errore standard: a pari merito vince la forma con meno parametri. Il
+candidato scelto va al secondo passo se il guadagno della prima proposta migliora rispetto
+all'ordine per scarto in almeno quattro leghe su cinque e sull'insieme con `z ≥ +2`. L'idea viene
+da queste leghe, quindi questo passo da solo non basta.
+
+**Secondo passo, sulle tre leghe nuove.** Parametri stimati su tutte e cinque le leghe, e scritti
+qui **prima** di aprire le tre leghe. Eredivisie, Liga Portugal e Championship 2023/24–2025/26:
+dei loro file sono stati guardati copia conforme, Elo e formazioni, mai il tabellone. I file sono
+del `b47`, cioè con le probabilità dell'1X2 di prima dell'ingresso delle neopromosse: il batch
+`b48` di quelle leghe (vedi *Da fare*, la coda alta della selezione) sarà una seconda conferma.
+Passa se il guadagno della prima proposta migliora in almeno due leghe su tre, sull'insieme con
+`z ≥ +2`, e nessuna lega peggiora con `z < −1`. Se passa, entra nel motore (una tabella
+`EDGE_GAIN` con `α` e `β`), e il CSV esporta il guadagno atteso di ogni proposta.
+
+**Se non passa.** L'ordine resta per scarto. L'etichetta dice comunque, per ogni fascia, il
+guadagno misurato **nella famiglia del mercato** (è una misura, non una scelta): un Over 2.5
+FORTE mostra quello che rende davvero.
+
+**Esito del primo passo: non passa.** Guadagno della prima proposta sulle cinque leghe `b48`,
+fuori lega, contro l'ordine per scarto (oggi +16.8):
+
+| lega | partite | oggi | F | differenza | `z` | prima proposta cambiata |
+|---|---|---|---|---|---|---|
+| Serie A | 1134 | +18.8 | +19.8 | +1.02 ±0.61 | +1.68 | 103 |
+| Premier | 1135 | +16.2 | +16.7 | +0.52 ±0.73 | +0.71 | 180 |
+| LaLiga | 1134 | +16.8 | +15.9 | −0.96 ±0.50 | −1.93 | 85 |
+| Bundesliga | 912 | +16.9 | +17.4 | +0.46 ±0.76 | +0.60 | 137 |
+| Ligue 1 | 915 | +15.0 | +14.5 | −0.47 ±0.65 | −0.73 | 86 |
+| insieme | 5230 | +16.8 | +16.9 | +0.12 ±0.29 | +0.42 | 591 |
+
+M fa lo stesso (+0.11 ±0.33, `z = +0.33`, tre leghe su cinque; M contro F −0.01 ±0.26), quindi
+vince F per semplicità, e F non arriva né a quattro leghe su cinque né a `z ≥ +2`. Il secondo
+passo non si fa: **i tabelloni delle tre leghe nuove restano non guardati**, buoni per un test
+futuro. Parametri su tutte e cinque, per chi ci torna: F 1X2 `α` 0.0 `β` 1.041, gol 0.0 / 0.525,
+numeri −0.74 / 1.062; in M l'Under ha `α` −3.0 e l'Over +3.0 (il livello basso dei gol), il
+Goal +2.4 e il NoGoal −2.4.
+
+**Perché non serve riordinare.** La prima proposta è quasi sempre dell'1X2 in tutti e due gli
+ordini (`1`, `X2`, `2`, `1X` fanno il 68% oggi e il 77% col candidato). Dove il candidato toglie
+dalla cima un mercato gol (Under in cima dal 13% al 4% delle partite), mette al suo posto un 1X2
+con lo scarto più basso, che rende più o meno lo stesso. E la retta per famiglia non basta per i
+numeri: le proposte che F manda in FORTE rendono +9.1 contro +23 attesi, perché lo scarto dei
+gialli e dei corner dipende dal riferimento di lega sbagliato (vedi *Da fare*), non dalla
+partita.
+
+**Cosa è entrato nel motore (`b50`).** Solo l'etichetta: `EDGE_BANDS` porta per ogni fascia il
+guadagno, ±2se e le proposte di ciascuna famiglia (misurati sulle cinque leghe `b48`, tabella in
+*Le tabelle col `b48`*), e ogni riga del tabellone e del mega-prompt dice quello della sua: un
+Goal MARGINALE «rende +3.5 punti (±1.7) sopra il giocarlo sempre (3457 proposte dei mercati gol)»,
+un tiri in porta FORTE «+7.2 (±8.0), 133 proposte dei mercati sui numeri». La legenda della card
+dice le cifre dell'1X2 e che gli altri mercati rendono molto meno. Ordine, fasce e verdetti sono
+quelli di prima: il CSV non cambia.
+
+**A 390px il tabellone usciva di lato.** L'intestazione «Scarto · quanto rende» non andava a capo
+e allargava la tabella a 393 px dentro un riquadro di 340: la pagina restava a 0 px di
+scorrimento, quindi il banco non lo vedeva. Dal `b50` l'intestazione va a capo, e il banco misura
+anche le tabelle compatte dentro il loro riquadro (col vecchio tabellone fallisce: `card-verdetti`
+53 px).
+
 ## Formazioni e assenze
 
 **Perché.** Il pick sbaglia il 47.2% delle partite: 25.6 punti sono pareggi, 21.6 vittorie
@@ -1381,9 +1577,9 @@ scrittura nuova, il messaggio iniziale). Il banco la verifica a parte, premendo 
 | `MARKET_PER_GOAL` | cor 3.61 · sot 3.20 · yel 1.48 · fouls null | misurata | variazione fra leghe: corner 1.1%, tiri 8.7%, gialli 14.7%, falli 28% (quindi null). In copia conforme (`b41`) corner e gialli **non crescono coi gol**: per gol i gialli vanno da 1.18 (Bundesliga) a 1.67 (LaLiga), i corner da 3.05 a 3.66. Il riferimento sbaglia fino a 18 punti la base del tabellone e 9 la previsione (corner in Bundesliga): vedi *Le altre quattro leghe* |
 | `STAT_SHRINK_TABLE` | 51 voci, default 0.50 | stimata `b5` | vedi *Le statistiche previste* |
 | `STAT_SHRINK_LEGACY` | 0.35 | storica | il `k` a cui valgono OL e correzione residuale |
-| `CONF_1X2_TABLE` | `[0,0]` + 8 fasce | stimata `b38`, riconfermata `b41` | resa del pick per fascia, 1882 partite di Serie A post-`b30`; `b41`, 1134 in copia conforme: 8 fasce su 8 dentro 2se; Premier χ² 11.2 su 8, LaLiga 7.7, Bundesliga 7.1, Ligue 1 5.2. Il punto `[0,0]` (`b41`) serve gli esiti non scelti: hit/p 0.939 / 1.000 / 0.943 / 0.993 / 0.963 in Serie A / Premier / LaLiga / Bundesliga / Ligue 1, contro 0.960 della tabella |
+| `CONF_1X2_TABLE` | `[0,0]` + 8 fasce | stimata `b38`, riconfermata `b41` e `b49` | resa del pick per fascia, 1882 partite di Serie A post-`b30`; `b41`, 1134 in copia conforme: 8 fasce su 8 dentro 2se; Premier χ² 11.2 su 8, LaLiga 7.7, Bundesliga 7.1, Ligue 1 5.2. Il punto `[0,0]` (`b41`) serve gli esiti non scelti: hit/p 0.939 / 1.000 / 0.943 / 0.993 / 0.963 in Serie A / Premier / LaLiga / Bundesliga / Ligue 1, contro 0.960 della tabella. `b49` (motore `b48`, 5230 partite): χ² 16.2 su 8, ma fuori lega né le probabilità nude (−0.00043 di Brier, `z = −1.01`) né una tabella rifatta (+0.00007) la battono; esiti non scelti hit/p 0.996. Vedi *Le tabelle col `b48`* |
 | retta dei mercati binari | −5.06 + 1.091·p | stimata, riconfermata `b38` e `b41` | 22.584 proposte, errore massimo 2.4 punti; `b41` 7938 proposte, 2.5 |
-| `EDGE_BANDS` | ≥20 / ≥10 / ≥5 | stimata `b38`, riconfermata `b41` | 28.230 proposte: +24.6 / +14.8 / +6.3 punti, monotono, segno concorde in 5 stagioni su 5. `b41` (copia conforme): +25.6 / +15.6 / +4.8 sulle 13.148 proposte con base del `b40`, +25.0 / +14.9 / +5.7 sulle 14.742 del `b41`, monotono in 3 stagioni su 3; Premier (≥20 / 10–20 / 5–10) +27.4 / +10.7 / +6.0, LaLiga +25.0 / +13.7 / +7.3, Bundesliga +28.7 / +14.0 / +5.5, Ligue 1 +26.4 / +13.4 / +5.0 |
+| `EDGE_BANDS` | ≥20 / ≥10 / ≥5, guadagno per famiglia (`b50`) | stimata `b38`, riconfermata `b41` e `b49`, per famiglia dal `b50` | 28.230 proposte: +24.6 / +14.8 / +6.3 punti, monotono, segno concorde in 5 stagioni su 5. `b41` (copia conforme): +25.6 / +15.6 / +4.8 sulle 13.148 proposte con base del `b40`, +25.0 / +14.9 / +5.7 sulle 14.742 del `b41`, monotono in 3 stagioni su 3; Premier (≥20 / 10–20 / 5–10) +27.4 / +10.7 / +6.0, LaLiga +25.0 / +13.7 / +7.3, Bundesliga +28.7 / +14.0 / +5.5, Ligue 1 +26.4 / +13.4 / +5.0. `b49` (motore `b48`, cinque leghe): +25.8 / +12.2 / +6.1, monotono in 5 leghe su 5; per famiglia 1X2 +27.5 / +15.5 / +8.0, gol +1.0 / +7.2 / +3.5, numeri +7.2 / +10.2 / +8.2. Dal `b50` l'etichetta mostra questi, per famiglia, con ±2se: 1X2 ±1.6 / ±1.6 / ±1.9 (2891 / 3573 / 2680 proposte), gol ±10.4 / ±2.3 / ±1.7 (92 / 1881 / 3457), numeri ±8.0 / ±2.9 / ±2.4 (133 / 1058 / 1628). Ordinare per guadagno atteso invece che per scarto: no (vedi *Il tabellone per famiglia di mercato: la regola*) |
 | minimo di `leagueBaseRates` | 200 partite | paracadute misurato `b38` | guadagno piatto fra 50 e 500; in produzione arrivano 900+ partite |
 | emivita | 106 giorni | a mano | uguale nei due file |
 | storico per squadra (`history-limit`) | 30 | scelta dell'utente (`b40`) | il batch base dell'utente e lo storico delle tarature `b24`–`b38`; fino al `b39` lo Scanner stampava a 15. Il Comparatore lo legge dallo Scanner in tutte le modalita' |
@@ -1532,6 +1728,12 @@ di questo elenco è stata a lungo falsa proprio perché nessuno sapeva dove cont
   `_ruoloIndip` del file preso dall'interruttore all'export, il marcatore della scala nel
   titolo di riga. Gli export si accumulano: un'etichetta che descrive righe va calcolata
   **dalle righe**.
+- **Un numero misurato sull'insieme non vale per le sue parti.** «FORTE, rende +24.6» era giusto
+  in media e sbagliato per quasi ogni riga: +27.5 sull'1X2, +1.0 sui mercati gol. Un'etichetta
+  che promette una resa va misurata sul gruppo a cui la si mostra.
+- **Pagina a 0 px non vuol dire tabella dentro lo schermo.** Il tabellone è uscito di lato di 53
+  px dentro il suo riquadro per chissà quante build, con lo scorrimento della pagina a 0. Il
+  banco misura anche le tabelle compatte, ma solo quelle dello Scanner.
 - **Le etichette di riga del CSV devono essere uniche**, e vanno lette come sono scritte: un
   parser che cerca `Unita: media gol trasferta` non trova `Unita: media gol trasf.` e legge
   `null` senza avvisi.
@@ -1620,6 +1822,7 @@ misurate.
 | Ricalibrare la confidence a retta | **sostituita da una tabella** | vedi *La confidence* |
 | Arretrare il taglio temporale a `x-1` | **no** | vedi *L'orario non è affidabile* |
 | Ordinare il tabellone per probabilità grezza | **no** | guadagno piatto (+1.4 … +7.1) contro monotono per scarto |
+| Ordinare il tabellone per guadagno atteso per famiglia o per mercato (`α + β·scarto`) | **no** (`b50`) | regola registrata; fuori lega sulle cinque leghe `b48` la prima proposta rende +0.12 ±0.29 in più (`z = +0.42`), tre leghe su cinque, LaLiga −0.96. Al posto dei gol sale un 1X2 che rende uguale. Resta l'etichetta per famiglia. Vedi *Il tabellone per famiglia di mercato: la regola* |
 | Anticipare le sorprese con forma (punti nelle ultime 5), momento dell'Elo (ultime 5), giorni di riposo **di sola lega**, fortuna (gol − NPxG, ultime 10), NPxG recenti | **no** (`b42`); il riposo si rifà con le coppe europee (`b44`, vedi *La stanchezza*) | 5230 partite, fuori lega (stimato su quattro leghe, misurato sulla quinta), sopra `lgTarget`: logloss 1 contro 2 −0.0000 / −0.0001 / +0.0001 / −0.0012 (`z = −1.40`) / −0.0020 (`z = −1.85`), prese +0.13 / +0.10 / +0.04 / +0.17 / +0.06 punti; tutte insieme +0.31. Il riposo conta solo le partite di lega: le coppe non sono nell'archivio |
 | L'indice delle formazioni (peso dei titolari abituali assenti, `b43`) | **no** (`b47`) | 5230 partite, fuori lega: −0.00041 di logloss, `z = −0.72`, stesso segno in 5 leghe su 5 ma prese 52.79 → 52.52%. Dalla sesta giornata −0.0021 in campione (`z = −1.88`): secondo giro registrato sulle tre leghe nuove. Vedi *Formazioni e assenze* |
 | La stanchezza con le coppe europee (`b44`) | **no** (`b47`) | vantaggio di riposo peggiore fuori lega in 5 leghe su 5 (+0.00036, `z = +2.68`); partite in 14 giorni e coppa entro 4 giorni prima o dopo, niente. Vedi *La stanchezza* |
@@ -2450,3 +2653,5 @@ invece di dichiarare verificato quello che non lo è.
 | `b46` | la formazione probabile: la card dice quando è solo l'ultimo undici, la salva nel browser e, con la confermata, mostra chi è uscito e chi è entrato rispetto alla probabile. Solo a schermo |
 | `b47` | le neopromosse sono sopravvalutate (−5.9 punti di vittoria 1 contro 2, quattro leghe su cinque): il CSV porta l'archivio di lega e la pendenza dell'Elo, per rifare l'Elo fuori dal motore identico al bit. Probabilità invariate; regole per l'ingresso delle neopromosse e per i pesi dell'Elo scritte prima del batch |
 | `b48` | l'ingresso delle neopromosse nell'Elo: entrano al livello delle squadre uscite, chi torna dalla serie inferiore regredisce verso quel livello, la pendenza non legge più le regressioni. Registrato prima del batch, passato sulle cinque leghe e sulle tre nuove. Formazioni e stanchezza non passano; il peso dell'Elo resta 0.75 / 1.25. Batch automatico da `strumenti/batch-auto.js` |
+| `b49` | le tabelle col `b48`, dal batch automatico delle cinque leghe (5230 partite in copia conforme): il motore vero fa −0.00367 di logloss 1 contro 2 come previsto, e la pendenza di calibrazione scende da 1.143 a 1.053. `CONF_1X2_TABLE` e `EDGE_BANDS` restano; la card delle soglie del pick mostra le cinque leghe col `b48`. Due voci nuove: il guadagno delle fasce per famiglia di mercato, e la coda alta della selezione contro le neopromosse. Probabilità invariate |
+| `b50` | il tabellone per famiglia di mercato: regola registrata, e ordinare per guadagno atteso non sceglie meglio (+0.12 ±0.29 sulla prima proposta, tre leghe su cinque), quindi l'ordine resta per scarto; l'etichetta di ogni riga dice quanto rende il suo tipo di mercato (1X2 FORTE +27.5, gol +1.0, numeri +7.2). A 390px il tabellone non esce più di lato, e il banco lo controlla. Probabilità e CSV invariati |

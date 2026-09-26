@@ -302,8 +302,14 @@ async function runScanner(browser, base, matches, limit) {
   });
   const log = page.__log.slice();
   const scroll = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  // una tabella di confronto non deve scorrere nemmeno dentro il suo riquadro: la pagina puo'
+  // stare a 0 px mentre la tabella esce di lato (il tabellone, fino al b49, di 53 px a 390px)
+  const compatte = await page.evaluate(() => [...document.querySelectorAll('table.table-compact')]
+    .map(t => { const w = t.closest('.tbl-scroll') || t.parentElement, c = t.closest('[id]');
+                return { id: c ? c.id : '?', eccesso: t.scrollWidth - w.clientWidth }; })
+    .filter(x => x.eccesso > 1));
   await page.context().close();
-  return { runs: out, log, scroll, giocatori };
+  return { runs: out, log, scroll, compatte, giocatori };
 }
 
 async function comparatorePage(browser, base, engineText) {
@@ -558,7 +564,8 @@ if (require.main === module) (async () => {
   const scanner = await runScanner(browser, base, day, null);
   const sLog = scanner.log.filter(l => !/CONSOLE/.test(l));
   console.log(`Scanner: ${day.length} partite in ${Math.round((Date.now() - t0) / 1000)}s · log ${sLog.slice(0, 5).join(' | ') || 'pulito'}`
-            + (process.env.MOBILE ? ` · scorrimento laterale ${scanner.scroll}px` : ''));
+            + (process.env.MOBILE ? ` · scorrimento laterale ${scanner.scroll}px · tabelle compatte che escono di lato: `
+                                    + (scanner.compatte.length ? JSON.stringify(scanner.compatte) : 'nessuna') : ''));
   console.log('   sottotitolo:', recMap(scanner.runs[day[0].id].rec)['ui-subtitle']);
   const G = scanner.giocatori;
   const gRotti = G ? G.per.filter(x => x.rotto || x.righe < 2) : null;
@@ -569,7 +576,7 @@ if (require.main === module) (async () => {
     console.log(`   formazioni ${m.id}: casa ${f(L && L.H)} | trasf. ${f(L && L.A)}`);
     const T = scanner.runs[m.id].fatigue, g = F => F ? `riposo ${F.riposo} (lega ${F.riposoLega}), ${F.partite14} in 14 gg, coppa ${F.coppaPrima == null ? '-' : F.coppaPrima + ' fa'} / ${F.coppaDopo == null ? '-' : 'fra ' + F.coppaDopo}` : '-';
     console.log(`   stanchezza ${m.id}: casa ${g(T && T.H)} | trasf. ${g(T && T.A)}`); }
-  let fail = (sLog.length || (process.env.MOBILE && scanner.scroll > 0) || !G || gRotti.length) ? 1 : 0;
+  let fail = (sLog.length || (process.env.MOBILE && (scanner.scroll > 0 || scanner.compatte.length)) || !G || gRotti.length) ? 1 : 0;
 
   const results = {};
   await Promise.all(MODES.map(async mode => { results[mode] = await runComparatore(browser, base, mode, date); }));
