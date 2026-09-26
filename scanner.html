@@ -174,7 +174,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b51</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b53</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -381,15 +381,17 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
             </div>
           </div>
           <div style="font-size:9px; color:var(--dim); margin-top:5px">
-            Non &egrave; pi&ugrave; una retta: &egrave; la <b>resa misurata</b> del pick, fascia per fascia, su
-            <b>1.882 partite</b> (b38), riconfermata su <b>1.134</b> in copia conforme dello Scanner (b41) e su <b>5.230</b> di cinque leghe col motore b48. La vecchia retta (6.26 + 0.880 &times; p, stimata su un
-            motore precedente) <b>comprimeva</b>: a 62 mostrava 61 dove il vero &egrave; 67.5, a 74 mostrava 71
-            dove il vero &egrave; 79. Il numero qui sotto ora si legge com'&egrave;.
+            &Egrave; la <b>probabilit&agrave; del pick</b> come la d&agrave; il motore (dal b53). Fino al b52 passava per una tabella
+            misurata sul motore b38, che alzava probabilit&agrave; timide; col motore b48 sono quasi calibrate da sole, e
+            la tabella le alzava troppo: fuori dai cinque campionati, fra il 45 e il 55% mostrava 52&ndash;55 e i pick
+            uscivano il 45&ndash;46%. La probabilit&agrave; nuda l'ha battuta in <b>quattro leghe mai viste su quattro</b>
+            (3.202 partite). Resta un difetto: fuori dai cinque campionati, fra il 45 e il 55%, esce ancora 3&ndash;6 punti meno.
           </div>
           <div style="font-size:9px; color:var(--dim); margin-top:6px; background:var(--panel2); border-radius:6px; padding:6px 8px; line-height:1.5">
             <b>Come usarla &mdash; resa del pick per soglia, in copia conforme dello Scanner (motore b48, 5.230 partite di Serie A, Premier, LaLiga, Bundesliga e Ligue 1, 2023/24&ndash;2025/26):</b><br>
             <span id="pick-soglie"></span> Le soglie cambiano di qualche punto da lega a lega: a &ge;65% dal 69.5% della Premier
             e 70.4% della Serie A al 79.3% della LaLiga. Sulle cinque leghe l'intervallo a &ge;65% &egrave; &plusmn;3.0 punti.
+            <span id="pick-fuori"></span>
           </div>
         </div>
 
@@ -1947,11 +1949,18 @@ window.SHRINK_LAM_K = (typeof window.SHRINK_LAM_K === 'number') ? window.SHRINK_
 // (un 11% mostrava 36). Vedi AGENTS.md, La confidence.
 window.CONF_1X2_TABLE = window.CONF_1X2_TABLE ||
   [[0,0],[37.6,36.1],[42.5,45.6],[47.3,52.4],[52.4,54.9],[57.3,56.4],[62.4,67.5],[67.0,70.4],[73.8,79.0]];
-window.CONF_1X2_MODE = window.CONF_1X2_MODE || 'tabella';
+// 'nuda' (b53): la confidence dell'1X2 e' la probabilita'. La tabella resta come manopola ('tabella').
+window.CONF_1X2_MODE = window.CONF_1X2_MODE || 'nuda';
 // Resa del pick sopra ogni soglia, cinque leghe col motore b48: [soglia, esce %, quota del
 // calendario %, 1 partita su N]. La card delle soglie e il mega-prompt la leggono da qui.
+// Solo le leghe di `leghe`; `fuori`: [nome, partite, pick su tutte, esce % e quota % a >=55].
 const PICK_RESA = { tutte: 52.7, casa: 43.0, partite: 5230,
-  soglie: [[70, 77.1, 9, 10.9], [65, 73.2, 16, 6.1], [60, 69.3, 26, 3.8], [55, 66.0, 38, 2.6], [50, 61.7, 52, 1.9]] };
+  soglie: [[70, 77.1, 9, 10.9], [65, 73.2, 16, 6.1], [60, 69.3, 26, 3.8], [55, 66.0, 38, 2.6], [50, 61.7, 52, 1.9]],
+  leghe: ['l_0ALvwF', 'l_4WFCIZ', 'l_0ErfuF', 'l_1Isor4', 'l_3FJFUl'],
+  fuori: { l_4DWyTT: ['Championship', 1659, 46.3, 64.8, 17], l_4H43wr: ['Eredivisie', 923, 53.7, 68.7, 47],
+           l_4QexZg: ['Liga Portugal', 913, 55.0, 72.4, 43], l_3hvsne: ['2. Bundesliga', 908, 45.4, 62.8, 16],
+           l_2L6d1F: ['First Division A', 931, 50.2, 65.5, 35], l_1LMdEO: ['Premiership scozzese', 683, 53.3, 68.9, 41],
+           l_4d6Bwl: ['Super League svizzera', 680, 47.1, 66.1, 26] } };
 (function () {
   const el = typeof document !== 'undefined' && document.getElementById('pick-soglie');
   if (!el) return;
@@ -1959,6 +1968,10 @@ const PICK_RESA = { tutte: 52.7, casa: 43.0, partite: 5230,
       `<span style="color:var(--${x[0] >= 55 ? 'green' : 'orange'})">${i ? '' : 'pick '}&ge;${x[0]}% &rarr; ${i ? '' : 'azzecca il '}<b>${x[1].toFixed(1)}%</b></span> (1 ${i ? '' : 'partita '}su ${x[3]})`).join(' &middot; ')
     + ' &middot; <span style="color:var(--red)">&lt;45% &rarr; non selezionare</span>.<br>'
     + `Su tutte le partite il pick azzecca il <b>${PICK_RESA.tutte}%</b> contro il ${PICK_RESA.casa.toFixed(1)}% del &laquo;gioca sempre in casa&raquo;.`;
+  const fu = document.getElementById('pick-fuori');
+  if (fu) fu.innerHTML = '<br><b>Valgono solo per questi cinque campionati.</b> Fuori cambiano molto; misurate a parte, pick &ge;55% &rarr; resa, quota del calendario (su tutte): '
+    + Object.values(PICK_RESA.fuori).map(x => `${x[0]} ${x[3].toFixed(1)}%, ${x[4]}% (${x[2].toFixed(1)}%)`).join(' &middot; ')
+    + '. Nelle altre leghe non sono misurate.';
 })();
 
 const KNN_MIN_COVERAGE = 0.6;
@@ -2261,7 +2274,7 @@ function renderVerdetti(mk, base, adv) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b51';
+window.__SCANNER_BUILD = '0905-b53';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -2953,8 +2966,9 @@ async function avviaScanner() {
     };
     const _calibConf1X2 = (p) => {
       const x = p * 100;
-      const v = (window.CONF_1X2_MODE === 'retta') ? (6.26 + 0.880 * x)
-                                                   : _interp(window.CONF_1X2_TABLE, x);
+      const v = (window.CONF_1X2_MODE === 'nuda') ? x
+              : (window.CONF_1X2_MODE === 'retta') ? (6.26 + 0.880 * x)
+              : _interp(window.CONF_1X2_TABLE, x);
       return Math.max(0, Math.min(100, v == null ? (6.26 + 0.880 * x) : v));
     };
     const _calibConfBin = (p) => Math.max(0, Math.min(100, -5.06 + 1.091 * (p * 100)));
@@ -3484,17 +3498,23 @@ async function avviaScanner() {
       return out || '  (metriche avanzate non disponibili per questa partita)';
     })();
 
+    const _fuoriTxt = (() => {
+      const F = PICK_RESA.fuori[lId], V = Object.values(PICK_RESA.fuori);
+      if (F) return `- Questa lega (${F[0]}) non e' fra i cinque campionati: le soglie qui sopra non valgono. Misurata a parte su ${F[1]} partite: il pick esce il ${F[2].toFixed(1)}% su tutte, e sopra il 55% il ${F[3].toFixed(1)}%, nel ${F[4]}% delle partite.`;
+      return `- Questa lega non e' mai stata misurata: soglie e confidence sono misurate su altre leghe, prendile come indicative. Nelle ${V.length} leghe provate fuori dai cinque campionati, sopra il 55% il pick e' uscito fra il ${Math.min(...V.map(x => x[3])).toFixed(1)} e il ${Math.max(...V.map(x => x[3])).toFixed(1)}%, in una quota del calendario fra il ${Math.min(...V.map(x => x[4]))} e il ${Math.max(...V.map(x => x[4]))}%.`;
+    })();
     const _pickTxt = (() => {
       const lab = _pickProb === m1 ? `1 (vince ${hName})` : _pickProb === m2 ? `2 (vince ${aName})` : 'X (pareggio)';
       const pp = 100 * _pickProb, S = PICK_RESA.soglie.find(x => pp >= x[0]);
       const dove = S ? `sopra la soglia del ${S[0]}%: rientra nel ${S[2]}% di partite piu' sicure, dove nel complesso il pick esce il ${S[1].toFixed(1)}%`
         : pp >= 45 ? 'fra 45 e 50%: sotto la prima soglia di selezione'
         : "sotto il 45%: sull'1X2 questa partita non si seleziona";
-      return `- Il pick: ${lab} al ${pp.toFixed(1)}%. Confidence ${confidence}/100 = quante volte esce, nel backtest, un pick con questa probabilita' (tabella misurata, non l'accordo fra i modelli).\n`
+      return `- Il pick: ${lab} al ${pp.toFixed(1)}%. Confidence ${confidence}/100 = la probabilita' del pick, gia' calibrata dal motore (misurata nel backtest, non l'accordo fra i modelli).\n`
         + `- Dove sta nella selezione: ${dove}.\n`
         + `- Soglie misurate su ${PICK_RESA.partite} partite di cinque campionati: `
         + PICK_RESA.soglie.map(x => `>=${x[0]}% esce il ${x[1].toFixed(1)}% (${x[2]}% delle partite)`).join(', ')
-        + `; su tutte le partite ${PICK_RESA.tutte}%.`;
+        + `; su tutte le partite ${PICK_RESA.tutte}%.`
+        + (PICK_RESA.leghe.includes(lId) ? '' : '\n' + _fuoriTxt);
     })();
     const _tabTxt = (() => {
       const V = window.__VERDETTI || [];
@@ -3539,6 +3559,8 @@ async function avviaScanner() {
       if (ELO._hfaClamp) R.push("Il vantaggio campo di lega e' un limite o un ripiego, non una misura.");
       const PS = window.__PRED_STATS || {};
       if (!PS.H || !Object.values(PS.H).some(v => v != null)) R.push('Statistiche avanzate non disponibili: la sezione 5 e\' vuota.');
+      if (!PICK_RESA.leghe.includes(lId)) R.push(PICK_RESA.fuori[lId] ? 'Lega fuori dai cinque campionati: le rese del tabellone sono misurate su quelli, non qui.'
+        : 'Lega mai misurata: soglie, confidence e rese del tabellone sono misurate su altre leghe.');
       const F = window.__FATIGUE_DEBUG;
       if (F && F.H && F.A && F.H.riposo != null && F.A.riposo != null && Math.abs(Math.min(F.H.riposo, 7) - Math.min(F.A.riposo, 7)) >= 3)
         R.push(`Riposo molto diverso (${F.H.riposo} contro ${F.A.riposo} giorni): solo contesto, misurato non sposta il risultato.`);
@@ -3646,7 +3668,7 @@ REGOLE (valgono per tutte le sezioni; non sono una sezione da scrivere)
 - Non riclassificare i verdetti, non proporre mercati che il tabellone non elenca, non
   inventare probabilita' o rese.
 - Non pronosticare un risultato esatto e non usare "certo", "sicuro", "esplosione", "goleada".
-- Il pick esce nel ${PICK_RESA.tutte}% delle partite e nel ${PICK_RESA.soglie[0][1].toFixed(1)}% di quelle sopra il ${PICK_RESA.soglie[0][0]}%: non promettere di piu'.
+- Nei cinque campionati misurati il pick esce nel ${PICK_RESA.tutte}% delle partite e nel ${PICK_RESA.soglie[0][1].toFixed(1)}% di quelle sopra il ${PICK_RESA.soglie[0][0]}%: non promettere di piu'.
 - Non mescolare RUOLO e GENERALE in una stessa frase senza dire quale usi.
 - Stanchezza e fortuna recente non anticipano il risultato (misurato): contesto, mai motivo
   per spostare un verdetto.
