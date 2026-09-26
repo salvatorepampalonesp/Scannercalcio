@@ -333,6 +333,16 @@ più alto perde 2.9 punti (±2.4), quasi tutti su partite contro una neopromossa
 nuove non si ripete (−0.3 ±2.0), e la voce è chiusa (vedi *Le tre leghe nuove col `b48`: la
 regola*).
 
+**Il tetto, sulle dodici leghe** (11.927 partite, probabilità del `b48`). Il pick prende il 51.0%
+e la sua probabilità media è il 51.7%: il modello è calibrato, e con queste probabilità il 51% è
+quello che ci si deve aspettare. Si perde nelle partite equilibrate: con |p1 − p2| sotto 10 punti
+(21% del calendario) il pick prende il 36–38%, sopra 50 punti il 74%. `X` non è mai la più
+probabile (pX al massimo 34.2%). Combinare tutto quello che il motore già calcola (le tre
+probabilità, `lgModel`, `lgElo`, i sei modelli, lambda, tiri, pendenze, neopromosse, formazioni,
+riposo, classifica della stagione), addestrato su undici leghe e misurato sulla dodicesima, non
+indovina di più: +0.2 ±0.4 punti (vedi *Cosa è già stato provato*). Per indovinare di più serve
+informazione che il motore non ha.
+
 **Formazioni e stanchezza.** Dal `b43` il motore sa chi manca oggi rispetto all'undici
 abituale, dal `b44` quanti giorni di riposo ha ogni squadra contando le coppe europee (card
 «Formazioni e stanchezza», sezioni CSV `FORMAZIONI` e `STANCHEZZA`). Col batch `b47` le due
@@ -2117,6 +2127,7 @@ misurate.
 | La stanchezza con le coppe europee (`b44`) | **no** (`b47`) | vantaggio di riposo peggiore fuori lega in 5 leghe su 5 (+0.00036, `z = +2.68`); partite in 14 giorni e coppa entro 4 giorni prima o dopo, niente. Vedi *La stanchezza* |
 | Peso e scala dell'Elo, secondo giro (0.40 / 2.00 sopra l'Elo corretto) | **no** (`b48`) | tre leghe mai viste: −0.00135, `z = −0.89`, Championship peggiore. Vedi *Peso e scala dell'Elo insieme* |
 | La coda alta della selezione contro le neopromosse (col `b48` il 10% più alto perde 2.9 punti sulle cinque leghe) | **non decisa, chiusa** (`b52`) | regola registrata sulle tre leghe nuove: −0.3 ±2.0 (confermata sotto −2se, smentita da 0 in su); otto leghe insieme −1.8 ±1.8, solo descrittivo. L'ingresso del `b48` resta. Vedi *Le tre leghe nuove col `b48`: la regola* |
+| Indovinare più risultati combinando tutto quello che il motore calcola (stacking, `b53`) | **no** (`b53`) | 12 leghe, 11.927 partite, addestrato su undici e misurato sulla dodicesima. Logistica sulle sole probabilità: +0.08 ±0.18 punti di prese; coi sei modelli, `lgModel`, `lgElo`, ΔElo e HFA (19 feature): +0.22 ±0.40, ma logloss −0.0029 (`z = −2.89`, una calibrazione, non prese); con 67 feature (lambda, tiri, pendenze, neopromosse, formazioni, riposo, classifica della stagione): −0.13 ±0.51, e comincia a giocare `X` (388 volte) perdendo; gradient boosting +0.30 ±0.55. La selezione nemmeno: 10 / 20 / 30 / 50% più sicuro +0.5 / +0.7 / −0.1 / +0.6 (±1.7 / 1.2 / 0.9 / 0.7). Il modello è calibrato (probabilità media del pick 51.7%, prese 51.0%): l'informazione del motore è sfruttata |
 | Il disaccordo fra modello ed Elo come segnale di sorpresa | **è il candidato Elo visto da un'altra parte** (`b42`) | fuori lega −0.0037 (`z = −2.47`), prese +0.57 punti, Ligue 1 di nuovo contraria (+0.0020). Nelle 717 partite (14%) in cui modello ed Elo indicano favoriti diversi il pick prende il 37.7% (41.4% col disaccordo in regressione), contro il 55.2% delle altre. A parità di partite giocate la selezione non migliora (top 20%: 72.8 contro 73.2%) |
 
 **Le cose che hanno retto**, in ordine di quanto valgono:
