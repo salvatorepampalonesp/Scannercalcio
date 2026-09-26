@@ -52,7 +52,7 @@ sono, le scrive l'utente. Per misurarle si usano gli stessi file (`strumenti/quo
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b57`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b58`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -263,9 +263,10 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   matrice allineata −0.0068 (`z = −6.00`), tutti e due meglio in 11 leghe su 11; Over 1.5 e 3.5
   entrano con loro. Il Goal con le sole quote dell'1X2 non passa (+0.0036). Vedi *Le quote per gli
   altri mercati: la regola*, «Esito».
-- [ ] **Il tabellone con le quote.** Le proposte del tabellone sono del solo motore anche quando ci
-  sono le quote, e il prompt lo dice. **Regola registrata**, sulle sette leghe di cui il tabellone non
-  è mai stato guardato: vedi *Il tabellone con le quote: la regola*.
+- [x] ~~**Il tabellone con le quote.**~~ — **passato, nello Scanner dal `b58`.** Sulle sette leghe di
+  cui il tabellone non era mai stato guardato la proposta in cima rende +14.6 punti sopra il giocarla
+  alla cieca contro +12.9 del motore (+1.73 ±0.97, `z = +3.55`), meglio in 7 leghe su 7. Vedi *Il
+  tabellone con le quote: la regola*, «Esito».
 - [ ] **Risultati esatti, multigol e handicap dalla matrice allineata.** Con le quote restano del
   motore per regola. Descrittivo del `b57`: la logloss del risultato esatto passa da 2.9200 a 2.8872
   (`z = −11.42`). Una regola registrata direbbe se entrano.
@@ -303,7 +304,7 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b57`)
+## Stato attuale (`b58`)
 
 **1X2.** Col motore `b48` il pick azzecca il 52.7% (±1.4) contro il 43.0% del «gioca sempre in
 casa» sulle cinque leghe: 52.7% contro 40.2% in Serie A, 52.7% contro 43.1% in Premier, 53.2%
@@ -426,7 +427,10 @@ stesso scarto rende molto di più nell'1X2 (FORTE +27.5) che nei mercati gol (+1
 (+7.2): dal `b50` l'etichetta di ogni riga dice quanto rende il suo tipo di mercato, mentre
 l'ordine resta per scarto, perché ordinare per guadagno atteso non sceglie meglio (vedi *Il
 tabellone per famiglia di mercato: la regola*). Vedi *Il tabellone ordinava per la colonna
-sbagliata*.
+sbagliata*. Dal `b58`, con le quote dell'1X2, il tabellone si ridisegna con le probabilità con le quote
+(1X2 e doppie chance, e Over/Under e Goal se c'è anche l'Over; i numeri restano del motore) e con le
+rese misurate su quelle: la proposta in cima rende +14.6 contro +12.9 sulle sette leghe mai guardate,
++19.2 contro +16.8 sui cinque campionati. Vedi *Il tabellone con le quote: la regola*.
 
 **Calibrazione 1X2.** Col `b48` la timidezza è quasi sparita: pendenza 1 contro 2 del prodotto
 finito 1.053 ±0.041 sulle cinque leghe (Serie A 1.151, Premier 1.012, LaLiga 1.064, Bundesliga
@@ -768,6 +772,9 @@ con le quote, il pick con le quote con la sua soglia (`QUOTE_RESA`), l'avviso se
 indicano esiti diversi, che le proposte 1X2 del tabellone sono del solo motore, e che non è un
 vantaggio sul bookmaker (il motore dato il mercato non aggiunge niente; giocare dove il motore dà
 più del mercato ha perso l'11–16%). In *IN SINTESI* il pick da citare diventa quello con le quote.
+Dal `b58` anche il tabellone del prompt (sezione 2) è un segnaposto, `@@TABELLONE@@`: senza quote il
+testo del motore (`window.__TAB_TXT_MOTORE`), con le quote dell'1X2 quello del tabellone con le quote,
+con le righe segnate «con le quote», e il blocco delle quote lo dice.
 Il prompt si ricostruisce da `window.__PROMPT_BASE` a ogni quota scritta, sostituendo i segnaposto
 `@@QUOTE@@` e `@@QUOTE_SINTESI@@` (vuoti senza quote: il prompt resta quello del `b53`). Dal `b55` il
 blocco dice da dove vengono le quote: «prese da football-data, <partita> del <data>, media dei
@@ -959,7 +966,7 @@ rilegge l'archivio di lega dal **testo** del CSV esportato, ci fa girare `buildG
 motore e confronta Elo e HFA con le righe del CSV, partita per partita; il controllo di potenza
 toglie una partita dall'archivio e deve vedere l'Elo cambiare.
 
-Esito al `b57` (storico 30), a 390px (anche nessuna tabella compatta che esce dal suo riquadro, il mega-prompt dello Scanner mai vuoto né rotto, i dieci casi delle quote, la matrice allineata e le quote automatiche a posto):
+Esito al `b58` (storico 30), a 390px (anche nessuna tabella compatta che esce dal suo riquadro, il mega-prompt dello Scanner mai vuoto né rotto, i dieci casi delle quote, la matrice allineata e le quote automatiche a posto):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
@@ -967,7 +974,7 @@ Esito al `b57` (storico 30), a 390px (anche nessuna tabella compatta che esce da
 | batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 190 | 0 su 122 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
 | `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 127-155 | 74-82 | 0 |
-| `vecchio`: motore `b56` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 | 1 (il certificato) | 0 |
+| `vecchio`: motore `b57` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 | 1 (il certificato) | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -998,7 +1005,13 @@ scrittura diversa e una sola riga del CSV, il certificato: la card delle quote n
 `safeHtml` e senza quote il prompt è quello di prima. Al `b55` lo stesso col `b54`: le quote
 automatiche non passano da `safeHtml` e il Comparatore non le chiama. Al `b56` lo stesso col `b55`:
 la nota di lega è scritta con `innerHTML` diretto e la nota della confidence è HTML fisso. Al `b57`
-lo stesso col `b56`: la card delle quote non passa da `safeHtml`.
+lo stesso col `b56`: la card delle quote non passa da `safeHtml`. Al `b58` lo stesso col `b57`: il
+tabellone del motore esce identico (costruzione e disegno ora sono due funzioni, `_vociVerdetti` e
+`_htmlVerdetti`), e quello con le quote è scritto con `innerHTML` diretto dalla card delle quote. Nei
+dieci casi il banco conta le righe del tabellone segnate «con le quote» (6 con l'1X2, 10 con anche
+l'Over, 0 senza), controlla la nota, che senza quote torni il tabellone del motore, che
+`window.__VERDETTI` (quello che legge il Comparatore) resti del motore, e che il prompt contenga il
+testo del tabellone giusto e nessun segnaposto.
 
 **Le quote sul banco (dal `b54`).** Dopo il giro dello Scanner il banco scrive le quote nella card
 dell'ultima partita, in sei casi: vuote (niente tabella, niente blocco nel prompt), valide con la
@@ -2020,6 +2033,48 @@ famiglia con le quote, e se le fasce restano in ordine; quante partite hanno alm
 FORTE o GIOCABILE; quali mercati finiscono in cima; la resa alla quota di chiusura delle proposte
 FORTE e GIOCABILE che hanno una quota (`1`, `X`, `2`, Over, Under), nei due tabelloni.
 
+**Esito (`b58`): passa.** `python3 strumenti/quote-tabellone.py batch48 batch4` rifà tutto in mezzo
+minuto. Prova di coincidenza su 11.902 partite: il tabellone del CSV è in ordine di scarto su tutte, il
+suo `1` è quello della riga `1` del CSV, il suo reale quello del punteggio.
+
+| lega (le sette del test) | partite | prima proposta, motore → con le quote | differenza | `z` | prima proposta cambiata |
+|---|---|---|---|---|---|
+| 2. Bundesliga | 908 | +7.7 → +10.9 | +3.19 | +2.00 | 500 |
+| Championship | 1.646 | +8.6 → +9.2 | +0.67 | +0.66 | 684 |
+| Eredivisie | 914 | +18.1 → +20.2 | +2.15 | +1.62 | 353 |
+| First Division A | 928 | +16.3 → +17.0 | +0.63 | +0.47 | 406 |
+| Liga Portugal | 913 | +17.5 → +19.6 | +2.07 | +2.16 | 210 |
+| Premiership scozzese | 683 | +15.1 → +18.1 | +3.02 | +2.20 | 231 |
+| Super League svizzera (solo 1X2) | 680 | +10.3 → +11.9 | +1.56 | +1.04 | 263 |
+| **insieme** | 6.672 | +12.9 → +14.6 | **+1.73 ±0.97** | **+3.55** | 2.647 |
+
+Meglio in sette leghe su sette, nessuna sotto `z = −1`. Sulle cinque leghe, solo descrittivo, +16.8 →
++19.2 (+2.43 ±1.03, `z = +4.70`): Bundesliga +4.80, Ligue 1 +3.39, LaLiga +1.90, Premier +1.48, Serie A
++1.22.
+
+Rese per fascia su tutte le leghe (FORTE / GIOCABILE / MARGINALE), motore contro con le quote: 1X2 +27.7
+/ +14.7 / +7.4 contro +28.6 / +14.3 / +7.5; gol +4.9 / +6.9 / +3.7 contro **+20.0 / +11.7 / +6.5**;
+numeri del motore +7.6 / +7.0 / +4.9. Con le quote le fasce restano in ordine, e i gol cambiano natura:
+lo scarto dei gol del motore rendeva poco perché le sue probabilità discriminano poco, quello con le
+quote rende come promette. Sulle sette leghe con le quote 1X2 +28.2 / +13.1 / +7.7, gol +16.1 / +12.4 /
++6.1; sulle cinque 1X2 +28.9 / +15.8 / +7.3, gol +21.9 / +11.1 / +7.0. Almeno una proposta FORTE o
+GIOCABILE: 76% delle partite col motore, 79% con le quote. In cima col motore `1` 25%, `X2` 19%,
+gialli 15%, Under 13%, `2` 13%; con le quote `1` 23%, `X2` 23%, gialli 12%, `1X` 11%, `2` 11%, Under
+9%.
+
+**Non batte il bookmaker, ma perde meno.** Le proposte FORTE con una quota, giocate alla chiusura:
+motore −3.6% della posta (3.107 giocate), con le quote −1.8% (3.840); FORTE e GIOCABILE −3.8% contro
+−2.4%.
+
+**Nel motore (`b58`).** `renderVerdetti` ora costruisce le proposte con `_vociVerdetti` e le disegna con
+`_htmlVerdetti`; il tabellone del motore esce identico al `b57`. `aggiornaQuote`, con le quote
+dell'1X2, rifà le proposte con le probabilità con le quote (`p1` … `p12`, e `pOv` … `pNG` se c'è
+anche l'Over, con la stessa matrice allineata della card), le etichetta con `EDGE_BANDS_QUOTE`, le
+scrive in `verdetti-body` e mette sopra la nota `verdetti-quote`; ogni proposta con le quote lo dice
+sotto il nome. Cancellate le quote torna il tabellone del motore. `window.__VERDETTI` resta quello del
+motore (lo legge il Comparatore); quello con le quote sta in `window.__VERDETTI_QUOTE`. Con le sole
+quote dell'Over il tabellone resta del motore: il test aveva sempre anche l'1X2.
+
 ## Formazioni e assenze
 
 **Perché.** Il pick sbaglia il 47.2% delle partite: 25.6 punti sono pareggi, 21.6 vittorie
@@ -2254,6 +2309,8 @@ scrittura nuova, il messaggio iniziale). Il banco la verifica a parte, premendo 
 | `QUOTE_COMB` | `W` 3×4, `b` 3 | stimata `b54` | logistica multinomiale sulle quattro variabili grezze `log(p1/pX)`, `log(p2/pX)` del motore e del mercato (quote di chiusura `AvgC`, margine tolto in proporzione), 11.902 partite di dodici leghe, `C = 1` sulle variabili standardizzate e riportata alla scala grezza. Il test registrato (fuori lega): prese +1.95, `z = +7.00`, logloss meglio in 12 leghe su 12. Si rifà con `strumenti/quote-bookmaker.py`, che stampa `W` e `b` identici. Usata solo quando l'utente scrive le quote |
 | `QUOTE_FD` / `QUOTE_PAESE` / `QUOTE_ALIAS` | 30 leghe; 12 paesi; 6 nomi | tabelle (`b55`) | codici di football-data delle leghe di `leghe.json` che ha, verificati scaricando i file; gli alias dai nomi che non si somigliano nelle 18 leghe provate. Vedi *Le quote automatiche* |
 | `QUOTE_SIM_MIN` / `QUOTE_SIM_STACCO` | 0.5 / 0.3 | a mano, misurate (`b55`) | nessuna partita sbagliata su 11.902 delle dodici leghe e 6.339 di diciotto leghe mai guardate; sono le soglie che fanno preferire «non trovata» a una partita dubbia |
+| `EDGE_BANDS_QUOTE` | FORTE / GIOCABILE / MARGINALE: 1X2 +28.6 / +14.3 / +7.5 (±1.0; 6.700 / 7.988 / 8.022 proposte), gol +20.0 / +11.7 / +6.5 (±4.7 / 1.5 / 1.2; 371 / 4.023 / 6.862) | misurata `b58` | resa sopra il giocarlo alla cieca delle proposte del tabellone con le quote, per fascia di scarto, sulle probabilità con le quote fuori lega: dodici leghe per l'1X2, undici per i gol. In ordine in tutte e due le famiglie. I numeri non hanno quote e restano in `EDGE_BANDS`. `strumenti/quote-tabellone.py` la stampa |
+| `TAB_QUOTE_RESA` | 6.672 partite di 7 leghe: prima proposta +12.9 → +14.6; cinque campionati +16.8 → +19.2; FORTE con una quota alla chiusura −1.8% | misurata `b58` | la nota del tabellone con le quote e il prompt la leggono da qui |
 | `QUOTE_OU` | intercetta 0.01328 · motore 0.0036 · mercato 1.12404 | stimata `b57` | logistica su `logit(pOver 2.5)` del motore e del mercato (chiusura `AvgC`, margine tolto in proporzione), 11.222 partite di undici leghe, `C = 1` sulle variabili standardizzate e riportata alla scala grezza. Test registrato fuori lega: −0.01312 di logloss, `z = −8.49`, 11 leghe su 11. Il peso del motore è zero: la combinazione è il mercato allargato. `strumenti/quote-gol.py` la stampa identica; il JS riproduce la matrice allineata dello script entro 4e-13 |
 | `QUOTE_OU_RESA` | 11.222 partite, 11 leghe · lato più probabile: motore 55.6, mercato 58.9, con le quote 58.9% · giocando dove il motore si discosta −7.5 / −9.9% · sempre −3.7% | misurata `b57` | la card e il blocco gol del mega-prompt la leggono da qui |
 | `QUOTE_COLONNE_OU` | chiusura `AvgC`, `PC`, `B365C`, poi `Avg`, `P`, `B365` (`>2.5` / `<2.5`) | tabella `b57` | le colonne dell'Over/Under nei file principali di football-data (Pinnacle è `PC`, non `PSC` come nell'1X2); ci sono su ogni riga delle 18 leghe provate e dei file della settimana, mai nei file `new` |
@@ -2424,6 +2481,11 @@ di questo elenco è stata a lungo falsa proprio perché nessuno sapeva dove cont
   contro il 52.7% del `b48` e una confidence che dal `b53` è la probabilità. E la nota della
   confidence, HTML fisso, diceva ancora «viene da una TABELLA». Dal `b56` la nota di lega legge
   `PICK_RESA`, la stessa costante della card delle soglie e del mega-prompt.
+- **Una misura nuova si rifà prima su un numero vecchio.** Le rese per fascia del `b58` davano ai
+  gol del motore +15.4 dove il `b49` aveva +1.0: in Python una `lambda` definita in un ciclo legge la
+  variabile del ciclo quando la si chiama, non quando la si scrive, e prendeva la frequenza alla cieca
+  dal file dell'ultima partita. Il test non ne era toccato, le rese sì. Rifatte le rese del motore
+  sulle cinque leghe (+0.3 / +7.4 / +3.1 contro +1.0 / +7.2 / +3.5 del `b49`), il difetto si è visto.
 - **Le etichette di riga del CSV devono essere uniche**, e vanno lette come sono scritte: un
   parser che cerca `Unita: media gol trasferta` non trova `Unita: media gol trasf.` e legge
   `null` senza avvisi.
@@ -2539,6 +2601,7 @@ misurate.
 | **Lo squilibrio sui cartellini** (`b16`) | AUC 0.562 → 0.593, stesso segno in 5 leghe |
 | **`sum_sot` sull'Over 2.5** (`b9`–`b12`) | l'unica feature sopravvissuta a tre leghe |
 | **L'ingresso delle neopromosse nell'Elo** (`b48`) | residuo delle neopromosse da −7.3 ±2.6 a −0.5 punti; logloss 1 contro 2 −0.0037 (`z = −2.64`) su cinque leghe, confermato non peggiore su tre leghe mai viste |
+| **Il tabellone con le quote** (`b58`) | registrato prima, sulle sette leghe di cui il tabellone non era mai stato guardato: la proposta in cima +12.9 → +14.6 punti sopra il giocarla alla cieca (+1.73 ±0.97, `z = +3.55`), 7 leghe su 7; cinque campionati +16.8 → +19.2 |
 | **Le quote dell'Over e la matrice allineata** (`b57`) | registrata prima, 11.222 partite di undici leghe, fuori lega: Over 2.5 −0.0131 di logloss (`z = −8.49`), Goal −0.0068 (`z = −6.00`), Over 1.5 −0.0093, Over 3.5 −0.0111; 11 leghe su 11 (l'Over 3.5 10). Il livello dei gol, con le quote, torna: Over previsto 54.0% contro 53.9% reale |
 | **Le quote del mercato nell'1X2** (`b54`) | registrata prima, 11.902 partite di dodici leghe, fuori lega: prese 51.04 → 52.99% (+1.95, `z = +7.00`), logloss −0.01772, dodici leghe su dodici. Il guadagno è del mercato: il motore, dato il mercato, pesa meno di zero |
 | **La confidence dell'1X2 uguale alla probabilità** (`b53`) | registrata prima, su quattro leghe mai aperte: Brier −0.00220, `z = −4.09`, quattro leghe su quattro; sulle tre leghe del `b52` −0.00137 (`z = −2.68`) |
@@ -3368,3 +3431,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b55` | le quote automatiche: lo Scanner le prende da football-data.co.uk attraverso il worker Cloudflare (strada `/quote/`, `strumenti/worker-quote.js`), chiusura per le partite giocate e quote della settimana per le prossime, in 30 leghe. Trova la partita per data e somiglianza dei nomi: nessuna sbagliata su 11.902 partite delle dodici leghe e 6.339 di diciotto leghe mai guardate. Riempie i campi solo se sono vuoti. `strumenti/quote-nomi.js`, e il banco con un file di quote finto e il controllo di potenza. Senza quote, e nel Comparatore, niente cambia |
 | `b56` | due testi vecchi corretti: la nota di lega in cima all'analisi legge `PICK_RESA` (le cinque leghe e le sette di fuori, col motore `b48`) al posto di `LEAGUE_STATS`, una tabella del primo caricamento che dava la Serie A al 49.8% sul segno; le leghe mai misurate lo dicono. La nota sotto le confidence dice che sull'1X2 la confidence è la probabilità (dal `b53`). Probabilità, tabellone e CSV invariati |
 | `b57` | le quote dell'Over/Under 2.5: regola registrata prima, due test passati su tre. Su 11.222 partite di undici leghe, fuori lega, l'Over con le quote fa −0.0131 di logloss (`z = −8.49`) e il Goal dalla matrice allineata a Over e 1X2 con le quote −0.0068 (`z = −6.00`), tutti e due in 11 leghe su 11; il Goal col solo 1X2 non passa. Due campi nella card (riempiti da soli dove football-data li ha, 18 leghe), la tabella dei gol con le quote (Over/Under 1.5, 2.5, 3.5, Goal/NoGoal), le doppie chance con le quote, il blocco nel mega-prompt; `strumenti/quote-gol.py`, dieci casi delle quote nel banco. Senza quote, e nel Comparatore, niente cambia |
+| `b58` | il tabellone con le quote: regola registrata prima, e passata sulle sette leghe di cui il tabellone non era mai stato guardato. La proposta in cima rende +14.6 punti sopra il giocarla alla cieca contro +12.9 del motore (+1.73, `z = +3.55`, 7 leghe su 7; cinque campionati +19.2 contro +16.8). Con le quote dell'1X2 il tabellone si ridisegna con le probabilità con le quote (anche Over/Under e Goal se c'è l'Over; i numeri restano del motore) e con le rese misurate su quelle (`EDGE_BANDS_QUOTE`), e lo stesso fa il tabellone del mega-prompt. `strumenti/quote-tabellone.py`. Senza quote, e nel Comparatore, niente cambia |
