@@ -174,7 +174,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b50</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b51</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -388,13 +388,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
           </div>
           <div style="font-size:9px; color:var(--dim); margin-top:6px; background:var(--panel2); border-radius:6px; padding:6px 8px; line-height:1.5">
             <b>Come usarla &mdash; resa del pick per soglia, in copia conforme dello Scanner (motore b48, 5.230 partite di Serie A, Premier, LaLiga, Bundesliga e Ligue 1, 2023/24&ndash;2025/26):</b><br>
-            <span style="color:var(--green)">pick &ge;65% &rarr; azzecca il <b>73.2%</b></span> (1 partita su 6.1) &middot;
-            <span style="color:var(--green)">&ge;60% &rarr; <b>69.3%</b></span> (1 su 3.8) &middot;
-            <span style="color:var(--green)">&ge;55% &rarr; <b>66.0%</b></span> (1 su 2.6) &middot;
-            <span style="color:var(--orange)">&ge;50% &rarr; <b>61.7%</b></span> (1 su 1.9) &middot;
-            <span style="color:var(--red)">&lt;45% &rarr; non selezionare</span>.<br>
-            Su tutte le partite il pick azzecca il <b>52.7%</b> contro il 43.0% del &laquo;gioca sempre in
-            casa&raquo;. Le soglie cambiano di qualche punto da lega a lega: a &ge;65% dal 69.5% della Premier
+            <span id="pick-soglie"></span> Le soglie cambiano di qualche punto da lega a lega: a &ge;65% dal 69.5% della Premier
             e 70.4% della Serie A al 79.3% della LaLiga. Sulle cinque leghe l'intervallo a &ge;65% &egrave; &plusmn;3.0 punti.
           </div>
         </div>
@@ -1954,6 +1948,18 @@ window.SHRINK_LAM_K = (typeof window.SHRINK_LAM_K === 'number') ? window.SHRINK_
 window.CONF_1X2_TABLE = window.CONF_1X2_TABLE ||
   [[0,0],[37.6,36.1],[42.5,45.6],[47.3,52.4],[52.4,54.9],[57.3,56.4],[62.4,67.5],[67.0,70.4],[73.8,79.0]];
 window.CONF_1X2_MODE = window.CONF_1X2_MODE || 'tabella';
+// Resa del pick sopra ogni soglia, cinque leghe col motore b48: [soglia, esce %, quota del
+// calendario %, 1 partita su N]. La card delle soglie e il mega-prompt la leggono da qui.
+const PICK_RESA = { tutte: 52.7, casa: 43.0, partite: 5230,
+  soglie: [[70, 77.1, 9, 10.9], [65, 73.2, 16, 6.1], [60, 69.3, 26, 3.8], [55, 66.0, 38, 2.6], [50, 61.7, 52, 1.9]] };
+(function () {
+  const el = typeof document !== 'undefined' && document.getElementById('pick-soglie');
+  if (!el) return;
+  el.innerHTML = PICK_RESA.soglie.filter(x => x[0] <= 65).map((x, i) =>
+      `<span style="color:var(--${x[0] >= 55 ? 'green' : 'orange'})">${i ? '' : 'pick '}&ge;${x[0]}% &rarr; ${i ? '' : 'azzecca il '}<b>${x[1].toFixed(1)}%</b></span> (1 ${i ? '' : 'partita '}su ${x[3]})`).join(' &middot; ')
+    + ' &middot; <span style="color:var(--red)">&lt;45% &rarr; non selezionare</span>.<br>'
+    + `Su tutte le partite il pick azzecca il <b>${PICK_RESA.tutte}%</b> contro il ${PICK_RESA.casa.toFixed(1)}% del &laquo;gioca sempre in casa&raquo;.`;
+})();
 
 const KNN_MIN_COVERAGE = 0.6;
 const KNN_DIMS = [
@@ -2226,9 +2232,9 @@ function renderVerdetti(mk, base, adv) {
   for (const v of voci) {
     const ok = v.verdetto === 'FORTE' || v.verdetto === 'GIOCABILE';
     const eTxt = v.edge == null ? '--' : (v.edge >= 0 ? '+' : '') + v.edge.toFixed(1);
-    righe.push(`- ${v.nome}: ${(v.p*100).toFixed(1)}% contro un base rate di lega `
-      + `${v.b == null ? 'ignoto' : (v.b*100).toFixed(1) + '%'} -> scarto ${eTxt} -> ${v.verdetto}`
-      + (v.guad != null ? ` (nei mercati ${EDGE_FAMIGLIA_TXT[v.fam]} chi gioca con questo scarto rende ${v.guad >= 0 ? '+' : ''}${v.guad.toFixed(1)} punti, +/-${v.guadErr.toFixed(1)}, sopra il giocarlo sempre, misurato su ${v.nOss} proposte)` : ''));
+    v.txt = `- ${v.nome}: ${(v.p*100).toFixed(1)}% (base di lega ${v.b == null ? 'ignota' : (v.b*100).toFixed(1) + '%'}), scarto ${eTxt}, ${v.verdetto}`
+      + (v.guad != null ? `. Misurato su ${v.nOss} proposte ${EDGE_FAMIGLIA_TXT[v.fam]}: con questo scarto rendono ${v.guad >= 0 ? '+' : ''}${v.guad.toFixed(1)} punti (+/-${v.guadErr.toFixed(1)}) sopra il giocarlo sempre` : '');
+    righe.push(v.txt);
     html += '<tr' + (ok ? ' style="background:rgba(34,197,94,.10)"' : '') + '>'
       + '<td style="text-align:left;font-weight:bold;white-space:nowrap">' + v.nome
       +   '<div style="font-size:9px;color:var(--dim);font-weight:normal">' + v.desc + '</div></td>'
@@ -2255,7 +2261,7 @@ function renderVerdetti(mk, base, adv) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b50';
+window.__SCANNER_BUILD = '0905-b51';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -2784,8 +2790,8 @@ async function avviaScanner() {
     const bcH = _mean(dH.overall.vals.bc) || 0; const bcA = _mean(dA.overall.vals.bc) || 0;
     const bcmH = _mean(dH.overall.vals.bcm) || 0; const bcmA = _mean(dA.overall.vals.bcm) || 0;
 
-    const crossH = _mean(dH.overall.vals.cross) || 0; const dribH = _mean(dH.overall.vals.drib) || 0; const thruH = _mean(dH.overall.vals.thru) || 0; const aerH = _mean(dH.overall.vals.aer) || 0;
-    const crossA = _mean(dA.overall.vals.cross) || 0; const dribA = _mean(dA.overall.vals.drib) || 0; const thruA = _mean(dA.overall.vals.thru) || 0; const aerA = _mean(dA.overall.vals.aer) || 0;
+    const crossH = _mean(dH.overall.vals.cross) || 0; const dribH = _mean(dH.overall.vals.drib) || 0; const thruH = _mean(dH.overall.vals.thru) || 0;
+    const crossA = _mean(dA.overall.vals.cross) || 0; const dribA = _mean(dA.overall.vals.drib) || 0; const thruA = _mean(dA.overall.vals.thru) || 0;
     const misc_H = _mean(dH.overall.vals.misc) || 0; const disp_H = _mean(dH.overall.vals.disp) || 0;
     const misc_A = _mean(dA.overall.vals.misc) || 0; const disp_A = _mean(dA.overall.vals.disp) || 0;
     const clumsyH = misc_H + disp_H; const clumsyA = misc_A + disp_A;
@@ -3478,157 +3484,172 @@ async function avviaScanner() {
       return out || '  (metriche avanzate non disponibili per questa partita)';
     })();
 
-    let p = `SEI UN DATA SCIENTIST ESPERTO DI CALCIO. Partita: ${hName} vs ${aName} (Simulazione al ${dateInput}).
+    const _pickTxt = (() => {
+      const lab = _pickProb === m1 ? `1 (vince ${hName})` : _pickProb === m2 ? `2 (vince ${aName})` : 'X (pareggio)';
+      const pp = 100 * _pickProb, S = PICK_RESA.soglie.find(x => pp >= x[0]);
+      const dove = S ? `sopra la soglia del ${S[0]}%: rientra nel ${S[2]}% di partite piu' sicure, dove nel complesso il pick esce il ${S[1].toFixed(1)}%`
+        : pp >= 45 ? 'fra 45 e 50%: sotto la prima soglia di selezione'
+        : "sotto il 45%: sull'1X2 questa partita non si seleziona";
+      return `- Il pick: ${lab} al ${pp.toFixed(1)}%. Confidence ${confidence}/100 = quante volte esce, nel backtest, un pick con questa probabilita' (tabella misurata, non l'accordo fra i modelli).\n`
+        + `- Dove sta nella selezione: ${dove}.\n`
+        + `- Soglie misurate su ${PICK_RESA.partite} partite di cinque campionati: `
+        + PICK_RESA.soglie.map(x => `>=${x[0]}% esce il ${x[1].toFixed(1)}% (${x[2]}% delle partite)`).join(', ')
+        + `; su tutte le partite ${PICK_RESA.tutte}%.`;
+    })();
+    const _tabTxt = (() => {
+      const V = window.__VERDETTI || [];
+      if (!V.length) return '(tabellone non disponibile)';
+      const con = V.filter(v => v.guad != null), senza = V.filter(v => v.guad == null);
+      return (con.length ? con.map(v => v.txt).join('\n') : '- Nessuna proposta con verdetto: nessun mercato arriva a +5 di scarto.')
+        + (senza.length ? '\n- Senza verdetto (scarto sotto +5, dentro il rumore): '
+           + senza.map(v => v.nome + ' ' + (v.edge == null ? 'base ignota' : (v.edge >= 0 ? '+' : '') + v.edge.toFixed(1))).join(', ') : '');
+    })();
+    const _eloTxt = (() => {
+      const E = window.__ELO_DEBUG_OVER;
+      const hfa = ELO._hfaClamp === 'basso' ? ` (ATTENZIONE: il valore grezzo e' ${Math.round(ELO._hfaRaw)}, tenuto al pavimento di 30: non e' una misura, e' un limite)`
+        : ELO._hfaClamp === 'alto' ? ` (ATTENZIONE: il valore grezzo e' ${Math.round(ELO._hfaRaw)}, tenuto al tetto di 100: non e' una misura, e' un limite)`
+        : ELO._hfaClamp === 'ripiego' ? ' (ATTENZIONE: meno di 50 partite in archivio, e\' il valore di ripiego)'
+        : ` su ${ELO._nHfa} partite (${ELO._hW} vittorie casa contro ${ELO._aW})`;
+      let t = `- Rating: ${hName} ${eloH_ov} | ${aName} ${eloA_ov} (differenza ${(_eloDiff > 0 ? '+' : '')}${_eloDiff ?? 'N/D'}), vantaggio campo di lega +${Math.round(ELO._hfa)}${hfa}.\n`
+        + `- Trend (media delle ultime 5 partite meno le 10 prima, pause escluse): ${hName} ${Math.round(trendH)} | ${aName} ${Math.round(trendA)}.`;
+      if (!E || !E.applied) return t + "\n- L'Elo NON sta inclinando i lambda: l'1X2 esce dal solo modello.";
+      const pOf = lg => (100 / (1 + Math.exp(-lg))).toFixed(1);
+      const div = Math.abs(+pOf(E.lgElo) - +pOf(E.lgModel));
+      return t + `\n- Su 1 contro 2 (pari esclusi) l'Elo da solo dice ${pOf(E.lgElo)}%, il modello da solo ${pOf(E.lgModel)}%, e si usa ${pOf(E.lgTarget)}% (peso Elo ${f2(E.w)}).`
+        + (div >= 10 ? `\n  ATTENZIONE: Elo e modello distano ${div.toFixed(1)} punti e con quel peso DECIDE L'ELO. Il verdetto 1X2 non viene dalle statistiche di questa partita ma dal rating di lega: dillo, invece di cercare nelle statistiche una conferma che non c'e'.` : '')
+        + "\n- L'Elo sposta solo il rapporto casa/trasferta: Over/Under e Goal/NoGoal non ne dipendono.";
+    })();
+    const _stancTxt = (() => {
+      const F = window.__FATIGUE_DEBUG;
+      if (!F || !F.H || !F.A) return '- non disponibile';
+      const g = v => v == null ? 'N/D' : v + ' giorni';
+      const eur = X => !X.inEuropa ? 'nessuna partita europea'
+        : [X.coppaPrima != null ? `ultima europea ${X.coppaPrima} giorni fa` : null, X.coppaDopo != null ? `prossima fra ${X.coppaDopo}` : null].filter(Boolean).join(', ') || 'in Europa';
+      return `- Riposo dall'ultima partita (lega e coppe europee): ${hName} ${g(F.H.riposo)} | ${aName} ${g(F.A.riposo)}\n`
+        + `- Partite negli ultimi 14 giorni: ${hName} ${F.H.partite14} | ${aName} ${F.A.partite14}\n`
+        + `- Coppe europee: ${hName} ${eur(F.H)} | ${aName} ${eur(F.A)}`
+        + (F.competizioni < 3 ? `\n- ATTENZIONE: archivio delle coppe europee incompleto (${F.competizioni} competizioni su 3): i conteggi possono essere bassi.` : '');
+    })();
+    const _rischiTxt = (() => {
+      const R = [], E = window.__ELO_DEBUG_OVER;
+      if (E && E.applied) { const pOf = lg => 100 / (1 + Math.exp(-lg)); const d = Math.abs(pOf(E.lgElo) - pOf(E.lgModel));
+        if (d >= 10) R.push(`Elo e modello distano ${d.toFixed(1)} punti sull'1X2: decide l'Elo.`); }
+      if (dH.role.n < 6 || dA.role.n < 6) R.push(`Poche partite di RUOLO (${dH.role.n} in casa per ${hName}, ${dA.role.n} in trasferta per ${aName}): i numeri di ruolo sono fragili.`);
+      if (100 * _pickProb < 50) R.push(`Il pick 1X2 e' sotto il 50% (${(100 * _pickProb).toFixed(1)}%): anche se ha un verdetto nel tabellone, esce meno di una volta su due.`);
+      if (ELO._hfaClamp) R.push("Il vantaggio campo di lega e' un limite o un ripiego, non una misura.");
+      const PS = window.__PRED_STATS || {};
+      if (!PS.H || !Object.values(PS.H).some(v => v != null)) R.push('Statistiche avanzate non disponibili: la sezione 5 e\' vuota.');
+      const F = window.__FATIGUE_DEBUG;
+      if (F && F.H && F.A && F.H.riposo != null && F.A.riposo != null && Math.abs(Math.min(F.H.riposo, 7) - Math.min(F.A.riposo, 7)) >= 3)
+        R.push(`Riposo molto diverso (${F.H.riposo} contro ${F.A.riposo} giorni): solo contesto, misurato non sposta il risultato.`);
+      return R.length ? R.map(x => '- ' + x).join('\n') : '- Nessun segnale di rischio calcolato.';
+    })();
+
+    let p = `SEI UN ANALISTA DI CALCIO CHE SA LEGGERE I NUMERI. Partita: ${hName} vs ${aName} (simulazione al ${dateInput}).
+Il tuo lavoro e' SPIEGARE, non ricalcolare: i numeri qui sotto vengono da un modello misurato su ${PICK_RESA.partite} partite di cinque campionati.
 
 AMBITO DEI NUMERI. Ogni riga dice da quali partite viene. RUOLO = solo le gare in casa
 ${artDel(hName)} e in trasferta ${artDel(aName)} (${dH.role.n} e ${dA.role.n} partite).
 GENERALE = le ultime ${dH.overall.n} e ${dA.overall.n} di qualunque tipo. Sono due campioni diversi:
 non mescolarli in una stessa frase senza dirlo.
 
-1. IL VERDETTO DEL MODELLO
-- 1X2 ENSEMBLE, quello che conta (${_ensLabel}):
-    1 ${pct(m1)} | X ${pct(mX)} | 2 ${pct(m2)}
-- Le stesse tre, lette sui due campioni separati:
+1. IL VERDETTO 1X2
+- Probabilita' (${_ensLabel}):
+    1 ${pct(m1)} | X ${pct(mX)} | 2 ${pct(m2)}      quote eque: 1 @${oddM1} | X @${oddMX} | 2 @${oddM2}
+- Le stesse tre sui due campioni separati:
     RUOLO     (${dH.role.n} casa / ${dA.role.n} trasferta):  1 ${pct(probsRole.p1)} | X ${pct(probsRole.pX)} | 2 ${pct(probsRole.p2)}
     GENERALE  (${dH.overall.n} / ${dA.overall.n} partite):   1 ${pct(probsOver.p1)} | X ${pct(probsOver.pX)} | 2 ${pct(probsOver.p2)}
-    Sull'1X2 l'ensemble segue il GENERALE. Se le due righe divergono di piu' di 5 punti,
-    dillo: vuol dire che in casa/trasferta la squadra rende diversamente dalla sua media.
-- Fair Odds Ensemble: 1 @${oddM1} | X @${oddMX} | 2 @${oddM2}   (Dixon-Coles puro: 1 @${odd1} | X @${oddX} | 2 @${odd2})
-- Affidabilita' campionaria: ${dH.role.n} match casa per ${hName}, ${dA.role.n} match trasferta per ${aName}. Vicini KNN efficaci: ${f1(knn_H.nEff)} / ${f1(knn_A.nEff)}
-- Confidence Score: ${confidence}/100
-- Scarti fuori soglia: ${hiddenValueMsgClean}
+    Sull'1X2 il verdetto segue il GENERALE. Se le due righe divergono di piu' di 5 punti,
+    dillo: in casa/trasferta la squadra rende diversamente dalla sua media.
+${_pickTxt}
 
-1-bis. TABELLONE GIOCABILITA' — verdetti gia' decisi da 2963 partite di backtest.
-Sono la parte piu' affidabile di questo prompt: NON ridiscuterli e non riclassificarli.
-${window.__VERDETTI_TXT || '(non disponibile)'}
+2. TABELLONE: cosa e' giocabile. Verdetti e rese sono misurati sul backtest: sono la parte
+piu' affidabile di questo prompt, NON ridiscuterli e non riclassificarli.
+FORTE e GIOCABILE vogliono dire che la proposta rende piu' del giocare quel mercato sempre,
+alla cieca, non che sia probabile: un 2 al 45% in una lega dove la trasferta vince il 29% e'
+giocabile anche se esce meno di una volta su due. Ogni proposta dice quanto rende DAVVERO il
+suo tipo di mercato: a parita' di scarto l'1X2 rende molto piu' dei mercati gol (Over/Under,
+Goal/NoGoal). Una doppia chance contiene l'esito singolo (X2 contiene il 2): non sono due
+giocate indipendenti.
+${_tabTxt}
 
-2. SCOMPOSIZIONE MODELLI
-- Dixon-Coles Puro (Ruolo NPxG) [nell'ensemble, peso ${_wPct(_share(_EW.dc)*(1-_sW))}]: 1 (${pct(probsRole.p1)}) | X (${pct(probsRole.pX)}) | 2 (${pct(probsRole.p2)})
-- Ordered Logit [nell'ensemble, peso ${_wPct(wOL)}]: 1 (${pct(probsOL.p1)}) | X (${pct(probsOL.pX)}) | 2 (${pct(probsOL.p2)})
-- Markov (Ruolo) [nell'ensemble, peso ${_wPct(_share(_EW.mk)*(1-_sW))}]: 1 (${pct(mk_ro.p1)}) | X (${pct(mk_ro.pX)}) | 2 (${pct(mk_ro.p2)})
-- Dixon-Coles Completo (NPxG su tutte le partite) [nell'ensemble, peso ${_wPct(_share(_EW.dc)*_sW)}]: 1 (${pct(probsOver.p1)}) | X (${pct(probsOver.pX)}) | 2 (${pct(probsOver.p2)})
-- Markov Completo [nell'ensemble, peso ${_wPct(_share(_EW.mk)*_sW)}]: 1 (${pct(mk_ov.p1)}) | X (${pct(mk_ov.pX)}) | 2 (${pct(mk_ov.p2)})
-- KNN 11D Puro (Tattica) [FUORI dall'ensemble, solo riferimento tattico]: 1 (${pct(probsKnn.p1)}) | X (${pct(probsKnn.pX)}) | 2 (${pct(probsKnn.p2)})
-- Correzione residuale: ${(window.__RESID_DEBUG && window.__RESID_DEBUG.applied) ? ('attiva su ' + window.__RESID_DEBUG.available.join('/') + ', spostamento ' + (window.__RESID_DEBUG.delta >= 0 ? '+' : '') + window.__RESID_DEBUG.delta.toFixed(3) + ' in log-odds verso ' + (window.__RESID_DEBUG.delta >= 0 ? 'la casa' : 'la trasferta')) : ((window.__RESID_DEBUG && window.__RESID_DEBUG.sig != null) ? ('spenta (alpha 0); segnale misurato ' + window.__RESID_DEBUG.sig.toFixed(3) + ' vs edge ' + window.__RESID_DEBUG.edge.toFixed(3)) : 'non calcolabile (metriche di creazione assenti)')}
+3. ELO [partite di lega delle ultime tre stagioni]
+${_eloTxt}
 
-3. QUALITA' E CINISMO — tutti i numeri di questa sezione sono [GENERALE]
-- NPxG vs xGOT [GENERALE, stessi campioni per i due numeri]: ${hName} ${f2(npxgH_gen)} vs ${xgotH > 0 ? f2(xgotH) : (xgShotH > 0 ? f2(xgShotH) + " (xG/Tiro)" : "N/D")} | ${aName} ${f2(npxgA_gen)} vs ${xgotA > 0 ? f2(xgotA) : (xgShotA > 0 ? f2(xgShotA) + " (xG/Tiro)" : "N/D")}
-- Big Chances (Create/Sprecate): ${hName} ${f1(bcH)}/${f1(bcmH)} | ${aName} ${f1(bcA)}/${f1(bcmA)}
-- Dipendenza da Palla Inattiva: ${hName} ${setPctH > 0 ? f1(setPctH) : "0"}% | ${aName} ${setPctA > 0 ? f1(setPctA) : "0"}%
-- Efficienza Goal vs xG: ${hName} ${f2(effH_ro)} | ${aName} ${f2(effA_ro)}
+4. RISCHI GIA' CALCOLATI
+${_rischiTxt}
 
-4. EXPECTATION PITAGORICA E ELO — [GENERALE]
-- ELO: ${hName} ${eloH_ov} | ${aName} ${eloA_ov} (differenza ${(_eloDiff>0?'+':'')}${_eloDiff ?? 'N/D'}), vantaggio campo di lega +${Math.round(ELO._hfa)}${
-  ELO._hfaClamp === 'basso' ? ` (ATTENZIONE: il valore grezzo e' ${Math.round(ELO._hfaRaw)}, tenuto al pavimento di 30 — non e' una misura, e' un limite)`
-  : ELO._hfaClamp === 'alto' ? ` (ATTENZIONE: il valore grezzo e' ${Math.round(ELO._hfaRaw)}, tenuto al tetto di 100 — non e' una misura, e' un limite)`
-  : ELO._hfaClamp === 'ripiego' ? ` (ATTENZIONE: meno di 50 partite in archivio, e' il valore di ripiego)`
-  : ` su ${ELO._nHfa} partite (${ELO._hW} vittorie casa contro ${ELO._aW})`}
-- ELO Trend (ult 5 contro le 10 prima): ${hName} ${Math.round(trendH)} | ${aName} ${Math.round(trendA)}
-${(function(){
-  const E = window.__ELO_DEBUG_OVER;
-  if (!E || !E.applied) return '- L\'Elo NON sta inclinando i lambda: l\'1X2 esce dal solo modello.';
-  const pOf = lg => (100/(1+Math.exp(-lg))).toFixed(1);
-  const G = ELO._gap || {thr:45,tau:360,asy:0.9};
-  const _pa = id => {
-    const L = (ELO.gapLog && ELO.gapLog[id]) || [];
-    if (!L.length) return 'nessuna';
-    const tot = 1 - L.reduce((a, x) => a * (1 - x.strength), 1);
-    const u = L[L.length - 1];
-    return `${L.length} (in tutto -${(100*tot).toFixed(0)}%, l'ultima ${Math.round((targetMs-u.t)/86400000)}g fa: ${Math.round(u.prima)} -> ${Math.round(u.dopo)})`;
-  };
-  const gp = id => { const lp = ELO.lastPlayed && ELO.lastPlayed[id];
-    if (!lp || !isFinite(targetMs)) return 'N/D';
-    const d = (targetMs-lp)/86400000, st = d>G.thr ? G.asy*(1-Math.exp(-(d-G.thr)/G.tau)) : 0;
-    return Math.round(d)+'g' + (st>0 ? ' (rating regredito del '+(100*st).toFixed(0)+'% verso 1500)' : ''); };
-  const _div = Math.abs(+pOf(E.lgElo) - +pOf(E.lgModel));
-  return `- Su 1 contro 2 (pari esclusi) l'Elo da solo dice ${pOf(E.lgElo)}%, il modello ${pOf(E.lgModel)}%, e si usa ${pOf(E.lgTarget)}% (peso Elo ${f2(E.w)}).`
-    + (_div >= 10 ? `\n  ATTENZIONE: Elo e modello distano ${_div.toFixed(1)} punti e con quel peso DECIDE L'ELO. Il verdetto 1X2 qui non viene dalle statistiche di questa partita ma dal rating di lega: dillo esplicitamente invece di cercare nelle stats una conferma che non c'e'.` : '')
-    + `\n- La differenza di rating e' moltiplicata per ${f2(E.scale)} prima di diventare quota: il nostro Elo e' una stima online con K limitato e sotto-disperde (misurato, pendenza 1.24 su tre leghe).`
-    + `\n- L'inclinazione sposta i lambda da ${f2(E.lamH0)}-${f2(E.lamA0)} a ${f2(E.lamH)}-${f2(E.lamA)} TENENDO FERMO il totale: 1X2 e handicap cambiano, Over/Under e Goal/NoGoal no.${E.capped?' Inclinazione arrivata al tetto.':''}`
-    + `\n- L'Elo si costruisce partita per partita in ordine di data: ogni pausa e' gia' stata scontata quando la squadra e' rientrata, quindi e' gia' dentro i rating qui sopra.`
-    + `\n  Pause gia' assorbite: ${hName} ${_pa(hId)}, ${aName} ${_pa(aId)}.`
-    + `\n  Dall'ultima giocata a oggi: ${hName} ${gp(hId)}, ${aName} ${gp(aId)}. Questo ultimo tratto per scelta NON viene scontato.`;
-})()}
-- ${hName}: Pts/Match Reali ${f2(pytH.ppgAct)} | Pts/Match Attesi ${f2(pytH.ppgExp)}. Diagnosi: ${pytH.msg}
-- ${aName}: Pts/Match Reali ${f2(pytA.ppgAct)} | Pts/Match Attesi ${f2(pytA.ppgExp)}. Diagnosi: ${pytA.msg}
-
-5. MATRICE DIFENSIVA E RIAGGRESSIONE — tutti [GENERALE]
-- Altezza Linea Difensiva: ${hName} ${defX_H > 0 ? f1(defX_H) + "m" : "N/D"} | ${aName} ${defX_A > 0 ? f1(defX_A) + "m" : "N/D"}
-- Lunghezza Squadra: ${hName} ${lenH > 0 ? f1(lenH) + "m" : "N/D"} | ${aName} ${lenA > 0 ? f1(lenA) + "m" : "N/D"}
-- Choke Index (Gegenpressing): ${hName} ${chokeH > 0 ? f2(chokeH) : "N/D"} | ${aName} ${chokeA > 0 ? f2(chokeA) : "N/D"}
-- Palle perse (controlli sbagliati + dribbling subiti): ${hName} ${f1(clumsyH)} | ${aName} ${f1(clumsyA)}
-
-6. STILE E FUNNEL OFFENSIVO — tutti [GENERALE]
-- Baricentro Offensivo Medio: ${hName} ${avgX_H > 0 ? f1(avgX_H) + "m" : "N/D"} | ${aName} ${avgX_A > 0 ? f1(avgX_A) + "m" : "N/D"}
-- Indice Penetrazione (Tocchi Area / Ingressi Trequarti): ${hName} ${f3H > 0 ? f1(penRateH) : "0"}% | ${aName} ${f3A > 0 ? f1(penRateA) : "0"}%
-- Stile d'Attacco (Cross/Dribbling/Filtranti a partita): ${hName} (${f1(crossH)} / ${f1(dribH)} / ${f1(thruH)}) | ${aName} (${f1(crossA)} / ${f1(dribA)} / ${f1(thruA)})
-- Duelli Aerei vinti: ${hName} ${f1(aerH)} | ${aName} ${f1(aerA)}
-- Moduli Base: ${hName} usa ${formH_disp} (${statsVsFormH_role ? f2(statsVsFormH_role.pts) : 'N/D'} pts vs simili). ${aName} usa ${formA_disp} (${statsVsFormA_role ? f2(statsVsFormA_role.pts) : 'N/D'} pts vs simili).
-
-7. PARTITE SIMILI (KNN 11 dimensioni tattiche) — [RUOLO]
-- ${hName} in casa vs simili a ${aName} (Rendimento: ${f2(knn_H.pts_per_game)} Pts/Match):
-  ${knn_H.topMatches.slice(0,2).map(m => `* vs ${m.info.oppName}: Finita ${m.info.gf}-${m.info.ga} (Poss: ${m.oppPoss.toFixed(0)}%, NPxG: ${f2(m.oppXG)}, Tilt: ${f1(m.oppTilt)}%, DifX: ${f1(m.oppDefX)}m)`).join('\n  ')}
-- ${aName} in trasferta vs simili a ${hName} (Rendimento: ${f2(knn_A.pts_per_game)} Pts/Match):
-  ${knn_A.topMatches.slice(0,2).map(m => `* vs ${m.info.oppName}: Finita ${m.info.gf}-${m.info.ga} (Poss: ${m.oppPoss.toFixed(0)}%, NPxG: ${f2(m.oppXG)}, Tilt: ${f1(m.oppTilt)}%, DifX: ${f1(m.oppDefX)}m)`).join('\n  ')}
-
-8. TIMING E MERCATI SUI NUMERI — il timing e' [GENERALE], i mercati sono dati nei due ambiti
-- Goal Fatti / Subiti ${hName}: 1-15' (${bHs['1-15']}F/${bHc['1-15']}S), 76-90' (${bHs['76-90+']}F/${bHc['76-90+']}S)
-- Goal Fatti / Subiti ${aName}: 1-15' (${bAs['1-15']}F/${bAc['1-15']}S), 76-90' (${bAs['76-90+']}F/${bAc['76-90+']}S)
-- P(Goal < 30'): ${pct(probGoal30)} [RUOLO]
-- Corner attesi:   RUOLO ${f1(advRole.lCor)} | GENERALE ${f1(advOver.lCor)}
-- Tiri in porta:   RUOLO ${f1(advRole.lSot)} | GENERALE ${f1(advOver.lSot)}
-- Gialli attesi:   RUOLO ${f1(advRole.lYel)} | GENERALE ${f1(advOver.lYel)}
-
-9. STATISTICHE AVANZATE PREVISTE PER QUESTA PARTITA [ambito RUOLO]
-Modello: media di lega x (quanto produce la squadra / lega) x (quanto concede l'avversario / lega).
-Non sono medie storiche: sono la previsione per questa specifica sfida.
+5. STATISTICHE AVANZATE PREVISTE PER QUESTA PARTITA [RUOLO]
+Previsione per questa sfida, non medie storiche: media di lega x (quanto produce la squadra)
+x (quanto concede l'avversario).
 ${_statBlocco}
+Quanto valgono (misurato su 2266 osservazioni squadra-partita): il livello e' giusto quasi
+ovunque, ma di uno scarto previsto fra le due squadre nel reale se ne vedono circa due terzi.
+- Reggono bene: passaggi, conduzioni, SCA, progressivi e in area, xT, key passes, occasioni
+  create, duelli aerei.
+- Valgono a meta': xAG, GCA, contrasti, intercetti, duelli vinti, PPDA.
+- Non usarle (il previsto non dice quasi niente sul reale): VAEP, PV, assist, secondi assist,
+  SCA da tiro/fallo/dribbling, blocchi.
 
-AFFIDABILITA' DI QUESTE PREVISIONI, misurata su 2266 osservazioni squadra-partita
-(tre leghe 2025/26). La colonna «pendenza» e' il coefficiente di reale ~ previsto:
-1.00 = lo scostamento previsto si realizza per intero; 0.50 = si realizza a meta'.
-Il LIVELLO invece e' giusto quasi ovunque (previsto/reale mediano 0.99, tutte entro il 15%).
-- Pendenza mediana su 41 metriche: 0.61. Quindi, in generale, quando questa sezione
-  prevede uno scarto fra le due squadre, il reale ne mostra circa i due terzi.
-- Reggono bene (pendenza >= 0.80): passaggi, conduzioni e distanze percorse, SCA,
-  passaggi/conduzioni progressive e in area, xT, key passes, occasioni create, duelli aerei.
-- Tengono a meta' (0.40-0.70): xAG, GCA, contrasti, intercetti, duelli vinti, PPDA.
-- NON usarle, il previsto non dice quasi niente sul reale (pendenza < 0.40): VAEP e PV
-  (totali e offensivi), assist, secondi assist, SCA da tiro/fallo/dribbling, blocchi.
-  Se le citi, dichiara che sono inaffidabili.
+6. QUALITA' E CINISMO [GENERALE]
+- NPxG contro xGOT: ${hName} ${f2(npxgH_gen)} vs ${xgotH > 0 ? f2(xgotH) : (xgShotH > 0 ? f2(xgShotH) + " (xG/tiro)" : "N/D")} | ${aName} ${f2(npxgA_gen)} vs ${xgotA > 0 ? f2(xgotA) : (xgShotA > 0 ? f2(xgShotA) + " (xG/tiro)" : "N/D")}
+- Big Chances create/sprecate: ${hName} ${f1(bcH)}/${f1(bcmH)} | ${aName} ${f1(bcA)}/${f1(bcmA)}
+- Gol da palla inattiva: ${hName} ${setPctH > 0 ? f1(setPctH) : "0"}% | ${aName} ${setPctA > 0 ? f1(setPctA) : "0"}%
+- Gol per xG: ${hName} ${f2(effH_ro)} | ${aName} ${f2(effA_ro)}
+- Punti reali contro attesi dagli xG: ${hName} ${f2(pytH.ppgAct)} vs ${f2(pytH.ppgExp)} (${pytH.msg}) | ${aName} ${f2(pytA.ppgAct)} vs ${f2(pytA.ppgExp)} (${pytA.msg})${hiddenValueMsgClean && !/^Nessuno/.test(hiddenValueMsgClean) ? `
+- Accoppiamento notato (descrittivo, non misurato): ${hiddenValueMsgClean}` : ''}
+Misurato: la fortuna recente (gol o punti sopra o sotto gli xG) non anticipa il risultato.
 
-ISTRUZIONI:
-Produci le seguenti sezioni in quest\'ordine:
+7. STILE [GENERALE, medie storiche: descrivono, non prevedono]
+- Linea difensiva: ${hName} ${defX_H > 0 ? f1(defX_H) + "m" : "N/D"} | ${aName} ${defX_A > 0 ? f1(defX_A) + "m" : "N/D"}; lunghezza squadra ${lenH > 0 ? f1(lenH) + "m" : "N/D"} | ${lenA > 0 ? f1(lenA) + "m" : "N/D"}
+- Riaggressione (Choke Index): ${hName} ${chokeH > 0 ? f2(chokeH) : "N/D"} | ${aName} ${chokeA > 0 ? f2(chokeA) : "N/D"}; palle perse a partita ${f1(clumsyH)} | ${f1(clumsyA)}
+- Baricentro offensivo: ${hName} ${avgX_H > 0 ? f1(avgX_H) + "m" : "N/D"} | ${aName} ${avgX_A > 0 ? f1(avgX_A) + "m" : "N/D"}; tocchi in area per ingresso nella trequarti ${f3H > 0 ? f1(penRateH) : "0"}% | ${f3A > 0 ? f1(penRateA) : "0"}%
+- Cross / dribbling / filtranti a partita: ${hName} ${f1(crossH)} / ${f1(dribH)} / ${f1(thruH)} | ${aName} ${f1(crossA)} / ${f1(dribA)} / ${f1(thruA)}
+- Modulo abituale: ${hName} ${formH_disp} | ${aName} ${formA_disp}
 
-## LETTURA DEI CALCOLI
-Massimo 5 righe. Incrocia Matrice Difensiva (altezza linea, compattezza, riaggressione),
-Cinismo (xGOT contro NPxG, Big Chances sprecate) e Funnel Offensivo (baricentri,
-penetrazione). Cita il numero e lo scarto ogni volta che affermi qualcosa. Se lo scarto
-fra le due squadre e' piccolo, dillo: "si equivalgono" e' una risposta legittima.
+8. TEMPI DEI GOL E MERCATI SUI NUMERI
+- Gol fatti/subiti [GENERALE] ${hName}: 1-15' ${bHs['1-15']}/${bHc['1-15']}, 76-90' ${bHs['76-90+']}/${bHc['76-90+']} | ${aName}: 1-15' ${bAs['1-15']}/${bAc['1-15']}, 76-90' ${bAs['76-90+']}/${bAc['76-90+']}
+- Probabilita' di un gol entro il 30': ${pct(probGoal30)} [RUOLO]
+- Attesi, RUOLO | GENERALE: corner ${f1(advRole.lCor)} | ${f1(advOver.lCor)}, tiri in porta ${f1(advRole.lSot)} | ${f1(advOver.lSot)}, gialli ${f1(advRole.lYel)} | ${f1(advOver.lYel)}
 
-## STATISTICHE AVANZATE
-Prendi la sezione 9 e di' cosa dice sul come si affronteranno: chi costruisce di piu',
-chi arriva in area, chi domina i duelli. Usa **solo** le metriche del gruppo «reggono
-bene»; quelle del gruppo «a meta'» citale dicendo che valgono meno; quelle inaffidabili
-non usarle proprio. Massimo 4 righe.
-Prima di dire che una squadra e' superiore su una metrica, ricordati la pendenza: uno
-scarto previsto del 30% nel reale vale circa il 20%. Se dopo lo sconto lo scarto e'
-piccolo, la risposta e' "si equivalgono".
+9. STANCHEZZA (solo contesto: misurato su ${PICK_RESA.partite} partite, il vantaggio di riposo non migliora la previsione)
+${_stancTxt}
 
-## MERCATI
-Per ogni riga del tabellone qui sopra, una frase sola che dica **perché** le statistiche
-di questa partita portano a quel numero. Il verdetto e l'hit li ha gia' decisi il
-backtest: non riclassificarli, non aggiungere ALTO/MEDIO/BASSO tuoi, non proporre
-mercati che il tabellone non elenca.
+ISTRUZIONI
+Scrivi in italiano, senza preamboli, queste quattro sezioni in quest'ordine.
 
-Dove il verdetto e' FUORI SOGLIA, scrivi in mezza riga cosa manca perche' quel mercato
-diventi giocabile (quale statistica dovrebbe muoversi e in che verso).
+## IN SINTESI
+Al massimo 5 righe, per chi deve decidere cosa giocare.
+- Le proposte da giocare sono SOLO quelle FORTE o GIOCABILE della sezione 2. Per ognuna:
+  mercato, probabilita' e quanto rende il suo tipo di mercato (il numero della sezione 2: e'
+  quello da guardare, non l'etichetta). Se l'etichetta promette piu' di quanto il suo tipo
+  renda, per esempio un FORTE dei mercati gol o sui numeri, dillo.
+- Se non ce n'e' nessuna, scrivilo chiaro: "Niente di giocabile in questa partita". Le
+  MARGINALI al massimo "da guardare".
+- Una riga sul pick 1X2 e su dove sta nella selezione (sezione 1).
+- Una riga sul rischio principale (sezione 4).
 
-## COSA NON FARE
+## LA PARTITA
+Al massimo 8 righe: come si affronteranno. Parti dalla sezione 5 rispettando le sue regole
+di affidabilita', poi qualita' e stile (sezioni 6 e 7). Cita il numero e lo scarto ogni
+volta che affermi qualcosa; se lo scarto e' piccolo, "si equivalgono" e' una risposta giusta.
+
+## PERCHE' LE PROPOSTE
+Per ogni proposta FORTE, GIOCABILE o MARGINALE, una frase: quali statistiche di questa
+partita portano a quel numero. Per quelle senza verdetto non scrivere niente.
+
+## RISCHI
+Al massimo 4 righe: cosa rende questa previsione meno solida. Parti dalla sezione 4; la
+stanchezza (sezione 9) citala solo come contesto.
+
+REGOLE (valgono per tutte le sezioni; non sono una sezione da scrivere)
+- Non riclassificare i verdetti, non proporre mercati che il tabellone non elenca, non
+  inventare probabilita' o rese.
 - Non pronosticare un risultato esatto e non usare "certo", "sicuro", "esplosione", "goleada".
-- Non trasformare uno scarto statistico in una previsione di esito: il modello azzecca
-  il pick nel ~52% dei casi, e la fascia alta arriva al 74%. Niente di piu'.
-- Non mescolare RUOLO e GENERALE in una stessa frase senza dire quale stai usando.
+- Il pick esce nel ${PICK_RESA.tutte}% delle partite e nel ${PICK_RESA.soglie[0][1].toFixed(1)}% di quelle sopra il ${PICK_RESA.soglie[0][0]}%: non promettere di piu'.
+- Non mescolare RUOLO e GENERALE in una stessa frase senza dire quale usi.
+- Stanchezza e fortuna recente non anticipano il risultato (misurato): contesto, mai motivo
+  per spostare un verdetto.
 - Se un dato e' N/D, dillo invece di aggirarlo.`;
 
     document.getElementById('ai-prompt').value = p;

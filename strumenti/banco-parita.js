@@ -286,7 +286,9 @@ async function runScanner(browser, base, matches, limit) {
       if (limit != null) document.getElementById('history-limit').value = String(limit);
       window.__REC_CUR = [];
       await avviaScanner();
-      return eval(SNAP);
+      const snap = eval(SNAP), pr = (document.getElementById('ai-prompt') || {}).value || '';
+      snap.prompt = { n: pr.length, rotto: pr ? ((pr.match(/.{0,40}(NaN|undefined|\[object|Infinity)/) || [null])[0]) : 'vuoto' };
+      return snap;
     }, { h: m.home_team.id, a: m.away_team.id, d: m.time_utc.slice(0, 10), limit, SNAP });
     out[m.id] = snap;
   }
@@ -567,6 +569,10 @@ if (require.main === module) (async () => {
             + (process.env.MOBILE ? ` · scorrimento laterale ${scanner.scroll}px · tabelle compatte che escono di lato: `
                                     + (scanner.compatte.length ? JSON.stringify(scanner.compatte) : 'nessuna') : ''));
   console.log('   sottotitolo:', recMap(scanner.runs[day[0].id].rec)['ui-subtitle']);
+  // il mega-prompt non passa da safeTxt/safeHtml: si controlla a parte che non sia vuoto o rotto
+  const P = day.map(m => scanner.runs[m.id].prompt), pRotti = P.filter(x => x.rotto);
+  console.log(`   mega-prompt: ${Math.min(...P.map(x => x.n))}-${Math.max(...P.map(x => x.n))} caratteri`
+    + (pRotti.length ? ' · ROTTO: ' + JSON.stringify(pRotti.map(x => x.rotto)) : ' · niente NaN, undefined o vuoti'));
   const G = scanner.giocatori;
   const gRotti = G ? G.per.filter(x => x.rotto || x.righe < 2) : null;
   console.log('   giocatori: ' + (G ? `statistiche per ${G.dati[0]}/${G.partite[0]} e ${G.dati[1]}/${G.partite[1]} partite, ${G.per.length} mercati, righe per mercato ${Math.min(...G.per.map(x => x.righe))}-${Math.max(...G.per.map(x => x.righe))}`
@@ -576,7 +582,7 @@ if (require.main === module) (async () => {
     console.log(`   formazioni ${m.id}: casa ${f(L && L.H)} | trasf. ${f(L && L.A)}`);
     const T = scanner.runs[m.id].fatigue, g = F => F ? `riposo ${F.riposo} (lega ${F.riposoLega}), ${F.partite14} in 14 gg, coppa ${F.coppaPrima == null ? '-' : F.coppaPrima + ' fa'} / ${F.coppaDopo == null ? '-' : 'fra ' + F.coppaDopo}` : '-';
     console.log(`   stanchezza ${m.id}: casa ${g(T && T.H)} | trasf. ${g(T && T.A)}`); }
-  let fail = (sLog.length || (process.env.MOBILE && (scanner.scroll > 0 || scanner.compatte.length)) || !G || gRotti.length) ? 1 : 0;
+  let fail = (sLog.length || (process.env.MOBILE && (scanner.scroll > 0 || scanner.compatte.length)) || !G || gRotti.length || pRotti.length) ? 1 : 0;
 
   const results = {};
   await Promise.all(MODES.map(async mode => { results[mode] = await runComparatore(browser, base, mode, date); }));
