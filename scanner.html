@@ -174,7 +174,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b55</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b56</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -464,7 +464,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
                     <td id="conf-p2" style="font-weight:bold;font-size:11px">--</td>
                   </tr>
                 </table>
-                <div style="font-size:9px; color:var(--dim); margin-top:4px">Confidence per esito = probabilita' calibrata di indovinare quell'esito. Sull'1X2 viene da una TABELLA misurata su 1882 partite e riconfermata su 1134 in copia conforme e su 5230 di cinque leghe col b48 (la vecchia retta 6.26 + 0.880 x p comprimeva: a 62 mostrava 61 dove il vero e' 67.5); sui mercati binari resta la retta -5.06 + 1.091 x p, rimisurata e giusta entro 2 punti. Non misura l'accordo fra i modelli: sui backtest quello correlava zero con l'azzeccare.</div>
+                <div style="font-size:9px; color:var(--dim); margin-top:4px">Confidence per esito = probabilita' di indovinare quell'esito. Sull'1X2, dal b53, e' la probabilita' del motore: la tabella misurata nel b38 alzava le probabilita' timide di allora, e col motore b48, gia' quasi calibrato, le alzava troppo (la probabilita' nuda l'ha battuta in quattro leghe mai viste su quattro, 3.202 partite). Sui mercati binari resta la retta -5.06 + 1.091 x p, rimisurata e giusta entro 2 punti. Non misura l'accordo fra i modelli: sui backtest quello correlava zero con l'azzeccare.</div>
               </div>
               <div style="background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:10px; margin-top:12px">
                 <div style="font-size:11px;font-weight:bold;color:var(--dim);margin-bottom:6px">🎯 Doppie Chance & Gol (con confidence)</div>
@@ -1990,6 +1990,9 @@ window.CONF_1X2_MODE = window.CONF_1X2_MODE || 'nuda';
 const PICK_RESA = { tutte: 52.7, casa: 43.0, partite: 5230,
   soglie: [[70, 77.1, 9, 10.9], [65, 73.2, 16, 6.1], [60, 69.3, 26, 3.8], [55, 66.0, 38, 2.6], [50, 61.7, 52, 1.9]],
   leghe: ['l_0ALvwF', 'l_4WFCIZ', 'l_0ErfuF', 'l_1Isor4', 'l_3FJFUl'],
+  cinque: { l_0ALvwF: ['Serie A', 1134, 52.7, 64.2, 37], l_4WFCIZ: ['Premier League', 1135, 52.7, 65.2, 43],
+            l_0ErfuF: ['LaLiga', 1134, 53.2, 68.8, 38], l_1Isor4: ['Bundesliga', 912, 52.5, 67.9, 37],
+            l_3FJFUl: ['Ligue 1', 915, 52.3, 63.7, 33] },
   fuori: { l_4DWyTT: ['Championship', 1659, 46.3, 64.8, 17], l_4H43wr: ['Eredivisie', 923, 53.7, 68.7, 47],
            l_4QexZg: ['Liga Portugal', 913, 55.0, 72.4, 43], l_3hvsne: ['2. Bundesliga', 908, 45.4, 62.8, 16],
            l_2L6d1F: ['First Division A', 931, 50.2, 65.5, 35], l_1LMdEO: ['Premiership scozzese', 683, 53.3, 68.9, 41],
@@ -2313,49 +2316,6 @@ function bucketTimings(timings) {
   return b;
 }
 
-const LEAGUE_STATS = {
-  'KSA_Saudi_Pro_League': { n:934, acc:55.0, netHit:76.4, confHit:84.2, gapCasa:+0.8 },
-  'ENG_Premier_League': { n:1900, acc:53.4, netHit:65.8, confHit:72.1, gapCasa:-1.3 },
-  'NED_Eredivisie': { n:611, acc:52.2, netHit:70.5, confHit:78.6, gapCasa:-3.4 },
-  'BEL_Challenger_Pro_League': { n:287, acc:50.9, netHit:68.4, confHit:null, gapCasa:-0.9 },
-  'ESP_LaLiga': { n:1908, acc:50.8, netHit:71.7, confHit:80.8, gapCasa:-0.1 },
-  'GER_Bundesliga': { n:1513, acc:50.3, netHit:65.6, confHit:69.3, gapCasa:-2.9 },
-  'FRA_Ligue_1': { n:1678, acc:50.1, netHit:63.7, confHit:72.4, gapCasa:-1.3 },
-  'ITA_Serie_A': { n:1901, acc:49.8, netHit:65.3, confHit:74.5, gapCasa:-2.4 },
-  'BEL_First_Division_A': { n:1609, acc:49.2, netHit:66.8, confHit:74.9, gapCasa:-2.0 },
-  'IND_Indian_Super_League': { n:610, acc:49.2, netHit:65.0, confHit:null, gapCasa:+2.0 },
-  'BRA_Serie_A': { n:1322, acc:48.7, netHit:63.3, confHit:63.6, gapCasa:+0.0 },
-  'AUT_Bundesliga': { n:994, acc:48.1, netHit:61.3, confHit:67.2, gapCasa:-3.5 },
-  'ITA_Serie_B': { n:394, acc:47.2, netHit:65.2, confHit:null, gapCasa:+0.6 },
-  'GER_2__Bundesliga': { n:1519, acc:47.2, netHit:60.3, confHit:60.9, gapCasa:-1.9 },
-  'ENG_League_One': { n:2241, acc:47.2, netHit:61.2, confHit:67.1, gapCasa:+1.1 },
-  'MEX_Liga_MX': { n:1026, acc:46.9, netHit:61.4, confHit:64.1, gapCasa:+0.7 },
-  'DEN_Superligaen': { n:986, acc:46.9, netHit:64.5, confHit:67.6, gapCasa:-1.2 },
-  'ESP_LaLiga2': { n:481, acc:45.3, netHit:53.9, confHit:null, gapCasa:-1.3 },
-  'ENG_League_Two': { n:2244, acc:45.3, netHit:55.9, confHit:57.9, gapCasa:-0.4 },
-  'ENG_Championship': { n:2799, acc:45.1, netHit:59.4, confHit:67.4, gapCasa:-0.8 },
-  'ARG_Liga_Profesional': { n:1602, acc:43.2, netHit:58.1, confHit:60.8, gapCasa:-1.0 },
-  'AUS_A-League': { n:825, acc:42.9, netHit:50.8, confHit:49.1, gapCasa:-1.3 },
-  'JPN_J__League': { n:1603, acc:42.0, netHit:53.6, confHit:48.4, gapCasa:-0.3 },
-  'EGY_Premier_League': { n:337, acc:41.8, netHit:null, confHit:null, gapCasa:-6.9 },
-  'KOR_K_League_1': { n:1049, acc:41.7, netHit:49.3, confHit:null, gapCasa:-2.3 },
-  'FRA_Ligue_2': { n:317, acc:39.4, netHit:60.5, confHit:null, gapCasa:-5.5 },
-};
-
-function _leagueKey() {
-  const sel = document.getElementById('sel-league');
-  const cty = document.getElementById('sel-country');
-  if (!sel || sel.selectedIndex == null || sel.selectedIndex < 0) return null;
-  const nome = (sel.options[sel.selectedIndex] || {}).text || '';
-  const paese = (cty && cty.value) ? cty.value : '';
-  if (!nome || !paese) return null;
-  const t = (paese + '_' + nome).toLowerCase().replace(/[^a-z0-9]/g, '');
-  for (const k of Object.keys(LEAGUE_STATS)) {
-    if (k.toLowerCase().replace(/[^a-z0-9]/g, '') === t) return k;
-  }
-  return null;
-}
-
 function renderFormazioni(FH, FA, SH, SA, VP) {
   const esc = _escHtml;
   const ultimo = F => F.disponibile && !F.confermata && /last.?start/i.test(F.tipo || '');
@@ -2395,26 +2355,19 @@ function renderFormazioni(FH, FA, SH, SA, VP) {
 }
 
 function renderLeagueNote() {
-  const box = document.getElementById('league-note');
+  const box = document.getElementById('league-note'), sel = document.getElementById('sel-league');
   if (!box) return;
-  const k = _leagueKey();
-  if (!k) { box.innerHTML = ''; return; }
-  const s = LEAGUE_STATS[k];
-  const nome = k.replace(/_/g, ' ').replace(/^[A-Z]{3} /, '');
-  let tono, testo;
-  if (s.acc >= 49) { tono = '#0f766e'; testo = 'il modello rende bene qui'; }
-  else if (s.acc >= 46) { tono = '#f59e0b'; testo = 'rendimento medio'; }
-  else { tono = '#ef4444'; testo = '<b>campionato difficile</b>: le soglie qui valgono meno'; }
-  let det = ' <b>' + s.acc + '%</b> sul segno';
-  if (s.netHit != null) det += ', <b>' + s.netHit + '%</b> sui pick sopra il 55%';
-  if (s.confHit != null) det += ', <b>' + s.confHit + '%</b> con confidence 60+';
-  let casa = '';
-  if (s.gapCasa <= -3) casa = ' Qui il modello <b>sopravvaluta la casa</b> di ' + Math.abs(s.gapCasa) + ' punti.';
-  else if (s.gapCasa >= 2) casa = ' Qui il modello sottovaluta la casa di ' + s.gapCasa + ' punti.';
-  box.innerHTML = '<div style="border-left:3px solid ' + tono + ';padding:10px 14px;margin-bottom:14px;'
+  const lId = sel ? sel.value : '';
+  if (!lId) { box.innerHTML = ''; return; }
+  const M = PICK_RESA.cinque[lId] || PICK_RESA.fuori[lId];
+  const nome = M ? M[0] : _escHtml((sel.options[sel.selectedIndex] || {}).text || 'Questa lega');
+  const testo = M ? `col motore attuale il pick esce il <b>${M[2].toFixed(1)}%</b> su tutte le partite e il <b>${M[3].toFixed(1)}%</b> sopra il 55% (${M[4]}% delle partite)`
+      + (PICK_RESA.cinque[lId] ? '' : '; le rese del tabellone qui sotto sono misurate sui cinque campionati')
+      + `.<span style="color:var(--dim)"> Misurato su ${M[1]} partite, 2023/24&ndash;2025/26.</span>`
+    : "lega mai misurata: soglie del pick e rese del tabellone vengono da altre leghe, prendile come indicative.";
+  box.innerHTML = '<div style="border-left:3px solid ' + (M ? '#0f766e' : '#f59e0b') + ';padding:10px 14px;margin-bottom:14px;'
     + 'background:rgba(255,255,255,.03);border-radius:0 8px 8px 0;font-size:12px;line-height:1.6">'
-    + '<b style="color:' + tono + '">' + nome + '</b> &middot; ' + testo + det + '.' + casa
-    + '<span style="color:var(--dim)"> Misurato su ' + s.n + ' partite.</span></div>';
+    + '<b style="color:' + (M ? '#0f766e' : '#f59e0b') + '">' + nome + '</b> &middot; ' + testo + '</div>';
 }
 
 // Per fascia di scarto e famiglia di mercato: [guadagno sopra il giocarlo sempre, 2se, proposte],
@@ -2511,7 +2464,7 @@ function renderVerdetti(mk, base, adv) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b55';
+window.__SCANNER_BUILD = '0905-b56';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -3186,9 +3139,9 @@ async function avviaScanner() {
     // La retta 6.26 + 0.880p COMPRIME: a 62 mostrava 61 dove il vero misurato e' 67.5,
     // a 74 mostrava 71 dove il vero e' 79. Era stimata prima dell'Elo che inclina i
     // lambda (b13), dell'ensemble riscritto (b20) e di ENS_SCOPE_W (b21): campione
-    // giusto, macchina diversa. Sostituita da una TABELLA misurata sul motore di oggi
-    // (1882 partite di Serie A, cinque stagioni, solo export post-b30), che non
-    // estrapola dove non ci sono dati. La retta dei mercati BINARI invece e' stata
+    // giusto, macchina diversa. Poi una TABELLA (b38, 1882 partite di Serie A); dal b53
+    // la confidence dell'1X2 e' la probabilita' nuda (CONF_1X2_MODE = 'nuda'), che ha
+    // battuto la tabella su quattro leghe mai viste. La retta dei mercati BINARI invece e' stata
     // rimisurata ed e' giusta: scarti entro 2 punti su 22.600 proposte, resta com'e'.
     // Vedi AGENTS.md, Il tabellone ordinava per la colonna sbagliata.
     const _interp = (tab, x) => {
