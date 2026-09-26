@@ -193,15 +193,16 @@ const lineupsOf = m => ({ data: { home: sideOf(m, m.home_team.id, hash(m.home_te
 const QUOTE_GIORNATA = () => { const c = BY_SEASON['2025/2026'].filter(m => m._ri === ROUND_TARGET);
   return c.filter(m => m.time_utc.slice(0, 10) === c[0].time_utc.slice(0, 10)); };
 const QUOTE_FINTE = k => [2.10 + 0.25 * k, 3.40, 3.60 - 0.25 * k];
+const QUOTE_FINTE_OU = k => [1.80 + 0.15 * k, 2.05 - 0.10 * k];
 const dataFd = t => t.slice(8, 10) + '/' + t.slice(5, 7) + '/' + t.slice(0, 4);
 function quoteFinte(p) {
   const G = QUOTE_GIORNATA(), riga = (div, m, h, a, q) => [div, dataFd(m.time_utc), '15:00', h, a, ...q.map(x => x.toFixed(2))].join(',');
-  if (p === '/quote/mmz4281/2526/I1.csv') return ['Div,Date,Time,HomeTeam,AwayTeam,AvgCH,AvgCD,AvgCA',
-    riga('I1', G[0], 'AC ' + G[0].home_team.name, G[0].away_team.name.slice(0, 5), QUOTE_FINTE(0)),
-    riga('I1', G[1], G[1].home_team.name + ' 1908', 'FC ' + G[1].away_team.name, QUOTE_FINTE(1)),
-    riga('I1', G[2], G[2].away_team.name, G[2].home_team.name, QUOTE_FINTE(2))].join('\r\n') + '\r\n';
-  if (p === '/quote/fixtures.csv') return ['Div,Date,Time,HomeTeam,AwayTeam,AvgH,AvgD,AvgA',
-    riga('E0', G[2], G[2].home_team.name, G[2].away_team.name, QUOTE_FINTE(3))].join('\n');
+  if (p === '/quote/mmz4281/2526/I1.csv') return ['Div,Date,Time,HomeTeam,AwayTeam,AvgCH,AvgCD,AvgCA,AvgC>2.5,AvgC<2.5',
+    riga('I1', G[0], 'AC ' + G[0].home_team.name, G[0].away_team.name.slice(0, 5), [...QUOTE_FINTE(0), ...QUOTE_FINTE_OU(0)]),
+    riga('I1', G[1], G[1].home_team.name + ' 1908', 'FC ' + G[1].away_team.name, [...QUOTE_FINTE(1), ...QUOTE_FINTE_OU(1)]),
+    riga('I1', G[2], G[2].away_team.name, G[2].home_team.name, [...QUOTE_FINTE(2), ...QUOTE_FINTE_OU(2)])].join('\r\n') + '\r\n';
+  if (p === '/quote/fixtures.csv') return ['Div,Date,Time,HomeTeam,AwayTeam,AvgH,AvgD,AvgA,Avg>2.5,Avg<2.5',
+    riga('E0', G[2], G[2].home_team.name, G[2].away_team.name, [...QUOTE_FINTE(3), ...QUOTE_FINTE_OU(3)])].join('\n');
   return null;
 }
 
@@ -309,8 +310,10 @@ async function runScanner(browser, base, matches, limit) {
       const snap = eval(SNAP), pr = (document.getElementById('ai-prompt') || {}).value || '';
       snap.prompt = { n: pr.length, rotto: pr ? ((pr.match(/.{0,40}(NaN|undefined|\[object|Infinity)/) || [null])[0]) : 'vuoto' };
       const esito = await window.__QUOTE_AUTO, pq = document.getElementById('ai-prompt').value, st = (document.getElementById('quote-auto') || {}).textContent || '';
-      snap.quoteAuto = { esito, campi: ['quota-1', 'quota-x', 'quota-2'].map(id => (document.getElementById(id) || {}).value), stato: st.slice(0, 160),
-                         nelPrompt: /CON LE QUOTE DEL MERCATO \(prese da football-data/.test(pq), rotto: /NaN|undefined|Infinity|@@QUOTE/.test(pq + st) };
+      snap.quoteAuto = { esito, campi: ['quota-1', 'quota-x', 'quota-2'].map(id => (document.getElementById(id) || {}).value), stato: st.slice(0, 240),
+                         campiOU: ['quota-ov', 'quota-un'].map(id => (document.getElementById(id) || {}).value),
+                         nelPrompt: /CON LE QUOTE DEL MERCATO \(prese da football-data/.test(pq), golNelPrompt: /GOL CON LE QUOTE \(prese da football-data/.test(pq),
+                         rotto: /NaN|undefined|Infinity|@@QUOTE/.test(pq + st) };
       return snap;
     }, { h: m.home_team.id, a: m.away_team.id, d: m.time_utc.slice(0, 10), limit, SNAP });
     out[m.id] = snap;
@@ -329,16 +332,23 @@ async function runScanner(browser, base, matches, limit) {
   // quando il mercato contraddice il motore (controllo di potenza), e la card piena per i 390px
   const quote = await page.evaluate(() => {
     if (typeof aggiornaQuote !== 'function') return null;
-    const set = (a, b, c) => { [['quota-1', a], ['quota-x', b], ['quota-2', c]].forEach(([id, v]) => document.getElementById(id).value = v); aggiornaQuote(); };
-    const casi = [], leggi = (nome, valide) => { const h = document.getElementById('quote-box').innerHTML, p = document.getElementById('ai-prompt').value;
-      casi.push({ nome, valide, righe: (h.match(/<tr>/g) || []).length, conQuote: /CON LE QUOTE DEL MERCATO/.test(p), sintesi: /pick da citare/.test(p),
+    const set = (a, b, c, o = '', u = '') => { [['quota-1', a], ['quota-x', b], ['quota-2', c], ['quota-ov', o], ['quota-un', u]]
+      .forEach(([id, v]) => document.getElementById(id).value = v); aggiornaQuote(); };
+    const casi = [], leggi = (nome, x, g) => { const h = document.getElementById('quote-box').innerHTML, p = document.getElementById('ai-prompt').value, Q = window.__QUOTE_GOL;
+      casi.push({ nome, x, g, righe: (h.match(/<tr>/g) || []).length, conQuote: /CON LE QUOTE DEL MERCATO/.test(p), sintesi: /pick da citare/.test(p),
+                  golPrompt: /GOL CON LE QUOTE/.test(p), golSintesi: /Over\/Under e Goal cita/.test(p), goalPrompt: /\| NoGoal \d+\.\d%/.test(p),
+                  allineata: Q ? Math.max(Math.abs(Q.o25 - Q.over), Math.abs(Q.lgMat - Q.lg12)) : null,
                   avviso: /Segui il pick con le quote/.test(h), segnaposto: /@@QUOTE/.test(p), rotto: /NaN|undefined|Infinity/.test(h + p) }); };
     const P = window.__QUOTE_CTX.p, contro = P[0] >= P[2] ? ['9', '5', '1.30'] : ['1.30', '5', '9'];
-    set('', '', ''); leggi('vuote', false);
-    set('2,10', '3.40', '3.60'); leggi('normali, con la virgola', true);
-    set(...contro); leggi('il mercato contraddice il motore', true);
-    set('2.1', '', '3.6'); leggi('incomplete', false);
-    set('1.20', '6.50', '13'); leggi('favorita netta', true);
+    set('', '', ''); leggi('vuote', false, 0);
+    set('2,10', '3.40', '3.60'); leggi('normali, con la virgola', true, 0);
+    set(...contro); leggi('il mercato contraddice il motore', true, 0);
+    set('2.1', '', '3.6'); leggi('incomplete', false, 0);
+    set('1.20', '6.50', '13'); leggi('favorita netta', true, 0);
+    set('', '', '', '1,85', '2.05'); leggi('solo Over/Under', false, 1);
+    set('2.10', '3.40', '3.60', '1.85', ''); leggi('Over/Under incompleto', true, 0);
+    set('1.20', '6.50', '13', '1.10', '7.50'); leggi('Over quasi certo, favorita netta', true, 2);
+    set('2,10', '3.40', '3.60', '1,85', '2.05'); leggi('1X2 e Over/Under', true, 2);
     return casi;
   });
   const log = page.__log.slice();
@@ -350,7 +360,7 @@ async function runScanner(browser, base, matches, limit) {
                 return { id: c ? c.id : '?', eccesso: t.scrollWidth - w.clientWidth }; })
     .filter(x => x.eccesso > 1));
   if (quote) quote.push(await page.evaluate(() => { nuovaPartita();
-    const vuoti = ['quota-1', 'quota-x', 'quota-2'].every(id => document.getElementById(id).value === '');
+    const vuoti = ['quota-1', 'quota-x', 'quota-2', 'quota-ov', 'quota-un'].every(id => document.getElementById(id).value === '');
     return { nome: 'cambia partita', svuotate: vuoti && window.__QUOTE_CTX === null && document.getElementById('quote-box').innerHTML === '--' }; }));
   await page.context().close();
   return { runs: out, log, scroll, compatte, giocatori, quote };
@@ -621,17 +631,21 @@ if (require.main === module) (async () => {
     + (gRotti.length ? ' · ROTTI: ' + gRotti.map(x => x.m).join(', ') : ' · nessun NaN') : 'bottone assente'));
   // le quote automatiche: prese le prime due (coi valori del file), non la terza (invertita, e l'esca e' di un'altra lega)
   const QA = day.map((m, k) => { const A = scanner.runs[m.id].quoteAuto || {}, atteso = k < 2 ? QUOTE_FINTE(k).map(x => x.toFixed(2)) : ['', '', ''];
+    const attesoOU = k < 2 ? QUOTE_FINTE_OU(k).map(x => x.toFixed(2)) : ['', ''];
     return { k, esito: A.esito, ok: A.esito === (k < 2 ? 'prese' : 'assente') && JSON.stringify(A.campi) === JSON.stringify(atteso)
-      && A.nelPrompt === (k < 2) && !A.rotto && (k >= 2 || /alla chiusura/.test(A.stato)), stato: A.stato }; });
+      && JSON.stringify(A.campiOU) === JSON.stringify(attesoOU) && A.golNelPrompt === (k < 2)
+      && A.nelPrompt === (k < 2) && !A.rotto && (k >= 2 || /alla chiusura/.test(A.stato) && /Over\/Under 2\.5 /.test(A.stato)), stato: A.stato }; });
   const qaRotte = QA.filter(x => !x.ok);
   console.log('   quote automatiche: ' + QA.map(x => x.esito).join(' / ') + (qaRotte.length ? ' · ROTTE: ' + JSON.stringify(qaRotte)
-    : ' · prese le due partite del file coi loro valori, non la terza (invertita) ne\' l\'esca di un\'altra lega'));
+    : ' · prese le due partite del file coi loro valori (1X2 e Over/Under), non la terza (invertita) ne\' l\'esca di un\'altra lega'));
   const Q = scanner.quote;
   const qRotte = Q ? Q.filter(x => x.nome === 'cambia partita' ? !x.svuotate
-    : x.rotto || x.segnaposto || (x.valide ? (x.righe !== 4 || !x.conQuote || !x.sintesi) : (x.righe !== 0 || x.conQuote || x.sintesi))
+    : x.rotto || x.segnaposto || x.righe !== (x.x ? 7 : 0) + [0, 3, 7][x.g] || x.conQuote !== x.x || x.sintesi !== x.x
+      || x.golPrompt !== (x.g > 0) || x.golSintesi !== (x.g > 0) || x.goalPrompt !== (x.g === 2)
+      || (x.g === 2 ? !(x.allineata < 1e-6) : x.allineata !== null)
       || (x.nome === 'il mercato contraddice il motore' && !x.avviso)) : null;
   console.log('   quote: ' + (Q ? `${Q.length} casi` + (qRotte.length ? ' · ROTTI: ' + JSON.stringify(qRotte)
-    : ' · card e prompt senza NaN ne\' segnaposto, avviso quando il mercato contraddice il motore, campi svuotati al cambio partita') : 'campo assente'));
+    : ' · card e prompt senza NaN ne\' segnaposto, avviso quando il mercato contraddice il motore, matrice allineata all\'Over e all\'1X2, campi svuotati al cambio partita') : 'campo assente'));
   // le formazioni devono avere valori veri, non tutti nulli: altrimenti il confronto non prova niente
   for (const m of day) { const L = scanner.runs[m.id].lineup, f = F => F ? `assenti ${F.abitualiAssenti} (peso ${F.pesoAssenti == null ? '-' : F.pesoAssenti.toFixed(2)}, gol ${F.golAssenti == null ? '-' : F.golAssenti.toFixed(2)}), cambi ${F.cambi}, allenatore ${F.allenatoreNuovo ? 'nuovo' : F.partiteAllenatore + '+'}` : '-';
     console.log(`   formazioni ${m.id}: casa ${f(L && L.H)} | trasf. ${f(L && L.A)}`);

@@ -37,7 +37,9 @@ def leggi_csv(f):
         if not (v('COPIA CONFORME DELLO SCANNER') or '').startswith('SI'): continue
         hg, ag = [int(x) for x in v('SCORE').split('-')]
         out.append({'id': ids[c], 'lega': v('LEGA'), 'data': v('DATA ISO (UTC)')[:10], 'H': v('SQUADRA CASA'), 'A': v('SQUADRA TRASFERTA'),
-                    'hg': hg, 'ag': ag, 'out': 0 if hg > ag else (1 if hg == ag else 2), 'p': [num(v(k)) / 100 for k in ('1', 'X', '2')]})
+                    'hg': hg, 'ag': ag, 'out': 0 if hg > ag else (1 if hg == ag else 2), 'p': [num(v(k)) / 100 for k in ('1', 'X', '2')],
+                    'lam': [num(v('Ambito: lambda casa (ruolo)')), num(v('Ambito: lambda trasf. (ruolo)'))], 'rho': num(v('Unita: rho stimato')),
+                    'gol': {k: num(v(k)) for k in ('Over 1.5', 'Over 2.5', 'Over 3.5', 'GG (da matrice)')}})
     return out
 
 def scarica(cartella):
@@ -66,11 +68,11 @@ def quote_fd(cartella):
             for r in csv.DictReader(io.open(os.path.join(cartella, f'{cod}_{s}.csv'), encoding='utf-8-sig', errors='replace')):
                 if not r.get('HomeTeam') or not r.get('FTHG'): continue
                 qc, fc = prendi(r, ['AvgC', 'PSC', 'B365C']); qp, _ = prendi(r, ['Avg', 'PS', 'B365'])
-                righe.append(dict(lega=lg, data=data(r['Date']), H=r['HomeTeam'], A=r['AwayTeam'], hg=int(r['FTHG']), ag=int(r['FTAG']), qc=qc, fc=fc, qp=qp))
+                righe.append(dict(lega=lg, data=data(r['Date']), H=r['HomeTeam'], A=r['AwayTeam'], hg=int(r['FTHG']), ag=int(r['FTAG']), qc=qc, fc=fc, qp=qp, riga=r))
     for r in csv.DictReader(io.open(os.path.join(cartella, 'SWZ.csv'), encoding='utf-8-sig')):
         if r['Season'] not in STAG.values() or not r.get('HG'): continue
         qc, fc = prendi(r, ['AvgC', 'PSC', 'B365C'])
-        righe.append(dict(lega='Super League', data=data(r['Date']), H=r['Home'], A=r['Away'], hg=int(r['HG']), ag=int(r['AG']), qc=qc, fc=fc, qp=None))
+        righe.append(dict(lega='Super League', data=data(r['Date']), H=r['Home'], A=r['Away'], hg=int(r['HG']), ag=int(r['AG']), qc=qc, fc=fc, qp=None, riga=r))
     return righe
 
 def aggancia(M, righe):
@@ -87,7 +89,7 @@ def aggancia(M, righe):
         c = [r for r in vicine(m['lega'], dt.date.fromisoformat(m['data'])) if r['H'] == mappa.get((m['lega'], m['H'])) and r['A'] == mappa.get((m['lega'], m['A']))]
         if len(c) != 1 or not c[0]['qc']: mancanti += 1; continue
         if (c[0]['hg'], c[0]['ag']) != (m['hg'], m['ag']): diversi += 1; continue
-        out.append(dict(m, qc=c[0]['qc'], fc=c[0]['fc'], qp=c[0]['qp']))
+        out.append(dict(m, qc=c[0]['qc'], fc=c[0]['fc'], qp=c[0]['qp'], riga=c[0]['riga']))
     print(f'partite dei CSV {len(M)}: agganciate col punteggio uguale {len(out)}, punteggio diverso {diversi}, non trovate {mancanti}'
           f' · coincidenza {100 * len(out) / max(1, len(out) + diversi):.2f}% · quote di chiusura da {dict(collections.Counter(o["fc"] for o in out))}')
     return out
