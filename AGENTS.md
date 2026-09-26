@@ -264,10 +264,8 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   entrano con loro. Il Goal con le sole quote dell'1X2 non passa (+0.0036). Vedi *Le quote per gli
   altri mercati: la regola*, «Esito».
 - [ ] **Il tabellone con le quote.** Le proposte del tabellone sono del solo motore anche quando ci
-  sono le quote, e il prompt lo dice. Ricalcolarle con le probabilità con le quote (1X2, doppie
-  chance, Over/Under, Goal) vuol dire rimisurare le rese per famiglia su quelle probabilità: si
-  ricostruisce dalla sezione `TABELLONE` del CSV e dalle quote, senza rilanciare il motore, con una
-  regola scritta prima.
+  sono le quote, e il prompt lo dice. **Regola registrata**, sulle sette leghe di cui il tabellone non
+  è mai stato guardato: vedi *Il tabellone con le quote: la regola*.
 - [ ] **Risultati esatti, multigol e handicap dalla matrice allineata.** Con le quote restano del
   motore per regola. Descrittivo del `b57`: la logloss del risultato esatto passa da 2.9200 a 2.8872
   (`z = −11.42`). Una regola registrata direbbe se entrano.
@@ -1988,6 +1986,39 @@ il totale per l'Over; `calcDCMatrix` del motore, 11×11 come lo script). Con le 
 la card dice che Goal e Over/Under restano del motore. Risultati esatti, multigol, handicap e
 tabellone restano del motore. `window.__QUOTE_GOL` espone i numeri della matrice allineata per il
 banco.
+
+### Il tabellone con le quote: la regola
+
+Scritta prima di leggere il tabellone con le quote. Del tabellone (sezione `TABELLONE` dei CSV) delle
+sette leghe fuori dai cinque campionati (Championship, Eredivisie e Liga Portugal dal `b52`; 2.
+Bundesliga, First Division A, Premiership scozzese e Super League svizzera dal `b53`) non si è mai
+guardato niente, tranne, per leggerne il formato scrivendo questa regola, le prime righe di un file
+(Championship 2023/24: le prime proposte di quattro partite). Delle cinque leghe il tabellone è stato
+guardato nel `b49` e nel `b50`.
+
+**Il candidato.** Il tabellone con le quote: stesse proposte, stesse basi di lega, stesse fasce
+(`EDGE_BANDS` 20 / 10 / 5), stesso ordine per scarto, ma con le probabilità con le quote dove ci sono.
+`1`, `X`, `2` dalla combinazione del `b54`, le doppie chance come loro somme; Over e Under 2.5 dalla
+combinazione del `b57`, Goal e NoGoal dalla matrice allineata, solo dove ci sono le quote dell'Over
+(altrimenti i mercati gol restano del motore, come nello Scanner); corner, tiri in porta e gialli del
+motore. Tutte le combinazioni fuori lega, stimate senza la lega della partita. Nessun parametro nuovo.
+
+**Il metro.** Quello del `b50`: il guadagno della proposta in cima a ogni partita, cioè reale meno la
+frequenza di quel mercato nella stagione del file, appaiato partita per partita contro il tabellone del
+motore.
+
+**Passa** se sulle sette leghe insieme il guadagno della prima proposta migliora con `z ≥ +2`,
+migliora in almeno cinque leghe su sette, e nessuna lega peggiora con `z < −1`. Se passa, lo Scanner
+con le quote ridisegna il tabellone con quelle probabilità, dicendolo; le rese per fascia dell'1X2 e
+dei gol si rimisurano sulle probabilità con le quote (dodici leghe per l'1X2, undici per i gol), e
+l'etichetta di ogni proposta con le quote dice quelle, mentre i numeri restano del motore; anche il
+tabellone del mega-prompt diventa quello con le quote. Se non passa, il tabellone resta del motore e
+questa sezione dice perché.
+
+**Descrittivi**, detti comunque: lo stesso confronto sulle cinque leghe; il guadagno per fascia e
+famiglia con le quote, e se le fasce restano in ordine; quante partite hanno almeno una proposta
+FORTE o GIOCABILE; quali mercati finiscono in cima; la resa alla quota di chiusura delle proposte
+FORTE e GIOCABILE che hanno una quota (`1`, `X`, `2`, Over, Under), nei due tabelloni.
 
 ## Formazioni e assenze
 
