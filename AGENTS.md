@@ -51,7 +51,7 @@ usano gli stessi file (`strumenti/quote-bookmaker.py`).
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b55`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b56`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -293,7 +293,7 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b55`)
+## Stato attuale (`b56`)
 
 **1X2.** Col motore `b48` il pick azzecca il 52.7% (±1.4) contro il 43.0% del «gioca sempre in
 casa» sulle cinque leghe: 52.7% contro 40.2% in Serie A, 52.7% contro 43.1% in Premier, 53.2%
@@ -939,7 +939,7 @@ rilegge l'archivio di lega dal **testo** del CSV esportato, ci fa girare `buildG
 motore e confronta Elo e HFA con le righe del CSV, partita per partita; il controllo di potenza
 toglie una partita dall'archivio e deve vedere l'Elo cambiare.
 
-Esito al `b55` (storico 30), a 390px (anche nessuna tabella compatta che esce dal suo riquadro, il mega-prompt dello Scanner mai vuoto né rotto, i sei casi delle quote e le quote automatiche a posto):
+Esito al `b56` (storico 30), a 390px (anche nessuna tabella compatta che esce dal suo riquadro, il mega-prompt dello Scanner mai vuoto né rotto, i sei casi delle quote e le quote automatiche a posto):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
@@ -947,7 +947,7 @@ Esito al `b55` (storico 30), a 390px (anche nessuna tabella compatta che esce da
 | batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 190 | 0 su 122 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
 | `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 127-155 | 74-82 | 0 |
-| `vecchio`: motore `b54` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 | 1 (il certificato) | 0 |
+| `vecchio`: motore `b55` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 | 1 (il certificato) | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -976,7 +976,8 @@ globale a schermo (4 scritture), le stesse quattro righe del CSV e il certificat
 le doppie chance e i mercati binari non cambiano. Al `b54` il controllo col `b53` non vede nessuna
 scrittura diversa e una sola riga del CSV, il certificato: la card delle quote non passa da
 `safeHtml` e senza quote il prompt è quello di prima. Al `b55` lo stesso col `b54`: le quote
-automatiche non passano da `safeHtml` e il Comparatore non le chiama.
+automatiche non passano da `safeHtml` e il Comparatore non le chiama. Al `b56` lo stesso col `b55`:
+la nota di lega è scritta con `innerHTML` diretto e la nota della confidence è HTML fisso.
 
 **Le quote sul banco (dal `b54`).** Dopo il giro dello Scanner il banco scrive le quote nella card
 dell'ultima partita, in sei casi: vuote (niente tabella, niente blocco nel prompt), valide con la
@@ -2084,7 +2085,7 @@ scrittura nuova, il messaggio iniziale). Il banco la verifica a parte, premendo 
 | `QUOTE_FD` / `QUOTE_PAESE` / `QUOTE_ALIAS` | 30 leghe; 12 paesi; 6 nomi | tabelle (`b55`) | codici di football-data delle leghe di `leghe.json` che ha, verificati scaricando i file; gli alias dai nomi che non si somigliano nelle 18 leghe provate. Vedi *Le quote automatiche* |
 | `QUOTE_SIM_MIN` / `QUOTE_SIM_STACCO` | 0.5 / 0.3 | a mano, misurate (`b55`) | nessuna partita sbagliata su 11.902 delle dodici leghe e 6.339 di diciotto leghe mai guardate; sono le soglie che fanno preferire «non trovata» a una partita dubbia |
 | `QUOTE_RESA` | tutte 53.0 · soglie ≥70 / 65 / 60 / 55 / 50: 78.6 / 74.7 / 71.1 / 67.5 / 64.0% su 14 / 20 / 27 / 37 / 49% del calendario · disaccordo 1321 partite, motore 26.3%, mercato 43.1% | misurata `b54` | combinazione stimata su undici leghe e misurata sulla dodicesima, 11.902 partite; soglie uguali nei cinque campionati e nelle altre sette (≥55: 67.9 e 67.1%). La card delle quote e il mega-prompt la leggono da qui |
-| `PICK_RESA` | tutte 52.7 · casa 43.0 · soglie ≥70 / 65 / 60 / 55 / 50: 77.1 / 73.2 / 69.3 / 66.0 / 61.7% su 9 / 16 / 26 / 38 / 52% del calendario | misurata `b49` | cinque leghe col motore `b48`, 5230 partite (tabella in *Stato attuale*). Dal `b51` una sola copia: la card delle soglie e il mega-prompt la leggono da qui. Si rifà con le tabelle, a ogni motore che sposta l'1X2. Dal `b52` porta `leghe` (le cinque, per id) e `fuori` (Championship 46.3 e 64.8% su 17%, Eredivisie 53.7 e 68.7% su 47%, Liga Portugal 55.0 e 72.4% su 43%: pick su tutte e a ≥55, 3495 partite col `b48`), perché sulle tre leghe nuove le soglie ≥55 / 60 / 65 / 70 escono dai 2se (vedi *Le tre leghe nuove col `b48`: la regola*). Dal `b53` `fuori` ha anche 2. Bundesliga (45.4 e 62.8% su 16%), First Division A (50.2 e 65.5% su 35%), Premiership scozzese (53.3 e 68.9% su 41%) e Super League svizzera (47.1 e 66.1% su 26%), 3202 partite col motore `b52` |
+| `PICK_RESA` | tutte 52.7 · casa 43.0 · soglie ≥70 / 65 / 60 / 55 / 50: 77.1 / 73.2 / 69.3 / 66.0 / 61.7% su 9 / 16 / 26 / 38 / 52% del calendario | misurata `b49` | cinque leghe col motore `b48`, 5230 partite (tabella in *Stato attuale*). Dal `b51` una sola copia: la card delle soglie e il mega-prompt la leggono da qui. Si rifà con le tabelle, a ogni motore che sposta l'1X2. Dal `b52` porta `leghe` (le cinque, per id) e `fuori` (Championship 46.3 e 64.8% su 17%, Eredivisie 53.7 e 68.7% su 47%, Liga Portugal 55.0 e 72.4% su 43%: pick su tutte e a ≥55, 3495 partite col `b48`), perché sulle tre leghe nuove le soglie ≥55 / 60 / 65 / 70 escono dai 2se (vedi *Le tre leghe nuove col `b48`: la regola*). Dal `b53` `fuori` ha anche 2. Bundesliga (45.4 e 62.8% su 16%), First Division A (50.2 e 65.5% su 35%), Premiership scozzese (53.3 e 68.9% su 41%) e Super League svizzera (47.1 e 66.1% su 26%), 3202 partite col motore `b52`. Dal `b56` porta anche `cinque`, le cinque leghe una per una nella stessa forma (tabella in *Stato attuale*): con `fuori` scrive la nota di lega in cima all'analisi |
 | retta dei mercati binari | −5.06 + 1.091·p | stimata, riconfermata `b38` e `b41` | 22.584 proposte, errore massimo 2.4 punti; `b41` 7938 proposte, 2.5 |
 | `EDGE_BANDS` | ≥20 / ≥10 / ≥5, guadagno per famiglia (`b50`) | stimata `b38`, riconfermata `b41` e `b49`, per famiglia dal `b50` | 28.230 proposte: +24.6 / +14.8 / +6.3 punti, monotono, segno concorde in 5 stagioni su 5. `b41` (copia conforme): +25.6 / +15.6 / +4.8 sulle 13.148 proposte con base del `b40`, +25.0 / +14.9 / +5.7 sulle 14.742 del `b41`, monotono in 3 stagioni su 3; Premier (≥20 / 10–20 / 5–10) +27.4 / +10.7 / +6.0, LaLiga +25.0 / +13.7 / +7.3, Bundesliga +28.7 / +14.0 / +5.5, Ligue 1 +26.4 / +13.4 / +5.0. `b49` (motore `b48`, cinque leghe): +25.8 / +12.2 / +6.1, monotono in 5 leghe su 5; per famiglia 1X2 +27.5 / +15.5 / +8.0, gol +1.0 / +7.2 / +3.5, numeri +7.2 / +10.2 / +8.2. Dal `b50` l'etichetta mostra questi, per famiglia, con ±2se: 1X2 ±1.6 / ±1.6 / ±1.9 (2891 / 3573 / 2680 proposte), gol ±10.4 / ±2.3 / ±1.7 (92 / 1881 / 3457), numeri ±8.0 / ±2.9 / ±2.4 (133 / 1058 / 1628). Ordinare per guadagno atteso invece che per scarto: no (vedi *Il tabellone per famiglia di mercato: la regola*) |
 | minimo di `leagueBaseRates` | 200 partite | paracadute misurato `b38` | guadagno piatto fra 50 e 500; in produzione arrivano 900+ partite |
@@ -2244,6 +2245,12 @@ di questo elenco è stata a lungo falsa proprio perché nessuno sapeva dove cont
 - **Pagina a 0 px non vuol dire tabella dentro lo schermo.** Il tabellone è uscito di lato di 53
   px dentro il suo riquadro per chissà quante build, con lo scorrimento della pagina a 0. Il
   banco misura anche le tabelle compatte, ma solo quelle dello Scanner.
+- **Un numero a schermo che nessuna misura rilegge invecchia in silenzio.** La nota di lega in cima
+  all'analisi leggeva `LEAGUE_STATS`, una tabella del primo caricamento del file (prima del `b2`):
+  fino al `b55` diceva «Serie A · il modello rende bene qui, 49.8% sul segno, 74.5% con confidence 60+»,
+  contro il 52.7% del `b48` e una confidence che dal `b53` è la probabilità. E la nota della
+  confidence, HTML fisso, diceva ancora «viene da una TABELLA». Dal `b56` la nota di lega legge
+  `PICK_RESA`, la stessa costante della card delle soglie e del mega-prompt.
 - **Le etichette di riga del CSV devono essere uniche**, e vanno lette come sono scritte: un
   parser che cerca `Unita: media gol trasferta` non trova `Unita: media gol trasf.` e legge
   `null` senza avvisi.
@@ -3183,3 +3190,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b53` | la confidence dell'1X2 è la probabilità del motore (`CONF_1X2_MODE = 'nuda'`): registrato prima, sulle quattro leghe mai aperte (2. Bundesliga, First Division A, Premiership scozzese, Super League svizzera, 3202 partite in copia conforme) batte la tabella del `b38` in quattro su quattro, −0.00220 di Brier (`z = −4.09`). Le quattro leghe entrano in `PICK_RESA.fuori`. Probabilità invariate; nel CSV cambiano solo le confidence dell'1X2 |
 | `b54` | le quote del bookmaker: regola registrata prima di scaricarle, e passata. Su 11.902 partite di dodici leghe (quote di chiusura di football-data.co.uk), stimata su undici leghe e misurata sulla dodicesima, la combinazione motore + mercato prende il 52.99% contro il 51.04% del motore (+1.95, `z = +7.00`), logloss meglio in 12 leghe su 12; il merito è del mercato, e dato il mercato il motore pesa meno di zero. Card «Con le quote del mercato» (facoltativa), soglie con le quote uguali in tutte le leghe, blocco nel mega-prompt, sei casi nel banco, `strumenti/quote-bookmaker.py`. Senza quote probabilità, tabellone e CSV invariati |
 | `b55` | le quote automatiche: lo Scanner le prende da football-data.co.uk attraverso il worker Cloudflare (strada `/quote/`, `strumenti/worker-quote.js`), chiusura per le partite giocate e quote della settimana per le prossime, in 30 leghe. Trova la partita per data e somiglianza dei nomi: nessuna sbagliata su 11.902 partite delle dodici leghe e 6.339 di diciotto leghe mai guardate. Riempie i campi solo se sono vuoti. `strumenti/quote-nomi.js`, e il banco con un file di quote finto e il controllo di potenza. Senza quote, e nel Comparatore, niente cambia |
+| `b56` | due testi vecchi corretti: la nota di lega in cima all'analisi legge `PICK_RESA` (le cinque leghe e le sette di fuori, col motore `b48`) al posto di `LEAGUE_STATS`, una tabella del primo caricamento che dava la Serie A al 49.8% sul segno; le leghe mai misurate lo dicono. La nota sotto le confidence dice che sull'1X2 la confidence è la probabilità (dal `b53`). Probabilità, tabellone e CSV invariati |
