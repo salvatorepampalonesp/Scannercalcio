@@ -302,6 +302,22 @@ async function runScanner(browser, base, matches, limit) {
     const D = window.__PLAYER_DATA; sel.value = '1'; renderGiocatori();
     return { dati: [D.H.nDati, D.A.nDati], partite: [D.H.nPartite, D.A.nPartite], per };
   });
+  // le quote (b54, fuori dal giro del motore): card e prompt senza NaN ne' segnaposto, l'avviso
+  // quando il mercato contraddice il motore (controllo di potenza), e la card piena per i 390px
+  const quote = await page.evaluate(() => {
+    if (typeof aggiornaQuote !== 'function') return null;
+    const set = (a, b, c) => { [['quota-1', a], ['quota-x', b], ['quota-2', c]].forEach(([id, v]) => document.getElementById(id).value = v); aggiornaQuote(); };
+    const casi = [], leggi = (nome, valide) => { const h = document.getElementById('quote-box').innerHTML, p = document.getElementById('ai-prompt').value;
+      casi.push({ nome, valide, righe: (h.match(/<tr>/g) || []).length, conQuote: /CON LE QUOTE DEL MERCATO/.test(p), sintesi: /pick da citare/.test(p),
+                  avviso: /Segui il pick con le quote/.test(h), segnaposto: /@@QUOTE/.test(p), rotto: /NaN|undefined|Infinity/.test(h + p) }); };
+    const P = window.__QUOTE_CTX.p, contro = P[0] >= P[2] ? ['9', '5', '1.30'] : ['1.30', '5', '9'];
+    set('', '', ''); leggi('vuote', false);
+    set('2,10', '3.40', '3.60'); leggi('normali, con la virgola', true);
+    set(...contro); leggi('il mercato contraddice il motore', true);
+    set('2.1', '', '3.6'); leggi('incomplete', false);
+    set('1.20', '6.50', '13'); leggi('favorita netta', true);
+    return casi;
+  });
   const log = page.__log.slice();
   const scroll = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   // una tabella di confronto non deve scorrere nemmeno dentro il suo riquadro: la pagina puo'
@@ -310,8 +326,11 @@ async function runScanner(browser, base, matches, limit) {
     .map(t => { const w = t.closest('.tbl-scroll') || t.parentElement, c = t.closest('[id]');
                 return { id: c ? c.id : '?', eccesso: t.scrollWidth - w.clientWidth }; })
     .filter(x => x.eccesso > 1));
+  if (quote) quote.push(await page.evaluate(() => { nuovaPartita();
+    const vuoti = ['quota-1', 'quota-x', 'quota-2'].every(id => document.getElementById(id).value === '');
+    return { nome: 'cambia partita', svuotate: vuoti && window.__QUOTE_CTX === null && document.getElementById('quote-box').innerHTML === '--' }; }));
   await page.context().close();
-  return { runs: out, log, scroll, compatte, giocatori };
+  return { runs: out, log, scroll, compatte, giocatori, quote };
 }
 
 async function comparatorePage(browser, base, engineText) {
@@ -577,12 +596,18 @@ if (require.main === module) (async () => {
   const gRotti = G ? G.per.filter(x => x.rotto || x.righe < 2) : null;
   console.log('   giocatori: ' + (G ? `statistiche per ${G.dati[0]}/${G.partite[0]} e ${G.dati[1]}/${G.partite[1]} partite, ${G.per.length} mercati, righe per mercato ${Math.min(...G.per.map(x => x.righe))}-${Math.max(...G.per.map(x => x.righe))}`
     + (gRotti.length ? ' · ROTTI: ' + gRotti.map(x => x.m).join(', ') : ' · nessun NaN') : 'bottone assente'));
+  const Q = scanner.quote;
+  const qRotte = Q ? Q.filter(x => x.nome === 'cambia partita' ? !x.svuotate
+    : x.rotto || x.segnaposto || (x.valide ? (x.righe !== 4 || !x.conQuote || !x.sintesi) : (x.righe !== 0 || x.conQuote || x.sintesi))
+      || (x.nome === 'il mercato contraddice il motore' && !x.avviso)) : null;
+  console.log('   quote: ' + (Q ? `${Q.length} casi` + (qRotte.length ? ' · ROTTI: ' + JSON.stringify(qRotte)
+    : ' · card e prompt senza NaN ne\' segnaposto, avviso quando il mercato contraddice il motore, campi svuotati al cambio partita') : 'campo assente'));
   // le formazioni devono avere valori veri, non tutti nulli: altrimenti il confronto non prova niente
   for (const m of day) { const L = scanner.runs[m.id].lineup, f = F => F ? `assenti ${F.abitualiAssenti} (peso ${F.pesoAssenti == null ? '-' : F.pesoAssenti.toFixed(2)}, gol ${F.golAssenti == null ? '-' : F.golAssenti.toFixed(2)}), cambi ${F.cambi}, allenatore ${F.allenatoreNuovo ? 'nuovo' : F.partiteAllenatore + '+'}` : '-';
     console.log(`   formazioni ${m.id}: casa ${f(L && L.H)} | trasf. ${f(L && L.A)}`);
     const T = scanner.runs[m.id].fatigue, g = F => F ? `riposo ${F.riposo} (lega ${F.riposoLega}), ${F.partite14} in 14 gg, coppa ${F.coppaPrima == null ? '-' : F.coppaPrima + ' fa'} / ${F.coppaDopo == null ? '-' : 'fra ' + F.coppaDopo}` : '-';
     console.log(`   stanchezza ${m.id}: casa ${g(T && T.H)} | trasf. ${g(T && T.A)}`); }
-  let fail = (sLog.length || (process.env.MOBILE && (scanner.scroll > 0 || scanner.compatte.length)) || !G || gRotti.length || pRotti.length) ? 1 : 0;
+  let fail = (sLog.length || (process.env.MOBILE && (scanner.scroll > 0 || scanner.compatte.length)) || !G || gRotti.length || pRotti.length || !Q || qRotte.length) ? 1 : 0;
 
   const results = {};
   await Promise.all(MODES.map(async mode => { results[mode] = await runComparatore(browser, base, mode, date); }));
