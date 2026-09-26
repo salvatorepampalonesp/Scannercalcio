@@ -48,7 +48,7 @@ competizioni UEFA; nessuna quota dei bookmaker.
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b50`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b51`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -258,7 +258,7 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b50`)
+## Stato attuale (`b51`)
 
 **1X2.** Col motore `b48` il pick azzecca il 52.7% (±1.4) contro il 43.0% del «gioca sempre in
 casa» sulle cinque leghe: 52.7% contro 40.2% in Serie A, 52.7% contro 43.1% in Premier, 53.2%
@@ -593,14 +593,55 @@ mano. Regola: **due numeri affiancati da un `vs` devono venire dallo stesso camp
 
 ### Il mega-prompt
 
-Porta il tabellone e i verdetti misurati e dice all'LLM di non ridiscuterli: il suo compito è
-spiegare perché le statistiche di questa partita portano lì. Tutti i numeri escono dalle
-stesse variabili dello schermo (un controllo verifica che `ensemble 1+X` coincida col
-tabellone). Sezione *COSA NON FARE*: niente risultati esatti, niente
-«certo/sicuro/esplosione/goleada», non mescolare ruolo e generale nella stessa frase. Quando
-Elo e modello distano 10+ punti, card e prompt dicono che il verdetto lo decide l'Elo; quando
-il clamp dell'HFA ha morso, dicono che è un limite, non una misura. Le narrative riportano lo
-scarto misurato e si fermano lì.
+Il testo da copiare in un LLM (card «MEGA-PROMPT»). Serve a due cose, scelte dall'utente nel
+`b51`: **decidere cosa giocare** e **capire la partita**. L'LLM spiega, non ricalcola: tutti i
+numeri escono dalle stesse variabili dello schermo, e verdetti e rese del tabellone sono dati
+come misurati, da non ridiscutere.
+
+**I dati, in quest'ordine** (dal `b51`):
+
+1. **Il verdetto 1X2**: probabilità, quote eque, ruolo contro generale, e il **pick con la sua
+   fascia**: la confidence spiegata (quante volte esce un pick con quella probabilità) e dove
+   sta nella selezione, dalle soglie misurate di `PICK_RESA` (sopra il 55%: «rientra nel 38% di
+   partite più sicure, dove nel complesso il pick esce il 66.0%»; sotto il 45%: non si
+   seleziona). Il numero cumulato di una soglia non è la probabilità di quel pick: per quella
+   c'è la confidence.
+2. **Il tabellone**: le proposte con verdetto per intero, ognuna con quanto rende il suo tipo
+   di mercato (`EDGE_BANDS` per famiglia), e quelle senza verdetto in una riga sola. Il prompt
+   dice che FORTE/GIOCABILE vuol dire «rende più del giocarlo alla cieca», non «probabile» (un
+   `2` al 45% può essere giocabile), e che una doppia chance contiene l'esito singolo.
+3. **L'Elo**: rating, vantaggio campo (col clamp detto quando morde), trend, Elo contro modello
+   su 1 contro 2 con l'avviso quando distano 10+ punti e decide l'Elo.
+4. **I rischi già calcolati**, in JS e non dall'LLM: Elo e modello in disaccordo, meno di 6
+   partite di ruolo, pick sotto il 50%, clamp dell'HFA, statistiche avanzate assenti, riposo
+   molto diverso.
+5. **Le statistiche avanzate previste** con le loro regole di affidabilità (quali reggono,
+   quali valgono a metà, quali non usare).
+6. **Qualità e cinismo**, con l'avvertenza misurata che la fortuna recente non anticipa il
+   risultato.
+7. **Stile**, dichiarato descrittivo (medie storiche, non previsioni).
+8. **Tempi dei gol e mercati sui numeri.**
+9. **Stanchezza** (riposo, partite in 14 giorni, coppe europee), dichiarata contesto: misurato,
+   non migliora la previsione (vedi *La stanchezza*).
+
+**Le risposte chieste**: *IN SINTESI* (cinque righe: cosa giocare, quanto rende il suo tipo di
+mercato, «niente di giocabile» se non c'è niente, il pick e il rischio principale), *LA PARTITA*
+(otto righe), *PERCHÉ LE PROPOSTE* (una frase per proposta con verdetto), *RISCHI*. Le regole
+(niente risultati esatti, niente «certo/sicuro/esplosione/goleada», non mescolare ruolo e
+generale, N/D detto, stanchezza e fortuna solo contesto) stanno in un blocco che il prompt dice
+esplicitamente di non scrivere come sezione.
+
+**Cosa è uscito nel `b51`**, e perché: Ordered Logit e KNN (peso 0 nell'1X2: l'OL poteva dire
+`2` al 47% con un verdetto `1`), la correzione residuale spenta, le partite simili del KNN (due
+partite), i dettagli delle pause dell'Elo e della scala. Prima il prompt aveva numeri vecchi
+(«2963 partite», «pick al 52%, fascia alta al 74%»), la frase rotta «nei mercati dei mercati
+gol» del `b50`, *COSA NON FARE* elencata fra le sezioni da scrivere, e chiedeva una frase per
+ognuna delle 13 righe del tabellone, anche senza verdetto, con un «FUORI SOGLIA» che il
+tabellone non usa. Formazioni e assenze **non** ci sono, per scelta dell'utente.
+
+**Controllo.** Il banco (dal `b51`) guarda il prompt di ogni partita dello Scanner: non vuoto,
+niente `NaN`, `undefined`, `Infinity`; col controllo di potenza (un `NaN` messo apposta) fallisce.
+Il contenuto va riletto a mano quando cambia: il banco non sa se una frase è giusta.
 
 ## Politica sui valori mancanti
 
@@ -771,7 +812,7 @@ rilegge l'archivio di lega dal **testo** del CSV esportato, ci fa girare `buildG
 motore e confronta Elo e HFA con le righe del CSV, partita per partita; il controllo di potenza
 toglie una partita dall'archivio e deve vedere l'Elo cambiare.
 
-Esito al `b50` (storico 30), a 390px (anche nessuna tabella compatta che esce dal suo riquadro):
+Esito al `b51` (storico 30), a 390px (anche nessuna tabella compatta che esce dal suo riquadro, e il mega-prompt dello Scanner mai vuoto né rotto):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
@@ -779,7 +820,7 @@ Esito al `b50` (storico 30), a 390px (anche nessuna tabella compatta che esce da
 | batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 190 | 0 su 122 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
 | `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 127-155 | 74-82 | 0 |
-| `vecchio`: motore `b49` caricato (controllo) | 0/3, «motore caricato diverso ...» | 1 (il tabellone) | 1 (il certificato) | 0 |
+| `vecchio`: motore `b50` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 | 1 (il certificato) | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -799,7 +840,9 @@ vede 19-76 scritture diverse: la lega finta ha squadre che entrano e escono, qui
 rating, pendenze e tutto quello che ne discende. Al `b49` il controllo col `b48` non vede
 nessuna scrittura diversa e una sola riga del CSV, il certificato: cambia solo il testo fisso
 della card delle soglie. Al `b50` il controllo col `b49` vede una scrittura diversa, il
-tabellone (le etichette per famiglia), e il certificato.
+tabellone (le etichette per famiglia), e il certificato. Al `b51` il controllo col `b50` non
+vede nessuna scrittura diversa: cambia il mega-prompt, che non passa da `safeHtml`, e la card
+delle soglie, che è testo fisso scritto una volta all'apertura.
 
 **Cosa resta fuori, e va saputo:**
 
@@ -816,7 +859,8 @@ tabellone (le etichette per famiglia), e il certificato.
   dal Comparatore.
 - Il banco confronta cio' che il motore scrive con `safeTxt`/`safeHtml`. Le poche card
   scritte con `innerHTML` diretto (la card dell'Elo, la nota di lega) e il mega-prompt non
-  sono nel confronto.
+  sono nel confronto; del mega-prompt, dal `b51`, il banco controlla solo che non sia vuoto o
+  rotto.
 
 **Come si rifa'.** `node strumenti/banco-parita.js` (tutte le modalita' e i controlli, circa
 tre minuti); `MOBILE=1` misura lo scorrimento laterale a 390px; `VECCHIO=<scanner vecchio>`
@@ -1578,6 +1622,7 @@ scrittura nuova, il messaggio iniziale). Il banco la verifica a parte, premendo 
 | `STAT_SHRINK_TABLE` | 51 voci, default 0.50 | stimata `b5` | vedi *Le statistiche previste* |
 | `STAT_SHRINK_LEGACY` | 0.35 | storica | il `k` a cui valgono OL e correzione residuale |
 | `CONF_1X2_TABLE` | `[0,0]` + 8 fasce | stimata `b38`, riconfermata `b41` e `b49` | resa del pick per fascia, 1882 partite di Serie A post-`b30`; `b41`, 1134 in copia conforme: 8 fasce su 8 dentro 2se; Premier χ² 11.2 su 8, LaLiga 7.7, Bundesliga 7.1, Ligue 1 5.2. Il punto `[0,0]` (`b41`) serve gli esiti non scelti: hit/p 0.939 / 1.000 / 0.943 / 0.993 / 0.963 in Serie A / Premier / LaLiga / Bundesliga / Ligue 1, contro 0.960 della tabella. `b49` (motore `b48`, 5230 partite): χ² 16.2 su 8, ma fuori lega né le probabilità nude (−0.00043 di Brier, `z = −1.01`) né una tabella rifatta (+0.00007) la battono; esiti non scelti hit/p 0.996. Vedi *Le tabelle col `b48`* |
+| `PICK_RESA` | tutte 52.7 · casa 43.0 · soglie ≥70 / 65 / 60 / 55 / 50: 77.1 / 73.2 / 69.3 / 66.0 / 61.7% su 9 / 16 / 26 / 38 / 52% del calendario | misurata `b49` | cinque leghe col motore `b48`, 5230 partite (tabella in *Stato attuale*). Dal `b51` una sola copia: la card delle soglie e il mega-prompt la leggono da qui. Si rifà con le tabelle, a ogni motore che sposta l'1X2 |
 | retta dei mercati binari | −5.06 + 1.091·p | stimata, riconfermata `b38` e `b41` | 22.584 proposte, errore massimo 2.4 punti; `b41` 7938 proposte, 2.5 |
 | `EDGE_BANDS` | ≥20 / ≥10 / ≥5, guadagno per famiglia (`b50`) | stimata `b38`, riconfermata `b41` e `b49`, per famiglia dal `b50` | 28.230 proposte: +24.6 / +14.8 / +6.3 punti, monotono, segno concorde in 5 stagioni su 5. `b41` (copia conforme): +25.6 / +15.6 / +4.8 sulle 13.148 proposte con base del `b40`, +25.0 / +14.9 / +5.7 sulle 14.742 del `b41`, monotono in 3 stagioni su 3; Premier (≥20 / 10–20 / 5–10) +27.4 / +10.7 / +6.0, LaLiga +25.0 / +13.7 / +7.3, Bundesliga +28.7 / +14.0 / +5.5, Ligue 1 +26.4 / +13.4 / +5.0. `b49` (motore `b48`, cinque leghe): +25.8 / +12.2 / +6.1, monotono in 5 leghe su 5; per famiglia 1X2 +27.5 / +15.5 / +8.0, gol +1.0 / +7.2 / +3.5, numeri +7.2 / +10.2 / +8.2. Dal `b50` l'etichetta mostra questi, per famiglia, con ±2se: 1X2 ±1.6 / ±1.6 / ±1.9 (2891 / 3573 / 2680 proposte), gol ±10.4 / ±2.3 / ±1.7 (92 / 1881 / 3457), numeri ±8.0 / ±2.9 / ±2.4 (133 / 1058 / 1628). Ordinare per guadagno atteso invece che per scarto: no (vedi *Il tabellone per famiglia di mercato: la regola*) |
 | minimo di `leagueBaseRates` | 200 partite | paracadute misurato `b38` | guadagno piatto fra 50 e 500; in produzione arrivano 900+ partite |
@@ -1731,6 +1776,9 @@ di questo elenco è stata a lungo falsa proprio perché nessuno sapeva dove cont
 - **Un numero misurato sull'insieme non vale per le sue parti.** «FORTE, rende +24.6» era giusto
   in media e sbagliato per quasi ogni riga: +27.5 sull'1X2, +1.0 sui mercati gol. Un'etichetta
   che promette una resa va misurata sul gruppo a cui la si mostra.
+- **Quello che non passa da `safeTxt`/`safeHtml` il banco non lo vede.** Il mega-prompt ha
+  detto «2963 partite» dal `b27` al `b50`, e «nei mercati dei mercati gol» nel `b50`, con il banco
+  verde. Dal `b51` il banco ne controlla la forma; il contenuto si rilegge a mano.
 - **Pagina a 0 px non vuol dire tabella dentro lo schermo.** Il tabellone è uscito di lato di 53
   px dentro il suo riquadro per chissà quante build, con lo scorrimento della pagina a 0. Il
   banco misura anche le tabelle compatte, ma solo quelle dello Scanner.
@@ -2655,3 +2703,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b48` | l'ingresso delle neopromosse nell'Elo: entrano al livello delle squadre uscite, chi torna dalla serie inferiore regredisce verso quel livello, la pendenza non legge più le regressioni. Registrato prima del batch, passato sulle cinque leghe e sulle tre nuove. Formazioni e stanchezza non passano; il peso dell'Elo resta 0.75 / 1.25. Batch automatico da `strumenti/batch-auto.js` |
 | `b49` | le tabelle col `b48`, dal batch automatico delle cinque leghe (5230 partite in copia conforme): il motore vero fa −0.00367 di logloss 1 contro 2 come previsto, e la pendenza di calibrazione scende da 1.143 a 1.053. `CONF_1X2_TABLE` e `EDGE_BANDS` restano; la card delle soglie del pick mostra le cinque leghe col `b48`. Due voci nuove: il guadagno delle fasce per famiglia di mercato, e la coda alta della selezione contro le neopromosse. Probabilità invariate |
 | `b50` | il tabellone per famiglia di mercato: regola registrata, e ordinare per guadagno atteso non sceglie meglio (+0.12 ±0.29 sulla prima proposta, tre leghe su cinque), quindi l'ordine resta per scarto; l'etichetta di ogni riga dice quanto rende il suo tipo di mercato (1X2 FORTE +27.5, gol +1.0, numeri +7.2). A 390px il tabellone non esce più di lato, e il banco lo controlla. Probabilità e CSV invariati |
+| `b51` | il mega-prompt riscritto per le due cose che servono all'utente, decidere cosa giocare e capire la partita: sintesi in cima, poi la partita, il perché delle proposte e i rischi. Aggiunti il pick con la sua fascia, i rischi calcolati e la stanchezza come contesto; tolti Ordered Logit, KNN e correzione residuale (peso 0), numeri vecchi e una frase rotta. Le soglie del pick in una costante sola (`PICK_RESA`) per card e prompt. Il banco controlla che il prompt non sia vuoto né rotto. Probabilità e CSV invariati |
