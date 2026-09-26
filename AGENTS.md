@@ -259,10 +259,9 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   Vedi *Le quote dei bookmaker: la regola*, «Esito».
 - [ ] **Le quote dei mercati gol.** football-data.co.uk ha anche le quote di chiusura dell'Over e
   dell'Under 2.5 (`AvgC>2.5`, `AvgC<2.5`). I mercati gol sono il muro più duro (AUC dell'Over fra
-  0.51 e 0.60, livello sotto il vero di 1–7 punti): la stessa prova dell'1X2, con la regola scritta
-  prima, direbbe se un campo per quelle quote alza Over/Under e Goal. `strumenti/quote-bookmaker.py`
-  aggancia già le partite: va esteso a leggere quelle colonne. Arriverebbero da sole come l'1X2: i file
-  sono gli stessi.
+  0.51 e 0.60, livello sotto il vero di 1–7 punti). **Regola registrata** (tre test: l'Over 2.5 col
+  mercato, il Goal dalla matrice allineata, il Goal con le sole quote dell'1X2): vedi *Le quote per
+  gli altri mercati: la regola*.
 - [ ] **Quote fino al fischio.** Le quote automatiche del `b55` sono quelle di quando football-data
   pubblica il file (per il weekend di solito il venerdì): valgono +1.4 punti di prese invece dei +2.0
   della chiusura. The Odds API le dà aggiornate, con una chiave gratuita (500 richieste al mese) da
@@ -1849,6 +1848,56 @@ Atalanta del 20/09/2026 (chiusura 1.62 / 3.93 / 5.16) e Lausanne – Lugano (3.5
 dai file di stagione, Granada – Andorra (LaLiga2) e Tijuana – Atlas (Liga MX) di questo weekend dai
 file della settimana, una partita di Serie A fra un mese «non ancora nei file», una lega saudita «non
 coperta». Sei chiamate per sei file, 0 px di scorrimento a 390px.
+
+### Le quote per gli altri mercati: la regola
+
+Scritta prima di leggere le quote dell'Over/Under accanto a qualunque risultato: delle colonne `>2.5`
+si sono guardate solo le intestazioni, e del motore solo la ricostruzione della matrice dei gol, che
+non usa i risultati.
+
+**Cosa c'è.** Oltre all'1X2, football-data.co.uk ha solo l'Over/Under 2.5 e l'handicap asiatico, e
+solo nei file principali (`mmz4281`, 18 leghe di `QUOTE_FD`); i file `new` (12 leghe, Svizzera
+compresa) hanno solo l'1X2. Nessuno quota Goal/NoGoal, corner, tiri, cartellini, falli o risultati
+esatti: quei mercati restano del motore, o si ricavano da una matrice.
+
+**I dati.** Le partite del test del `b54` (stesso aggancio) delle undici leghe coi file principali:
+la Svizzera esce. Probabilità dell'Over del mercato: `1/AvgC>2.5` e `1/AvgC<2.5` normalizzate (se
+mancano Pinnacle di chiusura `PC`, poi Bet365 `B365C`). Il motore: le probabilità del CSV (motore
+`b48`), e la sua matrice dei gol `DC(lambda di ruolo di casa e di trasferta, rho)` dalle righe
+`Ambito: lambda … (ruolo)` e `Unita: rho stimato`. Prova di coincidenza: Over 1.5 / 2.5 / 3.5 e GG
+ricostruiti stanno entro 0.075 punti da quelli del CSV su 11.927 partite su 11.927.
+
+**Primo test, l'Over 2.5.** Logistica su `logit(pOver)` del motore e del mercato, stimata su dieci
+leghe e misurata sull'undicesima, contro il motore da solo. **Passa** se la logloss dell'Over 2.5
+migliora con `z ≤ −2` sull'insieme e in almeno otto leghe su undici. Se passa, lo Scanner ha due
+campi per le quote dell'Over e dell'Under 2.5, riempiti da soli dalla stessa riga dell'1X2 quando il
+file le ha, e mostra l'Over/Under con le quote.
+
+**Secondo test, il Goal dalla matrice allineata.** La matrice allineata al mercato è il Dixon-Coles
+col `rho` del motore e i due lambda scelti perché dia l'Over 2.5 della combinazione del primo test e
+il `log(p1/p2)` della combinazione dell'1X2 del `b54`, tutte e due fuori lega. Nessun parametro
+nuovo. **Passa** se la logloss del Goal dalla matrice allineata migliora rispetto al motore con `z ≤
+−2` sull'insieme e in almeno otto leghe su undici. Se passa, con le quote il Goal/NoGoal esce da quella
+matrice. Allo stesso modo si misurano l'Over 1.5 e l'Over 3.5 della matrice allineata: ciascuno
+entra solo se migliora con `z ≤ −2` sull'insieme.
+
+**Terzo test, con le sole quote dell'1X2.** Dove l'Over non è quotato (le leghe dei file `new`, o chi
+scrive solo l'1X2), la matrice del motore inclinata come fa l'Elo (`eloTiltLambdas`): totale dei
+lambda identico, `log(p1/p2)` della combinazione dell'1X2. Stesso metro sul Goal, su tutte e dodici
+le leghe: **passa** con `z ≤ −2` sull'insieme e almeno otto leghe su dodici. Se passa, lì il Goal esce
+dalla matrice inclinata; l'Over resta del motore, perché l'inclinazione non lo muove.
+
+**Senza test.** Le doppie chance con le quote sono somme dell'1X2 con le quote, calibrato per fascia
+(`b54`): entrano con lui, e se ne dice la calibrazione. Risultati esatti, multigol e handicap restano
+del motore anche con le quote, e la card lo dice. Il tabellone resta del solo motore come dal `b54`:
+rifarlo con le quote vuol dire rimisurare le rese per famiglia, ed è un test a parte.
+
+**Descrittivi**, detti comunque: il mercato dell'Over da solo contro il motore e contro la
+combinazione; il peso del motore dato il mercato; l'AUC dell'Over per lega (motore, mercato,
+combinazione); le prese dell'Over/Under; la calibrazione del Goal per fascia; la resa giocando Over o
+Under alla quota di chiusura, e dove il motore dà all'Over 3+ e 5+ punti più del mercato; le quote di
+prima della partita (`Avg>2.5`, quelle che arrivano per le partite da giocare) al posto della
+chiusura; la logloss del risultato esatto dalla matrice allineata.
 
 ## Formazioni e assenze
 
