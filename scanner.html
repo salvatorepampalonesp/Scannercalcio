@@ -174,7 +174,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b54</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b55</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -249,8 +249,9 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
   <div class="card" id="card-quote" style="border-top:3px solid var(--orange)">
     <div class="section-title" style="color:var(--orange)">&#128200; Con le quote del mercato &mdash; il pick che esce di pi&ugrave;</div>
     <div style="font-size:11px;color:var(--dim);margin-bottom:10px;line-height:1.5">
-      <b>Facoltativo.</b> Scrivi le quote 1, X e 2 di un bookmaker, meglio a ridosso del fischio. Il mercato sa cose
-      che il motore non vede (infortuni, formazioni, notizie): su <b>11.902 partite di 12 leghe</b> (2023/24&ndash;2025/26,
+      Le quote arrivano da sole da <b>football-data.co.uk</b> quando la partita &egrave; nei loro file (30 leghe; per il
+      weekend di solito dal venerd&igrave;), altrimenti scrivile tu, meglio a ridosso del fischio: quelle scritte a mano valgono
+      sempre. Il mercato sa cose che il motore non vede (infortuni, formazioni, notizie): su <b>11.902 partite di 12 leghe</b> (2023/24&ndash;2025/26,
       quote medie di chiusura) il pick del motore esce il 51.0%, quello del mercato il 52.9%, quello con le quote il
       <b>53.0%</b>, pi&ugrave; del motore in tutte e dodici le leghe. Con quote di qualche giorno prima il guadagno &egrave; un po'
       minore (+1.4 punti invece di +2.0). <b>Il merito &egrave; del mercato</b>: dato il mercato il motore pesa meno di zero, perch&eacute;
@@ -258,10 +259,11 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       con le quote pu&ograve; stare oltre il mercato, lontano dal motore. Senza quote il resto della pagina non cambia.
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px">
-      <div style="min-width:0"><label for="quota-1">Quota 1</label><input type="text" inputmode="decimal" id="quota-1" placeholder="es. 2.10" oninput="aggiornaQuote()"></div>
-      <div style="min-width:0"><label for="quota-x">Quota X</label><input type="text" inputmode="decimal" id="quota-x" placeholder="es. 3.40" oninput="aggiornaQuote()"></div>
-      <div style="min-width:0"><label for="quota-2">Quota 2</label><input type="text" inputmode="decimal" id="quota-2" placeholder="es. 3.60" oninput="aggiornaQuote()"></div>
+      <div style="min-width:0"><label for="quota-1">Quota 1</label><input type="text" inputmode="decimal" id="quota-1" placeholder="es. 2.10" oninput="window.__QUOTE_FONTE = null; aggiornaQuote()"></div>
+      <div style="min-width:0"><label for="quota-x">Quota X</label><input type="text" inputmode="decimal" id="quota-x" placeholder="es. 3.40" oninput="window.__QUOTE_FONTE = null; aggiornaQuote()"></div>
+      <div style="min-width:0"><label for="quota-2">Quota 2</label><input type="text" inputmode="decimal" id="quota-2" placeholder="es. 3.60" oninput="window.__QUOTE_FONTE = null; aggiornaQuote()"></div>
     </div>
+    <div id="quote-auto" style="font-size:11px;color:var(--dim);margin-bottom:8px;line-height:1.5"></div>
     <div id="quote-box" style="font-size:12px;color:var(--dim)">--</div>
     <div style="font-size:10px;color:var(--dim);margin-top:8px;line-height:1.5;background:var(--panel2);border-radius:6px;padding:6px 8px">
       <b>Resa del pick con le quote, per soglia</b> (stimata su undici leghe e misurata sulla dodicesima, a turno):
@@ -782,8 +784,9 @@ function nuovaPartita() {
   const b = document.getElementById('btn-avvia');
   if (b) { b.disabled = false; b.innerHTML = '\ud83d\ude80 2. ESTRAI DATI E SIMULA MODELLI'; }
   ['quota-1', 'quota-x', 'quota-2'].forEach(id => { const q = document.getElementById(id); if (q) q.value = ''; });
-  window.__QUOTE_CTX = null;
+  window.__QUOTE_CTX = null; window.__QUOTE_FONTE = null;
   const qb = document.getElementById('quote-box'); if (qb) qb.innerHTML = '--';
+  const qa = document.getElementById('quote-auto'); if (qa) qa.innerHTML = '';
   window.scrollTo({ top: 0, behavior: 'smooth' });
   const sh = document.getElementById('sel-home');
   if (sh) try { sh.focus({ preventScroll: true }); } catch (e) {}
@@ -2065,7 +2068,7 @@ function aggiornaQuote() {
     + `confidence <b>${Math.round(pp)}/100</b>. ${dove.charAt(0).toUpperCase() + dove.slice(1)}.</div>`
     + (contro ? `<div style="margin-top:6px;color:var(--orange);line-height:1.5">&#9888; ${contro} Segui il pick con le quote.</div>` : '')
     + `<div style="margin-top:6px;font-size:11px;color:var(--dim)">Margine del bookmaker su queste quote: ${(100 * R.margine).toFixed(1)}%.</div>`;
-  const sez = `\n- CON LE QUOTE DEL MERCATO (inserite dall'utente: 1 @${q[0].toFixed(2)} | X @${q[1].toFixed(2)} | 2 @${q[2].toFixed(2)}, margine del bookmaker ${(100 * R.margine).toFixed(1)}%)\n`
+  const sez = `\n- CON LE QUOTE DEL MERCATO (${window.__QUOTE_FONTE || "scritte dall'utente"}: 1 @${q[0].toFixed(2)} | X @${q[1].toFixed(2)} | 2 @${q[2].toFixed(2)}, margine del bookmaker ${(100 * R.margine).toFixed(1)}%)\n`
     + `    mercato (quote senza margine): 1 ${pc(M[0])} | X ${pc(M[1])} | 2 ${pc(M[2])}\n`
     + `    con le quote:                  1 ${pc(P[0])} | X ${pc(P[1])} | 2 ${pc(P[2])}   (il mercato un po' piu' deciso; dato il mercato il motore pesa meno di zero)\n`
     + `- Con le quote il pick da seguire e' questo: ${nomi[iC]} (${chi[iC]}) al ${pp.toFixed(1)}%, confidence ${Math.round(pp)}/100, ${dove}.\n`
@@ -2075,6 +2078,137 @@ function aggiornaQuote() {
     + `- Le proposte 1X2 del tabellone (sezione 2) sono calcolate sul solo motore: se il mercato indica un esito diverso, dillo accanto alla proposta.\n`
     + `- Non e' un vantaggio sul bookmaker. Dato il mercato il motore non aggiunge niente: dove si discosta, il risultato va ancora piu' dalla parte del mercato (misurato in 12 leghe su 12). Giocare dove il motore da' a un esito piu' del mercato ha perso l'11-16% della posta, e anche il pick con le quote, giocato sempre alla quota media di chiusura, ha perso il 3% (il margine). Non presentare una differenza fra motore e mercato come un valore, e non usare le statistiche del motore per contraddire il mercato.`;
   scriviPrompt(sez, ' Ci sono le quote: il pick da citare e\' quello con le quote.');
+}
+
+// Le quote automatiche (b55): i file di football-data.co.uk passano dal worker (strada /quote/,
+// strumenti/worker-quote.js). Tre lettere = lega del file "new" (tutte le stagioni in un file).
+const QUOTE_FD = { l_0ALvwF: 'I1', l_0jy5yE: 'I2', l_4WFCIZ: 'E0', l_4DWyTT: 'E1', l_0ahLw8: 'E2', l_1W6idJ: 'E3',
+  l_1LMdEO: 'SC0', l_1Isor4: 'D1', l_3hvsne: 'D2', l_0ErfuF: 'SP1', l_3kyHLd: 'SP2', l_3FJFUl: 'F1', l_0275VP: 'F2',
+  l_4H43wr: 'N1', l_2L6d1F: 'B1', l_4QexZg: 'P1', l_0S1uaf: 'T1', l_3xwVF2: 'G1',
+  l_4d6Bwl: 'SWZ', l_3zsMpo: 'AUT', l_49Zmno: 'DNK', l_1XsMdH: 'SWE', l_0uqFK8: 'NOR', l_214sqK: 'POL',
+  l_2Mh0jT: 'RUS', l_45VZuL: 'ARG', l_1D8Xrl: 'BRA', l_2ApGa4: 'JPN', l_3v84VE: 'MEX', l_0eg6C9: 'USA' };
+const QUOTE_PAESE = { SWZ: 'Switzerland', AUT: 'Austria', DNK: 'Denmark', SWE: 'Sweden', NOR: 'Norway', POL: 'Poland',
+  RUS: 'Russia', ARG: 'Argentina', BRA: 'Brazil', JPN: 'Japan', MEX: 'Mexico', USA: 'USA' };
+const QUOTE_COLONNE = [['AvgC', 'media dei bookmaker alla chiusura'], ['PSC', 'Pinnacle alla chiusura'], ['B365C', 'Bet365 alla chiusura'],
+  ['Avg', 'media dei bookmaker quando football-data ha pubblicato il file'], ['PS', 'Pinnacle quando football-data ha pubblicato il file'],
+  ['B365', 'Bet365 quando football-data ha pubblicato il file']];
+const QUOTE_NOMI_VUOTI = new Set(['fc', 'cf', 'ac', 'afc', 'sc', 'ss', 'as', 'us', 'sv', 'fk', 'sk', 'bk', 'if', 'ssc', 'calcio', 'club', 'de', 'la', 'el', 'cd', 'ud', 'rc', 'rcd', 'sd', 'the', 'cp']);
+const QUOTE_NOMI_ESTESI = { st: 'saint', sp: 'sporting', weds: 'wednesday', utd: 'united' };
+const QUOTE_ALIAS = { kobenhavn: 'copenhagen', agf: 'aarhus', ob: 'odense', basaksehir: 'buyuksehyr', 'nizhny novgorod': 'pari nn', hamarkameratene: 'hamkam' };
+const QUOTE_SIM_MIN = 0.5, QUOTE_SIM_STACCO = 0.3;
+function _csvQuote(txt) {
+  const righe = String(txt).replace(/^\uFEFF/, '').split(/\r?\n/).filter(r => r.trim());
+  if (!righe.length) return [];
+  const sep = righe[0].includes('\t') ? '\t' : ',', h = righe[0].split(sep).map(x => x.trim());
+  return righe.slice(1).map(r => { const v = r.split(sep), o = {}; h.forEach((k, i) => { o[k] = (v[i] || '').trim(); }); return o; });
+}
+function _dataQuote(s) {
+  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/.exec(s || '');
+  return m ? Date.UTC(m[3].length === 2 ? 2000 + +m[3] : +m[3], +m[2] - 1, +m[1]) : null;
+}
+function _nomeQuote(s) {
+  const t = _nomeQuoteGrezzo(s), al = QUOTE_ALIAS[t.join(' ')];
+  return al ? al.split(' ') : t;
+}
+function _nomeQuoteGrezzo(s) {
+  return String(s || '').toLowerCase().replace(/\u00f8/g, 'o').replace(/\u00e6/g, 'ae').replace(/\u00df/g, 'ss').replace(/\u0142/g, 'l')
+    .replace(/\u0131/g, 'i').replace(/\u0111/g, 'd').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, ' ').trim().split(' ').map(t => QUOTE_NOMI_ESTESI[t] || t)
+    .filter(t => t.length > 1 && !/^\d+$/.test(t) && !QUOTE_NOMI_VUOTI.has(t));
+}
+function _simParola(a, b) {
+  if (a === b) return 1;
+  const [c, l] = a.length <= b.length ? [a, b] : [b, a];
+  if (c.length >= 3 && l.startsWith(c)) return 0.9;
+  if (c.length >= 4 && l.includes(c)) return 0.85;
+  let cp = 0;
+  while (cp < c.length && a[cp] === b[cp]) cp++;
+  if (cp >= 4) return Math.min(0.85, 0.5 + 0.5 * cp / c.length);
+  const bg = t => { const o = []; for (let i = 0; i < t.length - 1; i++) o.push(t.slice(i, i + 2)); return o; };
+  const A = bg(a), B = bg(b), nB = B.length;
+  if (!A.length || !nB) return 0;
+  let n = 0;
+  for (const x of A) { const i = B.indexOf(x); if (i >= 0) { n++; B.splice(i, 1); } }
+  return 2 * n / (A.length + nB);
+}
+function _simNomi(x, y) {
+  const a = _nomeQuote(x), b = _nomeQuote(y);
+  if (!a.length || !b.length) return 0;
+  if (a.join('') === b.join('')) return 1;
+  const sigla = (s, t) => s.length === 1 && s[0].length >= 2 && s[0].length <= 4 && t.length >= 2 && t.map(w => w[0]).join('') === s[0];
+  if (sigla(a, b) || sigla(b, a)) return 0.9;
+  const [c, l] = a.length <= b.length ? [a, b] : [b, a], iniz = l.map(w => w[0]).join('');
+  return c.reduce((s, t) => s + Math.max(t.length <= 3 && iniz.includes(t) ? 0.9 : 0, ...l.map(u => _simParola(t, u))), 0) / c.length;
+}
+function _quoteRiga(r) {
+  for (const [k, cosa] of QUOTE_COLONNE) {
+    const q = ['H', 'D', 'A'].map(e => parseFloat(r[k + e]));
+    if (q.every(x => isFinite(x) && x > 1)) return { q, cosa };
+  }
+  return null;
+}
+function trovaPartitaQuote(righe, cod, giorno, hName, aName) {
+  const t0 = Date.parse(giorno + 'T00:00:00Z'), visti = new Set(), cand = [];
+  for (const r of righe) {
+    if (QUOTE_PAESE[cod] ? (r.Country || '').trim() !== QUOTE_PAESE[cod] : (r.Div && r.Div !== cod)) continue;
+    const t = _dataQuote(r.Date), h = r.HomeTeam || r.Home, a = r.AwayTeam || r.Away, Q = _quoteRiga(r);
+    if (t == null || Math.abs(t - t0) > 86400000 || !Q || visti.has(h + '|' + a + '|' + t)) continue;
+    visti.add(h + '|' + a + '|' + t);
+    const sh = _simNomi(hName, h), sa = _simNomi(aName, a);
+    cand.push({ r, h, a, Q, sh, sa, s: sh + sa + (t === t0 ? 0.05 : 0) });
+  }
+  cand.sort((p, q) => q.s - p.s);
+  const b = cand[0];
+  if (!b || b.sh < QUOTE_SIM_MIN || b.sa < QUOTE_SIM_MIN) return { motivo: 'nessuna partita del file somiglia a questa', cand: cand.length };
+  if (cand[1] && b.s - cand[1].s < QUOTE_SIM_STACCO) return { motivo: `due partite del file somigliano a questa (${b.h} - ${b.a}, ${cand[1].h} - ${cand[1].a})`, cand: cand.length };
+  return { riga: b };
+}
+const _QUOTE_FILE = {};
+function _fileQuote(file) {
+  if (!_QUOTE_FILE[file]) {
+    _QUOTE_FILE[file] = fetch(PITCH_BASE + '/quote/' + file).then(r => r.ok ? r.text() : Promise.reject(new Error('HTTP ' + r.status))).then(_csvQuote);
+    _QUOTE_FILE[file].catch(() => { delete _QUOTE_FILE[file]; });
+  }
+  return _QUOTE_FILE[file];
+}
+async function caricaQuoteAuto(lId, giorno, hName, aName) {
+  const st = typeof document !== 'undefined' && document.getElementById('quote-auto');
+  if (!st || !document.getElementById('quota-1')) return null;
+  const C = window.__QUOTE_CTX, cod = QUOTE_FD[lId];
+  const scrivi = t => { if (window.__QUOTE_CTX === C) st.innerHTML = t; };
+  try {
+    if (!cod) { scrivi("Questa lega non e' nei file di football-data: le quote vanno scritte a mano."); return 'lega'; }
+    const t0 = new Date(giorno + 'T00:00:00Z'), y = t0.getUTCFullYear(), s0 = t0.getUTCMonth() >= 6 ? y : y - 1;
+    const stag = String(s0 % 100).padStart(2, '0') + String((s0 + 1) % 100).padStart(2, '0');
+    const files = QUOTE_PAESE[cod] ? ['new/' + cod + '.csv', 'new_league_fixtures.csv'] : ['mmz4281/' + stag + '/' + cod + '.csv', 'fixtures.csv'];
+    scrivi('Cerco le quote su football-data&hellip;');
+    const esiti = await Promise.allSettled(files.map(_fileQuote));
+    if (window.__QUOTE_CTX !== C) return null;
+    if (esiti.every(e => e.status === 'rejected')) {
+      scrivi('Quote automatiche non disponibili: il proxy non risponde sulla strada <code>/quote/</code> (va aggiunta al worker, vedi <code>strumenti/worker-quote.js</code>). Scrivile a mano.');
+      return 'proxy';
+    }
+    const T = trovaPartitaQuote(esiti.flatMap(e => e.status === 'fulfilled' ? e.value : []), cod, giorno, hName, aName);
+    if (!T.riga) {
+      scrivi(T.cand ? `Su football-data non ho trovato questa partita (${T.motivo}): scrivi le quote a mano.`
+        : "Su football-data questa partita non c'e' ancora: le quote arrivano qualche giorno prima (per il weekend di solito dal venerdi'). Riprova piu' tardi o scrivile a mano.");
+      return 'assente';
+    }
+    const R = T.riga, campi = ['quota-1', 'quota-x', 'quota-2'].map(id => document.getElementById(id));
+    const dove = `football-data, ${R.h} - ${R.a} del ${R.r.Date}, ${R.Q.cosa}`;
+    if (campi.some(el => String(el.value).trim() !== '')) {
+      scrivi(`Su football-data (${R.h} - ${R.a}, ${R.r.Date}): ${R.Q.q.map(x => x.toFixed(2)).join(' / ')}. Hai scritto le tue quote: valgono quelle.`);
+      return 'manuali';
+    }
+    campi.forEach((el, i) => { el.value = R.Q.q[i].toFixed(2); });
+    window.__QUOTE_FONTE = 'prese da ' + dove;
+    aggiornaQuote();
+    scrivi(`Quote prese da ${dove}. Se ne scrivi altre, valgono le tue.`);
+    return 'prese';
+  } catch (e) {
+    scrivi("Quote automatiche non disponibili (" + String(e && e.message || e).slice(0, 80) + "): scrivile a mano.");
+    return 'errore';
+  }
 }
 
 const KNN_MIN_COVERAGE = 0.6;
@@ -2377,7 +2511,7 @@ function renderVerdetti(mk, base, adv) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b54';
+window.__SCANNER_BUILD = '0905-b55';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -3781,6 +3915,7 @@ REGOLE (valgono per tutte le sezioni; non sono una sezione da scrivere)
     window.__QUOTE_CTX = { p: [m1, mX, m2], hName, aName };
     document.getElementById('ai-prompt').value = p.replace('@@QUOTE@@', '').replace('@@QUOTE_SINTESI@@', '');
     aggiornaQuote();
+    window.__QUOTE_AUTO = caricaQuoteAuto(lId, dateInput, hName, aName);
     wrapTables();
     aggiornaCacheInfo();
 

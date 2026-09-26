@@ -187,10 +187,29 @@ function playersOf(m) {
 }
 const lineupsOf = m => ({ data: { home: sideOf(m, m.home_team.id, hash(m.home_team.id) % 5), away: sideOf(m, m.away_team.id, hash(m.away_team.id + 'a') % 5) } });
 
+// le quote di football-data (b55) come le passa il worker: le prime due partite della giornata con
+// i nomi un po' diversi, la terza a squadre invertite (non va presa) e un'esca di un'altra lega
+// coi nomi esatti della terza (nemmeno)
+const QUOTE_GIORNATA = () => { const c = BY_SEASON['2025/2026'].filter(m => m._ri === ROUND_TARGET);
+  return c.filter(m => m.time_utc.slice(0, 10) === c[0].time_utc.slice(0, 10)); };
+const QUOTE_FINTE = k => [2.10 + 0.25 * k, 3.40, 3.60 - 0.25 * k];
+const dataFd = t => t.slice(8, 10) + '/' + t.slice(5, 7) + '/' + t.slice(0, 4);
+function quoteFinte(p) {
+  const G = QUOTE_GIORNATA(), riga = (div, m, h, a, q) => [div, dataFd(m.time_utc), '15:00', h, a, ...q.map(x => x.toFixed(2))].join(',');
+  if (p === '/quote/mmz4281/2526/I1.csv') return ['Div,Date,Time,HomeTeam,AwayTeam,AvgCH,AvgCD,AvgCA',
+    riga('I1', G[0], 'AC ' + G[0].home_team.name, G[0].away_team.name.slice(0, 5), QUOTE_FINTE(0)),
+    riga('I1', G[1], G[1].home_team.name + ' 1908', 'FC ' + G[1].away_team.name, QUOTE_FINTE(1)),
+    riga('I1', G[2], G[2].away_team.name, G[2].home_team.name, QUOTE_FINTE(2))].join('\r\n') + '\r\n';
+  if (p === '/quote/fixtures.csv') return ['Div,Date,Time,HomeTeam,AwayTeam,AvgH,AvgD,AvgA',
+    riga('E0', G[2], G[2].home_team.name, G[2].away_team.name, QUOTE_FINTE(3))].join('\n');
+  return null;
+}
+
 let API_CALLS = 0;
 function api(url) {
   API_CALLS++;
   const u = new URL(url); const p = u.pathname;
+  if (p.startsWith('/quote/')) return quoteFinte(p);
   let mm = p.match(/^\/leagues\/([^/]+)\/matches$/);
   if (mm) {
     const s = u.searchParams.get('season');
@@ -245,6 +264,7 @@ async function newPage(browser, base) {
   await page.route(PITCH + '/**', async route => {
     const body = api(route.request().url());
     if (!body) return route.fulfill({ status: 404, contentType: 'application/json', body: '{"error":"not found"}' });
+    if (typeof body === 'string') return route.fulfill({ status: 200, contentType: 'text/csv', headers: { 'access-control-allow-origin': '*' }, body });
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
   });
   await page.route(base + '/scanner.html*', async route => {
@@ -288,6 +308,9 @@ async function runScanner(browser, base, matches, limit) {
       await avviaScanner();
       const snap = eval(SNAP), pr = (document.getElementById('ai-prompt') || {}).value || '';
       snap.prompt = { n: pr.length, rotto: pr ? ((pr.match(/.{0,40}(NaN|undefined|\[object|Infinity)/) || [null])[0]) : 'vuoto' };
+      const esito = await window.__QUOTE_AUTO, pq = document.getElementById('ai-prompt').value, st = (document.getElementById('quote-auto') || {}).textContent || '';
+      snap.quoteAuto = { esito, campi: ['quota-1', 'quota-x', 'quota-2'].map(id => (document.getElementById(id) || {}).value), stato: st.slice(0, 160),
+                         nelPrompt: /CON LE QUOTE DEL MERCATO \(prese da football-data/.test(pq), rotto: /NaN|undefined|Infinity|@@QUOTE/.test(pq + st) };
       return snap;
     }, { h: m.home_team.id, a: m.away_team.id, d: m.time_utc.slice(0, 10), limit, SNAP });
     out[m.id] = snap;
@@ -596,6 +619,13 @@ if (require.main === module) (async () => {
   const gRotti = G ? G.per.filter(x => x.rotto || x.righe < 2) : null;
   console.log('   giocatori: ' + (G ? `statistiche per ${G.dati[0]}/${G.partite[0]} e ${G.dati[1]}/${G.partite[1]} partite, ${G.per.length} mercati, righe per mercato ${Math.min(...G.per.map(x => x.righe))}-${Math.max(...G.per.map(x => x.righe))}`
     + (gRotti.length ? ' · ROTTI: ' + gRotti.map(x => x.m).join(', ') : ' · nessun NaN') : 'bottone assente'));
+  // le quote automatiche: prese le prime due (coi valori del file), non la terza (invertita, e l'esca e' di un'altra lega)
+  const QA = day.map((m, k) => { const A = scanner.runs[m.id].quoteAuto || {}, atteso = k < 2 ? QUOTE_FINTE(k).map(x => x.toFixed(2)) : ['', '', ''];
+    return { k, esito: A.esito, ok: A.esito === (k < 2 ? 'prese' : 'assente') && JSON.stringify(A.campi) === JSON.stringify(atteso)
+      && A.nelPrompt === (k < 2) && !A.rotto && (k >= 2 || /alla chiusura/.test(A.stato)), stato: A.stato }; });
+  const qaRotte = QA.filter(x => !x.ok);
+  console.log('   quote automatiche: ' + QA.map(x => x.esito).join(' / ') + (qaRotte.length ? ' · ROTTE: ' + JSON.stringify(qaRotte)
+    : ' · prese le due partite del file coi loro valori, non la terza (invertita) ne\' l\'esca di un\'altra lega'));
   const Q = scanner.quote;
   const qRotte = Q ? Q.filter(x => x.nome === 'cambia partita' ? !x.svuotate
     : x.rotto || x.segnaposto || (x.valide ? (x.righe !== 4 || !x.conQuote || !x.sintesi) : (x.righe !== 0 || x.conQuote || x.sintesi))
@@ -607,7 +637,7 @@ if (require.main === module) (async () => {
     console.log(`   formazioni ${m.id}: casa ${f(L && L.H)} | trasf. ${f(L && L.A)}`);
     const T = scanner.runs[m.id].fatigue, g = F => F ? `riposo ${F.riposo} (lega ${F.riposoLega}), ${F.partite14} in 14 gg, coppa ${F.coppaPrima == null ? '-' : F.coppaPrima + ' fa'} / ${F.coppaDopo == null ? '-' : 'fra ' + F.coppaDopo}` : '-';
     console.log(`   stanchezza ${m.id}: casa ${g(T && T.H)} | trasf. ${g(T && T.A)}`); }
-  let fail = (sLog.length || (process.env.MOBILE && (scanner.scroll > 0 || scanner.compatte.length)) || !G || gRotti.length || pRotti.length || !Q || qRotte.length) ? 1 : 0;
+  let fail = (sLog.length || (process.env.MOBILE && (scanner.scroll > 0 || scanner.compatte.length)) || !G || gRotti.length || pRotti.length || !Q || qRotte.length || qaRotte.length) ? 1 : 0;
 
   const results = {};
   await Promise.all(MODES.map(async mode => { results[mode] = await runComparatore(browser, base, mode, date); }));
