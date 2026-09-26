@@ -142,6 +142,7 @@ Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export rec
   quattro quote guardate insieme, quindi non è una prova: si rifà sulle tre leghe nuove (serve il
   batch `b48` di Eredivisie, Liga Portugal e Championship 2023/24–2024/25, circa un'ora col batch
   automatico) prima di toccare l'ingresso delle neopromosse. Vedi *Le tabelle col `b48`*.
+  **Regola registrata**: vedi *Le tre leghe nuove col `b48`: la regola*.
 - [ ] **Il riferimento di lega dei mercati sui numeri è sbagliato da lega a lega.** Corner,
   tiri e gialli si ancorano a `MARKET_PER_GOAL × gol di lega`, ma corner e gialli non
   crescono coi gol: per gol i gialli vanno da 1.18 (Bundesliga) a 1.67 (LaLiga), i corner
@@ -1391,6 +1392,42 @@ e allargava la tabella a 393 px dentro un riquadro di 340: la pagina restava a 0
 scorrimento, quindi il banco non lo vedeva. Dal `b50` l'intestazione va a capo, e il banco misura
 anche le tabelle compatte dentro il loro riquadro (col vecchio tabellone fallisce: `card-verdetti`
 53 px).
+
+### Le tre leghe nuove col `b48`: la regola
+
+Scritta prima del batch del motore `b51` (probabilità identiche al `b48`) su Eredivisie, Liga
+Portugal e Championship 2023/24–2025/26, confrontato con i file `b47` delle stesse partite. Di
+queste leghe sono stati guardati copia conforme, Elo, formazioni e l'Elo corretto ricostruito
+fuori dal motore; mai la selezione del pick, le soglie, i mercati né il tabellone.
+
+**1. La coda alta (decide la voce di *Da fare*).** Ordinando dentro ogni file di stagione per
+probabilità del pick, la resa del 10% più alto del calendario, `b48` meno `b47` sulle stesse
+partite, con l'errore dal bootstrap sulle partite (il metodo delle cinque leghe).
+- **Confermata** se la differenza è sotto −2 errori standard **e** più di metà delle partite
+  che entrano nel 10% col `b48` sono contro una neopromossa (squadra assente dalla stagione
+  prima nell'archivio, entrata dal basso o, in Championship, dall'alto). Allora si cerca una
+  correzione dell'ingresso, da provare su leghe mai viste.
+- **Smentita** se la differenza è ≥ 0: la voce si chiude, il `b48` resta.
+- **Non decisa** in mezzo: la voce si chiude lo stesso, scrivendo che il test aveva poca potenza
+  (circa 3.500 partite: su un effetto come quello visto, ±3 punti di rumore) e riportando la
+  stima delle otto leghe insieme, solo descrittiva.
+- Descrittivo: la calibrazione del pick contro una neopromossa per fascia (< 55, 55–65, 65–70,
+  ≥ 70), `b47` e `b48`.
+
+**2. I numeri della card fuori dai cinque campionati.** Sulle tre leghe insieme:
+- le soglie di `PICK_RESA` **reggono** se la resa a ≥ 50 / 55 / 60 / 65 / 70 sta ciascuna
+  entro 2 errori standard dal numero della card; altrimenti la card deve dire che valgono per
+  i cinque campionati;
+- `CONF_1X2_TABLE` **regge** se il χ² sulle 8 fasce del pick sta sotto 15.5 (il 95° percentile
+  a 8 gradi di libertà).
+
+**3. Il `b48` sul motore vero**, solo descrittivo (il test è già passato sulla ricostruzione):
+logloss 1 contro 2 e 1X2, prese, pendenza di calibrazione, contro il `b47`.
+
+**4. I mercati, chiesti dall'utente**, solo descrittivi, per lega: AUC di `1`, `2`, `X`, Over
+2.5 e Goal; Over 2.5 e Goal previsti contro reali; corner, tiri in porta e gialli previsti
+contro reali e AUC. Dalle righe delle probabilità, **non** dalla sezione `TABELLONE`, che resta
+non guardata per un test futuro.
 
 ## Formazioni e assenze
 
