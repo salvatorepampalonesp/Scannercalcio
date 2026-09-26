@@ -174,7 +174,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b57</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b58</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -258,7 +258,8 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       dove si discosta il risultato va ancora pi&ugrave; dalla parte del mercato (in tutte e dodici le leghe). Per questo il numero
       con le quote pu&ograve; stare oltre il mercato, lontano dal motore. Con le quote di <b>Over e Under 2.5</b> (18 leghe su 30 le
       hanno nei file) la card d&agrave; anche Over/Under 1.5, 2.5 e 3.5 e Goal/NoGoal con le quote, dalla matrice dei gol allineata
-      al mercato: sul Goal e sull'Over meglio del motore in 11 leghe su 11. Corner, tiri e cartellini nessuno li quota: restano del
+      al mercato: sul Goal e sull'Over meglio del motore in 11 leghe su 11. Con le quote dell'1X2 anche il <b>tabellone</b> qui
+      sotto si ricalcola con le quote. Corner, tiri e cartellini nessuno li quota: restano del
       motore. Senza quote il resto della pagina non cambia.
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px">
@@ -314,6 +315,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       il suo tipo di mercato. Sotto +5 non c'&egrave; verdetto: il guadagno misurato sta dentro il rumore.
     </div>
     <div id="league-note"></div>
+    <div id="verdetti-quote"></div>
     <div class="tbl-scroll"><table class="table-ui table-compact">
       <thead><tr>
         <th style="text-align:left">Mercato</th><th>Prob. &middot; lega</th>
@@ -2070,9 +2072,29 @@ function _quoteLette(ids) {
 }
 function aggiornaQuote() {
   const C = window.__QUOTE_CTX, box = typeof document !== 'undefined' && document.getElementById('quote-box');
+  let tabTxt = window.__TAB_TXT_MOTORE || '';
   const scriviPrompt = (sez, sint) => { const el = document.getElementById('ai-prompt');
-    if (el && window.__PROMPT_BASE) el.value = window.__PROMPT_BASE.replace('@@QUOTE@@', () => sez).replace('@@QUOTE_SINTESI@@', () => sint); };
+    if (el && window.__PROMPT_BASE) el.value = window.__PROMPT_BASE.replace('@@QUOTE@@', () => sez).replace('@@QUOTE_SINTESI@@', () => sint).replace('@@TABELLONE@@', () => tabTxt); };
   if (!box || !C) return;
+  const tabellone = (P, O, G) => {
+    const TV = window.__VERDETTI_CTX, tb = document.getElementById('verdetti-body'), tn = document.getElementById('verdetti-quote');
+    window.__VERDETTI_QUOTE = null;
+    if (!TV || !tb) return;
+    if (!P) { tb.innerHTML = TV.html; if (tn) tn.innerHTML = ''; return; }
+    const mk = Object.assign({}, TV.mk, { p1: P[0], pX: P[1], p2: P[2], p1X: P[0] + P[1], pX2: P[1] + P[2], p12: P[0] + P[2] });
+    const chiavi = new Set(['p1', 'pX', 'p2', 'p1X', 'pX2', 'p12']);
+    if (G) { Object.assign(mk, { pOv: O.comb, pUn: 1 - O.comb, pGG: G.pGG, pNG: 1 - G.pGG }); ['pOv', 'pUn', 'pGG', 'pNG'].forEach(k => chiavi.add(k)); }
+    const V = _vociVerdetti(mk, TV.base, TV.adv, chiavi), T = TAB_QUOTE_RESA;
+    tb.innerHTML = _htmlVerdetti(V); window.__VERDETTI_QUOTE = V; tabTxt = _tabTesto(V);
+    if (tn) tn.innerHTML = '<div style="border-left:3px solid var(--orange);padding:8px 12px;margin-bottom:12px;background:rgba(255,255,255,.03);'
+      + 'border-radius:0 8px 8px 0;font-size:11px;line-height:1.55;color:var(--txt)"><b style="color:var(--orange)">Con le quote.</b> '
+      + (G ? '1X2, doppie chance, Over/Under e Goal/NoGoal' : "1X2 e doppie chance (Over/Under e Goal restano del motore: mancano le quote dell'Over)")
+      + ` usano le probabilit&agrave; con le quote, e ogni riga dice quanto rende con le quote; corner, tiri e gialli restano del motore. `
+      + `Su ${T.partite.toLocaleString('it-IT')} partite di ${T.leghe} leghe mai guardate prima la proposta in cima rende <b>+${T.quote.toFixed(1)}</b> punti sopra il giocarla `
+      + `alla cieca, contro +${T.motore.toFixed(1)} del motore (meglio in ${T.meglio} leghe su ${T.leghe}; nei cinque campionati +${T.cinque[1].toFixed(1)} contro +${T.cinque[0].toFixed(1)}). `
+      + `Non batte il bookmaker: le FORTE che hanno una quota, giocate alla chiusura, hanno perso l'${T.forte.toFixed(1)}%. `
+      + '<span style="color:var(--dim)">Cancella le quote per rivedere il tabellone del solo motore.</span></div>';
+  };
   const I1 = ['quota-1', 'quota-x', 'quota-2'], IO = ['quota-ov', 'quota-un'];
   const q = _quoteLette(I1), qo = _quoteLette(IO), scritte = ids => ids.some(id => { const el = document.getElementById(id); return el && String(el.value).trim() !== ''; });
   const avvisi = (!q && scritte(I1) ? ["Servono tutte e tre le quote dell'1X2, ciascuna maggiore di 1 (es. 2.10)."] : [])
@@ -2081,11 +2103,12 @@ function aggiornaQuote() {
   window.__QUOTE_GOL = null;
   if (!q && !qo) {
     box.innerHTML = avvHtml || 'Nessuna quota: vale il motore, qui sopra.';
+    tabellone(null);
     scriviPrompt('', '');
     return;
   }
   const pc = x => (100 * x).toFixed(1) + '%';
-  let html = avvHtml, sez = '', sint = '', P = null;
+  let html = avvHtml, sez = '', sint = '', P = null, Oq = null, Gq = null;
   if (q) {
     const R = combinaQuote(C.p, q), M = R.mercato; P = R.comb;
     const nomi = ['1', 'X', '2'], chi = [`vince ${C.hName}`, 'pareggio', `vince ${C.aName}`];
@@ -2120,7 +2143,8 @@ function aggiornaQuote() {
       + `- Misurato su ${QUOTE_RESA.partite} partite di ${QUOTE_RESA.leghe} leghe: il pick del motore esce il ${QUOTE_RESA.motore.toFixed(1)}%, quello del mercato il ${QUOTE_RESA.mercato.toFixed(1)}%, quello con le quote il ${QUOTE_RESA.tutte.toFixed(1)}%; `
       + QUOTE_RESA.soglie.map(x => `>=${x[0]}% esce il ${x[1].toFixed(1)}% (${x[2]}% delle partite)`).join(', ') + '. Le soglie valgono uguali in tutte le leghe misurate.\n'
       + (contro ? `- ATTENZIONE: ${contro} Dillo.\n` : '')
-      + `- Le proposte 1X2 del tabellone (sezione 2) sono calcolate sul solo motore: se il mercato indica un esito diverso, dillo accanto alla proposta.\n`
+      + (qo ? `- Il tabellone (sezione 2) e' ricalcolato con le quote: 1X2, doppie chance, Over/Under e Goal/NoGoal con le probabilita' con le quote e le rese misurate su quelle; corner, tiri e gialli restano del motore. Misurato su ${TAB_QUOTE_RESA.partite} partite di ${TAB_QUOTE_RESA.leghe} leghe: la proposta in cima rende +${TAB_QUOTE_RESA.quote} punti sopra il giocarla alla cieca, contro +${TAB_QUOTE_RESA.motore} del motore.\n`
+            : `- Il tabellone (sezione 2) e' ricalcolato con le quote per 1X2 e doppie chance, con le rese misurate su quelle; Over/Under, Goal/NoGoal, corner, tiri e gialli restano del motore. Misurato su ${TAB_QUOTE_RESA.partite} partite di ${TAB_QUOTE_RESA.leghe} leghe: la proposta in cima rende +${TAB_QUOTE_RESA.quote} punti sopra il giocarla alla cieca, contro +${TAB_QUOTE_RESA.motore} del motore.\n`)
       + `- Non e' un vantaggio sul bookmaker. Dato il mercato il motore non aggiunge niente: dove si discosta, il risultato va ancora piu' dalla parte del mercato (misurato in 12 leghe su 12). Giocare dove il motore da' a un esito piu' del mercato ha perso l'11-16% della posta, e anche il pick con le quote, giocato sempre alla quota media di chiusura, ha perso il 3% (il margine). Non presentare una differenza fra motore e mercato come un valore, e non usare le statistiche del motore per contraddire il mercato.`;
     sint += ' Ci sono le quote: il pick da citare e\' quello con le quote.';
   }
@@ -2129,6 +2153,7 @@ function aggiornaQuote() {
     const O = combinaOU(e25.pOv, qo), A = P ? matriceAllineata(O.comb, Math.log(P[0] / P[2]), C.rho) : null;
     const a15 = A && probsFromMatrix(A, 1.5).pOv, a25 = A && probsFromMatrix(A, 2.5), a35 = A && probsFromMatrix(A, 3.5).pOv;
     if (A) window.__QUOTE_GOL = { over: O.comb, o25: a25.pOv, lg12: Math.log(P[0] / P[2]), lgMat: Math.log(a25.p1 / a25.p2), o15: a15, o35: a35, gg: a25.pGG };
+    Oq = O; Gq = A ? a25 : null;
     const r = (lab, e, m, c) => `<tr><td style="text-align:left">${lab}</td><td>${pc(e)}</td><td>${m == null ? '--' : pc(m)}</td><td><b>${c == null ? '--' : pc(c)}</b></td></tr>`;
     html += `<div class="tbl-scroll" style="margin-top:10px"><table class="table-ui table-compact">`
       + `<thead><tr><th style="text-align:left">Gol</th><th>Motore</th><th>Mercato</th><th>Con le quote</th></tr></thead><tbody>`
@@ -2148,7 +2173,7 @@ function aggiornaQuote() {
       + `- Misurato su ${QUOTE_OU_RESA.partite} partite di ${QUOTE_OU_RESA.leghe} leghe: con le quote l'Over/Under dalla parte piu' probabile esce il ${QUOTE_OU_RESA.tutte.toFixed(1)}% (motore ${QUOTE_OU_RESA.motore.toFixed(1)}%)`
       + (A ? `, e Goal, Over 1.5 e Over 3.5 della matrice allineata sono piu' vicini al vero del motore in 11 leghe su 11 (l'Over 3.5 in 10)` : '')
       + `. Anche qui il merito e' del mercato: dato il mercato il motore pesa zero, e giocare dove si discosta dal mercato sull'Over ha perso il ${QUOTE_OU_RESA.valore[0]}-${QUOTE_OU_RESA.valore[1]}% della posta (il lato con le quote, giocato sempre alla chiusura, il ${QUOTE_OU_RESA.sempre}%).\n`
-      + `- Le proposte dei mercati gol del tabellone (Over/Under, Goal/NoGoal) sono calcolate sul solo motore: se con le quote la probabilita' e' molto diversa, dillo accanto alla proposta.`;
+      + (A ? '' : `- Senza le quote dell'1X2 il tabellone (sezione 2) resta del solo motore: se con le quote l'Over/Under e' molto diverso, dillo accanto alla proposta.`);
     sint += ' Per Over/Under e Goal cita le probabilita\' con le quote.';
   } else if (q) {
     html += `<div style="margin-top:6px;font-size:11px;color:var(--dim);line-height:1.5">Goal e Over/Under restano del motore finch&eacute; mancano le quote dell'Over: `
@@ -2156,6 +2181,7 @@ function aggiornaQuote() {
     sez += `\n- Goal e Over/Under: senza le quote dell'Over restano quelli del motore (col solo 1X2 il Goal peggiora: misurato).`;
   }
   box.innerHTML = html;
+  tabellone(P, Oq, Gq);
   scriviPrompt(sez, sint);
 }
 
@@ -2469,8 +2495,23 @@ window.EDGE_BANDS = window.EDGE_BANDS ||
 const EDGE_FAMIGLIA = { pOv: 'gol', pUn: 'gol', pGG: 'gol', pNG: 'gol',
   'cor9.5': 'numeri', 'sot8.5': 'numeri', 'yel3.5': 'numeri' };
 const EDGE_FAMIGLIA_TXT = { '1x2': "dell'1X2", gol: 'dei mercati gol', numeri: 'dei mercati sui numeri' };
+// Con le quote (b58): le stesse fasce, rese misurate sulle probabilita' con le quote, dodici leghe
+// per l'1X2 e undici per i gol. I numeri non hanno quote: restano quelli di EDGE_BANDS.
+const EDGE_BANDS_QUOTE = [[20, 'FORTE', { '1x2': [28.6, 1.0, 6700], gol: [20.0, 4.7, 371] }],
+  [10, 'GIOCABILE', { '1x2': [14.3, 1.0, 7988], gol: [11.7, 1.5, 4023] }],
+  [5, 'MARGINALE', { '1x2': [7.5, 1.0, 8022], gol: [6.5, 1.2, 6862] }]];
+const TAB_QUOTE_RESA = { partite: 6672, leghe: 7, motore: 12.9, quote: 14.6, meglio: 7, cinque: [16.8, 19.2], forte: 1.8 };
 
 function renderVerdetti(mk, base, adv) {
+  const voci = _vociVerdetti(mk, base, adv, null), html = _htmlVerdetti(voci);
+  safeHtml('verdetti-body', html);
+  window.__VERDETTI_TXT = voci.map(v => v.txt).join('\n');
+  window.__VERDETTI = voci;
+  window.__VERDETTI_CTX = { mk, base, adv, html };
+  renderLeagueNote();
+}
+
+function _vociVerdetti(mk, base, adv, daQuote) {
   const over = (line, lam, k) => 1 - negBinCDF(Math.floor(line), lam, k);
   const B = base && base.ok ? base : null;
   // l'ultima colonna e' la chiave del mercato: il Comparatore la usa per sapere cosa e'
@@ -2502,33 +2543,40 @@ function renderVerdetti(mk, base, adv) {
       R.push([nome, pr, (ref > 0) ? over(line, ref, kk) : null, desc, key]);
   }
 
-  const righe = [], voci = [];
+  const voci = [];
   for (const [nome, p, b, desc, key] of R) {
     if (p == null || isNaN(p)) continue;
     const edge = (b == null || isNaN(b)) ? null : (p - b) * 100;
-    const fam = EDGE_FAMIGLIA[key] || '1x2';
+    const fam = EDGE_FAMIGLIA[key] || '1x2', quote = !!(daQuote && daQuote.has(key));
     let verdetto = 'NESSUN VERDETTO', guad = null, guadErr = null, nOss = null;
     if (edge == null) verdetto = 'BASE DI LEGA ASSENTE';
-    else for (const [soglia, v, perFam] of window.EDGE_BANDS)
+    else for (const [soglia, v, perFam] of (quote ? EDGE_BANDS_QUOTE : window.EDGE_BANDS))
       if (edge >= soglia) { verdetto = v; [guad, guadErr, nOss] = perFam[fam]; break; }
-    voci.push({ nome, p, b, edge, verdetto, guad, guadErr, nOss, fam, desc, key });
+    voci.push(quote ? { nome, p, b, edge, verdetto, guad, guadErr, nOss, fam, desc, key, quote } : { nome, p, b, edge, verdetto, guad, guadErr, nOss, fam, desc, key });
   }
   // ordinati per scarto: in cima quello che batte di piu' il giocarlo alla cieca,
   // non quello con la percentuale piu' grossa.
   voci.sort((x, y) => (y.edge == null ? -1e9 : y.edge) - (x.edge == null ? -1e9 : x.edge));
 
+  for (const v of voci) {
+    const eTxt = v.edge == null ? '--' : (v.edge >= 0 ? '+' : '') + v.edge.toFixed(1), cq = v.quote ? ' con le quote' : '';
+    v.txt = `- ${v.nome}: ${(v.p*100).toFixed(1)}%${cq} (base di lega ${v.b == null ? 'ignota' : (v.b*100).toFixed(1) + '%'}), scarto ${eTxt}, ${v.verdetto}`
+      + (v.guad != null ? `. Misurato su ${v.nOss} proposte ${EDGE_FAMIGLIA_TXT[v.fam]}${cq}: con questo scarto rendono ${v.guad >= 0 ? '+' : ''}${v.guad.toFixed(1)} punti (+/-${v.guadErr.toFixed(1)}) sopra il giocarlo sempre` : '');
+  }
+  return voci;
+}
+
+function _htmlVerdetti(voci) {
   const col = v => v === 'FORTE' ? '#0f766e' : v === 'GIOCABILE' ? '#2d7d32'
                  : v === 'MARGINALE' ? '#f57c00' : '#4b5563';
   let html = '';
   for (const v of voci) {
     const ok = v.verdetto === 'FORTE' || v.verdetto === 'GIOCABILE';
     const eTxt = v.edge == null ? '--' : (v.edge >= 0 ? '+' : '') + v.edge.toFixed(1);
-    v.txt = `- ${v.nome}: ${(v.p*100).toFixed(1)}% (base di lega ${v.b == null ? 'ignota' : (v.b*100).toFixed(1) + '%'}), scarto ${eTxt}, ${v.verdetto}`
-      + (v.guad != null ? `. Misurato su ${v.nOss} proposte ${EDGE_FAMIGLIA_TXT[v.fam]}: con questo scarto rendono ${v.guad >= 0 ? '+' : ''}${v.guad.toFixed(1)} punti (+/-${v.guadErr.toFixed(1)}) sopra il giocarlo sempre` : '');
-    righe.push(v.txt);
     html += '<tr' + (ok ? ' style="background:rgba(34,197,94,.10)"' : '') + '>'
       + '<td style="text-align:left;font-weight:bold;white-space:nowrap">' + v.nome
-      +   '<div style="font-size:9px;color:var(--dim);font-weight:normal">' + v.desc + '</div></td>'
+      +   '<div style="font-size:9px;color:var(--dim);font-weight:normal">' + v.desc + '</div>'
+      +   (v.quote ? '<div style="font-size:9px;color:var(--orange);font-weight:bold">con le quote</div>' : '') + '</td>'
       + '<td style="white-space:nowrap"><b>' + (v.p*100).toFixed(1) + '%</b>'
       +   '<div style="font-size:9px;color:var(--dim)">lega ' + (v.b == null ? '--' : (v.b*100).toFixed(0) + '%') + '</div></td>'
       + '<td style="text-align:left">'
@@ -2539,20 +2587,25 @@ function renderVerdetti(mk, base, adv) {
            ? '<div style="font-size:11px;margin-top:3px"><b>' + v.verdetto + '</b> &middot; rende <b>'
              + (v.guad >= 0 ? '+' : '') + v.guad.toFixed(1) + '</b> punti <span style="color:var(--dim)">(&plusmn;'
              + v.guadErr.toFixed(1) + ')</span> sopra il giocarlo sempre'
-             + ' <span style="color:var(--dim)">(' + v.nOss + ' proposte ' + EDGE_FAMIGLIA_TXT[v.fam] + ')</span></div>'
+             + ' <span style="color:var(--dim)">(' + v.nOss + ' proposte ' + EDGE_FAMIGLIA_TXT[v.fam] + (v.quote ? ' con le quote' : '') + ')</span></div>'
            : '<div style="font-size:10px;color:var(--dim);margin-top:3px">'
              + (v.edge == null ? 'archivio di lega troppo corto per un base rate'
                                : 'sotto +5 di scarto il guadagno misurato e\' dentro il rumore')
              + '</div>')
       + '</td></tr>';
   }
-  safeHtml('verdetti-body', html);
-  window.__VERDETTI_TXT = righe.join('\n');
-  window.__VERDETTI = voci;
-  renderLeagueNote();
+  return html;
 }
 
-window.__SCANNER_BUILD = '0905-b57';
+function _tabTesto(V) {
+  if (!V.length) return '(tabellone non disponibile)';
+  const con = V.filter(v => v.guad != null), senza = V.filter(v => v.guad == null);
+  return (con.length ? con.map(v => v.txt).join('\n') : '- Nessuna proposta con verdetto: nessun mercato arriva a +5 di scarto.')
+    + (senza.length ? '\n- Senza verdetto (scarto sotto +5, dentro il rumore): '
+       + senza.map(v => v.nome + ' ' + (v.edge == null ? 'base ignota' : (v.edge >= 0 ? '+' : '') + v.edge.toFixed(1))).join(', ') : '');
+}
+
+window.__SCANNER_BUILD = '0905-b58';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -3794,14 +3847,7 @@ async function avviaScanner() {
         + `; su tutte le partite ${PICK_RESA.tutte}%.`
         + (PICK_RESA.leghe.includes(lId) ? '' : '\n' + _fuoriTxt);
     })();
-    const _tabTxt = (() => {
-      const V = window.__VERDETTI || [];
-      if (!V.length) return '(tabellone non disponibile)';
-      const con = V.filter(v => v.guad != null), senza = V.filter(v => v.guad == null);
-      return (con.length ? con.map(v => v.txt).join('\n') : '- Nessuna proposta con verdetto: nessun mercato arriva a +5 di scarto.')
-        + (senza.length ? '\n- Senza verdetto (scarto sotto +5, dentro il rumore): '
-           + senza.map(v => v.nome + ' ' + (v.edge == null ? 'base ignota' : (v.edge >= 0 ? '+' : '') + v.edge.toFixed(1))).join(', ') : '');
-    })();
+    const _tabTxt = _tabTesto(window.__VERDETTI || []);
     const _eloTxt = (() => {
       const E = window.__ELO_DEBUG_OVER;
       const hfa = ELO._hfaClamp === 'basso' ? ` (ATTENZIONE: il valore grezzo e' ${Math.round(ELO._hfaRaw)}, tenuto al pavimento di 30: non e' una misura, e' un limite)`
@@ -3871,7 +3917,7 @@ giocabile anche se esce meno di una volta su due. Ogni proposta dice quanto rend
 suo tipo di mercato: a parita' di scarto l'1X2 rende molto piu' dei mercati gol (Over/Under,
 Goal/NoGoal). Una doppia chance contiene l'esito singolo (X2 contiene il 2): non sono due
 giocate indipendenti.
-${_tabTxt}
+@@TABELLONE@@
 
 3. ELO [partite di lega delle ultime tre stagioni]
 ${_eloTxt}
@@ -3952,9 +3998,9 @@ REGOLE (valgono per tutte le sezioni; non sono una sezione da scrivere)
   per spostare un verdetto.
 - Se un dato e' N/D, dillo invece di aggirarlo.`;
 
-    window.__PROMPT_BASE = p;
+    window.__PROMPT_BASE = p; window.__TAB_TXT_MOTORE = _tabTxt;
     window.__QUOTE_CTX = { p: [m1, mX, m2], hName, aName, lam: [lamH_role, lamA_role], rho: RHO };
-    document.getElementById('ai-prompt').value = p.replace('@@QUOTE@@', '').replace('@@QUOTE_SINTESI@@', '');
+    document.getElementById('ai-prompt').value = p.replace('@@QUOTE@@', '').replace('@@QUOTE_SINTESI@@', '').replace('@@TABELLONE@@', () => _tabTxt);
     aggiornaQuote();
     window.__QUOTE_AUTO = caricaQuoteAuto(lId, dateInput, hName, aName);
     wrapTables();

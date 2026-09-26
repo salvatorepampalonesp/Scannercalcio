@@ -75,12 +75,14 @@ def auc(p, y):
     o = np.argsort(p); r = np.empty(len(p)); r[o] = np.arange(1, len(p) + 1)
     n1 = y.sum(); return (r[y == 1].sum() - n1 * (n1 + 1) / 2) / (n1 * (len(y) - n1))
 
-def main():
-    args = sys.argv[1:]; cq = 'batch/quote'
+def carica(args):
+    cq = 'batch/quote'
     if '--quote' in args: i = args.index('--quote'); cq = args[i + 1]; del args[i:i + 2]
     M = [m for d in args for f in sorted(qb.glob.glob(os.path.join(d, '*.csv'))) for m in qb.leggi_csv(f)]
     M = list({m['id']: m for m in M}.values())
-    qb.scarica(cq); Q = qb.aggancia(M, qb.quote_fd(cq))
+    qb.scarica(cq); return M, qb.aggancia(M, qb.quote_fd(cq))
+
+def con_quote(Q):
     lg = np.array([q['lega'] for q in Q]); hg = np.array([q['hg'] for q in Q]); ag = np.array([q['ag'] for q in Q])
     y1 = np.array([q['out'] for q in Q])
     P0 = np.array([q['p'] for q in Q]); P0 /= P0.sum(1, keepdims=True)
@@ -91,16 +93,24 @@ def main():
         te = lg == l; W, b = stima1(X1[~te], y1[~te]); Z = X1[te] @ W.T + b; Z -= Z.max(1, keepdims=True); E = np.exp(Z); PC[te] = E / E.sum(1, keepdims=True)
     lamH = np.array([q['lam'][0] for q in Q]); lamA = np.array([q['lam'][1] for q in Q]); rho = np.array([q['rho'] for q in Q])
     E0 = mercati(matrici(lamH, lamA, rho))
-    dev = max(abs(100 * E0[k] - np.array([q['gol'][c] for q in Q])).max() for k, c in (('o15', 'Over 1.5'), ('o25', 'Over 2.5'), ('o35', 'Over 3.5'), ('gg', 'GG (da matrice)')))
+    yo = (hg + ag > 2).astype(float)
+    OUc = [ou(q['riga'], ['AvgC', 'PC', 'B365C']) for q in Q]
+    k = np.array([o[0] is not None for o in OUc])
+    pm = np.array([(1 / o[0][0]) / (1 / o[0][0] + 1 / o[0][1]) for o in OUc if o[0]]); pe = E0['o25'][k]
+    X = np.column_stack([logit(pe), logit(pm)]); pc = lolo2(X, yo[k], lg[k])
+    aH, aA = allinea(pc, np.log(PC[k, 0] / PC[k, 2]), rho[k]); A = mercati(matrici(aH, aA, rho[k]))
+    return dict(lg=lg, hg=hg, ag=ag, y1=y1, P0=P0, PM=PM, PC=PC, E0=E0, rho=rho, lamH=lamH, lamA=lamA, OUc=OUc, k=k, pm=pm, pe=pe, X=X, pc=pc, aH=aH, aA=aA, A=A)
+
+def main():
+    M, Q = carica(sys.argv[1:]); C = con_quote(Q)
+    lg, hg, ag, y1, PC, E0, rho, lamH, lamA, OUc, k, pm, pe, X, pc = [C[x] for x in 'lg hg ag y1 PC E0 rho lamH lamA OUc k pm pe X pc'.split()]
+    dev = max(abs(100 * E0[kk] - np.array([q['gol'][c] for q in Q])).max() for kk, c in (('o15', 'Over 1.5'), ('o25', 'Over 2.5'), ('o35', 'Over 3.5'), ('gg', 'GG (da matrice)')))
     print(f'prova di coincidenza della matrice del motore: scarto massimo {dev:.3f} punti su {len(Q)} partite')
     yo = (hg + ag > 2).astype(float); yg = ((hg > 0) & (ag > 0)).astype(float)
-    OUc = [ou(q['riga'], ['AvgC', 'PC', 'B365C']) for q in Q]; OUp = [ou(q['riga'], ['Avg', 'P', 'B365']) for q in Q]
-    k = np.array([o[0] is not None for o in OUc])
+    OUp = [ou(q['riga'], ['Avg', 'P', 'B365']) for q in Q]
     print(f'partite con le quote dell Over di chiusura: {k.sum()} su {len(Q)} ({dict(qb.collections.Counter(o[1] for o in OUc if o[0]))})'
           f' · leghe {len(set(lg[k]))}: fuori {sorted(set(lg) - set(lg[k]))}')
-    Qk = [q for q, x in zip(Q, k) if x]; L = lg[k]; Yo = yo[k]; Yg = yg[k]
-    pm = np.array([(1 / o[0][0]) / (1 / o[0][0] + 1 / o[0][1]) for o in OUc if o[0]]); pe = E0['o25'][k]
-    X = np.column_stack([logit(pe), logit(pm)]); pc = lolo2(X, Yo, L)
+    L = lg[k]; Yo = yo[k]; Yg = yg[k]
 
     print('\n=== PRIMO TEST: Over 2.5, combinazione contro motore ===')
     z, meglio, per = confronto('combinazione contro motore', pe, pc, Yo, L)
@@ -133,7 +143,7 @@ def main():
         confronto(f'  quote di prima della partita ({kp.sum()} partite), coi coefficienti della chiusura, contro motore', pe, pcp, Yo, L, kp)
 
     print('\n=== SECONDO TEST: Goal dalla matrice allineata ===')
-    lg12 = np.log(PC[k, 0] / PC[k, 2]); aH, aA = allinea(pc, lg12, rho[k]); A = mercati(matrici(aH, aA, rho[k]))
+    lg12 = np.log(PC[k, 0] / PC[k, 2]); aH, aA, A = C['aH'], C['aA'], C['A']
     r1, r2 = abs(A['o25'] - pc).max(), abs(np.log(A['p1'] / A['p2']) - lg12).max()
     print(f'allineamento: scarto massimo sull Over {r1:.2e}, su log(p1/p2) {r2:.2e}')
     z, meglio, per = confronto('Goal, matrice allineata contro motore', E0['gg'][k], A['gg'], Yg, L)

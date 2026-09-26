@@ -39,7 +39,20 @@ def leggi_csv(f):
         out.append({'id': ids[c], 'lega': v('LEGA'), 'data': v('DATA ISO (UTC)')[:10], 'H': v('SQUADRA CASA'), 'A': v('SQUADRA TRASFERTA'),
                     'hg': hg, 'ag': ag, 'out': 0 if hg > ag else (1 if hg == ag else 2), 'p': [num(v(k)) / 100 for k in ('1', 'X', '2')],
                     'lam': [num(v('Ambito: lambda casa (ruolo)')), num(v('Ambito: lambda trasf. (ruolo)'))], 'rho': num(v('Unita: rho stimato')),
-                    'gol': {k: num(v(k)) for k in ('Over 1.5', 'Over 2.5', 'Over 3.5', 'GG (da matrice)')}})
+                    'gol': {k: num(v(k)) for k in ('Over 1.5', 'Over 2.5', 'Over 3.5', 'GG (da matrice)')},
+                    'file': os.path.basename(f), 'tab': tabellone(g, c)})
+    return out
+
+TAB_CHIAVI = {'1 (Casa)': 'p1', 'X (Pari)': 'pX', '2 (Trasf.)': 'p2', '1X': 'p1X', 'X2': 'pX2', '12': 'p12', 'Over 2.5': 'pOv', 'Under 2.5': 'pUn',
+              'Goal (GG)': 'pGG', 'NoGoal': 'pNG', 'Corner Over 9.5': 'cor9.5', 'Tiri porta Over 8.5': 'sot8.5', 'Gialli Over 3.5': 'yel3.5'}
+
+def tabellone(g, c):
+    out, i = [], 1
+    while g(f'Tabellone #{i}') and len(g(f'Tabellone #{i}')) > c + 2 and g(f'Tabellone #{i}')[c].strip():
+        r = g(f'Tabellone #{i}'); nome, p = r[c].strip().rsplit(' ', 1)
+        out.append({'key': TAB_CHIAVI[nome], 'p': num(p) / 100, 'b': None if 'N/D' in r[c + 1] else num(r[c + 1].replace('lega', '')) / 100,
+                    'hit': {'SI': 1, 'NO': 0}.get(r[c + 2].strip())})
+        i += 1
     return out
 
 def scarica(cartella):
