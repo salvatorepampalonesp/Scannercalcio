@@ -174,7 +174,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <h1>Scanner V9.7</h1>
       <span class="badge">Ordered Logit &middot; Confidence calibrata</span>
     </div>
-    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b56</span>
+    <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b57</span>
     <span class="badge" id="hdr-state">pronto</span>
   </div>
 
@@ -256,12 +256,19 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
       <b>53.0%</b>, pi&ugrave; del motore in tutte e dodici le leghe. Con quote di qualche giorno prima il guadagno &egrave; un po'
       minore (+1.4 punti invece di +2.0). <b>Il merito &egrave; del mercato</b>: dato il mercato il motore pesa meno di zero, perch&eacute;
       dove si discosta il risultato va ancora pi&ugrave; dalla parte del mercato (in tutte e dodici le leghe). Per questo il numero
-      con le quote pu&ograve; stare oltre il mercato, lontano dal motore. Senza quote il resto della pagina non cambia.
+      con le quote pu&ograve; stare oltre il mercato, lontano dal motore. Con le quote di <b>Over e Under 2.5</b> (18 leghe su 30 le
+      hanno nei file) la card d&agrave; anche Over/Under 1.5, 2.5 e 3.5 e Goal/NoGoal con le quote, dalla matrice dei gol allineata
+      al mercato: sul Goal e sull'Over meglio del motore in 11 leghe su 11. Corner, tiri e cartellini nessuno li quota: restano del
+      motore. Senza quote il resto della pagina non cambia.
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px">
       <div style="min-width:0"><label for="quota-1">Quota 1</label><input type="text" inputmode="decimal" id="quota-1" placeholder="es. 2.10" oninput="window.__QUOTE_FONTE = null; aggiornaQuote()"></div>
       <div style="min-width:0"><label for="quota-x">Quota X</label><input type="text" inputmode="decimal" id="quota-x" placeholder="es. 3.40" oninput="window.__QUOTE_FONTE = null; aggiornaQuote()"></div>
       <div style="min-width:0"><label for="quota-2">Quota 2</label><input type="text" inputmode="decimal" id="quota-2" placeholder="es. 3.60" oninput="window.__QUOTE_FONTE = null; aggiornaQuote()"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:10px">
+      <div style="min-width:0"><label for="quota-ov">Quota Over 2.5</label><input type="text" inputmode="decimal" id="quota-ov" placeholder="es. 1.85" oninput="window.__QUOTE_FONTE_OU = null; aggiornaQuote()"></div>
+      <div style="min-width:0"><label for="quota-un">Quota Under 2.5</label><input type="text" inputmode="decimal" id="quota-un" placeholder="es. 2.05" oninput="window.__QUOTE_FONTE_OU = null; aggiornaQuote()"></div>
     </div>
     <div id="quote-auto" style="font-size:11px;color:var(--dim);margin-bottom:8px;line-height:1.5"></div>
     <div id="quote-box" style="font-size:12px;color:var(--dim)">--</div>
@@ -783,8 +790,8 @@ function nuovaPartita() {
   if (c) { c.innerHTML = ''; c.style.display = 'none'; }
   const b = document.getElementById('btn-avvia');
   if (b) { b.disabled = false; b.innerHTML = '\ud83d\ude80 2. ESTRAI DATI E SIMULA MODELLI'; }
-  ['quota-1', 'quota-x', 'quota-2'].forEach(id => { const q = document.getElementById(id); if (q) q.value = ''; });
-  window.__QUOTE_CTX = null; window.__QUOTE_FONTE = null;
+  ['quota-1', 'quota-x', 'quota-2', 'quota-ov', 'quota-un'].forEach(id => { const q = document.getElementById(id); if (q) q.value = ''; });
+  window.__QUOTE_CTX = null; window.__QUOTE_FONTE = null; window.__QUOTE_FONTE_OU = null; window.__QUOTE_GOL = null;
   const qb = document.getElementById('quote-box'); if (qb) qb.innerHTML = '--';
   const qa = document.getElementById('quote-auto'); if (qa) qa.innerHTML = '';
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2031,9 +2038,33 @@ function combinaQuote(p, q) {
   const mx = Math.max(...z), e = z.map(x => Math.exp(x - mx)), se = e.reduce((a, c) => a + c, 0);
   return { mercato: pm, comb: e.map(x => x / se), margine: s - 1 };
 }
-function _quoteLette() {
+// Over/Under 2.5 con le quote (b57): logistica su logit(pOver) del motore e del mercato, 11.222 partite
+// di 11 leghe. Goal, Over 1.5 e 3.5 dalla matrice dei gol allineata: rho del motore, lambda scelti per
+// dare l'Over con le quote e il log(p1/p2) dell'1X2 con le quote.
+const QUOTE_OU = { b: 0.01328, motore: 0.0036, mercato: 1.12404 };
+const QUOTE_OU_RESA = { partite: 11222, leghe: 11, motore: 55.6, mercato: 58.9, tutte: 58.9, valore: [7.5, 9.9], sempre: 3.7 };
+function combinaOU(pOv, q) {
+  const im = 1 / q[0], iu = 1 / q[1], pm = im / (im + iu), lg = x => Math.log(x / (1 - x));
+  const z = QUOTE_OU.b + QUOTE_OU.motore * lg(Math.min(Math.max(pOv, 1e-6), 1 - 1e-6)) + QUOTE_OU.mercato * lg(pm);
+  return { mercato: pm, comb: 1 / (1 + Math.exp(-z)), margine: im + iu - 1 };
+}
+function _dividiGol(T, lg12, rho) {
+  let lo = 0.01, hi = 0.99;
+  for (let i = 0; i < 40; i++) { const s = (lo + hi) / 2, P = probsFromMatrix(calcDCMatrix(T * s, T * (1 - s), rho));
+    if (Math.log(P.p1 / P.p2) < lg12) lo = s; else hi = s; }
+  return (lo + hi) / 2;
+}
+function matriceAllineata(pOv, lg12, rho) {
+  let lo = 0.2, hi = 9;
+  for (let i = 0; i < 45; i++) { const T = (lo + hi) / 2, s = _dividiGol(T, lg12, rho);
+    if (probsFromMatrix(calcDCMatrix(T * s, T * (1 - s), rho)).pOv < pOv) lo = T; else hi = T; }
+  const T = (lo + hi) / 2, s = _dividiGol(T, lg12, rho);
+  return calcDCMatrix(T * s, T * (1 - s), rho);
+}
+function _quoteLette(ids) {
   if (typeof document === 'undefined') return null;
-  const v = ['quota-1', 'quota-x', 'quota-2'].map(id => { const el = document.getElementById(id);
+  ids = ids || ['quota-1', 'quota-x', 'quota-2'];
+  const v = ids.map(id => { const el = document.getElementById(id);
     return el ? parseFloat(String(el.value).trim().replace(',', '.')) : NaN; });
   return v.every(x => isFinite(x) && x > 1) ? v : null;
 }
@@ -2042,45 +2073,90 @@ function aggiornaQuote() {
   const scriviPrompt = (sez, sint) => { const el = document.getElementById('ai-prompt');
     if (el && window.__PROMPT_BASE) el.value = window.__PROMPT_BASE.replace('@@QUOTE@@', () => sez).replace('@@QUOTE_SINTESI@@', () => sint); };
   if (!box || !C) return;
-  const q = _quoteLette();
-  if (!q) {
-    const scritte = ['quota-1', 'quota-x', 'quota-2'].some(id => String(document.getElementById(id).value).trim() !== '');
-    box.innerHTML = scritte ? '<span style="color:var(--orange)">Servono tutte e tre le quote, ciascuna maggiore di 1 (es. 2.10).</span>'
-      : 'Nessuna quota: vale il pick del motore, qui sopra.';
+  const I1 = ['quota-1', 'quota-x', 'quota-2'], IO = ['quota-ov', 'quota-un'];
+  const q = _quoteLette(I1), qo = _quoteLette(IO), scritte = ids => ids.some(id => { const el = document.getElementById(id); return el && String(el.value).trim() !== ''; });
+  const avvisi = (!q && scritte(I1) ? ["Servono tutte e tre le quote dell'1X2, ciascuna maggiore di 1 (es. 2.10)."] : [])
+    .concat(!qo && scritte(IO) ? ["Servono le quote di Over e di Under 2.5, ciascuna maggiore di 1 (es. 1.85)."] : []);
+  const avvHtml = avvisi.map(a => `<div style="color:var(--orange);margin-bottom:6px">${a}</div>`).join('');
+  window.__QUOTE_GOL = null;
+  if (!q && !qo) {
+    box.innerHTML = avvHtml || 'Nessuna quota: vale il motore, qui sopra.';
     scriviPrompt('', '');
     return;
   }
-  const R = combinaQuote(C.p, q), P = R.comb, M = R.mercato;
-  const nomi = ['1', 'X', '2'], chi = [`vince ${C.hName}`, 'pareggio', `vince ${C.aName}`];
-  const iMax = a => a.indexOf(Math.max(...a));
-  const iC = iMax(P), iM = iMax(M), iP = iMax(C.p), pp = 100 * P[iC];
   const pc = x => (100 * x).toFixed(1) + '%';
-  const S = QUOTE_RESA.soglie.find(x => pp >= x[0]);
-  const dove = S ? `sopra la soglia del ${S[0]}%: con le quote il pick esce il ${S[1].toFixed(1)}% (${S[2]}% delle partite, 1 su ${S[3]})`
-    : pp >= 45 ? 'fra 45 e 50%: sotto la prima soglia di selezione'
-    : "sotto il 45%: sull'1X2 questa partita non si seleziona";
-  const D = QUOTE_RESA.disaccordo;
-  const contro = iP !== iM ? `Il motore dice ${nomi[iP]}, il mercato ${nomi[iM]}. Nelle ${D.partite} partite cosi' (${D.quota}%) ha avuto ragione il mercato il ${D.mercato}% delle volte, il motore il ${D.motore}%.` : '';
-  const riga = (lab, a, forte) => `<tr><td style="text-align:left">${lab}</td>` + a.map((x, i) =>
-    `<td${forte && i === iC ? ' style="font-weight:800;color:var(--orange)"' : ''}>${pc(x)}</td>`).join('') + '</tr>';
-  box.innerHTML = `<div class="tbl-scroll"><table class="table-ui table-compact">`
-    + `<thead><tr><th style="text-align:left">Stima</th><th>1</th><th>X</th><th>2</th></tr></thead><tbody>`
-    + riga('Motore', C.p) + riga(`Mercato <span style="font-size:10px;color:var(--dim)">(senza margine)</span>`, M)
-    + riga('<b>Con le quote</b>', P, true) + `</tbody></table></div>`
-    + `<div style="margin-top:8px;color:var(--txt);line-height:1.5">Pick con le quote: <b>${nomi[iC]}</b> (${chi[iC]}) al <b>${pp.toFixed(1)}%</b>, `
-    + `confidence <b>${Math.round(pp)}/100</b>. ${dove.charAt(0).toUpperCase() + dove.slice(1)}.</div>`
-    + (contro ? `<div style="margin-top:6px;color:var(--orange);line-height:1.5">&#9888; ${contro} Segui il pick con le quote.</div>` : '')
-    + `<div style="margin-top:6px;font-size:11px;color:var(--dim)">Margine del bookmaker su queste quote: ${(100 * R.margine).toFixed(1)}%.</div>`;
-  const sez = `\n- CON LE QUOTE DEL MERCATO (${window.__QUOTE_FONTE || "scritte dall'utente"}: 1 @${q[0].toFixed(2)} | X @${q[1].toFixed(2)} | 2 @${q[2].toFixed(2)}, margine del bookmaker ${(100 * R.margine).toFixed(1)}%)\n`
-    + `    mercato (quote senza margine): 1 ${pc(M[0])} | X ${pc(M[1])} | 2 ${pc(M[2])}\n`
-    + `    con le quote:                  1 ${pc(P[0])} | X ${pc(P[1])} | 2 ${pc(P[2])}   (il mercato un po' piu' deciso; dato il mercato il motore pesa meno di zero)\n`
-    + `- Con le quote il pick da seguire e' questo: ${nomi[iC]} (${chi[iC]}) al ${pp.toFixed(1)}%, confidence ${Math.round(pp)}/100, ${dove}.\n`
-    + `- Misurato su ${QUOTE_RESA.partite} partite di ${QUOTE_RESA.leghe} leghe: il pick del motore esce il ${QUOTE_RESA.motore.toFixed(1)}%, quello del mercato il ${QUOTE_RESA.mercato.toFixed(1)}%, quello con le quote il ${QUOTE_RESA.tutte.toFixed(1)}%; `
-    + QUOTE_RESA.soglie.map(x => `>=${x[0]}% esce il ${x[1].toFixed(1)}% (${x[2]}% delle partite)`).join(', ') + '. Le soglie valgono uguali in tutte le leghe misurate.\n'
-    + (contro ? `- ATTENZIONE: ${contro} Dillo.\n` : '')
-    + `- Le proposte 1X2 del tabellone (sezione 2) sono calcolate sul solo motore: se il mercato indica un esito diverso, dillo accanto alla proposta.\n`
-    + `- Non e' un vantaggio sul bookmaker. Dato il mercato il motore non aggiunge niente: dove si discosta, il risultato va ancora piu' dalla parte del mercato (misurato in 12 leghe su 12). Giocare dove il motore da' a un esito piu' del mercato ha perso l'11-16% della posta, e anche il pick con le quote, giocato sempre alla quota media di chiusura, ha perso il 3% (il margine). Non presentare una differenza fra motore e mercato come un valore, e non usare le statistiche del motore per contraddire il mercato.`;
-  scriviPrompt(sez, ' Ci sono le quote: il pick da citare e\' quello con le quote.');
+  let html = avvHtml, sez = '', sint = '', P = null;
+  if (q) {
+    const R = combinaQuote(C.p, q), M = R.mercato; P = R.comb;
+    const nomi = ['1', 'X', '2'], chi = [`vince ${C.hName}`, 'pareggio', `vince ${C.aName}`];
+    const iMax = a => a.indexOf(Math.max(...a));
+    const iC = iMax(P), iM = iMax(M), iP = iMax(C.p), pp = 100 * P[iC];
+    const S = QUOTE_RESA.soglie.find(x => pp >= x[0]);
+    const dove = S ? `sopra la soglia del ${S[0]}%: con le quote il pick esce il ${S[1].toFixed(1)}% (${S[2]}% delle partite, 1 su ${S[3]})`
+      : pp >= 45 ? 'fra 45 e 50%: sotto la prima soglia di selezione'
+      : "sotto il 45%: sull'1X2 questa partita non si seleziona";
+    const D = QUOTE_RESA.disaccordo;
+    const contro = iP !== iM ? `Il motore dice ${nomi[iP]}, il mercato ${nomi[iM]}. Nelle ${D.partite} partite cosi' (${D.quota}%) ha avuto ragione il mercato il ${D.mercato}% delle volte, il motore il ${D.motore}%.` : '';
+    const riga = (lab, a, forte) => `<tr><td style="text-align:left">${lab}</td>` + a.map((x, i) =>
+      `<td${forte && i === iC ? ' style="font-weight:800;color:var(--orange)"' : ''}>${pc(x)}</td>`).join('') + '</tr>';
+    const dc = a => [a[0] + a[1], a[1] + a[2], a[0] + a[2]];
+    html += `<div class="tbl-scroll"><table class="table-ui table-compact">`
+      + `<thead><tr><th style="text-align:left">Stima</th><th>1</th><th>X</th><th>2</th></tr></thead><tbody>`
+      + riga('Motore', C.p) + riga(`Mercato <span style="font-size:10px;color:var(--dim)">(senza margine)</span>`, M)
+      + riga('<b>Con le quote</b>', P, true) + `</tbody></table></div>`
+      + `<div style="margin-top:8px;color:var(--txt);line-height:1.5">Pick con le quote: <b>${nomi[iC]}</b> (${chi[iC]}) al <b>${pp.toFixed(1)}%</b>, `
+      + `confidence <b>${Math.round(pp)}/100</b>. ${dove.charAt(0).toUpperCase() + dove.slice(1)}.</div>`
+      + (contro ? `<div style="margin-top:6px;color:var(--orange);line-height:1.5">&#9888; ${contro} Segui il pick con le quote.</div>` : '')
+      + `<div style="margin-top:6px;font-size:11px;color:var(--dim)">Margine del bookmaker su queste quote: ${(100 * R.margine).toFixed(1)}%.</div>`
+      + `<div class="tbl-scroll" style="margin-top:8px"><table class="table-ui table-compact">`
+      + `<thead><tr><th style="text-align:left">Doppia chance</th><th>1X</th><th>X2</th><th>12</th></tr></thead><tbody>`
+      + `<tr><td style="text-align:left">Motore</td>${dc(C.p).map(x => `<td>${pc(x)}</td>`).join('')}</tr>`
+      + `<tr><td style="text-align:left"><b>Con le quote</b></td>${dc(P).map(x => `<td><b>${pc(x)}</b></td>`).join('')}</tr></tbody></table></div>`;
+    sez += `\n- CON LE QUOTE DEL MERCATO (${window.__QUOTE_FONTE || "scritte dall'utente"}: 1 @${q[0].toFixed(2)} | X @${q[1].toFixed(2)} | 2 @${q[2].toFixed(2)}, margine del bookmaker ${(100 * R.margine).toFixed(1)}%)\n`
+      + `    mercato (quote senza margine): 1 ${pc(M[0])} | X ${pc(M[1])} | 2 ${pc(M[2])}\n`
+      + `    con le quote:                  1 ${pc(P[0])} | X ${pc(P[1])} | 2 ${pc(P[2])}   (il mercato un po' piu' deciso; dato il mercato il motore pesa meno di zero)\n`
+      + `    doppie chance con le quote:    1X ${pc(dc(P)[0])} | X2 ${pc(dc(P)[1])} | 12 ${pc(dc(P)[2])}\n`
+      + `- Con le quote il pick da seguire e' questo: ${nomi[iC]} (${chi[iC]}) al ${pp.toFixed(1)}%, confidence ${Math.round(pp)}/100, ${dove}.\n`
+      + `- Misurato su ${QUOTE_RESA.partite} partite di ${QUOTE_RESA.leghe} leghe: il pick del motore esce il ${QUOTE_RESA.motore.toFixed(1)}%, quello del mercato il ${QUOTE_RESA.mercato.toFixed(1)}%, quello con le quote il ${QUOTE_RESA.tutte.toFixed(1)}%; `
+      + QUOTE_RESA.soglie.map(x => `>=${x[0]}% esce il ${x[1].toFixed(1)}% (${x[2]}% delle partite)`).join(', ') + '. Le soglie valgono uguali in tutte le leghe misurate.\n'
+      + (contro ? `- ATTENZIONE: ${contro} Dillo.\n` : '')
+      + `- Le proposte 1X2 del tabellone (sezione 2) sono calcolate sul solo motore: se il mercato indica un esito diverso, dillo accanto alla proposta.\n`
+      + `- Non e' un vantaggio sul bookmaker. Dato il mercato il motore non aggiunge niente: dove si discosta, il risultato va ancora piu' dalla parte del mercato (misurato in 12 leghe su 12). Giocare dove il motore da' a un esito piu' del mercato ha perso l'11-16% della posta, e anche il pick con le quote, giocato sempre alla quota media di chiusura, ha perso il 3% (il margine). Non presentare una differenza fra motore e mercato come un valore, e non usare le statistiche del motore per contraddire il mercato.`;
+    sint += ' Ci sono le quote: il pick da citare e\' quello con le quote.';
+  }
+  const E = calcDCMatrix(C.lam[0], C.lam[1], C.rho), e15 = probsFromMatrix(E, 1.5).pOv, e25 = probsFromMatrix(E, 2.5), e35 = probsFromMatrix(E, 3.5).pOv;
+  if (qo) {
+    const O = combinaOU(e25.pOv, qo), A = P ? matriceAllineata(O.comb, Math.log(P[0] / P[2]), C.rho) : null;
+    const a15 = A && probsFromMatrix(A, 1.5).pOv, a25 = A && probsFromMatrix(A, 2.5), a35 = A && probsFromMatrix(A, 3.5).pOv;
+    if (A) window.__QUOTE_GOL = { over: O.comb, o25: a25.pOv, lg12: Math.log(P[0] / P[2]), lgMat: Math.log(a25.p1 / a25.p2), o15: a15, o35: a35, gg: a25.pGG };
+    const r = (lab, e, m, c) => `<tr><td style="text-align:left">${lab}</td><td>${pc(e)}</td><td>${m == null ? '--' : pc(m)}</td><td><b>${c == null ? '--' : pc(c)}</b></td></tr>`;
+    html += `<div class="tbl-scroll" style="margin-top:10px"><table class="table-ui table-compact">`
+      + `<thead><tr><th style="text-align:left">Gol</th><th>Motore</th><th>Mercato</th><th>Con le quote</th></tr></thead><tbody>`
+      + r('Over 2.5', e25.pOv, O.mercato, O.comb) + r('Under 2.5', 1 - e25.pOv, 1 - O.mercato, 1 - O.comb)
+      + (A ? r('Over 1.5', e15, null, a15) + r('Over 3.5', e35, null, a35) + r('Goal', e25.pGG, null, a25.pGG) + r('NoGoal', 1 - e25.pGG, null, 1 - a25.pGG) : '')
+      + `</tbody></table></div>`
+      + `<div style="margin-top:6px;font-size:11px;color:var(--dim);line-height:1.5">Over/Under con le quote: dato il mercato il motore pesa zero, `
+      + `e il numero &egrave; il mercato un po' allargato. Su ${QUOTE_OU_RESA.partite.toLocaleString('it-IT')} partite di ${QUOTE_OU_RESA.leghe} leghe il lato pi&ugrave; probabile esce il `
+      + `<b>${QUOTE_OU_RESA.tutte.toFixed(1)}%</b> (motore ${QUOTE_OU_RESA.motore.toFixed(1)}%). `
+      + (A ? `Over 1.5 e 3.5 e Goal vengono dalla matrice dei gol allineata all'Over e all'1X2 con le quote: meglio del motore in 11 leghe su 11 (Over 3.5: 10). `
+           : `Per Goal e Over 1.5 e 3.5 con le quote servono anche le quote dell'1X2. `)
+      + `Margine del bookmaker: ${(100 * O.margine).toFixed(1)}%. Risultati esatti, multigol e handicap restano del motore.</div>`;
+    sez += `\n- GOL CON LE QUOTE (${window.__QUOTE_FONTE_OU || "scritte dall'utente"}: Over 2.5 @${qo[0].toFixed(2)} | Under 2.5 @${qo[1].toFixed(2)}, margine ${(100 * O.margine).toFixed(1)}%)\n`
+      + `    Over 2.5: motore ${pc(e25.pOv)} | mercato ${pc(O.mercato)} | con le quote ${pc(O.comb)}\n`
+      + (A ? `    con le quote (matrice dei gol allineata all'Over e all'1X2 con le quote): Over 1.5 ${pc(a15)} | Over 3.5 ${pc(a35)} | Goal ${pc(a25.pGG)} | NoGoal ${pc(1 - a25.pGG)}\n`
+           : `    Goal, Over 1.5 e 3.5 restano del motore: con le quote servono anche quelle dell'1X2.\n`)
+      + `- Misurato su ${QUOTE_OU_RESA.partite} partite di ${QUOTE_OU_RESA.leghe} leghe: con le quote l'Over/Under dalla parte piu' probabile esce il ${QUOTE_OU_RESA.tutte.toFixed(1)}% (motore ${QUOTE_OU_RESA.motore.toFixed(1)}%)`
+      + (A ? `, e Goal, Over 1.5 e Over 3.5 della matrice allineata sono piu' vicini al vero del motore in 11 leghe su 11 (l'Over 3.5 in 10)` : '')
+      + `. Anche qui il merito e' del mercato: dato il mercato il motore pesa zero, e giocare dove si discosta dal mercato sull'Over ha perso il ${QUOTE_OU_RESA.valore[0]}-${QUOTE_OU_RESA.valore[1]}% della posta (il lato con le quote, giocato sempre alla chiusura, il ${QUOTE_OU_RESA.sempre}%).\n`
+      + `- Le proposte dei mercati gol del tabellone (Over/Under, Goal/NoGoal) sono calcolate sul solo motore: se con le quote la probabilita' e' molto diversa, dillo accanto alla proposta.`;
+    sint += ' Per Over/Under e Goal cita le probabilita\' con le quote.';
+  } else if (q) {
+    html += `<div style="margin-top:6px;font-size:11px;color:var(--dim);line-height:1.5">Goal e Over/Under restano del motore finch&eacute; mancano le quote dell'Over: `
+      + `col solo 1X2 il Goal, inclinato come fa l'Elo, peggiora (misurato su 12 leghe).</div>`;
+    sez += `\n- Goal e Over/Under: senza le quote dell'Over restano quelli del motore (col solo 1X2 il Goal peggiora: misurato).`;
+  }
+  box.innerHTML = html;
+  scriviPrompt(sez, sint);
 }
 
 // Le quote automatiche (b55): i file di football-data.co.uk passano dal worker (strada /quote/,
@@ -2150,6 +2226,16 @@ function _quoteRiga(r) {
   }
   return null;
 }
+const QUOTE_COLONNE_OU = [['AvgC', 'media dei bookmaker alla chiusura'], ['PC', 'Pinnacle alla chiusura'], ['B365C', 'Bet365 alla chiusura'],
+  ['Avg', 'media dei bookmaker quando football-data ha pubblicato il file'], ['P', 'Pinnacle quando football-data ha pubblicato il file'],
+  ['B365', 'Bet365 quando football-data ha pubblicato il file']];
+function _quoteOURiga(r) {
+  for (const [k, cosa] of QUOTE_COLONNE_OU) {
+    const q = [r[k + '>2.5'], r[k + '<2.5']].map(x => parseFloat(x));
+    if (q.every(x => isFinite(x) && x > 1)) return { q, cosa };
+  }
+  return null;
+}
 function trovaPartitaQuote(righe, cod, giorno, hName, aName) {
   const t0 = Date.parse(giorno + 'T00:00:00Z'), visti = new Set(), cand = [];
   for (const r of righe) {
@@ -2197,17 +2283,19 @@ async function caricaQuoteAuto(lId, giorno, hName, aName) {
         : "Su football-data questa partita non c'e' ancora: le quote arrivano qualche giorno prima (per il weekend di solito dal venerdi'). Riprova piu' tardi o scrivile a mano.");
       return 'assente';
     }
-    const R = T.riga, campi = ['quota-1', 'quota-x', 'quota-2'].map(id => document.getElementById(id));
-    const dove = `football-data, ${R.h} - ${R.a} del ${R.r.Date}, ${R.Q.cosa}`;
-    if (campi.some(el => String(el.value).trim() !== '')) {
-      scrivi(`Su football-data (${R.h} - ${R.a}, ${R.r.Date}): ${R.Q.q.map(x => x.toFixed(2)).join(' / ')}. Hai scritto le tue quote: valgono quelle.`);
-      return 'manuali';
-    }
-    campi.forEach((el, i) => { el.value = R.Q.q[i].toFixed(2); });
-    window.__QUOTE_FONTE = 'prese da ' + dove;
-    aggiornaQuote();
-    scrivi(`Quote prese da ${dove}. Se ne scrivi altre, valgono le tue.`);
-    return 'prese';
+    const R = T.riga, OU = _quoteOURiga(R.r), prendi = ids => ids.map(id => document.getElementById(id));
+    const campi = prendi(['quota-1', 'quota-x', 'quota-2']), campiOU = prendi(['quota-ov', 'quota-un']);
+    const vuoti = cs => cs.every(el => el && String(el.value).trim() === '');
+    const dove = `football-data, ${R.h} - ${R.a} del ${R.r.Date}, ${R.Q.cosa}`, fmt = a => a.map(x => x.toFixed(2)).join(' / ');
+    const p1 = vuoti(campi), pOU = !!OU && vuoti(campiOU);
+    if (p1) { campi.forEach((el, i) => { el.value = R.Q.q[i].toFixed(2); }); window.__QUOTE_FONTE = 'prese da ' + dove; }
+    if (pOU) { campiOU.forEach((el, i) => { el.value = OU.q[i].toFixed(2); }); window.__QUOTE_FONTE_OU = `prese da football-data, ${R.h} - ${R.a} del ${R.r.Date}, ${OU.cosa}`; }
+    if (p1 || pOU) aggiornaQuote();
+    const t1 = p1 ? `Quote prese da ${dove}` : `Su football-data (${R.h} - ${R.a}, ${R.r.Date}) l'1X2 e' ${fmt(R.Q.q)}: hai scritto le tue, valgono quelle`;
+    const tO = !OU ? "l'Over/Under 2.5 in questo file non c'e' (scrivilo a mano se lo vuoi)"
+      : pOU ? `Over/Under 2.5 ${fmt(OU.q)}${OU.cosa === R.Q.cosa ? '' : ' (' + OU.cosa + ')'}` : `Over/Under 2.5 ${fmt(OU.q)}: hai scritto le tue, valgono quelle`;
+    scrivi(`${t1}; ${tO}.` + (p1 || pOU ? ' Se ne scrivi altre, valgono le tue.' : ''));
+    return p1 || pOU ? 'prese' : 'manuali';
   } catch (e) {
     scrivi("Quote automatiche non disponibili (" + String(e && e.message || e).slice(0, 80) + "): scrivile a mano.");
     return 'errore';
@@ -2464,7 +2552,7 @@ function renderVerdetti(mk, base, adv) {
   renderLeagueNote();
 }
 
-window.__SCANNER_BUILD = '0905-b56';
+window.__SCANNER_BUILD = '0905-b57';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -3865,7 +3953,7 @@ REGOLE (valgono per tutte le sezioni; non sono una sezione da scrivere)
 - Se un dato e' N/D, dillo invece di aggirarlo.`;
 
     window.__PROMPT_BASE = p;
-    window.__QUOTE_CTX = { p: [m1, mX, m2], hName, aName };
+    window.__QUOTE_CTX = { p: [m1, mX, m2], hName, aName, lam: [lamH_role, lamA_role], rho: RHO };
     document.getElementById('ai-prompt').value = p.replace('@@QUOTE@@', '').replace('@@QUOTE_SINTESI@@', '');
     aggiornaQuote();
     window.__QUOTE_AUTO = caricaQuoteAuto(lId, dateInput, hName, aName);
