@@ -129,9 +129,8 @@ Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export rec
   MARGINALE: lo scarto dei mercati gol vale meno perché la loro probabilità discrimina poco (AUC
   0.55). Il candidato è ordinare e classificare le proposte per **guadagno atteso della famiglia**
   invece che per scarto grezzo; si ricostruisce tutto dalla sezione `TABELLONE` del CSV (mercato,
-  probabilità, base, reale), senza rilanciare il motore. Regola da scrivere prima: scelto su
-  quattro leghe, misurato sulla quinta sulla proposta migliore di ogni partita, poi sulle tre
-  leghe nuove. Vedi *Le tabelle col `b48`*.
+  probabilità, base, reale), senza rilanciare il motore. **Regola registrata**: vedi *Il
+  tabellone per famiglia di mercato: la regola*.
 - [ ] **La coda alta della selezione contro le neopromosse.** Col `b48` il 10% del calendario
   col pick più probabile prende il 76.2% contro il 79.1% del `b47` sulle stesse partite (−2.9,
   ±2.4); al 50 / 30 / 20% la differenza è 0.0 / +0.5 / −0.7. Delle 72 partite che entrano in
@@ -1252,6 +1251,51 @@ che l'etichetta mostra (+24.6 / +14.8 / +6.3, Serie A `b38`) **restano**: rimpia
 delle cinque leghe (+25.8 / +12.2 / +6.1) avvicinerebbe i mercati gol e allontanerebbe l'1X2, e
 la media non è giusta per nessuno dei due. La cura è l'etichetta, e prima ancora l'ordinamento,
 per famiglia di mercato (vedi *Da fare*).
+
+### Il tabellone per famiglia di mercato: la regola
+
+**Perché.** Col `b48` sulle cinque leghe, a parità di scarto il guadagno dipende dal mercato
+(tabella in *Le tabelle col `b48`*): l'1X2 rende quanto lo scarto promette, i mercati gol la metà
+o meno, quelli sui numeri in mezzo. Lo scarto dei gol è gonfiato perché le loro probabilità
+discriminano poco (AUC 0.55), e quello dell'Under anche perché il livello dei gol è basso (l'Over
+previsto sta sotto il reale). Il tabellone ordina e classifica per scarto grezzo: mette in cima
+proposte che rendono meno di altre più in basso, e le etichetta con un guadagno che non hanno.
+
+**Il candidato.** Il **guadagno atteso** di ogni proposta, `g = α + β·scarto` in punti, al posto
+dello scarto: per ordinare, per le fasce (FORTE ≥ 20, GIOCABILE ≥ 10, MARGINALE ≥ 5, le stesse
+soglie, ora sul guadagno atteso) e per l'etichetta, che dice il guadagno atteso di quella
+proposta. `α` e `β` si stimano a minimi quadrati di `reale − base di lega` (in punti) su `scarto`,
+dentro ogni gruppo. Due forme, e nient'altro:
+
+- **F**, per famiglia: 1X2 (`1`, `X`, `2`, `1X`, `X2`, `12`), gol (Over 2.5, Under 2.5, Goal,
+  NoGoal), numeri (corner, tiri in porta, gialli). Sei parametri.
+- **M**, per mercato: una coppia (`α`, `β`) per ognuno dei tredici mercati. Ventisei parametri.
+
+**Il metro.** Il guadagno della proposta in cima a ogni partita: reale meno la frequenza di quel
+mercato nella stagione del file (il metro di *Il tabellone ordinava per la colonna sbagliata*;
+col `b48` oggi +16.8 sulle cinque leghe). La differenza col tabellone di oggi si misura appaiata,
+partita per partita. Descrittivi: guadagno delle proposte FORTE e GIOCABILE, quante partite ne
+hanno almeno una, guadagno per fascia e famiglia.
+
+**Primo passo, sulle cinque leghe (`b48`), fuori lega.** Parametri stimati su quattro leghe,
+misurati sulla quinta. Fra F e M si sceglie quella col guadagno d'insieme più alto, ma M solo se
+batte F di almeno un errore standard: a pari merito vince la forma con meno parametri. Il
+candidato scelto va al secondo passo se il guadagno della prima proposta migliora rispetto
+all'ordine per scarto in almeno quattro leghe su cinque e sull'insieme con `z ≥ +2`. L'idea viene
+da queste leghe, quindi questo passo da solo non basta.
+
+**Secondo passo, sulle tre leghe nuove.** Parametri stimati su tutte e cinque le leghe, e scritti
+qui **prima** di aprire le tre leghe. Eredivisie, Liga Portugal e Championship 2023/24–2025/26:
+dei loro file sono stati guardati copia conforme, Elo e formazioni, mai il tabellone. I file sono
+del `b47`, cioè con le probabilità dell'1X2 di prima dell'ingresso delle neopromosse: il batch
+`b48` di quelle leghe (vedi *Da fare*, la coda alta della selezione) sarà una seconda conferma.
+Passa se il guadagno della prima proposta migliora in almeno due leghe su tre, sull'insieme con
+`z ≥ +2`, e nessuna lega peggiora con `z < −1`. Se passa, entra nel motore (una tabella
+`EDGE_GAIN` con `α` e `β`), e il CSV esporta il guadagno atteso di ogni proposta.
+
+**Se non passa.** L'ordine resta per scarto. L'etichetta dice comunque, per ogni fascia, il
+guadagno misurato **nella famiglia del mercato** (è una misura, non una scelta): un Over 2.5
+FORTE mostra quello che rende davvero.
 
 ## Formazioni e assenze
 
