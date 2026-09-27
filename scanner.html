@@ -230,6 +230,51 @@ textarea{min-height:0;font-size:12px}
 .sorpresa.s-medio{border-color:rgba(245,183,59,.45);background:rgba(245,183,59,.07)}.sorpresa.s-medio .sorpresa-t{color:var(--warn)}
 .sorpresa.s-basso .sorpresa-t{color:var(--ok)}
 
+/* ---------- la giornata (b65) ---------- */
+#dashboard-area.g-attesa>:not(.toolbar):not(#giornata-bar){display:none}
+.giornata{padding:16px}
+.g-top{display:flex;align-items:center;gap:8px}
+.g-top .btn{flex:none;min-width:46px;padding:8px 12px}
+.g-cur{flex:1;min-width:0;text-align:center}
+.g-cur b{display:block;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.g-cur small{display:block;font-size:11.5px;color:var(--dim)}
+.g-sint{font-size:12.5px;color:var(--dim);line-height:1.55;margin-top:10px}
+.g-sint b{color:var(--txt)}
+.g-prog{height:5px;border-radius:99px;background:var(--panel3);overflow:hidden;margin:12px 0 6px}
+.g-prog i{display:block;height:100%;background:linear-gradient(90deg,#1fd1a5,#4b8dff);transition:width .3s}
+.g-stato{font-size:12px;color:var(--dim);line-height:1.5}
+.g-azioni{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.g-ord{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:12px;font-size:12px;color:var(--dim)}
+.g-ord button{font:inherit;font-size:12px;font-weight:650;color:var(--dim);background:var(--panel);border:1px solid var(--line2);
+  border-radius:99px;padding:4px 11px;cursor:pointer}
+.g-ord button.on{color:#03140e;background:linear-gradient(135deg,#1fd1a5,#4b8dff);border-color:transparent}
+.g-tutte{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+.g-tutte>summary{cursor:pointer;list-style:none;font-size:13px;font-weight:700;color:var(--txt);display:flex;align-items:center;gap:8px}
+.g-tutte>summary::-webkit-details-marker{display:none}
+.g-tutte>summary::after{content:"\25BE";color:var(--dim);margin-left:auto;transition:transform .15s}
+.g-tutte:not([open])>summary::after{transform:rotate(-90deg)}
+.g-lista{display:grid;gap:8px;margin-top:10px}
+@media(min-width:900px){.g-lista{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.g-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 10px;align-items:center;width:100%;min-width:0;text-align:left;
+  background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;color:var(--txt);font:inherit;cursor:pointer}
+.g-row:hover{border-color:#3a4659}
+.g-row:disabled{cursor:default;opacity:.85}
+.g-row.on{border-color:var(--accent2);box-shadow:0 0 0 1px var(--accent2) inset}
+.g-sq{font-weight:700;font-size:13.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.g-ora{font-size:11px;color:var(--dim);white-space:nowrap}
+.g-det{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:5px 10px;align-items:center;min-width:0;font-size:12px;color:var(--dim)}
+.g-det b{color:var(--txt)}
+.g-bar{display:flex;width:64px;height:6px;border-radius:99px;overflow:hidden;flex:none}
+.g-bar i:nth-child(1){background:var(--home)}.g-bar i:nth-child(2){background:var(--draw)}.g-bar i:nth-child(3){background:var(--away)}
+.g-chip{font-size:11px;font-weight:700;padding:1px 8px;border-radius:99px;border:1px solid var(--line2);white-space:nowrap}
+.g-chip.s-alto{color:var(--err);border-color:rgba(255,93,108,.55)}.g-chip.s-medio{color:var(--warn);border-color:rgba(245,183,59,.45)}
+.g-chip.v-ok{color:var(--ok);border-color:rgba(47,216,138,.45)}.g-chip.v-marg{color:var(--warn);border-color:rgba(245,183,59,.35)}
+.g-fondo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin:0 0 16px}
+.g-fondo .btn{min-width:0;flex-direction:column;align-items:flex-start;gap:0;text-align:left}
+.g-fondo .btn.dx{align-items:flex-end;text-align:right}
+.g-fondo .btn small{font-size:11px;color:var(--dim);font-weight:600}
+.g-fondo .btn span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
 /* ---------- tabelle ---------- */
 .tbl-scroll{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:12px;scrollbar-width:thin;
   background:
@@ -433,7 +478,7 @@ textarea{min-height:0;font-size:12px}
       <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#03140e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-6 4 3 7-8"/><path d="M15 6h4v4"/></svg></div>
       <div style="min-width:0"><h1>Scanner</h1><div class="brand-sub">Motore V9.7 &middot; probabilit&agrave; calibrate sul backtest</div></div>
     </div>
-    <span class="pill pill-build" id="build-ver">build 0905-b64</span>
+    <span class="pill pill-build" id="build-ver">build 0905-b65</span>
   </div>
 </header>
 
@@ -460,7 +505,9 @@ textarea{min-height:0;font-size:12px}
         <div><label for="sel-away">Trasferta</label><select id="sel-away" style="font-weight:700;color:var(--away)"></select></div>
         <div><label for="history-limit">Storico per squadra (partite)</label><input type="number" id="history-limit" value="30" min="5" max="100" style="font-weight:700"></div>
       </div>
-      <button class="btn btn-green btn-full" id="btn-avvia" onclick="avviaScanner()">Analizza la partita</button>
+      <button class="btn btn-green btn-full" id="btn-avvia" onclick="analizzaUna()">Analizza la partita</button>
+      <button class="btn btn-full" id="btn-giornata" style="margin-top:10px" onclick="analizzaGiornata()">Analizza tutta la giornata</button>
+      <p class="note" style="margin-top:8px">La giornata: tutte le partite della lega del primo turno dalla data scelta, ognuna analizzata per intero, poi si passa dall'una all'altra coi bottoni. La prima volta scarica lo storico di tutte le squadre: qualche minuto.</p>
     </div>
   </section>
 
@@ -470,6 +517,8 @@ textarea{min-height:0;font-size:12px}
       <div id="cache-info"></div>
     </div>
 
+    <section class="card giornata c-teal" id="giornata-bar" style="display:none"></section>
+
     <div class="match-hero">
       <div class="eyebrow">Analisi pre-partita</div>
       <h2 id="ui-title">Home vs Away</h2>
@@ -478,7 +527,7 @@ textarea{min-height:0;font-size:12px}
     </div>
 
     <nav class="secnav" id="nav-sezioni" aria-label="Sezioni">
-      <a href="#sez-verdetto">Verdetto</a><a href="#card-quote">Quote</a><a href="#card-verdetti">Tabellone</a><a href="#card-ambiti">Ruolo e generale</a><a href="#card-formazioni">Formazioni</a><a href="#card-giocatori">Giocatori</a><a href="#sez-perche">Statistiche</a><a href="#sez-mercati">Mercati</a><a href="#sez-prompt">Prompt</a><a href="#sez-dati">Dati</a>
+      <a href="#giornata-bar" id="nav-giornata" hidden>Giornata</a><a href="#sez-verdetto">Verdetto</a><a href="#card-quote">Quote</a><a href="#card-verdetti">Tabellone</a><a href="#card-ambiti">Ruolo e generale</a><a href="#card-formazioni">Formazioni</a><a href="#card-giocatori">Giocatori</a><a href="#sez-perche">Statistiche</a><a href="#sez-mercati">Mercati</a><a href="#sez-prompt">Prompt</a><a href="#sez-dati">Dati</a>
     </nav>
 
     <!-- STEP 3: il verdetto -->
@@ -958,6 +1007,7 @@ textarea{min-height:0;font-size:12px}
       <button class="btn btn-dark" style="margin-bottom:12px" onclick="copiaPrompt()">Copia il mega-prompt</button>
       <textarea id="ai-prompt" readonly rows="18"></textarea>
     </section>
+    <div class="g-fondo" id="giornata-fondo" style="display:none"></div>
 
     <!-- STEP 7: diagnostica -->
     <div class="group-head" id="sez-dati"><h3>Dati</h3><span>copertura dell'API e partite usate</span></div>
@@ -1079,14 +1129,283 @@ function nuovaPartita() {
   if (c) { c.innerHTML = ''; c.style.display = 'none'; }
   const b = document.getElementById('btn-avvia');
   if (b) { b.disabled = false; b.innerHTML = 'Analizza la partita'; }
-  ['quota-1', 'quota-x', 'quota-2', 'quota-ov', 'quota-un'].forEach(id => { const q = document.getElementById(id); if (q) q.value = ''; });
-  window.__QUOTE_CTX = null; window.__QUOTE_FONTE = null; window.__QUOTE_FONTE_OU = null; window.__QUOTE_GOL = null;
-  const qb = document.getElementById('quote-box'); if (qb) qb.innerHTML = '--';
-  const qa = document.getElementById('quote-auto'); if (qa) qa.innerHTML = '';
+  if (GIORNATA) { _quoteSalva(GIORNATA.vista); if (GIORNATA.corre) GIORNATA.stop = 'esci'; GIORNATA.vista = -1; }
+  svuotaQuote();
+  renderGiornata();
   window.scrollTo({ top: 0, behavior: 'smooth' });
   const sh = document.getElementById('sel-home');
   if (sh) try { sh.focus({ preventScroll: true }); } catch (e) {}
 }
+
+function svuotaQuote() {
+  ['quota-1', 'quota-x', 'quota-2', 'quota-ov', 'quota-un'].forEach(id => { const q = document.getElementById(id); if (q) q.value = ''; });
+  window.__QUOTE_CTX = null; window.__QUOTE_FONTE = null; window.__QUOTE_FONTE_OU = null; window.__QUOTE_GOL = null; window.__QUOTE_P = null;
+  const qb = document.getElementById('quote-box'); if (qb) qb.innerHTML = '--';
+  const qa = document.getElementById('quote-auto'); if (qa) qa.innerHTML = '';
+}
+
+let GIORNATA = null;
+const _giornoDi = m => String(m.date || m.time_utc || '').slice(0, 10);
+const _oraDi = m => String(m.time_utc || m.date || '');
+async function listaGiornata(lId, da) {
+  const lega = globalLeagueMatchesCache.filter(m => m.league_id === lId), tutte = new Set();
+  lega.forEach(m => { tutte.add(m.home_team && m.home_team.id); tutte.add(m.away_team && m.away_team.id); });
+  const ultima = lega.reduce((s, m) => (m._season || '') > s ? m._season : s, '');
+  const inCorso = new Set(); lega.filter(m => m._season === ultima).forEach(m => { inCorso.add(m.home_team.id); inCorso.add(m.away_team.id); });
+  const t0 = Date.parse(da + 'T00:00:00Z'), giorno = k => new Date(t0 + k * 864e5).toISOString().slice(0, 10);
+  const recente = new Date(Date.now() - 2 * 864e5).toISOString().slice(0, 10), cand = new Map();
+  const dellaLega = m => { const l = m.league && m.league.id != null ? m.league.id : m.league_id;
+    return l != null ? String(l) === String(lId) : tutte.has(m.home_team.id) && tutte.has(m.away_team.id); };
+  let primo = -1;
+  for (let k = 0; k < 28 && (primo < 0 || k <= primo + 6); k++) {
+    const g = giorno(k), prima = cand.size;
+    lega.forEach(m => { if (_giornoDi(m) === g) cand.set(m.id, m); });
+    if (g >= recente) {
+      if (!TARGET_CACHE[g]) {
+        const json = await apiCall(`/date/${g}?status=all`, true);
+        const list = json ? (json.data?.matches || json.matches || (Array.isArray(json.data) ? json.data : null)) : null;
+        if (Array.isArray(list)) TARGET_CACHE[g] = list;
+      }
+      (TARGET_CACHE[g] || []).forEach(m => { if (m && m.id && m.home_team && m.away_team && !cand.has(m.id) && dellaLega(m)) cand.set(m.id, m); });
+    }
+    if (primo < 0 && cand.size > prima) primo = k;
+  }
+  const ord = [...cand.values()].filter(m => m.home_team && m.away_team && !/postpon|cancel|abandon|suspend|rinvi/i.test(m.status || ''))
+    .sort((a, b) => _oraDi(a).localeCompare(_oraDi(b)));
+  const presi = [], viste = new Set(), max = Math.max(1, Math.floor((inCorso.size || tutte.size) / 2));
+  for (const m of ord) {
+    const h = m.home_team.id, a = m.away_team.id;
+    if (viste.has(h) || viste.has(a)) break;
+    if (presi.length && Date.parse(_oraDi(m)) - Date.parse(_oraDi(presi[0])) > 6 * 864e5) break;
+    viste.add(h); viste.add(a); presi.push(m);
+    if (presi.length >= max) break;
+  }
+  return presi;
+}
+
+async function analizzaGiornata() {
+  if (GIORNATA && GIORNATA.promessa) await GIORNATA.promessa;
+  const lId = document.getElementById('sel-league').value;
+  if (!lId || !globalLeagueMatchesCache.some(m => m.league_id === lId)) return alert("Carica prima il database della lega.");
+  const dIn = document.getElementById('target-date');
+  if (!dIn.value) dIn.value = new Date().toISOString().slice(0, 10);
+  const da = dIn.value, btn = document.getElementById('btn-giornata');
+  btn.disabled = true; btn.innerHTML = 'Cerco le partite della giornata...';
+  let lista = [];
+  try { lista = await listaGiornata(lId, da); } finally { btn.disabled = false; btn.innerHTML = 'Analizza tutta la giornata'; }
+  if (!lista.length) return alert(`Nessuna partita di questa lega fra il ${da} e le quattro settimane dopo.`);
+  const chiave = lId + '|' + lista.map(m => m.id).join(',');
+  const dash = document.getElementById('dashboard-area');
+  document.getElementById('setup-card').style.display = 'none'; dash.style.display = 'block';
+  if (GIORNATA && GIORNATA.chiave === chiave) {
+    const i = GIORNATA.lista.findIndex(x => x.stato === 'fatta');
+    if (!GIORNATA.lista.some(x => x.stato === 'attesa') && i >= 0) return giornataVai(i);
+    if (i < 0) dash.classList.add('g-attesa');
+    return _giornataCorri();
+  }
+  GIORNATA = { chiave, lId, da, vista: -1, corre: false, stop: null, promessa: null, ordine: 'orario',
+    lista: lista.map(m => ({ id: m.id, hId: m.home_team.id, aId: m.away_team.id, hName: m.home_team.name, aName: m.away_team.name,
+                             giorno: _giornoDi(m), ora: _oraDi(m), stato: 'attesa' })) };
+  dash.classList.add('g-attesa');
+  return _giornataCorri();
+}
+
+function _giornataCorri() {
+  const G = GIORNATA;
+  G.promessa = (async () => {
+    G.corre = true; G.stop = null; renderGiornata(); window.scrollTo({ top: 0 });
+    const timer = setInterval(_giornataProgresso, 1500);
+    try {
+      for (let i = 0; i < G.lista.length && !G.stop; i++) {
+        if (G.lista[i].stato !== 'attesa') continue;
+        G.lista[i].stato = 'corre'; renderGiornata();
+        if (await _giroGiornata(i)) {
+          document.getElementById('dashboard-area').classList.remove('g-attesa');
+          try { await window.__QUOTE_AUTO; } catch (e) {}
+        }
+        renderGiornata();
+      }
+    } finally { clearInterval(timer); G.corre = false; }
+    G.lista.forEach(x => { if (x.stato === 'corre') x.stato = 'attesa'; });
+    if (G.stop === 'esci') { document.getElementById('dashboard-area').style.display = 'none'; document.getElementById('setup-card').style.display = 'block';
+      G.vista = -1; renderGiornata(); return; }
+    const primo = G.lista.findIndex(x => x.stato === 'fatta');
+    if (primo < 0) {
+      document.getElementById('dashboard-area').classList.remove('g-attesa');
+      nuovaPartita();
+      alert('Nessuna partita della giornata si puo\' analizzare: ' + [...new Set(G.lista.map(x => x.motivo).filter(Boolean))].join('; '));
+      return;
+    }
+    if (!G.stop && G.vista !== primo) await _giroGiornata(primo);
+    renderGiornata(); window.scrollTo({ top: 0, behavior: 'smooth' });
+  })();
+  return G.promessa.finally(() => { G.promessa = null; });
+}
+
+async function _giroGiornata(i) {
+  const G = GIORNATA, x = G.lista[i];
+  if (window.__QUOTE_AUTO) { try { await window.__QUOTE_AUTO; } catch (e) {} }
+  _quoteSalva(G.vista);
+  const sH = document.getElementById('sel-home'), sA = document.getElementById('sel-away');
+  sH.value = x.hId; sA.value = x.aId;
+  if (sH.value !== String(x.hId) || sA.value !== String(x.aId)) {
+    x.stato = 'errore'; x.motivo = 'una delle due squadre non ha partite di lega nel database'; return false;
+  }
+  document.getElementById('target-date').value = x.giorno;
+  svuotaQuote(); _quoteRimetti(i);
+  G.vista = i; window.__ESITO = null;
+  const al = window.alert; let msg = null;
+  window.alert = t => { msg = String(t); };
+  try { await avviaScanner(); } finally { window.alert = al; }
+  const E = window.__ESITO;
+  if (!E || E.hId !== String(x.hId) || E.aId !== String(x.aId)) {
+    x.stato = 'errore'; x.motivo = msg || 'analisi non riuscita'; G.vista = -1; return false;
+  }
+  const S = E.sorpresa;
+  Object.assign(x, { stato: 'fatta', motivo: null, p: E.p, sorpresa: { liv: S.liv, pU: S.pU, fav: S.fav, dis: S.dis },
+                     top: _topVoce(window.__VERDETTI), buone: _buone(window.__VERDETTI) });
+  _giornataQuote();
+  return true;
+}
+
+async function giornataVai(i) {
+  const G = GIORNATA;
+  if (!G || G.corre || !G.lista[i]) return;
+  G.corre = true; G.stop = null;
+  if (window.matchMedia && !window.matchMedia('(min-width: 900px)').matches) G.aperta = false;
+  renderGiornata();
+  try { await _giroGiornata(i); } finally { G.corre = false; }
+  document.getElementById('dashboard-area').classList.remove('g-attesa');
+  renderGiornata(); window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function giornataPasso(d) {
+  const G = GIORNATA; if (!G) return;
+  const o = _ordineGiornata().filter(j => G.lista[j].stato === 'fatta'), k = o.indexOf(G.vista);
+  if (k >= 0 && o[k + d] != null) giornataVai(o[k + d]);
+}
+function giornataFerma() { if (GIORNATA && GIORNATA.corre) { GIORNATA.stop = 'ferma'; renderGiornata(); } }
+function giornataRiprendi() { if (GIORNATA && !GIORNATA.corre) _giornataCorri(); }
+function giornataOrdina(k) { if (GIORNATA) { GIORNATA.ordine = k; renderGiornata(); } }
+
+async function analizzaUna() {
+  const G = GIORNATA;
+  if (G && G.promessa) await G.promessa;
+  if (G) { _quoteSalva(G.vista); G.vista = -1; }
+  await avviaScanner();
+  const E = window.__ESITO, i = G && E ? G.lista.findIndex(x => String(x.hId) === E.hId && String(x.aId) === E.aId && x.giorno === E.giorno) : -1;
+  if (i >= 0) {
+    const x = G.lista[i], S = E.sorpresa;
+    Object.assign(x, { stato: 'fatta', motivo: null, p: E.p, sorpresa: { liv: S.liv, pU: S.pU, fav: S.fav, dis: S.dis },
+                       top: _topVoce(window.__VERDETTI), buone: _buone(window.__VERDETTI) });
+    G.vista = i; _giornataQuote();
+  }
+  renderGiornata();
+}
+
+function _topVoce(V) {
+  const v = (V || []).find(v => v.guad != null);
+  return v ? { nome: v.nome, verdetto: v.verdetto, edge: v.edge, p: v.p } : null;
+}
+const _buone = V => (V || []).filter(v => v.verdetto === 'FORTE' || v.verdetto === 'GIOCABILE').length;
+function _quoteSalva(i) {
+  const G = GIORNATA; if (!G || i == null || i < 0 || !G.lista[i]) return;
+  const v = ids => ids.map(id => String((document.getElementById(id) || {}).value || ''));
+  G.lista[i].mano = { q: window.__QUOTE_FONTE ? null : v(['quota-1', 'quota-x', 'quota-2']),
+                      ou: window.__QUOTE_FONTE_OU ? null : v(['quota-ov', 'quota-un']) };
+}
+function _quoteRimetti(i) {
+  const M = GIORNATA && GIORNATA.lista[i] && GIORNATA.lista[i].mano; if (!M) return;
+  const set = (ids, a) => { if (a && a.some(x => x.trim())) ids.forEach((id, k) => { const el = document.getElementById(id); if (el) el.value = a[k]; }); };
+  set(['quota-1', 'quota-x', 'quota-2'], M.q); set(['quota-ov', 'quota-un'], M.ou);
+}
+function _giornataQuote() {
+  const G = GIORNATA; if (!G || G.vista < 0) return;
+  const x = G.lista[G.vista], sH = document.getElementById('sel-home'), sA = document.getElementById('sel-away');
+  if (!x || x.stato !== 'fatta' || !sH || !sA || sH.value !== String(x.hId) || sA.value !== String(x.aId)) return;
+  x.quote = window.__QUOTE_P ? { p: window.__QUOTE_P.slice(), top: _topVoce(window.__VERDETTI_QUOTE), buone: _buone(window.__VERDETTI_QUOTE) } : null;
+  renderGiornata();
+}
+
+function _ordineGiornata() {
+  const G = GIORNATA, idx = G.lista.map((x, i) => i), pk = x => x.p ? Math.max(...(x.quote ? x.quote.p : x.p)) : -1;
+  const liv = { alto: 3, medio: 2, basso: 1 };
+  if (G.ordine === 'pick') idx.sort((a, b) => pk(G.lista[b]) - pk(G.lista[a]));
+  else if (G.ordine === 'sorpresa') idx.sort((a, b) => {
+    const A = G.lista[a], B = G.lista[b], la = A.sorpresa ? liv[A.sorpresa.liv] : 0, lb = B.sorpresa ? liv[B.sorpresa.liv] : 0;
+    return lb - la || (B.sorpresa ? B.sorpresa.pU : 0) - (A.sorpresa ? A.sorpresa.pU : 0); });
+  return idx;
+}
+const _quandoG = x => { const d = new Date(x.ora); if (isNaN(d)) return x.giorno;
+  try { return d.toLocaleString('it-IT', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); }
+  catch (e) { return x.giorno; } };
+function _rigaGiornata(x, i, on, blocca) {
+  const e = _escHtml, pc = v => (100 * v).toFixed(0);
+  let det;
+  if (x.stato === 'fatta') {
+    const P = x.quote ? x.quote.p : x.p, k = P.indexOf(Math.max(...P)), nomi = ['1', 'X', '2'], S = x.sorpresa;
+    const T = x.quote ? x.quote.top : x.top, buone = x.quote ? x.quote.buone : x.buone;
+    det = `<span class="g-bar"><i style="width:${(100 * x.p[0]).toFixed(1)}%"></i><i style="width:${(100 * x.p[1]).toFixed(1)}%"></i><i style="width:${(100 * x.p[2]).toFixed(1)}%"></i></span>`
+      + `<span>1 <b>${pc(x.p[0])}</b> &middot; X <b>${pc(x.p[1])}</b> &middot; 2 <b>${pc(x.p[2])}</b></span>`
+      + `<span>pick <b>${nomi[k]}</b> ${(100 * P[k]).toFixed(1)}%${x.quote ? ' con le quote' : ''}</span>`
+      + (S.liv !== 'basso' ? `<span class="g-chip s-${S.liv}">sorpresa ${S.liv === 'alto' ? 'ALTA' : 'media'}</span>` : '')
+      + (T ? `<span class="g-chip ${T.verdetto === 'MARGINALE' ? 'v-marg' : 'v-ok'}">${e(T.nome)} ${T.verdetto}</span>`
+           : '<span>niente con verdetto</span>')
+      + (buone > 1 ? `<span>${buone} FORTI o GIOCABILI</span>` : '');
+  } else if (x.stato === 'corre') det = '<span>analisi in corso&hellip;</span>';
+  else if (x.stato === 'errore') det = `<span style="color:var(--warn)">non analizzata: ${e(x.motivo || '')}</span>`;
+  else det = '<span>in attesa</span>';
+  const click = x.stato === 'fatta' && !blocca && !on;
+  return `<button type="button" class="g-row${on ? ' on' : ''}" data-g="${i}"${click ? ` onclick="giornataVai(${i})"` : ' disabled'}>`
+    + `<span class="g-sq">${e(x.hName)} &ndash; ${e(x.aName)}</span><span class="g-ora">${e(_quandoG(x))}</span>`
+    + `<span class="g-det">${det}</span></button>`;
+}
+function renderGiornata() {
+  if (typeof document === 'undefined') return;
+  const bar = document.querySelector('#giornata-bar'), fondo = document.querySelector('#giornata-fondo'), nav = document.querySelector('#nav-giornata');
+  if (!(bar instanceof Element)) return;
+  const G = GIORNATA, vis = !!G && (G.vista >= 0 || G.corre) && document.getElementById('dashboard-area').style.display !== 'none';
+  bar.style.display = vis ? '' : 'none';
+  if (fondo instanceof Element) fondo.style.display = vis && !G.corre && G.vista >= 0 ? '' : 'none';
+  if (nav instanceof Element) nav.hidden = !vis;
+  if (!vis) return;
+  const e = _escHtml, L = G.lista, n = L.length, fatte = L.filter(x => x.stato === 'fatta'), attesa = L.filter(x => x.stato === 'attesa').length;
+  const o = _ordineGiornata(), ok = o.filter(j => L[j].stato === 'fatta'), k = ok.indexOf(G.vista), cur = L[G.vista];
+  const prev = k > 0 ? ok[k - 1] : null, next = k >= 0 && k + 1 < ok.length ? ok[k + 1] : null, blocca = G.corre;
+  const nome = x => `${e(x.hName)} &ndash; ${e(x.aName)}`;
+  const giorni = [...new Set(L.map(x => _quandoG(x).split(',')[0]))];
+  const alte = fatte.filter(x => x.sorpresa.liv === 'alto').length, conBuone = fatte.filter(x => (x.quote ? x.quote.buone : x.buone) > 0).length;
+  let h = `<div class="section-title"><span class="ico">&#128197;</span><span class="t">La giornata<small>${n} partite, ${e(giorni[0])}${giorni.length > 1 ? ' &ndash; ' + e(giorni[giorni.length - 1]) : ''}</small></span></div>`
+    + `<div class="g-top"><button class="btn btn-sm" aria-label="Partita precedente" ${prev == null || blocca ? 'disabled' : `onclick="giornataVai(${prev})"`}>&#8249;</button>`
+    + `<div class="g-cur">${cur ? `<b>${nome(cur)}</b><small>${k + 1} di ${ok.length} analizzate &middot; ${e(_quandoG(cur))}</small>` : '<b>Analisi in corso</b><small>la prima partita arriva fra poco</small>'}</div>`
+    + `<button class="btn btn-sm" aria-label="Partita successiva" ${next == null || blocca ? 'disabled' : `onclick="giornataVai(${next})"`}>&#8250;</button></div>`;
+  if (G.corre) {
+    const inCorso = L.find(x => x.stato === 'corre'), fatto = n - attesa - (inCorso ? 1 : 0);
+    h += `<div class="g-prog"><i style="width:${(100 * fatto / n).toFixed(0)}%"></i></div>`
+      + `<div class="g-stato" id="giornata-stato">${inCorso ? `Analizzo ${fatto + 1} di ${n}: <b>${nome(inCorso)}</b>. ` : 'Carico la partita&hellip; '}`
+      + `<span id="giornata-mem">${_memGiornata()}</span>${G.stop === 'ferma' ? ' Mi fermo dopo questa.' : ''}</div>`
+      + (G.stop ? '' : '<div class="g-azioni"><button class="btn btn-sm" onclick="giornataFerma()">Ferma dopo questa</button></div>');
+  } else {
+    h += `<div class="g-sint"><b>${fatte.length}</b> su ${n} analizzate &middot; sorpresa ALTA in <b>${alte}</b> &middot; con almeno una proposta FORTE o GIOCABILE <b>${conBuone}</b>.`
+      + ' Tocca una partita per aprirla: lo storico &egrave; gi&agrave; in memoria.</div>'
+      + (attesa ? `<div class="g-azioni"><button class="btn btn-sm btn-green" onclick="giornataRiprendi()">Analizza le ${attesa} rimaste</button></div>` : '');
+  }
+  h += `<details class="g-tutte" id="giornata-tutte"${G.aperta === false ? '' : ' open'} ontoggle="GIORNATA&&(GIORNATA.aperta=this.open)">`
+    + `<summary>Tutte le partite (${n})</summary>`
+    + `<div class="g-ord">Ordina: ${[['orario', 'orario'], ['pick', 'pick pi&ugrave; sicuro'], ['sorpresa', 'rischio sorpresa']]
+      .map(([v, t]) => `<button type="button" class="${G.ordine === v ? 'on' : ''}" onclick="giornataOrdina('${v}')">${t}</button>`).join('')}</div>`
+    + `<div class="g-lista">${o.map(j => _rigaGiornata(L[j], j, j === G.vista && !G.corre, blocca)).join('')}</div></details>`
+    + '<details class="info" style="margin-top:10px"><summary>Come funziona la giornata</summary><div>'
+    + "Ogni partita &egrave; analizzata per intero, come se l'avessi scelta a mano: verdetto, tabellone, formazioni, prompt. "
+    + "Le quote automatiche arrivano per ognuna; quelle scritte a mano restano legate alla loro partita. Nell'elenco il pick e la proposta in cima "
+    + "sono quelli con le quote quando ci sono, la barra resta del motore. La giornata &egrave; il primo turno della lega dalla data scelta: "
+    + "dalla prima partita, in ordine di orario, finch&eacute; una squadra non gioca di nuovo, entro sette giorni.</div></details>";
+  bar.innerHTML = h;
+  if (fondo instanceof Element) fondo.innerHTML = G.corre || G.vista < 0 ? ''
+    : `<button class="btn" ${prev == null ? 'disabled' : `onclick="giornataVai(${prev})"`}><small>&#8249; precedente</small><span>${prev == null ? '&mdash;' : nome(L[prev])}</span></button>`
+    + `<button class="btn dx" ${next == null ? 'disabled' : `onclick="giornataVai(${next})"`}><small>successiva &#8250;</small><span>${next == null ? '&mdash;' : nome(L[next])}</span></button>`;
+}
+const _memGiornata = () => `In memoria ${Object.keys(RAW_CACHE || {}).length} partite scaricate.`;
+function _giornataProgresso() { const el = document.querySelector('#giornata-mem'); if (el instanceof Element) el.textContent = _memGiornata(); }
 
 function wrapTables() {
   document.querySelectorAll('table.table-ui').forEach(t => {
@@ -2479,6 +2798,7 @@ function aggiornaQuote() {
     tabellone(null);
     scriviPrompt('', '');
     _matriceCard(calcDCMatrix(C.lam[0], C.lam[1], C.rho), C.hName, false);
+    window.__QUOTE_P = null; _giornataQuote();
     return;
   }
   const pc = x => (100 * x).toFixed(1) + '%';
@@ -2560,6 +2880,7 @@ function aggiornaQuote() {
   tabellone(P, Oq, Gq);
   _matriceCard(Aq || calcDCMatrix(C.lam[0], C.lam[1], C.rho), C.hName, !!Aq);
   scriviPrompt(sez, sint);
+  window.__QUOTE_P = P; _giornataQuote();
 }
 
 // Le quote automatiche (b55): i file di football-data.co.uk passano dal worker (strada /quote/,
@@ -2989,7 +3310,7 @@ function _tabTesto(V) {
        + senza.map(v => v.nome + ' ' + (v.edge == null ? 'base ignota' : (v.edge >= 0 ? '+' : '') + v.edge.toFixed(1))).join(', ') : '');
 }
 
-window.__SCANNER_BUILD = '0905-b64';
+window.__SCANNER_BUILD = '0905-b65';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -3760,6 +4081,7 @@ async function avviaScanner() {
     safeTxt('master-1', pct(m1)); safeTxt('master-x', pct(mX)); safeTxt('master-2', pct(m2));
     const _sorpresa = rischioSorpresa(m1, mX, m2, window.__ELO_DEBUG_OVER);
     safeHtml('sorpresa-box', htmlSorpresa(_sorpresa, hName, aName));
+    window.__ESITO = { p: [m1, mX, m2], sorpresa: _sorpresa, hId: String(hId), aId: String(aId), giorno: dateInput };
 
     safeTxt('mdl-dc-1', pct(probsRole.p1)); safeTxt('mdl-dc-x', pct(probsRole.pX)); safeTxt('mdl-dc-2', pct(probsRole.p2));
     safeTxt('mdl-knn-1', pct(probsKnn.p1)); safeTxt('mdl-knn-x', pct(probsKnn.pX)); safeTxt('mdl-knn-2', pct(probsKnn.p2));
@@ -4349,31 +4671,50 @@ Misurato: la fortuna recente (gol o punti sopra o sotto gli xG) non anticipa il 
 ${_stancTxt}
 
 ISTRUZIONI
-Scrivi in italiano, senza preamboli, queste quattro sezioni in quest'ordine.
+Scrivi in italiano, senza preamboli, un'analisi completa in queste cinque sezioni, in
+quest'ordine. Non essere telegrafico: prenditi lo spazio che serve per spiegare davvero la
+partita (come una buona presentazione di una partita, indicativamente 700-1200 parole in
+tutto), ma ogni affermazione deve poggiare su un numero di questo prompt. Titoli e sottotitoli
+aiutano; gli elenchi puntati vanno bene per i numeri, il ragionamento scrivilo in paragrafi.
 
 ## IN SINTESI
-Al massimo 5 righe, per chi deve decidere cosa giocare.
+Per chi deve decidere cosa giocare: un elenco breve, prima di tutto il resto.
 - Le proposte da giocare sono SOLO quelle FORTE o GIOCABILE della sezione 2. Per ognuna:
   mercato, probabilita' e quanto rende il suo tipo di mercato (il numero della sezione 2: e'
   quello da guardare, non l'etichetta). Se l'etichetta promette piu' di quanto il suo tipo
   renda, per esempio un FORTE dei mercati gol o sui numeri, dillo.
 - Se non ce n'e' nessuna, scrivilo chiaro: "Niente di giocabile in questa partita". Le
   MARGINALI al massimo "da guardare".
-- Una riga sul pick 1X2 e su dove sta nella selezione (sezione 1).@@QUOTE_SINTESI@@
-- Una riga sul rischio principale (sezione 4).
+- Il pick 1X2 e dove sta nella selezione (sezione 1).@@QUOTE_SINTESI@@
+- Il rischio principale (sezione 4), col livello del rischio sorpresa.
 
 ## LA PARTITA
-Al massimo 8 righe: come si affronteranno. Parti dalla sezione 5 rispettando le sue regole
-di affidabilita', poi qualita' e stile (sezioni 6 e 7). Cita il numero e lo scarto ogni
-volta che affermi qualcosa; se lo scarto e' piccolo, "si equivalgono" e' una risposta giusta.
+L'analisi vera, in piu' paragrafi. Racconta come si affronteranno le due squadre:
+- il verdetto 1X2 e da dove viene: RUOLO contro GENERALE, Elo contro modello (sezioni 1 e 3);
+  se Elo e modello non sono d'accordo, spiega cosa vede ciascuno;
+- il confronto reparto per reparto con le statistiche previste (sezione 5, rispettando le sue
+  regole di affidabilita'): chi crea di piu', chi tiene palla e dove, chi pressa, chi concede;
+- qualita' e cinismo (sezione 6) e lo stile (sezione 7): come si incastrano i due modi di
+  giocare, e dove una squadra puo' far male all'altra;
+- ritmo e gol: quando segnano e subiscono, Over/Under e Goal, corner, tiri in porta e gialli
+  attesi (sezione 8).
+Cita il numero e lo scarto ogni volta che affermi qualcosa; se lo scarto e' piccolo, "si
+equivalgono" e' una risposta giusta. Dove i numeri non dicono niente, non riempire.
 
 ## PERCHE' LE PROPOSTE
-Per ogni proposta FORTE, GIOCABILE o MARGINALE, una frase: quali statistiche di questa
-partita portano a quel numero. Per quelle senza verdetto non scrivere niente.
+Per ogni proposta FORTE, GIOCABILE o MARGINALE, qualche riga: quali statistiche di questa
+partita portano a quel numero, e cosa dovrebbe succedere in campo perche' non esca. Per
+quelle senza verdetto non scrivere niente.
+
+## COME PUO' ANDARE
+Due o tre scenari di gara, dal piu' probabile a quello della sorpresa, ognuno legato ai
+numeri: chi deve imporre cosa, e quale statistica lo dice. Per la sorpresa usa le frequenze
+misurate della sezione 4. Non dare probabilita' che non sono nel prompt e non indicare un
+risultato esatto.
 
 ## RISCHI
-Al massimo 4 righe: cosa rende questa previsione meno solida. Parti dalla sezione 4; la
-stanchezza (sezione 9) citala solo come contesto.
+Cosa rende questa previsione meno solida. Parti dalla sezione 4 e spiega ogni rischio in
+concreto per questa partita; la stanchezza (sezione 9) citala solo come contesto.
 
 REGOLE (valgono per tutte le sezioni; non sono una sezione da scrivere)
 - Non riclassificare i verdetti, non proporre mercati che il tabellone non elenca, non
@@ -4430,8 +4771,8 @@ async function copiaPrompt() {
   let raf = 0, ora = -1;
   const spia = () => {
     raf = 0;
-    let k = 0;
-    sez.forEach((el, i) => { if (el && el.getBoundingClientRect().top <= 150) k = i; });
+    let k = -1;
+    sez.forEach((el, i) => { if (el && el.getClientRects().length && (k < 0 || el.getBoundingClientRect().top <= 150)) k = i; });
     if (k === ora) return;
     ora = k;
     link.forEach((a, i) => a.classList.toggle('on', i === k));

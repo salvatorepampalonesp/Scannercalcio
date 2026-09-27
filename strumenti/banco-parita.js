@@ -380,6 +380,45 @@ async function runScanner(browser, base, matches, limit) {
   return { runs: out, log, scroll, compatte, giocatori, quote, chiuse };
 }
 
+// la giornata (b65): trova le partite del turno, le analizza tutte, e ognuna deve stampare
+// esattamente quello che stampa la stessa partita analizzata da sola; poi i bottoni per cambiare
+async function runGiornata(browser, base, turno, singole) {
+  const page = await newPage(browser, base);
+  await page.goto(base + '/scanner.html');
+  await page.waitForFunction(() => document.getElementById('sel-country').options.length > 2);
+  await page.evaluate(({ COUNTRY, LEAGUE }) => {
+    const s = (id, v) => { const el = document.getElementById(id); el.value = v; if (el.value !== v) throw new Error('select ' + id + ' ' + v); };
+    s('sel-country', COUNTRY); updateLeagues(); s('sel-league', LEAGUE); updateSeasons(); s('sel-season', '2025/2026');
+    document.getElementById('api-key').value = 'finta';
+  }, { COUNTRY, LEAGUE });
+  await page.evaluate(() => caricaSquadreLega());
+  const d0 = new Date(Date.parse(turno[0].time_utc) - 2 * 86400000).toISOString().slice(0, 10);
+  await page.evaluate(d => { document.getElementById('target-date').value = d; }, d0);
+  if (await page.evaluate(() => typeof analizzaGiornata !== 'function')) { await page.context().close(); return null; }
+  await page.evaluate(() => analizzaGiornata());
+  const lista = await page.evaluate(() => GIORNATA.lista.map(x => ({ id: x.id, stato: x.stato, motivo: x.motivo || null })));
+  const diversi = [], giri = {};
+  for (const m of turno.filter(m => singole[m.id])) {
+    const i = lista.findIndex(x => x.id === m.id); if (i < 0) continue;
+    const r = await page.evaluate(async ({ i, SNAP }) => { window.__REC_CUR = []; await giornataVai(i); const s = eval(SNAP);
+      return { rec: s.rec, titolo: document.getElementById('ui-title').textContent, vista: GIORNATA.vista }; }, { i, SNAP });
+    const d = diffRecs(singole[m.id].rec, r.rec); giri[m.id] = d.n;
+    if (d.diff.length || r.vista !== i) diversi.push({ id: m.id, vista: r.vista, esempi: d.diff.slice(0, 3) });
+  }
+  const passi = await page.evaluate(async () => { const t = []; const v0 = GIORNATA.vista;
+    giornataPasso(1); while (GIORNATA.corre) await new Promise(r => setTimeout(r, 50)); t.push(GIORNATA.vista);
+    giornataPasso(-1); while (GIORNATA.corre) await new Promise(r => setTimeout(r, 50)); t.push(GIORNATA.vista);
+    return { v0, t, titolo: document.getElementById('ui-title').textContent, atteso: GIORNATA.lista[GIORNATA.vista].hName + ' - ' + GIORNATA.lista[GIORNATA.vista].aName }; });
+  const html = await page.evaluate(() => document.getElementById('giornata-bar').innerHTML + document.getElementById('giornata-fondo').innerHTML);
+  const pr = await page.evaluate(() => document.getElementById('ai-prompt').value);
+  await page.evaluate(() => { document.querySelectorAll('details').forEach(x => { x.open = true; }); });
+  const scroll = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  const righe = await page.evaluate(() => document.querySelectorAll('#giornata-bar .g-row').length);
+  const log = page.__log.filter(l => !/CONSOLE/.test(l));
+  await page.context().close();
+  return { lista, diversi, giri, passi, righe, scroll, log, rotto: /NaN|undefined|Infinity/.test(html), prompt: pr.length, promptRotto: /NaN|undefined|Infinity|@@/.test(pr) };
+}
+
 async function comparatorePage(browser, base, engineText) {
   const page = await newPage(browser, base);
   await page.goto(base + '/comparatore.html');
@@ -673,6 +712,14 @@ if (require.main === module) (async () => {
     const T = scanner.runs[m.id].fatigue, g = F => F ? `riposo ${F.riposo} (lega ${F.riposoLega}), ${F.partite14} in 14 gg, coppa ${F.coppaPrima == null ? '-' : F.coppaPrima + ' fa'} / ${F.coppaDopo == null ? '-' : 'fra ' + F.coppaDopo}` : '-';
     console.log(`   stanchezza ${m.id}: casa ${g(T && T.H)} | trasf. ${g(T && T.A)}`); }
   let fail = (sLog.length || (process.env.MOBILE && (scanner.scroll > 0 || scanner.compatte.length)) || !G || gRotti.length || pRotti.length || !Q || qRotte.length || qaRotte.length) ? 1 : 0;
+  const GI = await runGiornata(browser, base, cur, scanner.runs);
+  const giOk = GI && GI.lista.length === cur.length && GI.lista.every((x, k) => x.id === cur[k].id && x.stato === 'fatta')
+    && !GI.diversi.length && Object.keys(GI.giri).length === day.length && GI.righe === cur.length && !GI.rotto && !GI.promptRotto && !GI.log.length
+    && GI.passi.t[1] === GI.passi.v0 && GI.passi.t[0] !== GI.passi.v0 && GI.passi.titolo === GI.passi.atteso && (!process.env.MOBILE || GI.scroll <= 0);
+  console.log('   giornata: ' + (!GI ? 'funzione assente' : `${GI.lista.length} partite trovate su ${cur.length} del turno (${GI.lista.map(x => x.stato).join(' ')}), `
+    + `${Object.keys(GI.giri).length - GI.diversi.length} su ${Object.keys(GI.giri).length} rifatte coi bottoni identiche all'analisi singola (${Object.values(GI.giri)[0]} scritture ciascuna), avanti e indietro ${GI.passi.v0} -> ${GI.passi.t.join(' -> ')}`
+    + (process.env.MOBILE ? `, scorrimento laterale ${GI.scroll}px` : '') + (giOk ? '' : ' · FALLITA: ' + JSON.stringify({ lista: GI.lista, diversi: GI.diversi, passi: GI.passi, righe: GI.righe, rotto: GI.rotto, log: GI.log }).slice(0, 600))));
+  if (!giOk) fail++;
 
   const results = {};
   await Promise.all(MODES.map(async mode => { results[mode] = await runComparatore(browser, base, mode, date); }));
