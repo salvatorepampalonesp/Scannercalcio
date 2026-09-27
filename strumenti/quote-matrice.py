@@ -7,7 +7,8 @@
 # con i coefficienti dello Scanner letti da scanner.html (QUOTE_COMB, QUOTE_OU: non si ristimano), e si
 # misurano risultati esatti, multigol, handicap asiatico e il Goal ricalibrato. La ricalibrazione del Goal
 # si stima sulle partite di --allena; il test e' sulle partite di --prova. Senza --prova stampa solo la
-# stima e i descrittivi di --allena.
+# stima e i descrittivi di --allena. Esito (b62): i primi tre passano e sono nello Scanner, il Goal
+# ricalibrato no.
 import os, sys, re, io, csv, math, glob, collections, importlib.util, urllib.request, warnings
 import numpy as np
 from sklearn.linear_model import LogisticRegression
@@ -24,8 +25,7 @@ def costanti():
     m = re.search(r'const QUOTE_COMB = \{\s*W: (\[\[.*?\]\]),\s*b: (\[.*?\]) \};', s, re.S)
     W, b = np.array(eval(m.group(1))), np.array(eval(m.group(2)))
     m = re.search(r'const QUOTE_OU = \{ b: ([-\d.]+), motore: ([-\d.]+), mercato: ([-\d.]+) \};', s)
-    m2 = re.search(r'const GOAL_QUOTE_CAL = \{ a: ([-\d.]+), b: ([-\d.]+) \};', s)
-    return W, b, [float(x) for x in m.groups()], ([float(x) for x in m2.groups()] if m2 else None)
+    return W, b, [float(x) for x in m.groups()]
 
 def stagione(f):
     a = os.path.basename(f).rsplit('_', 1)[1][:9]
@@ -47,7 +47,31 @@ def carica(dirs, cq):
             if not r.get('HomeTeam') or not r.get('FTHG'): continue
             qc, fc = qb.prendi(r, ['AvgC', 'PSC', 'B365C']); qp, _ = qb.prendi(r, ['Avg', 'PS', 'B365'])
             righe.append(dict(lega=COD[cod], data=qb.data(r['Date']), H=r['HomeTeam'], A=r['AwayTeam'], hg=int(r['FTHG']), ag=int(r['FTAG']), qc=qc, fc=fc, qp=qp, riga=r))
-    return M, qb.aggancia(M, righe)
+    return M, aggancia(M, righe)
+
+# Come qb.aggancia (b54), ma la co-occorrenza dei nomi conta solo le partite vicine col punteggio uguale:
+# su cinque giornate (il 2026/27) la co-occorrenza semplice pareggia e scambia i nomi (Premier: 1 su 48).
+# La prova resta: un nome sbagliato rompe il punteggio di tutte le partite di quella squadra.
+def aggancia(M, righe):
+    import datetime as dt
+    per_data = collections.defaultdict(list)
+    for r in righe: per_data[(r['lega'], r['data'])].append(r)
+    vicine = lambda lg, d: sum((per_data.get((lg, d + dt.timedelta(days=k)), []) for k in (-1, 0, 1)), [])
+    cooc = collections.defaultdict(collections.Counter)
+    for m in M:
+        for r in vicine(m['lega'], dt.date.fromisoformat(m['data'])):
+            w = 1 if (r['hg'], r['ag']) == (m['hg'], m['ag']) else 0.01
+            cooc[(m['lega'], m['H'])][r['H']] += w; cooc[(m['lega'], m['A'])][r['A']] += w
+    mappa = {k: c.most_common(1)[0][0] for k, c in cooc.items()}
+    out, diversi, mancanti = [], 0, 0
+    for m in M:
+        c = [r for r in vicine(m['lega'], dt.date.fromisoformat(m['data'])) if r['H'] == mappa.get((m['lega'], m['H'])) and r['A'] == mappa.get((m['lega'], m['A']))]
+        if len(c) != 1 or not c[0]['qc']: mancanti += 1; continue
+        if (c[0]['hg'], c[0]['ag']) != (m['hg'], m['ag']): diversi += 1; continue
+        out.append(dict(m, qc=c[0]['qc'], fc=c[0]['fc'], qp=c[0]['qp'], riga=c[0]['riga']))
+    print(f'partite dei CSV {len(M)}: agganciate col punteggio uguale {len(out)}, punteggio diverso {diversi}, non trovate {mancanti}'
+          f' · coincidenza {100 * len(out) / max(1, len(out) + diversi):.2f}%')
+    return out
 
 def blocco(m):
     return 'il 2026/27' if m['fds'] == '2627' else m['lega']
@@ -119,13 +143,12 @@ def main():
     if '--quote' in a: i = a.index('--quote'); cq = a[i + 1]; del a[i:i + 2]
     i = a.index('--allena'); j = a.index('--prova') if '--prova' in a else len(a)
     allena, prova = a[i + 1:j], a[j + 1:]
-    W, b, OU, cal = costanti()
-    print(f'dallo Scanner: QUOTE_COMB W {W.tolist()} b {b.tolist()} · QUOTE_OU {OU} · ricalibrazione del Goal {cal}')
+    W, b, OU = costanti()
+    print(f'dallo Scanner: QUOTE_COMB W {W.tolist()} b {b.tolist()} · QUOTE_OU {OU}')
     M, Q = carica(allena, cq); C = calcola(Q, W, b, OU)
     print(f'--allena: {len(C["Q"])} partite con le quote dell\'Over · prova di coincidenza della matrice del motore: scarto massimo {C["dev"]:.3f} punti')
     ab = stima_goal(C)
-    print(f'ricalibrazione del Goal stimata su --allena: a {ab[0]:+.5f}, b {ab[1]:.5f}')
-    ab = cal or ab
+    print(f'ricalibrazione del Goal stimata su --allena: a {ab[0]:+.5f}, b {ab[1]:.5f} (la regola ha fissato +0.12317 / 0.83776)')
     C['bl'] = C['lega']
     print('\n=== --allena, descrittivo (per lega) ===')
     L0, L1 = perdite(C['E'], C['hg'], C['ag']), perdite(C['A'], C['hg'], C['ag'])

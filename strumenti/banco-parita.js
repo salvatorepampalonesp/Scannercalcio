@@ -335,6 +335,11 @@ async function runScanner(browser, base, matches, limit) {
     const set = (a, b, c, o = '', u = '') => { [['quota-1', a], ['quota-x', b], ['quota-2', c], ['quota-ov', o], ['quota-un', u]]
       .forEach(([id, v]) => document.getElementById(id).value = v); aggiornaQuote(); };
     const tb = document.getElementById('verdetti-body'), motoreHtml = tb.innerHTML;
+    // risultati esatti, handicap e multigol (b62): con 1X2 e Over dalla matrice allineata, senza dal motore
+    const MID = [['exact-scores', 'div'], ['table-ah', 'table'], ['mg-tot', 'div'], ['mg-h', 'div'], ['mg-a', 'div']];
+    const matOra = () => MID.map(([id]) => document.getElementById(id).innerHTML).join('|'), matMotore = matOra();
+    const matAttesa = Q => { const C = window.__QUOTE_CTX, H = _htmlMatrice(_mercatiMatrice(matriceAllineata(Q.over, Q.lg12, C.rho)), C.hName);
+      return [H.esatti, H.ah, H.mgTot, H.mgH, H.mgA].map((h, i) => { const e = document.createElement(MID[i][1]); e.innerHTML = h; return e.innerHTML; }).join('|'); };
     const casi = [], leggi = (nome, x, g) => { const h = document.getElementById('quote-box').innerHTML, p = document.getElementById('ai-prompt').value, Q = window.__QUOTE_GOL;
       casi.push({ nome, x, g, righe: (h.match(/<tr>/g) || []).length, conQuote: /CON LE QUOTE DEL MERCATO/.test(p), sintesi: /pick da citare/.test(p),
                   golPrompt: /GOL CON LE QUOTE/.test(p), golSintesi: /Over\/Under e Goal cita/.test(p), goalPrompt: /\| NoGoal \d+\.\d%/.test(p),
@@ -342,7 +347,9 @@ async function runScanner(browser, base, matches, limit) {
                   tabQuote: (tb.innerHTML.match(/>con le quote<\/div>/g) || []).length, tabNota: /Con le quote\./.test(document.getElementById('verdetti-quote').innerHTML),
                   tabMotore: tb.innerHTML === motoreHtml, tabPrompt: x ? !!window.__VERDETTI_QUOTE && p.includes(_tabTesto(window.__VERDETTI_QUOTE)) && /ricalcolato con le quote/.test(p) : p.includes(window.__TAB_TXT_MOTORE),
                   verdettiMotore: (window.__VERDETTI || []).every(v => !v.quote) && window.__VERDETTI.length > 0,
-                  avviso: /Segui il pick con le quote/.test(h), segnaposto: /@@/.test(p), rotto: /NaN|undefined|Infinity/.test(h + p + tb.innerHTML) }); };
+                  matNota: /Con le quote\./.test(document.getElementById('matrice-quote').innerHTML), matMotore: matOra() === matMotore,
+                  matAllineata: Q ? matOra() === matAttesa(Q) : null,
+                  avviso: /Segui il pick con le quote/.test(h), segnaposto: /@@/.test(p), rotto: /NaN|undefined|Infinity/.test(h + p + tb.innerHTML + matOra()) }); };
     const P = window.__QUOTE_CTX.p, contro = P[0] >= P[2] ? ['9', '5', '1.30'] : ['1.30', '5', '9'];
     set('', '', ''); leggi('vuote', false, 0);
     set('2,10', '3.40', '3.60'); leggi('normali, con la virgola', true, 0);
@@ -656,9 +663,10 @@ if (require.main === module) (async () => {
       || x.golPrompt !== (x.g > 0) || x.golSintesi !== (x.g > 0) || x.goalPrompt !== (x.g === 2)
       || (x.g === 2 ? !(x.allineata < 1e-6) : x.allineata !== null)
       || x.tabQuote !== (x.x ? (x.g === 2 ? 10 : 6) : 0) || x.tabNota !== x.x || x.tabMotore === x.x || !x.tabPrompt || !x.verdettiMotore
+      || x.matNota !== (x.g === 2) || x.matMotore === (x.g === 2) || (x.g === 2 && !x.matAllineata)
       || (x.nome === 'il mercato contraddice il motore' && !x.avviso)) : null;
   console.log('   quote: ' + (Q ? `${Q.length} casi` + (qRotte.length ? ' · ROTTI: ' + JSON.stringify(qRotte)
-    : ' · card e prompt senza NaN ne\' segnaposto, avviso quando il mercato contraddice il motore, matrice allineata all\'Over e all\'1X2, tabellone con le quote (6 o 10 righe) e del motore senza, campi svuotati al cambio partita') : 'campo assente'));
+    : ' · card e prompt senza NaN ne\' segnaposto, avviso quando il mercato contraddice il motore, matrice allineata all\'Over e all\'1X2, tabellone con le quote (6 o 10 righe) e del motore senza, risultati esatti/handicap/multigol dalla matrice allineata con 1X2 e Over e del motore senza, campi svuotati al cambio partita') : 'campo assente'));
   // le formazioni devono avere valori veri, non tutti nulli: altrimenti il confronto non prova niente
   for (const m of day) { const L = scanner.runs[m.id].lineup, f = F => F ? `assenti ${F.abitualiAssenti} (peso ${F.pesoAssenti == null ? '-' : F.pesoAssenti.toFixed(2)}, gol ${F.golAssenti == null ? '-' : F.golAssenti.toFixed(2)}), cambi ${F.cambi}, allenatore ${F.allenatoreNuovo ? 'nuovo' : F.partiteAllenatore + '+'}` : '-';
     console.log(`   formazioni ${m.id}: casa ${f(L && L.H)} | trasf. ${f(L && L.A)}`);

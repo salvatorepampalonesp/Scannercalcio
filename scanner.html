@@ -427,7 +427,7 @@ textarea{min-height:0;font-size:12px}
       <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#03140e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-6 4 3 7-8"/><path d="M15 6h4v4"/></svg></div>
       <div style="min-width:0"><h1>Scanner</h1><div class="brand-sub">Motore V9.7 &middot; probabilit&agrave; calibrate sul backtest</div></div>
     </div>
-    <span class="pill pill-build" id="build-ver">build 0905-b61</span>
+    <span class="pill pill-build" id="build-ver">build 0905-b62</span>
   </div>
 </header>
 
@@ -829,6 +829,7 @@ textarea{min-height:0;font-size:12px}
     <details class="card c-slate" data-apri>
       <summary><div class="section-title"><span class="ico">&#127922;</span><span class="t">Risultati esatti, handicap e multigol<small>Dalla matrice Dixon-Coles</small></span><span class="scope scope-ruolo">RUOLO &middot; casa/trasferta</span></div></summary>
       <div>
+        <div id="matrice-quote"></div>
         <div class="grid-2">
           <div>
             <div class="sub-title" style="margin-top:0">Risultati esatti pi&ugrave; probabili</div>
@@ -2356,6 +2357,38 @@ function matriceAllineata(pOv, lg12, rho) {
   const T = (lo + hi) / 2, s = _dividiGol(T, lg12, rho);
   return calcDCMatrix(T * s, T * (1 - s), rho);
 }
+// Risultati esatti, multigol e handicap da una matrice dei gol: il motore li disegna con la sua,
+// la card delle quote (b62) con quella allineata. Stesso HTML nei due casi.
+function _mercatiMatrice(mat) {
+  const esatti = [];
+  for (let i = 0; i <= 6; i++) for (let j = 0; j <= 6; j++) esatti.push({ h: i, a: j, p: mat[i][j] || 0 });
+  esatti.sort((a, b) => b.p - a.p);
+  const mg = (m, fasce) => Object.fromEntries(fasce.map(f => [f, multigoal(mat, +f[0], +f[2], m)]));
+  return { esatti, mgTot: mg('tot', ['0-1', '1-2', '1-3', '2-3', '2-4', '3-5']),
+           mgH: mg('h', ['0-1', '1-2', '1-3', '2-3']), mgA: mg('a', ['0-1', '1-2', '1-3', '2-3']),
+           ah: [-1.5, -1.0, -0.75, -0.5, +0.5, +1.0, +1.5].map(h => ({ h, ...asianHandicapMat(mat, h) })) };
+}
+function _htmlMatrice(M, hName) {
+  let esatti = '';
+  for (let i = 0; i < 6; i++) { const s = M.esatti[i]; esatti += `<div class="card-small" style="padding:8px; background:var(--panel2); border:1px solid var(--line); color:var(--txt)"><div style="font-size:20px; font-weight:900">${s.h} - ${s.a}</div><div style="font-size:12px; color:var(--blue); font-weight:bold">${pct(s.p)}</div></div>`; }
+  let ah = `<tr><th>Handicap (su ${hName})</th><th>1 (Casa Copre)</th><th>Rimborso</th><th>2 (Trasf Copre)</th></tr>`;
+  M.ah.forEach(d => { let lbl = d.h > 0 ? `+${d.h}` : d.h; ah += `<tr><td style="font-weight:bold">${lbl}</td><td style="color:var(--blue)">${pct(d.pHome)}</td><td>${d.pRefund>0 ? pct(d.pRefund) : '-'}</td><td style="color:var(--red)">${pct(d.pAway)}</td></tr>`; });
+  const mg = (obj) => Object.keys(obj).map(k => `<div style="background:rgba(79,140,255,.10); border:1px solid rgba(79,140,255,.30); border-radius:6px; padding:6px 8px; display:flex; justify-content:space-between; align-items:center;"><span style="font-weight:bold; font-size:11px">${k} Gol</span><span style="font-weight:900; color:var(--blue); font-size:13px">${pct(obj[k])}</span></div>`).join('');
+  return { esatti, ah, mgTot: mg(M.mgTot), mgH: mg(M.mgH), mgA: mg(M.mgA) };
+}
+const MATRICE_QUOTE_RESA = { partite: 4849, blocchi: 4, esatti: 8.60, multigol: 8.93, handicap: 4.80 };
+function _matriceCard(mat, hName, conQuote) {
+  if (typeof document === 'undefined') return;
+  const H = _htmlMatrice(_mercatiMatrice(mat), hName), R = MATRICE_QUOTE_RESA;
+  [['exact-scores', H.esatti], ['table-ah', H.ah], ['mg-tot', H.mgTot], ['mg-h', H.mgH], ['mg-a', H.mgA]]
+    .forEach(([id, h]) => { const el = document.getElementById(id); if (el) el.innerHTML = h; });
+  const n = document.getElementById('matrice-quote');
+  if (n) n.innerHTML = !conQuote ? '' : '<div style="border-left:3px solid var(--orange);padding:8px 12px;margin-bottom:12px;background:rgba(255,255,255,.03);'
+    + 'border-radius:0 8px 8px 0;font-size:11px;line-height:1.55;color:var(--txt)"><b style="color:var(--orange)">Con le quote.</b> '
+    + "Risultati esatti, handicap e multigol vengono dalla matrice dei gol allineata all'Over e all'1X2 con le quote, la stessa di Goal e Over 1.5 e 3.5. "
+    + `Su ${R.partite.toLocaleString('it-IT')} partite di leghe mai guardate prima sono pi&ugrave; vicini al vero di quelli del motore in ${R.blocchi} blocchi su ${R.blocchi}, su tutti e tre i mercati. `
+    + '<span style="color:var(--dim)">Cancella le quote per rivedere quelli del motore.</span></div>';
+}
 function _quoteLette(ids) {
   if (typeof document === 'undefined') return null;
   ids = ids || ['quota-1', 'quota-x', 'quota-2'];
@@ -2398,10 +2431,11 @@ function aggiornaQuote() {
     box.innerHTML = avvHtml || 'Nessuna quota: vale il motore, qui sopra.';
     tabellone(null);
     scriviPrompt('', '');
+    _matriceCard(calcDCMatrix(C.lam[0], C.lam[1], C.rho), C.hName, false);
     return;
   }
   const pc = x => (100 * x).toFixed(1) + '%';
-  let html = avvHtml, sez = '', sint = '', P = null, Oq = null, Gq = null;
+  let html = avvHtml, sez = '', sint = '', P = null, Oq = null, Gq = null, Aq = null;
   if (q) {
     const R = combinaQuote(C.p, q), M = R.mercato; P = R.comb;
     const nomi = ['1', 'X', '2'], chi = [`vince ${C.hName}`, 'pareggio', `vince ${C.aName}`];
@@ -2446,7 +2480,7 @@ function aggiornaQuote() {
     const O = combinaOU(e25.pOv, qo), A = P ? matriceAllineata(O.comb, Math.log(P[0] / P[2]), C.rho) : null;
     const a15 = A && probsFromMatrix(A, 1.5).pOv, a25 = A && probsFromMatrix(A, 2.5), a35 = A && probsFromMatrix(A, 3.5).pOv;
     if (A) window.__QUOTE_GOL = { over: O.comb, o25: a25.pOv, lg12: Math.log(P[0] / P[2]), lgMat: Math.log(a25.p1 / a25.p2), o15: a15, o35: a35, gg: a25.pGG };
-    Oq = O; Gq = A ? a25 : null;
+    Oq = O; Gq = A ? a25 : null; Aq = A;
     const r = (lab, e, m, c) => `<tr><td style="text-align:left">${lab}</td><td>${pc(e)}</td><td>${m == null ? '--' : pc(m)}</td><td><b>${c == null ? '--' : pc(c)}</b></td></tr>`;
     html += `<div class="tbl-scroll" style="margin-top:10px"><table class="table-ui table-compact">`
       + `<thead><tr><th style="text-align:left">Gol</th><th>Motore</th><th>Mercato</th><th>Con le quote</th></tr></thead><tbody>`
@@ -2458,7 +2492,9 @@ function aggiornaQuote() {
       + `<b>${QUOTE_OU_RESA.tutte.toFixed(1)}%</b> (motore ${QUOTE_OU_RESA.motore.toFixed(1)}%). `
       + (A ? `Over 1.5 e 3.5 e Goal vengono dalla matrice dei gol allineata all'Over e all'1X2 con le quote: meglio del motore in 11 leghe su 11 (Over 3.5: 10). `
            : `Per Goal e Over 1.5 e 3.5 con le quote servono anche le quote dell'1X2. `)
-      + `Margine del bookmaker: ${(100 * O.margine).toFixed(1)}%. Risultati esatti, multigol e handicap restano del motore.</div>`;
+      + `Margine del bookmaker: ${(100 * O.margine).toFixed(1)}%. `
+      + (A ? 'Anche risultati esatti, handicap e multigol vengono da questa matrice (la loro card lo dice).</div>'
+           : "Risultati esatti, multigol e handicap restano del motore: con le quote servono anche quelle dell'1X2.</div>");
     sez += `\n- GOL CON LE QUOTE (${window.__QUOTE_FONTE_OU || "scritte dall'utente"}: Over 2.5 @${qo[0].toFixed(2)} | Under 2.5 @${qo[1].toFixed(2)}, margine ${(100 * O.margine).toFixed(1)}%)\n`
       + `    Over 2.5: motore ${pc(e25.pOv)} | mercato ${pc(O.mercato)} | con le quote ${pc(O.comb)}\n`
       + (A ? `    con le quote (matrice dei gol allineata all'Over e all'1X2 con le quote): Over 1.5 ${pc(a15)} | Over 3.5 ${pc(a35)} | Goal ${pc(a25.pGG)} | NoGoal ${pc(1 - a25.pGG)}\n`
@@ -2475,6 +2511,7 @@ function aggiornaQuote() {
   }
   box.innerHTML = html;
   tabellone(P, Oq, Gq);
+  _matriceCard(Aq || calcDCMatrix(C.lam[0], C.lam[1], C.rho), C.hName, !!Aq);
   scriviPrompt(sez, sint);
 }
 
@@ -2905,7 +2942,7 @@ function _tabTesto(V) {
        + senza.map(v => v.nome + ' ' + (v.edge == null ? 'base ignota' : (v.edge >= 0 ? '+' : '') + v.edge.toFixed(1))).join(', ') : '');
 }
 
-window.__SCANNER_BUILD = '0905-b61';
+window.__SCANNER_BUILD = '0905-b62';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -3329,13 +3366,8 @@ async function avviaScanner() {
     const probsOver = probsFromMatrix(dcOver); const probsRole = probsFromMatrix(dcRole);
     const dcMat = dcRole; const lamH_mix = lamH_role, lamA_mix = lamA_role;
 
-    let exactScores = []; for(let i=0; i<=6; i++) { for(let j=0; j<=6; j++) { exactScores.push({ h: i, a: j, p: dcMat[i][j] || 0 }); } }
-    exactScores.sort((a,b) => b.p - a.p); let topScoresHtml = "";
-    for(let i=0; i<6; i++) { const s = exactScores[i]; topScoresHtml += `<div class="card-small" style="padding:8px; background:var(--panel2); border:1px solid var(--line); color:var(--txt)"><div style="font-size:20px; font-weight:900">${s.h} - ${s.a}</div><div style="font-size:12px; color:var(--blue); font-weight:bold">${pct(s.p)}</div></div>`; }
-    const mgTot = { '0-1': multigoal(dcMat,0,1,'tot'), '1-2': multigoal(dcMat,1,2,'tot'), '1-3': multigoal(dcMat,1,3,'tot'), '2-3': multigoal(dcMat,2,3,'tot'), '2-4': multigoal(dcMat,2,4,'tot'), '3-5': multigoal(dcMat,3,5,'tot') };
-    const mgH = { '0-1': multigoal(dcMat,0,1,'h'), '1-2': multigoal(dcMat,1,2,'h'), '1-3': multigoal(dcMat,1,3,'h'), '2-3': multigoal(dcMat,2,3,'h') };
-    const mgA = { '0-1': multigoal(dcMat,0,1,'a'), '1-2': multigoal(dcMat,1,2,'a'), '1-3': multigoal(dcMat,1,3,'a'), '2-3': multigoal(dcMat,2,3,'a') };
-    const ahData = [-1.5, -1.0, -0.75, -0.5, +0.5, +1.0, +1.5].map(h => ({ h, ...asianHandicapMat(dcMat, h) }));
+    const _MM = _mercatiMatrice(dcMat);
+    const mgTot = _MM.mgTot, mgH = _MM.mgH, mgA = _MM.mgA, ahData = _MM.ah;
 
     const calcAdv = (useRole) => {
       const scope = (useRole && dH.role.n >= 3 && dA.role.n >= 3) ? 'role' : 'overall';
@@ -3890,12 +3922,10 @@ async function avviaScanner() {
            : ''));
     }
 
-    safeHtml('exact-scores', topScoresHtml);
-    let ahHtml = `<tr><th>Handicap (su ${hName})</th><th>1 (Casa Copre)</th><th>Rimborso</th><th>2 (Trasf Copre)</th></tr>`;
-    ahData.forEach(d => { let lbl = d.h > 0 ? `+${d.h}` : d.h; ahHtml += `<tr><td style="font-weight:bold">${lbl}</td><td style="color:var(--blue)">${pct(d.pHome)}</td><td>${d.pRefund>0 ? pct(d.pRefund) : '-'}</td><td style="color:var(--red)">${pct(d.pAway)}</td></tr>`; });
-    safeHtml('table-ah', ahHtml);
-    const renderMg = (obj) => Object.keys(obj).map(k => `<div style="background:rgba(79,140,255,.10); border:1px solid rgba(79,140,255,.30); border-radius:6px; padding:6px 8px; display:flex; justify-content:space-between; align-items:center;"><span style="font-weight:bold; font-size:11px">${k} Gol</span><span style="font-weight:900; color:var(--blue); font-size:13px">${pct(obj[k])}</span></div>`).join('');
-    safeHtml('mg-tot', renderMg(mgTot)); safeHtml('mg-h', renderMg(mgH)); safeHtml('mg-a', renderMg(mgA));
+    const _HM = _htmlMatrice(_MM, hName);
+    safeHtml('exact-scores', _HM.esatti);
+    safeHtml('table-ah', _HM.ah);
+    safeHtml('mg-tot', _HM.mgTot); safeHtml('mg-h', _HM.mgH); safeHtml('mg-a', _HM.mgA);
 
     safeTxt('cor-tot-over', f1(advOver.lCor)); safeTxt('cor-tot-role', f1(advRole.lCor));
     safeTxt('sot-tot-over', f1(advOver.lSot)); safeTxt('sot-tot-role', f1(advRole.lSot));
