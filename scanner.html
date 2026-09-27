@@ -285,6 +285,52 @@ textarea{min-height:0;font-size:12px}
 .scope-ruolo{border-color:rgba(77,163,255,.55);color:#7fbcff;background:rgba(77,163,255,.08)}
 .scope-mix{border-color:rgba(245,183,59,.55);color:#f7c865;background:rgba(245,183,59,.08)}
 
+/* ---------- giocatori (b60): mercato a pastiglie, una lista per squadra ---------- */
+#btn-giocatori{margin-bottom:12px}
+.gi-box:empty{display:none}
+.gi-chips{display:flex;flex-wrap:wrap;gap:7px;margin:2px 0 10px}
+.gi-chip{font:inherit;font-size:12.5px;font-weight:650;color:var(--dim);padding:6px 12px;border-radius:99px;cursor:pointer;
+  border:1px solid var(--line2);background:var(--panel2);transition:color .15s,border-color .15s,background .15s;white-space:nowrap}
+.gi-chip:hover{color:var(--txt);border-color:#3a4659}
+.gi-chip.on{color:var(--txt);background:color-mix(in srgb,var(--c) 24%,var(--panel2));border-color:color-mix(in srgb,var(--c) 75%,transparent)}
+.gi-seg{display:inline-flex;gap:3px;padding:3px;border-radius:99px;background:var(--panel2);border:1px solid var(--line);margin:0 0 4px}
+.gi-seg .gi-chip{border-color:transparent;background:transparent;padding:5px 13px}
+.gi-seg .gi-chip.on{background:color-mix(in srgb,var(--c) 34%,var(--panel3));border-color:transparent}
+.gi-head{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 10px;margin:12px 0 12px}
+.gi-head b{font-size:16px;font-weight:800;color:var(--txt);letter-spacing:-.01em}
+.gi-head span{font-size:12px;color:var(--dim)}
+.gi-team{--t:var(--home);background:var(--panel2);border:1px solid var(--line);border-radius:16px;padding:4px 14px 2px;min-width:0}
+.gi-team.t-2{--t:var(--away)}
+.gi-team-h{display:flex;align-items:center;gap:9px;padding:10px 0;border-bottom:1px solid var(--line2)}
+.gi-team-h i{width:10px;height:10px;border-radius:50%;flex:none;background:var(--t);box-shadow:0 0 0 3px color-mix(in srgb,var(--t) 22%,transparent)}
+.gi-team-h b{font-size:15px;font-weight:800;color:var(--txt);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gi-team-h span{margin-left:auto;font-size:11.5px;color:var(--dim);white-space:nowrap}
+.gi-cols,.gi-row{display:grid;grid-template-columns:minmax(0,1fr) 64px 60px;column-gap:10px;align-items:center}
+.gi-cols{padding:10px 0 2px;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--faint)}
+.gi-cols span+span{text-align:center}
+.gi-row{padding:10px 0;border-top:1px solid rgba(255,255,255,.05)}
+.gi-cols+.gi-row{border-top:none}
+.gi-nome{display:flex;align-items:center;gap:7px;min-width:0;font-size:13.5px;font-weight:650;color:var(--txt)}
+.gi-nome span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gi-xi{flex:none;font-size:10px;font-weight:850;letter-spacing:.04em;line-height:1.5;color:var(--bg);background:var(--t);padding:0 5px;border-radius:5px}
+.gi-sub{font-size:11.5px;color:var(--dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.gi-u5{display:flex;justify-content:center;gap:3px}
+.gi-u5 i{width:9px;height:9px;border-radius:50%;background:var(--panel3);border:1px solid var(--line2)}
+.gi-u5 i.si{background:var(--t);border-color:transparent}
+.gi-pct{text-align:center;font-variant-numeric:tabular-nums}
+.gi-pct b{display:block;font-size:16px;font-weight:850;letter-spacing:-.02em;line-height:1.1}
+.gi-pct.alto b{color:var(--ok)} .gi-pct.medio b{color:var(--txt)} .gi-pct.basso b{color:var(--dim)}
+.gi-pct small{display:block;font-size:10.5px;color:var(--dim)}
+.gi-trk{display:block;height:4px;border-radius:99px;background:var(--panel3);margin:4px 2px 3px;overflow:hidden}
+.gi-trk i{display:block;height:100%;border-radius:99px;background:var(--faint)}
+.gi-pct.alto .gi-trk i{background:var(--ok)} .gi-pct.medio .gi-trk i{background:var(--t)}
+.gi-vuoto{padding:14px 0;font-size:12.5px;color:var(--dim)}
+.gi-avviso{margin:10px 0 0;font-size:12px;color:var(--warn)}
+.gi-load{font-size:12.5px;color:var(--dim)}
+.gi-load b{color:var(--txt)}
+.gi-load .gi-trk{height:6px;margin:8px 0 0}
+.gi-load .gi-trk i{background:linear-gradient(90deg,#6f63ff,#a78bfa);transition:width .25s}
+
 /* il motore scrive testi a 9-10px negli stili inline: sotto gli 11px non si legge */
 [style*="font-size:9px"],[style*="font-size: 9px"],[style*="font-size:9.5px"],
 [style*="font-size:10px"],[style*="font-size: 10px"]{font-size:11.5px !important}
@@ -345,7 +391,7 @@ textarea{min-height:0;font-size:12px}
       <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#03140e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-6 4 3 7-8"/><path d="M15 6h4v4"/></svg></div>
       <div style="min-width:0"><h1>Scanner</h1><div class="brand-sub">Motore V9.7 &middot; probabilit&agrave; calibrate sul backtest</div></div>
     </div>
-    <span class="pill pill-build" id="build-ver">build 0905-b59</span>
+    <span class="pill pill-build" id="build-ver">build 0905-b60</span>
   </div>
 </header>
 
@@ -514,14 +560,13 @@ textarea{min-height:0;font-size:12px}
         titolare e in <b>tutte</b>. Sono <b>frequenze, non probabilit&agrave;</b>: non sanno niente dell'avversario.
         Cinque partite sono poche, e nel motore le medie brevi non hanno mai previsto meglio della lunga: la
         colonna da guardare &egrave; <b>Tutte</b>, e l'ordine tiene conto di quante partite ci sono dietro
-        (un 2 su 3 non passa davanti a un 15 su 24). &#9679; = titolare nella formazione di oggi. La prima volta
-        costa una chiamata per partita (circa 60).
+        (un 2 su 3 non passa davanti a un 15 su 24). <b>XI</b> = titolare nella formazione di oggi. I cinque
+        pallini sono le sue ultime 5 da titolare, la pi&ugrave; recente a destra: pieno se ha raggiunto la soglia.
+        La prima volta costa una chiamata per partita (circa 60).
       </div></details>
-      <div class="grid-2" style="align-items:center;margin-bottom:12px">
-        <button class="btn btn-sm" id="btn-giocatori" onclick="caricaGiocatori()">Carica le statistiche dei giocatori</button>
-        <select id="sel-mercato-giocatori" onchange="renderGiocatori()"></select>
-      </div>
-      <div id="giocatori-box" class="note">--</div>
+      <button class="btn btn-full" id="btn-giocatori" onclick="caricaGiocatori()">Carica le statistiche dei giocatori</button>
+      <select id="sel-mercato-giocatori" onchange="renderGiocatori()" style="display:none" aria-hidden="true"></select>
+      <div id="giocatori-box" class="note gi-box">--</div>
     </section>
 
     <!-- STEP 4: perche' -->
@@ -1736,12 +1781,13 @@ async function caricaGiocatori() {
   const C = window.__PLAYER_CTX;
   if (!C) return alert("Prima lancia l'analisi della partita.");
   const btn = document.getElementById('btn-giocatori'); if (btn) btn.disabled = true;
-  const out = {};
+  const out = {}, totale = C.H.partite.length + C.A.partite.length;
   for (const side of ['H', 'A']) {
     const T = C[side], rec = {}, trovati = {}; let nDati = 0, nRighe = 0;
     for (let i = 0; i < T.partite.length; i++) {
-      const pm = T.partite[i];
-      safeHtml('giocatori-box', 'Scarico ' + _escHtml(T.nome) + ': partita ' + (i + 1) + ' di ' + T.partite.length + '...');
+      const pm = T.partite[i], fatte = (side === 'A' ? C.H.partite.length : 0) + i + 1;
+      safeHtml('giocatori-box', '<div class="gi-load">Scarico le statistiche di <b>' + _escHtml(T.nome) + '</b> &middot; partita ' + (i + 1) + ' di ' + T.partite.length
+        + '<span class="gi-trk"><i style="width:' + (100 * fatte / Math.max(1, totale)).toFixed(0) + '%"></i></span></div>');
       const res = await fetchPlayersRaw(pm.id);
       const list = res ? (Array.isArray(res.data) ? res.data : (res.data && Array.isArray(res.data.players) ? res.data.players : null)) : null;
       if (!list) continue;
@@ -1764,38 +1810,58 @@ async function caricaGiocatori() {
     out[side] = { nome: T.nome, nPartite: T.partite.length, nDati, nRighe, trovati, xi: T.xi, giocatori: Object.values(rec) };
   }
   window.__PLAYER_DATA = out;
-  if (btn) btn.disabled = false;
+  if (btn) {
+    const manca = out.H.nPartite - out.H.nDati + out.A.nPartite - out.A.nDati;
+    btn.disabled = false;
+    btn.textContent = !manca ? 'Statistiche caricate' : manca === 1 ? 'Riprova la partita senza dati' : 'Riprova le ' + manca + ' partite senza dati';
+    btn.style.display = manca ? '' : 'none';
+  }
   renderGiocatori();
+}
+
+function mercatoGiocatori(i) {
+  const sel = document.getElementById('sel-mercato-giocatori'); if (!sel) return;
+  sel.value = String(i); renderGiocatori();
 }
 
 function renderGiocatori() {
   const sel = document.getElementById('sel-mercato-giocatori');
   if (sel && !sel.options.length) { MERCATI_GIOCATORI.forEach((m, i) => sel.add(new Option(m[2], String(i)))); sel.value = '1'; }
   const D = window.__PLAYER_DATA; if (!D) return;
-  const [met, soglia, nomeM] = MERCATI_GIOCATORI[+(sel ? sel.value : 1) || 0];
-  const esc = _escHtml;
-  const tab = S => {
+  const cur = +(sel ? sel.value : 1) || 0, [met, soglia, nomeM] = MERCATI_GIOCATORI[cur];
+  const esc = _escHtml, gruppi = [];
+  MERCATI_GIOCATORI.forEach((m, i) => { const g = m[2].split(':')[0]; let G = gruppi.find(x => x.g === g); if (!G) gruppi.push(G = { g, idx: [] }); G.idx.push(i); });
+  const Gcur = gruppi.find(G => G.idx.includes(cur));
+  const verso = G => { const k = G.idx.find(i => MERCATI_GIOCATORI[i][1] === soglia); return k != null ? k : G.idx[0]; };
+  const chip = (i, txt, on) => '<button type="button" class="gi-chip' + (on ? ' on' : '') + '" aria-pressed="' + on + '" onclick="mercatoGiocatori(' + i + ')">' + esc(txt) + '</button>';
+  const filtri = '<div class="gi-chips">' + gruppi.map(G => chip(verso(G), G.g, G === Gcur)).join('') + '</div>'
+    + (Gcur.idx.length > 1 ? '<div class="gi-seg">' + Gcur.idx.map(i => chip(i, MERCATI_GIOCATORI[i][2].split(':')[1].trim(), i === cur)).join('') + '</div>' : '');
+  const cop = S => { const m = met === 'golast' ? 'gol' : met; if (m === 'giallo') return ''; const n = S.trovati[m] || 0;
+    return S.nRighe && n / S.nRighe < 0.5 ? '<div class="gi-avviso">Il dato &laquo;' + esc(nomeM) + '&raquo; c\'&egrave; solo su ' + n + ' righe su ' + S.nRighe + '.</div>' : ''; };
+  const blocco = (S, lato) => {
     const oggi = new Set(S.xi || []);
     const righe = S.giocatori.map(g => {
       const base = g.righe.filter(r => r.base && r[met] != null);
       if (!(oggi.has(g.id) || g.righe.some(r => r.recente)) || base.length < 3) return null;
       const u5 = base.slice(0, 5), ok = r => r[met] >= soglia;
       return { g, oggi: oggi.has(g.id), tit: g.righe.filter(r => r.tit === true).length,
-               media: base.reduce((a, r) => a + r[met], 0) / base.length,
+               media: base.reduce((a, r) => a + r[met], 0) / base.length, seq: u5.map(ok).reverse(),
                u5: u5.filter(ok).length, n5: u5.length, tot: base.filter(ok).length, n: base.length };
     }).filter(Boolean).sort((a, b) => (b.tot + 1) / (b.n + 2) - (a.tot + 1) / (a.n + 2) || b.n - a.n).slice(0, 12);
-    if (!righe.length) return '<div style="margin:6px 0">Nessun giocatore con almeno 3 partite da titolare su questo dato.</div>';
-    return '<div class="tbl-scroll"><table class="table-ui table-compact"><thead><tr><th style="text-align:left">' + esc(S.nome) + '</th><th>Tit.</th><th>Media</th><th>Ult. 5</th><th>Tutte</th></tr></thead><tbody>'
-      + righe.map(x => { const pc = Math.round(100 * x.tot / x.n);
-          return '<tr><td style="text-align:left;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap' + (x.oggi ? ';font-weight:bold' : '') + '">' + (x.oggi ? '&#9679; ' : '') + esc(x.g.nome) + '</td>'
-            + '<td>' + x.tit + '/' + S.nPartite + '</td><td>' + x.media.toFixed(1) + '</td><td>' + x.u5 + '/' + x.n5 + '</td>'
-            + '<td style="font-weight:bold;color:' + (pc >= 70 ? 'var(--ok)' : pc >= 50 ? 'var(--txt)' : 'var(--dim)') + '">' + pc + '% <span style="font-weight:normal;color:var(--dim)">(' + x.tot + '/' + x.n + ')</span></td></tr>'; }).join('')
-      + '</tbody></table></div>';
+    const testa = '<div class="gi-team-h"><i></i><b>' + esc(S.nome) + '</b><span>dati per ' + S.nDati + ' partite su ' + S.nPartite + '</span></div>' + cop(S);
+    if (!righe.length) return '<div class="gi-team ' + lato + '">' + testa + '<div class="gi-vuoto">Nessun giocatore con almeno 3 partite da titolare su questo dato.</div></div>';
+    return '<div class="gi-team ' + lato + '">' + testa + '<div class="gi-cols"><span>Giocatore</span><span>Ultime 5</span><span>Tutte</span></div>'
+      + righe.map(x => { const pc = Math.round(100 * x.tot / x.n), liv = pc >= 70 ? 'alto' : pc >= 50 ? 'medio' : 'basso';
+          return '<div class="gi-row" data-g="1"><div style="min-width:0"><div class="gi-nome">'
+            + (x.oggi ? '<span class="gi-xi" title="titolare nella formazione di oggi">XI</span>' : '') + '<span>' + esc(x.g.nome) + '</span></div>'
+            + '<div class="gi-sub">titolare ' + x.tit + '/' + S.nPartite + ' &middot; media ' + x.media.toFixed(1) + '</div></div>'
+            + '<div class="gi-u5" title="' + x.u5 + ' su ' + x.n5 + ' nelle ultime da titolare, la pi&ugrave; recente a destra">'
+            + x.seq.map(v => '<i' + (v ? ' class="si"' : '') + '></i>').join('') + '</div>'
+            + '<div class="gi-pct ' + liv + '"><b>' + pc + '%</b><span class="gi-trk"><i style="width:' + pc + '%"></i></span><small>' + x.tot + ' su ' + x.n + '</small></div></div>'; }).join('')
+      + '</div>';
   };
-  const cop = S => { const m = met === 'golast' ? 'gol' : met; if (m === 'giallo') return ''; const n = S.trovati[m] || 0;
-    return S.nRighe && n / S.nRighe < 0.5 ? '<div style="color:var(--orange);margin:4px 0">' + esc(S.nome) + ': il dato &laquo;' + esc(nomeM) + '&raquo; c\'&egrave; solo su ' + n + ' righe su ' + S.nRighe + '.</div>' : ''; };
-  safeHtml('giocatori-box', '<div style="margin:4px 0 8px">' + esc(nomeM) + ' &middot; statistiche giocatori trovate per ' + D.H.nDati + '/' + D.H.nPartite + ' e ' + D.A.nDati + '/' + D.A.nPartite + ' partite</div>'
-    + cop(D.H) + tab(D.H) + '<div style="height:10px"></div>' + cop(D.A) + tab(D.A));
+  safeHtml('giocatori-box', filtri + '<div class="gi-head"><b>' + esc(nomeM) + '</b><span>quante volte da titolare, non una probabilit&agrave;</span></div>'
+    + '<div class="grid-2">' + blocco(D.H, 't-1') + blocco(D.A, 't-2') + '</div>');
 }
 
 // Il campione di ruolo e' un SOTTOINSIEME delle ultime `limit` complessive: con
@@ -2788,7 +2854,7 @@ function _tabTesto(V) {
        + senza.map(v => v.nome + ' ' + (v.edge == null ? 'base ignota' : (v.edge >= 0 ? '+' : '') + v.edge.toFixed(1))).join(', ') : '');
 }
 
-window.__SCANNER_BUILD = '0905-b59';
+window.__SCANNER_BUILD = '0905-b60';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -3620,6 +3686,7 @@ async function avviaScanner() {
                      pOv:dcOv, pUn:dcUn, pGG:dcGG, pNG:dcNG }, _LGBASE, advRole);
     renderFormazioni(_FH, _FA, _SH, _SA, _VP);
     safeHtml('giocatori-box', 'Premi il bottone per le statistiche dei giocatori di ' + _escHtml(hName) + ' e ' + _escHtml(aName) + '.');
+    const _btnG = document.getElementById('btn-giocatori'); if (_btnG) { _btnG.style.display = ''; _btnG.textContent = 'Carica le statistiche dei giocatori'; }
     const odd1 = probsRole.p1 > 0 ? (1/probsRole.p1).toFixed(2) : "N/A"; const oddX = probsRole.pX > 0 ? (1/probsRole.pX).toFixed(2) : "N/A"; const odd2 = probsRole.p2 > 0 ? (1/probsRole.p2).toFixed(2) : "N/A";
     const oddM1 = m1 > 0 ? (1/m1).toFixed(2) : "N/A"; const oddMX = mX > 0 ? (1/mX).toFixed(2) : "N/A"; const oddM2 = m2 > 0 ? (1/m2).toFixed(2) : "N/A";
     safeTxt('m-odd-1', oddM1); safeTxt('m-odd-x', oddMX); safeTxt('m-odd-2', oddM2);

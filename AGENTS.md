@@ -52,7 +52,7 @@ sono, le scrive l'utente. Per misurarle si usano gli stessi file (`strumenti/quo
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b59`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b60`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -316,7 +316,7 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b59`)
+## Stato attuale (`b60`)
 
 **1X2.** Col motore `b48` il pick azzecca il 52.7% (±1.4) contro il 43.0% del «gioca sempre in
 casa» sulle cinque leghe: 52.7% contro 40.2% in Serie A, 52.7% contro 43.1% in Premier, 53.2%
@@ -437,8 +437,9 @@ frequenze descrittive, non misurate contro il reale. Vedi *Le statistiche dei gi
 
 **Grafica.** Dal `b59` lo Scanner ha una grafica nuova: barra delle sezioni fissa, il verdetto 1X2
 in tre riquadri con una barra, le card di approfondimento che si aprono a richiesta (sul telefono la
-pagina passa da 20.483 a 8.279 px). Motore, id e numeri sono quelli del `b58`. Vedi *La
-grafica dello Scanner*.
+pagina passa da 20.483 a 8.279 px). Motore, id e numeri sono quelli del `b58`. Dal `b60` anche la
+card dei giocatori: il mercato si sceglie con le pastiglie, e ogni squadra ha la sua lista con la
+frequenza, una barra e le ultime 5 a pallini. Vedi *La grafica dello Scanner*.
 
 **La selezione vale più dell'accuratezza.** Prima di aggiungere una feature, chiedersi se
 il segnale non sia già nell'output, solo mal etichettato.
@@ -847,6 +848,18 @@ il motore no. Chiesta dall'utente: «rendiamolo moderno».
 - **Il tabellone**: la terza colonna è una pastiglia col verdetto e lo scarto, sotto quanto rende la
   sua famiglia e su quante proposte; prima era una frase sola che a 390 px allargava la tabella. Le
   parole sono le stesse.
+- **La card dei giocatori (`b60`)**, che l'utente trovava brutta dopo il caricamento: era una
+  tabella a cinque colonne per squadra, e a 390 px «22/27» andava a capo in «22/2 7». Ora il mercato
+  si sceglie con le pastiglie (nove gruppi, e sotto la soglia quando il gruppo ne ha più d'una;
+  passando a un altro gruppo la soglia resta se c'è), e ogni squadra è un riquadro col suo colore,
+  una riga per giocatore: nome con `XI` se è nella formazione di oggi, titolare e media sotto, le
+  ultime 5 da titolare a pallini (la più recente a destra, come la forma sotto la partita), la
+  frequenza su tutte con una barra e «14 su 22». Sul computer le due squadre stanno affiancate.
+  Durante lo scarico una barra dice a che partita è; dopo, il bottone sparisce, o dice «Riprova le N
+  partite senza dati» se qualcuna non è arrivata, e torna com'era a ogni analisi. La `<select>`
+  `sel-mercato-giocatori` resta, nascosta: è lo stato del mercato scelto (le pastiglie la cambiano
+  con `mercatoGiocatori`), e il banco la usa per passare i 15 mercati. I numeri, l'ordine e i 12
+  giocatori per squadra sono quelli di prima.
 
 **Cosa non cambia, e non deve cambiare.**
 
@@ -1037,12 +1050,13 @@ statistiche per giocatore come `/players` (gol e assist omessi quando valgono ze
 portiere senza il gruppo dei duelli) e gialli per giocatore negli eventi. Il banco stampa gli
 indici di ogni partita: se fossero tutti vuoti il confronto non proverebbe niente. Dopo il giro
 dello Scanner preme anche il bottone dei giocatori e passa tutti e 15 i mercati: fallisce se una
-tabella è vuota o contiene `NaN`, `undefined` o `Infinity`. Dal `b47`, nel batch e nello sweep,
+lista ha meno di due giocatori (contati da `data-g`, dal `b60`; prima erano le righe `<tr>`) o
+contiene `NaN`, `undefined` o `Infinity`. Dal `b47`, nel batch e nello sweep,
 rilegge l'archivio di lega dal **testo** del CSV esportato, ci fa girare `buildGlobalElo` del
 motore e confronta Elo e HFA con le righe del CSV, partita per partita; il controllo di potenza
 toglie una partita dall'archivio e deve vedere l'Elo cambiare.
 
-Esito al `b59` (storico 30), a 390px con tutte le 24 card aperte (anche nessuna tabella compatta che esce dal suo riquadro, il mega-prompt dello Scanner mai vuoto né rotto, i dieci casi delle quote, la matrice allineata e le quote automatiche a posto):
+Esito al `b60` (storico 30), a 390px con tutte le 24 card aperte (anche nessuna tabella compatta che esce dal suo riquadro, il mega-prompt dello Scanner mai vuoto né rotto, i dieci casi delle quote, la matrice allineata e le quote automatiche a posto):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
@@ -1050,7 +1064,7 @@ Esito al `b59` (storico 30), a 390px con tutte le 24 card aperte (anche nessuna 
 | batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 190 | 0 su 122 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
 | `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 127-155 | 74-82 | 0 |
-| `vecchio`: motore `b58` caricato (controllo) | 0/3, «motore caricato diverso ...» | 1 (il tabellone) | 1 (il certificato) | 0 |
+| `vecchio`: motore `b59` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 | 1 (il certificato) | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -1093,7 +1107,9 @@ HTML), e il certificato; tutto il resto della grafica nuova è markup fisso o sc
 della grafica, che non passano da `safeHtml`. Dal `b59` il banco apre tutte le `details` prima di
 misurare, e se il Comparatore non carica il motore entro un minuto si ferma col suo log invece di
 aspettare per sempre (controllo di potenza: con la guardia sbagliata rimessa esce con 2 in un
-minuto e mezzo, citando «Failed to execute 'observe' on 'MutationObserver'»).
+minuto e mezzo, citando «Failed to execute 'observe' on 'MutationObserver'»). Al `b60` il controllo
+col `b59` non vede nessuna scrittura diversa, solo il certificato: la card dei giocatori si scrive dopo
+il giro del motore, quando si preme il bottone, e il messaggio iniziale è lo stesso.
 
 **Le quote sul banco (dal `b54`).** Dopo il giro dello Scanner il banco scrive le quote nella card
 dell'ultima partita, in sei casi: vuote (niente tabella, niente blocco nel prompt), valide con la
@@ -2459,7 +2475,7 @@ calendario, nelle cinque leghe, le probabilità lo sanno già o non conta.
 ## Le statistiche dei giocatori
 
 **Cosa mostra.** La card «Giocatori — le ultime 30 partite», col bottone: per ogni giocatore
-della rosa di oggi e per un mercato scelto dal menu (falli subiti ≥ 1/2/3, falli commessi
+della rosa di oggi e per un mercato scelto con le pastiglie (falli subiti ≥ 1/2/3, falli commessi
 ≥ 1/2, tiri ≥ 1/2/3, tiri in porta ≥ 1/2, ammonito, segna, assist, gol o assist, contrasti
 vinti ≥ 2) le partite da titolare sulle ultime 30 di campionato della squadra, la media, e
 quante volte ha raggiunto la soglia nelle sue ultime 5 da titolare e in tutte. Le partite
@@ -2480,7 +2496,7 @@ Valori mancanti come nel resto del motore: un conteggio assente con il suo grupp
 **Su quali partite si conta.** Solo quelle da titolare (se la formazione della partita manca,
 quelle con almeno 45 minuti): una scommessa sul giocatore si fa su un titolare, e un ingresso
 al 80' abbassa la frequenza senza dire niente. Solo la rosa di oggi: chi è nella formazione
-della partita (●) o ha giocato in una delle ultime 5. L'ordine usa `(riusciti + 1) / (partite +
+della partita (`XI`) o ha giocato in una delle ultime 5. L'ordine usa `(riusciti + 1) / (partite +
 2)`, perché un 2 su 3 non passi davanti a un 15 su 24; la percentuale a schermo resta quella
 grezza.
 
@@ -3659,3 +3675,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b57` | le quote dell'Over/Under 2.5: regola registrata prima, due test passati su tre. Su 11.222 partite di undici leghe, fuori lega, l'Over con le quote fa −0.0131 di logloss (`z = −8.49`) e il Goal dalla matrice allineata a Over e 1X2 con le quote −0.0068 (`z = −6.00`), tutti e due in 11 leghe su 11; il Goal col solo 1X2 non passa. Due campi nella card (riempiti da soli dove football-data li ha, 18 leghe), la tabella dei gol con le quote (Over/Under 1.5, 2.5, 3.5, Goal/NoGoal), le doppie chance con le quote, il blocco nel mega-prompt; `strumenti/quote-gol.py`, dieci casi delle quote nel banco. Senza quote, e nel Comparatore, niente cambia |
 | `b58` | il tabellone con le quote: regola registrata prima, e passata sulle sette leghe di cui il tabellone non era mai stato guardato. La proposta in cima rende +14.6 punti sopra il giocarla alla cieca contro +12.9 del motore (+1.73, `z = +3.55`, 7 leghe su 7; cinque campionati +19.2 contro +16.8). Con le quote dell'1X2 il tabellone si ridisegna con le probabilità con le quote (anche Over/Under e Goal se c'è l'Over; i numeri restano del motore) e con le rese misurate su quelle (`EDGE_BANDS_QUOTE`), e lo stesso fa il tabellone del mega-prompt. `strumenti/quote-tabellone.py`. Senza quote, e nel Comparatore, niente cambia |
 | `b59` | la grafica nuova, chiesta dall'utente: barra in alto e barra delle sezioni fissa, il verdetto 1X2 in tre riquadri con una barra, le card di approfondimento che si aprono a richiesta (sul telefono la pagina di un'analisi passa da 20.483 a 8.279 px), il tabellone più stretto a 390px. Motore, numeri e i 233 id di prima invariati; banco con 0 scritture diverse su 190 e 0 righe su 122 in ogni modalita'. Trovato strada facendo: nel Comparatore `getElementById` non torna mai `null` (contratto, punto 12) |
+| `b60` | la card dei giocatori ridisegnata, che dopo il caricamento restava una tabella a cinque colonne («22/27» andava a capo a 390px): il mercato a pastiglie, una lista per squadra col suo colore, `XI` per i titolari di oggi, le ultime 5 a pallini, la frequenza con una barra; una barra di avanzamento durante lo scarico e il bottone che dice quante partite riprovare. Numeri e ordine invariati; banco con 0 scritture diverse su 190 e 0 righe su 122 |
