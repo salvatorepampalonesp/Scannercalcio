@@ -41,6 +41,7 @@ def leggi(f):
                     'hg': hg, 'ag': ag, 'out': 0 if hg > ag else (1 if hg == ag else 2),
                     'conf': (v('COPIA CONFORME DELLO SCANNER') or '').startswith('SI'), 'p': [num(v(x)) for x in ('1', 'X', '2')],
                     'lgT': num(v('Elo: log-odds bersaglio [completo → 1X2]')), 'lgM': num(v('Elo: log-odds modello [completo → 1X2]')),
+                    'lgE': num(v('Elo: log-odds Elo [completo → 1X2]')),
                     'elod': num(v('ELO Diff (H-A)')), 'hfa': num(v('HFA Lega')), 'xg': [num(v('xG', 2, 0)), num(v('xG', 2, 1))]})
     return out
 
