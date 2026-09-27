@@ -356,6 +356,9 @@ async function runScanner(browser, base, matches, limit) {
     return casi;
   });
   const log = page.__log.slice();
+  // dal b59 le card di approfondimento sono <details> chiuse: si aprono tutte prima di misurare,
+  // altrimenti una tabella nascosta non si vede uscire di lato
+  const chiuse = await page.evaluate(() => { const d = [...document.querySelectorAll('details')]; d.forEach(x => { x.open = true; }); return d.length; });
   const scroll = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   // una tabella di confronto non deve scorrere nemmeno dentro il suo riquadro: la pagina puo'
   // stare a 0 px mentre la tabella esce di lato (il tabellone, fino al b49, di 53 px a 390px)
@@ -367,7 +370,7 @@ async function runScanner(browser, base, matches, limit) {
     const vuoti = ['quota-1', 'quota-x', 'quota-2', 'quota-ov', 'quota-un'].every(id => document.getElementById(id).value === '');
     return { nome: 'cambia partita', svuotate: vuoti && window.__QUOTE_CTX === null && document.getElementById('quote-box').innerHTML === '--' }; }));
   await page.context().close();
-  return { runs: out, log, scroll, compatte, giocatori, quote };
+  return { runs: out, log, scroll, compatte, giocatori, quote, chiuse };
 }
 
 async function comparatorePage(browser, base, engineText) {
@@ -376,7 +379,12 @@ async function comparatorePage(browser, base, engineText) {
   await page.evaluate(() => { document.getElementById('cmp-api-key').value = 'finta'; });
   if (engineText) await page.evaluate(t => loadEngineFromText(t, 'copia salvata in localStorage'), engineText);
   else await page.evaluate(() => loadEngineFromServer());
-  await page.waitForFunction(() => typeof engineReady !== 'undefined' && engineReady === true);
+  // se l'iniezione si ferma engineReady non arriva mai: meglio fallire subito, col log del Comparatore
+  await page.waitForFunction(() => typeof engineReady !== 'undefined' && engineReady === true, null, { timeout: 60000 })
+    .catch(async () => {
+      const righe = await page.evaluate(() => document.body.innerText.split('\n').filter(x => /Warning|mancanti|❌/.test(x)).slice(0, 6));
+      throw new Error('il Comparatore non ha caricato il motore: ' + [...righe, ...page.__log.slice(0, 4)].join(' | '));
+    });
   // ogni giro del motore dentro il Comparatore: chiave = data|casa|trasferta, e il k del giro
   await page.evaluate((SNAP) => {
     window.__RUNS = [];
@@ -622,7 +630,7 @@ if (require.main === module) (async () => {
   const scanner = await runScanner(browser, base, day, null);
   const sLog = scanner.log.filter(l => !/CONSOLE/.test(l));
   console.log(`Scanner: ${day.length} partite in ${Math.round((Date.now() - t0) / 1000)}s · log ${sLog.slice(0, 5).join(' | ') || 'pulito'}`
-            + (process.env.MOBILE ? ` · scorrimento laterale ${scanner.scroll}px · tabelle compatte che escono di lato: `
+            + (process.env.MOBILE ? ` · scorrimento laterale ${scanner.scroll}px (con ${scanner.chiuse} card aperte) · tabelle compatte che escono di lato: `
                                     + (scanner.compatte.length ? JSON.stringify(scanner.compatte) : 'nessuna') : ''));
   console.log('   sottotitolo:', recMap(scanner.runs[day[0].id].rec)['ui-subtitle']);
   // il mega-prompt non passa da safeTxt/safeHtml: si controlla a parte che non sia vuoto o rotto
