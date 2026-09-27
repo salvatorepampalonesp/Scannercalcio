@@ -52,7 +52,7 @@ sono, le scrive l'utente. Per misurarle si usano gli stessi file (`strumenti/quo
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b58`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b59`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -68,7 +68,10 @@ sono, le scrive l'utente. Per misurarle si usano gli stessi file (`strumenti/quo
 - **Il telefono in verticale è il caso principale.** A 390px
   `document.body.scrollWidth − larghezza schermo` deve fare 0. Le tabelle stanno in
   `.tbl-scroll` (lo fa `wrapTables()`); una tabella di **confronto** usa `table-compact` e
-  non deve scorrere; i figli di griglia vogliono `min-width:0`.
+  non deve scorrere; i figli di griglia vogliono `min-width:0`. Dal `b59` quasi tutte le card
+  sono `<details>` chiuse sul telefono: il banco le apre tutte prima di misurare, perché una
+  card chiusa non ha larghezza e nasconderebbe una tabella che esce di lato. Vedi *La grafica
+  dello Scanner*.
 - **Le manopole per chi fa backtest vanno nel pannello del Comparatore**, non in console:
   il Comparatore si usa anche da telefono.
 - **Il Comparatore deve stampare quello che stampa lo Scanner.** Ogni riga del CSV dice se
@@ -313,7 +316,7 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b58`)
+## Stato attuale (`b59`)
 
 **1X2.** Col motore `b48` il pick azzecca il 52.7% (±1.4) contro il 43.0% del «gioca sempre in
 casa» sulle cinque leghe: 52.7% contro 40.2% in Serie A, 52.7% contro 43.1% in Premier, 53.2%
@@ -431,6 +434,11 @@ già il pick. Vedi *Le neopromosse*.
 superato una soglia (falli subiti e commessi, tiri, tiri in porta, gialli, gol, assist,
 contrasti) nelle ultime 30 partite di campionato e nelle loro ultime 5 da titolare. Sono
 frequenze descrittive, non misurate contro il reale. Vedi *Le statistiche dei giocatori*.
+
+**Grafica.** Dal `b59` lo Scanner ha una grafica nuova: barra delle sezioni fissa, il verdetto 1X2
+in tre riquadri con una barra, le card di approfondimento che si aprono a richiesta (sul telefono la
+pagina passa da 20.483 a 8.279 px). Motore, id e numeri sono quelli del `b58`. Vedi *La
+grafica dello Scanner*.
 
 **La selezione vale più dell'accuratezza.** Prima di aggiungere una feature, chiedersi se
 il segnale non sia già nell'output, solo mal etichettato.
@@ -810,6 +818,52 @@ del banco usa l'id della Serie A, quindi il ramo «fuori dai cinque» il banco n
 scorrimento. Il blocco delle quote il banco lo passa dal `b54` (vedi *Il Comparatore stampa come
 lo Scanner*).
 
+## La grafica dello Scanner
+
+**Cosa cambia nel `b59`.** Solo la veste: il foglio di stile e il markup del corpo sono riscritti,
+il motore no. Chiesta dall'utente: «rendiamolo moderno».
+
+- **La barra in alto** (`header.appbar`) porta il nome e il badge della build (`#build-ver`), sempre
+  in vista.
+- **Il setup** è in due passi numerati (database della lega, poi la partita), con gli stessi campi.
+- **L'analisi** comincia con la partita (`.match-hero`) e una **barra delle sezioni** fissa sotto la
+  barra in alto (`#nav-sezioni`): Verdetto, Quote, Tabellone, Ambiti, Formazioni, Giocatori, Perché,
+  Mercati, Prompt, Dati. La sezione in vista si accende, e sul telefono il suo nome si centra. Un
+  tocco su una card chiusa la apre.
+- **Il verdetto 1X2** sta in tre riquadri (`#tile-1`, `#tile-x`, `#tile-2`) con una barra impilata
+  (`#bar-1`, `#bar-x`, `#bar-2`); il riquadro più probabile si segna da solo. Li muove un
+  `MutationObserver` su `#master-1`: il motore non sa che esistono e continua a scrivere solo i suoi
+  id.
+- **Le card di approfondimento** (i modelli, la qualità di tiro, il non possesso, i punti attesi, la
+  progressione, i mercati sui numeri, i risultati esatti, l'Elo, il Markov...) sono `<details
+  class="card">`: sul telefono chiuse, sopra i 900 px aperte quelle con `data-apri` (15 card su 17).
+  Copertura dei dati e macchina del tempo restano chiuse anche lì. Le spiegazioni lunghe dentro le
+  card sono `details.info`, chiuse. Sul telefono la pagina di un'analisi passa da 20.483 a 8.279
+  px (quote scritte, card chiuse).
+- **I colori** sono token su `:root` (`--home` azzurro, `--away` rosso, `--draw` grigio, `--accent`
+  verde), con gli alias vecchi tenuti; ogni card ha un colore di bordo (`c-blue`, `c-red`, ...). Le
+  tabelle larghe mostrano un'ombra sul lato dove c'è altro da scorrere. I caratteri da 9–10 px
+  scritti in linea dal motore salgono a 11.5 px.
+- **Il tabellone**: la terza colonna è una pastiglia col verdetto e lo scarto, sotto quanto rende la
+  sua famiglia e su quante proposte; prima era una frase sola che a 390 px allargava la tabella. Le
+  parole sono le stesse.
+
+**Cosa non cambia, e non deve cambiare.**
+
+- **Tutti gli id della pagina del `b58` ci sono ancora** (233, confrontati con un elenco preso prima
+  di riscrivere): il motore scrive per id, e il Comparatore porta i suoi id ombra.
+- `id="history-limit"` sta prima di `value="30"` nello stesso tag: il Comparatore lo legge con una
+  regex (vedi *Il contratto Scanner ↔ Comparatore*, punto 8).
+- **Il codice della grafica** è una funzione a parte in fondo allo script, che esce subito se non
+  trova `#nav-sezioni`: il Comparatore esegue anche lei, ma non ha quel nodo e non succede niente.
+  Nessuna riga del motore la chiama. Il nodo si cerca con `querySelector` e si controlla che sia un
+  `Element`, **non** con `getElementById`: nel Comparatore `getElementById` non torna mai `null`
+  (vedi *Il contratto Scanner ↔ Comparatore*, punto 12). La prima versione lo faceva, e il
+  Comparatore non caricava più il motore.
+- **Una card chiusa ha i suoi numeri scritti**: il motore scrive nel DOM a card chiusa o aperta.
+  Per lo stesso motivo il banco apre tutte le `details` prima di misurare lo scorrimento e le
+  tabelle compatte (24 `details` nella pagina dopo un'analisi).
+
 ## Politica sui valori mancanti
 
 - **Conteggi** (big chances, cross, filtranti, tocchi in area, recuperi): molte API omettono
@@ -908,6 +962,12 @@ testo, lo modifica con delle regex e lo esegue con `new Function`. Dipende quind
 11. **Le quote automatiche** (`b55`) lo Scanner le chiede a `PITCH_BASE + '/quote/<file>'`: il worker
     deve avere la strada di `strumenti/worker-quote.js`, prima di tutto il resto. Il Comparatore non la
     chiama (non ha i campi delle quote), quindi CSV e copia conforme non ne dipendono.
+12. **Nel Comparatore `document.getElementById` non torna mai `null`**: per un id che non ha torna
+    un fantasma (un `Proxy` che accetta tutto e non fa niente), così il motore scrive nel vuoto
+    senza errori. Quindi `if (!el) return` lì non protegge niente. Codice dello Scanner che deve
+    stare fermo nel Comparatore (la grafica, `b59`) cerca i nodi con `querySelector` e controlla
+    `instanceof Element`. Un errore a livello dello script ferma l'iniezione: il Comparatore dice
+    «Warning durante iniezione» e «Funzioni mancanti», e il banco resta ad aspettare il motore.
 
 **Come gira un batch.** `cmpRunMatch` mette la lega nel DOM del motore (creando l'`<option>`
 se manca e verificando che abbia attecchito), ricopia `history-limit`, e chiama
@@ -982,7 +1042,7 @@ rilegge l'archivio di lega dal **testo** del CSV esportato, ci fa girare `buildG
 motore e confronta Elo e HFA con le righe del CSV, partita per partita; il controllo di potenza
 toglie una partita dall'archivio e deve vedere l'Elo cambiare.
 
-Esito al `b58` (storico 30), a 390px (anche nessuna tabella compatta che esce dal suo riquadro, il mega-prompt dello Scanner mai vuoto né rotto, i dieci casi delle quote, la matrice allineata e le quote automatiche a posto):
+Esito al `b59` (storico 30), a 390px con tutte le 24 card aperte (anche nessuna tabella compatta che esce dal suo riquadro, il mega-prompt dello Scanner mai vuoto né rotto, i dieci casi delle quote, la matrice allineata e le quote automatiche a posto):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
@@ -990,7 +1050,7 @@ Esito al `b58` (storico 30), a 390px (anche nessuna tabella compatta che esce da
 | batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 190 | 0 su 122 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
 | `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 127-155 | 74-82 | 0 |
-| `vecchio`: motore `b57` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 | 1 (il certificato) | 0 |
+| `vecchio`: motore `b58` caricato (controllo) | 0/3, «motore caricato diverso ...» | 1 (il tabellone) | 1 (il certificato) | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -1027,7 +1087,13 @@ tabellone del motore esce identico (costruzione e disegno ora sono due funzioni,
 dieci casi il banco conta le righe del tabellone segnate «con le quote» (6 con l'1X2, 10 con anche
 l'Over, 0 senza), controlla la nota, che senza quote torni il tabellone del motore, che
 `window.__VERDETTI` (quello che legge il Comparatore) resti del motore, e che il prompt contenga il
-testo del tabellone giusto e nessun segnaposto.
+testo del tabellone giusto e nessun segnaposto. Al `b59` il controllo col `b58` vede una scrittura
+diversa, il tabellone (la terza colonna ha la pastiglia e la resa su due righe: stesse parole, altro
+HTML), e il certificato; tutto il resto della grafica nuova è markup fisso o scritto dalla funzione
+della grafica, che non passano da `safeHtml`. Dal `b59` il banco apre tutte le `details` prima di
+misurare, e se il Comparatore non carica il motore entro un minuto si ferma col suo log invece di
+aspettare per sempre (controllo di potenza: con la guardia sbagliata rimessa esce con 2 in un
+minuto e mezzo, citando «Failed to execute 'observe' on 'MutationObserver'»).
 
 **Le quote sul banco (dal `b54`).** Dopo il giro dello Scanner il banco scrive le quote nella card
 dell'ultima partita, in sei casi: vuote (niente tabella, niente blocco nel prompt), valide con la
@@ -2620,6 +2686,10 @@ di questo elenco è stata a lungo falsa proprio perché nessuno sapeva dove cont
 - **Un numero misurato sull'insieme non vale per le sue parti.** «FORTE, rende +24.6» era giusto
   in media e sbagliato per quasi ogni riga: +27.5 sull'1X2, +1.0 sui mercati gol. Un'etichetta
   che promette una resa va misurata sul gruppo a cui la si mostra.
+- **Una guardia `if (!el)` nel Comparatore è sempre falsa.** Il suo `getElementById` torna un
+  fantasma per gli id che non ha. La grafica del `b59` si difendeva così, e dentro il Comparatore
+  chiamava `MutationObserver.observe` sul fantasma: l'iniezione si fermava e il banco aspettava il
+  motore per sempre. Vedi il contratto, punto 12.
 - **Quello che non passa da `safeTxt`/`safeHtml` il banco non lo vede.** Il mega-prompt ha
   detto «2963 partite» dal `b27` al `b50`, e «nei mercati dei mercati gol» nel `b50`, con il banco
   verde. Dal `b51` il banco ne controlla la forma; il contenuto si rilegge a mano.
@@ -3588,3 +3658,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b56` | due testi vecchi corretti: la nota di lega in cima all'analisi legge `PICK_RESA` (le cinque leghe e le sette di fuori, col motore `b48`) al posto di `LEAGUE_STATS`, una tabella del primo caricamento che dava la Serie A al 49.8% sul segno; le leghe mai misurate lo dicono. La nota sotto le confidence dice che sull'1X2 la confidence è la probabilità (dal `b53`). Probabilità, tabellone e CSV invariati |
 | `b57` | le quote dell'Over/Under 2.5: regola registrata prima, due test passati su tre. Su 11.222 partite di undici leghe, fuori lega, l'Over con le quote fa −0.0131 di logloss (`z = −8.49`) e il Goal dalla matrice allineata a Over e 1X2 con le quote −0.0068 (`z = −6.00`), tutti e due in 11 leghe su 11; il Goal col solo 1X2 non passa. Due campi nella card (riempiti da soli dove football-data li ha, 18 leghe), la tabella dei gol con le quote (Over/Under 1.5, 2.5, 3.5, Goal/NoGoal), le doppie chance con le quote, il blocco nel mega-prompt; `strumenti/quote-gol.py`, dieci casi delle quote nel banco. Senza quote, e nel Comparatore, niente cambia |
 | `b58` | il tabellone con le quote: regola registrata prima, e passata sulle sette leghe di cui il tabellone non era mai stato guardato. La proposta in cima rende +14.6 punti sopra il giocarla alla cieca contro +12.9 del motore (+1.73, `z = +3.55`, 7 leghe su 7; cinque campionati +19.2 contro +16.8). Con le quote dell'1X2 il tabellone si ridisegna con le probabilità con le quote (anche Over/Under e Goal se c'è l'Over; i numeri restano del motore) e con le rese misurate su quelle (`EDGE_BANDS_QUOTE`), e lo stesso fa il tabellone del mega-prompt. `strumenti/quote-tabellone.py`. Senza quote, e nel Comparatore, niente cambia |
+| `b59` | la grafica nuova, chiesta dall'utente: barra in alto e barra delle sezioni fissa, il verdetto 1X2 in tre riquadri con una barra, le card di approfondimento che si aprono a richiesta (sul telefono la pagina di un'analisi passa da 20.483 a 8.279 px), il tabellone più stretto a 390px. Motore, numeri e i 233 id di prima invariati; banco con 0 scritture diverse su 190 e 0 righe su 122 in ogni modalita'. Trovato strada facendo: nel Comparatore `getElementById` non torna mai `null` (contratto, punto 12) |
