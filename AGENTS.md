@@ -189,6 +189,11 @@ Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export rec
   Over 2.5 + Goal −3.80‰ di logloss (`z = −2.99`), meglio in 6 leghe su 9; Over previsto 49.0 → 52.3%
   contro 52.8% reale, Goal 51.5 → 54.0% contro 53.8%. Peggiora dove il lambda era già alto
   (Argentina, gol/lambda 0.88). Vedi *Il livello dei gol: la regola*, «Esito».
+- [ ] **Il rating sugli xG: indovinare più partite.** L'Elo del motore è fatto sui gol. Un rating
+  delle squadre fatto sugli xG di tutte le partite della lega, combinato con l'1X2 del motore, sulle
+  dodici leghe già studiate fa −5.53‰ di logloss 1 contro 2 fuori lega (`z = −3.95`, 10 leghe su 12) e
+  +0.75 punti di prese; lo stesso rating fatto sui gol non aggiunge niente. Costa una chiamata a
+  `/stats` per ogni partita di lega. **Regola registrata**: vedi *Il rating sugli xG: la regola*.
 - [ ] **`LEAGUE_HALFLIFE_DAYS`** (oggi 0 = media piatta). È l'ultima ipotesi rimasta sul
   *livello* dei mercati gol: il lambda è inversamente proporzionale alla base di lega, e la
   base è una media piatta su tre stagioni (Premier: 3.041 contro 2.754 veri, −5% sul
@@ -3281,6 +3286,76 @@ il fattore dentro, e `strumenti/livello-gol.py` lo toglie per misurare. Con le q
 niente (il motore pesa 0.0036 nell'Over con le quote). Il Comparatore segue da solo: legge il motore, e
 il certificato conta la manopola nuova. Non è la cura della radice: il disallineamento di unità resta, e
 una media NPxG di lega lo toglierebbe lega per lega (vedi *Da fare*, punto 4).
+
+## Il rating sugli xG: la regola
+
+Scritta prima di aprire le leghe del test. Chiesta dall'utente: «indovinare più partite ed avere più
+alert su possibili upset. Abbiamo adesso qualche milione di dati ma non abbiamo idee».
+
+**Perché.** Tre quarti dell'1X2 vengono dall'Elo, e l'Elo impara dai gol: un 1-0 con un tiro vale
+quanto un 1-0 dominato. Gli xG di ogni partita sono meno rumorosi dei gol. Il motore li usa già, ma
+solo come medie delle due squadre, senza sapere contro chi sono stati fatti; l'Elo invece corregge per
+l'avversario, perché passa per tutte le partite della lega. Manca un rating che faccia le due cose.
+
+**L'esplorazione**, sulle dodici leghe già studiate (i CSV di `batch48`, `batch4` e `batch/2627`, dove
+ogni partita porta i suoi xG veri). Per lega e in ordine di data, un rating lineare: margine di xG
+previsto = `R_casa − R_trasf + H`; dopo ogni giornata, con `e` = margine vero − previsto, `R_casa += K·e`,
+`R_trasf −= K·e`, `H += KH·e`. Una squadra che entra in una stagione parte dalla media dei rating delle
+squadre uscite (come l'Elo dal `b48`); la prima stagione di ogni lega è solo rodaggio. Poi una
+logistica 1 contro 2 su `lgTarget` del motore e sul margine previsto, stimata su undici leghe e misurata
+sulla dodicesima (6.315 partite senza pari), contro il motore:
+
+| variante | logloss 1 contro 2 | `z` | leghe meglio |
+|---|---|---|---|
+| **motore + rating sugli xG** (`K` 0.05, `KH` 0.01) | **−5.53‰** | **−3.95** | 10 su 12 |
+| lo stesso rating, ma sui gol | +0.24 … +0.36‰ | +1.0 … +1.5 | — |
+| solo il rating sugli xG, senza motore | −4.57‰ | −2.33 | 9 su 12 |
+| modello, Elo e HFA con pesi liberi (il candidato del `b41` visto da un'altra parte) | −3.59‰ | −2.86 | 9 su 12 |
+| il rating sugli xG sopra i pesi liberi | −2.25‰ | −2.37 | 9 su 12 |
+| la media degli xG delle due squadre (ultime 30, emivita 106), anche corretta con l'Elo degli avversari, sopra i pesi liberi | −0.16‰ | −0.34 | — |
+
+Quello che il rating aggiunge non è il peso del modello (i pesi liberi hanno già fallito due test, vedi
+*Peso e scala dell'Elo insieme*) e non viene dallo storico delle due squadre: sta nel passare per tutte
+le partite della lega, come fa l'Elo. Griglia: `K` 0.015–0.12, `KH` 0–0.04, regressione fra le stagioni
+0.6–1.0, peso dei gol nel margine 0 / 0.3 / 0.6 / 1, xG, NPxG o tiri in porta. Meglio l'xG (NPxG
+−4.98‰, tiri in porta peggio), nessun peso ai gol, nessuna regressione; `K` fra 0.04 e 0.08 è piatto
+(−5.36 / −5.53 / −5.44 / −4.93‰), scelto 0.05, dentro la griglia. Sulle partite della terza stagione il
+rating fatto su tre stagioni fa −4.26‰, su due −3.88‰, su due partendo dall'Elo −4.38‰, sulla sola
+stagione partendo dall'Elo −3.41‰. Prese fuori lega +0.75 ±0.50 punti (50.25 → 51.00%, pick cambiato in
+659 partite su 8.506), logloss 1X2 −3.98‰ (`z = −3.84`); il 20% più sicuro del calendario 69.6 → 71.3%.
+
+**Il candidato**, con tutto fissato adesso (`strumenti/rating-xg.py`): il rating come sopra, `K` 0.05,
+`KH` 0.01, `H` di partenza 0.3, dagli xG di `/stats` di tutte le partite di lega delle tre stagioni del
+database, e l'1X2 da
+
+`lg' = 0.31000·lgTarget + 1.03668·margine − 0.03559`
+
+(stimati su tutte le dodici leghe dell'esplorazione), cioè il log-odds 1 contro 2 che l'inclinazione
+dell'Elo dà ai lambda completi; `pX` resta quella del motore. Nel test la probabilità di pareggio è quella
+del CSV e `1` e `2` si dividono il resto secondo `σ(lg')`.
+
+**I dati del test**: le dieci leghe con almeno due stagioni fra i batch del `b61` e del `b62`, League
+One, League Two e Süper Lig 2023/24–2025/26, Bundesliga austriaca, Superligaen e Liga MX 2023/24–2025/26,
+Eliteserien, Allsvenskan e MLS 2023–2025, J. League 2024–2025; la prima stagione di ognuna è rodaggio.
+Argentina e Brasile, una stagione sola, restano fuori. Di queste leghe si sono guardati i mercati gol
+(`b62`, `b63`) e, solo descrittivi, quante volte vincono il pick, lo sfavorito e il pareggio; il rating
+mai.
+
+**Il metro.** La logloss 1 contro 2 sulle partite senza pari, col rating e coi coefficienti scritti qui,
+contro il motore (`σ(lgTarget)`), appaiata partita per partita. **Passa** se sull'insieme migliora con
+`z ≤ −2`, migliora in almeno 7 leghe su 10, e le prese del pick (1X2 intero) non calano oltre il rumore
+(differenza appaiata non sotto −2 errori standard).
+
+**Se passa.** Il rating entra nel motore: gli xG di `/stats` di ogni partita di lega del database (una
+chiamata per partita la prima volta, circa 1.100 per una lega da 20 squadre, poi tenuti nel browser: una
+partita finita non cambia), il margine previsto e `lg'` al posto di `lgTarget` nel ramo completo, una
+manopola che torna a prima, il CSV che esporta il margine. Si rifanno sulle probabilità nuove le soglie
+del pick (`PICK_RESA`) e le rese dell'1X2 nel tabellone. Se non passa, resta tutto com'è e questa
+sezione dice perché.
+
+**Descrittivi**, detti comunque: prese per lega; la selezione al 10 / 20 / 30 / 50% del calendario;
+logloss 1X2; quante volte vince lo sfavorito quando ha il 25, 30, 35% o più, col motore e col rating
+(è la base di un avviso di sorpresa: vedi la voce in *Da fare*).
 
 ## I gol
 
