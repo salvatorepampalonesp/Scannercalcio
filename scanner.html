@@ -223,6 +223,12 @@ textarea{min-height:0;font-size:12px}
 .prob-bar i{display:block;height:100%;transition:width .6s cubic-bezier(.2,.8,.2,1)}
 .prob-bar .b1{background:var(--home)} .prob-bar .bx{background:var(--draw)} .prob-bar .b2{background:var(--away)}
 .prob-legend{display:flex;justify-content:space-between;font-size:11.5px;color:var(--dim)}
+/* avviso di sorpresa (b64): il livello lo decide la frequenza misurata dello sfavorito */
+.sorpresa{margin-top:12px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel2);padding:10px 12px;font-size:13px;line-height:1.5}
+.sorpresa-t{font-weight:700;font-size:12.5px;letter-spacing:.02em;margin-bottom:3px}
+.sorpresa.s-alto{border-color:rgba(255,93,108,.55);background:rgba(255,93,108,.08)}.sorpresa.s-alto .sorpresa-t{color:var(--err)}
+.sorpresa.s-medio{border-color:rgba(245,183,59,.45);background:rgba(245,183,59,.07)}.sorpresa.s-medio .sorpresa-t{color:var(--warn)}
+.sorpresa.s-basso .sorpresa-t{color:var(--ok)}
 
 /* ---------- tabelle ---------- */
 .tbl-scroll{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:12px;scrollbar-width:thin;
@@ -427,7 +433,7 @@ textarea{min-height:0;font-size:12px}
       <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#03140e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-6 4 3 7-8"/><path d="M15 6h4v4"/></svg></div>
       <div style="min-width:0"><h1>Scanner</h1><div class="brand-sub">Motore V9.7 &middot; probabilit&agrave; calibrate sul backtest</div></div>
     </div>
-    <span class="pill pill-build" id="build-ver">build 0905-b63</span>
+    <span class="pill pill-build" id="build-ver">build 0905-b64</span>
   </div>
 </header>
 
@@ -485,6 +491,17 @@ textarea{min-height:0;font-size:12px}
       </div>
       <div class="prob-bar" aria-hidden="true"><i class="b1" id="bar-1" style="width:33.3%"></i><i class="bx" id="bar-x" style="width:33.3%"></i><i class="b2" id="bar-2" style="width:33.3%"></i></div>
       <div class="prob-legend"><span>Casa</span><span>Pareggio</span><span>Trasferta</span></div>
+      <div id="sorpresa-box"></div>
+      <details class="info" style="margin:8px 0 0"><summary>Da dove viene il rischio sorpresa</summary><div>
+        Contato su <b>23.278 partite di 24 leghe</b> (2023&ndash;2026, lo stesso motore): per ogni fascia di probabilit&agrave; dello
+        sfavorito, quante volte hanno vinto lo sfavorito, il pareggio e il favorito. Le probabilit&agrave; del motore le sorprese le
+        contano gi&agrave; giuste: lo sfavorito al 30&ndash;35% vince il 32.3%. L'unico segnale che aggiunge qualcosa &egrave; il
+        <b>disaccordo fra modello ed Elo</b> sul favorito (17% delle partite): a pari probabilit&agrave; lo sfavorito vince 2.4 punti
+        in pi&ugrave;, uguale nelle dodici leghe dove &egrave; stato cercato e nelle altre dodici. <b>ALTO</b> vuol dire che nelle
+        partite cos&igrave; lo sfavorito ha vinto almeno una volta su tre: succede quando modello ed Elo non sono d'accordo e lo
+        sfavorito ha il 25% o pi&ugrave; (circa una partita su sei). Forma, riposo, formazioni, fortuna sotto gli xG e un rating
+        sugli xG non anticipano le sorprese: sono stati misurati e non aggiungono niente.
+      </div></details>
       <div class="inset" style="margin-top:14px">
         <div class="sub-title" style="margin:0 0 6px">Scarti fuori soglia fra le due squadre</div>
         <div id="hidden-value-msg" style="font-size:13px;line-height:1.5">--</div>
@@ -2313,6 +2330,36 @@ const PICK_RESA = { tutte: 52.7, casa: 43.0, partite: 5230,
     + '. Nelle altre leghe non sono misurate.';
 })();
 
+// Avviso di sorpresa (b64): per fascia di probabilita' dello sfavorito, e per accordo fra modello ed Elo sul
+// favorito, [partite, vince lo sfavorito %, pareggio %, vince il favorito %]. strumenti/sorpresa.py.
+const SORPRESA_TAB = { partite: 23278, leghe: 24, fasce: [
+  { da: 0, tutte: [3263, 10.1, 17.2, 72.8], accordo: [3260, 10.1, 17.2, 72.7], disaccordo: [3, 0.0, 0.0, 100.0] },
+  { da: 15, tutte: [3373, 18.8, 23.7, 57.5], accordo: [3343, 18.8, 23.7, 57.5], disaccordo: [30, 23.3, 23.3, 53.3] },
+  { da: 20, tutte: [4607, 22.7, 26.7, 50.6], accordo: [4433, 22.7, 26.5, 50.8], disaccordo: [174, 23.6, 32.2, 44.3] },
+  { da: 25, tutte: [5297, 27.4, 28.2, 44.4], accordo: [4584, 26.5, 28.4, 45.0], disaccordo: [713, 33.0, 26.8, 40.3] },
+  { da: 30, tutte: [5541, 32.3, 27.5, 40.2], accordo: [3371, 31.1, 27.1, 41.8], disaccordo: [2170, 34.3, 28.1, 37.6] },
+  { da: 35, tutte: [1197, 37.6, 27.8, 34.6], accordo: [237, 32.5, 29.1, 38.4], disaccordo: [960, 38.9, 27.5, 33.6] } ] };
+function rischioSorpresa(p1, pX, p2, E) {
+  const F = SORPRESA_TAB.fasce, pU = Math.min(p1, p2) / (p1 + pX + p2);
+  const i = Math.max(0, F.findIndex((x, j) => j === F.length - 1 || 100 * pU < F[j + 1].da));
+  const f = F[i], num = v => typeof v === 'number' && isFinite(v);
+  const dis = E && num(E.lgModel) && num(E.lgElo) ? (E.lgModel > 0) !== (E.lgElo > 0) : null;
+  const k = dis === null ? 'tutte' : (dis ? 'disaccordo' : 'accordo');
+  const c = f[k] && f[k][0] >= 150 ? f[k] : f.tutte;
+  return { fav: p1 >= p2 ? 1 : 2, pU, dis, c, conFlag: c !== f.tutte, da: f.da, a: i + 1 < F.length ? F[i + 1].da : null,
+           liv: c[1] >= 33 ? 'alto' : (c[1] >= 25 ? 'medio' : 'basso') };
+}
+function htmlSorpresa(S, hName, aName) {
+  const sf = S.fav === 1 ? aName : hName, fv = S.fav === 1 ? hName : aName, n = S.c[0].toLocaleString('it-IT');
+  const tit = { alto: '&#9888; Rischio sorpresa ALTO', medio: 'Rischio sorpresa medio', basso: 'Rischio sorpresa basso' }[S.liv];
+  const fascia = S.a != null ? `fra il ${S.da} e il ${S.a}%` : `al ${S.da}% o pi&ugrave;`;
+  const flag = S.dis === true ? ', e modello ed Elo indicano favoriti diversi' : (S.dis === false ? ', modello ed Elo d&#39;accordo sul favorito' : '');
+  const gruppo = S.conFlag ? (S.dis ? ' e modello ed Elo in disaccordo' : ' e modello ed Elo d&#39;accordo') : '';
+  return `<div class="sorpresa s-${S.liv}"><div class="sorpresa-t">${tit}</div>Lo sfavorito &egrave; <b>${sf}</b> al ${(100 * S.pU).toFixed(1)}%${flag}. `
+    + `Nelle ${n} partite con lo sfavorito ${fascia}${gruppo} (${SORPRESA_TAB.leghe} leghe) ha vinto lo sfavorito il <b>${S.c[1].toFixed(1)}%</b>, `
+    + `il pareggio il ${S.c[2].toFixed(1)}%, il favorito (${fv}) il ${S.c[3].toFixed(1)}%.</div>`;
+}
+
 // Le quote (b54): logistica multinomiale su [log(p1/pX), log(p2/pX)] del motore e del mercato,
 // 11.902 partite di 12 leghe. Soglie: [soglia, esce %, quota del calendario %, 1 partita su N].
 const QUOTE_COMB = {
@@ -2942,7 +2989,7 @@ function _tabTesto(V) {
        + senza.map(v => v.nome + ' ' + (v.edge == null ? 'base ignota' : (v.edge >= 0 ? '+' : '') + v.edge.toFixed(1))).join(', ') : '');
 }
 
-window.__SCANNER_BUILD = '0905-b63';
+window.__SCANNER_BUILD = '0905-b64';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -3711,6 +3758,8 @@ async function avviaScanner() {
     safeHtml('ui-streak', `<div style="display:flex; align-items:center; gap:5px; min-width:0"><span style="font-size:11px;font-weight:bold;color:var(--blue);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${hName}</span> ${renderStreak(dH.overall.streak.slice().reverse())}</div><div style="font-size:12px;color:var(--dim)">vs</div><div style="display:flex; align-items:center; gap:5px; min-width:0">${renderStreak(dA.overall.streak.slice().reverse())} <span style="font-size:11px;font-weight:bold;color:var(--red);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${aName}</span></div>`);
 
     safeTxt('master-1', pct(m1)); safeTxt('master-x', pct(mX)); safeTxt('master-2', pct(m2));
+    const _sorpresa = rischioSorpresa(m1, mX, m2, window.__ELO_DEBUG_OVER);
+    safeHtml('sorpresa-box', htmlSorpresa(_sorpresa, hName, aName));
 
     safeTxt('mdl-dc-1', pct(probsRole.p1)); safeTxt('mdl-dc-x', pct(probsRole.pX)); safeTxt('mdl-dc-2', pct(probsRole.p2));
     safeTxt('mdl-knn-1', pct(probsKnn.p1)); safeTxt('mdl-knn-x', pct(probsKnn.pX)); safeTxt('mdl-knn-2', pct(probsKnn.p2));
@@ -4210,7 +4259,10 @@ async function avviaScanner() {
         + (F.competizioni < 3 ? `\n- ATTENZIONE: archivio delle coppe europee incompleto (${F.competizioni} competizioni su 3): i conteggi possono essere bassi.` : '');
     })();
     const _rischiTxt = (() => {
-      const R = [], E = window.__ELO_DEBUG_OVER;
+      const R = [], E = window.__ELO_DEBUG_OVER, S = _sorpresa;
+      R.push(`Rischio sorpresa ${S.liv.toUpperCase()}: lo sfavorito (${S.fav === 1 ? aName : hName}) ha il ${(100 * S.pU).toFixed(1)}%`
+        + (S.dis === true ? ' e modello ed Elo indicano favoriti diversi' : '') + `; nelle ${S.c[0]} partite cosi' (${SORPRESA_TAB.leghe} leghe) ha vinto lo sfavorito il ${S.c[1].toFixed(1)}%, `
+        + `il pareggio il ${S.c[2].toFixed(1)}%, il favorito il ${S.c[3].toFixed(1)}%. Misurato: il motore non prevede le sorprese meglio di cosi'.`);
       if (E && E.applied) { const pOf = lg => 100 / (1 + Math.exp(-lg)); const d = Math.abs(pOf(E.lgElo) - pOf(E.lgModel));
         if (d >= 10) R.push(`Elo e modello distano ${d.toFixed(1)} punti sull'1X2: decide l'Elo.`); }
       if (dH.role.n < 6 || dA.role.n < 6) R.push(`Poche partite di RUOLO (${dH.role.n} in casa per ${hName}, ${dA.role.n} in trasferta per ${aName}): i numeri di ruolo sono fragili.`);

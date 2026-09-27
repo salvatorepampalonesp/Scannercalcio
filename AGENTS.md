@@ -52,7 +52,7 @@ sono, le scrive l'utente. Per misurarle si usano gli stessi file (`strumenti/quo
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b63`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b64`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -189,6 +189,10 @@ Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export rec
   Over 2.5 + Goal −3.80‰ di logloss (`z = −2.99`), meglio in 6 leghe su 9; Over previsto 49.0 → 52.3%
   contro 52.8% reale, Goal 51.5 → 54.0% contro 53.8%. Peggiora dove il lambda era già alto
   (Argentina, gol/lambda 0.88). Vedi *Il livello dei gol: la regola*, «Esito».
+- [x] ~~**Il rating sugli xG: indovinare più partite.**~~ — **non passato.** Un rating delle squadre
+  sugli xG di tutte le partite di lega, combinato con l'1X2 del motore: sulle dodici leghe già studiate
+  −5.53‰ di logloss 1 contro 2 fuori lega (`z = −3.95`), sulle dieci leghe del test −2.00‰ (`z = −1.19`),
+  meglio in 5 su 10, prese ferme. Vedi *Il rating sugli xG: la regola*, «Esito».
 - [ ] **`LEAGUE_HALFLIFE_DAYS`** (oggi 0 = media piatta). È l'ultima ipotesi rimasta sul
   *livello* dei mercati gol: il lambda è inversamente proporzionale alla base di lega, e la
   base è una media piatta su tre stagioni (Premier: 3.041 contro 2.754 veri, −5% sul
@@ -331,7 +335,7 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b63`)
+## Stato attuale (`b64`)
 
 **1X2.** Col motore `b48` il pick azzecca il 52.7% (±1.4) contro il 43.0% del «gioca sempre in
 casa» sulle cinque leghe: 52.7% contro 40.2% in Serie A, 52.7% contro 43.1% in Premier, 53.2%
@@ -388,6 +392,15 @@ fra modello ed Elo, +0.57 punti di prese. Il margine vero è la selezione: gioca
 più alto perde 2.9 punti (±2.4), quasi tutti su partite contro una neopromossa; sulle tre leghe
 nuove non si ripete (−0.3 ±2.0), e la voce è chiusa (vedi *Le tre leghe nuove col `b48`: la
 regola*).
+
+**Le sorprese** (dal `b64`). Sotto il verdetto 1X2 lo Scanner dice il rischio sorpresa, con quante
+volte lo sfavorito ha vinto nelle partite come quella (23.278 partite di 24 leghe). Le probabilità le
+sorprese le contano già giuste (sfavorito al 30–35%: vince il 32.3%); l'unico segnale che aggiunge
+qualcosa è il disaccordo fra modello ed Elo sul favorito, +2.4 punti allo sfavorito a pari
+probabilità, uguale nelle dodici leghe dove è stato cercato e nelle altre dodici. **ALTO** (una partita
+su sei: disaccordo e sfavorito al 25% o più) vuol dire sfavorito 33–39%, favorito 34–40%. Un rating
+sugli xG (vedi *Il rating sugli xG: la regola*) non passa il test e non anticipa le sorprese. Vedi
+*L'avviso di sorpresa*.
 
 **Il tetto, sulle dodici leghe** (11.927 partite, probabilità del `b48`). Il pick prende il 51.0%
 e la sua probabilità media è il 51.7%: il modello è calibrato, e con queste probabilità il 51% è
@@ -782,9 +795,9 @@ come misurati, da non ridiscutere.
    `2` al 45% può essere giocabile), e che una doppia chance contiene l'esito singolo.
 3. **L'Elo**: rating, vantaggio campo (col clamp detto quando morde), trend, Elo contro modello
    su 1 contro 2 con l'avviso quando distano 10+ punti e decide l'Elo.
-4. **I rischi già calcolati**, in JS e non dall'LLM: Elo e modello in disaccordo, meno di 6
-   partite di ruolo, pick sotto il 50%, clamp dell'HFA, statistiche avanzate assenti, riposo
-   molto diverso.
+4. **I rischi già calcolati**, in JS e non dall'LLM: il rischio sorpresa col suo livello e le
+   frequenze misurate (dal `b64`, sempre), Elo e modello in disaccordo, meno di 6 partite di ruolo,
+   pick sotto il 50%, clamp dell'HFA, statistiche avanzate assenti, riposo molto diverso.
 5. **Le statistiche avanzate previste** con le loro regole di affidabilità (quali reggono,
    quali valgono a metà, quali non usare).
 6. **Qualità e cinismo**, con l'avvertenza misurata che la fortuna recente non anticipa il
@@ -861,6 +874,9 @@ il motore no. Chiesta dall'utente: «rendiamolo moderno».
   (`#bar-1`, `#bar-x`, `#bar-2`); il riquadro più probabile si segna da solo. Li muove un
   `MutationObserver` su `#master-1`: il motore non sa che esistono e continua a scrivere solo i suoi
   id.
+- **Il rischio sorpresa (`b64`)** sta sotto la barra del verdetto (`#sorpresa-box`), scritto dal motore con
+  `safeHtml`: un riquadro rosso (ALTO), ambra (medio) o con il titolo verde (basso), e sotto una
+  spiegazione chiusa. Vedi *L'avviso di sorpresa*.
 - **Le card di approfondimento** (i modelli, la qualità di tiro, il non possesso, i punti attesi, la
   progressione, i mercati sui numeri, i risultati esatti, l'Elo, il Markov...) sono `<details
   class="card">`: sul telefono chiuse, sopra i 900 px aperte quelle con `data-apri` (15 card su 17).
@@ -915,7 +931,7 @@ il motore no. Chiesta dall'utente: «rendiamolo moderno».
   Comparatore non caricava più il motore.
 - **Una card chiusa ha i suoi numeri scritti**: il motore scrive nel DOM a card chiusa o aperta.
   Per lo stesso motivo il banco apre tutte le `details` prima di misurare lo scorrimento e le
-  tabelle compatte (24 `details` nella pagina dopo un'analisi).
+  tabelle compatte (25 `details` nella pagina dopo un'analisi dal `b64`).
 
 ## Politica sui valori mancanti
 
@@ -1096,15 +1112,15 @@ rilegge l'archivio di lega dal **testo** del CSV esportato, ci fa girare `buildG
 motore e confronta Elo e HFA con le righe del CSV, partita per partita; il controllo di potenza
 toglie una partita dall'archivio e deve vedere l'Elo cambiare.
 
-Esito al `b63` (storico 30), a 390px con tutte le 24 card aperte (anche nessuna tabella compatta che esce dal suo riquadro, il mega-prompt dello Scanner mai vuoto né rotto, i dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote e le quote automatiche a posto):
+Esito al `b64` (storico 30), a 390px con tutte le 25 card aperte (anche nessuna tabella compatta che esce dal suo riquadro, il mega-prompt dello Scanner mai vuoto né rotto, i dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote e le quote automatiche a posto):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
-| una partita, tutte del giorno, intervallo | 3/3 | 0 su 190 | 0 su 122 | 0 |
-| batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 190 | 0 su 122 | 0 |
+| una partita, tutte del giorno, intervallo | 3/3 | 0 su 191 | 0 su 122 | 0 |
+| batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 191 | 0 su 122 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
-| `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 127-155 | 74-82 | 0 |
-| `vecchio`: motore `b62` caricato (controllo) | 0/3, «motore caricato diverso ...» | 41 (il ramo di ruolo) | 37-42 | 0 |
+| `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 128-158 | 74-83 | 0 |
+| `vecchio`: motore `b63` caricato (controllo) | 0/3, «motore caricato diverso ...» | 1 (il rischio sorpresa) | 1 (il certificato) | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -1157,7 +1173,8 @@ nessuna scrittura diversa, solo il certificato: risultati esatti, handicap e mul
 escono con lo stesso HTML dalle funzioni nuove, e quelli con le quote li scrive la card delle quote
 con `innerHTML` diretto. Al `b63` il controllo col `b62` vede 41 scritture diverse e 37-42 righe del CSV:
 tutto il ramo di ruolo (mercati gol, multigol, risultati esatti, handicap, tempi dei gol, modelli di
-ruolo dell'1X2), mai il verdetto 1X2.
+ruolo dell'1X2), mai il verdetto 1X2. Al `b64` il controllo col `b63` vede una scrittura diversa, il
+riquadro del rischio sorpresa (`sorpresa-box`, che il `b63` non scrive), e il certificato.
 
 **Le quote sul banco (dal `b54`).** Dopo il giro dello Scanner il banco scrive le quote nella card
 dell'ultima partita, in sei casi: vuote (niente tabella, niente blocco nel prompt), valide con la
@@ -2743,6 +2760,7 @@ scrittura nuova, il messaggio iniziale). Il banco la verifica a parte, premendo 
 | `SHRINK_K` | 4 | misurata `b35`–`b37`, riconfermata `b41` | 12 e 28 peggiori a 5σ; sotto 4 migliora l'1X2 (−0.0016, `z = −3.03`) ma i gol pagano +0.0056. `b41`, copia conforme e zero clamp: a 2 l'1X2 −0.00069 (`z = −3.30`), la somma +0.00155; Premier −0.00079 (`z = −3.42`) e +0.00136; LaLiga −0.00052 e +0.00025; Bundesliga −0.00052 e +0.00321 (`z = 3.40`); Ligue 1 +0.00001 e +0.00087 |
 | `SHRINK_LAM_K` | 3 | a mano, misurata `b37` e `b41` | `b37`: ottimo del Brier Over fra 5 e 8, `z = −1.82`, segno ribaltato nel 2022/23. `b41`: in Serie A monotono fino a 20, miglior `z = −1.99` a 5, 3 stagioni su 3; in Premier il 2023/24 si ribalta (+0.00131 a 5, +0.0081 a 20); in LaLiga piatta a 5 e peggio da 8 in su; in Bundesliga meglio a 5 (`z = −2.69`, 3 stagioni su 3); in Ligue 1 meglio a 5 (`z = −1.26`). Tre leghe sì, una no, una ribaltata: resta 3 |
 | `GOALS_SOT_W` | 0.50 | stimata `b12`, confermata `b14` e `b41` | AUC Over 2.5 da 0.554/0.495/0.501 a 0.572/0.514/0.521; cinque leghe +2.18σ. `b41` in copia conforme: la Serie A punisce 0 (+0.0066, `z = 2.03`), la Premier punisce 1 (+0.0062, `z = 2.30`), LaLiga e Ligue 1 hanno l'ottimo a 0.50, la Bundesliga fra 0.25 e 0.50 |
+| `SORPRESA_TAB` | 6 fasce dello sfavorito × accordo / disaccordo fra modello ed Elo: partite, vince lo sfavorito, pareggio, vince il favorito | misurata `b64` | 23.278 partite in copia conforme di 24 leghe (batch `b48`–`b62`, 2023–2026), `strumenti/sorpresa.py`; col disaccordo lo sfavorito vince +2.39 ±1.49 punti oltre il previsto, uguale nelle due metà delle leghe. Non tocca le probabilità: è la frequenza detta dall'avviso. Vedi *L'avviso di sorpresa* |
 | `GOALS_LEVEL` | 1.051 | stimata e registrata `b62`, nel motore `b63` | gol/lambda di ruolo su 16.254 partite di quindici leghe (2023/24–2025/26), stabile per stagione (1.044–1.061) e per fonte degli xG; fuori lega Over 2.5 −2.74‰ (`z = −4.80`) e Goal −2.69‰ (`z = −6.27`), 13 leghe su 15. Test registrato su nove leghe mai aperte, 6.472 partite: −3.80‰ (`z = −2.99`), 6 su 9. Vedi *Il livello dei gol: la regola* |
 | `SOT_PER_GOAL` | 3.25 | misurata | LaLiga 3.19, Premier 3.04, Serie A 3.33. Tocca solo il livello |
 | `GOALS_SOT_CAP` | 0.20 | paracadute misurato | morde nello 0.18% |
@@ -3044,6 +3062,7 @@ misurate.
 | Peso e scala dell'Elo, secondo giro (0.40 / 2.00 sopra l'Elo corretto) | **no** (`b48`) | tre leghe mai viste: −0.00135, `z = −0.89`, Championship peggiore. Vedi *Peso e scala dell'Elo insieme* |
 | La coda alta della selezione contro le neopromosse (col `b48` il 10% più alto perde 2.9 punti sulle cinque leghe) | **non decisa, chiusa** (`b52`) | regola registrata sulle tre leghe nuove: −0.3 ±2.0 (confermata sotto −2se, smentita da 0 in su); otto leghe insieme −1.8 ±1.8, solo descrittivo. L'ingresso del `b48` resta. Vedi *Le tre leghe nuove col `b48`: la regola* |
 | Indovinare più risultati combinando tutto quello che il motore calcola (stacking, `b53`) | **no** (`b53`) | 12 leghe, 11.927 partite, addestrato su undici e misurato sulla dodicesima. Logistica sulle sole probabilità: +0.08 ±0.18 punti di prese; coi sei modelli, `lgModel`, `lgElo`, ΔElo e HFA (19 feature): +0.22 ±0.40, ma logloss −0.0029 (`z = −2.89`, una calibrazione, non prese); con 67 feature (lambda, tiri, pendenze, neopromosse, formazioni, riposo, classifica della stagione): −0.13 ±0.51, e comincia a giocare `X` (388 volte) perdendo; gradient boosting +0.30 ±0.55. La selezione nemmeno: 10 / 20 / 30 / 50% più sicuro +0.5 / +0.7 / −0.1 / +0.6 (±1.7 / 1.2 / 0.9 / 0.7). Il modello è calibrato (probabilità media del pick 51.7%, prese 51.0%): l'informazione del motore è sfruttata |
+| Un rating delle squadre sugli xG di tutte le partite di lega, combinato con l'1X2 (regola registrata) | **no** | esplorazione su dodici leghe −5.53‰ di logloss 1 contro 2 fuori lega (`z = −3.95`), +0.75 punti di prese; test su dieci leghe mai aperte −2.00‰ (`z = −1.19`), 5 leghe su 10, prese +0.00. Lo stesso rating sui gol non aggiunge niente; la media degli xG delle due squadre, anche corretta per l'Elo degli avversari, è il peso del modello visto da un'altra parte. Vedi *Il rating sugli xG: la regola* |
 | Il Goal con le sole quote dell'1X2 (matrice del motore inclinata a totale fermo) | **no** (`b57`) | registrato prima, dodici leghe: +0.00355 di logloss, `z = +4.36`, peggio in 9 leghe su 12. Senza le quote dell'Over il Goal resta del motore |
 | Battere il bookmaker con le quote di prima, il prezzo migliore o un sottoinsieme in cui il motore sa di più (ricerca registrata) | **no** | esplorazione 2023/24–2024/25, conferma 2025/26: il mercato non va dove dice il motore (pendenza 1 contro 2 +0.0098, `z = +1.10`); giocare il motore alle quote di prima CLV −6.5% (al prezzo migliore −1.3%); il prezzo migliore contro il consenso «passa» col CLV in proporzione (+15.1%) ma ricalibrato è −8.7%, ROI −34%; nessuna delle 27 fette ha il peso del motore positivo a `z ≥ 3`. Vedi *Battere il bookmaker: la regola della ricerca* |
 | Ricalibrare il Goal della matrice allineata con le quote (`σ(a + b·logit)`, stimata sulle undici leghe) | **no** (`b62`) | registrato prima, 4.849 partite mai viste: −0.0005 di logloss, `z = −0.57`, la League One peggiora. Lì il Goal allineato sta 2.0 punti sotto e la ricalibrazione lo porta 0.7 sopra |
@@ -3281,6 +3300,139 @@ il fattore dentro, e `strumenti/livello-gol.py` lo toglie per misurare. Con le q
 niente (il motore pesa 0.0036 nell'Over con le quote). Il Comparatore segue da solo: legge il motore, e
 il certificato conta la manopola nuova. Non è la cura della radice: il disallineamento di unità resta, e
 una media NPxG di lega lo toglierebbe lega per lega (vedi *Da fare*, punto 4).
+
+## Il rating sugli xG: la regola
+
+Scritta prima di aprire le leghe del test. Chiesta dall'utente: «indovinare più partite ed avere più
+alert su possibili upset. Abbiamo adesso qualche milione di dati ma non abbiamo idee».
+
+**Perché.** Tre quarti dell'1X2 vengono dall'Elo, e l'Elo impara dai gol: un 1-0 con un tiro vale
+quanto un 1-0 dominato. Gli xG di ogni partita sono meno rumorosi dei gol. Il motore li usa già, ma
+solo come medie delle due squadre, senza sapere contro chi sono stati fatti; l'Elo invece corregge per
+l'avversario, perché passa per tutte le partite della lega. Manca un rating che faccia le due cose.
+
+**L'esplorazione**, sulle dodici leghe già studiate (i CSV di `batch48`, `batch4` e `batch/2627`, dove
+ogni partita porta i suoi xG veri). Per lega e in ordine di data, un rating lineare: margine di xG
+previsto = `R_casa − R_trasf + H`; dopo ogni giornata, con `e` = margine vero − previsto, `R_casa += K·e`,
+`R_trasf −= K·e`, `H += KH·e`. Una squadra che entra in una stagione parte dalla media dei rating delle
+squadre uscite (come l'Elo dal `b48`); la prima stagione di ogni lega è solo rodaggio. Poi una
+logistica 1 contro 2 su `lgTarget` del motore e sul margine previsto, stimata su undici leghe e misurata
+sulla dodicesima (6.315 partite senza pari), contro il motore:
+
+| variante | logloss 1 contro 2 | `z` | leghe meglio |
+|---|---|---|---|
+| **motore + rating sugli xG** (`K` 0.05, `KH` 0.01) | **−5.53‰** | **−3.95** | 10 su 12 |
+| lo stesso rating, ma sui gol | +0.24 … +0.36‰ | +1.0 … +1.5 | — |
+| solo il rating sugli xG, senza motore | −4.57‰ | −2.33 | 9 su 12 |
+| modello, Elo e HFA con pesi liberi (il candidato del `b41` visto da un'altra parte) | −3.59‰ | −2.86 | 9 su 12 |
+| il rating sugli xG sopra i pesi liberi | −2.25‰ | −2.37 | 9 su 12 |
+| la media degli xG delle due squadre (ultime 30, emivita 106), anche corretta con l'Elo degli avversari, sopra i pesi liberi | −0.16‰ | −0.34 | — |
+
+Quello che il rating aggiunge non è il peso del modello (i pesi liberi hanno già fallito due test, vedi
+*Peso e scala dell'Elo insieme*) e non viene dallo storico delle due squadre: sta nel passare per tutte
+le partite della lega, come fa l'Elo. Griglia: `K` 0.015–0.12, `KH` 0–0.04, regressione fra le stagioni
+0.6–1.0, peso dei gol nel margine 0 / 0.3 / 0.6 / 1, xG, NPxG o tiri in porta. Meglio l'xG (NPxG
+−4.98‰, tiri in porta peggio), nessun peso ai gol, nessuna regressione; `K` fra 0.04 e 0.08 è piatto
+(−5.36 / −5.53 / −5.44 / −4.93‰), scelto 0.05, dentro la griglia. Sulle partite della terza stagione il
+rating fatto su tre stagioni fa −4.26‰, su due −3.88‰, su due partendo dall'Elo −4.38‰, sulla sola
+stagione partendo dall'Elo −3.41‰. Prese fuori lega +0.75 ±0.50 punti (50.25 → 51.00%, pick cambiato in
+659 partite su 8.506), logloss 1X2 −3.98‰ (`z = −3.84`); il 20% più sicuro del calendario 69.6 → 71.3%.
+
+**Il candidato**, con tutto fissato adesso (`strumenti/rating-xg.py`): il rating come sopra, `K` 0.05,
+`KH` 0.01, `H` di partenza 0.3, dagli xG di `/stats` di tutte le partite di lega delle tre stagioni del
+database, e l'1X2 da
+
+`lg' = 0.31000·lgTarget + 1.03668·margine − 0.03559`
+
+(stimati su tutte le dodici leghe dell'esplorazione), cioè il log-odds 1 contro 2 che l'inclinazione
+dell'Elo dà ai lambda completi; `pX` resta quella del motore. Nel test la probabilità di pareggio è quella
+del CSV e `1` e `2` si dividono il resto secondo `σ(lg')`.
+
+**I dati del test**: le dieci leghe con almeno due stagioni fra i batch del `b61` e del `b62`, League
+One, League Two e Süper Lig 2023/24–2025/26, Bundesliga austriaca, Superligaen e Liga MX 2023/24–2025/26,
+Eliteserien, Allsvenskan e MLS 2023–2025, J. League 2024–2025; la prima stagione di ognuna è rodaggio.
+Argentina e Brasile, una stagione sola, restano fuori. Di queste leghe si sono guardati i mercati gol
+(`b62`, `b63`) e, solo descrittivi, quante volte vincono il pick, lo sfavorito e il pareggio; il rating
+mai.
+
+**Il metro.** La logloss 1 contro 2 sulle partite senza pari, col rating e coi coefficienti scritti qui,
+contro il motore (`σ(lgTarget)`), appaiata partita per partita. **Passa** se sull'insieme migliora con
+`z ≤ −2`, migliora in almeno 7 leghe su 10, e le prese del pick (1X2 intero) non calano oltre il rumore
+(differenza appaiata non sotto −2 errori standard).
+
+**Se passa.** Il rating entra nel motore: gli xG di `/stats` di ogni partita di lega del database (una
+chiamata per partita la prima volta, circa 1.100 per una lega da 20 squadre, poi tenuti nel browser: una
+partita finita non cambia), il margine previsto e `lg'` al posto di `lgTarget` nel ramo completo, una
+manopola che torna a prima, il CSV che esporta il margine. Si rifanno sulle probabilità nuove le soglie
+del pick (`PICK_RESA`) e le rese dell'1X2 nel tabellone. Se non passa, resta tutto com'è e questa
+sezione dice perché.
+
+**Descrittivi**, detti comunque: prese per lega; la selezione al 10 / 20 / 30 / 50% del calendario;
+logloss 1X2; quante volte vince lo sfavorito quando ha il 25, 30, 35% o più, col motore e col rating
+(vedi *L'avviso di sorpresa*).
+
+**Esito: non passa.** `python3 strumenti/rating-xg.py --prova batch/nuove batch/livello`, 6.509 partite
+(4.879 senza pari) delle dieci leghe, rodaggio escluso.
+
+| lega | senza pari | logloss 1 contro 2 | prese |
+|---|---|---|---|
+| Eliteserien | 371 | −9.82‰ | 53.1 → 54.3% |
+| League Two | 810 | −6.44‰ | 46.8 → 47.3% |
+| Süper Lig | 475 | −5.58‰ | 53.1 → 53.9% |
+| Liga MX | 373 | −5.45‰ | 52.9 → 52.3% |
+| MLS | 797 | −2.84‰ | 48.1 → 47.5% |
+| Bundesliga austriaca | 289 | +1.10‰ | 47.9 → 48.2% |
+| League One | 829 | +1.51‰ | 49.3 → 50.2% |
+| Superligaen | 283 | +1.83‰ | 51.0 → 50.5% |
+| Allsvenskan | 371 | +1.83‰ | 50.8 → 49.6% |
+| J. League | 281 | +11.72‰ | 49.2 → 46.6% |
+| **insieme** | 4.879 | **−2.00‰ (`z = −1.19`)** | 49.73 → 49.73% (±0.65) |
+
+Meglio in 5 leghe su 10 contro le 7 richieste, `z` lontano da −2, prese ferme: **resta tutto com'è.**
+L'effetto c'è ma è un terzo di quello dell'esplorazione, e cambia molto da lega a lega. Solo
+descrittivo, trovato dopo: stimati sulle dieci leghe i coefficienti sarebbero 0.57 sul motore e 0.67 sul
+margine (nell'esplorazione 0.31 e 1.04), e per lega il peso del margine va da −0.09 (J. League, che ha
+una sola stagione di rodaggio) a 1.66 (Eliteserien); rifatti fuori lega fra le dieci darebbero −2.13‰
+(`z = −1.92`). Logloss 1X2 −1.45‰ (`z = −1.15`); il 10 / 20 / 30 / 50% più sicuro del calendario 65.6 /
+62.6 / 60.2 / 56.2% col motore, 67.4 / 62.2 / 60.6 / 57.1% col rating. Lo sfavorito col 30% o più
+(32% delle partite) vince il 31.9% col motore (previsto 32.9), il 32.1% col rating (33.1): le sorprese
+il motore le conta già giuste.
+
+## L'avviso di sorpresa
+
+Chiesto dall'utente insieme a «indovinare più partite»: «avere più alert su possibili upset». Non è un
+cambiamento delle probabilità: è una frequenza misurata, detta dove si decide.
+
+**La misura.** `python3 strumenti/sorpresa.py batch48 batch4 batch/2627 batch/nuove batch/livello`, sulle
+23.278 partite in copia conforme dei batch (24 leghe, 2023–2026, l'1X2 del motore è lo stesso dal
+`b48`). Lo sfavorito è il meno probabile fra `1` e `2`; il disaccordo è il segno di `lgModel` diverso da
+quello di `lgElo` nel ramo completo (17.4% delle partite).
+
+| sfavorito | partite | vince lo sfavorito (previsto) | pareggio | vince il favorito | col disaccordo: partite, sfavorito, favorito | con l'accordo |
+|---|---|---|---|---|---|---|
+| sotto il 15% | 3.263 | 10.1% (10.7) | 17.2% | 72.8% | 3 | 3.260, 10.1%, 72.7% |
+| 15–20% | 3.373 | 18.8% (17.6) | 23.7% | 57.5% | 30 | 3.343, 18.8%, 57.5% |
+| 20–25% | 4.607 | 22.7% (22.6) | 26.7% | 50.6% | 174, 23.6%, 44.3% | 4.433, 22.7%, 50.8% |
+| 25–30% | 5.297 | 27.4% (27.5) | 28.2% | 44.4% | **713, 33.0%, 40.3%** | 4.584, 26.5%, 45.0% |
+| 30–35% | 5.541 | 32.3% (32.4) | 27.5% | 40.2% | **2.170, 34.3%, 37.6%** | 3.371, 31.1%, 41.8% |
+| 35% o più | 1.197 | 37.6% (35.8) | 27.8% | 34.6% | **960, 38.9%, 33.6%** | 237, 32.5%, 38.4% |
+
+Per fascia le probabilità sono calibrate: il motore le sorprese le conta già giuste. A pari
+probabilità, col disaccordo lo sfavorito vince **+2.39 punti** più del previsto (±1.49, 4.050
+partite), con l'accordo −0.29 (±0.59): +2.33 (±2.13) nelle dodici leghe dove il disaccordo era stato
+guardato (`b42`) e +2.44 (±2.10) nelle altre dodici. È il peso del modello che l'1X2 non gli dà (vedi
+*Peso e scala dell'Elo insieme*): come correzione delle probabilità non ha passato i test, come
+frequenza misurata regge.
+
+**Nello Scanner (`b64`).** `SORPRESA_TAB` porta la tabella; `rischioSorpresa` sceglie la fascia dello
+sfavorito e la cella col disaccordo o con l'accordo (se ha almeno 150 partite, altrimenti la fascia
+intera; senza `lgModel` o `lgElo` la fascia intera). Il livello lo decide la frequenza della cella:
+sfavorito al 33% o più **ALTO**, dal 25% **medio**, sotto **basso**. ALTO è quindi disaccordo con lo
+sfavorito al 25% o più (circa una partita su sei), oppure lo sfavorito al 35% o più quando manca l'Elo.
+Il riquadro dice lo sfavorito, la sua probabilità, se modello ed Elo sono d'accordo, e le tre frequenze
+della cella; il mega-prompt lo mette per primo fra i rischi calcolati. Non passa per il CSV: livello e
+cella si rifanno dalle righe `1`, `X`, `2` e dai due log-odds del ramo completo, come fa lo strumento.
+Si rifà la tabella quando cambia l'1X2 del motore.
 
 ## I gol
 
@@ -4003,3 +4155,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b61` | la card delle formazioni ridisegnata: un riquadro per squadra col suo nome, lo stato della formazione in cima, chi manca con i nomi (dallo storico già scaricato, nessuna chiamata in più), il confronto con la probabile, cambi, capitano e allenatore, la stanchezza in tre riquadri. Prima era una tabella a tre colonne che a 390px spezzava le parole. Numeri e CSV invariati; banco con 0 scritture diverse su 190 e 0 righe su 122 |
 | `b62` | con le quote dell'1X2 e dell'Over, risultati esatti, multigol e handicap asiatico vengono dalla matrice dei gol allineata al mercato: regola registrata prima, passata su 4.849 partite mai viste (League One, League Two, Süper Lig 2023/24–2025/26 e il 2026/27 di dieci leghe), −0.0396 / −0.0602 / −0.0176 di logloss, `z` −8.60 / −8.93 / −4.80, 4 blocchi su 4. La ricalibrazione del Goal con le quote non passa (`z = −0.57`). Il riferimento di lega vero dei mercati sui numeri, misurato dai CSV, vale poco e non entra. `strumenti/quote-matrice.py`. Senza quote, e nel Comparatore, niente cambia |
 | `b63` | il livello dei gol: i lambda di ruolo moltiplicati per `GOALS_LEVEL = 1.051` (il lambda stava in media il 5% sotto i gol veri). Regola registrata prima, passata su 6.472 partite di nove leghe mai aperte (Austria, Danimarca, Messico, Norvegia, Svezia, MLS, Giappone, Argentina, Brasile): Over 2.5 + Goal −3.80‰, `z = −2.99`, 6 leghe su 9; Over previsto 49.0 → 52.3% contro 52.8% reale. L'1X2 non cambia. Rimisurate le rese dei gol nel tabellone; la retta dei binari regge. Il CSV esporta il fattore. `strumenti/livello-gol.py` |
+| `b64` | l'avviso di sorpresa, chiesto dall'utente: sotto il verdetto 1X2 il rischio che vinca lo sfavorito, ALTO / medio / basso, con le frequenze misurate su 23.278 partite di 24 leghe; ALTO (una partita su sei) quando modello ed Elo indicano favoriti diversi e lo sfavorito ha il 25% o più, e lì lo sfavorito vince il 33–39%. Anche nel mega-prompt. Prima, un rating delle squadre sugli xG di tutta la lega: regola registrata, −5.53‰ nell'esplorazione e −2.00‰ (`z = −1.19`, 5 leghe su 10) sulle leghe del test, non passa. Probabilità e CSV invariati. `strumenti/rating-xg.py`, `strumenti/sorpresa.py` |
