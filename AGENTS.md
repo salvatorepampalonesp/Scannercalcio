@@ -52,7 +52,7 @@ sono, le scrive l'utente. Per misurarle si usano gli stessi file (`strumenti/quo
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b60`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b61`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -316,7 +316,7 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b60`)
+## Stato attuale (`b61`)
 
 **1X2.** Col motore `b48` il pick azzecca il 52.7% (±1.4) contro il 43.0% del «gioca sempre in
 casa» sulle cinque leghe: 52.7% contro 40.2% in Serie A, 52.7% contro 43.1% in Premier, 53.2%
@@ -439,7 +439,8 @@ frequenze descrittive, non misurate contro il reale. Vedi *Le statistiche dei gi
 in tre riquadri con una barra, le card di approfondimento che si aprono a richiesta (sul telefono la
 pagina passa da 20.483 a 8.279 px). Motore, id e numeri sono quelli del `b58`. Dal `b60` anche la
 card dei giocatori: il mercato si sceglie con le pastiglie, e ogni squadra ha la sua lista con la
-frequenza, una barra e le ultime 5 a pallini. Vedi *La grafica dello Scanner*.
+frequenza, una barra e le ultime 5 a pallini. Dal `b61` quella delle formazioni: un riquadro per
+squadra, e chi manca detto per nome. Vedi *La grafica dello Scanner*.
 
 **La selezione vale più dell'accuratezza.** Prima di aggiungere una feature, chiedersi se
 il segnale non sia già nell'output, solo mal etichettato.
@@ -860,6 +861,20 @@ il motore no. Chiesta dall'utente: «rendiamolo moderno».
   `sel-mercato-giocatori` resta, nascosta: è lo stato del mercato scelto (le pastiglie la cambiano
   con `mercatoGiocatori`), e il banco la usa per passare i 15 mercati. I numeri, l'ordine e i 12
   giocatori per squadra sono quelli di prima.
+- **La card delle formazioni (`b61`)**, chiesta subito dopo: era una tabella a tre colonne con
+  undici righe, e a 390 px le etichette andavano a capo dentro le parole («Formaz ione», «Capita no
+  assent e»). Ora ogni squadra è un riquadro col suo nome e colore, e in cima lo stato della
+  formazione (confermata in verde, probabile o «ultimo undici» in ambra, non disponibile in
+  grigio). Sotto, **chi manca**: quanti titolari abituali, una barra col loro peso sull'undici
+  abituale, che quota dei gol segnavano, e **i nomi**, in ordine di presenze (la `C` segna il
+  capitano se è fra loro); con zero assenti, «è l'undici tipo» in verde; se lo storico ha meno di
+  `LINEUP_MIN_HIST` formazioni, lo dice. Poi, se c'è, il confronto con la probabile (fuori in rosso,
+  dentro in verde); cambi dall'ultima, capitano e allenatore (col `NUOVO` in ambra) in tre riquadri,
+  nascosti se la formazione non c'è; la stanchezza in tre riquadri (riposo, partite negli ultimi 14
+  giorni, coppa europea). Sul computer le due squadre stanno affiancate. I nomi vengono dallo storico
+  che il motore scarica già (`storicoFormazioni` tiene i nomi dei titolari di ogni partita,
+  `indiciFormazione` aggiunge `nomiAssenti` e `nomeCapitano`): nessuna chiamata in più, e il CSV non
+  li legge, quindi non cambia.
 
 **Cosa non cambia, e non deve cambiare.**
 
@@ -1056,7 +1071,7 @@ rilegge l'archivio di lega dal **testo** del CSV esportato, ci fa girare `buildG
 motore e confronta Elo e HFA con le righe del CSV, partita per partita; il controllo di potenza
 toglie una partita dall'archivio e deve vedere l'Elo cambiare.
 
-Esito al `b60` (storico 30), a 390px con tutte le 24 card aperte (anche nessuna tabella compatta che esce dal suo riquadro, il mega-prompt dello Scanner mai vuoto né rotto, i dieci casi delle quote, la matrice allineata e le quote automatiche a posto):
+Esito al `b61` (storico 30), a 390px con tutte le 24 card aperte (anche nessuna tabella compatta che esce dal suo riquadro, il mega-prompt dello Scanner mai vuoto né rotto, i dieci casi delle quote, la matrice allineata e le quote automatiche a posto):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
@@ -1064,7 +1079,7 @@ Esito al `b60` (storico 30), a 390px con tutte le 24 card aperte (anche nessuna 
 | batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 190 | 0 su 122 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
 | `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 127-155 | 74-82 | 0 |
-| `vecchio`: motore `b59` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 | 1 (il certificato) | 0 |
+| `vecchio`: motore `b60` caricato (controllo) | 0/3, «motore caricato diverso ...» | 1 (la card delle formazioni) | 1 (il certificato) | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -1109,7 +1124,10 @@ misurare, e se il Comparatore non carica il motore entro un minuto si ferma col 
 aspettare per sempre (controllo di potenza: con la guardia sbagliata rimessa esce con 2 in un
 minuto e mezzo, citando «Failed to execute 'observe' on 'MutationObserver'»). Al `b60` il controllo
 col `b59` non vede nessuna scrittura diversa, solo il certificato: la card dei giocatori si scrive dopo
-il giro del motore, quando si preme il bottone, e il messaggio iniziale è lo stesso.
+il giro del motore, quando si preme il bottone, e il messaggio iniziale è lo stesso. Al `b61` il
+controllo col `b60` vede una scrittura diversa, la card delle formazioni (`formazioni-box`, scritta da
+`safeHtml` dentro il giro), e il certificato: le righe `FORMAZIONI` del CSV non cambiano, perché i
+nomi aggiunti a `__LINEUP_DEBUG` il Comparatore non li legge.
 
 **Le quote sul banco (dal `b54`).** Dopo il giro dello Scanner il banco scrive le quote nella card
 dell'ultima partita, in sei casi: vuote (niente tabella, niente blocco nel prompt), valide con la
@@ -2345,8 +2363,8 @@ fuori da cinque partite non è più in rosa, quindi non conta come assente: la s
 adattata, e l'Elo e gli xG lo sanno. Conta chi manca **oggi**.
 
 **Non entrano nelle probabilità.** Il `b43` li mostra (card «Formazioni e stanchezza»,
-che dice se la formazione è probabile o confermata) e li esporta (sezione CSV `FORMAZIONI`),
-niente altro. Col motore `b42` caricato il banco vede diverse solo quella card, le venti righe
+che dice se la formazione è probabile o confermata; dal `b61` anche i nomi degli abituali assenti,
+vedi *La grafica dello Scanner*) e li esporta (sezione CSV `FORMAZIONI`), niente altro. Col motore `b42` caricato il banco vede diverse solo quella card, le venti righe
 del CSV e il certificato.
 
 **Il leakage.** La partita bersaglio entra solo coi titolari, l'allenatore e `confirmed`.
@@ -2411,8 +2429,8 @@ sulle confermate (per le partite giocate l'API restituisce solo la formazione re
 ancora non confermato. Quando lo stesso lato arriva confermato, `confrontoProbabile` dice chi
 era nella probabile e non parte (**fuori**) e chi parte senza esserci (**dentro**), con quante
 ore prima era stata vista: sono i cambi dell'ultimo momento, cioè le sorprese che il resto
-del motore non può vedere. La riga «Rispetto alla probabile» scrive «salvata» finché la
-formazione è probabile, e `--` se la probabile non era mai stata vista.
+del motore non può vedere. Il riquadro «Rispetto alla probabile» dice «salvata» finché la
+formazione è probabile, e non compare se la probabile non era mai stata vista.
 
 **Solo a schermo, mai nel CSV né in `__LINEUP_DEBUG`**: dipende da quando e su quale
 dispositivo si è aperto lo Scanner, quindi non è riproducibile, e un backtest non può
@@ -3676,3 +3694,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b58` | il tabellone con le quote: regola registrata prima, e passata sulle sette leghe di cui il tabellone non era mai stato guardato. La proposta in cima rende +14.6 punti sopra il giocarla alla cieca contro +12.9 del motore (+1.73, `z = +3.55`, 7 leghe su 7; cinque campionati +19.2 contro +16.8). Con le quote dell'1X2 il tabellone si ridisegna con le probabilità con le quote (anche Over/Under e Goal se c'è l'Over; i numeri restano del motore) e con le rese misurate su quelle (`EDGE_BANDS_QUOTE`), e lo stesso fa il tabellone del mega-prompt. `strumenti/quote-tabellone.py`. Senza quote, e nel Comparatore, niente cambia |
 | `b59` | la grafica nuova, chiesta dall'utente: barra in alto e barra delle sezioni fissa, il verdetto 1X2 in tre riquadri con una barra, le card di approfondimento che si aprono a richiesta (sul telefono la pagina di un'analisi passa da 20.483 a 8.279 px), il tabellone più stretto a 390px. Motore, numeri e i 233 id di prima invariati; banco con 0 scritture diverse su 190 e 0 righe su 122 in ogni modalita'. Trovato strada facendo: nel Comparatore `getElementById` non torna mai `null` (contratto, punto 12) |
 | `b60` | la card dei giocatori ridisegnata, che dopo il caricamento restava una tabella a cinque colonne («22/27» andava a capo a 390px): il mercato a pastiglie, una lista per squadra col suo colore, `XI` per i titolari di oggi, le ultime 5 a pallini, la frequenza con una barra; una barra di avanzamento durante lo scarico e il bottone che dice quante partite riprovare. Numeri e ordine invariati; banco con 0 scritture diverse su 190 e 0 righe su 122 |
+| `b61` | la card delle formazioni ridisegnata: un riquadro per squadra col suo nome, lo stato della formazione in cima, chi manca con i nomi (dallo storico già scaricato, nessuna chiamata in più), il confronto con la probabile, cambi, capitano e allenatore, la stanchezza in tre riquadri. Prima era una tabella a tre colonne che a 390px spezzava le parole. Numeri e CSV invariati; banco con 0 scritture diverse su 190 e 0 righe su 122 |

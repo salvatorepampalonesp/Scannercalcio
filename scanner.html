@@ -331,6 +331,42 @@ textarea{min-height:0;font-size:12px}
 .gi-load .gi-trk{height:6px;margin:8px 0 0}
 .gi-load .gi-trk i{background:linear-gradient(90deg,#6f63ff,#a78bfa);transition:width .25s}
 
+/* ---------- formazioni (b61): un riquadro per squadra ---------- */
+.gi-team-h .fz-stato{margin-left:auto}
+.fz-stato{flex:none;font-size:11px;font-weight:750;padding:3px 9px;border-radius:99px;white-space:nowrap;
+  border:1px solid var(--line2);color:var(--dim);background:var(--panel)}
+.fz-stato.ok{color:#9ff0c8;background:rgba(47,216,138,.1);border-color:rgba(47,216,138,.4)}
+.fz-stato.prob{color:#f7c865;background:rgba(245,183,59,.08);border-color:rgba(245,183,59,.45)}
+.fz-sez{padding:12px 0;border-top:1px solid rgba(255,255,255,.05)}
+.gi-team-h+.fz-sez{border-top:none}
+.fz-lab{font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);margin-bottom:7px}
+.fz-big{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.fz-big b{font-size:26px;font-weight:850;letter-spacing:-.03em;line-height:1;color:var(--txt)}
+.fz-big b.fz-ok{color:var(--ok)}
+.fz-big span{font-size:13px;color:var(--dim)}
+.fz-trk{margin:9px 0 5px}
+.fz-trk i{background:var(--t)}
+.fz-sub{font-size:12px;color:var(--dim);line-height:1.5}
+.fz-vuoto{font-size:12.5px;color:var(--dim);line-height:1.5}
+.fz-nomi{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.fz-nome{font-size:12.5px;font-weight:650;color:var(--txt);background:var(--panel3);border:1px solid var(--line2);border-radius:99px;padding:3px 10px}
+.fz-nome i{font-style:normal;font-size:10px;font-weight:850;color:var(--bg);background:var(--warn);border-radius:4px;padding:0 4px;margin-left:3px}
+.fz-nome.fuori{border-color:rgba(255,93,108,.45);background:rgba(255,93,108,.08)}
+.fz-nome.dentro{border-color:rgba(47,216,138,.45);background:rgba(47,216,138,.08)}
+.fz-fatti{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.fz-fatti.t3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.fz-fatto{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 10px;min-width:0}
+.fz-fatto.largo{grid-column:1/-1}
+.fz-fatto small{display:block;font-size:11px;color:var(--dim);line-height:1.3}
+.fz-fatto b{display:block;font-size:14px;font-weight:750;color:var(--txt);margin-top:3px;line-height:1.3;overflow-wrap:anywhere}
+.fz-da{display:block;font-size:11px;font-weight:500;color:var(--dim);margin-top:1px}
+.fz-nuovo{display:inline-block;font-size:10px;font-weight:850;letter-spacing:.04em;color:var(--bg);background:var(--warn);padding:0 6px;border-radius:5px;margin-left:7px;vertical-align:2px}
+.fz-warn{color:var(--warn)}
+.fz-foot{font-size:11px;color:var(--faint);padding:9px 0 11px;border-top:1px solid rgba(255,255,255,.05)}
+.fz-avviso{margin-top:14px;padding:12px 14px;border:1px solid rgba(245,183,59,.5);background:rgba(245,183,59,.07);border-radius:12px;
+  font-size:12.5px;color:var(--txt);line-height:1.6}
+.fz-nota{margin-top:12px;font-size:12px;color:var(--dim)}
+
 /* il motore scrive testi a 9-10px negli stili inline: sotto gli 11px non si legge */
 [style*="font-size:9px"],[style*="font-size: 9px"],[style*="font-size:9.5px"],
 [style*="font-size:10px"],[style*="font-size: 10px"]{font-size:11.5px !important}
@@ -391,7 +427,7 @@ textarea{min-height:0;font-size:12px}
       <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#03140e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-6 4 3 7-8"/><path d="M15 6h4v4"/></svg></div>
       <div style="min-width:0"><h1>Scanner</h1><div class="brand-sub">Motore V9.7 &middot; probabilit&agrave; calibrate sul backtest</div></div>
     </div>
-    <span class="pill pill-build" id="build-ver">build 0905-b60</span>
+    <span class="pill pill-build" id="build-ver">build 0905-b61</span>
   </div>
 </header>
 
@@ -1587,8 +1623,9 @@ function _luSide(res, isH) {
 function storicoFormazioni(matchList, details) {
   const lus = matchList.map(m => details[m.id] && details[m.id].lu).filter(Boolean);
   const out = { nLu: lus.length, share: {}, squad: new Set(), goals: {}, totGoals: 0,
-                lastXI: null, captain: null, coach: null, coachRun: 0 };
+                lastXI: null, captain: null, coach: null, coachRun: 0, nomi: {} };
   if (!lus.length) return out;
+  for (let i = lus.length - 1; i >= 0; i--) Object.assign(out.nomi, lus[i].nomi || {});
   const win = lus.slice(0, LINEUP_WINDOW); const cnt = {};
   win.forEach(l => l.xi.forEach(p => { cnt[p] = (cnt[p] || 0) + 1; }));
   Object.keys(cnt).forEach(p => { out.share[p] = cnt[p] / win.length; });
@@ -1608,7 +1645,8 @@ function storicoFormazioni(matchList, details) {
 function indiciFormazione(h, side) {
   const out = { disponibile: false, confermata: null, tipo: null, nStorico: h ? h.nLu : 0,
                 abitualiAssenti: null, pesoAssenti: null, golAssenti: null, cambi: null,
-                capitanoAssente: null, allenatore: null, allenatoreNuovo: null, partiteAllenatore: null };
+                capitanoAssente: null, allenatore: null, allenatoreNuovo: null, partiteAllenatore: null,
+                nomiAssenti: null, nomeCapitano: null };
   if (!side) return out;
   out.disponibile = true; out.confermata = side.confirmed; out.tipo = side.type; out.allenatore = side.coach;
   if (!h || h.nLu < LINEUP_MIN_HIST) return out;
@@ -1619,8 +1657,9 @@ function indiciFormazione(h, side) {
   out.abitualiAssenti = miss.length;
   out.pesoAssenti = tot > 0 ? miss.reduce((a, p) => a + h.share[p], 0) / tot : null;
   out.golAssenti = h.totGoals > 0 ? miss.reduce((a, p) => a + (h.goals[p] || 0), 0) / h.totGoals : null;
+  out.nomiAssenti = miss.slice().sort((a, b) => h.share[b] - h.share[a]).map(p => (h.nomi && h.nomi[p]) || p);
   if (h.lastXI) out.cambi = h.lastXI.filter(p => !xi.has(p)).length;
-  if (h.captain) out.capitanoAssente = !xi.has(h.captain);
+  if (h.captain) { out.capitanoAssente = !xi.has(h.captain); out.nomeCapitano = (h.nomi && h.nomi[h.captain]) || null; }
   if (side.coach && h.coach) { out.allenatoreNuovo = side.coach !== h.coach; out.partiteAllenatore = out.allenatoreNuovo ? 0 : h.coachRun; }
   return out;
 }
@@ -2684,42 +2723,54 @@ function bucketTimings(timings) {
   return b;
 }
 
-function renderFormazioni(FH, FA, SH, SA, VP) {
+function renderFormazioni(FH, FA, SH, SA, VP, nomeH, nomeA) {
   const esc = _escHtml;
-  const ultimo = F => F.disponibile && !F.confermata && /last.?start/i.test(F.tipo || '');
-  const st = F => !F.disponibile ? 'non disponibile' : (F.confermata ? 'confermata'
-    : (ultimo(F) ? 'probabile: <b>&egrave; l\'ultimo undici</b>' : 'probabile' + (F.tipo ? ' (' + esc(F.tipo) + ')' : '')));
-  const quando = V => 'probabile vista ' + (V.ore < 1 ? 'meno di un\'ora fa' : V.ore + (V.ore === 1 ? ' ora fa' : ' ore fa'));
-  const vp = V => !V ? '--' : (V.stato === 'salvata' ? 'salvata: la confronto con la confermata'
-    : (!V.fuori.length ? 'nessun cambio (' + quando(V) + ')'
-      : '<b>fuori</b> ' + V.fuori.map(esc).join(', ') + ' &middot; <b>dentro</b> ' + V.dentro.map(esc).join(', ') + ' (' + quando(V) + ')'));
   VP = VP || {};
-  const pc = v => v == null ? '--' : Math.round(100 * v) + '%';
-  const ab = F => F.abitualiAssenti == null ? '--' : F.abitualiAssenti + ' (' + pc(F.pesoAssenti) + ' del peso)';
-  const sn = v => v == null ? '--' : (v ? 'SI' : 'no');
-  const gi = v => v == null ? '--' : String(v);
+  const ultimo = F => F.disponibile && !F.confermata && /last.?start/i.test(F.tipo || '');
+  const stato = F => !F.disponibile ? '<span class="fz-stato">non disponibile</span>'
+    : F.confermata ? '<span class="fz-stato ok">confermata</span>'
+    : '<span class="fz-stato prob">' + (ultimo(F) ? 'probabile &middot; ultimo undici' : 'probabile') + '</span>';
+  const pc = v => Math.round(100 * v) + '%';
+  const fatto = (lab, val, cls) => '<div class="fz-fatto' + (cls ? ' ' + cls : '') + '"><small>' + lab + '</small><b>' + val + '</b></div>';
+  const nomi = (arr, cls, cap) => '<div class="fz-nomi">' + arr.map(n => '<span class="fz-nome' + (cls ? ' ' + cls : '') + '">' + esc(n)
+    + (cap && n === cap ? ' <i>C</i>' : '') + '</span>').join('') + '</div>';
+  const manca = F => {
+    if (!F.disponibile) return '<div class="fz-vuoto">Titolari della partita non ancora disponibili: l\'API li pubblica fino a 48 ore prima.</div>';
+    if (F.abitualiAssenti == null) return '<div class="fz-vuoto">Servono almeno ' + LINEUP_MIN_HIST + ' formazioni nello storico per dire chi manca (ce ne sono ' + F.nStorico + ').</div>';
+    if (!F.abitualiAssenti) return '<div class="fz-big"><b class="fz-ok">0</b><span>nessun titolare abituale assente: &egrave; l\'undici tipo</span></div>';
+    return '<div class="fz-big"><b>' + F.abitualiAssenti + '</b><span>' + (F.abitualiAssenti === 1 ? 'titolare abituale assente' : 'titolari abituali assenti') + '</span></div>'
+      + (F.pesoAssenti != null ? '<span class="gi-trk fz-trk"><i style="width:' + pc(F.pesoAssenti) + '"></i></span>' : '')
+      + '<div class="fz-sub">' + [F.pesoAssenti != null ? 'pesano il ' + pc(F.pesoAssenti) + ' dell\'undici abituale' : null,
+                                  F.golAssenti != null ? 'segnavano il ' + pc(F.golAssenti) + ' dei gol' : null].filter(Boolean).join(' &middot; ') + '</div>'
+      + (F.nomiAssenti && F.nomiAssenti.length ? nomi(F.nomiAssenti, '', F.capitanoAssente ? F.nomeCapitano : null) : '');
+  };
+  const quando = V => 'probabile vista ' + (V.ore < 1 ? 'meno di un\'ora fa' : V.ore + (V.ore === 1 ? ' ora fa' : ' ore fa'));
+  const prob = V => !V ? '' : '<div class="fz-sez"><div class="fz-lab">Rispetto alla probabile</div>'
+    + (V.stato === 'salvata' ? '<div class="fz-sub">Probabile salvata: quando arriva la confermata, qui compare chi &egrave; cambiato.</div>'
+      : !V.fuori.length ? '<div class="fz-sub">Nessun cambio (' + quando(V) + ').</div>'
+      : '<div class="fz-sub">Fuori</div>' + nomi(V.fuori, 'fuori') + '<div class="fz-sub" style="margin-top:8px">Dentro</div>' + nomi(V.dentro, 'dentro')
+        + '<div class="fz-sub" style="margin-top:8px">' + quando(V) + '</div>') + '</div>';
+  const cap = F => F.capitanoAssente == null ? '--' : F.capitanoAssente ? '<span class="fz-warn">assente</span>' : 'in campo';
+  const all = F => !F.allenatore ? '--' : esc(F.allenatore) + (F.allenatoreNuovo ? '<span class="fz-nuovo">NUOVO</span>'
+    : (F.partiteAllenatore != null ? '<span class="fz-da">da ' + F.partiteAllenatore + '+ partite</span>' : ''));
+  const gg = v => v == null ? '--' : v + (v === 1 ? ' giorno' : ' giorni');
   const eu = S => !S.inEuropa ? 'no' : [S.coppaPrima != null ? S.coppaPrima + ' gg fa' : null, S.coppaDopo != null ? 'fra ' + S.coppaDopo + ' gg' : null].filter(Boolean).join(' &middot; ');
-  const al = F => !F.allenatore ? '--' : (esc(F.allenatore) + (F.allenatoreNuovo ? ' &middot; <b>NUOVO</b>' : (F.partiteAllenatore != null ? ' &middot; ' + F.partiteAllenatore + '+ partite' : '')));
-  const rows = [
-    ['Formazione', st(FH), st(FA)],
-    ['Rispetto alla probabile', vp(VP.H), vp(VP.A)],
-    ['Titolari abituali assenti', ab(FH), ab(FA)],
-    ['Gol dei titolari assenti', pc(FH.golAssenti), pc(FA.golAssenti)],
-    ['Cambi dall\'ultima', FH.cambi == null ? '--' : FH.cambi, FA.cambi == null ? '--' : FA.cambi],
-    ['Capitano assente', sn(FH.capitanoAssente), sn(FA.capitanoAssente)],
-    ['Allenatore', al(FH), al(FA)],
-    ['Formazioni nello storico', FH.nStorico, FA.nStorico],
-    ['Giorni di riposo', gi(SH.riposo) + (SH.riposo !== SH.riposoLega ? ' (lega ' + gi(SH.riposoLega) + ')' : ''), gi(SA.riposo) + (SA.riposo !== SA.riposoLega ? ' (lega ' + gi(SA.riposoLega) + ')' : '')],
-    ['Partite in 14 giorni', SH.partite14, SA.partite14],
-    ['Coppa europea', eu(SH), eu(SA)]
-  ];
+  const blocco = (F, S, V, nome, lato) => '<div class="gi-team fz-team ' + lato + '">'
+    + '<div class="gi-team-h"><i></i><b>' + esc(nome || (lato === 't-1' ? 'Casa' : 'Trasferta')) + '</b>' + stato(F) + '</div>'
+    + '<div class="fz-sez"><div class="fz-lab">Chi manca</div>' + manca(F) + '</div>'
+    + prob(V)
+    + (!F.disponibile ? '' : '<div class="fz-sez"><div class="fz-fatti">'
+      + fatto('Cambi dall\'ultima', F.cambi == null ? '--' : F.cambi) + fatto('Capitano', cap(F))
+      + fatto('Allenatore', all(F), 'largo') + '</div></div>')
+    + '<div class="fz-sez"><div class="fz-lab">Stanchezza</div><div class="fz-fatti t3">'
+      + fatto('Riposo', gg(S.riposo) + (S.riposo !== S.riposoLega ? '<span class="fz-da">solo lega: ' + gg(S.riposoLega) + '</span>' : ''))
+      + fatto('Ultimi 14 giorni', S.partite14 == null ? '--' : S.partite14 + (S.partite14 === 1 ? ' partita' : ' partite')) + fatto('Coppa europea', eu(S)) + '</div></div>'
+    + '<div class="fz-foot">misurato su ' + F.nStorico + ' formazioni dello storico</div></div>';
   const nota = (ultimo(FH) || ultimo(FA))
-    ? '<div style="margin-top:8px;padding:8px;border:1px solid var(--orange);border-radius:6px;color:var(--txt)">La formazione probabile dell\'API qui &egrave; <b>l\'undici dell\'ultima partita</b>: chi si &egrave; fatto male o &egrave; squalificato da allora non risulta assente, e i cambi dall\'ultima non dicono niente. Rilancia l\'analisi a ridosso del calcio d\'inizio: con la confermata la riga &laquo;Rispetto alla probabile&raquo; dice chi &egrave; cambiato.</div>'
+    ? '<div class="fz-avviso">La formazione probabile dell\'API qui &egrave; <b>l\'undici dell\'ultima partita</b>: chi si &egrave; fatto male o &egrave; squalificato da allora non risulta assente, e i cambi dall\'ultima non dicono niente. Rilancia l\'analisi a ridosso del calcio d\'inizio: con la confermata la card dice chi &egrave; cambiato rispetto alla probabile.</div>'
     : ((FH.disponibile && !FH.confermata) || (FA.disponibile && !FA.confermata)
-      ? '<div style="margin-top:8px;color:var(--dim)">Con la formazione probabile gli indici sono indicativi: il backtest li misura solo sulle confermate.</div>' : '');
-  safeHtml('formazioni-box', '<div class="tbl-scroll"><table class="table-ui table-compact"><thead><tr><th style="text-align:left"></th><th>Casa</th><th>Trasf.</th></tr></thead><tbody>'
-    + rows.map(r => '<tr><td style="text-align:left">' + r[0] + '</td><td>' + r[1] + '</td><td>' + r[2] + '</td></tr>').join('')
-    + '</tbody></table></div>' + nota);
+      ? '<div class="fz-nota">Con la formazione probabile gli indici sono indicativi: il backtest li misura solo sulle confermate.</div>' : '');
+  safeHtml('formazioni-box', '<div class="grid-2">' + blocco(FH, SH, VP.H, nomeH, 't-1') + blocco(FA, SA, VP.A, nomeA, 't-2') + '</div>' + nota);
 }
 
 function renderLeagueNote() {
@@ -2854,7 +2905,7 @@ function _tabTesto(V) {
        + senza.map(v => v.nome + ' ' + (v.edge == null ? 'base ignota' : (v.edge >= 0 ? '+' : '') + v.edge.toFixed(1))).join(', ') : '');
 }
 
-window.__SCANNER_BUILD = '0905-b60';
+window.__SCANNER_BUILD = '0905-b61';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -3684,7 +3735,7 @@ async function avviaScanner() {
     window.__BASE_DEBUG = _LGBASE;
     renderVerdetti({ p1:m1, pX:mX, p2:m2, p1X:m1+mX, pX2:mX+m2, p12:m1+m2,
                      pOv:dcOv, pUn:dcUn, pGG:dcGG, pNG:dcNG }, _LGBASE, advRole);
-    renderFormazioni(_FH, _FA, _SH, _SA, _VP);
+    renderFormazioni(_FH, _FA, _SH, _SA, _VP, hName, aName);
     safeHtml('giocatori-box', 'Premi il bottone per le statistiche dei giocatori di ' + _escHtml(hName) + ' e ' + _escHtml(aName) + '.');
     const _btnG = document.getElementById('btn-giocatori'); if (_btnG) { _btnG.style.display = ''; _btnG.textContent = 'Carica le statistiche dei giocatori'; }
     const odd1 = probsRole.p1 > 0 ? (1/probsRole.p1).toFixed(2) : "N/A"; const oddX = probsRole.pX > 0 ? (1/probsRole.pX).toFixed(2) : "N/A"; const odd2 = probsRole.p2 > 0 ? (1/probsRole.p2).toFixed(2) : "N/A";
