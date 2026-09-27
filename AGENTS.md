@@ -184,6 +184,11 @@ Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export rec
   per partita né più peso alla coppia lo sistemano in tutte le leghe: serve la frequenza di
   lega vera, cioè un campione di partite di lega con `/stats` (vedi punto 4). Vedi *Le
   altre quattro leghe*. È la voce che vale di più, insieme alla media NPxG di lega.
+- [ ] **Il livello dei gol: il lambda di ruolo è corto del 5%.** Su 16.254 partite di quindici leghe
+  gol/lambda = 1.051, stabile per stagione e per lega (sopra 1 in 14 su 15); un fattore costante fuori
+  lega migliora Over 2.5 e Goal in 13 leghe su 15 (`z` −4.80 e −6.27), il rapporto gol/NPxG di lega o di
+  coppia non aggiunge niente. **Regola registrata**, da provare su nove leghe mai aperte: vedi *Il
+  livello dei gol: la regola*.
 - [ ] **`LEAGUE_HALFLIFE_DAYS`** (oggi 0 = media piatta). È l'ultima ipotesi rimasta sul
   *livello* dei mercati gol: il lambda è inversamente proporzionale alla base di lega, e la
   base è una media piatta su tre stagioni (Premier: 3.041 contro 2.754 veri, −5% sul
@@ -3166,6 +3171,55 @@ il livello del lambda non è tutto. Da qui `LEAGUE_HALFLIFE_DAYS` (vedi *Da fare
 
 Le doppie chance sono complementi degli esiti singoli: stessa AUC, stesso Brier, nessuna
 informazione in più.
+
+## Il livello dei gol: la regola
+
+Scritta prima di lanciare il batch delle leghe del test. Chiesta dall'utente: «voglio usare la
+matematica», cioè migliorare il motore senza appoggiarsi alle quote.
+
+**Perché.** Il lambda di ruolo, quello da cui escono i mercati gol (Over/Under, Goal, multigol,
+risultati esatti, handicap), sta sotto i gol veri. Sulle quindici leghe dei batch (`b48`, `b52`,
+`b61`, 2023/24–2025/26, 16.254 partite) gol/lambda vale **1.051**: 1.061 / 1.047 / 1.044 per stagione,
+1.051 con gli NPxG e 1.049 con l'xG di riserva, 1.055 in casa e 1.046 in trasferta, per lega da 0.973
+(First Division A) a 1.104 (Bundesliga), sopra 1 in 14 leghe su 15. L'Over 2.5 previsto sta 3.9 punti
+sotto il vero, il Goal 4.4. Sulle 55 stagioni-lega lo sbaglio segue il rapporto gol/NPxG della lega
+(`λ/gol ≈ (gol/NPxG)^−0.58`, correlazione −0.69): è il disallineamento di unità (vedi *Il
+disallineamento di unita nel lambda*). Ma partita per partita, stimato su quattordici leghe e misurato
+sulla quindicesima (2024/25–2025/26, 10.623 partite), il rapporto non serve:
+
+| correzione del lambda di ruolo | Over 2.5 | `z` | Goal | `z` | leghe meglio (Over / Goal) |
+|---|---|---|---|---|---|
+| fattore costante | −2.74‰ | −4.80 | −2.69‰ | −6.27 | 13 / 13 su 15 |
+| col rapporto gol/NPxG di lega (ultime 300 partite) | −2.56‰ | −4.33 | −2.51‰ | −5.65 | 13 / 13 |
+| col rapporto delle due squadre (ultime 30, ristretto) | −2.75‰ | −4.63 | −2.70‰ | −6.05 | 13 / 13 |
+
+Il rapporto di lega costerebbe una chiamata per partita di lega; quello delle due squadre è gratis ma
+non aggiunge niente al fattore costante. Dopo il fattore l'Over sta 1.0 punti sotto il vero, il Goal
+2.2: il resto del Goal è la forma della matrice, non il livello.
+
+**Il candidato.** `GOALS_LEVEL = 1.051`: i due lambda di ruolo moltiplicati per 1.051 prima della
+matrice dei gol del motore (`dcRole`), quindi Over/Under, Goal, multigol, risultati esatti, handicap e i
+mercati gol del tabellone senza quote. I lambda completi, e quindi l'1X2, non cambiano. Nessun altro
+parametro.
+
+**I dati del test**, mai aperti: batch automatico del motore in uso (`b62`), in copia conforme, delle
+stagioni con due stagioni alle spalle in `leghe.json`: Bundesliga austriaca, Superligaen danese e Liga
+MX 2023/24–2025/26; Allsvenskan, Eliteserien e MLS 2023–2025; J. League 2024–2025; Liga Profesional
+argentina e Série A brasiliana 2025.
+
+**Il metro.** Per partita, la somma delle logloss di Over 2.5 e Goal della matrice di ruolo, col
+fattore contro senza, ricostruita dal CSV (lambda di ruolo e `rho`), con la prova di coincidenza sulle
+righe Over 2.5 e GG del CSV. **Passa** se sull'insieme migliora con `z ≤ −2` e migliora in almeno due
+terzi delle leghe che arrivano con almeno 100 partite.
+
+**Se passa.** `GOALS_LEVEL` entra nel motore come manopola (`window.GOALS_LEVEL`, 1 torna a prima), il
+CSV esporta il fattore, e si rimisurano sulle probabilità corrette le rese della famiglia gol di
+`EDGE_BANDS` (il tabellone senza quote) e la retta della confidence dei mercati binari. Con le quote non
+cambia quasi niente: nell'Over con le quote il motore pesa 0.0036. Se non passa, resta tutto com'è e
+questa sezione dice perché.
+
+**Descrittivi**, detti comunque: Over 1.5 e 3.5, risultati esatti, multigol e handicap; il bias
+dell'Over e del Goal prima e dopo, per lega; gol/lambda per lega.
 
 ## I gol
 
