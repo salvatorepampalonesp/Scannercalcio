@@ -2215,6 +2215,17 @@ Se il primo test non passa, anche corner e cartellini sono un mercato in cui il 
 motore, e la ricerca con questi strumenti è finita; se passano tutti e due, lo Scanner avrà i campi
 per le quote di corner e cartellini, come per l'1X2.
 
+**Aggiornamento, prima di avere i dati.** Aperto `footiqo.com`: sul sito gratuito le quote sono solo 1X2,
+Over/Under gol da 0.5 a 4.5 e Goal/NoGoal (1xBet, chiusura); quelle di corner e cartellini sono solo nel
+Premium (€59.99, file `Footiqo_Premium_Corners_Cards_Odds.xlsx`, fogli `Corners_Closing_Odds` e
+`Cards_Closing_Odds`), per i mercati corner e **gialli**, e solo per i cinque campionati, Champions ed
+Europa League. Di conseguenza: il primo test passa con `z ≤ −2` sull'insieme e in almeno **quattro
+leghe su cinque**, stimato su quattro e misurato sulla quinta. Se i dati coprono meno di tre stagioni, il
+secondo test si fa fuori lega invece che per stagione (`t` scelto su quattro leghe, ROI misurato sulla
+quinta, a turno), sempre con ROI positivo e `z ≥ 2` sull'insieme. Un file gratuito di prova (Premier
+2025/26, anche corner e cartellini) si chiede con un indirizzo email: serve a leggere colonne e linee,
+non a guardare risultati.
+
 ## Formazioni e assenze
 
 **Perché.** Il pick sbaglia il 47.2% delle partite: 25.6 punti sono pareggi, 21.6 vittorie
