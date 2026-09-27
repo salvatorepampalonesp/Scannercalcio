@@ -52,7 +52,7 @@ sono, le scrive l'utente. Per misurarle si usano gli stessi file (`strumenti/quo
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b62`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b63`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -184,6 +184,11 @@ Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export rec
   per partita né più peso alla coppia lo sistemano in tutte le leghe: serve la frequenza di
   lega vera, cioè un campione di partite di lega con `/stats` (vedi punto 4). Vedi *Le
   altre quattro leghe*. È la voce che vale di più, insieme alla media NPxG di lega.
+- [x] ~~**Il livello dei gol: il lambda di ruolo è corto del 5%.**~~ — **passato, nel motore dal
+  `b63`** (`GOALS_LEVEL = 1.051`). Regola registrata prima; su 6.472 partite di nove leghe mai aperte
+  Over 2.5 + Goal −3.80‰ di logloss (`z = −2.99`), meglio in 6 leghe su 9; Over previsto 49.0 → 52.3%
+  contro 52.8% reale, Goal 51.5 → 54.0% contro 53.8%. Peggiora dove il lambda era già alto
+  (Argentina, gol/lambda 0.88). Vedi *Il livello dei gol: la regola*, «Esito».
 - [ ] **`LEAGUE_HALFLIFE_DAYS`** (oggi 0 = media piatta). È l'ultima ipotesi rimasta sul
   *livello* dei mercati gol: il lambda è inversamente proporzionale alla base di lega, e la
   base è una media piatta su tre stagioni (Premier: 3.041 contro 2.754 veri, −5% sul
@@ -326,7 +331,7 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b62`)
+## Stato attuale (`b63`)
 
 **1X2.** Col motore `b48` il pick azzecca il 52.7% (±1.4) contro il 43.0% del «gioca sempre in
 casa» sulle cinque leghe: 52.7% contro 40.2% in Serie A, 52.7% contro 43.1% in Premier, 53.2%
@@ -462,7 +467,7 @@ il segnale non sia già nell'output, solo mal etichettato.
 ogni partita rende +17.6 punti sopra il giocarla alla cieca come la stampava il `b40`, +18.9
 col `b41` (che ridà la base ai mercati sui numeri), contro +11.7 del vecchio ordinamento per
 probabilità. Col `b48` sulle cinque leghe +16.8 (±1.3; `b47` sulle stesse partite +16.4). Lo
-stesso scarto rende molto di più nell'1X2 (FORTE +27.5) che nei mercati gol (+1.0) o sui numeri
+stesso scarto rende molto di più nell'1X2 (FORTE +27.5) che nei mercati gol (+1.0; +2.3 dal `b63`) o sui numeri
 (+7.2): dal `b50` l'etichetta di ogni riga dice quanto rende il suo tipo di mercato, mentre
 l'ordine resta per scarto, perché ordinare per guadagno atteso non sceglie meglio (vedi *Il
 tabellone per famiglia di mercato: la regola*). Vedi *Il tabellone ordinava per la colonna
@@ -495,7 +500,10 @@ lambda resta corto: la radice è la media NPxG di lega (vedi *Da fare*, punto 4)
 previsto sotto il reale di 4.2 punti in Championship, 3.2 in Eredivisie e 5.8 in Liga Portugal,
 il GG di 4.8 / 3.7 / 5.3; AUC dell'Over 0.574 / 0.560 / 0.599, del GG 0.559 / 0.533 / 0.538.
 Sulle quattro del `b53` l'Over sta sotto di 4.2 (2. Bundesliga), 6.1 (Scozia) e 5.1 (Svizzera), sopra
-di 1.5 in Belgio.
+di 1.5 in Belgio. **Dal `b63` il livello è corretto** (`GOALS_LEVEL = 1.051` sui lambda di ruolo): su
+nove leghe mai aperte l'Over previsto passa da 49.0 a 52.3% (reale 52.8%) e il Goal da 51.5 a 54.0%
+(reale 53.8%). Resta lo sbaglio lega per lega (gol/lambda da 0.88 in Argentina a 1.10 in Norvegia), e
+resta il muro dell'ordinamento. Vedi *Il livello dei gol: la regola*.
 
 **Mercati sui numeri.** Discriminano meglio dei gol: in copia conforme gialli 0.647 di AUC,
 corner 0.574, tiri in porta 0.556 in Serie A, calibrati in media (previsto contro reale
@@ -526,6 +534,7 @@ non passa mai +7.1. Trascina con sé il `12`.
 | **Le cinque leghe col `b48`** | **5230** | **il riferimento dal `b49`** per soglie, confidence e tabellone: batch automatico `b48`, stesse stagioni e partite delle righe sotto, 5230 su 5230 in copia conforme, Elo rifatto dall'archivio identico su ogni file |
 | **Le quattro leghe del `b53`** | **3202** | 2. Bundesliga 908, First Division A 931, Premiership scozzese 683, Super League svizzera 680, 2023/24–2025/26: batch automatico del `b52`, 3202 su 3202 in copia conforme, Elo identico su ogni file; `/advanced` assente sul 2023/24 di Scozia e Svizzera. Aperte solo per il test della confidence nuda; il tabellone non è mai stato guardato |
 | **Le tre leghe nuove col `b48`** | **3495** | Championship 1659, Eredivisie 923, Liga Portugal 913, 2023/24–2025/26: batch automatico del `b51` (probabilità del `b48`), 3495 su 3495 in copia conforme, Elo rifatto dall'archivio identico su ogni file; `/advanced` assente sul 2023/24 di Championship e Liga Portugal. La sezione `TABELLONE` non è mai stata guardata |
+| **Le nove leghe del livello dei gol** | **6472** | Bundesliga austriaca 582, Superligaen 574, Liga MX 667 (2023/24–2025/26), Eliteserien 715, Allsvenskan 715, MLS 1581 (2023–2025), J. League 756 (2024–2025), Liga Profesional 508, Série A brasiliana 374 (2025): batch automatico del `b62`, tutte in copia conforme, Elo identico su ogni file. Aperte solo per il test del livello dei gol (`b63`) |
 | **League One, League Two, Süper Lig e il 2026/27** | **4879** | League One 1653, League Two 1656, Süper Lig 1018 (2023/24–2025/26; il 2023/24 con una sola stagione alle spalle) e le partite giocate del 2026/27 di dieci leghe (552): batch automatico del `b61`, tutte in copia conforme, Elo identico su ogni file; `/advanced` assente su League One e League Two. Aperte solo per il test dei mercati della matrice con le quote (`b62`) |
 | **Serie A 2023/24 → 2025/26** | **1134** | **il riferimento**: export `b40`, 1134 su 1134 in copia conforme, una stagione per file, storico 30, `lgN` ≥ 760; `/advanced` assente sul 2023/24 (`riserva-k-motore`) |
 | **Premier 2023/24 → 2025/26** | **1135** | **il riferimento**: export `b41`, 1135 su 1135 in copia conforme, una stagione per file, storico 30, `lgN` ≥ 760, `/advanced` su tutte e tre le stagioni |
@@ -1043,7 +1052,7 @@ niente. Controlla:
   testo; all'apertura il Comparatore ripristina la copia salvata in localStorage, che puo'
   essere vecchia) e che le build coincidano;
 - **ogni** manopola del motore contro il suo default letto dal sorgente
-  (`cmpEngineDefaults`, 30 manopole dal `b48`), piu' `CMP_K_LIST[0]` contro `SHRINK_K`;
+  (`cmpEngineDefaults`, 30 manopole dal `b48`, 31 dal `b63` con `GOALS_LEVEL`), piu' `CMP_K_LIST[0]` contro `SHRINK_K`;
 - lo storico per squadra contro quello dello Scanner (`window.__ENGINE_LIMIT`);
 - che la partita sia della stagione per cui e' caricato il database.
 
@@ -1087,7 +1096,7 @@ rilegge l'archivio di lega dal **testo** del CSV esportato, ci fa girare `buildG
 motore e confronta Elo e HFA con le righe del CSV, partita per partita; il controllo di potenza
 toglie una partita dall'archivio e deve vedere l'Elo cambiare.
 
-Esito al `b62` (storico 30), a 390px con tutte le 24 card aperte (anche nessuna tabella compatta che esce dal suo riquadro, il mega-prompt dello Scanner mai vuoto né rotto, i dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote e le quote automatiche a posto):
+Esito al `b63` (storico 30), a 390px con tutte le 24 card aperte (anche nessuna tabella compatta che esce dal suo riquadro, il mega-prompt dello Scanner mai vuoto né rotto, i dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote e le quote automatiche a posto):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
@@ -1095,7 +1104,7 @@ Esito al `b62` (storico 30), a 390px con tutte le 24 card aperte (anche nessuna 
 | batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 190 | 0 su 122 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
 | `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 127-155 | 74-82 | 0 |
-| `vecchio`: motore `b61` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 | 1 (il certificato) | 0 |
+| `vecchio`: motore `b62` caricato (controllo) | 0/3, «motore caricato diverso ...» | 41 (il ramo di ruolo) | 37-42 | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -1146,7 +1155,9 @@ controllo col `b60` vede una scrittura diversa, la card delle formazioni (`forma
 nomi aggiunti a `__LINEUP_DEBUG` il Comparatore non li legge. Al `b62` il controllo col `b61` non vede
 nessuna scrittura diversa, solo il certificato: risultati esatti, handicap e multigol del motore
 escono con lo stesso HTML dalle funzioni nuove, e quelli con le quote li scrive la card delle quote
-con `innerHTML` diretto.
+con `innerHTML` diretto. Al `b63` il controllo col `b62` vede 41 scritture diverse e 37-42 righe del CSV:
+tutto il ramo di ruolo (mercati gol, multigol, risultati esatti, handicap, tempi dei gol, modelli di
+ruolo dell'1X2), mai il verdetto 1X2.
 
 **Le quote sul banco (dal `b54`).** Dopo il giro dello Scanner il banco scrive le quote nella card
 dell'ultima partita, in sei casi: vuote (niente tabella, niente blocco nel prompt), valide con la
@@ -2732,6 +2743,7 @@ scrittura nuova, il messaggio iniziale). Il banco la verifica a parte, premendo 
 | `SHRINK_K` | 4 | misurata `b35`–`b37`, riconfermata `b41` | 12 e 28 peggiori a 5σ; sotto 4 migliora l'1X2 (−0.0016, `z = −3.03`) ma i gol pagano +0.0056. `b41`, copia conforme e zero clamp: a 2 l'1X2 −0.00069 (`z = −3.30`), la somma +0.00155; Premier −0.00079 (`z = −3.42`) e +0.00136; LaLiga −0.00052 e +0.00025; Bundesliga −0.00052 e +0.00321 (`z = 3.40`); Ligue 1 +0.00001 e +0.00087 |
 | `SHRINK_LAM_K` | 3 | a mano, misurata `b37` e `b41` | `b37`: ottimo del Brier Over fra 5 e 8, `z = −1.82`, segno ribaltato nel 2022/23. `b41`: in Serie A monotono fino a 20, miglior `z = −1.99` a 5, 3 stagioni su 3; in Premier il 2023/24 si ribalta (+0.00131 a 5, +0.0081 a 20); in LaLiga piatta a 5 e peggio da 8 in su; in Bundesliga meglio a 5 (`z = −2.69`, 3 stagioni su 3); in Ligue 1 meglio a 5 (`z = −1.26`). Tre leghe sì, una no, una ribaltata: resta 3 |
 | `GOALS_SOT_W` | 0.50 | stimata `b12`, confermata `b14` e `b41` | AUC Over 2.5 da 0.554/0.495/0.501 a 0.572/0.514/0.521; cinque leghe +2.18σ. `b41` in copia conforme: la Serie A punisce 0 (+0.0066, `z = 2.03`), la Premier punisce 1 (+0.0062, `z = 2.30`), LaLiga e Ligue 1 hanno l'ottimo a 0.50, la Bundesliga fra 0.25 e 0.50 |
+| `GOALS_LEVEL` | 1.051 | stimata e registrata `b62`, nel motore `b63` | gol/lambda di ruolo su 16.254 partite di quindici leghe (2023/24–2025/26), stabile per stagione (1.044–1.061) e per fonte degli xG; fuori lega Over 2.5 −2.74‰ (`z = −4.80`) e Goal −2.69‰ (`z = −6.27`), 13 leghe su 15. Test registrato su nove leghe mai aperte, 6.472 partite: −3.80‰ (`z = −2.99`), 6 su 9. Vedi *Il livello dei gol: la regola* |
 | `SOT_PER_GOAL` | 3.25 | misurata | LaLiga 3.19, Premier 3.04, Serie A 3.33. Tocca solo il livello |
 | `GOALS_SOT_CAP` | 0.20 | paracadute misurato | morde nello 0.18% |
 | `OL_BETA` / `T1` / `T2` | 2.056 / −0.475 / +0.671 | stimata `b20` | massima verosimiglianza su 1743 partite, leave-one-league-out, sulla variabile di **ruolo** (media +0.196). Peso 0 |
@@ -2756,7 +2768,7 @@ scrittura nuova, il messaggio iniziale). Il banco la verifica a parte, premendo 
 | `QUOTE_RESA` | tutte 53.0 · soglie ≥70 / 65 / 60 / 55 / 50: 78.6 / 74.7 / 71.1 / 67.5 / 64.0% su 14 / 20 / 27 / 37 / 49% del calendario · disaccordo 1321 partite, motore 26.3%, mercato 43.1% | misurata `b54` | combinazione stimata su undici leghe e misurata sulla dodicesima, 11.902 partite; soglie uguali nei cinque campionati e nelle altre sette (≥55: 67.9 e 67.1%). La card delle quote e il mega-prompt la leggono da qui |
 | `PICK_RESA` | tutte 52.7 · casa 43.0 · soglie ≥70 / 65 / 60 / 55 / 50: 77.1 / 73.2 / 69.3 / 66.0 / 61.7% su 9 / 16 / 26 / 38 / 52% del calendario | misurata `b49` | cinque leghe col motore `b48`, 5230 partite (tabella in *Stato attuale*). Dal `b51` una sola copia: la card delle soglie e il mega-prompt la leggono da qui. Si rifà con le tabelle, a ogni motore che sposta l'1X2. Dal `b52` porta `leghe` (le cinque, per id) e `fuori` (Championship 46.3 e 64.8% su 17%, Eredivisie 53.7 e 68.7% su 47%, Liga Portugal 55.0 e 72.4% su 43%: pick su tutte e a ≥55, 3495 partite col `b48`), perché sulle tre leghe nuove le soglie ≥55 / 60 / 65 / 70 escono dai 2se (vedi *Le tre leghe nuove col `b48`: la regola*). Dal `b53` `fuori` ha anche 2. Bundesliga (45.4 e 62.8% su 16%), First Division A (50.2 e 65.5% su 35%), Premiership scozzese (53.3 e 68.9% su 41%) e Super League svizzera (47.1 e 66.1% su 26%), 3202 partite col motore `b52`. Dal `b56` porta anche `cinque`, le cinque leghe una per una nella stessa forma (tabella in *Stato attuale*): con `fuori` scrive la nota di lega in cima all'analisi |
 | retta dei mercati binari | −5.06 + 1.091·p | stimata, riconfermata `b38` e `b41` | 22.584 proposte, errore massimo 2.4 punti; `b41` 7938 proposte, 2.5 |
-| `EDGE_BANDS` | ≥20 / ≥10 / ≥5, guadagno per famiglia (`b50`) | stimata `b38`, riconfermata `b41` e `b49`, per famiglia dal `b50` | 28.230 proposte: +24.6 / +14.8 / +6.3 punti, monotono, segno concorde in 5 stagioni su 5. `b41` (copia conforme): +25.6 / +15.6 / +4.8 sulle 13.148 proposte con base del `b40`, +25.0 / +14.9 / +5.7 sulle 14.742 del `b41`, monotono in 3 stagioni su 3; Premier (≥20 / 10–20 / 5–10) +27.4 / +10.7 / +6.0, LaLiga +25.0 / +13.7 / +7.3, Bundesliga +28.7 / +14.0 / +5.5, Ligue 1 +26.4 / +13.4 / +5.0. `b49` (motore `b48`, cinque leghe): +25.8 / +12.2 / +6.1, monotono in 5 leghe su 5; per famiglia 1X2 +27.5 / +15.5 / +8.0, gol +1.0 / +7.2 / +3.5, numeri +7.2 / +10.2 / +8.2. Dal `b50` l'etichetta mostra questi, per famiglia, con ±2se: 1X2 ±1.6 / ±1.6 / ±1.9 (2891 / 3573 / 2680 proposte), gol ±10.4 / ±2.3 / ±1.7 (92 / 1881 / 3457), numeri ±8.0 / ±2.9 / ±2.4 (133 / 1058 / 1628). Ordinare per guadagno atteso invece che per scarto: no (vedi *Il tabellone per famiglia di mercato: la regola*) |
+| `EDGE_BANDS` | ≥20 / ≥10 / ≥5, guadagno per famiglia (`b50`) | stimata `b38`, riconfermata `b41` e `b49`, per famiglia dal `b50` | 28.230 proposte: +24.6 / +14.8 / +6.3 punti, monotono, segno concorde in 5 stagioni su 5. `b41` (copia conforme): +25.6 / +15.6 / +4.8 sulle 13.148 proposte con base del `b40`, +25.0 / +14.9 / +5.7 sulle 14.742 del `b41`, monotono in 3 stagioni su 3; Premier (≥20 / 10–20 / 5–10) +27.4 / +10.7 / +6.0, LaLiga +25.0 / +13.7 / +7.3, Bundesliga +28.7 / +14.0 / +5.5, Ligue 1 +26.4 / +13.4 / +5.0. `b49` (motore `b48`, cinque leghe): +25.8 / +12.2 / +6.1, monotono in 5 leghe su 5; per famiglia 1X2 +27.5 / +15.5 / +8.0, gol +1.0 / +7.2 / +3.5, numeri +7.2 / +10.2 / +8.2. Dal `b50` l'etichetta mostra questi, per famiglia, con ±2se: 1X2 ±1.6 / ±1.6 / ±1.9 (2891 / 3573 / 2680 proposte), gol ±10.4 / ±2.3 / ±1.7 (92 / 1881 / 3457), numeri ±8.0 / ±2.9 / ±2.4 (133 / 1058 / 1628). Dal `b63` i gol, rifatti col livello dei gol: +2.3 ±12.8 (61) / +6.8 ±2.6 (1445) / +4.4 ±1.7 (3279). Ordinare per guadagno atteso invece che per scarto: no (vedi *Il tabellone per famiglia di mercato: la regola*) |
 | minimo di `leagueBaseRates` | 200 partite | paracadute misurato `b38` | guadagno piatto fra 50 e 500; in produzione arrivano 900+ partite |
 | emivita | 106 giorni | a mano | uguale nei due file |
 | storico per squadra (`history-limit`) | 30 | scelta dell'utente (`b40`) | il batch base dell'utente e lo storico delle tarature `b24`–`b38`; fino al `b39` lo Scanner stampava a 15. Il Comparatore lo legge dallo Scanner in tutte le modalita' |
@@ -3035,6 +3047,7 @@ misurate.
 | Il Goal con le sole quote dell'1X2 (matrice del motore inclinata a totale fermo) | **no** (`b57`) | registrato prima, dodici leghe: +0.00355 di logloss, `z = +4.36`, peggio in 9 leghe su 12. Senza le quote dell'Over il Goal resta del motore |
 | Battere il bookmaker con le quote di prima, il prezzo migliore o un sottoinsieme in cui il motore sa di più (ricerca registrata) | **no** | esplorazione 2023/24–2024/25, conferma 2025/26: il mercato non va dove dice il motore (pendenza 1 contro 2 +0.0098, `z = +1.10`); giocare il motore alle quote di prima CLV −6.5% (al prezzo migliore −1.3%); il prezzo migliore contro il consenso «passa» col CLV in proporzione (+15.1%) ma ricalibrato è −8.7%, ROI −34%; nessuna delle 27 fette ha il peso del motore positivo a `z ≥ 3`. Vedi *Battere il bookmaker: la regola della ricerca* |
 | Ricalibrare il Goal della matrice allineata con le quote (`σ(a + b·logit)`, stimata sulle undici leghe) | **no** (`b62`) | registrato prima, 4.849 partite mai viste: −0.0005 di logloss, `z = −0.57`, la League One peggiora. Lì il Goal allineato sta 2.0 punti sotto e la ricalibrazione lo porta 0.7 sopra |
+| Correggere il livello dei gol col rapporto gol/NPxG (di lega o delle due squadre) invece che con un fattore costante | **non aggiunge niente** (`b63`) | fuori lega su quindici leghe: lega −2.56‰ sull'Over, coppia −2.75‰, costante −2.74‰. Sulle stagioni lo sbaglio segue il rapporto (correlazione −0.69), ma partita per partita il rapporto stimato prima della data non lo prevede meglio di una costante. Vedi *Il livello dei gol: la regola* |
 | La frequenza vera di lega come riferimento di corner, tiri e gialli | **vale poco** | ricostruita dai CSV: previsione −2.2‰ sui corner delle cinque leghe (`z = −1.15`), bene solo dove sbagliava di molto (Bundesliga corner, Eredivisie gialli); tabellone +16.5 → +15.7…+16.2. Vedi *Il riferimento di lega vero: misurato* |
 | Giocare l'Over o l'Under dove il motore si discosta dal mercato | **no** (`b57`) | 11.222 partite, chiusura: scarto 3+ punti 7.354 giocate, −7.5% della posta; 5+ −9.9%; 8+ −8.7%. Il lato più probabile sempre giocato: motore −5.6%, mercato −3.5%, con le quote −3.7% (margine 5.8%) |
 | Giocare dove il motore dà a un esito più del mercato (le «value bet» del motore) | **no** (`b54`) | 11.902 partite, quote medie di chiusura: motore sopra il mercato di 3+ punti 7.504 giocate, escono il 32.6% contro il 34.2% del mercato, −11.6% della posta; 5+ −15.8%, 8+ −13.0%, 12+ −16.0%. Dato il mercato il motore pesa −0.19 ±0.08 (1 contro 2), negativo in 12 leghe su 12. Anche il pick sempre giocato perde: motore −6.0%, mercato −3.2%, con le quote −2.9% (margine medio 5.7%) |
@@ -3052,6 +3065,7 @@ misurate.
 | **`sum_sot` sull'Over 2.5** (`b9`–`b12`) | l'unica feature sopravvissuta a tre leghe |
 | **L'ingresso delle neopromosse nell'Elo** (`b48`) | residuo delle neopromosse da −7.3 ±2.6 a −0.5 punti; logloss 1 contro 2 −0.0037 (`z = −2.64`) su cinque leghe, confermato non peggiore su tre leghe mai viste |
 | **Il tabellone con le quote** (`b58`) | registrato prima, sulle sette leghe di cui il tabellone non era mai stato guardato: la proposta in cima +12.9 → +14.6 punti sopra il giocarla alla cieca (+1.73 ±0.97, `z = +3.55`), 7 leghe su 7; cinque campionati +16.8 → +19.2 |
+| **Il livello dei gol** (`b63`, `GOALS_LEVEL = 1.051`) | registrato prima, 6.472 partite di nove leghe mai aperte: Over 2.5 + Goal −3.80‰ (`z = −2.99`), 6 leghe su 9; Over previsto 49.0 → 52.3% contro 52.8% reale |
 | **Risultati esatti, multigol e handicap dalla matrice allineata** (`b62`) | registrata prima, 4.849 partite mai viste: −0.0396 / −0.0602 / −0.0176 di logloss (`z = −8.60 / −8.93 / −4.80`), 4 blocchi su 4 |
 | **Le quote dell'Over e la matrice allineata** (`b57`) | registrata prima, 11.222 partite di undici leghe, fuori lega: Over 2.5 −0.0131 di logloss (`z = −8.49`), Goal −0.0068 (`z = −6.00`), Over 1.5 −0.0093, Over 3.5 −0.0111; 11 leghe su 11 (l'Over 3.5 10). Il livello dei gol, con le quote, torna: Over previsto 54.0% contro 53.9% reale |
 | **Le quote del mercato nell'1X2** (`b54`) | registrata prima, 11.902 partite di dodici leghe, fuori lega: prese 51.04 → 52.99% (+1.95, `z = +7.00`), logloss −0.01772, dodici leghe su dodici. Il guadagno è del mercato: il motore, dato il mercato, pesa meno di zero |
@@ -3121,6 +3135,10 @@ documentazione eseguibile di un difetto noto. **Non accenderla senza aver prima 
 La conseguenza che conta oggi: lo shrinkage fa **due mestieri** (regolarizza le stime e
 compensa il disallineamento), quindi `SHRINK_K` e `SHRINK_LAM_K` non sono manopole libere.
 
+La compensazione non è completa: il lambda di ruolo resta in media il 5% sotto i gol veri. Dal `b63`
+`GOALS_LEVEL = 1.051` corregge il livello medio con un fattore misurato, non la radice: vedi *Il livello
+dei gol: la regola*.
+
 ## I mercati gol: due muri
 
 **L'ordinamento.** Il lambda del Dixon-Coles correla **+0.087** col totale dei gol, uguale in
@@ -3166,6 +3184,103 @@ il livello del lambda non è tutto. Da qui `LEAGUE_HALFLIFE_DAYS` (vedi *Da fare
 
 Le doppie chance sono complementi degli esiti singoli: stessa AUC, stesso Brier, nessuna
 informazione in più.
+
+## Il livello dei gol: la regola
+
+Scritta prima di lanciare il batch delle leghe del test. Chiesta dall'utente: «voglio usare la
+matematica», cioè migliorare il motore senza appoggiarsi alle quote.
+
+**Perché.** Il lambda di ruolo, quello da cui escono i mercati gol (Over/Under, Goal, multigol,
+risultati esatti, handicap), sta sotto i gol veri. Sulle quindici leghe dei batch (`b48`, `b52`,
+`b61`, 2023/24–2025/26, 16.254 partite) gol/lambda vale **1.051**: 1.061 / 1.047 / 1.044 per stagione,
+1.051 con gli NPxG e 1.049 con l'xG di riserva, 1.055 in casa e 1.046 in trasferta, per lega da 0.973
+(First Division A) a 1.104 (Bundesliga), sopra 1 in 14 leghe su 15. L'Over 2.5 previsto sta 3.9 punti
+sotto il vero, il Goal 4.4. Sulle 55 stagioni-lega lo sbaglio segue il rapporto gol/NPxG della lega
+(`λ/gol ≈ (gol/NPxG)^−0.58`, correlazione −0.69): è il disallineamento di unità (vedi *Il
+disallineamento di unita nel lambda*). Ma partita per partita, stimato su quattordici leghe e misurato
+sulla quindicesima (2024/25–2025/26, 10.623 partite), il rapporto non serve:
+
+| correzione del lambda di ruolo | Over 2.5 | `z` | Goal | `z` | leghe meglio (Over / Goal) |
+|---|---|---|---|---|---|
+| fattore costante | −2.74‰ | −4.80 | −2.69‰ | −6.27 | 13 / 13 su 15 |
+| col rapporto gol/NPxG di lega (ultime 300 partite) | −2.56‰ | −4.33 | −2.51‰ | −5.65 | 13 / 13 |
+| col rapporto delle due squadre (ultime 30, ristretto) | −2.75‰ | −4.63 | −2.70‰ | −6.05 | 13 / 13 |
+
+Il rapporto di lega costerebbe una chiamata per partita di lega; quello delle due squadre è gratis ma
+non aggiunge niente al fattore costante. Dopo il fattore l'Over sta 1.0 punti sotto il vero, il Goal
+2.2: il resto del Goal è la forma della matrice, non il livello.
+
+**Il candidato.** `GOALS_LEVEL = 1.051`: i due lambda di ruolo moltiplicati per 1.051 prima della
+matrice dei gol del motore (`dcRole`), quindi Over/Under, Goal, multigol, risultati esatti, handicap e i
+mercati gol del tabellone senza quote. I lambda completi, e quindi l'1X2, non cambiano. Nessun altro
+parametro.
+
+**I dati del test**, mai aperti: batch automatico del motore in uso (`b62`), in copia conforme, delle
+stagioni con due stagioni alle spalle in `leghe.json`: Bundesliga austriaca, Superligaen danese e Liga
+MX 2023/24–2025/26; Allsvenskan, Eliteserien e MLS 2023–2025; J. League 2024–2025; Liga Profesional
+argentina e Série A brasiliana 2025.
+
+**Il metro.** Per partita, la somma delle logloss di Over 2.5 e Goal della matrice di ruolo, col
+fattore contro senza, ricostruita dal CSV (lambda di ruolo e `rho`), con la prova di coincidenza sulle
+righe Over 2.5 e GG del CSV. **Passa** se sull'insieme migliora con `z ≤ −2` e migliora in almeno due
+terzi delle leghe che arrivano con almeno 100 partite.
+
+**Se passa.** `GOALS_LEVEL` entra nel motore come manopola (`window.GOALS_LEVEL`, 1 torna a prima), il
+CSV esporta il fattore, e si rimisurano sulle probabilità corrette le rese della famiglia gol di
+`EDGE_BANDS` (il tabellone senza quote) e la retta della confidence dei mercati binari. Con le quote non
+cambia quasi niente: nell'Over con le quote il motore pesa 0.0036. Se non passa, resta tutto com'è e
+questa sezione dice perché.
+
+**Descrittivi**, detti comunque: Over 1.5 e 3.5, risultati esatti, multigol e handicap; il bias
+dell'Over e del Goal prima e dopo, per lega; gol/lambda per lega.
+
+**Esito (`b63`): passa, al limite sul numero di leghe.** Batch automatico del `b62`: Bundesliga
+austriaca, Superligaen e Liga MX 2023/24–2025/26 (Liga MX: PitchAPI ha un torneo per stagione),
+Eliteserien, Allsvenskan e MLS 2023–2025, J. League 2024–2025, Argentina e Brasile 2025. 22 file,
+6.472 partite, tutte in copia conforme, l'Elo rifatto dall'archivio identico su ogni file, 42.239
+chiamate e nessuna fallita. Prova di coincidenza della matrice del motore: 0.072 punti.
+
+| lega | partite | Over 2.5 + Goal | gol/lambda | Over previsto − reale, prima → dopo | Goal, prima → dopo |
+|---|---|---|---|---|---|
+| Eliteserien | 715 | −9.07‰ | 1.100 | −7.3 → −4.0 | −3.1 → −0.7 |
+| Superligaen | 574 | −9.88‰ | 1.065 | −5.6 → −2.3 | −6.0 → −3.5 |
+| MLS | 1.581 | −10.00‰ | 1.071 | −6.4 → −3.1 | −5.0 → −2.5 |
+| Liga MX | 667 | −3.62‰ | 1.056 | −4.1 → −0.8 | −2.0 → +0.4 |
+| J. League | 756 | −3.63‰ | 1.044 | −3.7 → −0.6 | −2.2 → +0.3 |
+| Allsvenskan | 715 | −3.00‰ | 1.049 | −4.0 → −0.7 | −1.4 → +1.1 |
+| Bundesliga austriaca | 582 | +1.03‰ | 1.013 | −1.6 → +1.6 | −0.6 → +1.9 |
+| Série A brasiliana | 374 | +5.67‰ | 0.994 | +0.7 → +3.9 | +1.2 → +3.7 |
+| Liga Profesional | 508 | +15.68‰ | 0.880 | +5.7 → +8.6 | +5.7 → +8.0 |
+| **insieme** | 6.472 | **−3.80‰ (`z = −2.99`)** | 1.045 | −3.8 → −0.5 | −2.3 → +0.2 |
+
+Meglio in 6 leghe su 9, il minimo che la regola chiedeva. Il fattore costante è giusto in media (qui
+gol/lambda 1.045, sulle quindici leghe 1.051), ma dove il lambda era già alto lo alza ancora:
+l'Argentina, che segna poco, peggiora di 15.7‰. Descrittivi: Over 2.5 −2.86‰ (`z = −3.52`), Goal
+−0.93‰ (`z = −1.51`), Over 1.5 −0.35‰, Over 3.5 −1.64‰ (`z = −1.99`), risultati esatti −2.55‰ (`z =
+−2.46`), multigol −5.20‰ (`z = −2.58`), handicap +0.10‰ (il fattore non tocca la differenza reti).
+
+**Rimisurati sulle cinque leghe (`b48`) col fattore**, come la regola chiedeva:
+
+- rese della famiglia gol di `EDGE_BANDS` (FORTE / GIOCABILE / MARGINALE): +2.3 ±12.8 (61 proposte) /
+  +6.8 ±2.6 (1.445) / +4.4 ±1.7 (3.279), contro +0.3 / +7.4 / +3.1 senza fattore rifatte con lo stesso
+  strumento (il `b49` diceva +1.0 / +7.2 / +3.5: la differenza è la frequenza alla cieca corretta nel
+  `b58`). Dentro l'errore; l'etichetta del tabellone dal `b63` dice questi;
+- la retta della confidence dei binari (`−5.06 + 1.091·p`) regge: errore massimo per fascia 2.6 punti
+  su tutti i binari (2.7 senza fattore). Resta;
+- la proposta in cima al tabellone: +16.78 → +16.63 (−0.15 ±0.53). L'Under in cima passa dal 13 al 7%
+  delle partite: era gonfiato dal livello basso.
+
+**Nel motore (`b63`).** `window.GOALS_LEVEL = 1.051` (1 torna a prima), applicato ai due lambda di ruolo
+dopo l'inclinazione dell'Elo, subito prima di `dcRole`. Si muove tutto quello che esce dal ramo di
+ruolo: Over/Under, Goal, multigol, risultati esatti, handicap, i mercati gol del tabellone senza quote,
+la card dei tempi dei gol, e le colonne di ruolo dell'1X2 (modelli DC e Markov di ruolo, «Quote
+implicite — Dixon-Coles di ruolo»), che nell'1X2 finale pesano zero. Il verdetto 1X2 e le sue confidence
+non cambiano (verificato: 29 numeri a schermo su 154 cambiano, nessuno del verdetto). Il CSV esporta
+`Ambito: livello dei gol (fattore gia' nei lambda di ruolo)`: dal `b63` i lambda di ruolo del CSV hanno
+il fattore dentro, e `strumenti/livello-gol.py` lo toglie per misurare. Con le quote non cambia quasi
+niente (il motore pesa 0.0036 nell'Over con le quote). Il Comparatore segue da solo: legge il motore, e
+il certificato conta la manopola nuova. Non è la cura della radice: il disallineamento di unità resta, e
+una media NPxG di lega lo toglierebbe lega per lega (vedi *Da fare*, punto 4).
 
 ## I gol
 
@@ -3887,3 +4002,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b60` | la card dei giocatori ridisegnata, che dopo il caricamento restava una tabella a cinque colonne («22/27» andava a capo a 390px): il mercato a pastiglie, una lista per squadra col suo colore, `XI` per i titolari di oggi, le ultime 5 a pallini, la frequenza con una barra; una barra di avanzamento durante lo scarico e il bottone che dice quante partite riprovare. Numeri e ordine invariati; banco con 0 scritture diverse su 190 e 0 righe su 122 |
 | `b61` | la card delle formazioni ridisegnata: un riquadro per squadra col suo nome, lo stato della formazione in cima, chi manca con i nomi (dallo storico già scaricato, nessuna chiamata in più), il confronto con la probabile, cambi, capitano e allenatore, la stanchezza in tre riquadri. Prima era una tabella a tre colonne che a 390px spezzava le parole. Numeri e CSV invariati; banco con 0 scritture diverse su 190 e 0 righe su 122 |
 | `b62` | con le quote dell'1X2 e dell'Over, risultati esatti, multigol e handicap asiatico vengono dalla matrice dei gol allineata al mercato: regola registrata prima, passata su 4.849 partite mai viste (League One, League Two, Süper Lig 2023/24–2025/26 e il 2026/27 di dieci leghe), −0.0396 / −0.0602 / −0.0176 di logloss, `z` −8.60 / −8.93 / −4.80, 4 blocchi su 4. La ricalibrazione del Goal con le quote non passa (`z = −0.57`). Il riferimento di lega vero dei mercati sui numeri, misurato dai CSV, vale poco e non entra. `strumenti/quote-matrice.py`. Senza quote, e nel Comparatore, niente cambia |
+| `b63` | il livello dei gol: i lambda di ruolo moltiplicati per `GOALS_LEVEL = 1.051` (il lambda stava in media il 5% sotto i gol veri). Regola registrata prima, passata su 6.472 partite di nove leghe mai aperte (Austria, Danimarca, Messico, Norvegia, Svezia, MLS, Giappone, Argentina, Brasile): Over 2.5 + Goal −3.80‰, `z = −2.99`, 6 leghe su 9; Over previsto 49.0 → 52.3% contro 52.8% reale. L'1X2 non cambia. Rimisurate le rese dei gol nel tabellone; la retta dei binari regge. Il CSV esporta il fattore. `strumenti/livello-gol.py` |
