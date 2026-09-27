@@ -324,7 +324,7 @@ async function runScanner(browser, base, matches, limit) {
     await caricaGiocatori(); const sel = document.getElementById('sel-mercato-giocatori'); const per = [];
     for (let i = 0; i < sel.options.length; i++) { sel.value = String(i); renderGiocatori();
       const h = document.getElementById('giocatori-box').innerHTML;
-      per.push({ m: sel.options[i].text, righe: (h.match(/<tr>/g) || []).length, rotto: /NaN|undefined|Infinity/.test(h) }); }
+      per.push({ m: sel.options[i].text, righe: (h.match(/data-g="/g) || []).length, rotto: /NaN|undefined|Infinity/.test(h) }); }
     const D = window.__PLAYER_DATA; sel.value = '1'; renderGiocatori();
     return { dati: [D.H.nDati, D.A.nDati], partite: [D.H.nPartite, D.A.nPartite], per };
   });
