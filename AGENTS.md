@@ -314,6 +314,10 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   aggiuntivi dal maggio 2023: da verificare cosa c'è davvero per il calcio europeo). Con quelle, lo
   stesso schema: regola scritta prima, esplorazione e conferma per stagione, CLV sulla chiusura
   ricalibrata.
+- [x] ~~**StatsHub come fonte.**~~ — **escluso dall'utente.** Guardato nel settembre 2026: ha quote di più
+  bookmaker (anche sui singoli giocatori: tiri, falli, cartellini) e le statistiche degli arbitri, ma solo
+  attraverso la sua API interna, mentre le quote sono il prodotto che vende. L'utente non vuole usarla né
+  chiedere il permesso: non si usa, né per misurare né nello Scanner.
 - [ ] **Quote fino al fischio.** Le quote automatiche del `b55` sono quelle di quando football-data
   pubblica il file (per il weekend di solito il venerdì): valgono +1.4 punti di prese invece dei +2.0
   della chiusura. The Odds API le dà aggiornate, con una chiave gratuita (500 richieste al mese) da
