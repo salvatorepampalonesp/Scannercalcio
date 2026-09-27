@@ -166,8 +166,16 @@ Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export rec
   «confidence = probabilità» si prova su quattro leghe mai aperte, circa un'ora col batch
   automatico. **Regola registrata**: vedi *Le tre leghe nuove col `b48`: la regola*, «Il passo
   dopo».
-- [ ] **Il riferimento di lega dei mercati sui numeri è sbagliato da lega a lega.** Corner,
-  tiri e gialli si ancorano a `MARKET_PER_GOAL × gol di lega`, ma corner e gialli non
+- [x] ~~**Il riferimento di lega dei mercati sui numeri è sbagliato da lega a lega.**~~ —
+  **misurato: vale poco, e nel tabellone niente.** Con la frequenza vera della lega (la media
+  delle ultime 200 partite di lega prima della data) al posto di `MARKET_PER_GOAL × gol di
+  lega`, sulle 2024/25–2025/26 delle dodici leghe la previsione migliora dove il riferimento
+  sbagliava di molto (corner in Bundesliga −13.6‰ di logloss, gialli in Eredivisie −31.4‰) e
+  quasi niente altrove (cinque leghe: corner −2.2‰, `z = −1.15`; tiri −0.7‰; gialli +0.3‰).
+  Il tabellone non guadagna (prima proposta +16.5 → +15.7 / +15.9 / +16.2 sulle cinque): con
+  la base giusta corner e gialli salgono in cima più spesso, e rendono meno. Costerebbe 100–300
+  chiamate per lega. Vedi *Il riferimento di lega vero: misurato*. Il racconto sotto resta per
+  la storia. Corner, tiri e gialli si ancorano a `MARKET_PER_GOAL × gol di lega`, ma corner e gialli non
   crescono coi gol: per gol i gialli vanno da 1.18 (Bundesliga) a 1.67 (LaLiga), i corner
   da 3.05 a 3.66, contro 1.48 e 3.61. In Ligue 1 la base dei corner è 54.7% contro 46.0%. Il riferimento sbaglia **due volte**: nella base del
   tabellone (Bundesliga corner 69.7% contro 51.4% vero, LaLiga gialli 52.3% contro 62.7%) e
@@ -222,9 +230,9 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   aggregare `/advanced` su tutta la lega, non sulle due squadre. **Il `b41` le dà un
   numero**: sulle 12 stagioni-lega in copia conforme i gol per NPxG vanno da 1.055 a 1.156,
   e più sono alti più il lambda resta sotto i gol veri (correlazione −0.62; Bundesliga 1.13–
-  1.15 e lambda −8/−12%). **Lo stesso campione risolverebbe anche i mercati sui numeri**
-  (punto 1): le ultime N partite di lega prima della data, con `/stats` e `/advanced`, danno
-  in un colpo la media NPxG di lega e le frequenze vere di corner, tiri e gialli. Costa
+  1.15 e lambda −8/−12%). Le ultime N partite di lega prima della data, con `/stats` e
+  `/advanced`, danno in un colpo la media NPxG di lega e le frequenze vere di corner, tiri e
+  gialli (che da sole valgono poco: vedi *Il riferimento di lega vero: misurato*). Costa
   circa N chiamate la prima volta per lega (in cache come il database), e va scelto in modo
   deterministico (ultime N con `_isPast`) perché Scanner e Comparatore restino uguali.
 - [ ] **Cartellini**: posizione in classifica (costo zero, i punteggi sono già in cache) e
@@ -272,11 +280,11 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   tabellone con le quote: la regola*, «Esito».
 - [ ] **Risultati esatti, multigol e handicap dalla matrice allineata.** Con le quote restano del
   motore per regola. Descrittivo del `b57`: la logloss del risultato esatto passa da 2.9200 a 2.8872
-  (`z = −11.42`). Una regola registrata direbbe se entrano.
+  (`z = −11.42`). **Regola registrata**: vedi *I mercati della matrice con le quote: la regola*.
 - [ ] **Il Goal con le quote sta ancora sotto il vero**: 52.0% previsto contro 54.7% reale (il motore
   50.8%), 2–6 punti sotto in ogni fascia sotto il 60%. È la matrice di Dixon-Coles col `rho` del motore:
-  a pari Over e pari 1X2 dà troppo pochi Goal. Una ricalibrazione va registrata e provata su leghe
-  nuove.
+  a pari Over e pari 1X2 dà troppo pochi Goal. **Regola registrata** (una ricalibrazione, su leghe
+  nuove): vedi *I mercati della matrice con le quote: la regola*.
 - [ ] **Quote storiche di corner e cartellini.** Fonte trovata: Footiqo (1xBet, chiusura), bloccata
   dalla rete dell'ambiente finché `footiqo.com` non è fra i domini consentiti. Regola registrata: vedi
   *Le quote di corner e cartellini: la regola*. La ricerca per battere il bookmaker (`b58`, vedi
@@ -497,7 +505,9 @@ contro 36.0% veri in Eredivisie (3.42 contro 3.00 a partita) e 65.4% contro 69.6
 Portugal; corner Over 9.5 61.5% contro 56.7% in Eredivisie e 50.7% contro 55.6% in Championship.
 I tiri in porta tengono (40.7 / 40.6, 64.0 / 64.1, 47.1 / 45.1). AUC gialli / tiri / corner:
 Championship 0.535 / 0.554 / 0.547, Eredivisie 0.546 / 0.550 / 0.527, Liga Portugal 0.574 /
-0.612 / 0.553.
+0.612 / 0.553. Mettere al posto del riferimento la frequenza vera della lega vale poco: la
+previsione cambia solo dove sbagliava di molto, il tabellone non guadagna (vedi *Il riferimento
+di lega vero: misurato*). Il limite di questi mercati è che ordinano poco, non la base.
 
 **Pareggio.** Non si prevede abbastanza da giocarlo: in copia conforme `pX` ha AUC 0.562
 in Serie A (0.561 / 0.580 / 0.542 nelle tre stagioni; 0.487 sul vecchio campione), 0.547 in
@@ -1395,7 +1405,60 @@ riferimento costante a partita (9.5–9.9 corner, 3.9–4.1 gialli) aggiusta la 
 (+0.0028); più peso alla baseline di coppia (`MARKET_BASE_SHRINK` da 0.50 a 0.75 sui corner)
 aggiusta la Bundesliga (−0.0123, `z = −3.3`) e peggiora la Premier (+0.0029). Il livello di
 corner e gialli cambia davvero da lega a lega, e né i gol né la coppia lo sanno: serve la
-frequenza di lega vera (vedi *Da fare*, punto 4).
+frequenza di lega vera (vedi *Da fare*, punto 4). Misurata dopo, vale poco: vedi la sezione qui
+sotto.
+
+### Il riferimento di lega vero: misurato
+
+**La domanda.** Se il riferimento di corner, tiri in porta e gialli fosse la frequenza vera della
+lega, quanto migliorerebbero la previsione e il tabellone? Si ricostruisce dai CSV senza rilanciare
+il motore. In `calcAdv` il lambda è `grezzo + (1 − c)·(rif − 2·baseline di coppia)`, quindi con un
+altro riferimento `λ' = λ + (1 − c)·(rif' − rif)` (per tiri e gialli sul lambda prima dello
+squilibrio, a cui poi si somma l'aggiustamento di prima). La base del tabellone è `1 − BN(linea;
+rif', k della coppia)`. Prova di coincidenza: la P(Over) rifatta dal lambda e dal `k` del CSV sta
+entro 0.16 punti da quella del CSV su 11.927 partite su 11.927, la base del tabellone entro 0.15
+(sono i decimali del CSV). Il riferimento vero è la media dei reali delle ultime N partite della
+stessa lega prima del giorno, presi dai CSV dei batch (`b48`, e `b52` per le quattro leghe). È il
+campione che il motore dovrebbe scaricare. I bersagli sono le 2024/25 e 2025/26, che hanno una
+stagione intera alle spalle: 3.485 partite delle cinque leghe e 4.467 delle sette. Solo
+descrittivo: nessuna regola, perché niente entra nel motore.
+
+**La previsione** (N = 200, `c` quello di `MARKET_BASE_SHRINK`, logloss dell'Over alla linea del
+tabellone, in millesimi contro oggi):
+
+| | corner Over 9.5 | tiri in porta Over 8.5 | gialli Over 3.5 |
+|---|---|---|---|
+| oggi, P(Over) prevista meno reale, in punti (Serie A, Premier, LaLiga, Bundesliga, Ligue 1) | +1.0 / +4.9 / +1.6 / +7.8 / +3.8 | −1.4 / +5.7 / −4.3 / +4.6 / +1.0 | +0.5 / +2.4 / −1.8 / +5.9 / +0.1 |
+| riferimento vero, cinque leghe | −2.2 (`z = −1.15`); Bundesliga −13.6 | −0.7 (`z = −0.56`) | +0.3 (`z = +0.26`) |
+| riferimento vero, sette leghe | −2.8 (`z = −1.95`); Eredivisie −10.8 | −0.3 (`z = −0.48`) | −3.8 (`z = −1.25`); Eredivisie −31.4 |
+
+N fra 100 e 500 e `c` fra 0 e 0.75 non cambiano il quadro: sulle cinque leghe nessuna coppia arriva
+a `z = −1.5` su nessun mercato, e `c` = 0 (il riferimento pieno) non fa meglio del `c` in uso (solo i
+gialli sulle sette, di mezzo millesimo). Metà dello
+sbaglio del riferimento arriva al lambda: in Bundesliga il riferimento dei corner sta 1.80 sopra il
+vero e il lambda 0.88. Un livello sbagliato di qualche punto su un mercato al 50% costa pochi
+millesimi. Dove sbaglia di molto (corner in Bundesliga, gialli in Eredivisie) la correzione vale,
+altrove no.
+
+**Il tabellone** (la proposta in cima a ogni partita, sopra il giocarla alla cieca):
+
+| | cinque leghe (3.486) | sette leghe (4.468) |
+|---|---|---|
+| oggi | +16.5 | +12.3 |
+| base vera (binomiale col riferimento vero) | +15.7 | +12.3 |
+| base vera e previsione col riferimento vero | +15.9 | +12.4 |
+| base = frequenza delle ultime 200, e previsione col riferimento vero | +16.2 | +12.6 |
+
+Con la base vera corner, tiri e gialli finiscono in cima più spesso (dal 14 al 19–25% delle partite
+sulle cinque) e rendono meno. Con base e previsione vere FORTE / GIOCABILE / MARGINALE rendono +15.2 /
++12.5 / +5.2 (35 / 803 / 1.566 proposte), oggi +21.0 / +10.8 / +8.5 (49 / 597 / 950). La base
+sbagliata faceva da filtro. Il difetto vero di questi mercati è che le loro probabilità ordinano poco
+(AUC 0.51–0.65), non la base.
+
+**Esito.** Non entra nel motore. Costerebbe 100–300 chiamate per lega la prima volta, per pochi
+millesimi sull'insieme e niente nel tabellone. Se si torna al campione di lega per la media NPxG
+(vedi *Da fare*, punto 4), le frequenze vere arrivano gratis, e questa misura si rifà su dati nuovi
+con una regola scritta prima.
 
 ### Lo squilibrio sui tiri in porta: registrato, passato, nel motore (`b42`)
 
@@ -2325,6 +2388,69 @@ secondo test si fa fuori lega invece che per stagione (`t` scelto su quattro leg
 quinta, a turno), sempre con ROI positivo e `z ≥ 2` sull'insieme. Un file gratuito di prova (Premier
 2025/26, anche corner e cartellini) si chiede con un indirizzo email: serve a leggere colonne e linee,
 non a guardare risultati.
+
+### I mercati della matrice con le quote: la regola
+
+Scritta prima di aprire i dati del test: il batch è partito, e dei suoi file non si è letta nessuna
+riga. Chiesta dall'utente con «torniamo alle predizioni». Sono le due voci di *Da fare* sulla strada
+con le quote, che dal `b55` è quella di tutti i giorni in 30 leghe.
+
+**Oggi.** Con le quote dell'1X2 e dell'Over 2.5, Over 1.5, 2.5, 3.5 e Goal/NoGoal escono dalla
+matrice allineata (`b57`). Risultati esatti, multigol e handicap asiatico restano della matrice del
+motore, e il Goal allineato sta sotto il vero (51.9% contro 54.7% sulle undici leghe).
+
+**I candidati.**
+
+- **A.** Risultati esatti, multigol e handicap asiatico dalla matrice allineata, quando ci sono le
+  quote dell'1X2 e dell'Over. Nessun parametro nuovo.
+- **B.** Il Goal della matrice allineata ricalibrato, `pGG' = σ(a + b·logit(pGG))`, e il NoGoal `1 −
+  pGG'`. `a` e `b` sono stimati a massima verosimiglianza sulle 11.222 partite delle undici leghe del
+  `b57`, con la matrice allineata come la calcola lo Scanner (`QUOTE_COMB` e `QUOTE_OU` in uso):
+  **`a` = +0.12317, `b` = 0.83776**. Lì il Goal medio passa da 51.9 a 54.6% (reale 54.7%); per fascia
+  (allineata, ricalibrata, esce) < 40 36.9 / 41.9 / 40.9, 40–50 45.9 / 49.6 / 48.7, 50–60 54.6 / 56.9
+  / 57.9, ≥ 60 63.5 / 64.3 / 64.1.
+
+**I dati del test**, mai aperti:
+
+- League One, League Two e Süper Lig 2023/24–2025/26, dal batch automatico del motore `b61`
+  (probabilità dell'1X2 e matrice del motore identiche al `b48`), in copia conforme. Nel 2023/24 il
+  database ha una sola stagione alle spalle, perché `leghe.json` parte dal 2022/23: lo Scanner fa lo
+  stesso.
+- Le partite già giocate del 2026/27 nelle dieci leghe coi file principali di football-data che hanno
+  la stagione in `leghe.json`: le undici del `b57` tranne la Bundesliga.
+
+Quote di chiusura di football-data (`AvgC`, poi Pinnacle, poi Bet365), agganciate come nel `b54`, con
+la prova di coincidenza sul punteggio. Le probabilità con le quote si calcolano coi coefficienti dello
+Scanner, non ristimati: si misura quello che l'utente vede. I blocchi sono quattro: League One,
+League Two, Süper Lig, il 2026/27.
+
+**Il metro**, appaiato partita per partita contro quello che lo Scanner mostra oggi:
+
+1. *Risultati esatti*: logloss del punteggio sulla matrice 11×11. Una partita con più di 10 gol di
+   una squadra esce da questa misura.
+2. *Multigol*: la somma delle logloss della distribuzione dei gol totali (0, 1, …, 5, 6 o più) e di
+   quella dei gol di ciascuna squadra (0, 1, 2, 3 o più). Ogni fascia multigol dello Scanner è una
+   somma di queste.
+3. *Handicap asiatico*: logloss della differenza reti (−3 o meno, −2, −1, 0, +1, +2, +3 o più). Ogni
+   linea dell'handicap è una somma di queste.
+4. *Goal*: logloss del Goal ricalibrato (B) contro quello della matrice allineata.
+
+**Passa**, ciascuno dei quattro per sé, se sull'insieme la logloss migliora con `z ≤ −2` e migliora in
+almeno tre blocchi su quattro. A entra per i mercati che passano (1, 2, 3), B se passa il 4.
+
+**Se passano.** A: con le quote dell'1X2 e dell'Over, le card dei risultati esatti, del multigol e
+dell'handicap usano la matrice allineata, e lo dicono; il mega-prompt anche. B: il Goal/NoGoal con le
+quote (card, tabellone con le quote, prompt) passa per la ricalibrazione, e le rese della famiglia gol
+di `EDGE_BANDS_QUOTE` si rimisurano sulle undici leghe con quel Goal. Il Comparatore non cambia (non
+ha le quote), e senza quote non cambia niente.
+
+**Descrittivi**, detti comunque. Sugli stessi dati: le prese dell'1X2 con le quote contro motore e
+mercato, e la logloss dell'Over 2.5 con le quote contro il motore (la conferma del `b54` e del `b57`
+su dati mai visti); Over 1.5 e 3.5 della matrice allineata; la calibrazione del Goal per fascia prima
+e dopo B. Sulle undici leghe, dove i candidati sono nati, le stesse misure (solo descrittive):
+risultati esatti −0.0336 (`z = −11.74`), multigol −0.0528 (`z = −12.47`), handicap −0.0202 (`z =
+−8.77`), tutti e tre in 11 leghe su 11. `python3 strumenti/quote-matrice.py --allena batch48 batch4
+--prova batch/nuove batch/2627` rifà tutto.
 
 ## Formazioni e assenze
 
