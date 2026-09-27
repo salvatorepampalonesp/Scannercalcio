@@ -55,7 +55,7 @@ sono, le scrive l'utente. Per misurarle si usano gli stessi file (`strumenti/quo
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b65`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b66`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -73,7 +73,8 @@ sono, le scrive l'utente. Per misurarle si usano gli stessi file (`strumenti/quo
   `.tbl-scroll` (lo fa `wrapTables()`); una tabella di **confronto** usa `table-compact` e
   non deve scorrere; i figli di griglia vogliono `min-width:0`. Dal `b59` quasi tutte le card
   sono `<details>` chiuse sul telefono: il banco le apre tutte prima di misurare, perché una
-  card chiusa non ha larghezza e nasconderebbe una tabella che esce di lato. Vedi *La grafica
+  card chiusa non ha larghezza e nasconderebbe una tabella che esce di lato. Dal `b66` l'analisi
+  è divisa in schede, e per lo stesso motivo il banco misura scheda per scheda. Vedi *La grafica
   dello Scanner*.
 - **Le manopole per chi fa backtest vanno nel pannello del Comparatore**, non in console:
   il Comparatore si usa anche da telefono.
@@ -355,7 +356,7 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b65`)
+## Stato attuale (`b66`)
 
 **1X2.** Col motore `b48` il pick azzecca il 52.7% (±1.4) contro il 43.0% del «gioca sempre in
 casa» sulle cinque leghe: 52.7% contro 40.2% in Serie A, 52.7% contro 43.1% in Premier, 53.2%
@@ -429,6 +430,14 @@ rischio sorpresa e proposta in cima al tabellone di ogni partita, da ordinare pe
 sicuro o rischio sorpresa. Non cambia nessun numero: ogni partita stampa quello che stampa
 analizzata da sola (verificato dal banco, scrittura per scrittura). Vedi *La giornata*.
 
+**In breve e le schede** (dal `b66`). Chiesti dall'utente dopo due giri di proposte grafiche, nello
+stile di prima («quella originale mi piace di più»). Sotto la partita un riquadro dice quello che
+serve per decidere: il pick (con le quote se ci sono) e quante volte esce un pick così, il rischio
+sorpresa, le tre proposte migliori del tabellone e le formazioni. L'analisi è divisa in sette
+schede (Partita, Tabellone, Squadre, Statistiche, Mercati, Prompt, Dati) invece che una pagina sola,
+e il tabellone è un elenco: prima le proposte con un verdetto, le altre chiuse sotto. Non cambia
+nessun numero. Vedi *La grafica dello Scanner*, «Cosa cambia nel `b66`».
+
 **Il tetto, sulle dodici leghe** (11.927 partite, probabilità del `b48`). Il pick prende il 51.0%
 e la sua probabilità media è il 51.7%: il modello è calibrato, e con queste probabilità il 51% è
 quello che ci si deve aspettare. Si perde nelle partite equilibrate: con |p1 − p2| sotto 10 punti
@@ -498,7 +507,8 @@ in tre riquadri con una barra, le card di approfondimento che si aprono a richie
 pagina passa da 20.483 a 8.279 px). Motore, id e numeri sono quelli del `b58`. Dal `b60` anche la
 card dei giocatori: il mercato si sceglie con le pastiglie, e ogni squadra ha la sua lista con la
 frequenza, una barra e le ultime 5 a pallini. Dal `b61` quella delle formazioni: un riquadro per
-squadra, e chi manca detto per nome. Vedi *La grafica dello Scanner*.
+squadra, e chi manca detto per nome. Dal `b66` il riquadro «In breve», le schede e il tabellone a
+elenco. Vedi *La grafica dello Scanner*.
 
 **La selezione vale più dell'accuratezza.** Prima di aggiungere una feature, chiedersi se
 il segnale non sia già nell'output, solo mal etichettato.
@@ -905,7 +915,7 @@ il motore no. Chiesta dall'utente: «rendiamolo moderno».
 - **L'analisi** comincia con la partita (`.match-hero`) e una **barra delle sezioni** fissa sotto la
   barra in alto (`#nav-sezioni`): Verdetto, Quote, Tabellone, Ambiti, Formazioni, Giocatori, Perché,
   Mercati, Prompt, Dati. La sezione in vista si accende, e sul telefono il suo nome si centra. Un
-  tocco su una card chiusa la apre.
+  tocco su una card chiusa la apre. Dal `b66` le voci sono schede (vedi sotto).
 - **Il verdetto 1X2** sta in tre riquadri (`#tile-1`, `#tile-x`, `#tile-2`) con una barra impilata
   (`#bar-1`, `#bar-x`, `#bar-2`); il riquadro più probabile si segna da solo. Li muove un
   `MutationObserver` su `#master-1`: il motore non sa che esistono e continua a scrivere solo i suoi
@@ -925,7 +935,7 @@ il motore no. Chiesta dall'utente: «rendiamolo moderno».
   scritti in linea dal motore salgono a 11.5 px.
 - **Il tabellone**: la terza colonna è una pastiglia col verdetto e lo scarto, sotto quanto rende la
   sua famiglia e su quante proposte; prima era una frase sola che a 390 px allargava la tabella. Le
-  parole sono le stesse.
+  parole sono le stesse. Dal `b66` è un elenco (vedi sotto).
 - **La card dei giocatori (`b60`)**, che l'utente trovava brutta dopo il caricamento: era una
   tabella a cinque colonne per squadra, e a 390 px «22/27» andava a capo in «22/2 7». Ora il mercato
   si sceglie con le pastiglie (nove gruppi, e sotto la soglia quando il gruppo ne ha più d'una;
@@ -953,10 +963,60 @@ il motore no. Chiesta dall'utente: «rendiamolo moderno».
   `indiciFormazione` aggiunge `nomiAssenti` e `nomeCapitano`): nessuna chiamata in più, e il CSV non
   li legge, quindi non cambia.
 
+**Cosa cambia nel `b66`.** Chiesto dall'utente, che trovava la pagina «sloppona». Un primo giro di
+tre stili nuovi è stato scartato («nessuna mi convince, quella originale mi piace di più»); del
+secondo, tre ritocchi dello stile del `b59`, ha preso il sunto della seconda e le schede della terza,
+col riordino della prima sotto tutte e due. Colori, sfumature, icone e riquadri restano quelli del
+`b59`; motore e numeri non cambiano.
+
+- **In breve** (`#in-breve`, scritto da `renderInBreve` in `#in-breve-box`), il primo riquadro sotto
+  la partita: il pick con la sua probabilità (con le quote se ci sono, e allora accanto quella del
+  motore; senza, la quota equa), e quante volte esce un pick così: `QUOTE_RESA` con le quote,
+  `PICK_RESA.soglie` nei cinque campionati, `PICK_RESA.fuori` nelle sette leghe misurate a parte,
+  «lega mai misurata» nelle altre. Poi il rischio sorpresa (lo stesso di `#sorpresa-box`), le prime
+  tre proposte con un verdetto del tabellone che è a schermo (quello con le quote se c'è, e le
+  proposte ricalcolate hanno un punto arancione) e le formazioni, confermate o probabili, con quanti
+  titolari abituali mancano. Un tocco su una proposta apre la scheda Tabellone, sulle formazioni la
+  scheda Squadre. Non calcola niente: legge `__ESITO`, `__QUOTE_CTX`, `__QUOTE_P`,
+  `__VERDETTI_QUOTE` o `__VERDETTI` e `__LINEUP_DEBUG`, e lo chiama `aggiornaQuote` a fine analisi e
+  a ogni quota. Non passa da `safeHtml`.
+- **Le schede** (`schedaVai`). La barra delle sezioni ha sette voci: Partita (in breve, verdetto,
+  quote), Tabellone, Squadre (ruolo e generale, formazioni, giocatori), Statistiche, Mercati, Prompt,
+  Dati. La funzione della grafica dà a ogni figlio di `#dashboard-area` la sua scheda
+  (`data-scheda`), partendo dall'id con cui comincia ogni gruppo (`in-breve`, `card-verdetti`,
+  `card-ambiti`, `sez-perche`, `sez-mercati`, `sez-prompt`, `sez-dati`); quelli delle altre schede
+  hanno `fuori-scheda`. Il riquadro della giornata, la partita e la barra stanno sopra ogni scheda,
+  `#giornata-fondo` sotto. La scheda scelta resta cambiando partita nella giornata; «Cambia partita»
+  torna a Partita. I titoli dei gruppi (`.group-head`) non si mostrano: il nome è sulla scheda.
+- **Il tabellone è un elenco** (`_htmlVerdetti`; `#verdetti-body` è un `div`, non più il corpo di
+  una tabella). Ogni proposta con un verdetto è un riquadro (verde se FORTE o GIOCABILE): nome e
+  descrizione, probabilità e base di lega, la pastiglia col verdetto e lo scarto, quanto rende la sua
+  famiglia. Le proposte senza verdetto stanno chiuse in «Altri N mercati senza verdetto: scarto sotto
+  +5, dentro il rumore» (o «base di lega ignota», se l'archivio è troppo corto); senza nessun
+  verdetto lo dice una riga. Con le quote le proposte ricalcolate portano
+  `data-q="1"` e dicono «con le quote», e la nota sopra è chiusa. Parole e numeri sono quelli di
+  prima.
+- **Il riordino.** Il sottotitolo della partita dice giorno e storico («Martedì 20/01 · storico di
+  27 e 27 partite», prima «Motore V9.7: Analisi Integrale su 27 match (Simulazione al 2026-01-20)»),
+  e l'occhiello sopra il titolo la lega («Serie A · pre-partita»). L'occhiello lo scrive
+  `renderLeagueNote` con `textContent`, fuori dalle scritture del motore: la prima versione metteva la
+  lega nel sottotitolo prendendola dal testo del menu, che nel Comparatore è l'id; la seconda dal
+  catalogo `LEAGUES_CATALOG`, che nel Comparatore è vuoto (`loadLegheJson` lì è spenta). Il banco
+  l'ha visto tutte e due le volte. La forma è una riga per squadra col suo nome e colore. La memoria della cache sta in fondo alla pagina (`.memoria`), la barra in cima ha
+  solo «Cambia partita». Il riquadro «nessuno scarto sopra soglia» non si mostra quando non c'è
+  niente da dire (il prompt continua a dirlo). Le spiegazioni `details.info` non hanno più il
+  riquadro tratteggiato. La nota di lega sopra il tabellone è un riquadro verde (ambra se la lega non
+  è misurata). Nella card delle quote i paragrafi piccoli stanno chiusi in «Quanto valgono queste
+  quote». Nella giornata tre numeri (analizzate, sorpresa alta, con proposte forti) invece della
+  frase, e in ogni riga la probabilità più alta in grassetto; il pick si scrive solo con le quote,
+  «Giornata» non è più nella barra delle sezioni.
+
 **Cosa non cambia, e non deve cambiare.**
 
 - **Tutti gli id della pagina del `b58` ci sono ancora** (233, confrontati con un elenco preso prima
-  di riscrivere): il motore scrive per id, e il Comparatore porta i suoi id ombra.
+  di riscrivere): il motore scrive per id, e il Comparatore porta i suoi id ombra. Al `b66` la pagina
+  ne ha 252: in più `in-breve` e `in-breve-box`, in meno `nav-giornata` (la voce del `b65` nella barra
+  delle sezioni); `verdetti-body` c'è ancora, ma è un `div`.
 - `id="history-limit"` sta prima di `value="30"` nello stesso tag: il Comparatore lo legge con una
   regex (vedi *Il contratto Scanner ↔ Comparatore*, punto 8).
 - **Il codice della grafica** è una funzione a parte in fondo allo script, che esce subito se non
@@ -967,7 +1027,12 @@ il motore no. Chiesta dall'utente: «rendiamolo moderno».
   Comparatore non caricava più il motore.
 - **Una card chiusa ha i suoi numeri scritti**: il motore scrive nel DOM a card chiusa o aperta.
   Per lo stesso motivo il banco apre tutte le `details` prima di misurare lo scorrimento e le
-  tabelle compatte (25 `details` nella pagina dopo un'analisi dal `b64`).
+  tabelle compatte (28 `details` nella pagina dopo un'analisi dal `b66`). Dal `b66` vale anche per
+  le schede: una sezione di un'altra scheda ha i numeri scritti ma nessuna larghezza, quindi il banco
+  misura scheda per scheda, e oltre alle tabelle compatte guarda che i riquadri nuovi (proposte del
+  tabellone, righe di «In breve», forma, righe della giornata) non escano dal loro spazio.
+- **`renderInBreve` e `schedaVai`** cercano i nodi con `querySelector` e controllano `instanceof
+  Element`, come la grafica: nel Comparatore `aggiornaQuote` gira sui nodi fantasma e le chiama.
 
 ## La giornata
 
@@ -1004,11 +1069,12 @@ campi di un'altra partita, perché `caricaQuoteAuto` controlla che `__QUOTE_CTX`
 
 **Lo schermo.** In cima all'analisi il riquadro `#giornata-bar`: le frecce per la partita prima e
 dopo, quante sono analizzate, rischio sorpresa ALTO e partite con almeno una proposta FORTE o
-GIOCABILE, e l'elenco «Tutte le partite» (`details`: sul telefono si chiude quando si apre una
+GIOCABILE (dal `b66` tre numeri), e l'elenco «Tutte le partite» (`details`: sul telefono si chiude quando si apre una
 partita, sul computer due colonne), ordinabile per orario, pick più sicuro o rischio sorpresa (le
-frecce seguono l'ordine scelto). Ogni riga: la barra del motore, 1 X 2, il pick (con le quote se ci
-sono), il rischio sorpresa se non è basso, la proposta in cima. Dopo il mega-prompt `#giornata-fondo`
-ripete la partita prima e dopo col nome; nella barra delle sezioni compare «Giornata». Durante il
+frecce seguono l'ordine scelto). Ogni riga: la barra del motore, 1 X 2 con la più alta in grassetto,
+il pick con le quote se ci sono, il rischio sorpresa se non è basso, la proposta in cima. In fondo
+alla pagina, sotto ogni scheda, `#giornata-fondo` ripete la partita prima e dopo col nome (fino al
+`b65` stava dopo il mega-prompt, e «Giornata» era nella barra delle sezioni). Durante il
 giro una barra dice a che partita è e quante partite ci sono in memoria, e «Ferma dopo questa»
 lascia le altre in attesa, con «Analizza le N rimaste». «Cambia partita» durante il giro lo ferma e
 torna al setup. Rilanciare la stessa giornata la riprende o la mostra, senza rifare niente; analizzare
@@ -1145,6 +1211,9 @@ testo, lo modifica con delle regex e lo esegue con `new Function`. Dipende quind
     riuscito solo da `__ESITO`: se la riga si sposta dopo un `return` anticipato, o prima del calcolo
     di `m1/mX/m2`, ogni partita risulta «non analizzata». `_giornataQuote` esce subito senza una
     giornata: nel Comparatore, dove `aggiornaQuote` gira sui nodi fantasma, non ce n'è mai una.
+    Dal `b66` in fondo ad `aggiornaQuote` c'è anche `renderInBreve()`, che legge `__ESITO` come la
+    giornata: senza, il riquadro «In breve» resta vuoto. Esce subito se non trova `#in-breve-box`
+    con `querySelector` (nel Comparatore non c'è).
 
 **Come gira un batch.** `cmpRunMatch` mette la lega nel DOM del motore (creando l'`<option>`
 se manca e verificando che abbia attecchito), ricopia `history-limit`, e chiama
@@ -1220,9 +1289,14 @@ rilegge l'archivio di lega dal **testo** del CSV esportato, ci fa girare `buildG
 motore e confronta Elo e HFA con le righe del CSV, partita per partita; il controllo di potenza
 toglie una partita dall'archivio e deve vedere l'Elo cambiare. Dal `b65` lancia anche la giornata
 sul turno delle partite dello Scanner e controlla che ogni partita riaperta coi bottoni stampi quello
-che stampa analizzata da sola (vedi *La giornata*).
+che stampa analizzata da sola (vedi *La giornata*). Dal `b66` misura lo scorrimento scheda per
+scheda (sette schede, tutte le `details` aperte), guarda che i riquadri nuovi non escano dal loro
+spazio, e controlla «In breve» a ogni partita, nei dieci casi delle quote e nella giornata: il pick e
+la sua probabilità sono quelli delle probabilità mostrate (con le quote se ci sono), le proposte le
+prime tre con un verdetto del tabellone a schermo, il rischio sorpresa quello del motore, niente
+`NaN`. Nella giornata controlla anche che la scheda scelta resti cambiando partita.
 
-Esito al `b65` (storico 30), a 390px con tutte le 25 card aperte (anche nessuna tabella compatta che esce dal suo riquadro, il mega-prompt dello Scanner mai vuoto né rotto, i dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, 0 px):
+Esito al `b66` (storico 30), a 390px con tutte le 28 card aperte, scheda per scheda (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, 0 px):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
@@ -1230,7 +1304,7 @@ Esito al `b65` (storico 30), a 390px con tutte le 25 card aperte (anche nessuna 
 | batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 191 | 0 su 122 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
 | `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 128-158 | 74-83 | 0 |
-| `vecchio`: motore `b64` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 | 1 (il certificato) | 0 |
+| `vecchio`: motore `b65` caricato (controllo) | 0/3, «motore caricato diverso ...» | 4 | 1 (il certificato) | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -1265,7 +1339,7 @@ lo stesso col `b56`: la card delle quote non passa da `safeHtml`. Al `b58` lo st
 tabellone del motore esce identico (costruzione e disegno ora sono due funzioni, `_vociVerdetti` e
 `_htmlVerdetti`), e quello con le quote è scritto con `innerHTML` diretto dalla card delle quote. Nei
 dieci casi il banco conta le righe del tabellone segnate «con le quote» (6 con l'1X2, 10 con anche
-l'Over, 0 senza), controlla la nota, che senza quote torni il tabellone del motore, che
+l'Over, 0 senza; dal `b66` dall'attributo `data-q`), controlla la nota, che senza quote torni il tabellone del motore, che
 `window.__VERDETTI` (quello che legge il Comparatore) resti del motore, e che il prompt contenga il
 testo del tabellone giusto e nessun segnaposto. Al `b59` il controllo col `b58` vede una scrittura
 diversa, il tabellone (la terza colonna ha la pastiglia e la resa su due righe: stesse parole, altro
@@ -1286,7 +1360,21 @@ tutto il ramo di ruolo (mercati gol, multigol, risultati esatti, handicap, tempi
 ruolo dell'1X2), mai il verdetto 1X2. Al `b64` il controllo col `b63` vede una scrittura diversa, il
 riquadro del rischio sorpresa (`sorpresa-box`, che il `b63` non scrive), e il certificato. Al `b65` il
 controllo col `b64` non vede nessuna scrittura diversa, solo il certificato: la giornata sta fuori
-dal motore, `window.__ESITO` non è una scrittura, e il mega-prompt non passa da `safeHtml`.
+dal motore, `window.__ESITO` non è una scrittura, e il mega-prompt non passa da `safeHtml`. Al `b66`
+il controllo col `b65` vede quattro scritture diverse, tutte di forma: il sottotitolo della partita,
+la forma su due righe, il tabellone a elenco e il riquadro «nessuno scarto sopra soglia» (vuoto
+quando non c'è niente da dire); le righe del CSV no, solo il certificato. «In breve», le schede e
+l'occhiello con la lega non passano da `safeHtml`. Il banco ha trovato due volte il sottotitolo
+diverso fra Scanner e Comparatore, quando portava il nome della lega (vedi *La grafica dello
+Scanner*, «Cosa cambia nel `b66`»).
+
+**Il controllo di potenza del `b66`**, fatto a parte su una copia dello Scanner con due guasti
+messi apposta (`ROOT=<copia>`): `renderInBreve()` tolto dal ramo con le quote di `aggiornaQuote`, e
+le righe «Altri mercati» del tabellone larghe 430 px. Il banco deve fallire su tutti e due, e il
+secondo sta nella scheda Tabellone, che il vecchio modo di misurare (una pagina sola, la scheda
+Partita a schermo) non vedeva. Fallisce su tutti e due: 71 px di scorrimento (nel giro dello Scanner
+e nella giornata), e «In breve» sbagliato su 2 partite su 3 (quelle con le quote automatiche) e in
+tutti i casi con le quote dell'1X2.
 
 **Le quote sul banco (dal `b54`).** Dopo il giro dello Scanner il banco scrive le quote nella card
 dell'ultima partita, in sei casi: vuote (niente tabella, niente blocco nel prompt), valide con la
@@ -3046,7 +3134,10 @@ di questo elenco è stata a lungo falsa proprio perché nessuno sapeva dove cont
   lega presa dalla dropdown (vedi *L'etichetta di lega letta dal DOM*), il suffisso
   `_ruoloIndip` del file preso dall'interruttore all'export, il marcatore della scala nel
   titolo di riga. Gli export si accumulano: un'etichetta che descrive righe va calcolata
-  **dalle righe**.
+  **dalle righe**. Una quarta nel `b66`, dall'altra parte: il nome della lega scritto dal motore,
+  preso dal menu (nel Comparatore ha l'id come testo) e poi dal catalogo (nel Comparatore è vuoto).
+  Quello che il motore scrive deve venire da quello che il Comparatore gli passa: la lega arriva
+  come id, e il suo nome no.
 - **Un numero misurato sull'insieme non vale per le sue parti.** «FORTE, rende +24.6» era giusto
   in media e sbagliato per quasi ogni riga: +27.5 sull'1X2, +1.0 sui mercati gol. Un'etichetta
   che promette una resa va misurata sul gruppo a cui la si mostra.
@@ -4273,3 +4364,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b63` | il livello dei gol: i lambda di ruolo moltiplicati per `GOALS_LEVEL = 1.051` (il lambda stava in media il 5% sotto i gol veri). Regola registrata prima, passata su 6.472 partite di nove leghe mai aperte (Austria, Danimarca, Messico, Norvegia, Svezia, MLS, Giappone, Argentina, Brasile): Over 2.5 + Goal −3.80‰, `z = −2.99`, 6 leghe su 9; Over previsto 49.0 → 52.3% contro 52.8% reale. L'1X2 non cambia. Rimisurate le rese dei gol nel tabellone; la retta dei binari regge. Il CSV esporta il fattore. `strumenti/livello-gol.py` |
 | `b64` | l'avviso di sorpresa, chiesto dall'utente: sotto il verdetto 1X2 il rischio che vinca lo sfavorito, ALTO / medio / basso, con le frequenze misurate su 23.278 partite di 24 leghe; ALTO (una partita su sei) quando modello ed Elo indicano favoriti diversi e lo sfavorito ha il 25% o più, e lì lo sfavorito vince il 33–39%. Anche nel mega-prompt. Prima, un rating delle squadre sugli xG di tutta la lega: regola registrata, −5.53‰ nell'esplorazione e −2.00‰ (`z = −1.19`, 5 leghe su 10) sulle leghe del test, non passa. Probabilità e CSV invariati. `strumenti/rating-xg.py`, `strumenti/sorpresa.py` |
 | `b65` | la giornata, chiesta dall'utente: un bottone analizza tutte le partite del turno di una lega dalla data scelta, ognuna col giro completo dello Scanner, e poi si passa dall'una all'altra con le frecce, a cache calda (nessuna chiamata); in cima l'elenco con 1X2, pick, rischio sorpresa e proposta in cima, ordinabile. Il mega-prompt chiede un'analisi completa (700–1200 parole, una sezione in più sugli scenari) invece di quattro sezioni con un tetto di righe. Nessun numero cambia: il banco ritrova ogni partita della giornata identica all'analisi singola, 191 scritture su 191 |
+| `b66` | la grafica riordinata nello stile di prima, scelta dall'utente fra sei proposte: il riquadro «In breve» (pick e quante volte esce, rischio sorpresa, tre proposte migliori, formazioni), l'analisi in sette schede invece che una pagina sola, il tabellone a elenco con le proposte senza verdetto chiuse sotto; sottotitolo, forma, memoria della cache, note e giornata riordinati. Nessun numero cambia: il banco vede 4 scritture diverse col `b65`, tutte di forma, 0 righe del CSV, e misura ora scheda per scheda |

@@ -288,6 +288,33 @@ const SNAP = `(() => ({ rec: window.__REC_CUR || [], verd: JSON.parse(JSON.strin
   fatigue: JSON.parse(JSON.stringify(window.__FATIGUE_DEBUG || null)),
   trend: JSON.parse(JSON.stringify(window.__ELO_TREND || null)) }))()`;
 
+// «In breve» (b66): il pick e' quello delle probabilita' mostrate (con le quote se ci sono), le proposte
+// le prime tre con un verdetto del tabellone a schermo, il rischio sorpresa quello del motore
+const INBREVE = `(() => { const b = document.querySelector('#in-breve-box'); if (!(b instanceof Element)) return null;
+  const E = window.__ESITO, Q = window.__QUOTE_P, P = Q || (E && E.p); if (!P) return { ok: !b.innerHTML, rotto: false, vuoto: true };
+  const k = P.indexOf(Math.max(...P)), big = b.querySelector('.ib-big'), pp = b.querySelector('.ib-pp'), lab = b.querySelector('.ib-lab');
+  const V = (window.__VERDETTI_QUOTE || window.__VERDETTI || []).filter(v => v.guad != null).slice(0, 3).map(v => v.nome);
+  const Vb = [...b.querySelectorAll('.ib-p b')].map(x => x.firstChild.textContent.trim());
+  const ok = !!big && big.firstChild.textContent === ['1', 'X', '2'][k] && !!pp && pp.firstChild.textContent === (100 * P[k]).toFixed(1) + '%'
+    && JSON.stringify(V) === JSON.stringify(Vb) && !!b.querySelector('.ib-s-' + E.sorpresa.liv) && !!lab && /con le quote/.test(lab.textContent) === !!Q;
+  return { ok, rotto: /NaN|undefined|Infinity/.test(b.innerHTML), pick: ['1', 'X', '2'][k], proposte: Vb.length, quote: !!Q }; })()`;
+// dal b66 l'analisi e' divisa in schede, e una sezione nascosta non ha larghezza: si misura scheda per
+// scheda, con tutte le details aperte. Oltre alle tabelle compatte, i riquadri nuovi non devono uscire di lato
+const MISURA = `(() => { const d = [...document.querySelectorAll('details')]; d.forEach(x => { x.open = true; });
+  const schede = typeof schedaVai === 'function' ? [...document.querySelectorAll('#nav-sezioni a[data-k]')].map(a => a.dataset.k) : [];
+  let scroll = 0; const compatte = [], viste = new Set();
+  for (const k of (schede.length ? schede : [null])) {
+    if (k) schedaVai(k, false);
+    scroll = Math.max(scroll, document.documentElement.scrollWidth - window.innerWidth);
+    document.querySelectorAll('table.table-compact, .tv, .tv-mini, .ib-pick, .ib-p, .ib-riga, .fs-riga, .g-row').forEach(t => {
+      if (!t.getClientRects().length) return;
+      const tab = t.tagName === 'TABLE', w = tab ? (t.closest('.tbl-scroll') || t.parentElement) : t, c = t.closest('[id]');
+      const ecc = t.scrollWidth - w.clientWidth, key = (c ? c.id : '?') + (tab ? '' : ' .' + t.className.split(' ')[0]);
+      if (ecc > 1 && !viste.has(key)) { viste.add(key); compatte.push({ id: key, scheda: k, eccesso: ecc }); } });
+  }
+  if (schede.length) schedaVai('partita', false);
+  return { chiuse: d.length, schede: schede.length, scroll, compatte }; })()`;
+
 async function runScanner(browser, base, matches, limit) {
   const page = await newPage(browser, base);
   await page.goto(base + '/scanner.html');
@@ -300,7 +327,7 @@ async function runScanner(browser, base, matches, limit) {
   await page.evaluate(() => caricaSquadreLega());
   const out = {};
   for (const m of matches) {
-    const snap = await page.evaluate(async ({ h, a, d, limit, SNAP }) => {
+    const snap = await page.evaluate(async ({ h, a, d, limit, SNAP, INBREVE }) => {
       if (typeof nuovaPartita === 'function') nuovaPartita();
       document.getElementById('sel-home').value = h; document.getElementById('sel-away').value = a;
       document.getElementById('target-date').value = d;
@@ -314,8 +341,9 @@ async function runScanner(browser, base, matches, limit) {
                          campiOU: ['quota-ov', 'quota-un'].map(id => (document.getElementById(id) || {}).value),
                          nelPrompt: /CON LE QUOTE DEL MERCATO \(prese da football-data/.test(pq), golNelPrompt: /GOL CON LE QUOTE \(prese da football-data/.test(pq),
                          rotto: /NaN|undefined|Infinity|@@/.test(pq + st) };
+      snap.inBreve = eval(INBREVE);
       return snap;
-    }, { h: m.home_team.id, a: m.away_team.id, d: m.time_utc.slice(0, 10), limit, SNAP });
+    }, { h: m.home_team.id, a: m.away_team.id, d: m.time_utc.slice(0, 10), limit, SNAP, INBREVE });
     out[m.id] = snap;
   }
   // le statistiche dei giocatori (bottone, fuori dal giro del motore): tabelle piene, niente NaN
@@ -330,7 +358,7 @@ async function runScanner(browser, base, matches, limit) {
   });
   // le quote (b54, fuori dal giro del motore): card e prompt senza NaN ne' segnaposto, l'avviso
   // quando il mercato contraddice il motore (controllo di potenza), e la card piena per i 390px
-  const quote = await page.evaluate(() => {
+  const quote = await page.evaluate(INBREVE => {
     if (typeof aggiornaQuote !== 'function') return null;
     const set = (a, b, c, o = '', u = '') => { [['quota-1', a], ['quota-x', b], ['quota-2', c], ['quota-ov', o], ['quota-un', u]]
       .forEach(([id, v]) => document.getElementById(id).value = v); aggiornaQuote(); };
@@ -344,7 +372,7 @@ async function runScanner(browser, base, matches, limit) {
       casi.push({ nome, x, g, righe: (h.match(/<tr>/g) || []).length, conQuote: /CON LE QUOTE DEL MERCATO/.test(p), sintesi: /pick da citare/.test(p),
                   golPrompt: /GOL CON LE QUOTE/.test(p), golSintesi: /Over\/Under e Goal cita/.test(p), goalPrompt: /\| NoGoal \d+\.\d%/.test(p),
                   allineata: Q ? Math.max(Math.abs(Q.o25 - Q.over), Math.abs(Q.lgMat - Q.lg12)) : null,
-                  tabQuote: (tb.innerHTML.match(/>con le quote<\/div>/g) || []).length, tabNota: /Con le quote\./.test(document.getElementById('verdetti-quote').innerHTML),
+                  tabQuote: (tb.innerHTML.match(/ data-q="1"/g) || []).length, ib: eval(INBREVE), tabNota: /Con le quote\./.test(document.getElementById('verdetti-quote').innerHTML),
                   tabMotore: tb.innerHTML === motoreHtml, tabPrompt: x ? !!window.__VERDETTI_QUOTE && p.includes(_tabTesto(window.__VERDETTI_QUOTE)) && /ricalcolato con le quote/.test(p) : p.includes(window.__TAB_TXT_MOTORE),
                   verdettiMotore: (window.__VERDETTI || []).every(v => !v.quote) && window.__VERDETTI.length > 0,
                   matNota: /Con le quote\./.test(document.getElementById('matrice-quote').innerHTML), matMotore: matOra() === matMotore,
@@ -361,23 +389,17 @@ async function runScanner(browser, base, matches, limit) {
     set('1.20', '6.50', '13', '1.10', '7.50'); leggi('Over quasi certo, favorita netta', true, 2);
     set('2,10', '3.40', '3.60', '1,85', '2.05'); leggi('1X2 e Over/Under', true, 2);
     return casi;
-  });
+  }, INBREVE);
   const log = page.__log.slice();
-  // dal b59 le card di approfondimento sono <details> chiuse: si aprono tutte prima di misurare,
-  // altrimenti una tabella nascosta non si vede uscire di lato
-  const chiuse = await page.evaluate(() => { const d = [...document.querySelectorAll('details')]; d.forEach(x => { x.open = true; }); return d.length; });
-  const scroll = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-  // una tabella di confronto non deve scorrere nemmeno dentro il suo riquadro: la pagina puo'
-  // stare a 0 px mentre la tabella esce di lato (il tabellone, fino al b49, di 53 px a 390px)
-  const compatte = await page.evaluate(() => [...document.querySelectorAll('table.table-compact')]
-    .map(t => { const w = t.closest('.tbl-scroll') || t.parentElement, c = t.closest('[id]');
-                return { id: c ? c.id : '?', eccesso: t.scrollWidth - w.clientWidth }; })
-    .filter(x => x.eccesso > 1));
+  // dal b59 le card di approfondimento sono <details> chiuse, dal b66 le sezioni stanno in schede: si
+  // aprono tutte e si misura scheda per scheda. Una tabella di confronto non deve scorrere nemmeno dentro
+  // il suo riquadro: la pagina puo' stare a 0 px mentre la tabella esce di lato (il tabellone, fino al b49)
+  const { chiuse, schede, scroll, compatte } = await page.evaluate(MISURA);
   if (quote) quote.push(await page.evaluate(() => { nuovaPartita();
     const vuoti = ['quota-1', 'quota-x', 'quota-2', 'quota-ov', 'quota-un'].every(id => document.getElementById(id).value === '');
     return { nome: 'cambia partita', svuotate: vuoti && window.__QUOTE_CTX === null && document.getElementById('quote-box').innerHTML === '--' }; }));
   await page.context().close();
-  return { runs: out, log, scroll, compatte, giocatori, quote, chiuse };
+  return { runs: out, log, scroll, compatte, giocatori, quote, chiuse, schede };
 }
 
 // la giornata (b65): trova le partite del turno, le analizza tutte, e ognuna deve stampare
@@ -411,12 +433,16 @@ async function runGiornata(browser, base, turno, singole) {
     return { v0, t, titolo: document.getElementById('ui-title').textContent, atteso: GIORNATA.lista[GIORNATA.vista].hName + ' - ' + GIORNATA.lista[GIORNATA.vista].aName }; });
   const html = await page.evaluate(() => document.getElementById('giornata-bar').innerHTML + document.getElementById('giornata-fondo').innerHTML);
   const pr = await page.evaluate(() => document.getElementById('ai-prompt').value);
-  await page.evaluate(() => { document.querySelectorAll('details').forEach(x => { x.open = true; }); });
-  const scroll = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  // la scheda scelta resta cambiando partita, e «In breve» segue la partita a schermo
+  const schedaTenuta = await page.evaluate(async () => { if (typeof schedaVai !== 'function') return true; schedaVai('tabellone', false);
+    giornataPasso(1); while (GIORNATA.corre) await new Promise(r => setTimeout(r, 50)); const k = window.__SCHEDA;
+    giornataPasso(-1); while (GIORNATA.corre) await new Promise(r => setTimeout(r, 50)); return k === 'tabellone' && window.__SCHEDA === 'tabellone'; });
+  const inBreve = await page.evaluate(INBREVE);
+  const { scroll, compatte } = await page.evaluate(MISURA);
   const righe = await page.evaluate(() => document.querySelectorAll('#giornata-bar .g-row').length);
   const log = page.__log.filter(l => !/CONSOLE/.test(l));
   await page.context().close();
-  return { lista, diversi, giri, passi, righe, scroll, log, rotto: /NaN|undefined|Infinity/.test(html), prompt: pr.length, promptRotto: /NaN|undefined|Infinity|@@/.test(pr) };
+  return { lista, diversi, giri, passi, righe, scroll, compatte, schedaTenuta, inBreve, log, rotto: /NaN|undefined|Infinity/.test(html), prompt: pr.length, promptRotto: /NaN|undefined|Infinity|@@/.test(pr) };
 }
 
 async function comparatorePage(browser, base, engineText) {
@@ -676,13 +702,16 @@ if (require.main === module) (async () => {
   const scanner = await runScanner(browser, base, day, null);
   const sLog = scanner.log.filter(l => !/CONSOLE/.test(l));
   console.log(`Scanner: ${day.length} partite in ${Math.round((Date.now() - t0) / 1000)}s · log ${sLog.slice(0, 5).join(' | ') || 'pulito'}`
-            + (process.env.MOBILE ? ` · scorrimento laterale ${scanner.scroll}px (con ${scanner.chiuse} card aperte) · tabelle compatte che escono di lato: `
+            + (process.env.MOBILE ? ` · scorrimento laterale ${scanner.scroll}px (con ${scanner.chiuse} card aperte, ${scanner.schede} schede) · tabelle compatte e riquadri che escono di lato: `
                                     + (scanner.compatte.length ? JSON.stringify(scanner.compatte) : 'nessuna') : ''));
   console.log('   sottotitolo:', recMap(scanner.runs[day[0].id].rec)['ui-subtitle']);
   // il mega-prompt non passa da safeTxt/safeHtml: si controlla a parte che non sia vuoto o rotto
   const P = day.map(m => scanner.runs[m.id].prompt), pRotti = P.filter(x => x.rotto);
   console.log(`   mega-prompt: ${Math.min(...P.map(x => x.n))}-${Math.max(...P.map(x => x.n))} caratteri`
     + (pRotti.length ? ' · ROTTO: ' + JSON.stringify(pRotti.map(x => x.rotto)) : ' · niente NaN, undefined o vuoti'));
+  const IB = day.map(m => Object.assign({ id: m.id }, scanner.runs[m.id].inBreve)), ibRotti = IB.filter(x => !x.ok || x.rotto);
+  console.log(`   in breve: ${IB.map(x => `${x.pick}${x.quote ? ' con le quote' : ''}, ${x.proposte} proposte`).join(' · ')}`
+    + (ibRotti.length ? ' · ROTTO: ' + JSON.stringify(ibRotti) : ' · pick, proposte e sorpresa quelli a schermo, niente NaN'));
   const G = scanner.giocatori;
   const gRotti = G ? G.per.filter(x => x.rotto || x.righe < 2) : null;
   console.log('   giocatori: ' + (G ? `statistiche per ${G.dati[0]}/${G.partite[0]} e ${G.dati[1]}/${G.partite[1]} partite, ${G.per.length} mercati, righe per mercato ${Math.min(...G.per.map(x => x.righe))}-${Math.max(...G.per.map(x => x.righe))}`
@@ -701,7 +730,7 @@ if (require.main === module) (async () => {
     : x.rotto || x.segnaposto || x.righe !== (x.x ? 7 : 0) + [0, 3, 7][x.g] || x.conQuote !== x.x || x.sintesi !== x.x
       || x.golPrompt !== (x.g > 0) || x.golSintesi !== (x.g > 0) || x.goalPrompt !== (x.g === 2)
       || (x.g === 2 ? !(x.allineata < 1e-6) : x.allineata !== null)
-      || x.tabQuote !== (x.x ? (x.g === 2 ? 10 : 6) : 0) || x.tabNota !== x.x || x.tabMotore === x.x || !x.tabPrompt || !x.verdettiMotore
+      || x.tabQuote !== (x.x ? (x.g === 2 ? 10 : 6) : 0) || !x.ib || !x.ib.ok || x.ib.rotto || x.ib.quote !== x.x || x.tabNota !== x.x || x.tabMotore === x.x || !x.tabPrompt || !x.verdettiMotore
       || x.matNota !== (x.g === 2) || x.matMotore === (x.g === 2) || (x.g === 2 && !x.matAllineata)
       || (x.nome === 'il mercato contraddice il motore' && !x.avviso)) : null;
   console.log('   quote: ' + (Q ? `${Q.length} casi` + (qRotte.length ? ' · ROTTI: ' + JSON.stringify(qRotte)
@@ -711,14 +740,16 @@ if (require.main === module) (async () => {
     console.log(`   formazioni ${m.id}: casa ${f(L && L.H)} | trasf. ${f(L && L.A)}`);
     const T = scanner.runs[m.id].fatigue, g = F => F ? `riposo ${F.riposo} (lega ${F.riposoLega}), ${F.partite14} in 14 gg, coppa ${F.coppaPrima == null ? '-' : F.coppaPrima + ' fa'} / ${F.coppaDopo == null ? '-' : 'fra ' + F.coppaDopo}` : '-';
     console.log(`   stanchezza ${m.id}: casa ${g(T && T.H)} | trasf. ${g(T && T.A)}`); }
-  let fail = (sLog.length || (process.env.MOBILE && (scanner.scroll > 0 || scanner.compatte.length)) || !G || gRotti.length || pRotti.length || !Q || qRotte.length || qaRotte.length) ? 1 : 0;
+  let fail = (sLog.length || (process.env.MOBILE && (scanner.scroll > 0 || scanner.compatte.length)) || !G || gRotti.length || pRotti.length || ibRotti.length || !Q || qRotte.length || qaRotte.length) ? 1 : 0;
   const GI = await runGiornata(browser, base, cur, scanner.runs);
   const giOk = GI && GI.lista.length === cur.length && GI.lista.every((x, k) => x.id === cur[k].id && x.stato === 'fatta')
     && !GI.diversi.length && Object.keys(GI.giri).length === day.length && GI.righe === cur.length && !GI.rotto && !GI.promptRotto && !GI.log.length
-    && GI.passi.t[1] === GI.passi.v0 && GI.passi.t[0] !== GI.passi.v0 && GI.passi.titolo === GI.passi.atteso && (!process.env.MOBILE || GI.scroll <= 0);
+    && GI.passi.t[1] === GI.passi.v0 && GI.passi.t[0] !== GI.passi.v0 && GI.passi.titolo === GI.passi.atteso
+    && GI.schedaTenuta && GI.inBreve && GI.inBreve.ok && !GI.inBreve.rotto && (!process.env.MOBILE || (GI.scroll <= 0 && !GI.compatte.length));
   console.log('   giornata: ' + (!GI ? 'funzione assente' : `${GI.lista.length} partite trovate su ${cur.length} del turno (${GI.lista.map(x => x.stato).join(' ')}), `
     + `${Object.keys(GI.giri).length - GI.diversi.length} su ${Object.keys(GI.giri).length} rifatte coi bottoni identiche all'analisi singola (${Object.values(GI.giri)[0]} scritture ciascuna), avanti e indietro ${GI.passi.v0} -> ${GI.passi.t.join(' -> ')}`
-    + (process.env.MOBILE ? `, scorrimento laterale ${GI.scroll}px` : '') + (giOk ? '' : ' · FALLITA: ' + JSON.stringify({ lista: GI.lista, diversi: GI.diversi, passi: GI.passi, righe: GI.righe, rotto: GI.rotto, log: GI.log }).slice(0, 600))));
+    + ', la scheda resta cambiando partita, in breve segue la partita' + (process.env.MOBILE ? `, scorrimento laterale ${GI.scroll}px` : '')
+    + (giOk ? '' : ' · FALLITA: ' + JSON.stringify({ lista: GI.lista, diversi: GI.diversi, passi: GI.passi, righe: GI.righe, rotto: GI.rotto, schedaTenuta: GI.schedaTenuta, inBreve: GI.inBreve, compatte: GI.compatte, log: GI.log }).slice(0, 800))));
   if (!giOk) fail++;
 
   const results = {};

@@ -106,15 +106,15 @@ details.card[open]>summary .section-title::after{transform:rotate(-135deg) trans
 details.card[open]>summary+*{margin-top:16px}
 details.card>summary:hover{background:rgba(255,255,255,.015)}
 /* "come si legge": le spiegazioni lunghe stanno chiuse sotto il titolo */
-details.info{margin:-4px 0 14px;border:1px dashed var(--line2);border-radius:var(--radius-sm);background:rgba(255,255,255,.012)}
-details.info>summary{list-style:none;cursor:pointer;padding:9px 12px;font-size:12px;font-weight:650;color:var(--dim);
-  display:flex;align-items:center;gap:8px}
+details.info{margin:-6px 0 12px}
+details.info>summary{list-style:none;cursor:pointer;padding:4px 0;font-size:12px;font-weight:650;color:var(--dim);
+  display:flex;align-items:center;gap:7px}
 details.info>summary::-webkit-details-marker{display:none}
-details.info>summary::before{content:"i";width:18px;height:18px;border-radius:50%;display:grid;place-items:center;flex:none;
-  font:italic 700 11px Georgia,serif;color:var(--bg);background:var(--dim)}
-details.info>summary::after{content:"+";margin-left:auto;font-weight:700;font-size:15px;line-height:1}
-details.info[open]>summary::after{content:"\2212"}
-details.info>div{padding:0 12px 12px;font-size:12.5px;color:var(--dim);line-height:1.6}
+details.info>summary::before{content:"i";width:16px;height:16px;border-radius:50%;display:grid;place-items:center;flex:none;
+  font:italic 700 10px Georgia,serif;color:var(--bg);background:color-mix(in srgb,var(--accent) 55%,var(--dim))}
+details.info>summary::after{content:"\203A";font-weight:600;font-size:14px;line-height:1}
+details.info[open]>summary::after{content:"\2039"}
+details.info>div{padding:6px 0 4px 23px;font-size:12.5px;color:var(--dim);line-height:1.6}
 details.info>div b{color:var(--txt)}
 
 /* ---------- griglie ---------- */
@@ -177,9 +177,10 @@ textarea{min-height:0;font-size:12px}
 #console-loader:empty{display:none}
 
 /* ---------- testata della partita ---------- */
-.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
-.toolbar .btn{flex:0 0 auto}
-#cache-info{flex:1 1 200px;font-size:12px;color:var(--dim);line-height:1.45}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.toolbar .btn{flex:0 0 auto;min-height:36px}
+.memoria{font-size:12px;color:var(--dim);line-height:1.5;margin:6px 2px 14px}
+.memoria:empty{display:none}
 .match-hero{position:relative;overflow:hidden;text-align:center;padding:26px 18px 22px;margin-bottom:14px;border-radius:22px;
   border:1px solid var(--line);
   background:
@@ -188,7 +189,11 @@ textarea{min-height:0;font-size:12px}
     linear-gradient(180deg,#121925,#0d1219)}
 .match-hero .eyebrow{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
 #ui-title{font-size:30px !important;font-weight:850;letter-spacing:-.035em;line-height:1.1;color:var(--txt)}
-#ui-streak{margin:14px 0 10px;display:flex;justify-content:center;gap:12px;align-items:center;flex-wrap:wrap}
+#ui-streak{margin:14px auto 10px;display:grid;gap:7px;width:max-content;max-width:100%}
+.fs-riga{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
+.fs-n{font-size:12.5px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
+.fs-h{color:var(--home)} .fs-a{color:var(--away)}
+.fs-p{flex:none;white-space:nowrap}
 #ui-subtitle{font-size:12.5px;color:var(--dim)}
 
 /* ---------- navigazione per sezioni ---------- */
@@ -200,7 +205,8 @@ textarea{min-height:0;font-size:12px}
   border:1px solid var(--line2);background:var(--panel);transition:.15s;white-space:nowrap}
 .secnav a:hover{color:var(--txt);border-color:#3a4659}
 .secnav a.on{color:#03140e;background:linear-gradient(135deg,#1fd1a5,#4b8dff);border-color:transparent}
-.group-head{display:flex;align-items:baseline;gap:10px;margin:34px 2px 14px}
+.fuori-scheda{display:none !important}
+.group-head{display:none}
 .group-head h3{font-size:20px;font-weight:850;letter-spacing:-.03em}
 .group-head span{font-size:12.5px;color:var(--dim)}
 
@@ -229,6 +235,66 @@ textarea{min-height:0;font-size:12px}
 .sorpresa.s-alto{border-color:rgba(255,93,108,.55);background:rgba(255,93,108,.08)}.sorpresa.s-alto .sorpresa-t{color:var(--err)}
 .sorpresa.s-medio{border-color:rgba(245,183,59,.45);background:rgba(245,183,59,.07)}.sorpresa.s-medio .sorpresa-t{color:var(--warn)}
 .sorpresa.s-basso .sorpresa-t{color:var(--ok)}
+.inset:has(> #hidden-value-msg:empty){display:none}
+
+/* ---------- in breve (b66): quello che serve per decidere ---------- */
+.in-breve{background:
+    radial-gradient(420px 160px at 0% 0%,rgba(31,209,165,.16),transparent 70%),
+    radial-gradient(420px 160px at 100% 0%,rgba(75,141,255,.18),transparent 70%),
+    linear-gradient(180deg,#121925,#0d1219) !important;border-color:rgba(31,209,165,.28);--c:var(--accent2)}
+#in-breve-box:empty::before{content:"Analisi in corso...";font-size:12.5px;color:var(--dim)}
+.ib-lab{font-size:11px;font-weight:750;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
+.ib-pick{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:0 12px}
+.ib-pick .ib-lab{grid-column:1 / -1}
+.ib-big{font-size:34px;font-weight:900;letter-spacing:-.04em;line-height:1;color:var(--home);min-width:0}
+.ib-big span{display:block;font-size:14px;font-weight:650;letter-spacing:0;color:var(--txt);margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ib-pp{font-size:30px;font-weight:850;letter-spacing:-.04em;text-align:right;line-height:1;font-variant-numeric:tabular-nums}
+.ib-pp small{display:block;font-size:11.5px;font-weight:500;letter-spacing:0;color:var(--dim);margin-top:6px}
+.ib-soglia{font-size:12.5px;color:var(--dim);line-height:1.5;margin-top:10px}
+.ib-soglia b{color:var(--txt)}
+.ib-riga{display:flex;align-items:center;gap:4px 8px;flex-wrap:wrap;margin-top:12px;padding:10px 12px;border-radius:12px;
+  background:var(--panel2);border:1px solid var(--line);font-size:13px;color:var(--txt)}
+.ib-riga i{width:9px;height:9px;border-radius:50%;flex:none;background:var(--ok);box-shadow:0 0 0 4px rgba(47,216,138,.15)}
+.ib-riga span{color:var(--dim)}
+.ib-s-medio i{background:var(--warn);box-shadow:0 0 0 4px rgba(245,183,59,.15)} .ib-s-medio b{color:var(--warn)}
+.ib-s-alto{border-color:rgba(255,93,108,.5);background:rgba(255,93,108,.08)} .ib-s-alto i{background:var(--err);box-shadow:0 0 0 4px rgba(255,93,108,.15)} .ib-s-alto b{color:var(--err)}
+.ib-s-basso b{color:var(--ok)}
+.ib-p{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;padding:9px 0;color:var(--txt);border-top:1px solid rgba(255,255,255,.06)}
+.ib-lab+.ib-p{border-top:0}
+.ib-p b{font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ib-pv{font-size:16px;font-weight:850;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.ib-niente{font-size:12.5px;color:var(--dim);padding:4px 0}
+.ib-f b{color:var(--txt)}
+.ib-f::after{content:"\203A";margin-left:auto;color:var(--dim)}
+.qd{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--warn);vertical-align:middle;margin-left:4px}
+
+/* ---------- tabellone a elenco (b66) ---------- */
+.lnota{font-size:12.5px;line-height:1.5;color:var(--dim);margin:0 0 12px;padding:9px 12px;border-radius:12px;
+  background:rgba(31,209,165,.07);border:1px solid rgba(31,209,165,.25)}
+.lnota b{color:var(--accent2)}
+.lnota-w{background:rgba(245,183,59,.07);border-color:rgba(245,183,59,.35)} .lnota-w b{color:var(--warn)}
+.qnota>summary b{color:var(--warn)}
+.tv-lista{display:grid;gap:8px}
+.tv{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:11px 13px}
+.tv-ok{background:linear-gradient(180deg,rgba(34,197,94,.11),rgba(34,197,94,.05));border-color:rgba(47,216,138,.28)}
+.tv-top{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.tv-n{font-weight:750;font-size:14.5px;min-width:0}
+.tv-n small{display:block;font-weight:500;font-size:12px;color:var(--dim);margin-top:1px}
+.tv-p{font-size:22px;font-weight:850;letter-spacing:-.03em;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.tv-p small{display:block;font-size:11px;font-weight:500;color:var(--dim);letter-spacing:0}
+.tv-bot{display:flex;align-items:center;gap:6px 10px;margin-top:8px;flex-wrap:wrap}
+.tv-r{font-size:12.5px;color:var(--dim);min-width:0} .tv-r b{color:var(--txt)} .tv-r i{font-style:normal;color:var(--faint)}
+.tv-r em{font-style:normal;font-weight:650;color:var(--warn)}
+.tv-vuoto{font-size:13px;color:var(--dim);padding:12px 13px;border:1px solid var(--line);border-radius:14px;background:var(--panel2)}
+.tv-altri{margin-top:4px}
+.tv-altri>summary{list-style:none;cursor:pointer;font-size:12px;font-weight:650;color:var(--dim);padding:8px 2px}
+.tv-altri>summary::-webkit-details-marker{display:none}
+.tv-altri>summary::after{content:" \203A"}
+.tv-altri[open]>summary::after{content:" \2039"}
+.tv-mini{display:grid;grid-template-columns:minmax(0,1fr) auto 52px;gap:10px;align-items:baseline;padding:6px 2px;
+  font-size:12.5px;color:var(--dim);border-top:1px solid rgba(255,255,255,.05);font-variant-numeric:tabular-nums}
+.tv-mini span:first-child{color:var(--txt);min-width:0}
+.tv-mini span:last-child{text-align:right}
 
 /* ---------- la giornata (b65) ---------- */
 #dashboard-area.g-attesa>:not(.toolbar):not(#giornata-bar){display:none}
@@ -238,8 +304,12 @@ textarea{min-height:0;font-size:12px}
 .g-cur{flex:1;min-width:0;text-align:center}
 .g-cur b{display:block;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .g-cur small{display:block;font-size:11.5px;color:var(--dim)}
-.g-sint{font-size:12.5px;color:var(--dim);line-height:1.55;margin-top:10px}
-.g-sint b{color:var(--txt)}
+.g-stat{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
+.g-stat>div{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:9px 6px 8px;text-align:center;min-width:0}
+.g-stat b{display:block;font-size:20px;font-weight:850;letter-spacing:-.03em;line-height:1.1}
+.g-stat b small{font-size:12px;color:var(--dim);font-weight:700}
+.g-stat span{font-size:11px;color:var(--dim)}
+.g-stat .al b{color:var(--err)} .g-stat .ok b{color:var(--ok)}
 .g-prog{height:5px;border-radius:99px;background:var(--panel3);overflow:hidden;margin:12px 0 6px}
 .g-prog i{display:block;height:100%;background:linear-gradient(90deg,#1fd1a5,#4b8dff);transition:width .3s}
 .g-stato{font-size:12px;color:var(--dim);line-height:1.5}
@@ -263,7 +333,7 @@ textarea{min-height:0;font-size:12px}
 .g-sq{font-weight:700;font-size:13.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .g-ora{font-size:11px;color:var(--dim);white-space:nowrap}
 .g-det{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:5px 10px;align-items:center;min-width:0;font-size:12px;color:var(--dim)}
-.g-det b{color:var(--txt)}
+.g-det b{color:var(--dim);font-weight:650} .g-det b.g-max{color:var(--txt);font-weight:850}
 .g-bar{display:flex;width:64px;height:6px;border-radius:99px;overflow:hidden;flex:none}
 .g-bar i:nth-child(1){background:var(--home)}.g-bar i:nth-child(2){background:var(--draw)}.g-bar i:nth-child(3){background:var(--away)}
 .g-chip{font-size:11px;font-weight:700;padding:1px 8px;border-radius:99px;border:1px solid var(--line2);white-space:nowrap}
@@ -296,8 +366,6 @@ textarea{min-height:0;font-size:12px}
 .td-highlight-red{color:var(--away);font-weight:700}
 .n-badge{color:var(--faint)}
 .vchip{display:inline-block;color:#fff;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:800;letter-spacing:.02em;white-space:nowrap}
-.vrende{font-size:12.5px;margin-top:5px}
-.vnota{font-size:11.5px;color:var(--dim);margin-top:2px;line-height:1.35}
 
 /* ---------- elementi del motore ---------- */
 .odds-box{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center}
@@ -443,13 +511,10 @@ textarea{min-height:0;font-size:12px}
   details.card>summary .section-title .t{grid-row:1;grid-column:2}
   details.card>summary .section-title .scope{display:inline-block;grid-row:2;grid-column:2;justify-self:start}
   details.card>summary .section-title::after{grid-row:1/span 2;grid-column:3;margin-left:0;justify-self:end}
-  #verdetti-body td{white-space:normal !important}
   .vchip{font-size:10.5px;padding:3px 8px}
   .brand-sub{display:none}
   #ui-title{font-size:25px !important}
   .match-hero{padding:22px 14px 18px}
-  .group-head{margin:28px 2px 12px}
-  .group-head h3{font-size:18px}
   .prob-tile .prob-val{font-size:25px}
   .prob-grid{gap:8px}
 
@@ -465,7 +530,6 @@ textarea{min-height:0;font-size:12px}
   [style*="font-size:32px"],[style*="font-size: 32px"]{font-size:24px !important}
   [style*="width:"]{max-width:100% !important}
   .odds-val{font-size:19px}
-  .toolbar .btn{flex:1 1 100%}
   #btn-carica,#btn-avvia{width:100%}
 }
 </style>
@@ -478,7 +542,7 @@ textarea{min-height:0;font-size:12px}
       <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#03140e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-6 4 3 7-8"/><path d="M15 6h4v4"/></svg></div>
       <div style="min-width:0"><h1>Scanner</h1><div class="brand-sub">Motore V9.7 &middot; probabilit&agrave; calibrate sul backtest</div></div>
     </div>
-    <span class="pill pill-build" id="build-ver">build 0905-b65</span>
+    <span class="pill pill-build" id="build-ver">build 0905-b66</span>
   </div>
 </header>
 
@@ -514,7 +578,6 @@ textarea{min-height:0;font-size:12px}
   <div id="dashboard-area" style="display:none">
     <div class="toolbar">
       <button class="btn btn-ghost btn-sm" id="btn-nuova" onclick="nuovaPartita()">&#8592; Cambia partita</button>
-      <div id="cache-info"></div>
     </div>
 
     <section class="card giornata c-teal" id="giornata-bar" style="display:none"></section>
@@ -527,10 +590,15 @@ textarea{min-height:0;font-size:12px}
     </div>
 
     <nav class="secnav" id="nav-sezioni" aria-label="Sezioni">
-      <a href="#giornata-bar" id="nav-giornata" hidden>Giornata</a><a href="#sez-verdetto">Verdetto</a><a href="#card-quote">Quote</a><a href="#card-verdetti">Tabellone</a><a href="#card-ambiti">Ruolo e generale</a><a href="#card-formazioni">Formazioni</a><a href="#card-giocatori">Giocatori</a><a href="#sez-perche">Statistiche</a><a href="#sez-mercati">Mercati</a><a href="#sez-prompt">Prompt</a><a href="#sez-dati">Dati</a>
+      <a href="#" data-k="partita" class="on">Partita</a><a href="#" data-k="tabellone">Tabellone</a><a href="#" data-k="squadre">Squadre</a><a href="#" data-k="statistiche">Statistiche</a><a href="#" data-k="mercati">Mercati</a><a href="#" data-k="prompt">Prompt</a><a href="#" data-k="dati">Dati</a>
     </nav>
 
-    <!-- STEP 3: il verdetto -->
+    <!-- STEP 3: in breve, e il verdetto -->
+    <section class="card in-breve" id="in-breve">
+      <div class="section-title"><span class="ico">&#9889;</span><span class="t">In breve<small>Quello che serve per decidere; i dettagli sono nelle schede</small></span></div>
+      <div id="in-breve-box"></div>
+    </section>
+
     <section class="card" id="sez-verdetto">
       <div class="section-title"><span class="ico">&#127919;</span><span class="t">Il verdetto 1X2<small>Ensemble del motore e quote eque</small></span></div>
       <div class="prob-grid">
@@ -553,7 +621,7 @@ textarea{min-height:0;font-size:12px}
       </div></details>
       <div class="inset" style="margin-top:14px">
         <div class="sub-title" style="margin:0 0 6px">Scarti fuori soglia fra le due squadre</div>
-        <div id="hidden-value-msg" style="font-size:13px;line-height:1.5">--</div>
+        <div id="hidden-value-msg" style="font-size:13px;line-height:1.5"></div>
       </div>
       <details class="info" style="margin:14px 0 0"><summary>Come nasce questo numero</summary><div>
         Sintesi pesata dei motori (Dixon-Coles su NPxG 70%, Markov 30%, su lambda stimati su TUTTE le partite; l'Ordered
@@ -613,13 +681,7 @@ textarea{min-height:0;font-size:12px}
       </div></details>
       <div id="league-note"></div>
       <div id="verdetti-quote"></div>
-      <div class="tbl-scroll"><table class="table-ui table-compact">
-        <thead><tr>
-          <th style="text-align:left">Mercato</th><th>Prob. &middot; lega</th>
-          <th style="text-align:left;white-space:normal">Scarto &middot; quanto rende</th>
-        </tr></thead>
-        <tbody id="verdetti-body"></tbody>
-      </table></div>
+      <div id="verdetti-body" class="tv-lista"></div>
     </section>
 
     <section class="card c-blue" id="card-ambiti">
@@ -1007,7 +1069,6 @@ textarea{min-height:0;font-size:12px}
       <button class="btn btn-dark" style="margin-bottom:12px" onclick="copiaPrompt()">Copia il mega-prompt</button>
       <textarea id="ai-prompt" readonly rows="18"></textarea>
     </section>
-    <div class="g-fondo" id="giornata-fondo" style="display:none"></div>
 
     <!-- STEP 7: diagnostica -->
     <div class="group-head" id="sez-dati"><h3>Dati</h3><span>copertura dell'API e partite usate</span></div>
@@ -1026,6 +1087,8 @@ textarea{min-height:0;font-size:12px}
         <div class="log-box"><table class="table-ui" id="table-log-away"></table></div>
       </div>
     </details>
+    <div id="cache-info" class="memoria"></div>
+    <div class="g-fondo" id="giornata-fondo" style="display:none"></div>
   </div>
 </main>
 
@@ -1131,7 +1194,7 @@ function nuovaPartita() {
   if (b) { b.disabled = false; b.innerHTML = 'Analizza la partita'; }
   if (GIORNATA) { _quoteSalva(GIORNATA.vista); if (GIORNATA.corre) GIORNATA.stop = 'esci'; GIORNATA.vista = -1; }
   svuotaQuote();
-  renderGiornata();
+  renderGiornata(); schedaVai('partita', false);
   window.scrollTo({ top: 0, behavior: 'smooth' });
   const sh = document.getElementById('sel-home');
   if (sh) try { sh.focus({ preventScroll: true }); } catch (e) {}
@@ -1343,14 +1406,13 @@ function _rigaGiornata(x, i, on, blocca) {
   let det;
   if (x.stato === 'fatta') {
     const P = x.quote ? x.quote.p : x.p, k = P.indexOf(Math.max(...P)), nomi = ['1', 'X', '2'], S = x.sorpresa;
-    const T = x.quote ? x.quote.top : x.top, buone = x.quote ? x.quote.buone : x.buone;
+    const T = x.quote ? x.quote.top : x.top;
     det = `<span class="g-bar"><i style="width:${(100 * x.p[0]).toFixed(1)}%"></i><i style="width:${(100 * x.p[1]).toFixed(1)}%"></i><i style="width:${(100 * x.p[2]).toFixed(1)}%"></i></span>`
-      + `<span>1 <b>${pc(x.p[0])}</b> &middot; X <b>${pc(x.p[1])}</b> &middot; 2 <b>${pc(x.p[2])}</b></span>`
-      + `<span>pick <b>${nomi[k]}</b> ${(100 * P[k]).toFixed(1)}%${x.quote ? ' con le quote' : ''}</span>`
+      + `<span>${[0, 1, 2].map(j => `${nomi[j]} <b${x.p[j] === Math.max(...x.p) ? ' class="g-max"' : ''}>${pc(x.p[j])}</b>`).join(' &middot; ')}</span>`
+      + (x.quote ? `<span>con le quote <b class="g-max">${nomi[k]}</b> ${(100 * P[k]).toFixed(1)}%</span>` : '')
       + (S.liv !== 'basso' ? `<span class="g-chip s-${S.liv}">sorpresa ${S.liv === 'alto' ? 'ALTA' : 'media'}</span>` : '')
       + (T ? `<span class="g-chip ${T.verdetto === 'MARGINALE' ? 'v-marg' : 'v-ok'}">${e(T.nome)} ${T.verdetto}</span>`
-           : '<span>niente con verdetto</span>')
-      + (buone > 1 ? `<span>${buone} FORTI o GIOCABILI</span>` : '');
+           : '<span>niente con verdetto</span>');
   } else if (x.stato === 'corre') det = '<span>analisi in corso&hellip;</span>';
   else if (x.stato === 'errore') det = `<span style="color:var(--warn)">non analizzata: ${e(x.motivo || '')}</span>`;
   else det = '<span>in attesa</span>';
@@ -1359,14 +1421,63 @@ function _rigaGiornata(x, i, on, blocca) {
     + `<span class="g-sq">${e(x.hName)} &ndash; ${e(x.aName)}</span><span class="g-ora">${e(_quandoG(x))}</span>`
     + `<span class="g-det">${det}</span></button>`;
 }
+function renderInBreve() {
+  if (typeof document === 'undefined') return;
+  const box = document.querySelector('#in-breve-box');
+  if (!(box instanceof Element)) return;
+  const E = window.__ESITO, C = window.__QUOTE_CTX;
+  if (!E || !C) { box.innerHTML = ''; return; }
+  const e = _escHtml, P = window.__QUOTE_P, pr = P || E.p, im = pr.indexOf(Math.max(...pr)), pp = 100 * pr[im];
+  const nomi = ['1', 'X', '2'], chi = [`vince ${e(C.hName)}`, 'pareggio', `vince ${e(C.aName)}`];
+  const lId = (document.getElementById('sel-league') || {}).value || '';
+  let soglia;
+  if (P) { const S = QUOTE_RESA.soglie.find(x => pp >= x[0]);
+    soglia = S ? `Sopra il ${S[0]}%: con le quote il pick esce il <b>${S[1].toFixed(1)}%</b> (${S[2]}% delle partite).` : 'Sotto il 50%: con le quote esce meno di una volta su due.'; }
+  else if (PICK_RESA.leghe.includes(lId)) { const S = PICK_RESA.soglie.find(x => pp >= x[0]);
+    soglia = S ? `Sopra il ${S[0]}%: nei cinque campionati il pick esce il <b>${S[1].toFixed(1)}%</b> (${S[2]}% delle partite).` : 'Sotto il 50%: esce meno di una volta su due.'; }
+  else if (PICK_RESA.fuori[lId]) { const M = PICK_RESA.fuori[lId];
+    soglia = pp >= 55 ? `Sopra il 55%: in ${M[0]} il pick esce il <b>${M[3].toFixed(1)}%</b> (${M[4]}% delle partite).` : `In ${M[0]} il pick esce il ${M[2].toFixed(1)}% su tutte le partite.`; }
+  else soglia = 'Lega mai misurata: la resa del pick qui non si conosce.';
+  const S = E.sorpresa, liv = S.liv, sf = S.fav === 1 ? C.aName : C.hName;
+  const V = (window.__VERDETTI_QUOTE || window.__VERDETTI || []).filter(v => v.guad != null).slice(0, 3);
+  const col = v => v === 'FORTE' ? '#0f766e' : v === 'GIOCABILE' ? '#2d7d32' : '#f57c00';
+  const L = window.__LINEUP_DEBUG, F = L && L.H && L.A && L.H.disponibile && L.A.disponibile ? L : null;
+  box.innerHTML = `<div class="ib-pick"><div class="ib-lab">Pick ${P ? 'con le quote' : 'del motore'}</div>`
+    + `<div class="ib-big">${nomi[im]}<span>${chi[im]}</span></div>`
+    + `<div class="ib-pp">${pp.toFixed(1)}%<small>${P ? 'motore ' + (100 * E.p[im]).toFixed(1) + '%' : 'quota equa ' + (1 / pr[im]).toFixed(2)}</small></div></div>`
+    + `<div class="ib-soglia">${soglia}</div>`
+    + `<div class="ib-riga ib-s-${liv}"><i></i><b>Rischio sorpresa ${liv === 'alto' ? 'ALTO' : liv}</b><span>${e(sf)} al ${(100 * S.pU).toFixed(1)}%${S.dis === true ? ', modello ed Elo in disaccordo' : ''}</span></div>`
+    + `<div class="ib-lab" style="margin-top:16px">Le proposte migliori</div>`
+    + (V.length ? V.map(v => `<a href="#" class="ib-p" onclick="schedaVai('tabellone');return false"><span class="vchip" style="background:${col(v.verdetto)}">${v.verdetto}</span>`
+        + `<b>${v.nome}${v.quote ? '<i class="qd" title="con le quote"></i>' : ''}</b><span class="ib-pv">${(100 * v.p).toFixed(1)}%</span></a>`).join('')
+      : '<div class="ib-niente">Niente di giocabile: nessun mercato arriva a +5 di scarto.</div>')
+    + (F ? `<a href="#" class="ib-riga ib-f" onclick="schedaVai('squadre');return false"><b>Formazioni ${F.H.confermata && F.A.confermata ? 'confermate' : 'probabili'}</b>`
+        + `<span>${e(C.hName)} ${F.H.abitualiAssenti ?? '?'} assenti &middot; ${e(C.aName)} ${F.A.abitualiAssenti ?? '?'}</span></a>` : '');
+}
+
+function schedaVai(k, sposta) {
+  if (typeof document === 'undefined') return;
+  const dash = document.querySelector('#dashboard-area'), nav = document.querySelector('#nav-sezioni');
+  if (!(dash instanceof Element) || !(nav instanceof Element)) return;
+  window.__SCHEDA = k;
+  [...dash.children].forEach(el => { if (el.dataset.scheda) el.classList.toggle('fuori-scheda', el.dataset.scheda !== k); });
+  let on = null;
+  nav.querySelectorAll('a[data-k]').forEach(a => { a.classList.toggle('on', a.dataset.k === k); if (a.dataset.k === k) on = a; });
+  if (on && nav.scrollWidth > nav.clientWidth) nav.scrollTo({ left: on.offsetLeft - nav.clientWidth / 2 + on.offsetWidth / 2, behavior: 'smooth' });
+  if (sposta === false) return;
+  const hero = document.querySelector('.match-hero'), bar = document.querySelector('.appbar');
+  if (!(hero instanceof Element)) return;
+  const y = hero.getBoundingClientRect().bottom + window.scrollY - (bar instanceof Element ? bar.offsetHeight : 0);
+  if (window.scrollY > y) window.scrollTo({ top: y });
+}
+
 function renderGiornata() {
   if (typeof document === 'undefined') return;
-  const bar = document.querySelector('#giornata-bar'), fondo = document.querySelector('#giornata-fondo'), nav = document.querySelector('#nav-giornata');
+  const bar = document.querySelector('#giornata-bar'), fondo = document.querySelector('#giornata-fondo');
   if (!(bar instanceof Element)) return;
   const G = GIORNATA, vis = !!G && (G.vista >= 0 || G.corre) && document.getElementById('dashboard-area').style.display !== 'none';
   bar.style.display = vis ? '' : 'none';
   if (fondo instanceof Element) fondo.style.display = vis && !G.corre && G.vista >= 0 ? '' : 'none';
-  if (nav instanceof Element) nav.hidden = !vis;
   if (!vis) return;
   const e = _escHtml, L = G.lista, n = L.length, fatte = L.filter(x => x.stato === 'fatta'), attesa = L.filter(x => x.stato === 'attesa').length;
   const o = _ordineGiornata(), ok = o.filter(j => L[j].stato === 'fatta'), k = ok.indexOf(G.vista), cur = L[G.vista];
@@ -1385,8 +1496,8 @@ function renderGiornata() {
       + `<span id="giornata-mem">${_memGiornata()}</span>${G.stop === 'ferma' ? ' Mi fermo dopo questa.' : ''}</div>`
       + (G.stop ? '' : '<div class="g-azioni"><button class="btn btn-sm" onclick="giornataFerma()">Ferma dopo questa</button></div>');
   } else {
-    h += `<div class="g-sint"><b>${fatte.length}</b> su ${n} analizzate &middot; sorpresa ALTA in <b>${alte}</b> &middot; con almeno una proposta FORTE o GIOCABILE <b>${conBuone}</b>.`
-      + ' Tocca una partita per aprirla: lo storico &egrave; gi&agrave; in memoria.</div>'
+    h += `<div class="g-stat"><div><b>${fatte.length}<small>/${n}</small></b><span>analizzate</span></div>`
+      + `<div class="al"><b>${alte}</b><span>sorpresa alta</span></div><div class="ok"><b>${conBuone}</b><span>con proposte forti</span></div></div>`
       + (attesa ? `<div class="g-azioni"><button class="btn btn-sm btn-green" onclick="giornataRiprendi()">Analizza le ${attesa} rimaste</button></div>` : '');
   }
   h += `<details class="g-tutte" id="giornata-tutte"${G.aperta === false ? '' : ' open'} ontoggle="GIORNATA&&(GIORNATA.aperta=this.open)">`
@@ -2778,14 +2889,13 @@ function aggiornaQuote() {
     if (G) { Object.assign(mk, { pOv: O.comb, pUn: 1 - O.comb, pGG: G.pGG, pNG: 1 - G.pGG }); ['pOv', 'pUn', 'pGG', 'pNG'].forEach(k => chiavi.add(k)); }
     const V = _vociVerdetti(mk, TV.base, TV.adv, chiavi), T = TAB_QUOTE_RESA;
     tb.innerHTML = _htmlVerdetti(V); window.__VERDETTI_QUOTE = V; tabTxt = _tabTesto(V);
-    if (tn) tn.innerHTML = '<div style="border-left:3px solid var(--orange);padding:8px 12px;margin-bottom:12px;background:rgba(255,255,255,.03);'
-      + 'border-radius:0 8px 8px 0;font-size:11px;line-height:1.55;color:var(--txt)"><b style="color:var(--orange)">Con le quote.</b> '
+    if (tn) tn.innerHTML = '<details class="info qnota"><summary><b>Con le quote.</b> ' + (G ? '1X2 e gol ricalcolati' : '1X2 ricalcolato') + '</summary><div>'
       + (G ? '1X2, doppie chance, Over/Under e Goal/NoGoal' : "1X2 e doppie chance (Over/Under e Goal restano del motore: mancano le quote dell'Over)")
-      + ` usano le probabilit&agrave; con le quote, e ogni riga dice quanto rende con le quote; corner, tiri e gialli restano del motore. `
+      + ` usano le probabilit&agrave; con le quote (segnate col punto arancione), e ogni riga dice quanto rende con le quote; corner, tiri e gialli restano del motore. `
       + `Su ${T.partite.toLocaleString('it-IT')} partite di ${T.leghe} leghe mai guardate prima la proposta in cima rende <b>+${T.quote.toFixed(1)}</b> punti sopra il giocarla `
       + `alla cieca, contro +${T.motore.toFixed(1)} del motore (meglio in ${T.meglio} leghe su ${T.leghe}; nei cinque campionati +${T.cinque[1].toFixed(1)} contro +${T.cinque[0].toFixed(1)}). `
       + `Non batte il bookmaker: le FORTE che hanno una quota, giocate alla chiusura, hanno perso l'${T.forte.toFixed(1)}%. `
-      + '<span style="color:var(--dim)">Cancella le quote per rivedere il tabellone del solo motore.</span></div>';
+      + 'Cancella le quote per rivedere il tabellone del solo motore.</div></details>';
   };
   const I1 = ['quota-1', 'quota-x', 'quota-2'], IO = ['quota-ov', 'quota-un'];
   const q = _quoteLette(I1), qo = _quoteLette(IO), scritte = ids => ids.some(id => { const el = document.getElementById(id); return el && String(el.value).trim() !== ''; });
@@ -2798,7 +2908,7 @@ function aggiornaQuote() {
     tabellone(null);
     scriviPrompt('', '');
     _matriceCard(calcDCMatrix(C.lam[0], C.lam[1], C.rho), C.hName, false);
-    window.__QUOTE_P = null; _giornataQuote();
+    window.__QUOTE_P = null; _giornataQuote(); renderInBreve();
     return;
   }
   const pc = x => (100 * x).toFixed(1) + '%';
@@ -2877,10 +2987,17 @@ function aggiornaQuote() {
     sez += `\n- Goal e Over/Under: senza le quote dell'Over restano quelli del motore (col solo 1X2 il Goal peggiora: misurato).`;
   }
   box.innerHTML = html;
+  const piccole = [...box.children].filter(e => e.tagName === 'DIV' && /font-size:\s*11px/.test(e.getAttribute('style') || ''));
+  if (piccole.length) {
+    const d = document.createElement('details'); d.className = 'info'; d.style.margin = '12px 0 0';
+    d.innerHTML = '<summary>Quanto valgono queste quote</summary><div></div>';
+    piccole.forEach(e => { e.removeAttribute('style'); d.lastChild.appendChild(e); });
+    box.appendChild(d);
+  }
   tabellone(P, Oq, Gq);
   _matriceCard(Aq || calcDCMatrix(C.lam[0], C.lam[1], C.rho), C.hName, !!Aq);
   scriviPrompt(sez, sint);
-  window.__QUOTE_P = P; _giornataQuote();
+  window.__QUOTE_P = P; _giornataQuote(); renderInBreve();
 }
 
 // Le quote automatiche (b55): i file di football-data.co.uk passano dal worker (strada /quote/,
@@ -3182,6 +3299,8 @@ function renderLeagueNote() {
   const box = document.getElementById('league-note'), sel = document.getElementById('sel-league');
   if (!box) return;
   const lId = sel ? sel.value : '';
+  const eb = document.querySelector('.match-hero .eyebrow');
+  if (eb instanceof Element) eb.textContent = (lId && (sel.options[sel.selectedIndex] || {}).text || 'Analisi') + ' \u00b7 pre-partita';
   if (!lId) { box.innerHTML = ''; return; }
   const M = PICK_RESA.cinque[lId] || PICK_RESA.fuori[lId];
   const nome = M ? M[0] : _escHtml((sel.options[sel.selectedIndex] || {}).text || 'Questa lega');
@@ -3189,9 +3308,7 @@ function renderLeagueNote() {
       + (PICK_RESA.cinque[lId] ? '' : '; le rese del tabellone qui sotto sono misurate sui cinque campionati')
       + `.<span style="color:var(--dim)"> Misurato su ${M[1]} partite, 2023/24&ndash;2025/26.</span>`
     : "lega mai misurata: soglie del pick e rese del tabellone vengono da altre leghe, prendile come indicative.";
-  box.innerHTML = '<div style="border-left:3px solid ' + (M ? '#0f766e' : '#f59e0b') + ';padding:10px 14px;margin-bottom:14px;'
-    + 'background:rgba(255,255,255,.03);border-radius:0 8px 8px 0;font-size:12px;line-height:1.6">'
-    + '<b style="color:' + (M ? '#0f766e' : '#f59e0b') + '">' + nome + '</b> &middot; ' + testo + '</div>';
+  box.innerHTML = '<div class="lnota' + (M ? '' : ' lnota-w') + '"><b>' + nome + '</b> &middot; ' + testo + '</div>';
 }
 
 // Per fascia di scarto e famiglia di mercato: [guadagno sopra il giocarlo sempre, 2se, proposte],
@@ -3279,26 +3396,20 @@ function _vociVerdetti(mk, base, adv, daQuote) {
 function _htmlVerdetti(voci) {
   const col = v => v === 'FORTE' ? '#0f766e' : v === 'GIOCABILE' ? '#2d7d32'
                  : v === 'MARGINALE' ? '#f57c00' : '#4b5563';
-  let html = '';
-  for (const v of voci) {
-    const ok = v.verdetto === 'FORTE' || v.verdetto === 'GIOCABILE';
-    const eTxt = v.edge == null ? '--' : (v.edge >= 0 ? '+' : '') + v.edge.toFixed(1);
-    html += '<tr' + (ok ? ' style="background:rgba(34,197,94,.10)"' : '') + '>'
-      + '<td style="text-align:left;font-weight:bold;white-space:nowrap">' + v.nome
-      +   '<div style="font-size:9px;color:var(--dim);font-weight:normal">' + v.desc + '</div>'
-      +   (v.quote ? '<div style="font-size:9px;color:var(--orange);font-weight:bold">con le quote</div>' : '') + '</td>'
-      + '<td style="white-space:nowrap"><b>' + (v.p*100).toFixed(1) + '%</b>'
-      +   '<div style="font-size:9px;color:var(--dim)">lega ' + (v.b == null ? '--' : (v.b*100).toFixed(0) + '%') + '</div></td>'
-      + '<td style="text-align:left">'
-      +   '<span class="vchip" style="background:' + col(v.verdetto) + '">'
-      +   (v.guad != null ? v.verdetto + ' ' + eTxt : v.edge == null ? v.verdetto : 'scarto ' + eTxt) + '</span>'
-      +   (v.guad != null
-           ? '<div class="vrende">rende <b>' + (v.guad >= 0 ? '+' : '') + v.guad.toFixed(1) + '</b> punti <span style="color:var(--dim)">&plusmn;'
-             + v.guadErr.toFixed(1) + '</span></div><div class="vnota">su ' + v.nOss + ' proposte ' + EDGE_FAMIGLIA_TXT[v.fam] + (v.quote ? ' con le quote' : '') + '</div>'
-           : '<div class="vnota">' + (v.edge == null ? 'archivio di lega troppo corto per un base rate'
-                               : 'sotto +5 di scarto: dentro il rumore') + '</div>')
-      + '</td></tr>';
-  }
+  const eT = v => v.edge == null ? '--' : (v.edge >= 0 ? '+' : '') + v.edge.toFixed(1);
+  const pc = x => (x * 100).toFixed(1) + '%', q = v => v.quote ? ' data-q="1"' : '';
+  const con = voci.filter(v => v.guad != null), senza = voci.filter(v => v.guad == null);
+  let html = con.map(v => '<div class="tv' + (v.verdetto === 'MARGINALE' ? '' : ' tv-ok') + '"' + q(v) + '>'
+      + '<div class="tv-top"><span class="tv-n">' + v.nome + '<small>' + v.desc + '</small></span>'
+      +   '<span class="tv-p">' + pc(v.p) + '<small>lega ' + (v.b == null ? '--' : (v.b * 100).toFixed(0) + '%') + '</small></span></div>'
+      + '<div class="tv-bot"><span class="vchip" style="background:' + col(v.verdetto) + '">' + v.verdetto + ' ' + eT(v) + '</span>'
+      +   '<span class="tv-r">rende <b>' + (v.guad >= 0 ? '+' : '') + v.guad.toFixed(1) + '</b> punti <i>&plusmn;' + v.guadErr.toFixed(1) + '</i> &middot; '
+      +   v.nOss + ' proposte ' + EDGE_FAMIGLIA_TXT[v.fam] + (v.quote ? ' <em>con le quote</em>' : '') + '</span></div></div>').join('');
+  if (!con.length) html += '<div class="tv-vuoto">Niente di giocabile: nessun mercato arriva a +5 di scarto dal base rate della lega.</div>';
+  if (senza.length) html += '<details class="tv-altri"><summary>Altri ' + senza.length + ' mercati senza verdetto: scarto sotto +5' + (senza.some(v => v.edge == null) ? ' o base di lega ignota' : ', dentro il rumore') + '</summary>'
+    + senza.map(v => '<div class="tv-mini"' + q(v) + '><span>' + v.nome + (v.quote ? '<i class="qd" title="con le quote"></i>' : '') + '</span><span>' + pc(v.p)
+      + ' &middot; lega ' + (v.b == null ? '--' : (v.b * 100).toFixed(0) + '%') + '</span><span>' + (v.edge == null ? 'base ignota' : eT(v)) + '</span></div>').join('')
+    + '</details>';
   return html;
 }
 
@@ -3310,7 +3421,7 @@ function _tabTesto(V) {
        + senza.map(v => v.nome + ' ' + (v.edge == null ? 'base ignota' : (v.edge >= 0 ? '+' : '') + v.edge.toFixed(1))).join(', ') : '');
 }
 
-window.__SCANNER_BUILD = '0905-b65';
+window.__SCANNER_BUILD = '0905-b66';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -4059,7 +4170,7 @@ async function avviaScanner() {
         hiddenValueMsg = `<strong>Dominio senza resa.</strong> ${Cap(artIl(hName))} ha ${f1(bcmH)} Big Chances sprecate a partita e punti sotto gli xG (${pytH.diff>0?'+':''}${f1(pytH.diff)} su ${pytH.n}, z=${f2(pytH.z)}). Uno scarto del genere in media rientra, ma non c'è una data: il modello non lo usa per prevedere.`;
         hiddenValueMsgClean = `${hName}: ${f1(bcmH)} Big Chances sprecate e ${f1(pytH.diff)} punti sotto gli xG (z=${f2(pytH.z)}).`;
     } else {
-        hiddenValueMsg = `Nessuno scarto sopra soglia fra le due squadre su flusso, qualità dei tiri e riaggressione.`;
+        hiddenValueMsg = '';
         hiddenValueMsgClean = `Nessuno scarto sopra soglia.`;
     }
 
@@ -4070,13 +4181,15 @@ async function avviaScanner() {
     // stampera' questi numeri: va detto qui, dove si decide.
     const _pendenti = globalLeagueMatchesCache.filter(m => m.league_id === lId && m.status !== 'finished'
       && typeof m.time_utc === 'string' && m.time_utc.slice(0, 10) < dateInput).length;
-    safeTxt('ui-title', `${hName} - ${aName}`); safeTxt('ui-subtitle', `Motore V9.7: Analisi Integrale su ${dH.overall.n} match (Simulazione al ${dateInput})`
+    const _giornoTxt = new Date(dateInput + 'T12:00:00Z').toLocaleDateString('it-IT', { weekday: 'long', day: '2-digit', month: '2-digit', timeZone: 'UTC' });
+    safeTxt('ui-title', `${hName} - ${aName}`); safeTxt('ui-subtitle', `${_giornoTxt.charAt(0).toUpperCase() + _giornoTxt.slice(1)} · storico di ${dH.overall.n} e ${dA.overall.n} partite`
       + (_pendenti ? ` · ⚠ ${_pendenti} partite di lega prima di questa data non risultano concluse nel database: se si sono gia' giocate, ricaricalo` : ''));
 
     const covOf = (team, key) => ((team.overall.coverage||{})[key]||0);
     const nd = (team, key, txt) => covOf(team, key) > 0 ? txt : 'N/D';
     const renderStreak = (arr) => arr.map(s => { let bg = s==='V' ? 'var(--green)' : (s==='S' ? 'var(--red)' : '#f57c00'); return `<span style="display:inline-block;width:18px;height:18px;line-height:18px;text-align:center;border-radius:50%;background:${bg};color:white;font-size:10px;font-weight:bold;margin:0 2px">${s}</span>`; }).join('');
-    safeHtml('ui-streak', `<div style="display:flex; align-items:center; gap:5px; min-width:0"><span style="font-size:11px;font-weight:bold;color:var(--blue);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${hName}</span> ${renderStreak(dH.overall.streak.slice().reverse())}</div><div style="font-size:12px;color:var(--dim)">vs</div><div style="display:flex; align-items:center; gap:5px; min-width:0">${renderStreak(dA.overall.streak.slice().reverse())} <span style="font-size:11px;font-weight:bold;color:var(--red);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${aName}</span></div>`);
+    safeHtml('ui-streak', `<div class="fs-riga"><span class="fs-n fs-h">${hName}</span><span class="fs-p">${renderStreak(dH.overall.streak.slice().reverse())}</span></div>`
+      + `<div class="fs-riga"><span class="fs-n fs-a">${aName}</span><span class="fs-p">${renderStreak(dA.overall.streak.slice().reverse())}</span></div>`);
 
     safeTxt('master-1', pct(m1)); safeTxt('master-x', pct(mX)); safeTxt('master-2', pct(m2));
     const _sorpresa = rischioSorpresa(m1, mX, m2, window.__ELO_DEBUG_OVER);
@@ -4767,23 +4880,11 @@ async function copiaPrompt() {
   };
   const m1 = document.getElementById('master-1');
   if (m1 instanceof Node && window.MutationObserver) new MutationObserver(barra).observe(m1, { childList: true, characterData: true, subtree: true });
-  const link = [...nav.querySelectorAll('a')], sez = link.map(a => document.getElementById(a.getAttribute('href').slice(1)));
-  let raf = 0, ora = -1;
-  const spia = () => {
-    raf = 0;
-    let k = -1;
-    sez.forEach((el, i) => { if (el && el.getClientRects().length && (k < 0 || el.getBoundingClientRect().top <= 150)) k = i; });
-    if (k === ora) return;
-    ora = k;
-    link.forEach((a, i) => a.classList.toggle('on', i === k));
-    const a = link[k];
-    if (a && nav.scrollWidth > nav.clientWidth) nav.scrollTo({ left: a.offsetLeft - nav.clientWidth / 2 + a.offsetWidth / 2, behavior: 'smooth' });
-  };
-  window.addEventListener('scroll', () => { if (!raf) raf = requestAnimationFrame(spia); }, { passive: true });
-  link.forEach(a => a.addEventListener('click', () => {
-    const el = document.getElementById(a.getAttribute('href').slice(1));
-    if (el && el.tagName === 'DETAILS') el.open = true;
-  }));
+  const dash = document.querySelector('#dashboard-area'), INIZIO = { 'in-breve': 'partita', 'card-verdetti': 'tabellone', 'card-ambiti': 'squadre', 'sez-perche': 'statistiche', 'sez-mercati': 'mercati', 'sez-prompt': 'prompt', 'sez-dati': 'dati' };
+  let cur = null;
+  if (dash instanceof Element) [...dash.children].forEach(el => { if (INIZIO[el.id]) cur = INIZIO[el.id]; if (el.id === 'giornata-fondo') cur = null; if (cur) el.dataset.scheda = cur; });
+  nav.querySelectorAll('a[data-k]').forEach(a => a.addEventListener('click', ev => { ev.preventDefault(); schedaVai(a.dataset.k); }));
+  schedaVai('partita', false);
 })();
 </script>
 </body>
