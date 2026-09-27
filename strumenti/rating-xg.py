@@ -9,6 +9,7 @@
 # dalla media dei rating delle squadre uscite. La prima stagione di ogni lega e' solo rodaggio.
 # Poi combina il log-odds 1 contro 2 del motore (lgTarget) col margine previsto:
 # lg' = a*lgTarget + b*margine + c. --allena stima a, b, c; --prova applica quelli di COEF e fa il test.
+# Esito: non passa. Esplorazione -5.53 per mille (z -3.95); test su dieci leghe -2.00 per mille (z -1.19), 5 su 10.
 import csv, io, os, re, sys, glob, math, collections
 import numpy as np
 

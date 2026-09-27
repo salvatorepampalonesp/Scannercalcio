@@ -189,11 +189,10 @@ Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export rec
   Over 2.5 + Goal −3.80‰ di logloss (`z = −2.99`), meglio in 6 leghe su 9; Over previsto 49.0 → 52.3%
   contro 52.8% reale, Goal 51.5 → 54.0% contro 53.8%. Peggiora dove il lambda era già alto
   (Argentina, gol/lambda 0.88). Vedi *Il livello dei gol: la regola*, «Esito».
-- [ ] **Il rating sugli xG: indovinare più partite.** L'Elo del motore è fatto sui gol. Un rating
-  delle squadre fatto sugli xG di tutte le partite della lega, combinato con l'1X2 del motore, sulle
-  dodici leghe già studiate fa −5.53‰ di logloss 1 contro 2 fuori lega (`z = −3.95`, 10 leghe su 12) e
-  +0.75 punti di prese; lo stesso rating fatto sui gol non aggiunge niente. Costa una chiamata a
-  `/stats` per ogni partita di lega. **Regola registrata**: vedi *Il rating sugli xG: la regola*.
+- [x] ~~**Il rating sugli xG: indovinare più partite.**~~ — **non passato.** Un rating delle squadre
+  sugli xG di tutte le partite di lega, combinato con l'1X2 del motore: sulle dodici leghe già studiate
+  −5.53‰ di logloss 1 contro 2 fuori lega (`z = −3.95`), sulle dieci leghe del test −2.00‰ (`z = −1.19`),
+  meglio in 5 su 10, prese ferme. Vedi *Il rating sugli xG: la regola*, «Esito».
 - [ ] **`LEAGUE_HALFLIFE_DAYS`** (oggi 0 = media piatta). È l'ultima ipotesi rimasta sul
   *livello* dei mercati gol: il lambda è inversamente proporzionale alla base di lega, e la
   base è una media piatta su tre stagioni (Premier: 3.041 contro 2.754 veri, −5% sul
@@ -3049,6 +3048,7 @@ misurate.
 | Peso e scala dell'Elo, secondo giro (0.40 / 2.00 sopra l'Elo corretto) | **no** (`b48`) | tre leghe mai viste: −0.00135, `z = −0.89`, Championship peggiore. Vedi *Peso e scala dell'Elo insieme* |
 | La coda alta della selezione contro le neopromosse (col `b48` il 10% più alto perde 2.9 punti sulle cinque leghe) | **non decisa, chiusa** (`b52`) | regola registrata sulle tre leghe nuove: −0.3 ±2.0 (confermata sotto −2se, smentita da 0 in su); otto leghe insieme −1.8 ±1.8, solo descrittivo. L'ingresso del `b48` resta. Vedi *Le tre leghe nuove col `b48`: la regola* |
 | Indovinare più risultati combinando tutto quello che il motore calcola (stacking, `b53`) | **no** (`b53`) | 12 leghe, 11.927 partite, addestrato su undici e misurato sulla dodicesima. Logistica sulle sole probabilità: +0.08 ±0.18 punti di prese; coi sei modelli, `lgModel`, `lgElo`, ΔElo e HFA (19 feature): +0.22 ±0.40, ma logloss −0.0029 (`z = −2.89`, una calibrazione, non prese); con 67 feature (lambda, tiri, pendenze, neopromosse, formazioni, riposo, classifica della stagione): −0.13 ±0.51, e comincia a giocare `X` (388 volte) perdendo; gradient boosting +0.30 ±0.55. La selezione nemmeno: 10 / 20 / 30 / 50% più sicuro +0.5 / +0.7 / −0.1 / +0.6 (±1.7 / 1.2 / 0.9 / 0.7). Il modello è calibrato (probabilità media del pick 51.7%, prese 51.0%): l'informazione del motore è sfruttata |
+| Un rating delle squadre sugli xG di tutte le partite di lega, combinato con l'1X2 (regola registrata) | **no** | esplorazione su dodici leghe −5.53‰ di logloss 1 contro 2 fuori lega (`z = −3.95`), +0.75 punti di prese; test su dieci leghe mai aperte −2.00‰ (`z = −1.19`), 5 leghe su 10, prese +0.00. Lo stesso rating sui gol non aggiunge niente; la media degli xG delle due squadre, anche corretta per l'Elo degli avversari, è il peso del modello visto da un'altra parte. Vedi *Il rating sugli xG: la regola* |
 | Il Goal con le sole quote dell'1X2 (matrice del motore inclinata a totale fermo) | **no** (`b57`) | registrato prima, dodici leghe: +0.00355 di logloss, `z = +4.36`, peggio in 9 leghe su 12. Senza le quote dell'Over il Goal resta del motore |
 | Battere il bookmaker con le quote di prima, il prezzo migliore o un sottoinsieme in cui il motore sa di più (ricerca registrata) | **no** | esplorazione 2023/24–2024/25, conferma 2025/26: il mercato non va dove dice il motore (pendenza 1 contro 2 +0.0098, `z = +1.10`); giocare il motore alle quote di prima CLV −6.5% (al prezzo migliore −1.3%); il prezzo migliore contro il consenso «passa» col CLV in proporzione (+15.1%) ma ricalibrato è −8.7%, ROI −34%; nessuna delle 27 fette ha il peso del motore positivo a `z ≥ 3`. Vedi *Battere il bookmaker: la regola della ricerca* |
 | Ricalibrare il Goal della matrice allineata con le quote (`σ(a + b·logit)`, stimata sulle undici leghe) | **no** (`b62`) | registrato prima, 4.849 partite mai viste: −0.0005 di logloss, `z = −0.57`, la League One peggiora. Lì il Goal allineato sta 2.0 punti sotto e la ricalibrazione lo porta 0.7 sopra |
@@ -3356,6 +3356,33 @@ sezione dice perché.
 **Descrittivi**, detti comunque: prese per lega; la selezione al 10 / 20 / 30 / 50% del calendario;
 logloss 1X2; quante volte vince lo sfavorito quando ha il 25, 30, 35% o più, col motore e col rating
 (è la base di un avviso di sorpresa: vedi la voce in *Da fare*).
+
+**Esito: non passa.** `python3 strumenti/rating-xg.py --prova batch/nuove batch/livello`, 6.509 partite
+(4.879 senza pari) delle dieci leghe, rodaggio escluso.
+
+| lega | senza pari | logloss 1 contro 2 | prese |
+|---|---|---|---|
+| Eliteserien | 371 | −9.82‰ | 53.1 → 54.3% |
+| League Two | 810 | −6.44‰ | 46.8 → 47.3% |
+| Süper Lig | 475 | −5.58‰ | 53.1 → 53.9% |
+| Liga MX | 373 | −5.45‰ | 52.9 → 52.3% |
+| MLS | 797 | −2.84‰ | 48.1 → 47.5% |
+| Bundesliga austriaca | 289 | +1.10‰ | 47.9 → 48.2% |
+| League One | 829 | +1.51‰ | 49.3 → 50.2% |
+| Superligaen | 283 | +1.83‰ | 51.0 → 50.5% |
+| Allsvenskan | 371 | +1.83‰ | 50.8 → 49.6% |
+| J. League | 281 | +11.72‰ | 49.2 → 46.6% |
+| **insieme** | 4.879 | **−2.00‰ (`z = −1.19`)** | 49.73 → 49.73% (±0.65) |
+
+Meglio in 5 leghe su 10 contro le 7 richieste, `z` lontano da −2, prese ferme: **resta tutto com'è.**
+L'effetto c'è ma è un terzo di quello dell'esplorazione, e cambia molto da lega a lega. Solo
+descrittivo, trovato dopo: stimati sulle dieci leghe i coefficienti sarebbero 0.57 sul motore e 0.67 sul
+margine (nell'esplorazione 0.31 e 1.04), e per lega il peso del margine va da −0.09 (J. League, che ha
+una sola stagione di rodaggio) a 1.66 (Eliteserien); rifatti fuori lega fra le dieci darebbero −2.13‰
+(`z = −1.92`). Logloss 1X2 −1.45‰ (`z = −1.15`); il 10 / 20 / 30 / 50% più sicuro del calendario 65.6 /
+62.6 / 60.2 / 56.2% col motore, 67.4 / 62.2 / 60.6 / 57.1% col rating. Lo sfavorito col 30% o più
+(32% delle partite) vince il 31.9% col motore (previsto 32.9), il 32.1% col rating (33.1): le sorprese
+il motore le conta già giuste.
 
 ## I gol
 
