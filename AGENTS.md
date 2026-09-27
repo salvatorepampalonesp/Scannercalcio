@@ -37,7 +37,10 @@ prevedere (`/matches/{id}/lineups`) e, se la partita non è nell'archivio di leg
 archivi di Champions, Europa e Conference League della stagione (tre chiamate, in memoria per
 la sessione), per contare il riposo vero. Dal `b45` lo Scanner chiede anche `/players` delle
 partite dello storico, ma solo quando si preme il bottone della card dei giocatori (una chiamata
-per partita, in memoria per la sessione): non fa parte del giro del motore. La documentazione dell'API
+per partita, in memoria per la sessione): non fa parte del giro del motore. Dal `b65` lo Scanner
+analizza anche una giornata intera: trova le partite del turno nell'archivio di lega e con
+`/date/{giorno}?status=all` (una chiamata per giorno, dai due giorni prima di oggi in avanti), poi
+fa il giro completo del motore su ognuna (vedi *La giornata*). La documentazione dell'API
 (51 pagine, settembre 2026) elenca anche statistiche per giocatore (`/players`,
 `/advanced/players`), tiri (`/shots`), `/h2h`, arbitro, heatmap e 42 leghe fra cui coppe e
 competizioni UEFA; nessuna quota dei bookmaker. Le quote 1X2 (card «Con le quote del mercato», dal
@@ -52,7 +55,7 @@ sono, le scrive l'utente. Per misurarle si usano gli stessi file (`strumenti/quo
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b64`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b65`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -352,7 +355,7 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b64`)
+## Stato attuale (`b65`)
 
 **1X2.** Col motore `b48` il pick azzecca il 52.7% (±1.4) contro il 43.0% del «gioca sempre in
 casa» sulle cinque leghe: 52.7% contro 40.2% in Serie A, 52.7% contro 43.1% in Premier, 53.2%
@@ -418,6 +421,13 @@ probabilità, uguale nelle dodici leghe dove è stato cercato e nelle altre dodi
 su sei: disaccordo e sfavorito al 25% o più) vuol dire sfavorito 33–39%, favorito 34–40%. Un rating
 sugli xG (vedi *Il rating sugli xG: la regola*) non passa il test e non anticipa le sorprese. Vedi
 *L'avviso di sorpresa*.
+
+**La giornata** (dal `b65`). Un bottone analizza tutte le partite del turno di una lega dalla data
+scelta, ognuna col giro completo dello Scanner; poi si passa dall'una all'altra coi bottoni, a
+cache calda (nessuna chiamata, un decimo di secondo sul banco). In cima un elenco con 1X2, pick,
+rischio sorpresa e proposta in cima al tabellone di ogni partita, da ordinare per orario, pick più
+sicuro o rischio sorpresa. Non cambia nessun numero: ogni partita stampa quello che stampa
+analizzata da sola (verificato dal banco, scrittura per scrittura). Vedi *La giornata*.
 
 **Il tetto, sulle dodici leghe** (11.927 partite, probabilità del `b48`). Il pick prende il 51.0%
 e la sua probabilità media è il 51.7%: il modello è calibrato, e con queste probabilità il 51% è
@@ -824,12 +834,21 @@ come misurati, da non ridiscutere.
 9. **Stanchezza** (riposo, partite in 14 giorni, coppe europee), dichiarata contesto: misurato,
    non migliora la previsione (vedi *La stanchezza*).
 
-**Le risposte chieste**: *IN SINTESI* (cinque righe: cosa giocare, quanto rende il suo tipo di
-mercato, «niente di giocabile» se non c'è niente, il pick e il rischio principale), *LA PARTITA*
-(otto righe), *PERCHÉ LE PROPOSTE* (una frase per proposta con verdetto), *RISCHI*. Le regole
-(niente risultati esatti, niente «certo/sicuro/esplosione/goleada», non mescolare ruolo e
-generale, N/D detto, stanchezza e fortuna solo contesto) stanno in un blocco che il prompt dice
-esplicitamente di non scrivere come sezione.
+**Le risposte chieste** (dal `b65`, senza limiti di righe): un'analisi completa, indicativamente
+700–1200 parole, dove ogni affermazione poggia su un numero del prompt. *IN SINTESI* (elenco breve:
+cosa giocare, quanto rende il suo tipo di mercato, «niente di giocabile» se non c'è niente, il pick
+e il rischio principale col livello del rischio sorpresa), *LA PARTITA* (più paragrafi: da dove
+viene il verdetto, ruolo contro generale ed Elo contro modello; il confronto reparto per reparto
+con le statistiche previste e le loro regole di affidabilità; qualità, cinismo e stile, e come si
+incastrano; ritmo, gol e mercati sui numeri), *PERCHÉ LE PROPOSTE* (qualche riga per proposta con
+verdetto: le statistiche che la portano e cosa la farebbe saltare), *COME PUÒ ANDARE* (due o tre
+scenari dal più probabile a quello della sorpresa, legati ai numeri e alle frequenze misurate del
+rischio sorpresa, senza probabilità inventate né risultati esatti), *RISCHI*. Fino al `b64` erano
+quattro sezioni con un tetto di righe (cinque, otto, una frase per proposta, quattro): l'utente le
+trovava troppo strette («un'analisi in 4 righe è un po' meh»). Le regole (niente risultati esatti,
+niente «certo/sicuro/esplosione/goleada», non mescolare ruolo e generale, N/D detto, stanchezza e
+fortuna solo contesto) stanno in un blocco che il prompt dice esplicitamente di non scrivere come
+sezione.
 
 **Cosa è uscito nel `b51`**, e perché: Ordered Logit e KNN (peso 0 nell'1X2: l'OL poteva dire
 `2` al 47% con un verdetto `1`), la correzione residuale spenta, le partite simili del KNN (due
@@ -950,6 +969,73 @@ il motore no. Chiesta dall'utente: «rendiamolo moderno».
   Per lo stesso motivo il banco apre tutte le `details` prima di misurare lo scorrimento e le
   tabelle compatte (25 `details` nella pagina dopo un'analisi dal `b64`).
 
+## La giornata
+
+**Cosa fa (`b65`).** Chiesto dall'utente: «un'opzione per calcolare l'intera giornata di una lega,
+sempre completa, con dei bottoni per cambiare partita». Nel passo 2 del setup, sotto «Analizza la
+partita», il bottone «Analizza tutta la giornata» (`analizzaGiornata`): trova le partite del turno
+dalla data scelta e fa su ognuna il giro completo dello Scanner, poi mostra la prima. Non cambia
+nessun numero: ogni partita stampa quello che stampa analizzata da sola.
+
+**Quali partite** (`listaGiornata`). Dalla data scelta si cerca la prima partita della lega, fino a
+quattro settimane avanti (le soste per le nazionali durano due); da quella si prendono sette giorni.
+Le partite vengono dall'archivio di lega e, per i giorni da due giorni prima di oggi in avanti
+(l'archivio può avere fino a 24 ore e ha solo le concluse), da `/date/{giorno}?status=all` (una
+chiamata per giorno, tenuta in `TARGET_CACHE`), filtrate per `league.id`, o per squadre del database
+se la risposta non dice la lega. Poi in ordine di orario, escluse le rinviate e annullate, **finché
+una squadra non gioca di nuovo**, al massimo metà delle squadre dell'ultima stagione in archivio. La
+data di ogni partita è quella UTC, come in `partitaBersaglio`. Sulla PitchAPI vera, Serie A
+2026/27: dal 18 settembre le 10 partite del turno del 18–20 (4 chiamate, archivio); dal 3 ottobre,
+in piena sosta, le 10 del 10–12 ottobre (17 chiamate). Con la prima versione, che teneva sette
+giorni dalla data scelta invece che dalla prima partita, dal 3 ottobre ne trovava 3.
+
+**Ogni partita** (`_giroGiornata`). Mette casa, trasferta e data nei campi del setup, svuota le
+quote (`svuotaQuote`, la stessa di «Cambia partita») e rimette quelle che l'utente aveva scritto a
+mano su quella partita, cattura gli `alert` del motore e chiama `avviaScanner()`. Se il motore non
+arriva in fondo (per esempio «Storico insufficiente» alla prima giornata di una neopromossa) la
+partita resta nell'elenco come «non analizzata» col motivo. L'esito lo legge da tre posti:
+`window.__ESITO` (1X2, rischio sorpresa, id delle squadre e data, scritto dal motore subito dopo il
+riquadro della sorpresa: se manca o è di un'altra partita, il giro non è riuscito), `__VERDETTI` (la
+proposta in cima con un verdetto e quante sono FORTI o GIOCABILI), e con le quote `window.__QUOTE_P`
+e `__VERDETTI_QUOTE`, che `aggiornaQuote` passa all'elenco (`_giornataQuote`) a ogni quota arrivata o
+scritta. Durante il giro della giornata, prima di passare alla partita dopo, aspetta le quote
+automatiche della precedente (`__QUOTE_AUTO`); se arrivassero tardi non scriverebbero comunque nei
+campi di un'altra partita, perché `caricaQuoteAuto` controlla che `__QUOTE_CTX` sia ancora il suo.
+
+**Lo schermo.** In cima all'analisi il riquadro `#giornata-bar`: le frecce per la partita prima e
+dopo, quante sono analizzate, rischio sorpresa ALTO e partite con almeno una proposta FORTE o
+GIOCABILE, e l'elenco «Tutte le partite» (`details`: sul telefono si chiude quando si apre una
+partita, sul computer due colonne), ordinabile per orario, pick più sicuro o rischio sorpresa (le
+frecce seguono l'ordine scelto). Ogni riga: la barra del motore, 1 X 2, il pick (con le quote se ci
+sono), il rischio sorpresa se non è basso, la proposta in cima. Dopo il mega-prompt `#giornata-fondo`
+ripete la partita prima e dopo col nome; nella barra delle sezioni compare «Giornata». Durante il
+giro una barra dice a che partita è e quante partite ci sono in memoria, e «Ferma dopo questa»
+lascia le altre in attesa, con «Analizza le N rimaste». «Cambia partita» durante il giro lo ferma e
+torna al setup. Rilanciare la stessa giornata la riprende o la mostra, senza rifare niente; analizzare
+a mano una partita della giornata col bottone di sempre (`analizzaUna`) la ricollega all'elenco,
+una fuori dall'elenco lo nasconde.
+
+**Quanto costa.** La prima volta lo storico di tutte le squadre del turno. Sulla PitchAPI vera, Serie
+A del 10–12 ottobre 2026 lanciata dal 3 ottobre, a database caricato: 10 partite su 10 analizzate in
+135 secondi, 1.221 chiamate; poi cambiare partita prende 370 ms e una chiamata (la formazione della
+partita, che non essendo confermata non resta in memoria), 0 px di scorrimento a 390px. Sul banco, 5
+partite di una lega da 10 squadre, 553 chiamate e 26 secondi, e il cambio 70–80 ms senza chiamate. Le quote scritte a mano restano legate alla loro partita solo in memoria: un
+ricaricamento le perde, come tutto il resto.
+
+**I limiti, noti.** Un recupero infrasettimanale giocato prima del turno taglia l'elenco alla prima
+squadra che torna in campo: si sceglie la data del turno. Alla prima giornata della stagione una
+neopromossa non ha partite di lega nel database e la sua partita resta non analizzata, come a mano.
+
+**Il Comparatore non la vede.** Chiama solo `avviaScanner()`; le funzioni della giornata cercano i
+nodi con `querySelector` e controllano `instanceof Element` (contratto, punto 12), e
+`window.__ESITO` non è una scrittura a schermo. Il banco (`runGiornata`) carica il database finto,
+lancia la giornata due giorni prima del turno, e controlla: le 5 partite del turno, tutte
+analizzate, in ordine; ognuna delle 3 analizzate a parte dallo Scanner, riaperta coi bottoni,
+stampa le stesse 191 scritture; avanti e indietro tornano alla stessa partita; niente `NaN` nel
+riquadro né nel prompt; 0 px di scorrimento a 390px. Controllo di potenza: spostando di un giorno la
+data con cui la giornata analizza ogni partita, il banco fallisce (il sottotitolo e lo storico
+cambiano).
+
 ## Politica sui valori mancanti
 
 - **Conteggi** (big chances, cross, filtranti, tocchi in area, recuperi): molte API omettono
@@ -1054,6 +1140,11 @@ testo, lo modifica con delle regex e lo esegue con `new Function`. Dipende quind
     stare fermo nel Comparatore (la grafica, `b59`) cerca i nodi con `querySelector` e controlla
     `instanceof Element`. Un errore a livello dello script ferma l'iniezione: il Comparatore dice
     «Warning durante iniezione» e «Funzioni mancanti», e il banco resta ad aspettare il motore.
+13. **Le due righe della giornata** (`b65`): `window.__ESITO` subito dopo il riquadro della sorpresa
+    in `avviaScanner`, e `_giornataQuote()` in fondo ad `aggiornaQuote`. La giornata sa che un giro è
+    riuscito solo da `__ESITO`: se la riga si sposta dopo un `return` anticipato, o prima del calcolo
+    di `m1/mX/m2`, ogni partita risulta «non analizzata». `_giornataQuote` esce subito senza una
+    giornata: nel Comparatore, dove `aggiornaQuote` gira sui nodi fantasma, non ce n'è mai una.
 
 **Come gira un batch.** `cmpRunMatch` mette la lega nel DOM del motore (creando l'`<option>`
 se manca e verificando che abbia attecchito), ricopia `history-limit`, e chiama
@@ -1127,9 +1218,11 @@ lista ha meno di due giocatori (contati da `data-g`, dal `b60`; prima erano le r
 contiene `NaN`, `undefined` o `Infinity`. Dal `b47`, nel batch e nello sweep,
 rilegge l'archivio di lega dal **testo** del CSV esportato, ci fa girare `buildGlobalElo` del
 motore e confronta Elo e HFA con le righe del CSV, partita per partita; il controllo di potenza
-toglie una partita dall'archivio e deve vedere l'Elo cambiare.
+toglie una partita dall'archivio e deve vedere l'Elo cambiare. Dal `b65` lancia anche la giornata
+sul turno delle partite dello Scanner e controlla che ogni partita riaperta coi bottoni stampi quello
+che stampa analizzata da sola (vedi *La giornata*).
 
-Esito al `b64` (storico 30), a 390px con tutte le 25 card aperte (anche nessuna tabella compatta che esce dal suo riquadro, il mega-prompt dello Scanner mai vuoto né rotto, i dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote e le quote automatiche a posto):
+Esito al `b65` (storico 30), a 390px con tutte le 25 card aperte (anche nessuna tabella compatta che esce dal suo riquadro, il mega-prompt dello Scanner mai vuoto né rotto, i dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, 0 px):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
@@ -1137,7 +1230,7 @@ Esito al `b64` (storico 30), a 390px con tutte le 25 card aperte (anche nessuna 
 | batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 191 | 0 su 122 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
 | `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 128-158 | 74-83 | 0 |
-| `vecchio`: motore `b63` caricato (controllo) | 0/3, «motore caricato diverso ...» | 1 (il rischio sorpresa) | 1 (il certificato) | 0 |
+| `vecchio`: motore `b64` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 | 1 (il certificato) | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -1191,7 +1284,9 @@ escono con lo stesso HTML dalle funzioni nuove, e quelli con le quote li scrive 
 con `innerHTML` diretto. Al `b63` il controllo col `b62` vede 41 scritture diverse e 37-42 righe del CSV:
 tutto il ramo di ruolo (mercati gol, multigol, risultati esatti, handicap, tempi dei gol, modelli di
 ruolo dell'1X2), mai il verdetto 1X2. Al `b64` il controllo col `b63` vede una scrittura diversa, il
-riquadro del rischio sorpresa (`sorpresa-box`, che il `b63` non scrive), e il certificato.
+riquadro del rischio sorpresa (`sorpresa-box`, che il `b63` non scrive), e il certificato. Al `b65` il
+controllo col `b64` non vede nessuna scrittura diversa, solo il certificato: la giornata sta fuori
+dal motore, `window.__ESITO` non è una scrittura, e il mega-prompt non passa da `safeHtml`.
 
 **Le quote sul banco (dal `b54`).** Dopo il giro dello Scanner il banco scrive le quote nella card
 dell'ultima partita, in sei casi: vuote (niente tabella, niente blocco nel prompt), valide con la
@@ -4177,3 +4272,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b62` | con le quote dell'1X2 e dell'Over, risultati esatti, multigol e handicap asiatico vengono dalla matrice dei gol allineata al mercato: regola registrata prima, passata su 4.849 partite mai viste (League One, League Two, Süper Lig 2023/24–2025/26 e il 2026/27 di dieci leghe), −0.0396 / −0.0602 / −0.0176 di logloss, `z` −8.60 / −8.93 / −4.80, 4 blocchi su 4. La ricalibrazione del Goal con le quote non passa (`z = −0.57`). Il riferimento di lega vero dei mercati sui numeri, misurato dai CSV, vale poco e non entra. `strumenti/quote-matrice.py`. Senza quote, e nel Comparatore, niente cambia |
 | `b63` | il livello dei gol: i lambda di ruolo moltiplicati per `GOALS_LEVEL = 1.051` (il lambda stava in media il 5% sotto i gol veri). Regola registrata prima, passata su 6.472 partite di nove leghe mai aperte (Austria, Danimarca, Messico, Norvegia, Svezia, MLS, Giappone, Argentina, Brasile): Over 2.5 + Goal −3.80‰, `z = −2.99`, 6 leghe su 9; Over previsto 49.0 → 52.3% contro 52.8% reale. L'1X2 non cambia. Rimisurate le rese dei gol nel tabellone; la retta dei binari regge. Il CSV esporta il fattore. `strumenti/livello-gol.py` |
 | `b64` | l'avviso di sorpresa, chiesto dall'utente: sotto il verdetto 1X2 il rischio che vinca lo sfavorito, ALTO / medio / basso, con le frequenze misurate su 23.278 partite di 24 leghe; ALTO (una partita su sei) quando modello ed Elo indicano favoriti diversi e lo sfavorito ha il 25% o più, e lì lo sfavorito vince il 33–39%. Anche nel mega-prompt. Prima, un rating delle squadre sugli xG di tutta la lega: regola registrata, −5.53‰ nell'esplorazione e −2.00‰ (`z = −1.19`, 5 leghe su 10) sulle leghe del test, non passa. Probabilità e CSV invariati. `strumenti/rating-xg.py`, `strumenti/sorpresa.py` |
+| `b65` | la giornata, chiesta dall'utente: un bottone analizza tutte le partite del turno di una lega dalla data scelta, ognuna col giro completo dello Scanner, e poi si passa dall'una all'altra con le frecce, a cache calda (nessuna chiamata); in cima l'elenco con 1X2, pick, rischio sorpresa e proposta in cima, ordinabile. Il mega-prompt chiede un'analisi completa (700–1200 parole, una sezione in più sugli scenari) invece di quattro sezioni con un tetto di righe. Nessun numero cambia: il banco ritrova ogni partita della giornata identica all'analisi singola, 191 scritture su 191 |
