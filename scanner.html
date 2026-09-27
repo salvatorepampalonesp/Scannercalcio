@@ -427,7 +427,7 @@ textarea{min-height:0;font-size:12px}
       <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#03140e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-6 4 3 7-8"/><path d="M15 6h4v4"/></svg></div>
       <div style="min-width:0"><h1>Scanner</h1><div class="brand-sub">Motore V9.7 &middot; probabilit&agrave; calibrate sul backtest</div></div>
     </div>
-    <span class="pill pill-build" id="build-ver">build 0905-b62</span>
+    <span class="pill pill-build" id="build-ver">build 0905-b63</span>
   </div>
 </header>
 
@@ -2827,13 +2827,13 @@ function renderLeagueNote() {
 }
 
 // Per fascia di scarto e famiglia di mercato: [guadagno sopra il giocarlo sempre, 2se, proposte],
-// cinque leghe col b48. Lo stesso scarto rende molto meno nei gol che nell'1X2, ma ordinare
+// cinque leghe col b48 (i gol rifatti dal b63, col livello dei gol). Lo stesso scarto rende molto meno nei gol che nell'1X2, ma ordinare
 // per guadagno atteso non sceglie proposte migliori: l'ordine resta per scarto.
 // Vedi AGENTS.md, Il tabellone per famiglia di mercato.
 window.EDGE_BANDS = window.EDGE_BANDS ||
-  [[20, 'FORTE',     { '1x2': [27.5, 1.6, 2891], gol: [1.0, 10.4, 92],  numeri: [7.2, 8.0, 133] }],
-   [10, 'GIOCABILE', { '1x2': [15.5, 1.6, 3573], gol: [7.2, 2.3, 1881], numeri: [10.2, 2.9, 1058] }],
-   [5,  'MARGINALE', { '1x2': [8.0, 1.9, 2680],  gol: [3.5, 1.7, 3457], numeri: [8.2, 2.4, 1628] }]];
+  [[20, 'FORTE',     { '1x2': [27.5, 1.6, 2891], gol: [2.3, 12.8, 61],  numeri: [7.2, 8.0, 133] }],
+   [10, 'GIOCABILE', { '1x2': [15.5, 1.6, 3573], gol: [6.8, 2.6, 1445], numeri: [10.2, 2.9, 1058] }],
+   [5,  'MARGINALE', { '1x2': [8.0, 1.9, 2680],  gol: [4.4, 1.7, 3279], numeri: [8.2, 2.4, 1628] }]];
 const EDGE_FAMIGLIA = { pOv: 'gol', pUn: 'gol', pGG: 'gol', pNG: 'gol',
   'cor9.5': 'numeri', 'sot8.5': 'numeri', 'yel3.5': 'numeri' };
 const EDGE_FAMIGLIA_TXT = { '1x2': "dell'1X2", gol: 'dei mercati gol', numeri: 'dei mercati sui numeri' };
@@ -2942,7 +2942,7 @@ function _tabTesto(V) {
        + senza.map(v => v.nome + ' ' + (v.edge == null ? 'base ignota' : (v.edge >= 0 ? '+' : '') + v.edge.toFixed(1))).join(', ') : '');
 }
 
-window.__SCANNER_BUILD = '0905-b62';
+window.__SCANNER_BUILD = '0905-b63';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -3217,6 +3217,9 @@ window.ENS_W = window.ENS_W || { dc: 0.70, mk: 0.30, ol: 0.00 };
 window.ENS_SCOPE_W = (typeof window.ENS_SCOPE_W === 'number') ? window.ENS_SCOPE_W : 1;
 window.SOT_PER_GOAL = (typeof window.SOT_PER_GOAL === 'number') ? window.SOT_PER_GOAL : 3.25;
 window.GOALS_SOT_W  = (typeof window.GOALS_SOT_W  === 'number') ? window.GOALS_SOT_W  : 0.50;
+// il lambda di ruolo sta sotto i gol veri del 5%: fattore misurato, non il disallineamento di unita'
+// corretto alla radice (AGENTS.md, Il livello dei gol: la regola). Non tocca l'1X2 (lambda completi).
+window.GOALS_LEVEL  = (typeof window.GOALS_LEVEL  === 'number') ? window.GOALS_LEVEL  : 1.051;
 
 // media pesata fra due stime del lambda, NON un moltiplicatore: un fattore limitato
 // lascia il rango dominato dal Dixon-Coles e non sposta niente (AGENTS.md, I gol)
@@ -3361,6 +3364,7 @@ async function avviaScanner() {
     // che decide 1/X/2; __ELO_DEBUG resta quello di ruolo, che decide i mercati gol.
     window.__ELO_DEBUG_OVER = _ETo;
     if (_ETo.applied && _ETo.lamH > 0 && _ETo.lamA > 0) { lamH_over = _ETo.lamH; lamA_over = _ETo.lamA; }
+    lamH_role *= window.GOALS_LEVEL; lamA_role *= window.GOALS_LEVEL;
 
     const dcOver = calcDCMatrix(lamH_over, lamA_over, RHO); const dcRole = calcDCMatrix(lamH_role, lamA_role, RHO);
     const probsOver = probsFromMatrix(dcOver); const probsRole = probsFromMatrix(dcRole);

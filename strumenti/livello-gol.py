@@ -5,15 +5,37 @@
 # Rifa' dai CSV del Comparatore la matrice dei gol del motore (lambda di ruolo e rho) con e senza il
 # fattore sui due lambda, e applica la regola: la somma delle logloss di Over 2.5 e Goal, col fattore
 # contro senza, migliora con z <= -2 sull'insieme e in almeno due terzi delle leghe con 100 partite o
-# piu'. Con --allena stampa anche gol/lambda sulle partite di stima (il fattore della regola).
+# piu'. Con --allena stampa anche gol/lambda sulle partite di stima (il fattore della regola). Dal b63
+# i lambda del CSV hanno gia' il fattore (riga «Ambito: livello dei gol»): lo strumento lo toglie.
+# Esito: passa (b63), -3.80 per mille su 6.472 partite di nove leghe mai aperte, z -2.99, 6 su 9.
 import os, sys, glob, math, collections, importlib.util
 import numpy as np
 QUI = os.path.dirname(os.path.abspath(__file__))
 _s = importlib.util.spec_from_file_location('qm', os.path.join(QUI, 'quote-matrice.py'))
 qm = importlib.util.module_from_spec(_s); _s.loader.exec_module(qm); qg, qb = qm.qg, qm.qb
 
+RIGA_F = "Ambito: livello dei gol (fattore gia' nei lambda di ruolo)"
+
+def fattori(f):
+    # dal b63 i lambda di ruolo del CSV hanno gia' dentro GOALS_LEVEL: qui si tolgono, per misurare
+    # sempre il motore senza fattore contro il motore col fattore
+    ids = fx = None
+    for r in qb.csv.reader(qb.io.open(f, encoding='utf-8-sig'), delimiter=';'):
+        if r and r[0] == 'ID PARTITA': ids = r
+        elif r and r[0] == RIGA_F: fx = r
+        elif r and r[0].startswith('=== ARCHIVIO'): break
+    if not ids or not fx: return {}
+    return {ids[c]: qb.num(fx[c]) for c in range(1, len(ids), 4) if ids[c] and c < len(fx) and qb.num(fx[c])}
+
 def carica(dirs):
-    M = [m for d in dirs for f in sorted(glob.glob(os.path.join(d, '*.csv'))) for m in qb.leggi_csv(f)]
+    M = []
+    for d in dirs:
+        for f in sorted(glob.glob(os.path.join(d, '*.csv'))):
+            FX = fattori(f)
+            for m in qb.leggi_csv(f):
+                m['fx'] = FX.get(m['id'], 1.0)
+                if m['lam'][0] and m['lam'][1]: m['lam'] = [x / m['fx'] for x in m['lam']]
+                M.append(m)
     M = list({m['id']: m for m in M}.values())
     return [m for m in M if m['lam'][0] and m['lam'][1] and m['rho'] is not None]
 
@@ -21,7 +43,8 @@ def misura(M, F):
     lh = np.array([m['lam'][0] for m in M]); la = np.array([m['lam'][1] for m in M]); rho = np.array([m['rho'] for m in M])
     hg = np.array([m['hg'] for m in M]); ag = np.array([m['ag'] for m in M]); lega = np.array([m['lega'] for m in M])
     E, C = qg.matrici(lh, la, rho), qg.matrici(F * lh, F * la, rho); E0, C0 = qg.mercati(E), qg.mercati(C)
-    dev = max(abs(100 * E0[k] - np.array([m['gol'][c] for m in M])).max() for k, c in (('o25', 'Over 2.5'), ('gg', 'GG (da matrice)')))
+    fx = np.array([m['fx'] for m in M]); X0 = qg.mercati(qg.matrici(fx * lh, fx * la, rho))   # la matrice com'era nel CSV
+    dev = max(abs(100 * X0[k] - np.array([m['gol'][c] for m in M])).max() for k, c in (('o25', 'Over 2.5'), ('gg', 'GG (da matrice)')))
     Y = {'o15': hg + ag > 1, 'o25': hg + ag > 2, 'o35': hg + ag > 3, 'gg': (hg > 0) & (ag > 0)}
     Y = {k: v.astype(float) for k, v in Y.items()}
     return dict(E0=E0, C0=C0, E=E, C=C, Y=Y, hg=hg, ag=ag, lega=lega, dev=dev, lam=lh + la)

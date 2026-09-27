@@ -165,7 +165,7 @@ select{cursor:pointer}
   <div class="topbar">
     <div class="brand">
       <h1>Comparatore V9.7</h1>
-      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b62</span>
+      <span class="badge" id="build-ver" style="background:#0f766e;color:#fff;border-color:#0f766e">build 0905-b63</span>
       <span class="badge" id="engine-badge">motore non caricato</span>
     </div>
     <span class="badge">previsioni vs realtà</span>
@@ -729,6 +729,7 @@ async function loadEngineFromText(text, fileName) {
         advOver:  (typeof advOver!=='undefined') ? advOver : null,
         ahData:   (typeof ahData!=='undefined') ? ahData : null,    /* handicap asiatico */
         mgTot:    (typeof mgTot!=='undefined') ? mgTot : null,      /* multigol totali */
+        goalsLevel: (typeof window.GOALS_LEVEL === 'number') ? window.GOALS_LEVEL : null,  /* fattore gia' dentro lamH/lamA (b63) */
         /* ELO — necessario per validare il fix HFA dinamico */
         /* il rating come lo stampa lo Scanner: arrotondato, e 1500 se la squadra non ne ha uno */
         eloH:    (typeof eloH_ov!=='undefined') ? eloH_ov : ((typeof ELO!=='undefined' && ELO && ELO.table && typeof hId!=='undefined') ? ELO.table[hId] : null),
@@ -861,7 +862,7 @@ async function loadEngineFromText(text, fileName) {
     <p><code>${fileName}</code> — clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
 
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b62';
+  const _bComp = '0905-b63';
   window.__CMP_BUILD = _bComp;
   const _el = document.getElementById('engine-build');
   if (_el) {
@@ -2668,6 +2669,7 @@ function cmpExportCSV() {
     ['DCover GG', m=>[fmt(m.R.probsOver?.pGG),'','','']], ['DCover Over 2.5', m=>[fmt(m.R.probsOver?.pOv),'','','']],
     ['Ambito: lambda casa (ruolo)', m=>[m.R.lamH!=null?(+m.R.lamH).toFixed(3):'-','','','']],
     ['Ambito: lambda trasf. (ruolo)', m=>[m.R.lamA!=null?(+m.R.lamA).toFixed(3):'-','','','']],
+    ['Ambito: livello dei gol (fattore gia\' nei lambda di ruolo)', m=>[m.R.goalsLevel!=null?(+m.R.goalsLevel).toFixed(3):'N/D','','','']],
     ['Ambito: lambda casa (completo)', m=>[m.R.lamHover!=null?(+m.R.lamHover).toFixed(3):'-','','','']],
     ['Ambito: lambda trasf. (completo)', m=>[m.R.lamAover!=null?(+m.R.lamAover).toFixed(3):'-','','','']],
     ['Ambito: peso del completo (ENS_SCOPE_W)', m=>[m.R.ensDebug?.scopeW!=null?m.R.ensDebug.scopeW:'-','','','']],
