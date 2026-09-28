@@ -55,7 +55,7 @@ sono, le scrive l'utente. Per misurarle si usano gli stessi file (`strumenti/quo
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b66`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b67`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -356,7 +356,7 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b66`)
+## Stato attuale (`b67`)
 
 **1X2.** Col motore `b48` il pick azzecca il 52.7% (±1.4) contro il 43.0% del «gioca sempre in
 casa» sulle cinque leghe: 52.7% contro 40.2% in Serie A, 52.7% contro 43.1% in Premier, 53.2%
@@ -1071,7 +1071,13 @@ campi di un'altra partita, perché `caricaQuoteAuto` controlla che `__QUOTE_CTX`
 dopo, quante sono analizzate, rischio sorpresa ALTO e partite con almeno una proposta FORTE o
 GIOCABILE (dal `b66` tre numeri), e l'elenco «Tutte le partite» (`details`: sul telefono si chiude quando si apre una
 partita, sul computer due colonne), ordinabile per orario, pick più sicuro o rischio sorpresa (le
-frecce seguono l'ordine scelto). Ogni riga: la barra del motore, 1 X 2 con la più alta in grassetto,
+frecce seguono l'ordine scelto). Dal `b67` le due colonne si riempiono dall'alto in basso (`columns: 2`),
+e in ordine di orario ogni giorno ha la sua intestazione («sabato 10/10»). Fino al `b66` erano una
+griglia riempita per righe: l'ordine era giusto da sinistra a destra, ma leggendo una colonna si
+saltava una partita su due (Monza, Bologna, Venezia… invece di Monza, Udinese, Bologna…), e
+all'utente sembrava sbagliato. Sul telefono, una colonna sola, era giusto anche prima: rifatto sulla
+PitchAPI vera su Serie A, Premier, LaLiga2, MLS e Liga MX. L'ordine si calcola sull'orario come
+numero (`Date.parse`), non più confrontando le stringhe. Ogni riga: la barra del motore, 1 X 2 con la più alta in grassetto,
 il pick con le quote se ci sono, il rischio sorpresa se non è basso, la proposta in cima. In fondo
 alla pagina, sotto ogni scheda, `#giornata-fondo` ripete la partita prima e dopo col nome (fino al
 `b65` stava dopo il mega-prompt, e «Giornata» era nella barra delle sezioni). Durante il
@@ -1296,7 +1302,7 @@ la sua probabilità sono quelli delle probabilità mostrate (con le quote se ci 
 prime tre con un verdetto del tabellone a schermo, il rischio sorpresa quello del motore, niente
 `NaN`. Nella giornata controlla anche che la scheda scelta resti cambiando partita.
 
-Esito al `b66` (storico 30), a 390px con tutte le 28 card aperte, scheda per scheda (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, 0 px):
+Esito al `b67` (storico 30; uguale al `b66`), a 390px con tutte le 28 card aperte, scheda per scheda (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, 0 px):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
@@ -1304,7 +1310,7 @@ Esito al `b66` (storico 30), a 390px con tutte le 28 card aperte, scheda per sch
 | batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 191 | 0 su 122 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
 | `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 128-158 | 74-83 | 0 |
-| `vecchio`: motore `b65` caricato (controllo) | 0/3, «motore caricato diverso ...» | 4 | 1 (il certificato) | 0 |
+| `vecchio`: motore `b66` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 | 1 (il certificato) | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -1366,7 +1372,8 @@ la forma su due righe, il tabellone a elenco e il riquadro «nessuno scarto sopr
 quando non c'è niente da dire); le righe del CSV no, solo il certificato. «In breve», le schede e
 l'occhiello con la lega non passano da `safeHtml`. Il banco ha trovato due volte il sottotitolo
 diverso fra Scanner e Comparatore, quando portava il nome della lega (vedi *La grafica dello
-Scanner*, «Cosa cambia nel `b66`»).
+Scanner*, «Cosa cambia nel `b66`»). Al `b67` il controllo col `b66` non vede nessuna scrittura
+diversa, solo il certificato: cambia l'elenco della giornata, che sta fuori dal motore.
 
 **Il controllo di potenza del `b66`**, fatto a parte su una copia dello Scanner con due guasti
 messi apposta (`ROOT=<copia>`): `renderInBreve()` tolto dal ramo con le quote di `aggiornaQuote`, e
@@ -3148,6 +3155,10 @@ di questo elenco è stata a lungo falsa proprio perché nessuno sapeva dove cont
 - **Quello che non passa da `safeTxt`/`safeHtml` il banco non lo vede.** Il mega-prompt ha
   detto «2963 partite» dal `b27` al `b50`, e «nei mercati dei mercati gol» nel `b50`, con il banco
   verde. Dal `b51` il banco ne controlla la forma; il contenuto si rilegge a mano.
+- **L'ordine nel DOM non è l'ordine in cui si legge.** L'elenco della giornata era in ordine di
+  orario, e il banco lo confermava; ma sul computer stava in una griglia a due colonne riempita per
+  righe, e chi legge una colonna dall'alto in basso vedeva le partite saltare. Un elenco da leggere
+  in ordine va in una colonna, o in colonne riempite dall'alto (`columns`), mai in una griglia a righe.
 - **Pagina a 0 px non vuol dire tabella dentro lo schermo.** Il tabellone è uscito di lato di 53
   px dentro il suo riquadro per chissà quante build, con lo scorrimento della pagina a 0. Il
   banco misura anche le tabelle compatte, ma solo quelle dello Scanner.
@@ -4365,3 +4376,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b64` | l'avviso di sorpresa, chiesto dall'utente: sotto il verdetto 1X2 il rischio che vinca lo sfavorito, ALTO / medio / basso, con le frequenze misurate su 23.278 partite di 24 leghe; ALTO (una partita su sei) quando modello ed Elo indicano favoriti diversi e lo sfavorito ha il 25% o più, e lì lo sfavorito vince il 33–39%. Anche nel mega-prompt. Prima, un rating delle squadre sugli xG di tutta la lega: regola registrata, −5.53‰ nell'esplorazione e −2.00‰ (`z = −1.19`, 5 leghe su 10) sulle leghe del test, non passa. Probabilità e CSV invariati. `strumenti/rating-xg.py`, `strumenti/sorpresa.py` |
 | `b65` | la giornata, chiesta dall'utente: un bottone analizza tutte le partite del turno di una lega dalla data scelta, ognuna col giro completo dello Scanner, e poi si passa dall'una all'altra con le frecce, a cache calda (nessuna chiamata); in cima l'elenco con 1X2, pick, rischio sorpresa e proposta in cima, ordinabile. Il mega-prompt chiede un'analisi completa (700–1200 parole, una sezione in più sugli scenari) invece di quattro sezioni con un tetto di righe. Nessun numero cambia: il banco ritrova ogni partita della giornata identica all'analisi singola, 191 scritture su 191 |
 | `b66` | la grafica riordinata nello stile di prima, scelta dall'utente fra sei proposte: il riquadro «In breve» (pick e quante volte esce, rischio sorpresa, tre proposte migliori, formazioni), l'analisi in sette schede invece che una pagina sola, il tabellone a elenco con le proposte senza verdetto chiuse sotto; sottotitolo, forma, memoria della cache, note e giornata riordinati. Nessun numero cambia: il banco vede 4 scritture diverse col `b65`, tutte di forma, 0 righe del CSV, e misura ora scheda per scheda |
+| `b67` | la giornata sul computer: l'elenco a due colonne si riempie dall'alto in basso invece che per righe (leggendo una colonna l'ordine per orario sembrava sbagliato), con un'intestazione per ogni giorno; l'ordine si calcola sull'orario come numero. Sul telefono era già giusto (rifatto sulla PitchAPI vera su cinque leghe). Nessun numero cambia: col `b66` 0 scritture diverse su 191, 0 righe del CSV |
