@@ -323,8 +323,11 @@ textarea{min-height:0;font-size:12px}
 .g-tutte>summary::-webkit-details-marker{display:none}
 .g-tutte>summary::after{content:"\25BE";color:var(--dim);margin-left:auto;transition:transform .15s}
 .g-tutte:not([open])>summary::after{transform:rotate(-90deg)}
-.g-lista{display:grid;gap:8px;margin-top:10px}
-@media(min-width:900px){.g-lista{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.g-lista{margin-top:10px}
+.g-lista>*{margin-bottom:8px;break-inside:avoid}
+/* sul computer due colonne riempite dall'alto in basso, non per righe: si leggono in ordine di orario */
+@media(min-width:900px){.g-lista{columns:2;column-gap:8px}}
+.g-giorno{font-size:11px;font-weight:750;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);padding:6px 2px 0;break-after:avoid}
 .g-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 10px;align-items:center;width:100%;min-width:0;text-align:left;
   background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;color:var(--txt);font:inherit;cursor:pointer}
 .g-row:hover{border-color:#3a4659}
@@ -542,7 +545,7 @@ textarea{min-height:0;font-size:12px}
       <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#03140e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-6 4 3 7-8"/><path d="M15 6h4v4"/></svg></div>
       <div style="min-width:0"><h1>Scanner</h1><div class="brand-sub">Motore V9.7 &middot; probabilit&agrave; calibrate sul backtest</div></div>
     </div>
-    <span class="pill pill-build" id="build-ver">build 0905-b66</span>
+    <span class="pill pill-build" id="build-ver">build 0905-b67</span>
   </div>
 </header>
 
@@ -1234,7 +1237,7 @@ async function listaGiornata(lId, da) {
     if (primo < 0 && cand.size > prima) primo = k;
   }
   const ord = [...cand.values()].filter(m => m.home_team && m.away_team && !/postpon|cancel|abandon|suspend|rinvi/i.test(m.status || ''))
-    .sort((a, b) => _oraDi(a).localeCompare(_oraDi(b)));
+    .sort((a, b) => (Date.parse(_oraDi(a)) || 0) - (Date.parse(_oraDi(b)) || 0) || _oraDi(a).localeCompare(_oraDi(b)));
   const presi = [], viste = new Set(), max = Math.max(1, Math.floor((inCorso.size || tutte.size) / 2));
   for (const m of ord) {
     const h = m.home_team.id, a = m.away_team.id;
@@ -1398,6 +1401,8 @@ function _ordineGiornata() {
     return lb - la || (B.sorpresa ? B.sorpresa.pU : 0) - (A.sorpresa ? A.sorpresa.pU : 0); });
   return idx;
 }
+const _giornoG = x => { const d = new Date(x.ora); if (isNaN(d)) return x.giorno;
+  try { return d.toLocaleDateString('it-IT', { weekday: 'long', day: '2-digit', month: '2-digit' }); } catch (e) { return x.giorno; } };
 const _quandoG = x => { const d = new Date(x.ora); if (isNaN(d)) return x.giorno;
   try { return d.toLocaleString('it-IT', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); }
   catch (e) { return x.giorno; } };
@@ -1504,7 +1509,8 @@ function renderGiornata() {
     + `<summary>Tutte le partite (${n})</summary>`
     + `<div class="g-ord">Ordina: ${[['orario', 'orario'], ['pick', 'pick pi&ugrave; sicuro'], ['sorpresa', 'rischio sorpresa']]
       .map(([v, t]) => `<button type="button" class="${G.ordine === v ? 'on' : ''}" onclick="giornataOrdina('${v}')">${t}</button>`).join('')}</div>`
-    + `<div class="g-lista">${o.map(j => _rigaGiornata(L[j], j, j === G.vista && !G.corre, blocca)).join('')}</div></details>`
+    + `<div class="g-lista">${o.map((j, i) => (G.ordine === 'orario' && (i === 0 || _giornoG(L[j]) !== _giornoG(L[o[i - 1]])) ? `<div class="g-giorno">${e(_giornoG(L[j]))}</div>` : '')
+        + _rigaGiornata(L[j], j, j === G.vista && !G.corre, blocca)).join('')}</div></details>`
     + '<details class="info" style="margin-top:10px"><summary>Come funziona la giornata</summary><div>'
     + "Ogni partita &egrave; analizzata per intero, come se l'avessi scelta a mano: verdetto, tabellone, formazioni, prompt. "
     + "Le quote automatiche arrivano per ognuna; quelle scritte a mano restano legate alla loro partita. Nell'elenco il pick e la proposta in cima "
@@ -3421,7 +3427,7 @@ function _tabTesto(V) {
        + senza.map(v => v.nome + ' ' + (v.edge == null ? 'base ignota' : (v.edge >= 0 ? '+' : '') + v.edge.toFixed(1))).join(', ') : '');
 }
 
-window.__SCANNER_BUILD = '0905-b66';
+window.__SCANNER_BUILD = '0905-b67';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
