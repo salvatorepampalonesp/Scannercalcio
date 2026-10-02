@@ -206,6 +206,9 @@ Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export rec
   (`z = −2.69`, 9 su 12), Goal −0.45‰ (`z = −1.77`, da 53.5 a 54.8% contro 55.1% reale), Over 2.5 +0.11‰
   (`z = +1.13`), pareggi 23.5 → 25.7%. Tocca risultati esatti, handicap, multigol e Goal del motore (non
   l'1X2, che esce dal ramo completo). Da registrare e provare su leghe mai aperte per i mercati gol.
+  Sulle 24 leghe (23.278 partite) lo stesso: pareggi 24.2 contro 25.5%, 1-1 11.3 → 11.7, 2-2 5.0 → 5.7, e
+  il Goal dove la matrice dice meno del 40% (in media 36.8) esce il 46.9% (vedi *Il Dixon-Coles contro i
+  risultati reali*).
 - [ ] **`LEAGUE_HALFLIFE_DAYS`** (oggi 0 = media piatta). È l'ultima ipotesi rimasta sul
   *livello* dei mercati gol: il lambda è inversamente proporzionale alla base di lega, e la
   base è una media piatta su tre stagioni (Premier: 3.041 contro 2.754 veri, −5% sul
@@ -224,6 +227,13 @@ Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export rec
   è sulle stesse partite su cui è fatta `SORPRESA_TAB`: va scritta una regola e provata su partite nuove
   (il 2026/27 man mano che si gioca) prima di mettere il numero nello Scanner. Vedi *L'avviso di
   sorpresa*, «Contro le quote e nel tabellone».
+- [ ] **I tocchi in area nell'1X2: il test sulle partite nuove.** Regola registrata il 2 ottobre 2026:
+  Elo, modello e tocchi nell'area avversaria previsti, con pesi già fissati, contro il motore, sulle partite
+  giocate dal 3 ottobre 2026 nelle 24 leghe dei batch. Nell'esplorazione (le 24 leghe, già tutte guardate)
+  −4.90‰ di logloss 1 contro 2 fuori lega (`z = −6.37`), 22 leghe su 24, prese +0.50 punti. Si guarda una
+  volta sola, quando le partite nuove senza pari sono almeno 4.000 (verso marzo 2027): batch automatico
+  della stagione in corso, poi `python3 strumenti/dc-residui.py --prova <cartelle>`. Vedi *Il Dixon-Coles
+  contro i risultati reali*, «La regola dei tocchi in area».
 
 ### 2. Aspettano una sesta lega
 
@@ -293,7 +303,11 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   della partita, la frequenza su tutte e sulle ultime 5 e il dato reale, e vedere quanto
   prevede e quanto va ristretta. Poi l'avversario: i falli subiti dipendono da quanti falli fa
   l'altra squadra, che il motore prevede già.
-- [ ] **I parametri interni di Markov**: verificati solo gli invarianti.
+- [ ] **I parametri interni di Markov** (dopo il 75' i gol salgono del 30%, chi è avanti rallenta a 0.94,
+  chi è dietro accelera a 1.12): scritti a mano, mai stimati. Sull'1 contro 2 il Markov è il Dixon-Coles
+  (correlazione 0.9998); il pareggio lo dà 1.5 punti più alto del Dixon-Coles, e sopra il vero in ogni
+  fascia (vedi *Markov,
+  Dixon-Coles ed Elo*). Nell'1X2 pesa 0.30 e il peso è piatto: stimarli varrebbe poco.
 - [x] ~~**Le quote dei bookmaker.**~~ — **passato, nello Scanner dal `b54`.** Su 11.902 partite
   di dodici leghe, stimata su undici e misurata sulla dodicesima, la combinazione motore + mercato
   prende il 52.99% contro il 51.04% del motore (+1.95, `z = +7.00`), logloss meglio in 12 leghe su
@@ -457,6 +471,16 @@ probabilità, `lgModel`, `lgElo`, i sei modelli, lambda, tiri, pendenze, neoprom
 riposo, classifica della stagione), addestrato su undici leghe e misurato sulla dodicesima, non
 indovina di più: +0.2 ±0.4 punti (vedi *Cosa è già stato provato*). Per indovinare di più serve
 informazione che il motore non ha.
+
+**Il Dixon-Coles contro i risultati** (solo misura, dopo il `b67`). Sulle 24 leghe (23.278 partite) il
+livello dei gol è giusto (2.789 previsti a partita, 2.787 veri), i gol di una squadra sono previsti quanto
+si può (correlazione 0.30, il tetto di Poisson), il totale meno (0.11 contro un tetto di 0.15: il lambda
+totale è troppo largo). Markov e Dixon-Coles sull'1 contro 2 sono lo stesso modello; il modello e l'Elo
+sbagliano in versi opposti (timido l'uno, troppo sicuro l'altro), ed è per questo che si combinano bene.
+L'1X2 usa poco quello che il motore già prevede sul dominio del campo: i tocchi nell'area avversaria
+previsti, insieme a pesi liberi di Elo e modello, valgono −4.9‰ di logloss fuori lega, ma sulle stesse 24
+leghe su cui sono stati cercati. Regola registrata sulle partite nuove del 2026/27. Vedi *Il Dixon-Coles
+contro i risultati reali*.
 
 **Con le quote** (dal `b54`). Le quote del bookmaker sono quell'informazione. Scritte nella card
 «Con le quote del mercato», il pick prende il **53.0%** invece del 51.0% sulle stesse 11.902 partite
@@ -682,8 +706,10 @@ perché sui gol il completo peggiora la calibrazione ovunque. Non «sistemarlo»
   tenuto giusto lo stesso, perché è a schermo (dal `b51` non è più nel mega-prompt).
 - **KNN**: calcolato e mostrato come riferimento tattico, **non entra nell'ensemble**. Non
   descriverlo come se ci fosse.
-- **Markov** (`markovFlow`, rate dipendenti dal punteggio): da solo fa logloss 1.0091,
-  leggermente meglio del Dixon-Coles (1.0098). Verificati solo gli invarianti.
+- **Markov** (`markovFlow`, rate dipendenti dal punteggio): sulle 24 leghe, sui lambda completi
+  dopo l'Elo, logloss 1X2 1.0098 come il Dixon-Coles. Sull'1 contro 2 è lo stesso modello (log p1/p2
+  correlato 0.9998); il pareggio lo dà 1.5 punti più alto (26.7% contro 25.5% veri). Vedi *Markov,
+  Dixon-Coles ed Elo*.
 
 **Tre quarti dell'1X2 non passano dal modello.** Con `ELO_1X2_W = 0.75` si ha
 `lgTarget = 0.25·lgModel + 0.75·lgElo`: qualunque correzione lato Dixon-Coles arriva
@@ -3026,7 +3052,7 @@ scrittura nuova, il messaggio iniziale). Il banco la verifica a parte, premendo 
 
 | costante | valore | tipo | da dove viene |
 |---|---|---|---|
-| `ENS_W` dc / mk / ol | 0.70 / 0.30 / 0.00 | stimata `b20` | griglia leave-one-league-out su 1743 partite, OL a 0 in 4 fold su 5. Vale −0.0013 di logloss, `z = −2.03`: pulizia più che guadagno |
+| `ENS_W` dc / mk / ol | 0.70 / 0.30 / 0.00 | stimata `b20` | griglia leave-one-league-out su 1743 partite, OL a 0 in 4 fold su 5. Vale −0.0013 di logloss, `z = −2.03`: pulizia più che guadagno. Sulle 24 leghe (23.278 partite, dopo il `b67`) il peso del Markov è piatto fra 0.3 e 0.6 (logloss 1.00957 a 0.30, 1.00952 a 0.50), scelto fuori lega 0.5 ma contro 0.30 +0.05‰ (`z = +0.73`): resta |
 | `ENS_SCOPE_W` | 1 | stimata `b21` | 1133 partite, logloss 1.0113 → 1.0071, monotono in 3 leghe su 3, `z = −3.96`, fuori campione 1.0 in 3 fold su 3. Solo 1X2 |
 | `ELO_1X2_W` | 0.75 | stimata `b14`, riconfermata `b35` e `b41` a `S` fisso | 5 leghe, 1743 partite: w 0 → 0.50 a +5.02σ, ottimo a 0.75. `b35` (Serie A 1882, ramo giusto): ottimo interno piatto fra 0.50 e 0.75, estremi peggiori a 2σ. `b41` (1134 in copia conforme): idem. Spazzata **insieme a `ELO_SCALE`** su Serie A e Premier la coppia 0.40 / 2.00 vale −0.0063 (`z = −3.53`), 6 stagioni su 6, ma nel test registrato Ligue 1 non migliora (+0.0004): non passa. Vedi *Peso e scala dell'Elo insieme* |
 | `ELO_SCALE` | 1.25 | stimata `b30`, confermata `b35` e `b41` a `w` fisso; la coppia con `w` non ha passato il test (`b41`) | pendenza di calibrazione dell'Elo 1.235 (`z = 3.13`); fuori campione 1.20–1.35 in 7 fold su 7; `b35`: 1.25 batte 1.00 a `z = 3.92`; `b41`: a `z = 3.55`, Elo a 1.119 ±0.089. Applicata alla sola differenza di rating, non all'HFA |
@@ -3362,6 +3388,8 @@ misurate.
 | La frequenza vera di lega come riferimento di corner, tiri e gialli | **vale poco** | ricostruita dai CSV: previsione −2.2‰ sui corner delle cinque leghe (`z = −1.15`), bene solo dove sbagliava di molto (Bundesliga corner, Eredivisie gialli); tabellone +16.5 → +15.7…+16.2. Vedi *Il riferimento di lega vero: misurato* |
 | Giocare l'Over o l'Under dove il motore si discosta dal mercato | **no** (`b57`) | 11.222 partite, chiusura: scarto 3+ punti 7.354 giocate, −7.5% della posta; 5+ −9.9%; 8+ −8.7%. Il lato più probabile sempre giocato: motore −5.6%, mercato −3.5%, con le quote −3.7% (margine 5.8%) |
 | Giocare dove il motore dà a un esito più del mercato (le «value bet» del motore) | **no** (`b54`) | 11.902 partite, quote medie di chiusura: motore sopra il mercato di 3+ punti 7.504 giocate, escono il 32.6% contro il 34.2% del mercato, −11.6% della posta; 5+ −15.8%, 8+ −13.0%, 12+ −16.0%. Dato il mercato il motore pesa −0.19 ±0.08 (1 contro 2), negativo in 12 leghe su 12. Anche il pick sempre giocato perde: motore −6.0%, mercato −3.2%, con le quote −2.9% (margine medio 5.7%) |
+| Il Markov al posto del Dixon-Coles, o con più peso nell'ensemble (solo descrittivo) | **sono lo stesso modello** | 23.278 partite di 24 leghe: logloss 1X2 1.0098 tutti e due (lambda completi, dopo l'Elo), log(p1/p2) correlato 0.9998; il Markov dà il pareggio 1.5 punti più alto del Dixon-Coles (26.7% contro 25.5% veri). Peso nell'ensemble piatto fra 0.3 e 0.6, fuori lega contro lo 0.30 +0.05‰ (`z = +0.73`). Elo + Markov a pesi liberi vale quanto Elo + DC (−2.97 contro −2.91‰). Vedi *Markov, Dixon-Coles ed Elo* |
+| Restringere il totale dei lambda di ruolo, che è troppo largo (pendenza dei gol veri sul lambda totale 0.71) (solo descrittivo) | **vale un millesimo** | Over 2.5 + Goal −0.97‰ (`z = −2.43`), 18 leghe su 24, `c` 0.7 verso la media della lega-stagione presa col senno di poi; per vederlo su partite nuove ne servirebbero circa 30.000. Vedi *Il Dixon-Coles contro i risultati reali* |
 | Il disaccordo fra modello ed Elo come segnale di sorpresa | **è il candidato Elo visto da un'altra parte** (`b42`) | fuori lega −0.0037 (`z = −2.47`), prese +0.57 punti, Ligue 1 di nuovo contraria (+0.0020). Nelle 717 partite (14%) in cui modello ed Elo indicano favoriti diversi il pick prende il 37.7% (41.4% col disaccordo in regressione), contro il 55.2% delle altre. A parità di partite giocate la selezione non migliora (top 20%: 72.8 contro 73.2%) |
 
 **Le cose che hanno retto**, in ordine di quanto valgono:
@@ -3756,6 +3784,135 @@ batch48 batch4 --tutte batch/2627 batch/nuove batch/livello`, con `SORPRESA_TAB`
 
 È lo stesso segnale della tabella (+2.4 punti allo sfavorito) visto dal tabellone, misurato sulle stesse
 partite: non è una conferma indipendente. Vedi *Da fare*, l'etichetta delle proposte sul favorito.
+
+## Il Dixon-Coles contro i risultati reali
+
+Chiesto dall'utente: «la correlazione fra i nostri CSV e i risultati del nostro Dixon-Coles», e prima
+Markov e Dixon-Coles messi in relazione con l'Elo. Solo misura, dopo il `b67`: le 23.278 partite in copia
+conforme di 24 leghe (batch `b48`–`b62`, 2023–2026), coi lambda di ruolo moltiplicati per il fattore del
+`b63` come li usa il motore di oggi. Le correlazioni sono dentro la lega-stagione, le AUC dentro la lega.
+`python3 strumenti/dc-residui.py` e `python3 strumenti/markov-dc.py` (senza argomenti leggono le cinque
+cartelle dei batch) rifanno tutto in mezzo minuto. Prova di coincidenza: l'Over 2.5 dalla matrice entro
+0.072 punti dal CSV, Dixon-Coles e Markov rifatti dai lambda completi entro 0.07 e 0.08.
+
+**La pagella.**
+
+- *Il livello* è giusto: lambda totale 2.789 contro 2.787 gol a partita (casa 1.539 contro 1.543,
+  trasferta 1.250 contro 1.244).
+- *I gol di una squadra*: correlazione col lambda 0.304 in casa e 0.272 in trasferta. Anche conoscendo il
+  lambda esatto, con gol di Poisson non si andrebbe oltre `sqrt(var(λ) / (var(λ) + media))`, cioè 0.302 in
+  casa: il motore ci sta già. Il resto è il caso.
+- *Il totale*: 0.109 contro un tetto di 0.152, e i gol veri crescono solo di 0.71 per ogni gol in più di
+  lambda totale: il totale è troppo largo. È il muro dell'ordinamento dei mercati gol (vedi *I mercati gol:
+  due muri*). La differenza reti, coi lambda completi dopo l'Elo: 0.389.
+- *I mercati della matrice di ruolo* (previsto, reale, AUC): Over 1.5 76.3 / 76.5%, 0.558; Over 2.5 52.4 /
+  53.4%, 0.554; Over 3.5 30.6 / 30.6%, 0.557; Goal 53.1 / 54.4%, 0.531. Calibrati, ordinano poco. Il Goal
+  sbaglia nella fascia bassa: dove dice meno del 40% (in media 36.8) esce il 46.9%.
+- *Il risultato esatto*: il più probabile esce il 12.5% (previsto 12.2%), ed è 1-1 nel 65% delle partite
+  (1-0 15%, 2-0 8%, 0-1 5%). Previsto → reale: 0-0 6.7 → 6.7, 1-0 9.3 → 9.6, 0-1 7.6 → 7.2, 1-1 11.3 →
+  11.7, 2-1 8.3 → 8.8, 1-2 6.9 → 7.4, 2-0 7.5 → 6.8, 0-2 5.1 → 4.7, 2-2 5.0 → 5.7; pareggi 24.2 contro
+  25.5% (vedi *Da fare*, i pareggi con gol).
+
+**Dove sbaglia.** I residui dei gol contro le statistiche previste prima della partita, che il CSV già
+esporta (righe `Previsto` delle sezioni CASA e TRASFERTA), correlazione dentro la lega-stagione, e fra
+parentesi le due metà (2023/24–2024/25 e dal 2025/26):
+
+- *Il totale dei gol* (gol veri meno lambda di ruolo): dove si prevedono più tiri in porta la partita segna
+  meno di quanto dice il lambda, r −0.046 (`z = −7.0`; −0.036 / −0.062), e così con xGOT (−0.044), xG
+  (−0.038), NPxG (−0.035). È il totale troppo largo visto da un'altra parte.
+- *La differenza reti* (coi lambda dell'1X2): la squadra con più tocchi previsti nell'area avversaria vince
+  più di quanto dicono i lambda, r +0.059 (`z = +9.0`; +0.065 / +0.049), e lo stesso, più debole, con
+  corner (+0.043), possesso (+0.042), NPxG (+0.037), xG (+0.036) e tiri in porta (+0.033), tutti nello
+  stesso verso nelle due metà. Una spiegazione possibile, trovata dopo e quindi non una prova: l'1X2 è
+  fatto per tre quarti dall'Elo, che impara solo dai gol, e il dominio del campo che il motore prevede ci
+  arriva diviso per quattro.
+
+**Quanto varrebbero, fuori lega** (stimato su 23 leghe, misurato sulla 24ª; logloss):
+
+| correzione | differenza | `z` | leghe meglio |
+|---|---|---|---|
+| il totale dei lambda di ruolo ristretto (`c` 0.7) verso la media della lega-stagione, Over 2.5 + Goal | −0.97‰ | −2.43 | 18 su 24 |
+| i tocchi in area (casa meno trasferta) sopra l'1X2 del Dixon-Coles di oggi ricalibrato, 1 contro 2 | −3.70‰ | −5.62 | 21 su 24 |
+| i corner, idem | −1.45‰ | −3.45 | 21 su 24 |
+| il possesso, idem | −1.08‰ | −2.95 | 18 su 24 |
+| A: Elo e modello con pesi liberi, contro il motore (`σ(lgTarget)`), 1 contro 2 | −2.91‰ | −4.86 | 19 su 24 |
+| B: A più i tocchi in area, contro il motore | −4.90‰ | −6.37 | 22 su 24 |
+| B contro A: quello che aggiungono i tocchi | −1.98‰ | −4.10 | 20 su 24 |
+
+Con B il pick del 1X2 intero (pareggio del motore, il resto diviso da B) prende il 50.46% contro il 49.96%
+del motore (+0.50, errore 0.15). Il restringimento del totale ha come centro la media della lega-stagione
+presa col senno di poi, e vale un millesimo: per vederlo su partite nuove ne servirebbero circa 30.000. Non
+si registra.
+
+**Le cautele.** Le 24 leghe sono tutte già guardate, e i candidati erano una trentina (tredici statistiche
+in due forme, l'Elo, il restringimento). La correzione residuale del `b3` (GCA, conduzioni in area,
+passaggi progressivi) sembrava valere ed ha cambiato segno da un mese all'altro: qui il verso regge nelle
+due metà, ma è lo stesso tipo di idea. E A, i pesi liberi, ha già fallito due test registrati in un'altra
+forma (vedi *Peso e scala dell'Elo insieme*). Per questo serve il test sulle partite nuove.
+
+### La regola dei tocchi in area
+
+Scritta il 2 ottobre 2026, prima di qualunque partita del test.
+
+**Il candidato B.** Il log-odds 1 contro 2 del ramo completo diventa
+
+`lg' = 0.08218 + 0.43716·lgElo + 0.49462·lgModel + 0.21680·(Δtocchi − 5.0773) / 7.6366`
+
+con `lgElo` e `lgModel` del motore (le righe `Elo: log-odds Elo` e `Elo: log-odds modello` `[completo →
+1X2]` del CSV) e `Δtocchi` i tocchi nell'area avversaria previsti da `predictStat` (`tch_box`, che il motore
+prende da `/advanced` o, se manca, da `/stats`) per la casa meno quelli per la trasferta: le righe `Tocchi
+Area`, colonna Previsto. Dove mancano, il termine dei tocchi vale 0 (li ha il 99.9% delle partite). I coefficienti sono stimati su
+tutte le 23.278 partite. Il pareggio resta quello del motore; `1` e `2` si dividono il resto secondo
+`σ(lg')`. Per il controllo, A: `lg' = 0.01024 + 0.47035·lgElo + 0.65971·lgModel`. I valori sono in
+`REGOLA`, in testa a `strumenti/dc-residui.py`.
+
+**I dati del test.** Le partite in copia conforme giocate dal 3 ottobre 2026 in poi nelle 24 leghe dei
+batch, col motore in uso (se nel frattempo l'1X2 del motore cambia, la regola si riscrive prima di
+guardare). Si guarda **una volta sola**, al primo batch in cui le partite senza pari sono almeno 4.000
+(circa 5.400 partite: verso marzo 2027); se la stagione europea finisce prima, alla fine, con quelle che ci
+sono. `python3 strumenti/dc-residui.py --prova <cartelle>` (il `--dal` di default è il 3 ottobre 2026).
+
+**Il metro.** La logloss 1 contro 2 sulle partite senza pari, B contro il motore (`σ(lgTarget)`), appaiata
+partita per partita. **Passa** se sull'insieme migliora con `z ≤ −2`, se B fa meglio di A (i tocchi
+aggiungono qualcosa, non è solo il peso del modello), se migliora in più di metà delle leghe con almeno 50
+partite senza pari, e se le prese del 1X2 intero non calano oltre il rumore (differenza appaiata non sotto
+−2 errori standard). Su 4.000 partite senza pari, con l'effetto dell'esplorazione ci si aspetta `z` intorno
+a −3, con metà dell'effetto intorno a −1.5.
+
+**Se passa.** Una manopola nel ramo completo (spenta, torna a oggi) che mette `lg'` al posto di
+`lgTarget` come bersaglio dell'inclinazione, coi tocchi presi da `predictStat`; il CSV esporta `Δtocchi` e
+`lg'`; si rifanno `PICK_RESA`, le rese dell'1X2 nel tabellone e `SORPRESA_TAB` (il disaccordo fra modello
+ed Elo cambia significato quando cambiano i pesi). Se non passa, resta tutto com'è e questa sezione dice
+perché.
+
+### Markov, Dixon-Coles ed Elo
+
+Chiesto dall'utente: «Markov chain e Dixon-Coles, mettendoli in relazione con l'Elo rispetto ai risultati
+reali». Sulle stesse 23.278 partite (`strumenti/markov-dc.py`); «senza Elo» sono i lambda completi divisi
+come dice il log-odds del modello, prima dell'inclinazione, con lo stesso totale:
+
+| | logloss 1X2 | prese | AUC 1 contro 2 | pendenza 1 contro 2 | pareggio previsto (reale 25.5%) | AUC del pareggio |
+|---|---|---|---|---|---|---|
+| Dixon-Coles senza Elo | 1.0142 | 49.75% | 0.715 | 1.163 | 25.7% | 0.547 |
+| Markov senza Elo | 1.0143 | 49.75% | 0.715 | 1.130 | 27.3% | 0.551 |
+| Dixon-Coles con Elo | 1.0098 | 49.96% | 0.720 | 0.991 | 25.2% | 0.550 |
+| Markov con Elo | 1.0098 | 49.99% | 0.720 | 0.963 | 26.7% | 0.553 |
+| finale (0.70 DC + 0.30 Markov) | 1.0096 | 49.96% | 0.720 | 0.983 | 25.6% | 0.551 |
+| Elo da solo | | | 0.713 | 0.871 | | |
+
+- **Sull'1 contro 2 sono lo stesso modello**: i due log(p1/p2) correlano 0.9998. Differiscono sul
+  pareggio: il Markov lo dà 1.5 punti più alto del Dixon-Coles (le due `pX` correlano 0.944) e sopra il
+  vero in ogni fascia (22–26%: 24.4 → 22.4; oltre il 30%: 31.1 → 29.3); il Dixon-Coles è calibrato tranne
+  fra il 22 e il 26% (24.3 → 25.6).
+- **Il modello e l'Elo sbagliano in versi opposti**: il modello è timido (pendenza 1.16), l'Elo troppo
+  sicuro (0.87 sulle 24 leghe; nel `b41`, sulle cinque leghe e col motore di allora, stava fra 0.96 e
+  1.12), il prodotto quasi calibrato (0.99). Correlano 0.831: per questo la combinazione vale più di
+  ciascuno. Da soli, ricalibrati, fanno peggio del motore (fuori lega Elo +4.57‰, Dixon-Coles +3.97‰,
+  Markov +3.84‰); con pesi liberi meglio (A, qui sopra), e il Markov non aggiunge niente al Dixon-Coles
+  (Elo + DC −2.91‰, Elo + Markov −2.97‰, tutti e tre −2.94‰).
+- **Il peso del Markov nell'ensemble è piatto**: logloss 1.00981 a 0, 1.00957 a 0.30, 1.00952 a 0.50,
+  1.00977 a 1; fuori lega si sceglie 0.5 in 18 leghe su 24, ma contro lo 0.30 in uso fa +0.05‰ (`z =
+  +0.73`). `ENS_W` resta.
 
 ## I gol
 
