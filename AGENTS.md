@@ -216,6 +216,14 @@ Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export rec
   è tutto il muro (vedi *Una media NPxG di lega*, punto 4). Va ricostruito il verso
   sull'Over, non dedotto: il CSV esporta `Unita: media gol casa
   (piatta)` e `(emivita 106)` fianco a fianco. Vedi *I mercati gol: due muri*.
+- [ ] **L'etichetta delle proposte sul favorito nelle partite ALTO, senza quote.** Nelle partite col
+  rischio sorpresa ALTO le proposte 1X2 dalla parte del favorito (il favorito secco e la sua doppia
+  chance) rendono 3.5 punti meno di quanto promette lo scarto (±1.6, 3.467 proposte, 21 leghe su 24);
+  un 1X2 GIOCABILE lì rende +9.4 contro il +15.5 dell'etichetta. Toglierle non conviene (la prima
+  proposta scende di 1.5 punti), dirlo sì. Con le quote non serve: rendono quanto promettono. La misura
+  è sulle stesse partite su cui è fatta `SORPRESA_TAB`: va scritta una regola e provata su partite nuove
+  (il 2026/27 man mano che si gioca) prima di mettere il numero nello Scanner. Vedi *L'avviso di
+  sorpresa*, «Contro le quote e nel tabellone».
 
 ### 2. Aspettano una sesta lega
 
@@ -420,8 +428,10 @@ sorprese le contano già giuste (sfavorito al 30–35%: vince il 32.3%); l'unico
 qualcosa è il disaccordo fra modello ed Elo sul favorito, +2.4 punti allo sfavorito a pari
 probabilità, uguale nelle dodici leghe dove è stato cercato e nelle altre dodici. **ALTO** (una partita
 su sei: disaccordo e sfavorito al 25% o più) vuol dire sfavorito 33–39%, favorito 34–40%. Un rating
-sugli xG (vedi *Il rating sugli xG: la regola*) non passa il test e non anticipa le sorprese. Vedi
-*L'avviso di sorpresa*.
+sugli xG (vedi *Il rating sugli xG: la regola*) non passa il test e non anticipa le sorprese. Contro
+le quote l'avviso non aggiunge niente: il mercato il disaccordo lo conosce già. Senza quote, nelle
+partite ALTO le proposte del tabellone dalla parte del favorito rendono 3.5 punti meno di quanto
+promettono. Vedi *L'avviso di sorpresa*.
 
 **La giornata** (dal `b65`). Un bottone analizza tutte le partite del turno di una lega dalla data
 scelta, ognuna col giro completo dello Scanner; poi si passa dall'una all'altra coi bottoni, a
@@ -475,6 +485,10 @@ al prezzo migliore); il prezzo migliore contro il consenso sembra valere solo co
 proporzione, che sopravvaluta gli sfavoriti (ricalibrato −8.7%, ROI −34%); in nessuna delle 27 fette
 scritte prima il motore, dato il mercato, pesa più di zero. La strada che resta sono i mercati senza
 quote storiche nei file (corner, cartellini). Vedi *Battere il bookmaker: la regola della ricerca*.
+Nemmeno i nostri dati trovano una debolezza delle quote che regga su partite nuove: rating sugli xG,
+fortuna e forma recenti, riposo, coppe europee, neopromosse (vedi *Le debolezze delle quote: la
+regola*). L'Elo e il mercato indicano lo stesso favorito nell'87% delle partite, e dato il mercato l'Elo
+pesa meno di zero.
 
 **Formazioni e stanchezza.** Dal `b43` il motore sa chi manca oggi rispetto all'undici
 abituale, dal `b44` quanti giorni di riposo ha ogni squadra contando le coppe europee (card
@@ -2594,6 +2608,63 @@ meno precisi), con quote storiche a pagamento; le quote a pochi minuti dal fisch
 formazione confermata. Ogni prova con la sua regola, e col CLV calcolato sulla chiusura
 **ricalibrata**, non in proporzione.
 
+### Le debolezze delle quote: la regola
+
+Chiesta dall'utente: «controllare eventuali debolezze delle quote rispetto alle nostre probabilità,
+troviamo una relazione come con l'Elo». La domanda è se, a quote di chiusura uguali, qualcosa che i
+nostri dati sanno vedere sposta l'esito. Motore, modello, Elo, disaccordo modello/Elo, `pX` del motore e
+Over del motore erano già misurati (dato il mercato pesano zero o meno), quindi esclusi.
+
+**La regola**, scritta prima di guardare i dati. Le 11.902 partite del `b54` con le quote di chiusura
+(`AvgC`, margine tolto in proporzione); per l'Over/Under undici leghe. Esplorazione sul 2023/24 e
+2024/25, conferma sul 2025/26 guardata solo per chi passa. Per ogni candidato, una logistica `esito ~
+logit(mercato) + candidato` (standardizzato): 1 contro 2 sulle partite senza pari, pareggio sul
+`logit(pX)`, Over 2.5 sul `logit(pOver)`. Passa all'esame con `|z| ≥ 3` (dodici prove), è confermato con
+`z ≥ 2` nello stesso verso. I candidati sono dodici, nient'altro. Sull'1X2: il margine del rating sugli
+xG (`strumenti/rating-xg.py`); la fortuna nelle ultime 5 e 10 (differenza reti meno differenza di xG,
+casa meno trasferta); i punti nelle ultime 5; il riposo (`min(giorni, 7)`); la coppa europea nei 4 giorni
+prima; la neopromossa; la differenza di xG nelle ultime 10. Sul pareggio: il margine del rating in valore
+assoluto e il totale dei lambda del motore. Sull'Over: la fortuna sui gol (gol fatti e subiti meno xG
+fatti e subiti, ultime 10, le due squadre) e gli xG totali delle ultime 10.
+
+**Esito del primo giro: nessuno passa.** Esplorazione 7.934 partite (coefficiente per deviazione
+standard del candidato, `z`, leghe nello stesso verso):
+
+| candidato | mercato | coefficiente | `z` | leghe |
+|---|---|---|---|---|
+| fortuna ultime 10 | 1 contro 2 | −0.092 | −2.69 | 10 su 12 |
+| margine del rating sugli xG | 1 contro 2 | +0.290 | +2.42 | 9 su 12 |
+| riposo | 1 contro 2 | −0.054 | −1.65 | 8 su 12 |
+| fortuna ultime 5 | 1 contro 2 | −0.052 | −1.60 | 10 su 12 |
+| fortuna sui gol | Over 2.5 | −0.040 | −1.51 | 7 su 11 |
+| punti nelle ultime 5 | 1 contro 2 | −0.060 | −1.44 | 10 su 12 |
+| neopromossa, coppa europea, xG recenti, rating e lambda sul pareggio, xG totali sull'Over | | | fra −0.45 e +0.25 | |
+
+Fortuna e forma recenti vanno tutte nello stesso verso: chi ha raccolto più di quanto ha creato vince un
+po' meno di quanto dicono le quote. È il verso classico, ma sotto la soglia.
+
+**Il secondo giro**, scritto dopo il primo e prima di guardare i dati: i due candidati più forti,
+fortuna ultime 10 (verso atteso negativo) e rating sugli xG (positivo), su 6.152 partite senza pari mai
+usate per questa domanda (il 2025/26 delle dodici leghe; League One, League Two e Süper Lig
+2023/24–2025/26, quote `E2`, `E3`, `T1`). Passa con `|z| ≥ 2` nel verso atteso e lo stesso verso in tre
+blocchi su quattro.
+
+| | esplorazione | test | `z` | blocchi nel verso atteso (12 leghe 2025/26, League One, League Two, Süper Lig) | esito |
+|---|---|---|---|---|---|
+| fortuna ultime 10 | −0.092 | −0.047 | −1.53 | 3 su 4 (−0.045 / +0.027 / −0.070 / −0.164) | **non passa** |
+| rating sugli xG | +0.290 | −0.053 | −0.58 | 1 su 4 | **non passa** |
+
+Coi coefficienti dell'esplorazione, sui dati del test, la fortuna non migliora la previsione del mercato
+ricalibrato (−0.01‰, `z = −0.01`) e il rating la peggiora (+1.33‰, `z = +2.09`). Solo descrittivo, su
+tutti i dati insieme (compresi quelli su cui è stata scelta, quindi un po' gonfiata): la fortuna vale
+−0.067 per deviazione standard (`z = −2.93`), e nel 10% di partite più estreme (più di 1.08 gol a partita
+di differenza) sposta circa 2.8 punti di probabilità, quanto il bookmaker trattiene su una partita
+equilibrata. Anche fosse vera, non lascerebbe guadagno.
+
+**Dove resta qualcosa.** Sull'1X2 e sull'Over/Under le quote di chiusura sanno già quello che sanno i
+nostri dati. L'unico terreno aperto resta quello dei mercati senza quote storiche (corner, cartellini).
+`python3 strumenti/quote-debolezze.py batch48 batch4 --prova batch/nuove` rifà tutto in un paio di minuti.
+
 ### Le quote di corner e cartellini: la regola
 
 Scritta prima di avere le quote. **La fonte**: Footiqo (quote di chiusura di 1xBet per corner e
@@ -3280,6 +3351,9 @@ misurate.
 | La Poisson bivariata (Karlis–Ntzoufras): una parte comune `λ3` ai gol delle due squadre, `X = X1 + X3`, `Y = X2 + X3`, marginali uguali al motore (solo descrittivo) | **no** | la correlazione fra i residui dei gol di casa e di trasferta è +0.002: non c'è dipendenza da modellare. `λ3` fuori lega 0–4% del lambda minore; risultato esatto +0.06‰, Goal −0.10‰, Over +0.02‰ |
 | Una temperatura sull'1X2 per lega, `σ(T·log(p1/p2) + a)` stimata sulla stagione prima della stessa lega (l'alternativa rimasta in *Peso e scala dell'Elo insieme*) | **no** (solo descrittivo) | 7.954 partite, walk-forward: logloss 1X2 +3.59‰ (`z = +3.57`), meglio in 1 lega su 12, prese 50.33 → 50.25%. `T` non è stabile da una stagione all'altra della stessa lega (LaLiga 1.51 poi 1.05, Championship 0.77 poi 1.04): una stagione di una lega è troppo poco per stimarla |
 | La quota del pareggio e l'Elo: prevedere o giocare la `X` (solo descrittivo) | **dicono la stessa cosa** | 11.222 partite di undici leghe con le quote di chiusura: la probabilità del pareggio del mercato è quasi solo quanto è equilibrata la partita (correlazione −0.90 col suo `log(p1/p2)`, −0.79 con lo squilibrio dell'Elo). AUC del pareggio: mercato 0.580, motore 0.559, Elo 0.555. Dato il mercato, né lo squilibrio dell'Elo (+0.08‰), né la `pX` del motore (−0.00‰), né il disaccordo modello/Elo (+0.11‰) aggiungono niente, fuori lega. Giocare `X` alla chiusura: sempre −3.3%; i due sottoinsiemi sopra lo zero (Elo equilibrato +1.5% ±7.7, disaccordo +1.0% ±7.4), riguardati su 4.849 partite mai usate per questo, fanno −8.2% e −14.9% (tutte −8.5%): era rumore |
+| L'Elo e le quote dell'1X2: quanto vanno d'accordo, e se l'accordo si gioca (solo descrittivo) | **d'accordo sì, un vantaggio no** | 11.902 partite di dodici leghe, chiusura: il `log(p1/p2)` del mercato correla 0.920 con `lgElo` (R² 0.85; `lgModel` 0.911, l'1X2 finito del motore 0.939), da 0.80 a 0.96 secondo la lega; stesso favorito nell'86.8% delle partite. Dove non sono d'accordo vince il favorito del mercato: 61.6% delle partite senza pari. A pari probabilità del mercato l'accordo dell'Elo non alza la resa del favorito (+1.1 ±0.9 punti d'accordo, +2.2 ±2.5 in disaccordo). AUC 1 contro 2 mercato 0.771, Elo 0.742; dato il mercato l'Elo pesa −0.146 ±0.055, negativo in 12 leghe su 12 (fuori lega −0.33‰, `z = −1.09`). Giocare `1` o `2` dove l'Elo dà 3 / 5 / 8 / 12+ punti più del mercato: −12.4 / −14.6 / −15.3 / −12.4% della posta. `strumenti/sorpresa-quote.py` |
+| L'avviso di sorpresa contro le quote, e saltare nelle partite ALTO le proposte dalla parte del favorito (solo descrittivo) | **il mercato lo sa già; toglierle no** | ALTO contro il mercato ricalibrato +1.3 ±2.3 punti allo sfavorito, dato il mercato il disaccordo +0.01‰; lo sfavorito delle ALTO alla chiusura −4.7%. Nel tabellone del motore le proposte sul favorito nelle ALTO rendono 3.5 punti meno del promesso, ma toglierle abbassa la prima proposta di 1.5 punti (7 leghe su 24). Vedi *L'avviso di sorpresa*, «Contro le quote e nel tabellone» |
+| Le debolezze delle quote: rating sugli xG, fortuna e forma recenti, riposo, coppe europee, neopromosse, dato il mercato (regola registrata, due giri) | **no** | primo giro, dodici candidati: nessuno arriva a `z` ±3 (fortuna ultime 10 −2.69, rating sugli xG +2.42); secondo giro sui due più forti, 6.152 partite mai usate per questo: fortuna −0.047 (`z = −1.53`), rating −0.053 (si ribalta). La fortuna, se vera, sposta 2.8 punti di probabilità nel 10% più estremo: quanto il margine. Vedi *Le debolezze delle quote: la regola* |
 | Un rating delle squadre sugli xG di tutte le partite di lega, combinato con l'1X2 (regola registrata) | **no** | esplorazione su dodici leghe −5.53‰ di logloss 1 contro 2 fuori lega (`z = −3.95`), +0.75 punti di prese; test su dieci leghe mai aperte −2.00‰ (`z = −1.19`), 5 leghe su 10, prese +0.00. Lo stesso rating sui gol non aggiunge niente; la media degli xG delle due squadre, anche corretta per l'Elo degli avversari, è il peso del modello visto da un'altra parte. Vedi *Il rating sugli xG: la regola* |
 | Il Goal con le sole quote dell'1X2 (matrice del motore inclinata a totale fermo) | **no** (`b57`) | registrato prima, dodici leghe: +0.00355 di logloss, `z = +4.36`, peggio in 9 leghe su 12. Senza le quote dell'Over il Goal resta del motore |
 | Battere il bookmaker con le quote di prima, il prezzo migliore o un sottoinsieme in cui il motore sa di più (ricerca registrata) | **no** | esplorazione 2023/24–2024/25, conferma 2025/26: il mercato non va dove dice il motore (pendenza 1 contro 2 +0.0098, `z = +1.10`); giocare il motore alle quote di prima CLV −6.5% (al prezzo migliore −1.3%); il prezzo migliore contro il consenso «passa» col CLV in proporzione (+15.1%) ma ricalibrato è −8.7%, ROI −34%; nessuna delle 27 fette ha il peso del motore positivo a `z ≥ 3`. Vedi *Battere il bookmaker: la regola della ricerca* |
@@ -3651,6 +3725,37 @@ Il riquadro dice lo sfavorito, la sua probabilità, se modello ed Elo sono d'acc
 della cella; il mega-prompt lo mette per primo fra i rischi calcolati. Non passa per il CSV: livello e
 cella si rifanno dalle righe `1`, `X`, `2` e dai due log-odds del ramo completo, come fa lo strumento.
 Si rifà la tabella quando cambia l'1X2 del motore.
+
+**Contro le quote e nel tabellone** (solo descrittivo, dopo il `b67`). `python3 strumenti/sorpresa-quote.py
+batch48 batch4 --tutte batch/2627 batch/nuove batch/livello`, con `SORPRESA_TAB` letta da `scanner.html`.
+
+- *Contro le quote* (11.902 partite delle dodici leghe, chiusura). Le partite ALTO sono il 14.8%: lo
+  sfavorito del motore vince il 34.9%, contro il 32.9% del motore (+2.0 ±2.3) e il 33.6% del mercato
+  ricalibrato (+1.3 ±2.3, dentro il rumore). Nel 41% delle ALTO il mercato ha già come favorita la
+  squadra che il motore dà sfavorita. Dato il mercato, il segno del disaccordo non aggiunge niente
+  all'1X2 (+0.01‰, `z = +0.12`, 6 leghe su 12). Giocare lo sfavorito delle ALTO alla quota di chiusura:
+  −4.7% ±6.4 (medio −7.4%, basso −18.6%: il margine pesa di più sulle quote alte). Il pick del motore
+  nelle ALTO esce meno della sua probabilità: sotto il 45% il 35.5% contro il 39.0% (1.616 partite),
+  fra il 45 e il 50% il 37.0% contro il 46.7% (135); le ALTO sono lo 0.2% delle partite col pick sopra
+  il 50%, quindi la selezione già non le gioca.
+- *Il tabellone del motore* (23.278 partite di 24 leghe, i mercati gol rifatti col livello dei gol del
+  `b63`, matrice entro 0.072 punti). La prima proposta rende +6.9 ±1.5 nelle ALTO, +7.6 nelle medio,
+  +18.0 nelle basso: le ALTO e le medio sono partite equilibrate, con scarti piccoli. L'effetto proprio
+  dell'avviso è sulle proposte 1X2 **dalla parte del favorito** (il favorito secco e la sua doppia
+  chance): nelle ALTO rendono 3.5 punti meno di quanto promette lo scarto (±1.6, 3.467 proposte, 21
+  leghe su 24), nelle medio −0.4, nelle basso +0.5. Quelle dalla parte dello sfavorito e la `X` rendono
+  quanto promettono (+0.7 ±2.2). Un 1X2 GIOCABILE nelle ALTO rende +9.4 ±2.2 (scarto medio 13.1),
+  contro il +15.5 dell'etichetta. Toglierle non conviene: rendono meno del promesso ma più delle
+  alternative, e senza di loro la prima proposta scende di 1.5 punti (±1.2, meglio in 7 leghe su 24).
+  La doppia chance dello sfavorito nelle ALTO esce il 62.9% (prevista 60.6%); giocata sempre +0.5 ±1.6,
+  proposta dal tabellone (28%) +7.8 ±2.9 con scarto medio 7.5. Lo sfavorito secco proposto (12%) +12.0
+  ±4.5 con scarto 7.1, su 480 proposte: troppo poche per dirlo.
+- *Il tabellone con le quote* (dodici leghe): nelle ALTO la prima proposta passa da +7.4 ±2.3 (motore)
+  a +11.4 ±2.2, e le proposte dalla parte del favorito rendono quanto promettono (−0.1 ±2.6 contro −3.2
+  ±2.3 del motore). Il mercato il disaccordo lo conosce già: con le quote non c'è niente da correggere.
+
+È lo stesso segnale della tabella (+2.4 punti allo sfavorito) visto dal tabellone, misurato sulle stesse
+partite: non è una conferma indipendente. Vedi *Da fare*, l'etichetta delle proposte sul favorito.
 
 ## I gol
 
