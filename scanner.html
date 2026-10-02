@@ -545,7 +545,7 @@ textarea{min-height:0;font-size:12px}
       <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#03140e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-6 4 3 7-8"/><path d="M15 6h4v4"/></svg></div>
       <div style="min-width:0"><h1>Scanner</h1><div class="brand-sub">Motore V9.7 &middot; probabilit&agrave; calibrate sul backtest</div></div>
     </div>
-    <span class="pill pill-build" id="build-ver">build 0905-b67</span>
+    <span class="pill pill-build" id="build-ver">build 0905-b68</span>
   </div>
 </header>
 
@@ -3427,7 +3427,7 @@ function _tabTesto(V) {
        + senza.map(v => v.nome + ' ' + (v.edge == null ? 'base ignota' : (v.edge >= 0 ? '+' : '') + v.edge.toFixed(1))).join(', ') : '');
 }
 
-window.__SCANNER_BUILD = '0905-b67';
+window.__SCANNER_BUILD = '0905-b68';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -3502,7 +3502,8 @@ function predictStat(att, dif, feat, scope, kOverride) {
   const add = STAT_TYPE[feat] === 'additivo';
   const gv = (t, f) => {
     const x = t && t[sc] && t[sc].features && t[sc].features[f];
-    if (!x || !isFinite(x.decay)) return null;
+    // nValid, non il segno: senza dati decay vale 0, che per le additive e' un numero valido
+    if (!x || !(x.nValid > 0) || !isFinite(x.decay)) return null;
     return add ? x.decay : (x.decay > 0 ? x.decay : null);
   };
   const mine = gv(att, feat);

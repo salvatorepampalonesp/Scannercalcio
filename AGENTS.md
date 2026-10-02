@@ -55,7 +55,7 @@ sono, le scrive l'utente. Per misurarle si usano gli stessi file (`strumenti/quo
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b67`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b68`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -258,9 +258,12 @@ qui ha bisogno di dati nuovi, non di rifare questi.
 - [ ] **Le sette metriche col `k` di default 0.50**: `gf`, `direct_speed`, `seq_time`,
   `avg_x`, `cp_regains`, `rec_time`, `xg_sp`. Mai misurate.
 - [ ] **`avg_def_x`**: pendenza 0.06, la previsione è scorrelata dal reale. Capire (forse
-  la forma attacco × difesa non va bene per una coordinata) o togliere.
+  la forma attacco × difesa non va bene per una coordinata) o togliere. Prima, rimisurarla col
+  `b68`: fino al `b67` un avversario senza dati entrava come concesso 0 (vedi *Le statistiche
+  previste*), e su una coordinata intorno ai 40 metri questo sposta la previsione di metri.
 - [ ] **`vaep` e `pv`**: rapporto previsto/reale 0.87/0.88 senza spiegazione. Sono le due
-  metriche `additivo` non coordinate.
+  metriche `additivo` non coordinate. Anche qui il concesso a 0 del `b67` tirava la previsione
+  verso il basso: da rimisurare col `b68` prima di cercare altro.
 
 ### 4. Lavori nuovi (costano chiamate o sviluppo)
 
@@ -378,7 +381,7 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b67`)
+## Stato attuale (`b68`)
 
 **1X2.** Col motore `b48` il pick azzecca il 52.7% (±1.4) contro il 43.0% del «gioca sempre in
 casa» sulle cinque leghe: 52.7% contro 40.2% in Serie A, 52.7% contro 43.1% in Premier, 53.2%
@@ -760,7 +763,13 @@ sua famiglia.
 `media × sh(mio/media) × sh(concesso_avversario/media)`, con `sh(r) = 1 + k·(r − 1)` e `k`
 da `STAT_SHRINK_TABLE` (default 0.50). La media è `_base`, cioè **della coppia**, non della
 lega. Se manca il concesso o la media, torna la media semplice (le leghe minori spesso non
-hanno `/advanced`).
+hanno `/advanced`). «Manca» vuol dire nessun valore nello storico (`nValid` 0), non un valore
+nullo: senza dati `decay` vale 0, e per le metriche `additivo` 0 è un numero valido. Fino al
+`b67` il controllo era sul segno, quindi per le quattro additive (`vaep`, `pv`, `avg_x`,
+`avg_def_x`) «nessun dato» usciva «previsto 0», e un avversario senza dati entrava come
+concesso 0 e tirava giù la previsione (in un caso di prova l'altezza difensiva 38.5 diventava
+35.85). Dal `b68` la metrica senza dati è `null` (N/D), e col concesso mancante torna la media
+della squadra, come per le altre.
 
 `STAT_SHRINK_TABLE`, rifatta nel `b5` su 1133 partite di tre leghe col metodo della
 pendenza (`k_nuovo = k × pendenza` di `reale ~ previsto`), 51 voci:
@@ -1211,7 +1220,9 @@ testo, lo modifica con delle regex e lo esegue con `new Function`. Dipende quind
    `extractSafeStat`, `buildGlobalElo`, `calcDCMatrix`, `markovFlow`, `probsFromMatrix`,
    `estimateRho`, `calculateRho`, `getSimilarMatches`, `computeLeagueParams`, `multigoal`,
    `asianHandicapMat`, `negBinCDF`, `negBinK`, `poisson`, `expectedPoints`, `loadLegheJson`,
-   `fetchMatchRaw`, `predictStat`, `_isPast`. Il contenuto è libero, i nomi no.
+   `fetchMatchRaw`, `predictStat`, `_isPast`. Il contenuto è libero, i nomi no. Dal `b68`
+   l'esposizione azzera un nome che il motore caricato non ha: prima restava su `window` la
+   funzione del motore caricato prima, e un motore vecchio sembrava completo.
 3. **L'hook** si aggancia alla riga della confidence,
    `/(const\s+confidence\s*=\s*Math\.round\([^;]*;)/`. Non riscriverla e non citarla
    testualmente altrove nel file. Tutto ciò che l'hook legge va prodotto **prima**:
@@ -3201,6 +3212,9 @@ di questo elenco è stata a lungo falsa proprio perché nessuno sapeva dove cont
   *L'orario non è affidabile*.
 - **Un valore di ripiego plausibile è più pericoloso di un errore**: 1.50/1.20 per sedici
   build, l'HFA a +100 per tre. Un fallback deve dire su quante osservazioni è prodotto.
+- **«Nessun dato» si conta, non si deduce dal valore.** `_timeDecayDates` restituisce 0 quando
+  non ha valori, e per le metriche additive 0 è un valore vero: fino al `b67` `predictStat`
+  stampava «previsto 0» e usava un concesso 0. Il controllo giusto è `nValid > 0`.
 
 **Fra i due file**
 
@@ -4409,6 +4423,10 @@ aveva lo stesso nome di un verdetto del tabellone che vuol dire un'altra cosa.
 Le confidence dell'1X2 (`Confidence Globale` e la colonna Confidence delle righe `1`, `X`, `2`)
 dal `b53` sono la probabilità arrotondata; nei file fino al `b52` sono `CONF_1X2_TABLE` applicata
 alla probabilità. Chi confronta file di build diverse le ricalcola dalla probabilità.
+
+Nei file fino al `b67` il Previsto di `Altezza Difensiva` (e delle altre metriche additive) è
+`0,00` quando la squadra non ha dati, cioè sulle righe `riserva-*`: va letto come N/D. Dal `b68`
+è N/D (vedi *Le statistiche previste*).
 
 La sezione `FORMAZIONI` (dal `b43`) dice per ogni squadra se la formazione della partita
 c'era e se era confermata, quante formazioni dello storico l'hanno misurata, e gli indici di
