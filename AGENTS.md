@@ -1353,7 +1353,7 @@ la sua probabilità sono quelli delle probabilità mostrate (con le quote se ci 
 prime tre con un verdetto del tabellone a schermo, il rischio sorpresa quello del motore, niente
 `NaN`. Nella giornata controlla anche che la scheda scelta resti cambiando partita.
 
-Esito al `b67` (storico 30; uguale al `b66`), a 390px con tutte le 28 card aperte, scheda per scheda (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, 0 px):
+Esito al `b68` (storico 30; uguale al `b67`), a 390px con tutte le 28 card aperte, scheda per scheda (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, 0 px):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
@@ -1361,7 +1361,7 @@ Esito al `b67` (storico 30; uguale al `b66`), a 390px con tutte le 28 card apert
 | batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 191 | 0 su 122 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
 | `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 128-158 | 74-83 | 0 |
-| `vecchio`: motore `b66` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 | 1 (il certificato) | 0 |
+| `vecchio`: motore `b67` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 | 1 (il certificato) | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -1424,7 +1424,11 @@ quando non c'è niente da dire); le righe del CSV no, solo il certificato. «In 
 l'occhiello con la lega non passano da `safeHtml`. Il banco ha trovato due volte il sottotitolo
 diverso fra Scanner e Comparatore, quando portava il nome della lega (vedi *La grafica dello
 Scanner*, «Cosa cambia nel `b66`»). Al `b67` il controllo col `b66` non vede nessuna scrittura
-diversa, solo il certificato: cambia l'elenco della giornata, che sta fuori dal motore.
+diversa, solo il certificato: cambia l'elenco della giornata, che sta fuori dal motore. Al `b68`
+lo stesso col `b67`: nella lega finta tutte le squadre hanno dati per le metriche additive, quindi
+la correzione di `predictStat` lì non si vede. Si vede su una prova a parte, `predictStat` del
+`b67` e del `b68` su squadre finte: senza dati 0 contro N/D, con l'avversario senza dati 35.85
+contro 38.5, con i dati da tutte e due e sulle metriche a volume identici.
 
 **Il controllo di potenza del `b66`**, fatto a parte su una copia dello Scanner con due guasti
 messi apposta (`ROOT=<copia>`): `renderInBreve()` tolto dal ramo con le quote di `aggiornaQuote`, e
@@ -4657,3 +4661,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b65` | la giornata, chiesta dall'utente: un bottone analizza tutte le partite del turno di una lega dalla data scelta, ognuna col giro completo dello Scanner, e poi si passa dall'una all'altra con le frecce, a cache calda (nessuna chiamata); in cima l'elenco con 1X2, pick, rischio sorpresa e proposta in cima, ordinabile. Il mega-prompt chiede un'analisi completa (700–1200 parole, una sezione in più sugli scenari) invece di quattro sezioni con un tetto di righe. Nessun numero cambia: il banco ritrova ogni partita della giornata identica all'analisi singola, 191 scritture su 191 |
 | `b66` | la grafica riordinata nello stile di prima, scelta dall'utente fra sei proposte: il riquadro «In breve» (pick e quante volte esce, rischio sorpresa, tre proposte migliori, formazioni), l'analisi in sette schede invece che una pagina sola, il tabellone a elenco con le proposte senza verdetto chiuse sotto; sottotitolo, forma, memoria della cache, note e giornata riordinati. Nessun numero cambia: il banco vede 4 scritture diverse col `b65`, tutte di forma, 0 righe del CSV, e misura ora scheda per scheda |
 | `b67` | la giornata sul computer: l'elenco a due colonne si riempie dall'alto in basso invece che per righe (leggendo una colonna l'ordine per orario sembrava sbagliato), con un'intestazione per ogni giorno; l'ordine si calcola sull'orario come numero. Sul telefono era già giusto (rifatto sulla PitchAPI vera su cinque leghe). Nessun numero cambia: col `b66` 0 scritture diverse su 191, 0 righe del CSV |
+| `b68` | due correzioni rimaste sul ramo dell'audit del 23 settembre, mai unito (il resto era già stato rifatto nel `b39`, `b41`, `b50`, `b51` e `b56`): `predictStat` riconosce «nessun dato» da `nValid` e non dal valore, quindi le quattro metriche additive senza dati sono N/D invece di «previsto 0» e un avversario senza dati non entra più come concesso 0; il Comparatore azzera i nomi che il motore caricato non ha. Nessuna probabilità cambia: col `b67` 0 scritture diverse su 191, una sola riga del CSV (il certificato) |
