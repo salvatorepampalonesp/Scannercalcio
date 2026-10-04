@@ -253,6 +253,19 @@ Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export rec
   `leghe.json` che football-data non ha, o quando le quote non ci sono. Per un test, una regola scritta prima
   e leghe o stagioni mai aperte per questa domanda (circa 300 partite utili per stagione di 24 leghe).
   `strumenti/` non ha ancora lo script: l'esplorazione è da riscrivere lì prima di registrare la regola.
+- [ ] **L'handicap della matrice allineata esagera il margine del favorito.** Solo esplorazione, sulle 11
+  leghe coi file principali (10.485 partite con le quote di chiusura di 1X2, Over 2.5 e handicap asiatico,
+  football-data `AHCh`, `AvgCAHH`/`AvgCAHA`). Alla linea dell'handicap del mercato, la probabilità che la casa
+  copra: col favorito in casa a −1.5 la matrice allineata dice 54.4%, il mercato 49.9%, esce il 46.2%; con la
+  casa a +0.75 46.1%, 50.0%, 50.2%. La matrice del motore sbaglia al contrario (43.5% a −1.5, 53.0% a +0.75):
+  il vero sta in mezzo, e il mercato ci sta sopra. La quota dell'handicap contro la matrice allineata −1.77‰
+  di logloss (`z = −2.47`, 9 leghe su 11), ma è quasi tutta taratura: ricalibrate tutte e due fuori lega,
+  −0.16‰ (`z = −0.50`), e la matrice allineata non aggiunge niente al mercato dell'handicap (−0.01‰). Un
+  campo per la quota dell'handicap varrebbe quindi poco più di 1X2 e Over; il difetto da correggere è la
+  dispersione della differenza reti nella matrice allineata, che tocca la card dell'handicap con le quote
+  (`b62`). Per un test: una correzione fissata sulle 11 leghe, provata su partite mai usate per questa
+  domanda. Le probabilità sono fatte in modo che la quota equa e la previsione misurino la stessa cosa anche
+  sulle linee intere e a quarti (vedi la testa di `strumenti/quote-handicap.py`, che rifà tutto in un minuto).
 
 ### 2. Aspettano una sesta lega
 
@@ -367,7 +380,11 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   stimata sulle undici leghe lo porta 0.7 sopra: −0.0005 di logloss, `z = −0.57`, la League One peggiora.
   Il Goal con le quote resta quello della matrice allineata.
 - [ ] **Quote storiche di corner e cartellini.** Fonte trovata: Footiqo (1xBet, chiusura), bloccata
-  dalla rete dell'ambiente finché `footiqo.com` non è fra i domini consentiti. Regola registrata: vedi
+  dalla rete dell'ambiente finché `footiqo.com` non è fra i domini consentiti (va scritto senza `www`:
+  `www.footiqo.com` rimanda lì, e `*.footiqo.com` non lo comprende). Gratis, dalla pagina di ogni lega col
+  bottone di esportazione, ci sono anche le quote di chiusura di Goal/NoGoal e dell'Over/Under da 0.5 a 4.5:
+  servono a misurare il Goal con la sua quota contro quello della matrice allineata, prima di dare allo
+  Scanner un campo per scriverla. Regola registrata: vedi
   *Le quote di corner e cartellini: la regola*. La ricerca per battere il bookmaker (`b58`, vedi
   *Battere il bookmaker: la regola della ricerca*) non ha trovato niente su 1X2 e Over/Under, dove il
   mercato è il più preciso. Il motore discrimina di più su gialli e corner, mercati che i file storici
