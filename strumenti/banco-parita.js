@@ -254,7 +254,7 @@ function instrument(src) {
 }
 
 async function newPage(browser, base) {
-  const ctx = await browser.newContext({ acceptDownloads: false, timezoneId: 'Europe/Rome',
+  const ctx = await browser.newContext({ acceptDownloads: false, timezoneId: 'Europe/Rome', reducedMotion: 'reduce',
                                          viewport: process.env.MOBILE ? { width: 390, height: 844 } : { width: 1280, height: 900 } });
   const page = await ctx.newPage();
   page.setDefaultTimeout(0);
@@ -289,29 +289,35 @@ const SNAP = `(() => ({ rec: window.__REC_CUR || [], verd: JSON.parse(JSON.strin
   trend: JSON.parse(JSON.stringify(window.__ELO_TREND || null)) }))()`;
 
 // «In breve» (b66): il pick e' quello delle probabilita' mostrate (con le quote se ci sono), le proposte
-// le prime tre con un verdetto del tabellone a schermo, il rischio sorpresa quello del motore
-const INBREVE = `(() => { const b = document.querySelector('#in-breve-box'); if (!(b instanceof Element)) return null;
-  const E = window.__ESITO, Q = window.__QUOTE_P, P = Q || (E && E.p); if (!P) return { ok: !b.innerHTML, rotto: false, vuoto: true };
+// le prime tre con un verdetto del tabellone a schermo, il rischio sorpresa quello del motore. Dal b69 il
+// riquadro, la sorpresa e le proposte sono tre blocchi dentro #in-breve
+const INBREVE = `(() => { const b = document.querySelector('#in-breve'); if (!(b instanceof Element)) return null;
+  const E = window.__ESITO, Q = window.__QUOTE_P, P = Q || (E && E.p); if (!P) return { ok: !b.querySelector('.ib-big'), rotto: false, vuoto: true };
   const k = P.indexOf(Math.max(...P)), big = b.querySelector('.ib-big'), pp = b.querySelector('.ib-pp'), lab = b.querySelector('.ib-lab');
   const V = (window.__VERDETTI_QUOTE || window.__VERDETTI || []).filter(v => v.guad != null).slice(0, 3).map(v => v.nome);
   const Vb = [...b.querySelectorAll('.ib-p b')].map(x => x.firstChild.textContent.trim());
   const ok = !!big && big.firstChild.textContent === ['1', 'X', '2'][k] && !!pp && pp.firstChild.textContent === (100 * P[k]).toFixed(1) + '%'
-    && JSON.stringify(V) === JSON.stringify(Vb) && !!b.querySelector('.ib-s-' + E.sorpresa.liv) && !!lab && /con le quote/.test(lab.textContent) === !!Q;
+    && JSON.stringify(V) === JSON.stringify(Vb) && !!b.querySelector('.ib-s-' + E.sorpresa.liv + ', .sorpresa.s-' + E.sorpresa.liv) && !!lab && /con le quote/.test(lab.textContent) === !!Q;
   return { ok, rotto: /NaN|undefined|Infinity/.test(b.innerHTML), pick: ['1', 'X', '2'][k], proposte: Vb.length, quote: !!Q }; })()`;
 // dal b66 l'analisi e' divisa in schede, e una sezione nascosta non ha larghezza: si misura scheda per
-// scheda, con tutte le details aperte. Oltre alle tabelle compatte, i riquadri nuovi non devono uscire di lato
+// scheda, con tutte le details aperte. Oltre alle tabelle compatte, i riquadri nuovi non devono uscire di lato.
+// Dal b69 le schede sono le voci del dock (Altro apre un foglio con Prompt e Dati), e Squadre ha tre sotto-schede
 const MISURA = `(() => { const d = [...document.querySelectorAll('details')]; d.forEach(x => { x.open = true; });
-  const schede = typeof schedaVai === 'function' ? [...document.querySelectorAll('#nav-sezioni a[data-k]')].map(a => a.dataset.k) : [];
+  const voci = typeof schedaVai === 'function' ? [...document.querySelectorAll('#nav-sezioni [data-k], #foglio-altro [data-k]')].map(a => a.dataset.k).filter(k => k !== 'altro') : [];
+  const schede = [...new Set(voci)], dash = document.querySelector('#dashboard-area'), sotto = [...document.querySelectorAll('#squadre-seg [data-sq]')].map(x => x.dataset.sq);
+  const giri = []; schede.forEach(k => { if (k === 'squadre' && sotto.length) sotto.forEach(q => giri.push([k, q])); else giri.push([k, null]); });
   let scroll = 0; const compatte = [], viste = new Set();
-  for (const k of (schede.length ? schede : [null])) {
+  for (const [k, q] of (giri.length ? giri : [[null, null]])) {
     if (k) schedaVai(k, false);
+    if (q && dash) dash.dataset.sq = q;
     scroll = Math.max(scroll, document.documentElement.scrollWidth - window.innerWidth);
-    document.querySelectorAll('table.table-compact, .tv, .tv-mini, .ib-pick, .ib-p, .ib-riga, .fs-riga, .g-row').forEach(t => {
+    document.querySelectorAll('table.table-compact, .tv, .tv-mini, .ib-pick, .ib-p, .ib-f, .fs-riga, .g-row, .gi-row, .cfr-r, .so-top').forEach(t => {
       if (!t.getClientRects().length) return;
       const tab = t.tagName === 'TABLE', w = tab ? (t.closest('.tbl-scroll') || t.parentElement) : t, c = t.closest('[id]');
       const ecc = t.scrollWidth - w.clientWidth, key = (c ? c.id : '?') + (tab ? '' : ' .' + t.className.split(' ')[0]);
-      if (ecc > 1 && !viste.has(key)) { viste.add(key); compatte.push({ id: key, scheda: k, eccesso: ecc }); } });
+      if (ecc > 1 && !viste.has(key)) { viste.add(key); compatte.push({ id: key, scheda: k + (q ? '/' + q : ''), eccesso: ecc }); } });
   }
+  if (dash && sotto.length) dash.dataset.sq = sotto[0];
   if (schede.length) schedaVai('partita', false);
   return { chiuse: d.length, schede: schede.length, scroll, compatte }; })()`;
 
@@ -776,7 +782,7 @@ if (require.main === module) (async () => {
       else {
         pm.kPrimoGiro = first.k; pm.limit = first.limit;
         const d = diffRecs(S.rec, first.rec);
-        pm.scrittureMotore = d.n; pm.scrittureDiverse = d.diff.length; pm.esempi = d.diff.slice(0, 6);
+        pm.scrittureMotore = d.n; pm.scrittureDiverse = d.diff.length; pm.esempi = d.diff.slice(0, 6); pm.idDiversi = [...new Set(d.diff.map(x => x.id))];
       }
       if (csv && csv.header) {
         const col = ((csv.sec._all['ID PARTITA'] || []).indexOf(m.id) - 1) / 4;

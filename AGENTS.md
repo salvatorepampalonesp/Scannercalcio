@@ -55,7 +55,7 @@ sono, le scrive l'utente. Per misurarle si usano gli stessi file (`strumenti/quo
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b68`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b69`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -74,8 +74,8 @@ sono, le scrive l'utente. Per misurarle si usano gli stessi file (`strumenti/quo
   non deve scorrere; i figli di griglia vogliono `min-width:0`. Dal `b59` quasi tutte le card
   sono `<details>` chiuse sul telefono: il banco le apre tutte prima di misurare, perché una
   card chiusa non ha larghezza e nasconderebbe una tabella che esce di lato. Dal `b66` l'analisi
-  è divisa in schede, e per lo stesso motivo il banco misura scheda per scheda. Vedi *La grafica
-  dello Scanner*.
+  è divisa in schede, e per lo stesso motivo il banco misura scheda per scheda (dal `b69` le voci
+  del dock, del foglio Altro e le tre sotto-schede di Squadre). Vedi *La grafica dello Scanner*.
 - **Le manopole per chi fa backtest vanno nel pannello del Comparatore**, non in console:
   il Comparatore si usa anche da telefono.
 - **Il Comparatore deve stampare quello che stampa lo Scanner.** Ogni riga del CSV dice se
@@ -381,7 +381,7 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b68`)
+## Stato attuale (`b69`)
 
 **1X2.** Col motore `b48` il pick azzecca il 52.7% (±1.4) contro il 43.0% del «gioca sempre in
 casa» sulle cinque leghe: 52.7% contro 40.2% in Serie A, 52.7% contro 43.1% in Premier, 53.2%
@@ -549,7 +549,9 @@ pagina passa da 20.483 a 8.279 px). Motore, id e numeri sono quelli del `b58`. D
 card dei giocatori: il mercato si sceglie con le pastiglie, e ogni squadra ha la sua lista con la
 frequenza, una barra e le ultime 5 a pallini. Dal `b61` quella delle formazioni: un riquadro per
 squadra, e chi manca detto per nome. Dal `b66` il riquadro «In breve», le schede e il tabellone a
-elenco. Vedi *La grafica dello Scanner*.
+elenco. Dal `b69` la grafica «Nocturne» del progetto Claude Design dell'utente, con le animazioni: il
+dock in fondo, l'anello dell'analisi in corso, Numeri a fisarmonica col numero chiave, la home e il
+Comparatore negli stessi colori. Vedi *La grafica dello Scanner*.
 
 **La selezione vale più dell'accuratezza.** Prima di aggiungere una feature, chiedersi se
 il segnale non sia già nell'output, solo mal etichettato.
@@ -1060,17 +1062,86 @@ col riordino della prima sotto tutte e due. Colori, sfumature, icone e riquadri 
   frase, e in ogni riga la probabilità più alta in grassetto; il pick si scrive solo con le quote,
   «Giornata» non è più nella barra delle sezioni.
 
+**Cosa cambia nel `b69`.** La grafica «Nocturne» del progetto Claude Design dell'utente (pacchetto
+«Modernizzazione interfaccia con animazioni», redesign 2a), fatta uguale e completata con le schermate
+che il disegno non aveva. Lo Scanner, la home e il Comparatore cambiano veste; motore e numeri no.
+
+- **I token.** Fondo `#161826`, superficie `#232532`, testo `#e9e9ed`, accento `#9184d9` usato come
+  linea e mai come riempimento; casa, trasferta, ok, attenzione ed errore in `oklch`; raggi 4 / 8 / 14;
+  divisori che sfumano ai lati (`--riga`). Inter 400 e 500 in locale (sottoinsieme latino in base64,
+  64 KB) e le icone Phosphor in uno `sprite` dentro la pagina: nessun CDN. Gli alias del `b59`
+  (`--panel`, `--dim`, `--green`...) restano, perché gli stili in linea del motore li usano.
+- **Il setup.** Il passo 1 (database della lega), una volta caricato, si chiude in una riga col check
+  (`#db-riga`, «Serie A · 2025/2026 · 270 partite in memoria») e «Cambia» lo riapre (`#db-passo`). Il
+  passo 2 ha casa e trasferta col pallino del loro colore, data e storico con i bottoni − e +. Da
+  mostrare, `#matchup-builder` riceve `display:flex` invece di `block` (due righe del motore, l'unico
+  tocco al suo codice: con `block` il `gap` della colonna non c'era).
+- **L'analisi in corso** (`#analisi-corso`): sopra la pagina, un anello con la percentuale e sei passi
+  (storico di casa e di trasferta con «12/30», parametri della lega, formazioni, verdetto e tabellone,
+  quote), poi «Analisi pronta». Non tocca il motore: legge il suo registro (`#console-loader`) con un
+  `MutationObserver`. Lo aprono e chiudono `analizzaUna` (il bottone) e la giornata, con
+  `__GRAFICA.caricaInizia()` e `caricaFine()`; se il motore si ferma prima di `__ESITO`, si chiude da
+  solo. Aspetta le quote automatiche al massimo 2.5 secondi.
+- **Il dock** (`#nav-sezioni`, ora un `nav.dock` in fondo con bottoni `data-k`): Partita, Tabellone,
+  Squadre, Numeri, Altro. Altro apre un foglio dal basso (`#foglio-altro`) con Prompt e Dati.
+  Statistiche e Mercati del `b66` sono una scheda sola, Numeri (`schedaVai('statistiche')` e
+  `('mercati')` ci portano). Squadre ha un controllo a segmenti (`#squadre-seg`: Formazioni,
+  Giocatori, Ruolo e generale), che mette `data-sq` su `#dashboard-area`; le card dicono la loro
+  sotto-scheda con `data-sq-p`, e `squadreVai(k)` ci porta. La barra in alto dice «Cambia partita»
+  finché si vede il titolo della partita, poi la partita con lega e giorno. La freccia torna a
+  Partita, e da Partita al setup (`tornaIndietro`).
+- **Partita.** «In breve» è il pick grande col suo colore, la probabilità, la barra dell'1X2 e le tre
+  colonne con la quota equa (o il motore, con le quote), poi la resa del pick. Sotto il rischio
+  sorpresa (`#sorpresa-box`) con un indicatore a tre tacche, le tre proposte migliori a righe
+  (`#in-breve-prop`) e le formazioni; poi la card delle quote. I riquadri del verdetto del `b59`
+  (`#tile-*`, `#master-*`, `#bar-*`) restano nella pagina ma nascosti: il motore ci scrive, e «In
+  breve» dice gli stessi numeri. Della sezione resta in vista solo «Scarti fuori soglia» quando c'è.
+- **Tabellone.** Ogni proposta con un verdetto è una riga con la pastiglia, il nome, la probabilità e
+  una barra dalla base di lega alla probabilità; sotto, la resa della sua famiglia.
+- **Numeri.** Ogni card è una fisarmonica col suo numero chiave nell'intestazione (`CHIAVI`: confidence
+  73/100, xGOT delle due squadre, il primo tempo, il risultato esatto più probabile, i corner, il
+  pareggio del Markov, l'Elo...), letto dagli id che il motore ha già scritto; se lì non c'è un numero,
+  l'intestazione resta senza.
+- **La giornata.** Una scheda con le frecce e la partita in vista (scorre di lato cambiando partita),
+  tre numeri, e l'elenco con un'intestazione per giorno; in ordine di orario la riga dice solo l'ora.
+- **Le animazioni** sono quelle di `scanner-motion.js` del pacchetto: entrata a cascata dei blocchi,
+  barre che si allungano, numeri che contano, il pick che rimbalza, l'indicatore del dock e dei
+  segmenti che scivola, fisarmoniche, onda al tocco, foglio dal basso. Tutte in Web Animations, e
+  tutte spente con `prefers-reduced-motion: reduce`. I numeri che contano sono solo i nodi con
+  `data-count` (In breve, giornata, giocatori, formazioni, righe del tabellone): partono da 0 e
+  finiscono sul testo originale, rimesso identico. Chi legge il DOM in quei 1.3 secondi legge un
+  numero intermedio; per questo il banco gira col movimento ridotto.
+- **La home** (`index.html`): il marchio, «V9.7 · Modello analitico proprietario», due righe d'ingresso
+  con l'icona, la nota in fondo.
+- **Il Comparatore**: stessi token, i passi in fila con il check, la modalità a segmenti («Un
+  giorno»), il motore caricato come una riga col check, il cartellino «motore b69» (verde se la build
+  coincide, ambra se no). Nel risultato i modelli dell'1X2 e il tabellone sono righe con l'esito a
+  icona; le altre tabelle restano tabelle. Le righe evidenziate avevano sfondi chiari del tema di
+  una volta (`#f0f8ff`, `#fff8e1`, `#f3e5f5`) su testo chiaro: illeggibili, ora tolti. Id, logica, CSV
+  e certificato non cambiano.
+
+Schermate pensate qui, che il disegno non aveva: la giornata mentre gira, il passo 1 del setup aperto,
+la card delle quote, le fisarmoniche di Numeri col numero chiave, il prompt, i dati, il foglio Altro,
+la chiusura dell'anello quando il motore si ferma. Sul banco, la stessa analisi dura uguale col `b68`
+e col `b69` (9.9 e 7.5 secondi a cache fredda sulla lega finta, 36 ms a cache calda): la grafica non
+rallenta il motore.
+
 **Cosa non cambia, e non deve cambiare.**
 
 - **Tutti gli id della pagina del `b58` ci sono ancora** (233, confrontati con un elenco preso prima
   di riscrivere): il motore scrive per id, e il Comparatore porta i suoi id ombra. Al `b66` la pagina
   ne ha 252: in più `in-breve` e `in-breve-box`, in meno `nav-giornata` (la voce del `b65` nella barra
-  delle sezioni); `verdetti-body` c'è ancora, ma è un `div`.
+  delle sezioni); `verdetti-body` c'è ancora, ma è un `div`. Al `b69` ci sono tutti i 252 del `b68`, più
+  17 della grafica (`analisi-corso` e i suoi `cv-*`, `db-*`, `foglio-altro`, `in-breve-prop`,
+  `squadre-seg`, `ab-tit`).
 - `id="history-limit"` sta prima di `value="30"` nello stesso tag: il Comparatore lo legge con una
   regex (vedi *Il contratto Scanner ↔ Comparatore*, punto 8).
 - **Il codice della grafica** è una funzione a parte in fondo allo script, che esce subito se non
   trova `#nav-sezioni`: il Comparatore esegue anche lei, ma non ha quel nodo e non succede niente.
-  Nessuna riga del motore la chiama. Il nodo si cerca con `querySelector` e si controlla che sia un
+  Nessuna riga del motore la chiama. Dal `b69` espone `window.__GRAFICA` (scheda, sotto-scheda, In
+  breve, blocco, giornata, inizio e fine dell'analisi), che chiamano solo le funzioni dell'interfaccia
+  (`schedaVai`, `squadreVai`, `renderInBreve`, `renderGiornata`, `renderGiocatori`, `analizzaUna`),
+  sempre con `if (window.__GRAFICA)`: nel Comparatore non esiste. Il nodo si cerca con `querySelector` e si controlla che sia un
   `Element`, **non** con `getElementById`: nel Comparatore `getElementById` non torna mai `null`
   (vedi *Il contratto Scanner ↔ Comparatore*, punto 12). La prima versione lo faceva, e il
   Comparatore non caricava più il motore.
@@ -1079,7 +1150,9 @@ col riordino della prima sotto tutte e due. Colori, sfumature, icone e riquadri 
   tabelle compatte (28 `details` nella pagina dopo un'analisi dal `b66`). Dal `b66` vale anche per
   le schede: una sezione di un'altra scheda ha i numeri scritti ma nessuna larghezza, quindi il banco
   misura scheda per scheda, e oltre alle tabelle compatte guarda che i riquadri nuovi (proposte del
-  tabellone, righe di «In breve», forma, righe della giornata) non escano dal loro spazio.
+  tabellone, righe di «In breve», forma, righe della giornata) non escano dal loro spazio. Dal `b69`
+  le schede sono le voci del dock e del foglio Altro, e Squadre si misura in tutte e tre le
+  sotto-schede.
 - **`renderInBreve` e `schedaVai`** cercano i nodi con `querySelector` e controllano `instanceof
   Element`, come la grafica: nel Comparatore `aggiornaQuote` gira sui nodi fantasma e le chiama.
 
@@ -1351,9 +1424,12 @@ scheda (sette schede, tutte le `details` aperte), guarda che i riquadri nuovi no
 spazio, e controlla «In breve» a ogni partita, nei dieci casi delle quote e nella giornata: il pick e
 la sua probabilità sono quelli delle probabilità mostrate (con le quote se ci sono), le proposte le
 prime tre con un verdetto del tabellone a schermo, il rischio sorpresa quello del motore, niente
-`NaN`. Nella giornata controlla anche che la scheda scelta resti cambiando partita.
+`NaN`. Nella giornata controlla anche che la scheda scelta resti cambiando partita. Dal `b69` gira
+col movimento ridotto (`reducedMotion: 'reduce'`: i numeri che contano mostrerebbero valori
+intermedi), legge «In breve» da `#in-breve` (il riquadro, la sorpresa e le proposte sono tre blocchi)
+e misura le voci del dock e del foglio Altro, Squadre in tutte e tre le sotto-schede.
 
-Esito al `b68` (storico 30; uguale al `b67`), a 390px con tutte le 28 card aperte, scheda per scheda (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, 0 px):
+Esito al `b69` (storico 30; uguale al `b68`), a 390px con tutte le 28 card aperte, scheda per scheda e in tutte e tre le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, 0 px):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
@@ -1361,7 +1437,7 @@ Esito al `b68` (storico 30; uguale al `b67`), a 390px con tutte le 28 card apert
 | batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 191 | 0 su 122 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
 | `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 128-158 | 74-83 | 0 |
-| `vecchio`: motore `b67` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 | 1 (il certificato) | 0 |
+| `vecchio`: motore `b68` caricato (controllo) | 0/3, «motore caricato diverso ...» | 10 su 191 (la grafica) | 1 (il certificato) | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -1428,7 +1504,23 @@ diversa, solo il certificato: cambia l'elenco della giornata, che sta fuori dal 
 lo stesso col `b67`: nella lega finta tutte le squadre hanno dati per le metriche additive, quindi
 la correzione di `predictStat` lì non si vede. Si vede su una prova a parte, `predictStat` del
 `b67` e del `b68` su squadre finte: senza dati 0 contro N/D, con l'avversario senza dati 35.85
-contro 38.5, con i dati da tutte e due e sulle metriche a volume identici.
+contro 38.5, con i dati da tutte e due e sulle metriche a volume identici. Al `b69` il controllo col
+`b68` vede 10 scritture diverse, tutte di forma, scritte dalla grafica nuova dentro il giro del motore:
+la forma (`ui-streak`), il rischio sorpresa, il tabellone, le formazioni, i risultati esatti e i tre
+multigol (gli stessi numeri con altri colori), le due tabelle dei punti attesi (`table-log-home`,
+`table-log-away`, i colori dell'intestazione); le righe del CSV no, solo il certificato.
+
+**Il controllo di potenza del `b69`**, su una copia con due guasti (`ROOT=<copia>`): `renderInBreve()`
+tolto dal ramo con le quote di `aggiornaQuote`, e la regola `nowrap` sull'ultima colonna di «Ruolo e
+generale» estesa alla riga d'avviso a tutta larghezza. Il banco fallisce su tutti e due: 188 px in
+`squadre/ambiti`, e «In breve» sbagliato sulle 2 partite con le quote automatiche e nei casi con le
+quote dell'1X2. Il secondo guasto non è inventato: è quello che il primo giro del banco nuovo ha
+trovato davvero nel `b69` in lavorazione, nella sotto-scheda (la riga d'avviso compare solo con meno di
+6 partite di ruolo).
+Sulla PitchAPI vera, Juventus – Atalanta del 20/09/2026 (245 chiamate, quote automatiche prese da
+football-data): nessun errore, 0 px di scorrimento in tutte le schede a 390px. Lì si è visto anche un
+difetto che la lega finta, coi nomi corti, non mostrava: la pastiglia «confermata» accanto al nome
+troncava «Juventus» in «Juvent…»; ora sta sotto il nome.
 
 **Il controllo di potenza del `b66`**, fatto a parte su una copia dello Scanner con due guasti
 messi apposta (`ROOT=<copia>`): `renderInBreve()` tolto dal ramo con le quote di `aggiornaQuote`, e
@@ -4662,3 +4754,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b66` | la grafica riordinata nello stile di prima, scelta dall'utente fra sei proposte: il riquadro «In breve» (pick e quante volte esce, rischio sorpresa, tre proposte migliori, formazioni), l'analisi in sette schede invece che una pagina sola, il tabellone a elenco con le proposte senza verdetto chiuse sotto; sottotitolo, forma, memoria della cache, note e giornata riordinati. Nessun numero cambia: il banco vede 4 scritture diverse col `b65`, tutte di forma, 0 righe del CSV, e misura ora scheda per scheda |
 | `b67` | la giornata sul computer: l'elenco a due colonne si riempie dall'alto in basso invece che per righe (leggendo una colonna l'ordine per orario sembrava sbagliato), con un'intestazione per ogni giorno; l'ordine si calcola sull'orario come numero. Sul telefono era già giusto (rifatto sulla PitchAPI vera su cinque leghe). Nessun numero cambia: col `b66` 0 scritture diverse su 191, 0 righe del CSV |
 | `b68` | due correzioni rimaste sul ramo dell'audit del 23 settembre, mai unito (il resto era già stato rifatto nel `b39`, `b41`, `b50`, `b51` e `b56`): `predictStat` riconosce «nessun dato» da `nValid` e non dal valore, quindi le quattro metriche additive senza dati sono N/D invece di «previsto 0» e un avversario senza dati non entra più come concesso 0; il Comparatore azzera i nomi che il motore caricato non ha. Nessuna probabilità cambia: col `b67` 0 scritture diverse su 191, una sola riga del CSV (il certificato) |
+| `b69` | la grafica «Nocturne» del progetto Claude Design dell'utente, fatta uguale e completata con le schermate che il disegno non aveva: token nuovi, Inter e icone Phosphor in locale, il setup col database chiuso in una riga, l'anello dell'analisi in corso (legge il registro del motore), il dock con Partita, Tabellone, Squadre, Numeri e Altro, «In breve» col pick grande, il tabellone a righe con la barra dalla base di lega, Numeri a fisarmonica col numero chiave, la giornata a scheda scorrevole; le animazioni del pacchetto, spente col movimento ridotto. Anche la home e il Comparatore (righe con l'esito a icona, via gli sfondi chiari illeggibili). Nessun numero cambia: col `b68` 10 scritture diverse su 191, tutte di forma, una riga del CSV (il certificato); il banco gira col movimento ridotto e misura dock, foglio Altro e sotto-schede |
