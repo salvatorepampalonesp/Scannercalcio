@@ -88,6 +88,12 @@ sono, le scrive l'utente. Per misurarle si usano gli stessi file (`strumenti/quo
   Vedi *Le costanti messe a mano*.
 - La storia dei perché: messaggi di commit, `git log -S <costante>`, e il codice
   pre-ripulitura (commento in testa a `scanner.html` al commit `cd51a69`).
+- **Le skill** (`.claude/skills/`) sono le sequenze di questo file scritte passo per passo, per chi
+  lavora qui con Claude Code: `nuova-build` (build nei quattro posti, controlli, banco col motore
+  di prima, AGENTS.md, commit e PR), `regola-registrata` (già provato? esplorazione, regola
+  committata prima del test, esito com'è), `batch` (batch automatico e controlli di ogni CSV),
+  `schermate` (lo Scanner a 390px, sulla lega finta o su una partita vera). Se cambia una
+  procedura qui, cambia anche la sua skill.
 
 ## Da fare
 
@@ -4486,7 +4492,10 @@ node strumenti/batch-auto.js --leghe "Serie A,Eredivisie,ENG:Championship" --sta
 
 ## Leggere un CSV del Comparatore
 
-Prima di analizzare, sempre, in quest'ordine:
+Prima di analizzare, sempre, in quest'ordine. I controlli su copia conforme, ID, stagione, `lgN`,
+clamp e riserva li fa `python3 strumenti/controlla-csv.py <cartelle o file>`, che esce con 1 se
+qualcosa non va (sui 77 file dei batch, 23.278 partite: niente da segnalare); l'Elo rifatto
+dall'archivio lo controlla `strumenti/elo-archivio.py`.
 
 - **Copia conforme.** In testa al file, `Copia conforme dello Scanner: N partite su M`; per
   partita, la riga `COPIA CONFORME DELLO SCANNER`. Una riga a NO non e' un errore (e' un A/B,
@@ -4602,6 +4611,10 @@ python3 -m http.server 8204 &
 # apri le tre pagine e raccogli pageerror + console error: zero errori e zero richieste
 # fallite (leghe.json sta nel repository). A 390px, zero scroll laterale. Ogni id scritto
 # da safeTxt/safeHtml deve esistere nel DOM.
+
+# 5. le schermate dello Scanner a 390px, ogni scheda, scorrimento ed errori (~40 secondi)
+node strumenti/schermate.js --out <cartella>            # lega finta; esce con 1 se qualcosa scorre
+node strumenti/schermate.js --vera "Juventus|Atalanta|2026-09-20"   # PitchAPI vera, ~250 chiamate
 ```
 
 **I controlli con nome**, da rifare quando si tocca la parte che riguardano. Ognuno ha
