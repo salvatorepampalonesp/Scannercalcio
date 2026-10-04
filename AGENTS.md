@@ -240,6 +240,19 @@ Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export rec
   volta sola, quando le partite nuove senza pari sono almeno 4.000 (verso marzo 2027): batch automatico
   della stagione in corso, poi `python3 strumenti/dc-residui.py --prova <cartelle>`. Vedi *Il Dixon-Coles
   contro i risultati reali*, «La regola dei tocchi in area».
+- [ ] **La motivazione di fine stagione, senza quote.** Solo esplorazione, sulle 24 leghe già guardate, dal
+  solo archivio di lega (nessuna chiamata). Nelle ultime 6 giornate, una squadra è «motivata» se può ancora
+  cambiare zona (primo posto, primo quarto della classifica, metà, ultimi tre), con 3 punti per ogni partita
+  che le resta in calendario. Dove una sola delle due è motivata (904 partite su 3.520) quella vince più del
+  previsto dal motore: in casa 56.3% contro 48.2%, in trasferta 41.6% contro 35.0%. Fuori lega −3.43‰ di
+  logloss 1 contro 2 (`z = −2.05`, 15 leghe su 24, coefficiente `z = +4.4`). Stesso verso nelle due metà
+  (2023/24–2024/25 coefficiente `z = +2.7`, dal 2025/26 `+3.8`) e con 3–12 giornate alla fine. Più forte
+  nelle leghe senza split né playoff (−4.00‰, 12 su 16) che nelle altre (−0.35‰). **Il mercato lo sa
+  già**: sulle 1.710 partite con le quote di chiusura, dato il mercato la motivazione pesa −0.03 (`z =
+  −0.26`), e fuori lega contro il mercato ricalibrato +0.55‰. Servirebbe solo senza quote: le 12 leghe di
+  `leghe.json` che football-data non ha, o quando le quote non ci sono. Per un test, una regola scritta prima
+  e leghe o stagioni mai aperte per questa domanda (circa 300 partite utili per stagione di 24 leghe).
+  `strumenti/` non ha ancora lo script: l'esplorazione è da riscrivere lì prima di registrare la regola.
 
 ### 2. Aspettano una sesta lega
 
@@ -3505,6 +3518,10 @@ misurate.
 | Giocare l'Over o l'Under dove il motore si discosta dal mercato | **no** (`b57`) | 11.222 partite, chiusura: scarto 3+ punti 7.354 giocate, −7.5% della posta; 5+ −9.9%; 8+ −8.7%. Il lato più probabile sempre giocato: motore −5.6%, mercato −3.5%, con le quote −3.7% (margine 5.8%) |
 | Giocare dove il motore dà a un esito più del mercato (le «value bet» del motore) | **no** (`b54`) | 11.902 partite, quote medie di chiusura: motore sopra il mercato di 3+ punti 7.504 giocate, escono il 32.6% contro il 34.2% del mercato, −11.6% della posta; 5+ −15.8%, 8+ −13.0%, 12+ −16.0%. Dato il mercato il motore pesa −0.19 ±0.08 (1 contro 2), negativo in 12 leghe su 12. Anche il pick sempre giocato perde: motore −6.0%, mercato −3.2%, con le quote −2.9% (margine medio 5.7%) |
 | Il Markov al posto del Dixon-Coles, o con più peso nell'ensemble (solo descrittivo) | **sono lo stesso modello** | 23.278 partite di 24 leghe: logloss 1X2 1.0098 tutti e due (lambda completi, dopo l'Elo), log(p1/p2) correlato 0.9998; il Markov dà il pareggio 1.5 punti più alto del Dixon-Coles (26.7% contro 25.5% veri). Peso nell'ensemble piatto fra 0.3 e 0.6, fuori lega contro lo 0.30 +0.05‰ (`z = +0.73`). Elo + Markov a pesi liberi vale quanto Elo + DC (−2.97 contro −2.91‰). Vedi *Markov, Dixon-Coles ed Elo* |
+| Il vantaggio campo di ogni squadra (scarto casa/trasferta della sua differenza reti dalla media di lega, ristretto con `n/(n+20)`), sopra l'1X2 (solo descrittivo) | **no** | 17.337 partite senza pari di 24 leghe, dall'archivio, fuori lega: −0.07‰ (`z = −0.62`), 13 leghe su 24; casa e trasferta separate −0.03‰. Il vantaggio campo vero è quello della lega, che il motore ha già |
+| Gli scontri diretti (differenza reti dei precedenti nell'archivio, corretta per il campo) (solo descrittivo) | **no, peggiora** | 17.337 partite: +0.07‰ (`z = +2.70`), 10 leghe su 24; con almeno due precedenti +0.10‰ |
+| Una taratura dell'1X2 per giornata (prime 5, 6–10, resto) (solo descrittivo) | **no** | +0.06‰ fuori lega: le prime giornate non sono più timide né più sicure delle altre |
+| La motivazione di fine stagione (ultime 6 giornate, chi può ancora cambiare zona) (solo descrittivo) | **contro il motore sì, contro il mercato no** | 2.671 partite senza pari: −3.43‰ fuori lega (`z = −2.05`), 15 leghe su 24; dato il mercato −0.03 (`z = −0.26`). Pareggi vicini al previsto. Quando nessuna delle due ha obiettivi si segna di più (3.16 gol a partita, 2.81 quando li hanno tutte e due): l'Over 2.5 esce il 62.6% contro il 59.4% del mercato, ma dato il mercato non aggiunge niente (`z = +0.26`). Vedi *Da fare* |
 | Restringere il totale dei lambda di ruolo, che è troppo largo (pendenza dei gol veri sul lambda totale 0.71) (solo descrittivo) | **vale un millesimo** | Over 2.5 + Goal −0.97‰ (`z = −2.43`), 18 leghe su 24, `c` 0.7 verso la media della lega-stagione presa col senno di poi; per vederlo su partite nuove ne servirebbero circa 30.000. Vedi *Il Dixon-Coles contro i risultati reali* |
 | Il disaccordo fra modello ed Elo come segnale di sorpresa | **è il candidato Elo visto da un'altra parte** (`b42`) | fuori lega −0.0037 (`z = −2.47`), prese +0.57 punti, Ligue 1 di nuovo contraria (+0.0020). Nelle 717 partite (14%) in cui modello ed Elo indicano favoriti diversi il pick prende il 37.7% (41.4% col disaccordo in regressione), contro il 55.2% delle altre. A parità di partite giocate la selezione non migliora (top 20%: 72.8 contro 73.2%) |
 
