@@ -298,7 +298,20 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   circa N chiamate la prima volta per lega (in cache come il database), e va scelto in modo
   deterministico (ultime N con `_isPast`) perché Scanner e Comparatore restino uguali.
 - [ ] **Cartellini**: posizione in classifica (costo zero, i punteggi sono già in cache) e
-  arbitro (`/v1/matches/{id}` lo espone, profilarlo costa ~15 chiamate).
+  arbitro. Cosa dà la PitchAPI, guardato il 4 ottobre 2026: il **nome** dell'arbitro (nessun id) e
+  lo stadio, solo in `/matches/{id}`. Non c'è nell'archivio di lega né in `/date`, e non c'è un
+  endpoint per arbitro (`/referees`, `/matches?referee=`, `/matches/{id}/officials`: 404). Sulle
+  partite giocate c'è sempre: 120 su 120 in un campione di otto leghe, 2023–2026 (Serie A, Premier,
+  Championship, League Two, Eredivisie, Bundesliga austriaca, MLS, Süper Lig). **Prima del fischio
+  quasi mai**: su 15 partite non ancora giocate fra il 4 e il 5 ottobre (Argentina, Colombia, USL,
+  LaLiga2, Paraguay) solo una lo aveva (Paraguay); LaLiga2 il giorno prima no. Cartellini e falli
+  della partita stanno in `/stats` (`yellow_cards`, `red_cards`, `fouls`, gruppo `Discipline`) e i
+  cartellini, col minuto e il giocatore, in `/events` (`yellowcard`). Profilare un arbitro vuol dire
+  quindi una chiamata a `/matches/{id}` per ogni partita di lega dell'archivio (circa 1.100 per tre
+  stagioni di una lega da 20 squadre, una volta sola: una partita giocata non cambia); i cartellini
+  di quelle partite il motore li ha già quasi tutti in `RAW_CACHE`, e nei CSV ci sono i gialli reali
+  di ogni partita. Per una misura sui batch: 23.278 chiamate, una per partita dei CSV. Nello Scanner,
+  senza l'arbitro della partita da prevedere, servirebbe un campo dove scriverlo, come le quote.
 - [ ] **L'endpoint `/shots`** (`/v1/matches/{id}/shots`, ogni tiro con xG, porta, area,
   situazione, coordinate): la forma della distribuzione dei tiri è il candidato più serio
   per l'*ordinamento* dei mercati gol. Una chiamata in più per partita (+25% sul batch).
