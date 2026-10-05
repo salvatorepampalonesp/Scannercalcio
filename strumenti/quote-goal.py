@@ -61,7 +61,7 @@ def footiqo(cartella):
         for nome in ('passate', 'corrente'):
             for r in json.load(open(os.path.join(cartella, f'{slug}_{nome}.json')))['data']:
                 r = dict(zip(COL, r)); g, m, a = r['matchDate'][:8].split('-')
-                out.append(dict(lega=lg, data=dt.date(2000 + int(a), int(m), int(g)), H=r['homeTeam'], A=r['awayTeam'], q={k: num(r[k]) for k in COL[7:]}))
+                out.append(dict(lega=lg, data=dt.date(2000 + int(a), int(m), int(g)), H=r['homeTeam'], A=r['awayTeam'], q={k: num(r[k]) for k in COL[7:]}, fid=r['id']))
     return out
 
 # Per data (entro un giorno) e nomi; la co-occorrenza dei nomi conta le partite vicine con l'1X2 simile
