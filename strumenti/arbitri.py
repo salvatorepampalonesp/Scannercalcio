@@ -6,6 +6,10 @@
 # quote di quote-goal.py: la panoramica (arbitro e punteggio di ogni partita, dal 2015/16) e corner e
 # cartellini. Una pagina e quattro richieste per lega, con una pausa, come fa la pagina col menu «All».
 # Condizioni d'uso: uso personale, niente ridistribuzione; i file restano in batch/footiqo/, fuori da git.
+#
+# Senza argomenti: l'esplorazione sul 2023/24 e 2024/25 dei cinque campionati. --prova: il test registrato
+# sul 2025/26 e il 2026/27 giocato, Serie A e LaLiga coi b di REGOLA. Esito: passa (conteggio dei gialli
+# -18.88 per mille, z = -3.37, 850 partite, meglio in tutte e due).
 import os, sys, re, json, html, math, time, subprocess, collections, importlib.util, datetime as dt
 import numpy as np
 QUI = os.path.dirname(os.path.abspath(__file__))
@@ -191,6 +195,53 @@ def main():
             misura('corner', np.array([r['c']['lam_c'] for r in Sc]), np.array([r['c']['k_c'] for r in Sc]), np.array([r['c']['c'] for r in Sc]), fc,
                    np.array([r['q']['lega'] for r in Sc]), 9)
 
-if __name__ == '__main__':
+REGOLA = {'Serie A': 0.96, 'LaLiga': 0.72}   # AGENTS.md, Gli arbitri e i gialli: la regola (fissati sul 2023/24-2024/25)
+
+def prova(dirs, cart):
+    STAGIONI = {'2526', '2627'}
+    F = leggi_footiqo(cart); R = profili(F, K=10)
+    M, Q = qm.carica(dirs, 'batch/quote')
+    Q = [q for q in Q if q['lega'] in LEGHE.values() and q['fds'] in STAGIONI]
+    A = qgo.aggancia(Q, qgo.footiqo(cart))
+    csvv = {}
+    for d in dirs:
+        for fn in sorted(os.listdir(d)):
+            if fn.endswith('.csv'): csvv.update(leggi_csv(os.path.join(d, fn)))
+    righe = [dict(q=q, f=F[x['fid']], c=csvv[q['id']]) for q, x in zip(Q, A) if x and x['fid'] in F and q['id'] in csvv and csvv[q['id']]['y'] is not None]
+    print(f'test (2025/26 e 2026/27 giocato): {len(Q)} partite coi file di football-data, agganciate a Footiqo con i gialli del CSV {len(righe)}')
+    z = lambda d: d.mean() / d.std(ddof=1) * math.sqrt(len(d))
+    for l in sorted(LEGHE.values()):
+        S = [r for r in righe if r['q']['lega'] == l]
+        ok = [r for r in S if r['f']['gialli'] is not None]
+        senza = sum(1 for r in S if r['f']['fid'] not in R or R[r['f']['fid']]['n'] == 0)
+        print(f'  {l:15s} {len(S):4d} partite · arbitri senza storia {senza} · gialli di Footiqo uguali al CSV {sum(r["f"]["gialli"] == r["c"]["y"] for r in ok)}/{len(ok)}')
+    S = [r for r in righe if r['f']['fid'] in R]
+    lg = np.array([r['q']['lega'] for r in S]); y = np.array([r['c']['y'] for r in S]); lam = np.array([r['c']['lam_y'] for r in S])
+    kd = np.array([r['c']['k_y'] for r in S]); f = np.log(np.array([R[r['f']['fid']]['r'] for r in S]))
+    b = np.array([REGOLA.get(l, 0.0) for l in lg]); l1 = lam * np.exp(b * f)
+    dc = -(nb_logpmf(y, l1, kd) - nb_logpmf(y, lam, kd))
+    d35 = qg.ll(nb_over(3, l1, kd), (y > 3).astype(float)) - qg.ll(nb_over(3, lam, kd), (y > 3).astype(float))
+    d45 = qg.ll(nb_over(4, l1, kd), (y > 4).astype(float)) - qg.ll(nb_over(4, lam, kd), (y > 4).astype(float))
+    t = np.isin(lg, list(REGOLA))
+    print('\n=== IL TEST: Serie A e LaLiga, b fissati ' + ', '.join(f'{k} {v}' for k, v in REGOLA.items()) + ' ===')
+    for l in REGOLA:
+        k = lg == l
+        print(f'  {l:8s} {k.sum():4d} partite: conteggio {1000 * dc[k].mean():+.2f}‰ (z {z(dc[k]):+.2f}) · Over 3.5 {1000 * d35[k].mean():+.2f}‰ (z {z(d35[k]):+.2f})'
+              f' · Over 4.5 {1000 * d45[k].mean():+.2f}‰ · gialli veri/attesi {y[k].mean() / lam[k].mean():.3f}')
+    zc = z(dc[t]); meglio = all(dc[lg == l].mean() < 0 for l in REGOLA); ov = d35[t].mean() <= 0
+    print(f'  insieme {t.sum()} partite: conteggio {1000 * dc[t].mean():+.2f}‰ (z {zc:+.2f}) · Over 3.5 {1000 * d35[t].mean():+.2f}‰ (z {z(d35[t]):+.2f})'
+          f' · Over 4.5 {1000 * d45[t].mean():+.2f}‰ (z {z(d45[t]):+.2f})')
+    print(f'  -> z <= -2: {"si" if zc <= -2 else "no"} · meglio in tutte e due: {"si" if meglio else "no"} · Over 3.5 non peggiore: {"si" if ov else "no"}'
+          f' · {"PASSA" if zc <= -2 and meglio and ov else "NON PASSA"}')
+    print('\n=== DESCRITTIVI: b in lega sul test (regressione, in campione) e veri/attesi per quinto dell arbitro ===')
+    for l in sorted(LEGHE.values()):
+        k = lg == l; X = lam[k] * f[k]; e = y[k] - lam[k]; bb = (X * e).sum() / (X * X).sum()
+        se = math.sqrt(((e - bb * X) ** 2).sum() / (k.sum() - 1) / (X * X).sum())
+        q = np.quantile(f[k], [.2, .8]); lo, hi = f[k] <= q[0], f[k] >= q[1]
+        print(f'  {l:15s} b {bb:+.3f} ±{se:.3f} (z {bb / se:+.2f}) · quinto meno severo {y[k][lo].mean() / lam[k][lo].mean():.3f}, piu severo {y[k][hi].mean() / lam[k][hi].mean():.3f}')
+
+if __name__ == '__main__' and '--prova' in sys.argv:
+    prova([x for x in sys.argv[1:] if x != '--prova'] or ['batch48', 'batch/2627'], 'batch/footiqo')
+elif __name__ == '__main__':
     if '--solo-scarica' in sys.argv: scarica('batch/footiqo', {'cartellini': 'HYCFT'})
     else: main()

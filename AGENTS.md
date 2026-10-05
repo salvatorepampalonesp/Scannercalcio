@@ -329,9 +329,20 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   ogni partita (tabella con `referee`, `FTHG`, `FTAG`) e corner e gialli per tempo (`HCFT`, `HYCFT`…).
   Bastano due richieste per lega, fatte come quelle delle quote (`strumenti/quote-goal.py --scarica`, che
   oggi prende solo le quote): i nomi si agganciano allo stesso modo, e non serve nessuna chiamata a PitchAPI.
-  Scaricati il 5 ottobre 2026 (`strumenti/arbitri.py --scarica`). Nell'esplorazione sul 2023/24–2024/25
-  l'arbitro sposta i gialli in Serie A e LaLiga (`z` +5.4 e +4.2), non nelle altre tre leghe. Regola
-  registrata sul 2025/26 e il 2026/27: vedi *Gli arbitri e i gialli: la regola*.
+  Scaricati il 5 ottobre 2026 (`strumenti/arbitri.py --scarica`). **Test registrato passato** per Serie A e
+  LaLiga: vedi la voce qui sotto e *Gli arbitri e i gialli: la regola*. La posizione in classifica resta da
+  misurare.
+- [ ] **L'arbitro nei gialli dello Scanner, Serie A e LaLiga.** Il test registrato è passato: sul 2025/26 e
+  il 2026/27 i gialli attesi del motore per `R^b` (rapporto dell'arbitro sulle sue partite precedenti, `b`
+  0.96 in Serie A e 0.72 in LaLiga) fanno −18.9‰ sul conteggio (`z = −3.37`, 850 partite) e −13.4‰
+  sull'Over 3.5. Per entrare servono:
+  - un campo per l'arbitro (le designazioni escono uno o due giorni prima);
+  - la tabella dei rapporti costruita dalla PitchAPI (nomi da `/matches/{id}`, circa 1.100 chiamate per
+    tre stagioni di una lega; gialli dai batch) e confrontata con quella di Footiqo, perché i dati di
+    Footiqo non si ridistribuiscono;
+  - le rese della famiglia dei numeri rimisurate.
+
+  Nelle altre tre leghe l'effetto sul test è positivo ma sotto la soglia: serve un test a parte.
 - [ ] **L'endpoint `/shots`** (`/v1/matches/{id}/shots`, ogni tiro con xG, porta, area,
   situazione, coordinate): la forma della distribuzione dei tiri è il candidato più serio
   per l'*ordinamento* dei mercati gol. Una chiamata in più per partita (+25% sul batch).
@@ -671,7 +682,10 @@ I tiri in porta tengono (40.7 / 40.6, 64.0 / 64.1, 47.1 / 45.1). AUC gialli / ti
 Championship 0.535 / 0.554 / 0.547, Eredivisie 0.546 / 0.550 / 0.527, Liga Portugal 0.574 /
 0.612 / 0.553. Mettere al posto del riferimento la frequenza vera della lega vale poco: la
 previsione cambia solo dove sbagliava di molto, il tabellone non guadagna (vedi *Il riferimento
-di lega vero: misurato*). Il limite di questi mercati è che ordinano poco, non la base.
+di lega vero: misurato*). Il limite di questi mercati è che ordinano poco, non la base. **L'arbitro** sposta
+i gialli in Serie A e LaLiga: col suo rapporto sulle partite precedenti il conteggio dei gialli migliora
+di 18.9‰ (`z = −3.37`) sul 2025/26 e 2026/27, test registrato. Non è ancora nello Scanner. Vedi *Gli
+arbitri e i gialli: la regola*.
 
 **Pareggio.** Non si prevede abbastanza da giocarlo: in copia conforme `pX` ha AUC 0.562
 in Serie A (0.561 / 0.580 / 0.542 nelle tre stagioni; 0.487 sul vecchio campione), 0.547 in
@@ -3688,6 +3702,7 @@ misurate.
 | Il Goal con le sole quote dell'1X2 (matrice del motore inclinata a totale fermo) | **no** (`b57`) | registrato prima, dodici leghe: +0.00355 di logloss, `z = +4.36`, peggio in 9 leghe su 12. Senza le quote dell'Over il Goal resta del motore |
 | Battere il bookmaker con le quote di prima, il prezzo migliore o un sottoinsieme in cui il motore sa di più (ricerca registrata) | **no** | esplorazione 2023/24–2024/25, conferma 2025/26: il mercato non va dove dice il motore (pendenza 1 contro 2 +0.0098, `z = +1.10`); giocare il motore alle quote di prima CLV −6.5% (al prezzo migliore −1.3%); il prezzo migliore contro il consenso «passa» col CLV in proporzione (+15.1%) ma ricalibrato è −8.7%, ROI −34%; nessuna delle 27 fette ha il peso del motore positivo a `z ≥ 3`. Vedi *Battere il bookmaker: la regola della ricerca* |
 | Le quote del Goal, dell'Over 1.5 e del 3.5 (Footiqo, 1xBet, chiusura) insieme alla matrice allineata (regola registrata) | **no** | 5.434 partite dei cinque campionati, fuori lega: Goal −1.69‰ (`z = −1.73`, 3 su 5), Over 1.5 +0.11‰, Over 3.5 +0.90‰. La matrice allineata ordina il Goal meglio della sua quota (AUC più alta in 5 leghe su 5; dato l'allineata il mercato pesa −0.16): la quota ne correggerebbe solo il livello (51.7 → 55.1%). Vedi *Le quote del Goal: la regola* |
+| Un coefficiente unico dell'arbitro sui gialli per tutte e cinque le leghe (esplorazione 2023/24–2024/25) | **no** | fuori lega −1.06‰ sull'Over 3.5 (`z = −0.91`), meglio in 2 leghe su 5: in Serie A e LaLiga l'effetto è forte, in Bundesliga, Premier e Ligue 1 nell'esplorazione non c'è. Per lega in Serie A e LaLiga sì (test passato). Vedi *Gli arbitri e i gialli: la regola* |
 | Ricalibrare il Goal della matrice allineata con le quote (`σ(a + b·logit)`, stimata sulle undici leghe) | **no** (`b62`) | registrato prima, 4.849 partite mai viste: −0.0005 di logloss, `z = −0.57`, la League One peggiora. Lì il Goal allineato sta 2.0 punti sotto e la ricalibrazione lo porta 0.7 sopra |
 | Correggere il livello dei gol col rapporto gol/NPxG (di lega o delle due squadre) invece che con un fattore costante | **non aggiunge niente** (`b63`) | fuori lega su quindici leghe: lega −2.56‰ sull'Over, coppia −2.75‰, costante −2.74‰. Sulle stagioni lo sbaglio segue il rapporto (correlazione −0.69), ma partita per partita il rapporto stimato prima della data non lo prevede meglio di una costante. Vedi *Il livello dei gol: la regola* |
 | La frequenza vera di lega come riferimento di corner, tiri e gialli | **vale poco** | ricostruita dai CSV: previsione −2.2‰ sui corner delle cinque leghe (`z = −1.15`), bene solo dove sbagliava di molto (Bundesliga corner, Eredivisie gialli); tabellone +16.5 → +15.7…+16.2. Vedi *Il riferimento di lega vero: misurato* |
@@ -3718,6 +3733,7 @@ misurate.
 | **Le quote dell'Over e la matrice allineata** (`b57`) | registrata prima, 11.222 partite di undici leghe, fuori lega: Over 2.5 −0.0131 di logloss (`z = −8.49`), Goal −0.0068 (`z = −6.00`), Over 1.5 −0.0093, Over 3.5 −0.0111; 11 leghe su 11 (l'Over 3.5 10). Il livello dei gol, con le quote, torna: Over previsto 54.0% contro 53.9% reale |
 | **Le quote del mercato nell'1X2** (`b54`) | registrata prima, 11.902 partite di dodici leghe, fuori lega: prese 51.04 → 52.99% (+1.95, `z = +7.00`), logloss −0.01772, dodici leghe su dodici. Il guadagno è del mercato: il motore, dato il mercato, pesa meno di zero |
 | **La confidence dell'1X2 uguale alla probabilità** (`b53`) | registrata prima, su quattro leghe mai aperte: Brier −0.00220, `z = −4.09`, quattro leghe su quattro; sulle tre leghe del `b52` −0.00137 (`z = −2.68`) |
+| **L'arbitro nei gialli, Serie A e LaLiga** (non ancora nello Scanner) | registrato prima, 850 partite del 2025/26 e del 2026/27: conteggio dei gialli −18.88‰ (`z = −3.37`), Over 3.5 −13.44‰ (`z = −2.85`), meglio in 2 leghe su 2 |
 | **Lo squilibrio sui tiri in porta** (`b42`) | registrato prima di vedere due leghe e passato su tutte e due; cinque leghe −0.0029 di logloss dell'Over 8.5, `z = −3.10`, positivo in 14 stagioni su 15 |
 
 ## La baseline di coppia
@@ -4630,6 +4646,31 @@ le rese della famiglia dei numeri nel tabellone. Senza arbitro il motore resta q
 
 **Descrittivi**, che non decidono: lo stesso sulle altre tre leghe col `b` stimato in lega; quanti arbitri
 del test non hanno storia; la coincidenza dei gialli.
+
+**Esito: passa.** `python3 strumenti/arbitri.py --prova` lo rifà in mezzo minuto (senza `--prova` rifà
+l'esplorazione). 850 partite di Serie A e LaLiga, 2025/26 e 2026/27 giocato. 33 hanno un arbitro senza
+storia, con rapporto 1.
+
+| | partite | conteggio | `z` | Over 3.5 | `z` | Over 4.5 | gialli veri / attesi |
+|---|---|---|---|---|---|---|---|
+| Serie A | 413 | −21.49‰ | −2.65 | −18.57‰ | −2.47 | −24.24‰ | 0.986 |
+| LaLiga | 437 | −16.41‰ | −2.11 | −8.59‰ | −1.48 | −5.90‰ | 1.041 |
+| **insieme** | 850 | **−18.88‰** | **−3.37** | −13.44‰ | −2.85 | −14.82‰ (`z = −3.16`) | |
+
+Le tre condizioni ci sono tutte: `z ≤ −2`, meglio in tutte e due, Over 3.5 meglio. L'effetto sul test è
+più grande che nell'esplorazione (atteso `z` −2.4): in campione `b` 0.95 in Serie A e 0.74 in LaLiga,
+quasi quelli fissati. Dagli arbitri meno severi ai più severi i gialli veri sugli attesi vanno da 0.88 a
+1.17 in Serie A e da 0.90 a 1.18 in LaLiga. Gialli di Footiqo uguali a quelli del CSV: 386 su 427 in
+Serie A, 379 su 443 in LaLiga.
+
+**Trovato dopo, da non usare senza un test.** Sul test anche le altre tre leghe hanno `b` positivo, in
+campione e sotto la soglia: Bundesliga +0.71 (`z = +1.60`), Ligue 1 +0.41 (`z = +1.40`), Premier +0.65
+(`z = +1.58`). Nell'esplorazione stavano intorno a zero. Forse l'effetto c'è anche lì, più piccolo e più
+rumoroso; un `b` comune ha già fallito nell'esplorazione. Per estenderlo serve un test registrato su
+partite nuove.
+
+**Cosa resta da fare** per lo Scanner (vedi *Da fare*): il campo dell'arbitro e la tabella dei rapporti
+dalla PitchAPI. Fino ad allora il motore resta quello di oggi.
 
 ## Il modello non fallisce in una lega più che in un'altra
 
