@@ -324,7 +324,11 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   stagioni di una lega da 20 squadre, una volta sola: una partita giocata non cambia); i cartellini
   di quelle partite il motore li ha già quasi tutti in `RAW_CACHE`, e nei CSV ci sono i gialli reali
   di ogni partita. Per una misura sui batch: 23.278 chiamate, una per partita dei CSV. Nello Scanner,
-  senza l'arbitro della partita da prevedere, servirebbe un campo dove scriverlo, come le quote.
+  senza l'arbitro della partita da prevedere, servirebbe un campo dove scriverlo, come le quote. Per i
+  cinque campionati c'è una strada più corta. La parte gratuita di Footiqo ha, dal 2015/16, l'arbitro di
+  ogni partita (tabella con `referee`, `FTHG`, `FTAG`) e corner e gialli per tempo (`HCFT`, `HYCFT`…).
+  Bastano due richieste per lega, fatte come quelle delle quote (`strumenti/quote-goal.py --scarica`, che
+  oggi prende solo le quote): i nomi si agganciano allo stesso modo, e non serve nessuna chiamata a PitchAPI.
 - [ ] **L'endpoint `/shots`** (`/v1/matches/{id}/shots`, ogni tiro con xG, porta, area,
   situazione, coordinate): la forma della distribuzione dei tiri è il candidato più serio
   per l'*ordinamento* dei mercati gol. Una chiamata in più per partita (+25% sul batch).
@@ -379,12 +383,12 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   Sulle leghe nuove il Goal allineato sta 2.0 punti sotto (51.9% contro 53.9%), e la ricalibrazione
   stimata sulle undici leghe lo porta 0.7 sopra: −0.0005 di logloss, `z = −0.57`, la League One peggiora.
   Il Goal con le quote resta quello della matrice allineata.
-- [ ] **Quote storiche di corner e cartellini.** Fonte trovata: Footiqo (1xBet, chiusura), bloccata
-  dalla rete dell'ambiente finché `footiqo.com` non è fra i domini consentiti (va scritto senza `www`:
-  `www.footiqo.com` rimanda lì, e `*.footiqo.com` non lo comprende). Gratis, dalla pagina di ogni lega col
-  bottone di esportazione, ci sono anche le quote di chiusura di Goal/NoGoal e dell'Over/Under da 0.5 a 4.5:
-  servono a misurare il Goal con la sua quota contro quello della matrice allineata, prima di dare allo
-  Scanner un campo per scriverla. Regola registrata: vedi
+- [ ] **Quote storiche di corner e cartellini.** Fonte trovata: Footiqo (1xBet, chiusura), raggiungibile
+  dal 5 ottobre 2026 (il dominio va consentito senza `www`: `www.footiqo.com` rimanda lì, e `*.footiqo.com`
+  non lo comprende). Gratis, e solo per i cinque campionati e le coppe, ci sono le quote di chiusura di
+  1X2, Goal/NoGoal e dell'Over/Under da 0.5 a 4.5. Misurate: il Goal con la sua quota non batte quello
+  della matrice allineata, e nemmeno l'Over 1.5 e 3.5, quindi niente campi (vedi *Le quote del Goal: la
+  regola*). Corner e cartellini solo nel Premium. Regola registrata: vedi
   *Le quote di corner e cartellini: la regola*. La ricerca per battere il bookmaker (`b58`, vedi
   *Battere il bookmaker: la regola della ricerca*) non ha trovato niente su 1X2 e Over/Under, dove il
   mercato è il più preciso. Il motore discrimina di più su gialli e corner, mercati che i file storici
@@ -553,7 +557,9 @@ allineata al mercato dà Goal, Over 1.5 e 3.5 migliori del motore in 11 leghe su
 mercati: la regola*. Dal `b62`, con le quote dell'1X2 e dell'Over, anche risultati esatti, multigol e
 handicap vengono dalla matrice allineata: su 4.849 partite mai viste (tre leghe nuove e il 2026/27)
 sono più vicini al vero del motore in 4 blocchi su 4 (`z` da −4.8 a −8.9). Vedi *I mercati della
-matrice con le quote: la regola*.
+matrice con le quote: la regola*. Le quote del Goal (Footiqo, 1xBet, cinque campionati) non aggiungono
+niente: la matrice allineata ordina il Goal meglio della sua quota, che ne correggerebbe solo il livello
+(−1.7‰, `z = −1.73`). Vedi *Le quote del Goal: la regola*.
 
 **Battere il bookmaker** (ricerca registrata, `b58`): con questi dati no. Il mercato non va dove dice
 il motore; giocare il motore alle quote di qualche giorno prima perde in CLV (−6.5% alla media, −1.3%
@@ -3001,6 +3007,142 @@ esatto), quindi non cambia. Il banco controlla i dieci casi delle quote: con 1X2
 quella della matrice allineata, rifatta nella pagina con le funzioni dello Scanner, e c'è la nota;
 negli altri casi è identica a quella del motore.
 
+### Le quote del Goal: la regola
+
+Scritta prima di guardare le quote di Footiqo accanto ai risultati: delle tabelle scaricate si sono letti
+solo i nomi, le date e, per l'aggancio, le quote dell'1X2 e dell'Over 2.5. Chiesta dall'utente: «se invece
+lasciassi lo spazio per le quote goal no goal ecc?».
+
+**Oggi.** Con le quote dell'1X2 e dell'Over 2.5 (football-data, `b57`) Goal/NoGoal, Over 1.5 e Over 3.5
+escono dalla matrice allineata. Il Goal allineato sta sotto il vero (undici leghe 52.0% contro 54.7%; leghe
+del `b62` 51.9 contro 53.9), e la sua ricalibrazione non ha passato il test (`b62`). football-data le quote
+del Goal non le ha.
+
+**La fonte.** Footiqo, parte gratuita. Le condizioni d'uso (15 agosto 2025) permettono l'uso personale e
+vietano la ridistribuzione e lo scraping a ritmo abusivo. Per lega ci sono le quote di chiusura di 1xBet
+di 1X2, Over/Under da 0.5 a 4.5 e Goal/NoGoal, dal 2015/16, ma solo per dieci competizioni: i cinque
+campionati, Champions, Europa e Conference League, Nations League e Libertadores. Si è fatta una
+richiesta per tabella, quella che la pagina fa col menu «All»: 15 richieste in tutto. I file stanno in
+`batch/footiqo/`, fuori da git. La tabella delle quote non ha il punteggio.
+
+**I dati.** Le partite dei cinque campionati dei CSV con le quote di chiusura di 1X2 e Over 2.5 di
+football-data: 2023/24–2025/26 (`batch48`) e le giocate del 2026/27 (`batch/2627`, senza la Bundesliga),
+5.436 in tutto. Si agganciano a Footiqo per data (entro un giorno) e nomi: 5.434, 2 non trovate (Ligue 1
+2025/26). La prova di coincidenza non usa i risultati:
+- `log(p1/p2)` di 1xBet contro la media di football-data: correlazione 0.998, scarto mediano 0.050,
+  3 partite oltre 0.5;
+- logit dell'Over 2.5: correlazione 0.992.
+
+Margine medio di 1xBet: 1X2 3.05%, Goal/NoGoal 5.24%. Il Goal di queste partite contro i risultati è già
+stato guardato (`b57`), le quote del Goal mai.
+
+**Primo test, il Goal.** Probabilità del mercato: `1/BTTSY` e `1/BTTSN` normalizzate. Il candidato è
+`σ(a + b·logit(Goal del mercato) + c·logit(Goal allineato))`, nella forma di `QUOTE_OU` (`stima2` di
+`quote-gol.py`), stimata su quattro leghe e misurata sulla quinta. Si confronta col Goal allineato come lo
+mostra lo Scanner: matrice allineata con `QUOTE_COMB` e `QUOTE_OU` in uso, quote di football-data. Metro:
+logloss del Goal, appaiata partita per partita. **Passa** se migliora con `z ≤ −2` sull'insieme e in almeno
+quattro leghe su cinque (il 2026/27 sta con la sua lega).
+
+**Secondo test, Over 1.5 e Over 3.5**, due test, ognuno per sé. Lo stesso del primo, con le quote
+`O15`/`U15` e `O35`/`U35` di 1xBet, contro l'Over 1.5 e 3.5 della matrice allineata. Stesse soglie. Over
+0.5 e 4.5 solo descrittivi.
+
+**Terzo test, la matrice a tre vincoli**, solo se il primo passa. È la matrice allineata a 1X2 e Over 2.5
+come oggi, più il Goal del primo test (coefficienti fuori lega). Il terzo parametro è il `rho` del
+Dixon-Coles:
+- le quattro celle che corregge stanno tutte sotto i 2.5 gol, e la loro somma non cambia, quindi l'Over
+  2.5 resta quello;
+- sposta il Goal attraverso l'1-1;
+- `log(p1/p2)` cambia appena, e si riallinea.
+
+Bisezione su `rho` dentro `[max(−1/λH, −1/λA), min(1/(λH·λA), 1)]`, coi lambda riallineati a ogni passo.
+Dove il Goal non si raggiunge `rho` resta al bordo, e si dice quante volte. Metro: i tre del `b62`
+(logloss di risultati esatti, multigol, handicap) contro la matrice allineata di oggi. Ognuno passa con
+le stesse soglie.
+
+**Se passano.**
+- *Il primo*: nella card delle quote due campi per le quote di Goal e NoGoal, da scrivere a mano
+  (football-data non le ha, e Footiqo copre solo i cinque campionati). Con le quote dell'1X2, dell'Over e
+  del Goal, Goal/NoGoal della card, del tabellone con le quote e del prompt escono dalla combinazione, coi
+  coefficienti stimati su tutte e cinque le leghe (`QUOTE_GG`).
+- *Il secondo*: lo stesso per l'Over/Under 1.5 e 3.5.
+- *Il terzo*: con le quote del Goal, risultati esatti, multigol e handicap della card escono dalla
+  matrice a tre vincoli.
+
+Le rese della famiglia gol di `EDGE_BANDS_QUOTE` si rimisurano sulle cinque leghe col Goal nuovo: se le
+fasce restano in ordine e dentro i 2se, restano i numeri del `b58`. Se non passano, lo Scanner non ha i
+campi, e questa sezione dice perché.
+
+**Descrittivi**, detti comunque, che non decidono:
+- il mercato del Goal da solo (in proporzione) contro il Goal allineato, e contro la matrice allineata
+  ricalibrata fuori lega (quanto è livello e quanto ordinamento);
+- il peso della matrice allineata, dato il mercato;
+- livello previsto contro reale e calibrazione per fascia di Goal allineato, mercato e combinazione;
+- AUC per lega;
+- lo stesso con la matrice allineata alle quote di 1xBet invece che a quelle di football-data;
+- la resa giocando alla chiusura di 1xBet il lato più probabile del Goal, e dove la matrice allineata si
+  discosta dal mercato di 3+ e 5+ punti.
+
+**Esito: nessuno dei tre passa.** `python3 strumenti/quote-goal.py` rifà tutto in un paio di minuti
+(`--scarica` riprende le tabelle da Footiqo); il terzo test, che qui non si è fatto, ne prende altri sette.
+5.434 partite, con le quote di Goal/NoGoal e dell'Over/Under 1.5 e 3.5 su tutte; matrice del motore entro
+0.072 punti dal CSV.
+
+| test | logloss, con la sua quota meno allineata | `z` | leghe meglio | esito |
+|---|---|---|---|---|
+| Goal | −1.69‰ | −1.73 | 3 su 5 | **non passa** |
+| Over 1.5 | +0.11‰ | +0.45 | 1 su 5 | **non passa** |
+| Over 3.5 | +0.90‰ | +3.00 | 2 su 5 | **non passa** (peggiora) |
+| matrice a tre vincoli | | | | non fatto: chiedeva che passasse il primo |
+
+Il Goal per lega (Bundesliga, LaLiga, Ligue 1, Premier, Serie A): +0.38 / −5.23 / +1.13 / −2.78 /
+−0.88‰.
+
+**La matrice allineata ordina il Goal meglio della sua quota.** AUC allineata contro mercato, in cinque
+leghe su cinque:
+
+| lega | allineata | mercato |
+|---|---|---|
+| Bundesliga | 0.602 | 0.593 |
+| LaLiga | 0.610 | 0.603 |
+| Ligue 1 | 0.568 | 0.566 |
+| Premier | 0.561 | 0.559 |
+| Serie A | 0.555 | 0.542 |
+
+Stimata su tutte e cinque, la combinazione dà al mercato −0.16 e all'allineata +1.04: dato l'allineata, il
+mercato non aggiunge niente. La quota del Goal porta solo il livello:
+
+| Goal | allineata | mercato | combinazione | reale |
+|---|---|---|---|---|
+| media | 51.7% | 54.2% | 55.1% | 55.1% |
+| fascia 40–50: prevista → esce | 45.7 → 48.6 | 46.5 → 46.5 | | |
+| fascia 50–60: prevista → esce | 54.6 → 58.3 | 54.6 → 54.9 | | |
+
+Per fascia l'allineata sta 3–5 punti sotto il vero; il mercato è calibrato fra il 40 e il 60%.
+Ricalibrare l'allineata fuori lega fa meglio della combinazione col mercato (+0.37‰ per la
+combinazione, `z = +2.52`). Ma quella ricalibrazione, provata su leghe nuove nel `b62`, non ha passato il
+test, perché lo scarto del livello cambia da lega a lega.
+
+Descrittivi, che non decidono:
+- il mercato in proporzione contro l'allineata: −1.44‰ (`z = −1.54`, 3 su 5);
+- la matrice allineata alle quote di 1xBet invece che a quelle di football-data: +0.33‰ (`z = +0.82`), e la
+  combinazione col Goal contro quella −2.02‰ (`z = −1.87`);
+- Over 1.5 previsto (allineata / mercato / combinazione) 77.0 / 75.8 / 77.6% contro 77.6% reale; Over 3.5
+  32.3 / 33.0 / 31.8% contro 31.8%;
+- Over 0.5 e 4.5: il mercato fa peggio dell'allineata (+4.41‰ e +1.54‰);
+- margine di 1xBet: Goal/NoGoal 5.24%, Over/Under 1.5 4.38%, 2.5 3.51%, 3.5 4.16%;
+- giocando sempre, alla chiusura di 1xBet, il lato più probabile del Goal: −4.1% ±2.3;
+- dove l'allineata si discosta dal mercato di 3+ punti: −2.0% ±4.0 (2.344 giocate); di 5+: +1.6% ±6.9
+  (736). Rumore.
+
+**Cosa cambia.** Nello Scanner niente: nessun campo per le quote del Goal, dell'Over 1.5 o del 3.5. Con le
+quote dell'1X2 e dell'Over 2.5 la matrice allineata ordina il Goal come la sua quota, o meglio. La quota
+del Goal ne correggerebbe solo il livello (circa 3 punti nei cinque campionati), e vale −1.7‰, sotto la
+soglia.
+
+**Trovato dopo.** La parte gratuita di Footiqo ha anche, per i cinque campionati dal 2015/16, l'arbitro di
+ogni partita e i corner e i gialli per tempo: vedi *Da fare*, i cartellini.
+
 ## Formazioni e assenze
 
 **Perché.** Il pick sbaglia il 47.2% delle partite: 25.6 punti sono pareggi, 21.6 vittorie
@@ -3542,6 +3684,7 @@ misurate.
 | Un rating delle squadre sugli xG di tutte le partite di lega, combinato con l'1X2 (regola registrata) | **no** | esplorazione su dodici leghe −5.53‰ di logloss 1 contro 2 fuori lega (`z = −3.95`), +0.75 punti di prese; test su dieci leghe mai aperte −2.00‰ (`z = −1.19`), 5 leghe su 10, prese +0.00. Lo stesso rating sui gol non aggiunge niente; la media degli xG delle due squadre, anche corretta per l'Elo degli avversari, è il peso del modello visto da un'altra parte. Vedi *Il rating sugli xG: la regola* |
 | Il Goal con le sole quote dell'1X2 (matrice del motore inclinata a totale fermo) | **no** (`b57`) | registrato prima, dodici leghe: +0.00355 di logloss, `z = +4.36`, peggio in 9 leghe su 12. Senza le quote dell'Over il Goal resta del motore |
 | Battere il bookmaker con le quote di prima, il prezzo migliore o un sottoinsieme in cui il motore sa di più (ricerca registrata) | **no** | esplorazione 2023/24–2024/25, conferma 2025/26: il mercato non va dove dice il motore (pendenza 1 contro 2 +0.0098, `z = +1.10`); giocare il motore alle quote di prima CLV −6.5% (al prezzo migliore −1.3%); il prezzo migliore contro il consenso «passa» col CLV in proporzione (+15.1%) ma ricalibrato è −8.7%, ROI −34%; nessuna delle 27 fette ha il peso del motore positivo a `z ≥ 3`. Vedi *Battere il bookmaker: la regola della ricerca* |
+| Le quote del Goal, dell'Over 1.5 e del 3.5 (Footiqo, 1xBet, chiusura) insieme alla matrice allineata (regola registrata) | **no** | 5.434 partite dei cinque campionati, fuori lega: Goal −1.69‰ (`z = −1.73`, 3 su 5), Over 1.5 +0.11‰, Over 3.5 +0.90‰. La matrice allineata ordina il Goal meglio della sua quota (AUC più alta in 5 leghe su 5; dato l'allineata il mercato pesa −0.16): la quota ne correggerebbe solo il livello (51.7 → 55.1%). Vedi *Le quote del Goal: la regola* |
 | Ricalibrare il Goal della matrice allineata con le quote (`σ(a + b·logit)`, stimata sulle undici leghe) | **no** (`b62`) | registrato prima, 4.849 partite mai viste: −0.0005 di logloss, `z = −0.57`, la League One peggiora. Lì il Goal allineato sta 2.0 punti sotto e la ricalibrazione lo porta 0.7 sopra |
 | Correggere il livello dei gol col rapporto gol/NPxG (di lega o delle due squadre) invece che con un fattore costante | **non aggiunge niente** (`b63`) | fuori lega su quindici leghe: lega −2.56‰ sull'Over, coppia −2.75‰, costante −2.74‰. Sulle stagioni lo sbaglio segue il rapporto (correlazione −0.69), ma partita per partita il rapporto stimato prima della data non lo prevede meglio di una costante. Vedi *Il livello dei gol: la regola* |
 | La frequenza vera di lega come riferimento di corner, tiri e gialli | **vale poco** | ricostruita dai CSV: previsione −2.2‰ sui corner delle cinque leghe (`z = −1.15`), bene solo dove sbagliava di molto (Bundesliga corner, Eredivisie gialli); tabellone +16.5 → +15.7…+16.2. Vedi *Il riferimento di lega vero: misurato* |
