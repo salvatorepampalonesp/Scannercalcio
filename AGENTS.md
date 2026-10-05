@@ -329,6 +329,9 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   ogni partita (tabella con `referee`, `FTHG`, `FTAG`) e corner e gialli per tempo (`HCFT`, `HYCFT`…).
   Bastano due richieste per lega, fatte come quelle delle quote (`strumenti/quote-goal.py --scarica`, che
   oggi prende solo le quote): i nomi si agganciano allo stesso modo, e non serve nessuna chiamata a PitchAPI.
+  Scaricati il 5 ottobre 2026 (`strumenti/arbitri.py --scarica`). Nell'esplorazione sul 2023/24–2024/25
+  l'arbitro sposta i gialli in Serie A e LaLiga (`z` +5.4 e +4.2), non nelle altre tre leghe. Regola
+  registrata sul 2025/26 e il 2026/27: vedi *Gli arbitri e i gialli: la regola*.
 - [ ] **L'endpoint `/shots`** (`/v1/matches/{id}/shots`, ogni tiro con xG, porta, area,
   situazione, coordinate): la forma della distribuzione dei tiri è il candidato più serio
   per l'*ordinamento* dei mercati gol. Una chiamata in più per partita (+25% sul batch).
@@ -4550,6 +4553,83 @@ lYel = lYel_grezzo + CARDS_ELO_B * (|Elo_casa − Elo_trasferta| − scarto_medi
 Lo scarto medio di lega è calcolato al volo su `ELO.table`. Il Brier migliora in tutte e
 cinque le leghe con ottimo interno su −0.0035; AUC Over 3.5 / 4.5 / 5.5 da 0.562 / 0.567 /
 0.580 a 0.593 / 0.590 / 0.599. Costo zero chiamate.
+
+### Gli arbitri e i gialli: la regola
+
+Scritta prima di guardare il 2025/26 e il 2026/27. Chiesta dall'utente: «scarica gli arbitri da Footiqo e
+fai la prima misura».
+
+**I dati.**
+- *Footiqo*, parte gratuita, cinque campionati dal 2015/16: per ogni partita l'arbitro (tabella con
+  `referee`) e i gialli (`HYCFT` + `AYCFT`), con lo stesso id delle quote. 20.008 partite, tutte con
+  l'arbitro.
+- *Il download*: `python3 strumenti/arbitri.py --scarica`, una pagina e quattro richieste per lega. I file
+  stanno in `batch/footiqo/`, fuori da git; le condizioni d'uso sono in *Le quote del Goal: la regola*.
+- *Due difetti nei gialli di Footiqo*. Dove il dato manca scrive 0 (Ligue 1 89 partite su 610 nel
+  2023/24–2024/25 con 0 contro 3–6 del CSV, Serie A 16, Premier 13). Spesso conta 2 gialli in più del CSV,
+  forse il secondo giallo. Gli zeri si scartano. Coi gialli del CSV coincide l'87% delle partite (Ligue 1
+  77%).
+- *L'aggancio* è quello di `strumenti/quote-goal.py`: partita del CSV, poi riga delle quote di Footiqo, poi
+  stesso id per arbitro e gialli.
+
+**Il profilo dell'arbitro.** Per ogni partita conta solo il passato. Si prendono le ultime 80 partite
+dell'arbitro nella stessa lega, prima del giorno; per ognuna l'atteso è la media dei gialli della lega nei
+365 giorni prima. Il rapporto è `R = (gialli veri + K·e) / (gialli attesi + K·e)`, con `K = 10` partite
+ed `e` la media della lega oggi. Il candidato corregge i gialli attesi del motore (`Gialli tot (atteso)`,
+la sua dispersione resta quella) con `λ' = λ·R^b`.
+
+**L'esplorazione**, solo sul 2023/24 e sul 2024/25 dei cinque campionati: 3.487 partite, tutte con
+l'arbitro, mediana di 80 partite precedenti, 146 arbitri. Il rapporto va da 0.88 a 1.12 fra il 10° e il
+90° percentile.
+
+| lega | `b` in lega (`z`) | gialli veri / attesi, quinto degli arbitri meno e più severi | `b` del 2023/24 sul 2024/25, Over 3.5 | `b` del 2024/25 sul 2023/24 |
+|---|---|---|---|---|
+| Serie A | +0.93 (+5.36) | 0.844 / 1.096 | 0.73: −13.01‰ | 1.17: −1.08‰ |
+| LaLiga | +0.73 (+4.23) | 0.873 / 1.094 | 0.73: −8.16‰ | 0.71: −8.93‰ |
+| Ligue 1 | +0.13 (+0.51) | | −0.05: +0.09‰ | 0.36: +0.78‰ |
+| Bundesliga | +0.08 (+0.26) | 0.920 / 0.919 | −0.29: +2.79‰ | 0.54: +5.28‰ |
+| Premier | −0.03 (−0.14) | 1.051 / 0.960 | 0.56: +5.98‰ | −0.73: +9.19‰ |
+
+- *Un `b` comune* stimato fuori lega su tutte e cinque: −1.06‰ sull'Over 3.5 (`z = −0.91`), meglio in 2
+  leghe su 5. Aiuta dove l'effetto c'è e guasta dove non c'è.
+- *Serie A e LaLiga* col `b` dell'altra stagione: conteggio −11.69‰ (`z = −3.15`), Over 3.5 −7.74‰ (`z =
+  −2.45`), Over 4.5 −10.86‰ (`z = −3.26`).
+- *Il controllo coi corner* (lo stesso profilo dei gialli sui corner, dove l'arbitro non dovrebbe
+  contare): `b` −0.08 (`z = −1.42`), fuori lega +0.05‰.
+- *`K` fra 5 e 40* non cambia il quadro.
+
+Serie A e LaLiga le ha scelte l'esplorazione: è il test che deve dire se reggono.
+
+**Il candidato**, con tutto fissato adesso:
+- solo Serie A e LaLiga, `λ' = λ·R^b` col profilo descritto sopra (`profili` di `strumenti/arbitri.py`,
+  `K = 10`, ultime 80 partite, zeri scartati);
+- `b` stimato a massima verosimiglianza binomiale negativa sul 2023/24 e 2024/25 di ognuna: **Serie A
+  0.96, LaLiga 0.72**;
+- nelle altre leghe niente.
+
+**I dati del test**, mai guardati per questa domanda: Serie A e LaLiga 2025/26 (`batch48`) e le partite
+giocate del 2026/27 (`batch/2627`), circa 870.
+
+**Il metro.** La log-verosimiglianza del conteggio dei gialli (binomiale negativa con la dispersione del
+CSV), col candidato contro il motore, appaiata partita per partita. **Passa** se:
+- migliora con `z ≤ −2` sulle due leghe insieme;
+- migliora in tutte e due;
+- l'Over 3.5 dei gialli non peggiora sull'insieme.
+
+Con l'effetto dell'esplorazione ci si aspetta `z` intorno a −2.4.
+
+**Se passa.** Entra solo per Serie A e LaLiga:
+- un campo per scrivere l'arbitro (le designazioni escono uno o due giorni prima);
+- una tabella dei rapporti degli arbitri, costruita fuori dallo Scanner e rifatta a ogni stagione.
+
+Per non ridistribuire dati di Footiqo, la tabella nel repository va costruita dalla PitchAPI (nome da
+`/matches/{id}`, gialli dai batch) e confrontata con quella di Footiqo prima di entrare. Poi si rimisurano
+le rese della famiglia dei numeri nel tabellone. Senza arbitro il motore resta quello di oggi.
+
+**Se non passa**, niente campo, e questa sezione dice perché.
+
+**Descrittivi**, che non decidono: lo stesso sulle altre tre leghe col `b` stimato in lega; quanti arbitri
+del test non hanno storia; la coincidenza dei gialli.
 
 ## Il modello non fallisce in una lega più che in un'altra
 
