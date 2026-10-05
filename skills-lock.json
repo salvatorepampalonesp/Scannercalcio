@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "skills": {
+    "accessibility-review": {
+      "source": "anthropics/knowledge-work-plugins",
+      "sourceType": "github",
+      "skillPath": "design/skills/accessibility-review/SKILL.md",
+      "computedHash": "987e6d762060025045c4cc243cbc2feefc5397bb2998d666b4c334c4c1e19d8a"
+    },
+    "find-skills": {
+      "source": "vercel-labs/skills",
+      "sourceType": "github",
+      "skillPath": "skills/find-skills/SKILL.md",
+      "computedHash": "913b9d37d0d54047dd65222bb8c67b2bf04e3cb87dcad1729068d7a8b2c8c396"
+    },
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "skillPath": "skills/frontend-design/SKILL.md",
+      "computedHash": "89496d5dd00f4810205f351759594fc2742bf8eea85a2f2b2d1de59f4bd91576"
+    },
+    "frontend-ui-engineering": {
+      "source": "addyosmani/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/frontend-ui-engineering/SKILL.md",
+      "computedHash": "caada020b47fb51c68ba91f9bf390745e18f9d6c17e4c251b046ba74e43343d7"
+    },
+    "performance-optimization": {
+      "source": "addyosmani/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/performance-optimization/SKILL.md",
+      "computedHash": "c88cbe0824ce94b4bc2d2d43519dc717afc529db1672388c2a5c7d695faccb8c"
+    },
+    "ponytail": {
+      "source": "DietrichGebert/ponytail",
+      "sourceType": "github",
+      "skillPath": "skills/ponytail/SKILL.md",
+      "computedHash": "210fa0831f649ce9f8a305f7b7c8cf2a0dd09ac4dd53067109941b96e7811d4e"
+    },
+    "ponytail-audit": {
+      "source": "DietrichGebert/ponytail",
+      "sourceType": "github",
+      "skillPath": "skills/ponytail-audit/SKILL.md",
+      "computedHash": "33a1360f2b611ec0bc3288cc27c24f0d0760ed3245b3c67c25b4d94ce842a6a1"
+    },
+    "ponytail-debt": {
+      "source": "DietrichGebert/ponytail",
+      "sourceType": "github",
+      "skillPath": "skills/ponytail-debt/SKILL.md",
+      "computedHash": "1d22f90b3ebdafa8a108d64c9395ba58bdc9fd9efc292cc775a9937147314d1d"
+    },
+    "ponytail-gain": {
+      "source": "DietrichGebert/ponytail",
+      "sourceType": "github",
+      "skillPath": "skills/ponytail-gain/SKILL.md",
+      "computedHash": "460b3f67928a76e6966c8771c726aa1b768a0e64aaa22aa4bbdff945069313e7"
+    },
+    "ponytail-help": {
+      "source": "DietrichGebert/ponytail",
+      "sourceType": "github",
+      "skillPath": "skills/ponytail-help/SKILL.md",
+      "computedHash": "49b5b2ef1781630b853788b1f83d8cadeffe24d30c1886545cb692cad972b90f"
+    },
+    "ponytail-review": {
+      "source": "DietrichGebert/ponytail",
+      "sourceType": "github",
+      "skillPath": "skills/ponytail-review/SKILL.md",
+      "computedHash": "09c824396581b0048a4feb504e21a9b3f943c9ec06b77eec04737c0f741c6d25"
+    },
+    "security-and-hardening": {
+      "source": "addyosmani/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/security-and-hardening/SKILL.md",
+      "computedHash": "1e0cd727cccd3c8c0834ce7722a8a2851e2e849f1352ee972f39311437b021d3"
+    },
+    "transitions-dev": {
+      "source": "Jakubantalik/transitions.dev",
+      "sourceType": "github",
+      "skillPath": "skills/transitions-dev/SKILL.md",
+      "computedHash": "563209e79a63f2023f9d41d3fefe4fb9610829537b782a1460b78a4d43dfb080"
+    },
+    "transitions-polish": {
+      "source": "Jakubantalik/transitions.dev",
+      "sourceType": "github",
+      "skillPath": "skills/transitions-polish/SKILL.md",
+      "computedHash": "af33db737e6cefd936ed428838a71466708a39fd76f84db9bc5a608da81e7785"
+    },
+    "ux-copy": {
+      "source": "anthropics/knowledge-work-plugins",
+      "sourceType": "github",
+      "skillPath": "design/skills/ux-copy/SKILL.md",
+      "computedHash": "f7addd20b733b196d870154c3e86ee3ada83e7a16b1ad910c861607f8b472735"
+    }
+  }
+}

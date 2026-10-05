@@ -94,6 +94,15 @@ sono, le scrive l'utente. Per misurarle si usano gli stessi file (`strumenti/quo
   committata prima del test, esito com'è), `batch` (batch automatico e controlli di ogni CSV),
   `schermate` (lo Scanner a 390px, sulla lega finta o su una partita vera). Se cambia una
   procedura qui, cambia anche la sua skill.
+- **Le skill generali** scelte dall'utente stanno accanto (5 ottobre 2026): `find-skills`, ponytail
+  (sei skill), front-end e design (`frontend-design`, `frontend-ui-engineering`, `transitions-dev`,
+  `transitions-polish`, `accessibility-review`, `ux-copy`), sicurezza e velocità
+  (`security-and-hardening`, `performance-optimization`, e gli agenti `security-auditor` e
+  `web-performance-auditor` in `.claude/agents/`), `graphify`. Da dove vengono lo dice
+  `skills-lock.json` (si aggiornano con `npx skills update`); `graphify` e i due agenti sono copiati
+  a mano dai loro repository. Dove dicono altro da questo file vale questo file: niente commenti
+  `ponytail:` nel JS, e i resoconti restano coi numeri. `graphify` scrive in `graphify-out/`, fuori
+  da git.
 
 ## Da fare
 
