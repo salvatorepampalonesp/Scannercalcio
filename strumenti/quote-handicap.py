@@ -113,4 +113,5 @@ def main():
     m = LogisticRegression(penalty=None, max_iter=1000).fit(np.vstack([X[:, 1:], X[:, 1:]]), np.r_[np.ones(len(y)), np.zeros(len(y))], sample_weight=np.r_[wt * y, wt * (1 - y)])
     print(f'\npesi su tutte le partite: mercato {m.coef_[0][0]:+.3f}, allineata {m.coef_[0][1]:+.3f}, intercetta {m.intercept_[0]:+.3f}')
 
-main()
+if __name__ == '__main__':
+    main()
