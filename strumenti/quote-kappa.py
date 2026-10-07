@@ -7,6 +7,8 @@
 # l'Over 2.5 di QUOTE_OU) moltiplicata per exp(-KAPPA*(x-y)^2), rinormalizzata e riallineata agli stessi due bersagli:
 # 1X2 e Over 2.5 restano quelli, cambia solo come si distribuisce la differenza reti. L'handicap si misura alla linea del
 # mercato come in quote-handicap.py (mezze puntate, il nulla escluso). Solo misura: lo Scanner non cambia.
+# Esito del test (7 ottobre 2026): non passa. Handicap -0.74 per mille (z -1.59, 3 blocchi su 4) contro i -2.02 (z -5.31)
+# dell'esplorazione.
 import os, sys, math, collections, importlib.util
 import numpy as np
 QUI = os.path.dirname(os.path.abspath(__file__)); os.chdir(os.path.join(QUI, '..'))

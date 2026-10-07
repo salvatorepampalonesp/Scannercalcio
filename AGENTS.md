@@ -262,7 +262,8 @@ Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export rec
   `leghe.json` che football-data non ha, o quando le quote non ci sono. Per un test, una regola scritta prima
   e leghe o stagioni mai aperte per questa domanda (circa 300 partite utili per stagione di 24 leghe).
   `strumenti/` non ha ancora lo script: l'esplorazione è da riscrivere lì prima di registrare la regola.
-- [ ] **L'handicap della matrice allineata esagera il margine del favorito.** Solo esplorazione, sulle 11
+- [x] ~~**L'handicap della matrice allineata esagera il margine del favorito.**~~ — **la correzione registrata non
+  passa** (7 ottobre 2026; vedi in fondo alla voce). Il racconto resta per la storia. Solo esplorazione, sulle 11
   leghe coi file principali (10.485 partite con le quote di chiusura di 1X2, Over 2.5 e handicap asiatico,
   football-data `AHCh`, `AvgCAHH`/`AvgCAHA`). Alla linea dell'handicap del mercato, la probabilità che la casa
   copra: col favorito in casa a −1.5 la matrice allineata dice 54.4%, il mercato 49.9%, esce il 46.2%; con la
@@ -275,8 +276,9 @@ Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export rec
   (`b62`). Per un test: una correzione fissata sulle 11 leghe, provata su partite mai usate per questa
   domanda. Le probabilità sono fatte in modo che la quota equa e la previsione misurino la stessa cosa anche
   sulle linee intere e a quarti (vedi la testa di `strumenti/quote-handicap.py`, che rifà tutto in un minuto).
-  **Regola registrata il 7 ottobre 2026**: stringere la differenza reti della matrice allineata con `κ = 0.03`,
-  fuori lega −2.02‰ sull'handicap (`z = −5.31`, 11 leghe su 11). Vedi *L'handicap della matrice allineata: la
+  **Regola registrata il 7 ottobre 2026, non passata**: stringere la differenza reti della matrice allineata con
+  `κ = 0.03` valeva −2.02‰ sull'handicap nell'esplorazione (`z = −5.31`, 11 leghe su 11). Sulle partite del test
+  vale −0.74‰ (`z = −1.59`, 3 blocchi su 4). Il difetto resta. Vedi *L'handicap della matrice allineata: la
   regola*.
 
 ### 2. Aspettano una sesta lega
@@ -3245,6 +3247,27 @@ cambiano:
 per una; la matrice corretta contro la quota dell'handicap. `python3 strumenti/quote-kappa.py` rifà
 l'esplorazione, `python3 strumenti/quote-kappa.py --prova batch/nuove batch/2627` il test.
 
+**Esito: non passa.** 4.849 partite con le quote di 1X2 e Over, 4.528 anche con quelle dell'handicap. La matrice
+del motore si ricostruisce entro 0.072 punti dal CSV.
+
+| | League One (1.526) | League Two (1.545) | Süper Lig (941) | il 2026/27 (516) | insieme | `z` |
+|---|---|---|---|---|---|---|
+| **handicap** (il test) | −0.91‰ | −0.94‰ | +0.52‰ | −1.93‰ | **−0.74‰** | **−1.59** |
+| risultato esatto (guardia) | +0.33‰ | +1.97‰ | −10.04‰ | −5.27‰ | −1.93‰ | −1.14 |
+| multigol (guardia) | −2.23‰ | −1.09‰ | −0.13‰ | −5.44‰ | −1.77‰ | −1.79 |
+
+Meglio in 3 blocchi su 4, con le guardie a posto, ma `z` resta lontano da −2. L'effetto c'è e va nel verso giusto,
+ma è un terzo di quello dell'esplorazione (−2.02‰). **Resta tutto com'è**: la card dell'handicap con le quote
+continua a dare al favorito un margine troppo largo.
+
+Descrittivi:
+- differenza reti −1.48‰ (`z = −1.15`, 3 blocchi su 4); Goal −1.08‰ (`z = −1.26`, 4 su 4);
+- la matrice corretta contro la quota dell'handicap −0.84‰ (`z = −1.25`);
+- Goal previsto 51.9 → 54.8%, reale 53.9%: qui la correzione lo porta un punto sopra;
+- pareggi 24.0 → 25.5%, reali 25.4%; Over 1.5 e 3.5 fermi (75.5 e 29.8%, reali 75.1 e 29.0%);
+- le linee si spostano come nell'esplorazione: a −1.0 da 53.7 a 51.3% (ne esce il 49.5%), a +0.75 da 45.8 a 47.4%
+  (ne esce il 49.1%).
+
 ## Formazioni e assenze
 
 **Perché.** Il pick sbaglia il 47.2% delle partite: 25.6 punti sono pareggi, 21.6 vittorie
@@ -3789,6 +3812,7 @@ misurate.
 | Le quote del Goal, dell'Over 1.5 e del 3.5 (Footiqo, 1xBet, chiusura) insieme alla matrice allineata (regola registrata) | **no** | 5.434 partite dei cinque campionati, fuori lega: Goal −1.69‰ (`z = −1.73`, 3 su 5), Over 1.5 +0.11‰, Over 3.5 +0.90‰. La matrice allineata ordina il Goal meglio della sua quota (AUC più alta in 5 leghe su 5; dato l'allineata il mercato pesa −0.16): la quota ne correggerebbe solo il livello (51.7 → 55.1%). Vedi *Le quote del Goal: la regola* |
 | Un coefficiente unico dell'arbitro sui gialli per tutte e cinque le leghe (esplorazione 2023/24–2024/25) | **no** | fuori lega −1.06‰ sull'Over 3.5 (`z = −0.91`), meglio in 2 leghe su 5: in Serie A e LaLiga l'effetto è forte, in Bundesliga, Premier e Ligue 1 nell'esplorazione non c'è. Per lega in Serie A e LaLiga sì (test passato). Vedi *Gli arbitri e i gialli: la regola* |
 | Ricalibrare il Goal della matrice allineata con le quote (`σ(a + b·logit)`, stimata sulle undici leghe) | **no** (`b62`) | registrato prima, 4.849 partite mai viste: −0.0005 di logloss, `z = −0.57`, la League One peggiora. Lì il Goal allineato sta 2.0 punti sotto e la ricalibrazione lo porta 0.7 sopra |
+| Stringere la differenza reti della matrice allineata con le quote (`P·exp(−κ·(x−y)²)`, `κ = 0.03`, riallineata a 1X2 e Over) | **no** (regola registrata, 7 ottobre 2026) | esplorazione sulle 11 leghe: handicap −2.02‰ (`z = −5.31`, 11 su 11), risultati esatti −4.21‰, multigol −3.86‰; test su 4.528 partite mai usate per questa domanda: handicap −0.74‰ (`z = −1.59`, 3 blocchi su 4), risultati esatti −1.93‰, multigol −1.77‰. Verso giusto, un terzo dell'effetto. Vedi *L'handicap della matrice allineata: la regola* |
 | Correggere il livello dei gol col rapporto gol/NPxG (di lega o delle due squadre) invece che con un fattore costante | **non aggiunge niente** (`b63`) | fuori lega su quindici leghe: lega −2.56‰ sull'Over, coppia −2.75‰, costante −2.74‰. Sulle stagioni lo sbaglio segue il rapporto (correlazione −0.69), ma partita per partita il rapporto stimato prima della data non lo prevede meglio di una costante. Vedi *Il livello dei gol: la regola* |
 | La frequenza vera di lega come riferimento di corner, tiri e gialli | **vale poco** | ricostruita dai CSV: previsione −2.2‰ sui corner delle cinque leghe (`z = −1.15`), bene solo dove sbagliava di molto (Bundesliga corner, Eredivisie gialli); tabellone +16.5 → +15.7…+16.2. Vedi *Il riferimento di lega vero: misurato* |
 | Giocare l'Over o l'Under dove il motore si discosta dal mercato | **no** (`b57`) | 11.222 partite, chiusura: scarto 3+ punti 7.354 giocate, −7.5% della posta; 5+ −9.9%; 8+ −8.7%. Il lato più probabile sempre giocato: motore −5.6%, mercato −3.5%, con le quote −3.7% (margine 5.8%) |
