@@ -275,6 +275,9 @@ Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export rec
   (`b62`). Per un test: una correzione fissata sulle 11 leghe, provata su partite mai usate per questa
   domanda. Le probabilità sono fatte in modo che la quota equa e la previsione misurino la stessa cosa anche
   sulle linee intere e a quarti (vedi la testa di `strumenti/quote-handicap.py`, che rifà tutto in un minuto).
+  **Regola registrata il 7 ottobre 2026**: stringere la differenza reti della matrice allineata con `κ = 0.03`,
+  fuori lega −2.02‰ sull'handicap (`z = −5.31`, 11 leghe su 11). Vedi *L'handicap della matrice allineata: la
+  regola*.
 
 ### 2. Aspettano una sesta lega
 
@@ -3168,6 +3171,79 @@ soglia.
 
 **Trovato dopo.** La parte gratuita di Footiqo ha anche, per i cinque campionati dal 2015/16, l'arbitro di
 ogni partita e i corner e i gialli per tempo: vedi *Da fare*, i cartellini.
+
+### L'handicap della matrice allineata: la regola
+
+Scritta prima di aprire i dati del test: delle quote dell'handicap delle partite del test si sono lette solo le
+intestazioni dei file. Chiesta dall'utente dopo i controlli del 7 ottobre 2026 («registrare l'handicap»).
+
+**Perché.** Con le quote dell'1X2 e dell'Over 2.5, handicap, risultati esatti e multigol della card escono dalla
+matrice allineata (`b62`). Alla linea dell'handicap del mercato quella matrice dà al favorito un margine troppo
+largo, da tutte e due le parti:
+
+| linea (casa) | partite | allineata | mercato | esce |
+|---|---|---|---|---|
+| −1.50 | 407 | 54.4% | 49.9% | 46.2% |
+| −1.00 | 513 | 54.2% | 50.0% | 49.5% |
+| −0.75 | 1.065 | 53.2% | 50.2% | 50.7% |
+| +0.75 | 457 | 46.1% | 50.0% | 50.2% |
+| +1.00 | 211 | 45.5% | 50.4% | 50.2% |
+
+Quote di chiusura dell'handicap asiatico di football-data (`AHCh`, `AvgCAHH`/`AvgCAHA`), margine tolto in
+proporzione; la copertura si misura sulle mezze puntate decise, il nulla escluso (`strumenti/quote-handicap.py`).
+
+**L'esplorazione**, sulle 11 leghe coi file principali (`batch48`, `batch4`): 11.222 partite con le quote di 1X2 e
+Over, 10.485 anche con quelle dell'handicap. Il candidato stringe la differenza reti: `P'(x, y) ∝ P(x, y) ·
+exp(−κ·(x − y)²)`, poi la matrice si riallinea agli stessi bersagli, quindi 1X2 e Over 2.5 non cambiano. `κ` su una
+griglia da 0 a 0.10, scelto fuori lega sulla logloss della differenza reti (7 classi, da −3 a +3): **0.03 in 11
+fold su 11**. Contro la matrice allineata di oggi:
+
+| mercato | logloss | `z` | leghe meglio |
+|---|---|---|---|
+| handicap, alla linea del mercato | −2.02‰ | −5.31 | 11 su 11 |
+| differenza reti | −4.36‰ | −5.16 | 11 su 11 |
+| risultato esatto | −4.21‰ | −3.49 | 7 su 11 |
+| multigol | −3.86‰ | −5.44 | 7 su 11 |
+| Goal | −1.38‰ | −2.24 | 7 su 11 |
+
+- *Per stagione*, l'handicap migliora di −1.73 / −2.28 / −2.04‰.
+- *Le linee* si spostano: a −1.5 da 54.4 a 51.5%, a +0.75 da 46.1 a 47.8%.
+- *Contro la quota dell'handicap* la matrice corretta fa +0.24‰ (`z = +0.52`): vale quanto il mercato.
+- *Il Goal* passa da 51.9 a 55.1% (reale 54.7%), i pareggi da 22.7 a 24.1% (reali 25.7%).
+- *La scelta di `κ`*: in campione la logloss dell'handicap scende fino a 0.06 (−2.61‰), ma da 0.045 in su
+  risultati esatti e differenza reti peggiorano. Si sceglie sulla differenza reti, di cui l'handicap è fatto.
+
+**Il candidato**, con tutto fissato: `κ = 0.03` (`KAPPA` in `strumenti/quote-kappa.py`), sul Dixon-Coles 11×11 col
+`rho` del motore, coi lambda riallineati dalla bisezione annidata di `matriceAllineata` agli stessi bersagli di oggi:
+il `log(p1/p2)` di `QUOTE_COMB` e l'Over 2.5 di `QUOTE_OU`. Nessun altro parametro.
+
+**I dati del test** sono le partite del test del `b62`: League One, League Two e Süper Lig 2023/24–2025/26 (batch del
+`b61`) e il 2026/27 giocato di dieci leghe (`batch/2627`), 4.849 partite con le quote di 1X2 e Over; si usano quelle
+che hanno anche le quote di chiusura dell'handicap. Nel `b62` su queste partite si è misurata la matrice allineata
+contro quella del motore (risultati esatti, multigol, differenza reti, Goal ricalibrato); il `κ` mai, e le quote
+dell'handicap non sono mai state aperte. I blocchi sono quattro: League One, League Two, Süper Lig, il 2026/27.
+
+**Il metro.** La logloss della copertura dell'handicap alla linea del mercato, matrice corretta contro allineata,
+appaiata partita per partita. **Passa** se:
+- migliora con `z ≤ −2` sull'insieme;
+- migliora in almeno 3 blocchi su 4;
+- risultati esatti e multigol non peggiorano sull'insieme.
+
+Con l'effetto dell'esplorazione, su circa 4.000 partite con l'handicap ci si aspetta `z` intorno a −3.
+
+**Se passa.** Nello Scanner `matriceAllineata` prende il `κ`, con una manopola che a 0 torna a prima. Con le quote
+cambiano:
+- la card di risultati esatti, handicap e multigol;
+- Goal/NoGoal, Over 1.5 e Over 3.5, nella card delle quote e nel tabellone.
+
+1X2 e Over 2.5 con le quote no. Si rimisurano le rese dei gol di `EDGE_BANDS_QUOTE` e i numeri di
+`MATRICE_QUOTE_RESA`, e il banco rifà la matrice allineata col `κ`. Senza quote, e nel Comparatore, niente cambia.
+
+**Se non passa**, resta tutto com'è e questa sezione dice perché.
+
+**Descrittivi**, che non decidono: differenza reti; Goal (livello e fasce); Over 1.5 e 3.5; pareggi; le linee una
+per una; la matrice corretta contro la quota dell'handicap. `python3 strumenti/quote-kappa.py` rifà
+l'esplorazione, `python3 strumenti/quote-kappa.py --prova batch/nuove batch/2627` il test.
 
 ## Formazioni e assenze
 
