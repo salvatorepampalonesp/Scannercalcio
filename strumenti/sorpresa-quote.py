@@ -8,6 +8,8 @@
 # scanner.html) contro le quote; il tabellone con le quote nelle partite ALTO. Su tutte le leghe dei batch
 # (anche --tutte): il tabellone del motore per livello di sorpresa, coi mercati gol rifatti col livello dei gol
 # del b63 (i CSV sono di motori precedenti), e la resa delle proposte dalla parte del favorito e dello sfavorito.
+# Dal b70 anche la tabella del rischio sorpresa con le quote (SORPRESA_QUOTE_TAB): per fascia dello sfavorito con
+# le quote (QUOTE_COMB letta da scanner.html, quote di chiusura), quante volte vincono sfavorito, pareggio e favorito.
 import os, re, sys, glob, math, collections, importlib.util
 import numpy as np
 from sklearn.linear_model import LogisticRegression
@@ -35,6 +37,15 @@ def livello(m):
     dis = (m['lgModel'] > 0) != (m['lgElo'] > 0); c = TAB[i][3] if dis else TAB[i][2]
     if c is None or c[0] < 150: c = TAB[i][1]
     return 'alto' if c[1] >= 33 else ('medio' if c[1] >= 25 else 'basso')
+
+def quote_comb():
+    s = open(os.path.join(DIR, '..', 'scanner.html'), encoding='utf-8').read()
+    b = s[s.index('const QUOTE_COMB'):]; b = b[:b.index('};')]
+    W = [[float(v) for v in r.split(',')] for r in re.findall(r'\[(-?[\d.]+(?:, -?[\d.]+){3})\]', b[:b.index('b:')])]
+    B = [float(v) for v in re.search(r'b: \[([^\]]*)\]', b).group(1).split(',')]
+    t = s[s.index('const SORPRESA_QUOTE_TAB'):]; t = t[:t.index('] };')]
+    T = [[float(v) for v in m.split(',')] for m in re.findall(r'tutte: \[([^\]]*)\]', t)]
+    return np.array(W), np.array(B), T
 
 def leggi(dirs):
     M = list({m['id']: m for d in dirs for f in sorted(glob.glob(os.path.join(d, '*.csv'))) for m in qb.leggi_csv(f)}.values())
@@ -106,6 +117,33 @@ def elo_e_sorpresa(Q):
     d = lp(lolo(np.column_stack([mk[nd], sd_]))) - lp(lolo(mk[nd][:, None])); per = {l: d[L == l].mean() for l in set(L)}
     print(f'  1 contro 2 dato il mercato, col segnale del disaccordo: {1000 * d.mean():+.2f} per mille (z {d.mean() / d.std(ddof=1) * math.sqrt(len(d)):+.2f}), meglio in {sum(v < 0 for v in per.values())}/{len(per)} leghe')
 
+def sorpresa_con_le_quote(Q):
+    W, B, Tsc = quote_comb(); FAS = [0, 15, 20, 25, 30]
+    y = np.array([q['out'] for q in Q]); P0 = np.array([q['p'] for q in Q], float); lg = np.array([q['lega'] for q in Q])
+    Qc = np.array([q['qc'] for q in Q]); PM = (1 / Qc) / (1 / Qc).sum(1, keepdims=True)
+    F = np.column_stack([np.log(P0[:, 0] / P0[:, 1]), np.log(P0[:, 2] / P0[:, 1]), np.log(PM[:, 0] / PM[:, 1]), np.log(PM[:, 2] / PM[:, 1])])
+    Z = F @ W.T + B; E = np.exp(Z - Z.max(1, keepdims=True)); PC = E / E.sum(1, keepdims=True)
+    PF = np.zeros_like(PC); mu, sd = F.mean(0), F.std(0)
+    for l in sorted(set(lg)):
+        te = lg == l; PF[te] = LogisticRegression(C=1.0, max_iter=3000).fit((F[~te] - mu) / sd, y[~te]).predict_proba((F[te] - mu) / sd)
+    dis = np.sign([q['lgModel'] for q in Q]) != np.sign([q['lgElo'] for q in Q])
+    def tab(P, k):
+        sf = np.where(P[:, 0] < P[:, 2], 0, 2); pu = np.minimum(P[:, 0], P[:, 2]) / P.sum(1); out = []
+        for i, a in enumerate(FAS):
+            kk = k & (100 * pu >= a) & (100 * pu < (FAS[i + 1] if i + 1 < len(FAS) else 101))
+            out.append([int(kk.sum()), round(100 * (y == sf)[kk].mean(), 1), round(100 * (y == 1)[kk].mean(), 1), round(100 * (y == 2 - sf)[kk].mean(), 1), 100 * pu[kk].mean()])
+        return out
+    tutte = np.ones(len(y), bool); T = tab(PC, tutte)
+    print(f'\n=== 5. il rischio sorpresa con le quote ({len(Q)} partite, quote di chiusura) ===')
+    for i, a in enumerate(FAS):
+        f = lambda r: f'{r[0]:5d} sfavorito {r[1]:5.1f} (previsto {r[4]:5.1f})'
+        print(f'  da {a:2d}%: {f(T[i])} pari {T[i][2]:5.1f} favorito {T[i][3]:5.1f} · fuori lega {f(tab(PF, tutte)[i])} · disaccordo {f(tab(PC, dis)[i])} · accordo {f(tab(PC, ~dis)[i])}')
+    print('  SORPRESA_QUOTE_TAB di scanner.html ' + ('coincide' if [r[:4] for r in T] == [[int(t[0])] + t[1:] for t in Tsc] else 'NON COINCIDE: ' + str([r[:4] for r in T])))
+    liv = np.array([livello(q) for q in Q]); sfM = np.where(P0[:, 0] < P0[:, 2], 0, 2); sfC = np.where(PC[:, 0] < PC[:, 2], 0, 2)
+    for L_ in ('alto', 'medio', 'basso'):
+        k = liv == L_
+        print(f'  riquadro del motore {L_:5s} {k.sum():5d}: con le quote il suo sfavorito e il favorito nel {100 * (sfM != sfC)[k].mean():.1f}%, il pick con le quote nel {100 * (PC.argmax(1) == sfM)[k].mean():.1f}%')
+
 def tabellone_motore(M):
     # mercati gol del tabellone rifatti col livello dei gol del b63 (prova di coincidenza sulla matrice del CSV)
     M = [m for m in M if None not in m['lam'] and m['rho'] is not None]
@@ -173,6 +211,7 @@ def main():
     if '--tutte' in args: i = args.index('--tutte'); tutte = args[i + 1:]; args = args[:i]
     M12 = leggi(args); Q = [q for q in qb.aggancia(M12, qb.quote_fd('batch/quote')) if q['lgModel'] is not None and q['lgElo'] is not None]
     elo_e_sorpresa(Q)
+    sorpresa_con_le_quote(Q)
     tabellone_motore(leggi(args + tutte))
     tabellone_quote(M12, Q)
 

@@ -55,7 +55,7 @@ sono, le scrive l'utente. Per misurarle si usano gli stessi file (`strumenti/quo
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b69`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b70`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -462,7 +462,7 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b69`)
+## Stato attuale (`b70`)
 
 **1X2.** Col motore `b48` il pick azzecca il 52.7% (±1.4) contro il 43.0% del «gioca sempre in
 casa» sulle cinque leghe: 52.7% contro 40.2% in Serie A, 52.7% contro 43.1% in Premier, 53.2%
@@ -529,7 +529,12 @@ su sei: disaccordo e sfavorito al 25% o più) vuol dire sfavorito 33–39%, favo
 sugli xG (vedi *Il rating sugli xG: la regola*) non passa il test e non anticipa le sorprese. Contro
 le quote l'avviso non aggiunge niente: il mercato il disaccordo lo conosce già. Senza quote, nelle
 partite ALTO le proposte del tabellone dalla parte del favorito rendono 3.5 punti meno di quanto
-promettono. Vedi *L'avviso di sorpresa*.
+promettono. Dal `b70`, con le quote dell'1X2, il riquadro dice il rischio delle quote: lo sfavorito è quello
+delle quote, le frequenze sono misurate sulle probabilità con le quote (11.902 partite di 12 leghe), e il
+rischio non arriva mai ad ALTO, perché con le quote lo sfavorito non vince una volta su tre in nessuna
+fascia (al 30% o più vince il 31.2%). Fino al `b69` restava quello del motore, e in 4 partite ALTO su 10
+dava come sfavorita la squadra che il pick con le quote, subito sopra, dava vincente. Vedi *L'avviso di
+sorpresa*.
 
 **La giornata** (dal `b65`). Un bottone analizza tutte le partite del turno di una lega dalla data
 scelta, ognuna col giro completo dello Scanner; poi si passa dall'una all'altra coi bottoni, a
@@ -970,7 +975,7 @@ come misurati, da non ridiscutere.
 3. **L'Elo**: rating, vantaggio campo (col clamp detto quando morde), trend, Elo contro modello
    su 1 contro 2 con l'avviso quando distano 10+ punti e decide l'Elo.
 4. **I rischi già calcolati**, in JS e non dall'LLM: il rischio sorpresa col suo livello e le
-   frequenze misurate (dal `b64`, sempre), Elo e modello in disaccordo, meno di 6 partite di ruolo,
+   frequenze misurate (dal `b64`, sempre; dal `b70` con le quote dell'1X2 quello delle quote), Elo e modello in disaccordo, meno di 6 partite di ruolo,
    pick sotto il 50%, clamp dell'HFA, statistiche avanzate assenti, riposo molto diverso.
 5. **Le statistiche avanzate previste** con le loro regole di affidabilità (quali reggono,
    quali valgono a metà, quali non usare).
@@ -1023,7 +1028,9 @@ Dal `b58` anche il tabellone del prompt (sezione 2) è un segnaposto, `@@TABELLO
 testo del motore (`window.__TAB_TXT_MOTORE`), con le quote dell'1X2 quello del tabellone con le quote,
 con le righe segnate «con le quote», e il blocco delle quote lo dice.
 Il prompt si ricostruisce da `window.__PROMPT_BASE` a ogni quota scritta, sostituendo i segnaposto
-`@@QUOTE@@` e `@@QUOTE_SINTESI@@` (vuoti senza quote: il prompt resta quello del `b53`). Dal `b55` il
+`@@QUOTE@@` e `@@QUOTE_SINTESI@@` (vuoti senza quote: il prompt resta quello del `b53`). Dal `b70` anche la
+prima riga dei rischi è un segnaposto, `@@SORPRESA@@`: senza quote il testo del motore
+(`window.__SORPRESA_TXT_MOTORE`, scritto da `testoSorpresa`), con le quote dell'1X2 il rischio con le quote. Dal `b55` il
 blocco dice da dove vengono le quote: «prese da football-data, <partita> del <data>, media dei
 bookmaker alla chiusura» oppure «scritte dall'utente». Dal `b57` il blocco dell'1X2 ha anche le
 doppie chance con le quote, e con le quote dell'Over segue un blocco «GOL CON LE QUOTE»: Over 2.5 del
@@ -1059,7 +1066,9 @@ il motore no. Chiesta dall'utente: «rendiamolo moderno».
   id.
 - **Il rischio sorpresa (`b64`)** sta sotto la barra del verdetto (`#sorpresa-box`), scritto dal motore con
   `safeHtml`: un riquadro rosso (ALTO), ambra (medio) o con il titolo verde (basso), e sotto una
-  spiegazione chiusa. Vedi *L'avviso di sorpresa*.
+  spiegazione chiusa. Dal `b70`, con le quote dell'1X2, lo riscrive `aggiornaQuote` (`innerHTML` diretto)
+  col rischio delle quote, col punto arancione accanto al livello e `data-q="1"`; cancellate le quote torna
+  quello del motore. Vedi *L'avviso di sorpresa*.
 - **Le card di approfondimento** (i modelli, la qualità di tiro, il non possesso, i punti attesi, la
   progressione, i mercati sui numeri, i risultati esatti, l'Elo, il Markov...) sono `<details
   class="card">`: sul telefono chiuse, sopra i 900 px aperte quelle con `data-apri` (15 card su 17).
@@ -1269,8 +1278,8 @@ arriva in fondo (per esempio «Storico insufficiente» alla prima giornata di un
 partita resta nell'elenco come «non analizzata» col motivo. L'esito lo legge da tre posti:
 `window.__ESITO` (1X2, rischio sorpresa, id delle squadre e data, scritto dal motore subito dopo il
 riquadro della sorpresa: se manca o è di un'altra partita, il giro non è riuscito), `__VERDETTI` (la
-proposta in cima con un verdetto e quante sono FORTI o GIOCABILI), e con le quote `window.__QUOTE_P`
-e `__VERDETTI_QUOTE`, che `aggiornaQuote` passa all'elenco (`_giornataQuote`) a ogni quota arrivata o
+proposta in cima con un verdetto e quante sono FORTI o GIOCABILI), e con le quote `window.__QUOTE_P`,
+`__VERDETTI_QUOTE` e (dal `b70`) `__SORPRESA_QUOTE`, che `aggiornaQuote` passa all'elenco (`_giornataQuote`) a ogni quota arrivata o
 scritta. Durante il giro della giornata, prima di passare alla partita dopo, aspetta le quote
 automatiche della precedente (`__QUOTE_AUTO`); se arrivassero tardi non scriverebbero comunque nei
 campi di un'altra partita, perché `caricaQuoteAuto` controlla che `__QUOTE_CTX` sia ancora il suo.
@@ -1515,7 +1524,7 @@ col movimento ridotto (`reducedMotion: 'reduce'`: i numeri che contano mostrereb
 intermedi), legge «In breve» da `#in-breve` (il riquadro, la sorpresa e le proposte sono tre blocchi)
 e misura le voci del dock e del foglio Altro, Squadre in tutte e tre le sotto-schede.
 
-Esito al `b69` (storico 30; uguale al `b68`), a 390px con tutte le 28 card aperte, scheda per scheda e in tutte e tre le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, 0 px):
+Esito al `b70` (storico 30; uguale al `b69`), a 390px con tutte le 28 card aperte, scheda per scheda e in tutte e tre le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, 0 px):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
@@ -1523,7 +1532,7 @@ Esito al `b69` (storico 30; uguale al `b68`), a 390px con tutte le 28 card apert
 | batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 191 | 0 su 122 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
 | `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 128-158 | 74-83 | 0 |
-| `vecchio`: motore `b68` caricato (controllo) | 0/3, «motore caricato diverso ...» | 10 su 191 (la grafica) | 1 (il certificato) | 0 |
+| `vecchio`: motore `b69` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 su 191 | 1 (il certificato) | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -1594,7 +1603,17 @@ contro 38.5, con i dati da tutte e due e sulle metriche a volume identici. Al `b
 `b68` vede 10 scritture diverse, tutte di forma, scritte dalla grafica nuova dentro il giro del motore:
 la forma (`ui-streak`), il rischio sorpresa, il tabellone, le formazioni, i risultati esatti e i tre
 multigol (gli stessi numeri con altri colori), le due tabelle dei punti attesi (`table-log-home`,
-`table-log-away`, i colori dell'intestazione); le righe del CSV no, solo il certificato.
+`table-log-away`, i colori dell'intestazione); le righe del CSV no, solo il certificato. Al `b70` il
+controllo col `b69` non vede nessuna scrittura diversa, solo il certificato: il rischio sorpresa del motore
+esce identico, e quello con le quote lo scrive `aggiornaQuote` con `innerHTML` diretto.
+
+**Il controllo del `b70`.** Da qui «In breve» controlla anche il rischio sorpresa: con le quote dell'1X2
+`#sorpresa-box` deve essere identico a quello rifatto nella pagina con `rischioSorpresa(…,
+SORPRESA_QUOTE_TAB)` e `htmlSorpresa` dello Scanner, col `data-q`, `window.__SORPRESA_QUOTE` dello stesso
+livello e il prompt con la sua riga (`testoSorpresa`); senza, quello del motore, senza `data-q`. Il banco
+stampa il livello controllato in ogni caso. Controllo di potenza, su una copia che con le quote lascia il
+rischio del motore (`sorpresa(null)` al posto di `sorpresa(P)`): il banco fallisce sulle 2 partite con le
+quote automatiche e su tutti e 6 i casi con le quote dell'1X2.
 
 **Il controllo di potenza del `b69`**, su una copia con due guasti (`ROOT=<copia>`): `renderInBreve()`
 tolto dal ramo con le quote di `aggiornaQuote`, e la regola `nowrap` sull'ultima colonna di «Ruolo e
@@ -1655,7 +1674,7 @@ Over.
   dal Comparatore.
 - Il banco confronta cio' che il motore scrive con `safeTxt`/`safeHtml`. Le poche card
   scritte con `innerHTML` diretto (la card dell'Elo, la nota di lega, la card delle quote e, con
-  le quote, quella dei risultati esatti) e il mega-prompt non sono nel confronto; del mega-prompt, dal `b51`, il banco controlla solo che non
+  le quote, quella dei risultati esatti e il rischio sorpresa) e il mega-prompt non sono nel confronto; del mega-prompt, dal `b51`, il banco controlla solo che non
   sia vuoto o rotto, e dal `b54` il blocco delle quote nei casi del banco (dieci dal `b57`).
 - **Le quote il Comparatore non le ha** (né 1X2 né Over/Under): niente campi, niente combinazione nel
   CSV, e non chiama la strada `/quote/`. Le rese con le quote sono misurate fuori dal motore, da
@@ -3488,6 +3507,7 @@ scrittura nuova, il messaggio iniziale). Il banco la verifica a parte, premendo 
 | `SHRINK_LAM_K` | 3 | a mano, misurata `b37` e `b41` | `b37`: ottimo del Brier Over fra 5 e 8, `z = −1.82`, segno ribaltato nel 2022/23. `b41`: in Serie A monotono fino a 20, miglior `z = −1.99` a 5, 3 stagioni su 3; in Premier il 2023/24 si ribalta (+0.00131 a 5, +0.0081 a 20); in LaLiga piatta a 5 e peggio da 8 in su; in Bundesliga meglio a 5 (`z = −2.69`, 3 stagioni su 3); in Ligue 1 meglio a 5 (`z = −1.26`). Tre leghe sì, una no, una ribaltata: resta 3 |
 | `GOALS_SOT_W` | 0.50 | stimata `b12`, confermata `b14` e `b41` | AUC Over 2.5 da 0.554/0.495/0.501 a 0.572/0.514/0.521; cinque leghe +2.18σ. `b41` in copia conforme: la Serie A punisce 0 (+0.0066, `z = 2.03`), la Premier punisce 1 (+0.0062, `z = 2.30`), LaLiga e Ligue 1 hanno l'ottimo a 0.50, la Bundesliga fra 0.25 e 0.50 |
 | `SORPRESA_TAB` | 6 fasce dello sfavorito × accordo / disaccordo fra modello ed Elo: partite, vince lo sfavorito, pareggio, vince il favorito | misurata `b64` | 23.278 partite in copia conforme di 24 leghe (batch `b48`–`b62`, 2023–2026), `strumenti/sorpresa.py`; col disaccordo lo sfavorito vince +2.39 ±1.49 punti oltre il previsto, uguale nelle due metà delle leghe. Non tocca le probabilità: è la frequenza detta dall'avviso. Vedi *L'avviso di sorpresa* |
+| `SORPRESA_QUOTE_TAB` | 5 fasce dello sfavorito con le quote: partite, vince lo sfavorito, pareggio, vince il favorito | misurata `b70` | 11.902 partite di 12 leghe con le quote di chiusura, probabilità con `QUOTE_COMB`; fuori lega la stessa entro 0.3 punti. Il disaccordo modello/Elo non conta (30% o più: 30.8 contro 31.4%). Con le soglie di sempre il rischio con le quote non arriva ad ALTO. `strumenti/sorpresa-quote.py`, sezione 5. Vedi *L'avviso di sorpresa*, «Con le quote» |
 | `GOALS_LEVEL` | 1.051 | stimata e registrata `b62`, nel motore `b63` | gol/lambda di ruolo su 16.254 partite di quindici leghe (2023/24–2025/26), stabile per stagione (1.044–1.061) e per fonte degli xG; fuori lega Over 2.5 −2.74‰ (`z = −4.80`) e Goal −2.69‰ (`z = −6.27`), 13 leghe su 15. Test registrato su nove leghe mai aperte, 6.472 partite: −3.80‰ (`z = −2.99`), 6 su 9. Vedi *Il livello dei gol: la regola* |
 | `SOT_PER_GOAL` | 3.25 | misurata | LaLiga 3.19, Premier 3.04, Serie A 3.33. Tocca solo il livello |
 | `GOALS_SOT_CAP` | 0.20 | paracadute misurato | morde nello 0.18% |
@@ -4218,6 +4238,40 @@ batch48 batch4 --tutte batch/2627 batch/nuove batch/livello`, con `SORPRESA_TAB`
 
 È lo stesso segnale della tabella (+2.4 punti allo sfavorito) visto dal tabellone, misurato sulle stesse
 partite: non è una conferma indipendente. Vedi *Da fare*, l'etichetta delle proposte sul favorito.
+
+**Con le quote (`b70`).** Fino al `b69` il riquadro restava quello del motore anche con le quote: lo scriveva
+il motore in `avviaScanner`, e `aggiornaQuote` rifaceva pick, tabellone e prompt ma non lui. Sulle 11.902
+partite con le quote di chiusura, nelle partite ALTO (14.8%) lo sfavorito del riquadro è il favorito con le
+quote nel 43.7% dei casi, e il pick con le quote è proprio lui nel 42.7%: il riquadro dava come sfavorita la
+squadra che «In breve», subito sopra, dava come pick (nelle medio 16.4%, nelle basso 1.8%). Se n'è accorto
+l'utente.
+
+La tabella con le quote (`SORPRESA_QUOTE_TAB`), per fascia dello sfavorito con le quote (`QUOTE_COMB`,
+quote di chiusura):
+
+| sfavorito con le quote | partite | vince lo sfavorito (previsto) | pareggio | vince il favorito | col disaccordo modello/Elo | con l'accordo |
+|---|---|---|---|---|---|---|
+| sotto il 15% | 2.880 | 9.9% (9.6) | 17.5% | 72.5% | 14 | 9.9% |
+| 15–20% | 1.933 | 18.0% (17.6) | 26.2% | 55.8% | 74, 20.3% | 17.9% |
+| 20–25% | 2.186 | 22.8% (22.5) | 26.9% | 50.3% | 264, 25.0% | 22.5% |
+| 25–30% | 2.480 | 26.2% (27.5) | 30.5% | 43.3% | 683, 26.4% | 26.2% |
+| 30% o più | 2.423 | 31.2% (32.5) | 28.8% | 40.0% | 855, 30.8% | 31.4% |
+
+La fascia sopra il 35% con le quote ha solo 216 partite, ed è unita a quella del 30%. Con la combinazione
+stimata fuori lega la tabella è la stessa entro 0.3 punti, con le quote di prima della partita (11.222
+partite) entro 1.9. Il disaccordo fra modello ed Elo, con le quote, non aggiunge niente, e non c'è nella
+tabella. Con le soglie di sempre (ALTO se lo sfavorito vince almeno una volta su tre, medio dal 25%) il
+rischio con le quote è medio dal 25% (41% delle partite) e basso sotto: **ALTO non esce mai**. È quello
+che le misure del `b67` dicevano: le sorprese segnalate dal disaccordo il mercato le conosce già.
+
+Nello Scanner: `rischioSorpresa(p1, pX, p2, E, T)` prende la tabella come argomento (senza, quella del
+motore); `aggiornaQuote` la chiama sulle probabilità con le quote con `SORPRESA_QUOTE_TAB` e `E` nullo, e
+riscrive `#sorpresa-box` con `htmlSorpresa`, che con le quote dice «Con le quote lo sfavorito è …» e, se il
+favorito cambia, «Senza le quote il motore dava favorito …». Il rischio con le quote va anche nella
+giornata (pastiglia, ordinamento per sorpresa, conteggio delle ALTO: `x.quote.sorpresa`) e nel mega-prompt
+(`@@SORPRESA@@`, scritto da `testoSorpresa`). `window.__ESITO.sorpresa` resta quello del motore. Senza le
+quote dell'1X2 (anche con le sole quote dell'Over) niente cambia. `python3 strumenti/sorpresa-quote.py
+batch48 batch4` rifà la tabella (sezione 5) e la confronta con quella dello Scanner.
 
 ## Il Dixon-Coles contro i risultati reali
 
@@ -5188,3 +5242,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b67` | la giornata sul computer: l'elenco a due colonne si riempie dall'alto in basso invece che per righe (leggendo una colonna l'ordine per orario sembrava sbagliato), con un'intestazione per ogni giorno; l'ordine si calcola sull'orario come numero. Sul telefono era già giusto (rifatto sulla PitchAPI vera su cinque leghe). Nessun numero cambia: col `b66` 0 scritture diverse su 191, 0 righe del CSV |
 | `b68` | due correzioni rimaste sul ramo dell'audit del 23 settembre, mai unito (il resto era già stato rifatto nel `b39`, `b41`, `b50`, `b51` e `b56`): `predictStat` riconosce «nessun dato» da `nValid` e non dal valore, quindi le quattro metriche additive senza dati sono N/D invece di «previsto 0» e un avversario senza dati non entra più come concesso 0; il Comparatore azzera i nomi che il motore caricato non ha. Nessuna probabilità cambia: col `b67` 0 scritture diverse su 191, una sola riga del CSV (il certificato) |
 | `b69` | la grafica «Nocturne» del progetto Claude Design dell'utente, fatta uguale e completata con le schermate che il disegno non aveva: token nuovi, Inter e icone Phosphor in locale, il setup col database chiuso in una riga, l'anello dell'analisi in corso (legge il registro del motore), il dock con Partita, Tabellone, Squadre, Numeri e Altro, «In breve» col pick grande, il tabellone a righe con la barra dalla base di lega, Numeri a fisarmonica col numero chiave, la giornata a scheda scorrevole; le animazioni del pacchetto, spente col movimento ridotto. Anche la home e il Comparatore (righe con l'esito a icona, via gli sfondi chiari illeggibili). Nessun numero cambia: col `b68` 10 scritture diverse su 191, tutte di forma, una riga del CSV (il certificato); il banco gira col movimento ridotto e misura dock, foglio Altro e sotto-schede |
+| `b70` | il rischio sorpresa con le quote, notato dall'utente: fino al `b69` il riquadro restava quello del motore anche con le quote, e nelle partite ALTO il 43.7% delle volte dava come sfavorita la squadra che il pick con le quote, subito sopra, dava vincente. Con le quote dell'1X2 il riquadro, la giornata (pastiglia, ordinamento, conteggio) e il mega-prompt dicono il rischio delle quote, da una tabella misurata sulle probabilità con le quote (`SORPRESA_QUOTE_TAB`, 11.902 partite di 12 leghe): lo sfavorito con le quote al 30% o più vince il 31.2%, quindi con le quote il rischio non arriva mai ad ALTO, e il disaccordo fra modello ed Elo non c'entra più. Senza quote niente cambia. Banco: col `b69` 0 scritture diverse su 191, una riga del CSV (il certificato); «In breve» controlla anche il rischio, e il controllo di potenza fallisce dove deve |

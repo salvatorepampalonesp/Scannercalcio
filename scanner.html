@@ -673,7 +673,7 @@ body.vista-partita .dock{display:flex}
     <button type="button" class="btn btn-ghost ab-back" id="btn-nuova" onclick="tornaIndietro()" aria-label="Indietro"><svg class="ic" aria-hidden="true"><use href="#i-arrow-left"/></svg><span>Cambia partita</span></button>
     <span class="ab-tit" id="ab-tit"><b></b><small></small></span>
     <span class="ab-spazio"></span>
-    <span class="tag" id="build-ver">build 0905-b69</span>
+    <span class="tag" id="build-ver">build 0905-b70</span>
   </div>
 </header>
 
@@ -1539,17 +1539,20 @@ function _giornataQuote() {
   const G = GIORNATA; if (!G || G.vista < 0) return;
   const x = G.lista[G.vista], sH = document.getElementById('sel-home'), sA = document.getElementById('sel-away');
   if (!x || x.stato !== 'fatta' || !sH || !sA || sH.value !== String(x.hId) || sA.value !== String(x.aId)) return;
-  x.quote = window.__QUOTE_P ? { p: window.__QUOTE_P.slice(), top: _topVoce(window.__VERDETTI_QUOTE), buone: _buone(window.__VERDETTI_QUOTE) } : null;
+  const S = window.__SORPRESA_QUOTE;
+  x.quote = window.__QUOTE_P ? { p: window.__QUOTE_P.slice(), top: _topVoce(window.__VERDETTI_QUOTE), buone: _buone(window.__VERDETTI_QUOTE),
+                                 sorpresa: S ? { liv: S.liv, pU: S.pU, fav: S.fav, dis: S.dis } : null } : null;
   renderGiornata();
 }
+const _sorpG = x => (x.quote && x.quote.sorpresa) || x.sorpresa;
 
 function _ordineGiornata() {
   const G = GIORNATA, idx = G.lista.map((x, i) => i), pk = x => x.p ? Math.max(...(x.quote ? x.quote.p : x.p)) : -1;
   const liv = { alto: 3, medio: 2, basso: 1 };
   if (G.ordine === 'pick') idx.sort((a, b) => pk(G.lista[b]) - pk(G.lista[a]));
   else if (G.ordine === 'sorpresa') idx.sort((a, b) => {
-    const A = G.lista[a], B = G.lista[b], la = A.sorpresa ? liv[A.sorpresa.liv] : 0, lb = B.sorpresa ? liv[B.sorpresa.liv] : 0;
-    return lb - la || (B.sorpresa ? B.sorpresa.pU : 0) - (A.sorpresa ? A.sorpresa.pU : 0); });
+    const A = _sorpG(G.lista[a]), B = _sorpG(G.lista[b]), la = A ? liv[A.liv] : 0, lb = B ? liv[B.liv] : 0;
+    return lb - la || (B ? B.pU : 0) - (A ? A.pU : 0); });
   return idx;
 }
 const _giornoG = x => { const d = new Date(x.ora); if (isNaN(d)) return x.giorno;
@@ -1565,7 +1568,7 @@ function _rigaGiornata(x, i, on, blocca) {
   const e = _escHtml, pc = v => (100 * v).toFixed(0), nomi = ['1', 'X', '2'];
   let det, pk = '<span></span>';
   if (x.stato === 'fatta') {
-    const P = x.quote ? x.quote.p : x.p, k = P.indexOf(Math.max(...P)), S = x.sorpresa;
+    const P = x.quote ? x.quote.p : x.p, k = P.indexOf(Math.max(...P)), S = _sorpG(x);
     const T = x.quote ? x.quote.top : x.top;
     pk = `<span class="g-pk" style="color:${_colPick[k]}">${nomi[k]} &middot; ${pc(P[k])}%</span>`;
     det = `<span class="g-bar">${x.p.map(v => `<i style="flex:${v.toFixed(3)} 1 0"></i>`).join('')}</span>`
@@ -1660,7 +1663,7 @@ function renderGiornata() {
   const prev = k > 0 ? ok[k - 1] : null, next = k >= 0 && k + 1 < ok.length ? ok[k + 1] : null, blocca = G.corre;
   const nome = x => `${e(x.hName)} &ndash; ${e(x.aName)}`, ic = n => `<svg class="ic" aria-hidden="true"><use href="#i-${n}"/></svg>`;
   const giorni = [...new Set(L.map(x => _quandoG(x).split(',')[0]))];
-  const alte = fatte.filter(x => x.sorpresa.liv === 'alto').length, conBuone = fatte.filter(x => (x.quote ? x.quote.buone : x.buone) > 0).length;
+  const alte = fatte.filter(x => _sorpG(x).liv === 'alto').length, conBuone = fatte.filter(x => (x.quote ? x.quote.buone : x.buone) > 0).length;
   const slide = x => {
     if (!x || x.stato !== 'fatta') return '<div class="g-slide"><b>Analisi in corso</b><small>la prima partita arriva fra poco</small></div>';
     const P = x.quote ? x.quote.p : x.p, j = P.indexOf(Math.max(...P));
@@ -2959,28 +2962,47 @@ const SORPRESA_TAB = { partite: 23278, leghe: 24, fasce: [
   { da: 25, tutte: [5297, 27.4, 28.2, 44.4], accordo: [4584, 26.5, 28.4, 45.0], disaccordo: [713, 33.0, 26.8, 40.3] },
   { da: 30, tutte: [5541, 32.3, 27.5, 40.2], accordo: [3371, 31.1, 27.1, 41.8], disaccordo: [2170, 34.3, 28.1, 37.6] },
   { da: 35, tutte: [1197, 37.6, 27.8, 34.6], accordo: [237, 32.5, 29.1, 38.4], disaccordo: [960, 38.9, 27.5, 33.6] } ] };
-function rischioSorpresa(p1, pX, p2, E) {
-  const F = SORPRESA_TAB.fasce, pU = Math.min(p1, p2) / (p1 + pX + p2);
+const SORPRESA_QUOTE_TAB = { partite: 11902, leghe: 12, fasce: [
+  { da: 0, tutte: [2880, 9.9, 17.5, 72.5] }, { da: 15, tutte: [1933, 18.0, 26.2, 55.8] }, { da: 20, tutte: [2186, 22.8, 26.9, 50.3] },
+  { da: 25, tutte: [2480, 26.2, 30.5, 43.3] }, { da: 30, tutte: [2423, 31.2, 28.8, 40.0] } ] };
+function rischioSorpresa(p1, pX, p2, E, T) {
+  const F = (T || SORPRESA_TAB).fasce, pU = Math.min(p1, p2) / (p1 + pX + p2);
   const i = Math.max(0, F.findIndex((x, j) => j === F.length - 1 || 100 * pU < F[j + 1].da));
   const f = F[i], num = v => typeof v === 'number' && isFinite(v);
   const dis = E && num(E.lgModel) && num(E.lgElo) ? (E.lgModel > 0) !== (E.lgElo > 0) : null;
   const k = dis === null ? 'tutte' : (dis ? 'disaccordo' : 'accordo');
   const c = f[k] && f[k][0] >= 150 ? f[k] : f.tutte;
   return { fav: p1 >= p2 ? 1 : 2, pU, dis, c, conFlag: c !== f.tutte, da: f.da, a: i + 1 < F.length ? F[i + 1].da : null,
-           liv: c[1] >= 33 ? 'alto' : (c[1] >= 25 ? 'medio' : 'basso') };
+           liv: c[1] >= 33 ? 'alto' : (c[1] >= 25 ? 'medio' : 'basso'), quote: !!T };
 }
-function htmlSorpresa(S, hName, aName) {
+function htmlSorpresa(S, hName, aName, Sm) {
   const sf = S.fav === 1 ? aName : hName, fv = S.fav === 1 ? hName : aName, n = S.c[0].toLocaleString('it-IT');
   const liv = { alto: ['ALTO', 3], medio: ['medio', 2], basso: ['basso', 1] }[S.liv];
   const fascia = S.a != null ? `fra il ${S.da} e il ${S.a}%` : `al ${S.da}% o pi&ugrave;`;
   const flag = S.dis === true ? 'Modello ed Elo indicano favoriti diversi. ' : (S.dis === false ? 'Modello ed Elo d&#39;accordo sul favorito. ' : '');
   const gruppo = S.conFlag ? (S.dis ? ' e modello ed Elo in disaccordo' : ' e modello ed Elo d&#39;accordo') : '';
-  return `<div class="sorpresa s-${S.liv}" data-in><div class="so-top"><span class="so-metro l${liv[1]}" aria-hidden="true"><i></i><i></i><i></i></span>`
-    + `<span class="sorpresa-t">Rischio sorpresa <b>${liv[0]}</b></span><span class="so-u">${sf} ${(100 * S.pU).toFixed(1)}%</span></div>`
-    + `<div class="so-txt">${flag}Nelle ${n} partite con lo sfavorito ${fascia}${gruppo} (${SORPRESA_TAB.leghe} leghe) ha vinto lo sfavorito il <b>${S.c[1].toFixed(1)}%</b>, `
-    + `il pareggio il ${S.c[2].toFixed(1)}%, il favorito (${fv}) il ${S.c[3].toFixed(1)}%.</div>`
-    + '<details class="so-info"><summary>Da dove viene il rischio sorpresa</summary><div>' + SORPRESA_INFO + '</div></details></div>';
+  const giro = S.quote && Sm && Sm.fav !== S.fav ? `Senza le quote il motore dava favorito ${sf}. ` : '';
+  return `<div class="sorpresa s-${S.liv}" data-in${S.quote ? ' data-q="1"' : ''}><div class="so-top"><span class="so-metro l${liv[1]}" aria-hidden="true"><i></i><i></i><i></i></span>`
+    + `<span class="sorpresa-t">Rischio sorpresa <b>${liv[0]}</b>${S.quote ? ' <i class="qd" title="con le quote"></i>' : ''}</span><span class="so-u">${sf} ${(100 * S.pU).toFixed(1)}%</span></div>`
+    + (S.quote
+      ? `<div class="so-txt">Con le quote lo sfavorito &egrave; ${sf}. ${giro}Nelle ${n} partite con le quote e lo sfavorito ${fascia} (${SORPRESA_QUOTE_TAB.leghe} leghe) ha vinto lo sfavorito il <b>${S.c[1].toFixed(1)}%</b>, `
+        + `il pareggio il ${S.c[2].toFixed(1)}%, il favorito (${fv}) il ${S.c[3].toFixed(1)}%.</div>`
+        + '<details class="so-info"><summary>Da dove viene il rischio sorpresa con le quote</summary><div>' + SORPRESA_QUOTE_INFO + '</div></details></div>'
+      : `<div class="so-txt">${flag}Nelle ${n} partite con lo sfavorito ${fascia}${gruppo} (${SORPRESA_TAB.leghe} leghe) ha vinto lo sfavorito il <b>${S.c[1].toFixed(1)}%</b>, `
+        + `il pareggio il ${S.c[2].toFixed(1)}%, il favorito (${fv}) il ${S.c[3].toFixed(1)}%.</div>`
+        + '<details class="so-info"><summary>Da dove viene il rischio sorpresa</summary><div>' + SORPRESA_INFO + '</div></details></div>');
 }
+function testoSorpresa(S, hName, aName, Sm) {
+  const sf = S.fav === 1 ? aName : hName;
+  if (!S.quote) return `Rischio sorpresa ${S.liv.toUpperCase()}: lo sfavorito (${sf}) ha il ${(100 * S.pU).toFixed(1)}%`
+    + (S.dis === true ? ' e modello ed Elo indicano favoriti diversi' : '') + `; nelle ${S.c[0]} partite cosi' (${SORPRESA_TAB.leghe} leghe) ha vinto lo sfavorito il ${S.c[1].toFixed(1)}%, `
+    + `il pareggio il ${S.c[2].toFixed(1)}%, il favorito il ${S.c[3].toFixed(1)}%. Misurato: il motore non prevede le sorprese meglio di cosi'.`;
+  return `Rischio sorpresa ${S.liv.toUpperCase()}, con le quote: lo sfavorito con le quote (${sf}) ha il ${(100 * S.pU).toFixed(1)}%`
+    + (Sm && Sm.fav !== S.fav ? ` (senza le quote il motore lo dava favorito)` : '')
+    + `; nelle ${S.c[0]} partite cosi' con le quote di chiusura (${SORPRESA_QUOTE_TAB.leghe} leghe) ha vinto lo sfavorito il ${S.c[1].toFixed(1)}%, il pareggio il ${S.c[2].toFixed(1)}%, `
+    + `il favorito il ${S.c[3].toFixed(1)}%. Con le quote il disaccordo fra modello ed Elo non aggiunge niente (il mercato lo sa gia'), e lo sfavorito non vince una volta su tre in nessuna fascia: il rischio non arriva ad ALTO.`;
+}
+const SORPRESA_QUOTE_INFO = `Con le quote dell'1X2 il rischio si conta sulle probabilit&agrave; con le quote: <b>11.902 partite di 12 leghe</b> con le quote di chiusura (2023&ndash;2026), per fascia di probabilit&agrave; dello sfavorito con le quote. Sono gi&agrave; giuste: lo sfavorito al 30% o pi&ugrave; vince il 31.2%. Il disaccordo fra modello ed Elo qui non conta, perch&eacute; il mercato lo sa gi&agrave; (con lo sfavorito al 30% o pi&ugrave; vince il 30.8% col disaccordo e il 31.4% senza). Con le quote lo sfavorito non vince una volta su tre in nessuna fascia, quindi il rischio non arriva ad <b>ALTO</b>: il pi&ugrave; alto &egrave; medio, con lo sfavorito al 25% o pi&ugrave;. Cancella le quote per rivedere il rischio del motore.`;
 const SORPRESA_INFO = `Contato su <b>23.278 partite di 24 leghe</b> (2023&ndash;2026, lo stesso motore): per ogni fascia di probabilit&agrave; dello sfavorito, quante volte hanno vinto lo sfavorito, il pareggio e il favorito. Le probabilit&agrave; del motore le sorprese le contano gi&agrave; giuste: lo sfavorito al 30&ndash;35% vince il 32.3%. L'unico segnale che aggiunge qualcosa &egrave; il <b>disaccordo fra modello ed Elo</b> sul favorito (17% delle partite): a pari probabilit&agrave; lo sfavorito vince 2.4 punti in pi&ugrave;, uguale nelle dodici leghe dove &egrave; stato cercato e nelle altre dodici. <b>ALTO</b> vuol dire che nelle partite cos&igrave; lo sfavorito ha vinto almeno una volta su tre: succede quando modello ed Elo non sono d'accordo e lo sfavorito ha il 25% o pi&ugrave; (circa una partita su sei). Forma, riposo, formazioni, fortuna sotto gli xG e un rating sugli xG non anticipano le sorprese: sono stati misurati e non aggiungono niente.`;
 
 // Le quote (b54): logistica multinomiale su [log(p1/pX), log(p2/pX)] del motore e del mercato,
@@ -3068,10 +3090,21 @@ function _quoteLette(ids) {
 }
 function aggiornaQuote() {
   const C = window.__QUOTE_CTX, box = typeof document !== 'undefined' && document.getElementById('quote-box');
-  let tabTxt = window.__TAB_TXT_MOTORE || '';
+  let tabTxt = window.__TAB_TXT_MOTORE || '', sorTxt = window.__SORPRESA_TXT_MOTORE || '';
   const scriviPrompt = (sez, sint) => { const el = document.getElementById('ai-prompt');
-    if (el && window.__PROMPT_BASE) el.value = window.__PROMPT_BASE.replace('@@QUOTE@@', () => sez).replace('@@QUOTE_SINTESI@@', () => sint).replace('@@TABELLONE@@', () => tabTxt); };
+    if (el && window.__PROMPT_BASE) el.value = window.__PROMPT_BASE.replace('@@QUOTE@@', () => sez).replace('@@QUOTE_SINTESI@@', () => sint).replace('@@TABELLONE@@', () => tabTxt)
+      .replace('@@SORPRESA@@', () => sorTxt); };
   if (!box || !C) return;
+  const sorpresa = P => {
+    const Es = window.__ESITO, el = document.getElementById('sorpresa-box'), Sm = Es && Es.sorpresa;
+    window.__SORPRESA_QUOTE = null;
+    if (!Sm || !el) return;
+    const S = P ? rischioSorpresa(P[0], P[1], P[2], null, SORPRESA_QUOTE_TAB) : Sm;
+    if (P) { window.__SORPRESA_QUOTE = S; sorTxt = testoSorpresa(S, C.hName, C.aName, Sm); }
+    const h = htmlSorpresa(S, C.hName, C.aName, Sm);
+    if (el.__sorpH === h && el.__sorpE === Es) return;
+    el.innerHTML = h; el.__sorpH = h; el.__sorpE = Es;
+  };
   const tabellone = (P, O, G) => {
     const TV = window.__VERDETTI_CTX, tb = document.getElementById('verdetti-body'), tn = document.getElementById('verdetti-quote');
     window.__VERDETTI_QUOTE = null;
@@ -3099,6 +3132,7 @@ function aggiornaQuote() {
   if (!q && !qo) {
     box.innerHTML = avvHtml || 'Nessuna quota: vale il motore, qui sopra.';
     tabellone(null);
+    sorpresa(null);
     scriviPrompt('', '');
     _matriceCard(calcDCMatrix(C.lam[0], C.lam[1], C.rho), C.hName, false);
     window.__QUOTE_P = null; _giornataQuote(); renderInBreve();
@@ -3188,6 +3222,7 @@ function aggiornaQuote() {
     box.appendChild(d);
   }
   tabellone(P, Oq, Gq);
+  sorpresa(P);
   _matriceCard(Aq || calcDCMatrix(C.lam[0], C.lam[1], C.rho), C.hName, !!Aq);
   scriviPrompt(sez, sint);
   window.__QUOTE_P = P; _giornataQuote(); renderInBreve();
@@ -3622,7 +3657,7 @@ function _tabTesto(V) {
        + senza.map(v => v.nome + ' ' + (v.edge == null ? 'base ignota' : (v.edge >= 0 ? '+' : '') + v.edge.toFixed(1))).join(', ') : '');
 }
 
-window.__SCANNER_BUILD = '0905-b69';
+window.__SCANNER_BUILD = '0905-b70';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -4896,10 +4931,8 @@ async function avviaScanner() {
         + (F.competizioni < 3 ? `\n- ATTENZIONE: archivio delle coppe europee incompleto (${F.competizioni} competizioni su 3): i conteggi possono essere bassi.` : '');
     })();
     const _rischiTxt = (() => {
-      const R = [], E = window.__ELO_DEBUG_OVER, S = _sorpresa;
-      R.push(`Rischio sorpresa ${S.liv.toUpperCase()}: lo sfavorito (${S.fav === 1 ? aName : hName}) ha il ${(100 * S.pU).toFixed(1)}%`
-        + (S.dis === true ? ' e modello ed Elo indicano favoriti diversi' : '') + `; nelle ${S.c[0]} partite cosi' (${SORPRESA_TAB.leghe} leghe) ha vinto lo sfavorito il ${S.c[1].toFixed(1)}%, `
-        + `il pareggio il ${S.c[2].toFixed(1)}%, il favorito il ${S.c[3].toFixed(1)}%. Misurato: il motore non prevede le sorprese meglio di cosi'.`);
+      const R = [], E = window.__ELO_DEBUG_OVER;
+      R.push('@@SORPRESA@@');
       if (E && E.applied) { const pOf = lg => 100 / (1 + Math.exp(-lg)); const d = Math.abs(pOf(E.lgElo) - pOf(E.lgModel));
         if (d >= 10) R.push(`Elo e modello distano ${d.toFixed(1)} punti sull'1X2: decide l'Elo.`); }
       if (dH.role.n < 6 || dA.role.n < 6) R.push(`Poche partite di RUOLO (${dH.role.n} in casa per ${hName}, ${dA.role.n} in trasferta per ${aName}): i numeri di ruolo sono fragili.`);
@@ -5041,9 +5074,10 @@ REGOLE (valgono per tutte le sezioni; non sono una sezione da scrivere)
   per spostare un verdetto.
 - Se un dato e' N/D, dillo invece di aggirarlo.`;
 
-    window.__PROMPT_BASE = p; window.__TAB_TXT_MOTORE = _tabTxt;
+    window.__PROMPT_BASE = p; window.__TAB_TXT_MOTORE = _tabTxt; window.__SORPRESA_TXT_MOTORE = testoSorpresa(_sorpresa, hName, aName);
     window.__QUOTE_CTX = { p: [m1, mX, m2], hName, aName, lam: [lamH_role, lamA_role], rho: RHO };
-    document.getElementById('ai-prompt').value = p.replace('@@QUOTE@@', '').replace('@@QUOTE_SINTESI@@', '').replace('@@TABELLONE@@', () => _tabTxt);
+    document.getElementById('ai-prompt').value = p.replace('@@QUOTE@@', '').replace('@@QUOTE_SINTESI@@', '').replace('@@TABELLONE@@', () => _tabTxt)
+      .replace('@@SORPRESA@@', () => window.__SORPRESA_TXT_MOTORE);
     aggiornaQuote();
     window.__QUOTE_AUTO = caricaQuoteAuto(lId, dateInput, hName, aName);
     wrapTables();

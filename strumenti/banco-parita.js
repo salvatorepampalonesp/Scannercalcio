@@ -290,15 +290,24 @@ const SNAP = `(() => ({ rec: window.__REC_CUR || [], verd: JSON.parse(JSON.strin
 
 // «In breve» (b66): il pick e' quello delle probabilita' mostrate (con le quote se ci sono), le proposte
 // le prime tre con un verdetto del tabellone a schermo, il rischio sorpresa quello del motore. Dal b69 il
-// riquadro, la sorpresa e le proposte sono tre blocchi dentro #in-breve
+// riquadro, la sorpresa e le proposte sono tre blocchi dentro #in-breve. Dal b70 con le quote dell'1X2 il
+// rischio sorpresa e' quello delle probabilita' con le quote (SORPRESA_QUOTE_TAB): il riquadro deve essere
+// identico a quello rifatto qui con le funzioni dello Scanner, e il prompt deve dire lo stesso rischio
 const INBREVE = `(() => { const b = document.querySelector('#in-breve'); if (!(b instanceof Element)) return null;
   const E = window.__ESITO, Q = window.__QUOTE_P, P = Q || (E && E.p); if (!P) return { ok: !b.querySelector('.ib-big'), rotto: false, vuoto: true };
   const k = P.indexOf(Math.max(...P)), big = b.querySelector('.ib-big'), pp = b.querySelector('.ib-pp'), lab = b.querySelector('.ib-lab');
   const V = (window.__VERDETTI_QUOTE || window.__VERDETTI || []).filter(v => v.guad != null).slice(0, 3).map(v => v.nome);
   const Vb = [...b.querySelectorAll('.ib-p b')].map(x => x.firstChild.textContent.trim());
   const ok = !!big && big.firstChild.textContent === ['1', 'X', '2'][k] && !!pp && pp.firstChild.textContent === (100 * P[k]).toFixed(1) + '%'
-    && JSON.stringify(V) === JSON.stringify(Vb) && !!b.querySelector('.ib-s-' + E.sorpresa.liv + ', .sorpresa.s-' + E.sorpresa.liv) && !!lab && /con le quote/.test(lab.textContent) === !!Q;
-  return { ok, rotto: /NaN|undefined|Infinity/.test(b.innerHTML), pick: ['1', 'X', '2'][k], proposte: Vb.length, quote: !!Q }; })()`;
+    && JSON.stringify(V) === JSON.stringify(Vb) && !!lab && /con le quote/.test(lab.textContent) === !!Q;
+  const C = window.__QUOTE_CTX, sb = document.querySelector('#sorpresa-box'), S = Q ? rischioSorpresa(Q[0], Q[1], Q[2], null, SORPRESA_QUOTE_TAB) : E.sorpresa;
+  const t = document.createElement('div'); t.innerHTML = C ? htmlSorpresa(S, C.hName, C.aName, E.sorpresa) : '';
+  const pr = (document.getElementById('ai-prompt') || {}).value || '';
+  const sorOk = !!C && sb instanceof Element && sb.innerHTML === t.innerHTML && !!sb.querySelector('.sorpresa.s-' + S.liv)
+    && !!sb.querySelector('.sorpresa[data-q]') === !!Q && pr.includes(testoSorpresa(S, C.hName, C.aName, E.sorpresa))
+    && (Q ? window.__SORPRESA_QUOTE && window.__SORPRESA_QUOTE.liv === S.liv : !window.__SORPRESA_QUOTE);
+  return { ok: ok && sorOk, sorOk, rotto: /NaN|undefined|Infinity/.test(b.innerHTML), pick: ['1', 'X', '2'][k], proposte: Vb.length, quote: !!Q,
+           sorpresa: S.liv + (Q ? ' con le quote' : '') }; })()`;
 // dal b66 l'analisi e' divisa in schede, e una sezione nascosta non ha larghezza: si misura scheda per
 // scheda, con tutte le details aperte. Oltre alle tabelle compatte, i riquadri nuovi non devono uscire di lato.
 // Dal b69 le schede sono le voci del dock (Altro apre un foglio con Prompt e Dati), e Squadre ha tre sotto-schede
@@ -716,7 +725,7 @@ if (require.main === module) (async () => {
   console.log(`   mega-prompt: ${Math.min(...P.map(x => x.n))}-${Math.max(...P.map(x => x.n))} caratteri`
     + (pRotti.length ? ' · ROTTO: ' + JSON.stringify(pRotti.map(x => x.rotto)) : ' · niente NaN, undefined o vuoti'));
   const IB = day.map(m => Object.assign({ id: m.id }, scanner.runs[m.id].inBreve)), ibRotti = IB.filter(x => !x.ok || x.rotto);
-  console.log(`   in breve: ${IB.map(x => `${x.pick}${x.quote ? ' con le quote' : ''}, ${x.proposte} proposte`).join(' · ')}`
+  console.log(`   in breve: ${IB.map(x => `${x.pick}${x.quote ? ' con le quote' : ''}, ${x.proposte} proposte, sorpresa ${x.sorpresa}`).join(' · ')}`
     + (ibRotti.length ? ' · ROTTO: ' + JSON.stringify(ibRotti) : ' · pick, proposte e sorpresa quelli a schermo, niente NaN'));
   const G = scanner.giocatori;
   const gRotti = G ? G.per.filter(x => x.rotto || x.righe < 2) : null;
@@ -739,7 +748,7 @@ if (require.main === module) (async () => {
       || x.tabQuote !== (x.x ? (x.g === 2 ? 10 : 6) : 0) || !x.ib || !x.ib.ok || x.ib.rotto || x.ib.quote !== x.x || x.tabNota !== x.x || x.tabMotore === x.x || !x.tabPrompt || !x.verdettiMotore
       || x.matNota !== (x.g === 2) || x.matMotore === (x.g === 2) || (x.g === 2 && !x.matAllineata)
       || (x.nome === 'il mercato contraddice il motore' && !x.avviso)) : null;
-  console.log('   quote: ' + (Q ? `${Q.length} casi` + (qRotte.length ? ' · ROTTI: ' + JSON.stringify(qRotte)
+  console.log('   quote: ' + (Q ? `${Q.length} casi` + ` (sorpresa: ${Q.map(x => x.ib && x.ib.sorpresa ? x.ib.sorpresa : '-').join(', ')})` + (qRotte.length ? ' · ROTTI: ' + JSON.stringify(qRotte)
     : ' · card e prompt senza NaN ne\' segnaposto, avviso quando il mercato contraddice il motore, matrice allineata all\'Over e all\'1X2, tabellone con le quote (6 o 10 righe) e del motore senza, risultati esatti/handicap/multigol dalla matrice allineata con 1X2 e Over e del motore senza, campi svuotati al cambio partita') : 'campo assente'));
   // le formazioni devono avere valori veri, non tutti nulli: altrimenti il confronto non prova niente
   for (const m of day) { const L = scanner.runs[m.id].lineup, f = F => F ? `assenti ${F.abitualiAssenti} (peso ${F.pesoAssenti == null ? '-' : F.pesoAssenti.toFixed(2)}, gol ${F.golAssenti == null ? '-' : F.golAssenti.toFixed(2)}), cambi ${F.cambi}, allenatore ${F.allenatoreNuovo ? 'nuovo' : F.partiteAllenatore + '+'}` : '-';
