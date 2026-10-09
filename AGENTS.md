@@ -55,7 +55,7 @@ sono, le scrive l'utente. Per misurarle si usano gli stessi file (`strumenti/quo
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b71`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b72`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -300,7 +300,22 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   `seq_time`, `xg_shot`. Il motore le prevede e le mostra, il CSV non le esporta.
 - [ ] **`aerials`**: rifare il `k` (0.54, tarato sulla quantità di partita pre-`b19`) e la
   riga `t = +2.4` della Progressione Storica; togliere il doppione `aer`, che legge gli
-  stessi due campi.
+  stessi due campi. Misurato dopo il `b71` (`strumenti/stat-previste.py`, 23.278 partite): per
+  squadra la pendenza è 1.15, ma sulla differenza fra le due squadre 0.54 (correlazione 0.20):
+  lo scarto previsto fra le squadre è il doppio di quello reale. Dal `b72` il prompt dice di non
+  usarla.
+- [ ] **`STAT_SHRINK_TABLE` va ritarata.** È del `b5` (1133 partite di tre leghe). Sulle 23.278
+  partite dei batch (`strumenti/stat-previste.py`) il livello è giusto ovunque (previsto/reale fra
+  0.96 e 1.02), ma per le metriche che reggono la pendenza di reale ~ previsto sta sopra 1: per
+  squadra 1.05–1.28 (passaggi 1.28, conduzioni 1.20, SCA 1.17), sulla differenza fra le due squadre
+  1.28–1.53 (PPDA 1.53, SCA 1.49, key passes 1.45). Il `k` è troppo basso: le previsioni sono
+  troppo strette. Sotto 1 restano `gca` (0.74), `tackles` (0.79), `interceptions` (0.70),
+  `duels_won` (0.72), `blocks` (0.69), `vaep` (0.54), `pv` (0.38), gli assist e il breakdown SCA.
+  Col metodo del `b5` (`k × pendenza`), fuori lega, poi le stesse misure. Tocca le statistiche
+  previste e il prompt. I mercati sui numeri no (usano `MARKET_SHRINK_K`), né OL e correzione
+  residuale (`STAT_SHRINK_LEGACY`); ma i tiri in porta previsti (`sot`) fanno la seconda stima dei gol
+  (`goalsSotCorrection`), quindi il `k` di `sot` sposta i lambda: si tiene fermo, o si rimisura coi
+  mercati gol.
 - [ ] **Le sette metriche col `k` di default 0.50**: `gf`, `direct_speed`, `seq_time`,
   `avg_x`, `cp_regains`, `rec_time`, `xg_sp`. Mai misurate.
 - [ ] **`avg_def_x`**: pendenza 0.06, la previsione è scorrelata dal reale. Capire (forse
@@ -462,7 +477,7 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b71`)
+## Stato attuale (`b72`)
 
 **1X2.** Col motore `b48` il pick azzecca il 52.7% (±1.4) contro il 43.0% del «gioca sempre in
 casa» sulle cinque leghe: 52.7% contro 40.2% in Serie A, 52.7% contro 43.1% in Premier, 53.2%
@@ -978,7 +993,7 @@ come misurati, da non ridiscutere.
 4. **I rischi già calcolati**, in JS e non dall'LLM: il rischio sorpresa col suo livello e le
    frequenze misurate (dal `b64`, sempre; dal `b70` con le quote dell'1X2 quello delle quote), Elo e modello in disaccordo, meno di 6 partite di ruolo,
    pick sotto il 50%, clamp dell'HFA, statistiche avanzate assenti, riposo molto diverso.
-5. **Le statistiche avanzate previste** con le loro regole di affidabilità (quali reggono,
+5. **Le statistiche avanzate previste** con le loro regole di affidabilità (dal `b72` rimisurate, vedi sotto: quali reggono,
    quali valgono a metà, quali non usare).
 6. **Qualità e cinismo**, con l'avvertenza misurata che la fortuna recente non anticipa il
    risultato.
@@ -1002,6 +1017,35 @@ trovava troppo strette («un'analisi in 4 righe è un po' meh»). Le regole (nie
 niente «certo/sicuro/esplosione/goleada», non mescolare ruolo e generale, N/D detto, stanchezza e
 fortuna solo contesto) stanno in un blocco che il prompt dice esplicitamente di non scrivere come
 sezione.
+
+**Cosa è cambiato nel `b72`.** Chiesto dall'utente («il prompt per l'IA è tutto aggiornato?»), riletto
+riga per riga contro il motore e le misure. Cinque punti non lo erano:
+
+- *Le regole di affidabilità delle statistiche previste* (sezione 5) erano del `b5` (pendenze su
+  2266 osservazioni, «di uno scarto previsto se ne vedono due terzi»), e i duelli aerei «reggevano
+  bene» per una misura fatta sulla quantità di partita, prima del `b19`. Rimisurate sulle 23.278
+  partite dei batch (`strumenti/stat-previste.py`), raggruppate per correlazione della differenza
+  casa meno trasferta (quello che il prompt chiede: «chi crea di più»). Reggono bene, da 0.38 a 0.62:
+  passaggi, conduzioni, progressivi, in area e nell'ultimo terzo, SCA, xT, key passes, occasioni
+  create, PPDA (salita da «a metà»). A metà, da 0.22 a 0.33: xAG, GCA, dribbling tentati, respinte.
+  Non usarle, sotto 0.21: duelli aerei (scesi da «reggono bene»: sulla differenza pendenza 0.54),
+  contrasti, intercetti e duelli vinti (scesi da «a metà»), blocchi, VAEP, PV, assist, secondi
+  assist, SCA da tiro, fallo e dribbling. Il livello è giusto ovunque (entro il 4%), e sulla
+  differenza le previsioni che reggono sono prudenti (pendenza 1–1.5): il prompt ora lo dice.
+- *L'Elo* (sezione 3): «Over/Under e Goal/NoGoal non ne dipendono» era falso per il Goal, perché il
+  ramo di ruolo, da cui escono i mercati gol, si inclina con l'Elo a totale fermo. Ora dice che
+  l'Over/Under quasi non ne dipende e il Goal un po' sì.
+- *«Gol da palla inattiva»* (sezione 6) era la quota degli xG da palla inattiva (sullo schermo
+  «Dipendenza P.Inattiva»), e senza dati diceva «0%» invece di N/D.
+- *«Gol per xG»* stava nella sezione [GENERALE] ma era il valore di RUOLO: ora è quello generale
+  (lo schermo li mostra tutti e due).
+- *Il tabellone* (sezione 2) diceva che a parità di scarto l'1X2 rende molto più dei mercati gol:
+  vero senza quote, non con le quote (gol FORTE +20.0 contro 1X2 +28.6, `b58`). Ora lo distingue.
+
+Il resto era già giusto: soglie e confidence (`PICK_RESA`, `b49`, motore `b48`), rese del tabellone
+(`EDGE_BANDS` coi gol del `b63`, `EDGE_BANDS_QUOTE`), quote (`QUOTE_RESA`, `QUOTE_OU_RESA`,
+`TAB_QUOTE_RESA`), rischio sorpresa (`b71`), stanchezza e fortuna, il ruolo che decide i mercati gol
+e il generale l'1X2.
 
 **Cosa è uscito nel `b51`**, e perché: Ordered Logit e KNN (peso 0 nell'1X2: l'OL poteva dire
 `2` al 47% con un verdetto `1`), la correzione residuale spenta, le partite simili del KNN (due
@@ -1525,7 +1569,7 @@ col movimento ridotto (`reducedMotion: 'reduce'`: i numeri che contano mostrereb
 intermedi), legge «In breve» da `#in-breve` (il riquadro, la sorpresa e le proposte sono tre blocchi)
 e misura le voci del dock e del foglio Altro, Squadre in tutte e tre le sotto-schede.
 
-Esito al `b71` (storico 30; uguale al `b70`), a 390px con tutte le 28 card aperte, scheda per scheda e in tutte e tre le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, 0 px):
+Esito al `b72` (storico 30; uguale al `b71`), a 390px con tutte le 28 card aperte, scheda per scheda e in tutte e tre le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, 0 px):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
@@ -1533,7 +1577,7 @@ Esito al `b71` (storico 30; uguale al `b70`), a 390px con tutte le 28 card apert
 | batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 191 | 0 su 122 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
 | `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 128-158 | 74-83 | 0 |
-| `vecchio`: motore `b70` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 su 191 | 1 (il certificato) | 0 |
+| `vecchio`: motore `b71` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 su 191 | 1 (il certificato) | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -1607,7 +1651,8 @@ multigol (gli stessi numeri con altri colori), le due tabelle dei punti attesi (
 `table-log-away`, i colori dell'intestazione); le righe del CSV no, solo il certificato. Al `b70` il
 controllo col `b69` non vede nessuna scrittura diversa, solo il certificato: il rischio sorpresa del motore
 esce identico, e quello con le quote lo scrive `aggiornaQuote` con `innerHTML` diretto. Al `b71` lo stesso
-col `b70`.
+col `b70`, e al `b72` col `b71`: cambia solo il mega-prompt, che non passa da `safeHtml` (riletto a mano
+su una partita della lega finta, con e senza quote).
 
 **Il controllo del `b70`.** Da qui «In breve» controlla anche il rischio sorpresa: con le quote dell'1X2
 `#sorpresa-box` deve essere identico a quello rifatto nella pagina con `rischioSorpresa(…,
@@ -5254,3 +5299,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b69` | la grafica «Nocturne» del progetto Claude Design dell'utente, fatta uguale e completata con le schermate che il disegno non aveva: token nuovi, Inter e icone Phosphor in locale, il setup col database chiuso in una riga, l'anello dell'analisi in corso (legge il registro del motore), il dock con Partita, Tabellone, Squadre, Numeri e Altro, «In breve» col pick grande, il tabellone a righe con la barra dalla base di lega, Numeri a fisarmonica col numero chiave, la giornata a scheda scorrevole; le animazioni del pacchetto, spente col movimento ridotto. Anche la home e il Comparatore (righe con l'esito a icona, via gli sfondi chiari illeggibili). Nessun numero cambia: col `b68` 10 scritture diverse su 191, tutte di forma, una riga del CSV (il certificato); il banco gira col movimento ridotto e misura dock, foglio Altro e sotto-schede |
 | `b70` | il rischio sorpresa con le quote, notato dall'utente: fino al `b69` il riquadro restava quello del motore anche con le quote, e nelle partite ALTO il 43.7% delle volte dava come sfavorita la squadra che il pick con le quote, subito sopra, dava vincente. Con le quote dell'1X2 il riquadro, la giornata (pastiglia, ordinamento, conteggio) e il mega-prompt dicono il rischio delle quote, da una tabella misurata sulle probabilità con le quote (`SORPRESA_QUOTE_TAB`, 11.902 partite di 12 leghe): lo sfavorito con le quote al 30% o più vince il 31.2%, quindi con le quote il rischio non arriva mai ad ALTO, e il disaccordo fra modello ed Elo non c'entra più. Senza quote niente cambia. Banco: col `b69` 0 scritture diverse su 191, una riga del CSV (il certificato); «In breve» controlla anche il rischio, e il controllo di potenza fallisce dove deve |
 | `b71` | l'accordo fra modello ed Elo torna nel rischio sorpresa con le quote, chiesto dall'utente («l'interazione fra Elo e probabilità mi piaceva»): nel `b70` con le quote il riquadro aveva solo la fascia dello sfavorito. `SORPRESA_QUOTE_TAB` ha le celle per accordo e disaccordo, contate sulle 11.902 partite con le quote come la tabella del motore; con le quote il disaccordo pesa poco (sfavorito al 30% o più: 30.7% contro 31.5%), quindi ALTO continua a non uscire. Banco: col `b70` 0 scritture diverse su 191, una riga del CSV (il certificato) |
+| `b72` | il mega-prompt riletto contro il motore e le misure, chiesto dall'utente: le regole di affidabilità delle statistiche previste rimisurate sulle 23.278 partite dei batch (`strumenti/stat-previste.py`; i duelli aerei, contrasti, intercetti e duelli vinti passano a «non usarle», la PPDA a «reggono bene»); l'Elo che sposta anche il Goal, non solo l'1X2; la quota degli xG da palla inattiva detta col suo nome e N/D senza dati; «Gol per xG» generale nella sezione generale; il tabellone che distingue le rese dei gol senza e con le quote. Nessun numero a schermo cambia: col `b71` 0 scritture diverse su 191, una riga del CSV (il certificato). Due voci nuove in *Da fare*: `STAT_SHRINK_TABLE` troppo stretta (pendenze della differenza 1.3–1.5) e i duelli aerei |

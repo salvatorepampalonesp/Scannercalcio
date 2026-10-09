@@ -673,7 +673,7 @@ body.vista-partita .dock{display:flex}
     <button type="button" class="btn btn-ghost ab-back" id="btn-nuova" onclick="tornaIndietro()" aria-label="Indietro"><svg class="ic" aria-hidden="true"><use href="#i-arrow-left"/></svg><span>Cambia partita</span></button>
     <span class="ab-tit" id="ab-tit"><b></b><small></small></span>
     <span class="ab-spazio"></span>
-    <span class="tag" id="build-ver">build 0905-b71</span>
+    <span class="tag" id="build-ver">build 0905-b72</span>
   </div>
 </header>
 
@@ -3661,7 +3661,7 @@ function _tabTesto(V) {
        + senza.map(v => v.nome + ' ' + (v.edge == null ? 'base ignota' : (v.edge >= 0 ? '+' : '') + v.edge.toFixed(1))).join(', ') : '');
 }
 
-window.__SCANNER_BUILD = '0905-b71';
+window.__SCANNER_BUILD = '0905-b72';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -4865,16 +4865,14 @@ async function avviaScanner() {
     const _statBlocco = (() => {
       const PS = window.__PRED_STATS || { H:{}, A:{} };
       const GRUPPI = [
-        ['Reggono bene (pendenza 0.80-1.07)', [
+        ['Reggono bene (correlazione della differenza fra le squadre 0.38-0.62)', [
           ['passes','Passaggi'], ['carries','Conduzioni'], ['prog_passes','Passaggi progressivi'],
           ['prog_carries','Conduzioni progressive'], ['passes_box','Passaggi in area'],
           ['carries_box','Conduzioni in area'], ['carries_f3','Conduzioni ultimo terzo'],
           ['sca','SCA'], ['xt','xT'], ['key_passes','Key passes'],
-          ['chances_created','Occasioni create'], ['take_ons','Dribbling tentati'],
-          ['aerials','Duelli aerei vinti'], ['clearances','Respinte']]],
-        ['Tengono a meta\' (0.40-0.70)', [
-          ['xag','xAG'], ['gca','GCA'], ['tackles','Contrasti'],
-          ['interceptions','Intercetti'], ['duels_won','Duelli vinti'], ['ppda','PPDA']]]
+          ['chances_created','Occasioni create'], ['ppda','PPDA']]],
+        ['Valgono a meta\' (0.22-0.33)', [
+          ['xag','xAG'], ['gca','GCA'], ['take_ons','Dribbling tentati'], ['clearances','Respinte']]]
       ];
       const f = v => (v == null || !isFinite(v)) ? 'N/D' : (Math.abs(v) >= 100 ? v.toFixed(0) : v.toFixed(2));
       let out = '';
@@ -4921,7 +4919,7 @@ async function avviaScanner() {
       const div = Math.abs(+pOf(E.lgElo) - +pOf(E.lgModel));
       return t + `\n- Su 1 contro 2 (pari esclusi) l'Elo da solo dice ${pOf(E.lgElo)}%, il modello da solo ${pOf(E.lgModel)}%, e si usa ${pOf(E.lgTarget)}% (peso Elo ${f2(E.w)}).`
         + (div >= 10 ? `\n  ATTENZIONE: Elo e modello distano ${div.toFixed(1)} punti e con quel peso DECIDE L'ELO. Il verdetto 1X2 non viene dalle statistiche di questa partita ma dal rating di lega: dillo, invece di cercare nelle statistiche una conferma che non c'e'.` : '')
-        + "\n- L'Elo sposta solo il rapporto casa/trasferta: Over/Under e Goal/NoGoal non ne dipendono.";
+        + "\n- L'Elo sposta il rapporto casa/trasferta tenendo fermo il totale dei gol attesi: l'Over/Under quasi non ne dipende, il Goal/NoGoal un po' si' (piu' la partita e' squilibrata, meno Goal).";
     })();
     const _stancTxt = (() => {
       const F = window.__FATIGUE_DEBUG;
@@ -4975,9 +4973,9 @@ piu' affidabile di questo prompt, NON ridiscuterli e non riclassificarli.
 FORTE e GIOCABILE vogliono dire che la proposta rende piu' del giocare quel mercato sempre,
 alla cieca, non che sia probabile: un 2 al 45% in una lega dove la trasferta vince il 29% e'
 giocabile anche se esce meno di una volta su due. Ogni proposta dice quanto rende DAVVERO il
-suo tipo di mercato: a parita' di scarto l'1X2 rende molto piu' dei mercati gol (Over/Under,
-Goal/NoGoal). Una doppia chance contiene l'esito singolo (X2 contiene il 2): non sono due
-giocate indipendenti.
+suo tipo di mercato: senza quote, a parita' di scarto, l'1X2 rende molto piu' dei mercati gol
+(Over/Under, Goal/NoGoal); con le quote la distanza si riduce molto. Una doppia chance contiene
+l'esito singolo (X2 contiene il 2): non sono due giocate indipendenti.
 @@TABELLONE@@
 
 3. ELO [partite di lega delle ultime tre stagioni]
@@ -4990,19 +4988,21 @@ ${_rischiTxt}
 Previsione per questa sfida, non medie storiche: media di lega x (quanto produce la squadra)
 x (quanto concede l'avversario).
 ${_statBlocco}
-Quanto valgono (misurato su 2266 osservazioni squadra-partita): il livello e' giusto quasi
-ovunque, ma di uno scarto previsto fra le due squadre nel reale se ne vedono circa due terzi.
-- Reggono bene: passaggi, conduzioni, SCA, progressivi e in area, xT, key passes, occasioni
-  create, duelli aerei.
-- Valgono a meta': xAG, GCA, contrasti, intercetti, duelli vinti, PPDA.
-- Non usarle (il previsto non dice quasi niente sul reale): VAEP, PV, assist, secondi assist,
-  SCA da tiro/fallo/dribbling, blocchi.
+Quanto valgono (misurato su 23.278 partite di 24 leghe): il livello e' giusto ovunque (previsto
+e reale coincidono in media entro il 4%). Sulla differenza fra le due squadre le previsioni sono
+prudenti: per quelle che reggono, nel reale lo scarto e' di solito da 1 a 1.5 volte quello
+previsto. Uno scarto previsto netto va preso sul serio; uno piccolo resta piccolo.
+- Reggono bene: passaggi, conduzioni, progressivi, in area e nell'ultimo terzo, SCA, xT, key
+  passes, occasioni create, PPDA.
+- Valgono a meta': xAG, GCA, dribbling tentati, respinte.
+- Non usarle (il previsto non dice quasi niente sul reale): duelli aerei, contrasti, intercetti,
+  duelli vinti, blocchi, VAEP, PV, assist, secondi assist, SCA da tiro/fallo/dribbling.
 
 6. QUALITA' E CINISMO [GENERALE]
 - NPxG contro xGOT: ${hName} ${f2(npxgH_gen)} vs ${xgotH > 0 ? f2(xgotH) : (xgShotH > 0 ? f2(xgShotH) + " (xG/tiro)" : "N/D")} | ${aName} ${f2(npxgA_gen)} vs ${xgotA > 0 ? f2(xgotA) : (xgShotA > 0 ? f2(xgShotA) + " (xG/tiro)" : "N/D")}
 - Big Chances create/sprecate: ${hName} ${f1(bcH)}/${f1(bcmH)} | ${aName} ${f1(bcA)}/${f1(bcmA)}
-- Gol da palla inattiva: ${hName} ${setPctH > 0 ? f1(setPctH) : "0"}% | ${aName} ${setPctA > 0 ? f1(setPctA) : "0"}%
-- Gol per xG: ${hName} ${f2(effH_ro)} | ${aName} ${f2(effA_ro)}
+- Quota degli xG che viene da palla inattiva: ${hName} ${setPctH != null ? f1(setPctH) + '%' : 'N/D'} | ${aName} ${setPctA != null ? f1(setPctA) + '%' : 'N/D'}
+- Gol per xG: ${hName} ${f2(effH_ov)} | ${aName} ${f2(effA_ov)}
 - Punti reali contro attesi dagli xG: ${hName} ${f2(pytH.ppgAct)} vs ${f2(pytH.ppgExp)} (${pytH.msg}) | ${aName} ${f2(pytA.ppgAct)} vs ${f2(pytA.ppgExp)} (${pytA.msg})${hiddenValueMsgClean && !/^Nessuno/.test(hiddenValueMsgClean) ? `
 - Accoppiamento notato (descrittivo, non misurato): ${hiddenValueMsgClean}` : ''}
 Misurato: la fortuna recente (gol o punti sopra o sotto gli xG) non anticipa il risultato.
