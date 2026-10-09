@@ -227,7 +227,7 @@ select{appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:36px
 
   <div class="topbar">
     <div class="brand"><svg class="ic" aria-hidden="true"><use href="#i-chart-bar"/></svg><h1>Comparatore V9.7</h1></div>
-    <div class="tb-tag"><span class="badge" id="build-ver">build 0905-b69</span><span class="badge" id="engine-badge">motore non caricato</span></div>
+    <div class="tb-tag"><span class="badge" id="build-ver">build 0905-b70</span><span class="badge" id="engine-badge">motore non caricato</span></div>
   </div>
 
   <!-- indicatore di flusso -->
@@ -913,7 +913,7 @@ async function loadEngineFromText(text, fileName) {
     <p><code>${fileName}</code> — clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
 
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b69';
+  const _bComp = '0905-b70';
   window.__CMP_BUILD = _bComp;
   const _el = document.getElementById('engine-build');
   if (_el) {
