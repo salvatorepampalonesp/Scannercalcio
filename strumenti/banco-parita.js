@@ -292,7 +292,8 @@ const SNAP = `(() => ({ rec: window.__REC_CUR || [], verd: JSON.parse(JSON.strin
 // le prime tre con un verdetto del tabellone a schermo, il rischio sorpresa quello del motore. Dal b69 il
 // riquadro, la sorpresa e le proposte sono tre blocchi dentro #in-breve. Dal b70 con le quote dell'1X2 il
 // rischio sorpresa e' quello delle probabilita' con le quote (SORPRESA_QUOTE_TAB): il riquadro deve essere
-// identico a quello rifatto qui con le funzioni dello Scanner, e il prompt deve dire lo stesso rischio
+// identico a quello rifatto qui con le funzioni dello Scanner, e il prompt deve dire lo stesso rischio. Dal b71
+// anche con le quote il riquadro tiene l'accordo fra modello ed Elo del motore
 const INBREVE = `(() => { const b = document.querySelector('#in-breve'); if (!(b instanceof Element)) return null;
   const E = window.__ESITO, Q = window.__QUOTE_P, P = Q || (E && E.p); if (!P) return { ok: !b.querySelector('.ib-big'), rotto: false, vuoto: true };
   const k = P.indexOf(Math.max(...P)), big = b.querySelector('.ib-big'), pp = b.querySelector('.ib-pp'), lab = b.querySelector('.ib-lab');
@@ -300,14 +301,14 @@ const INBREVE = `(() => { const b = document.querySelector('#in-breve'); if (!(b
   const Vb = [...b.querySelectorAll('.ib-p b')].map(x => x.firstChild.textContent.trim());
   const ok = !!big && big.firstChild.textContent === ['1', 'X', '2'][k] && !!pp && pp.firstChild.textContent === (100 * P[k]).toFixed(1) + '%'
     && JSON.stringify(V) === JSON.stringify(Vb) && !!lab && /con le quote/.test(lab.textContent) === !!Q;
-  const C = window.__QUOTE_CTX, sb = document.querySelector('#sorpresa-box'), S = Q ? rischioSorpresa(Q[0], Q[1], Q[2], null, SORPRESA_QUOTE_TAB) : E.sorpresa;
+  const C = window.__QUOTE_CTX, sb = document.querySelector('#sorpresa-box'), S = Q ? rischioSorpresa(Q[0], Q[1], Q[2], window.__ELO_DEBUG_OVER, SORPRESA_QUOTE_TAB) : E.sorpresa;
   const t = document.createElement('div'); t.innerHTML = C ? htmlSorpresa(S, C.hName, C.aName, E.sorpresa) : '';
   const pr = (document.getElementById('ai-prompt') || {}).value || '';
   const sorOk = !!C && sb instanceof Element && sb.innerHTML === t.innerHTML && !!sb.querySelector('.sorpresa.s-' + S.liv)
     && !!sb.querySelector('.sorpresa[data-q]') === !!Q && pr.includes(testoSorpresa(S, C.hName, C.aName, E.sorpresa))
-    && (Q ? window.__SORPRESA_QUOTE && window.__SORPRESA_QUOTE.liv === S.liv : !window.__SORPRESA_QUOTE);
+    && (Q ? window.__SORPRESA_QUOTE && window.__SORPRESA_QUOTE.liv === S.liv : !window.__SORPRESA_QUOTE) && S.dis === E.sorpresa.dis && S.dis !== null;
   return { ok: ok && sorOk, sorOk, rotto: /NaN|undefined|Infinity/.test(b.innerHTML), pick: ['1', 'X', '2'][k], proposte: Vb.length, quote: !!Q,
-           sorpresa: S.liv + (Q ? ' con le quote' : '') }; })()`;
+           sorpresa: S.liv + (Q ? ' con le quote' : '') + (S.dis ? ', disaccordo' : ', accordo') }; })()`;
 // dal b66 l'analisi e' divisa in schede, e una sezione nascosta non ha larghezza: si misura scheda per
 // scheda, con tutte le details aperte. Oltre alle tabelle compatte, i riquadri nuovi non devono uscire di lato.
 // Dal b69 le schede sono le voci del dock (Altro apre un foglio con Prompt e Dati), e Squadre ha tre sotto-schede
