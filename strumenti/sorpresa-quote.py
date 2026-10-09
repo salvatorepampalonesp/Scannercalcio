@@ -9,7 +9,8 @@
 # (anche --tutte): il tabellone del motore per livello di sorpresa, coi mercati gol rifatti col livello dei gol
 # del b63 (i CSV sono di motori precedenti), e la resa delle proposte dalla parte del favorito e dello sfavorito.
 # Dal b70 anche la tabella del rischio sorpresa con le quote (SORPRESA_QUOTE_TAB): per fascia dello sfavorito con
-# le quote (QUOTE_COMB letta da scanner.html, quote di chiusura), quante volte vincono sfavorito, pareggio e favorito.
+# le quote (QUOTE_COMB letta da scanner.html, quote di chiusura), quante volte vincono sfavorito, pareggio e favorito,
+# su tutte e per accordo fra modello ed Elo sul favorito (dal b71, come rischioSorpresa).
 import os, re, sys, glob, math, collections, importlib.util
 import numpy as np
 from sklearn.linear_model import LogisticRegression
@@ -44,7 +45,7 @@ def quote_comb():
     W = [[float(v) for v in r.split(',')] for r in re.findall(r'\[(-?[\d.]+(?:, -?[\d.]+){3})\]', b[:b.index('b:')])]
     B = [float(v) for v in re.search(r'b: \[([^\]]*)\]', b).group(1).split(',')]
     t = s[s.index('const SORPRESA_QUOTE_TAB'):]; t = t[:t.index('] };')]
-    T = [[float(v) for v in m.split(',')] for m in re.findall(r'tutte: \[([^\]]*)\]', t)]
+    T = {k: [[float(v) for v in m.split(',')] for m in re.findall(r'\b' + k + r': \[([^\]]*)\]', t)] for k in ('tutte', 'accordo', 'disaccordo')}
     return np.array(W), np.array(B), T
 
 def leggi(dirs):
@@ -126,7 +127,7 @@ def sorpresa_con_le_quote(Q):
     PF = np.zeros_like(PC); mu, sd = F.mean(0), F.std(0)
     for l in sorted(set(lg)):
         te = lg == l; PF[te] = LogisticRegression(C=1.0, max_iter=3000).fit((F[~te] - mu) / sd, y[~te]).predict_proba((F[te] - mu) / sd)
-    dis = np.sign([q['lgModel'] for q in Q]) != np.sign([q['lgElo'] for q in Q])
+    dis = np.array([(q['lgModel'] > 0) != (q['lgElo'] > 0) for q in Q])
     def tab(P, k):
         sf = np.where(P[:, 0] < P[:, 2], 0, 2); pu = np.minimum(P[:, 0], P[:, 2]) / P.sum(1); out = []
         for i, a in enumerate(FAS):
@@ -138,7 +139,9 @@ def sorpresa_con_le_quote(Q):
     for i, a in enumerate(FAS):
         f = lambda r: f'{r[0]:5d} sfavorito {r[1]:5.1f} (previsto {r[4]:5.1f})'
         print(f'  da {a:2d}%: {f(T[i])} pari {T[i][2]:5.1f} favorito {T[i][3]:5.1f} · fuori lega {f(tab(PF, tutte)[i])} · disaccordo {f(tab(PC, dis)[i])} · accordo {f(tab(PC, ~dis)[i])}')
-    print('  SORPRESA_QUOTE_TAB di scanner.html ' + ('coincide' if [r[:4] for r in T] == [[int(t[0])] + t[1:] for t in Tsc] else 'NON COINCIDE: ' + str([r[:4] for r in T])))
+    for nome, k in (('tutte', tutte), ('accordo', ~dis), ('disaccordo', dis)):
+        R = [r[:4] for r in tab(PC, k)]
+        print(f'  SORPRESA_QUOTE_TAB di scanner.html, {nome}: ' + ('coincide' if R == [[int(t[0])] + t[1:] for t in Tsc[nome]] else 'NON COINCIDE: ' + str(R)))
     liv = np.array([livello(q) for q in Q]); sfM = np.where(P0[:, 0] < P0[:, 2], 0, 2); sfC = np.where(PC[:, 0] < PC[:, 2], 0, 2)
     for L_ in ('alto', 'medio', 'basso'):
         k = liv == L_
