@@ -673,7 +673,7 @@ body.vista-partita .dock{display:flex}
     <button type="button" class="btn btn-ghost ab-back" id="btn-nuova" onclick="tornaIndietro()" aria-label="Indietro"><svg class="ic" aria-hidden="true"><use href="#i-arrow-left"/></svg><span>Cambia partita</span></button>
     <span class="ab-tit" id="ab-tit"><b></b><small></small></span>
     <span class="ab-spazio"></span>
-    <span class="tag" id="build-ver">build 0905-b73</span>
+    <span class="tag" id="build-ver">build 0905-b74</span>
   </div>
 </header>
 
@@ -2929,17 +2929,36 @@ window.CONF_1X2_TABLE = window.CONF_1X2_TABLE ||
 window.CONF_1X2_MODE = window.CONF_1X2_MODE || 'nuda';
 // Resa del pick sopra ogni soglia, cinque leghe col motore b48: [soglia, esce %, quota del
 // calendario %, 1 partita su N]. La card delle soglie e il mega-prompt la leggono da qui.
-// Solo le leghe di `leghe`; `fuori`: [nome, partite, pick su tutte, esce % e quota % a >=55].
+// Solo le leghe di `leghe`. `cinque` e `fuori`, lega per lega: [nome, partite, pick su tutte, esce % a >=55,
+// quota % a >=55, stagioni, partite a >=55]. In `fuori` solo le leghe con almeno 50 partite sopra il 55% (b74).
 const PICK_RESA = { tutte: 52.7, casa: 43.0, partite: 5230,
   soglie: [[70, 77.1, 9, 10.9], [65, 73.2, 16, 6.1], [60, 69.3, 26, 3.8], [55, 66.0, 38, 2.6], [50, 61.7, 52, 1.9]],
   leghe: ['l_0ALvwF', 'l_4WFCIZ', 'l_0ErfuF', 'l_1Isor4', 'l_3FJFUl'],
-  cinque: { l_0ALvwF: ['Serie A', 1134, 52.7, 64.2, 37], l_4WFCIZ: ['Premier League', 1135, 52.7, 65.2, 43],
-            l_0ErfuF: ['LaLiga', 1134, 53.2, 68.8, 38], l_1Isor4: ['Bundesliga', 912, 52.5, 67.9, 37],
-            l_3FJFUl: ['Ligue 1', 915, 52.3, 63.7, 33] },
-  fuori: { l_4DWyTT: ['Championship', 1659, 46.3, 64.8, 17], l_4H43wr: ['Eredivisie', 923, 53.7, 68.7, 47],
-           l_4QexZg: ['Liga Portugal', 913, 55.0, 72.4, 43], l_3hvsne: ['2. Bundesliga', 908, 45.4, 62.8, 16],
-           l_2L6d1F: ['First Division A', 931, 50.2, 65.5, 35], l_1LMdEO: ['Premiership scozzese', 683, 53.3, 68.9, 41],
-           l_4d6Bwl: ['Super League svizzera', 680, 47.1, 66.1, 26] } };
+  cinque: { l_0ALvwF: ['Serie A', 1134, 52.7, 64.2, 37, '2023/24-2025/26', 417], l_4WFCIZ: ['Premier League', 1135, 52.7, 65.2, 43, '2023/24-2025/26', 485],
+            l_0ErfuF: ['LaLiga', 1134, 53.2, 68.8, 38, '2023/24-2025/26', 433], l_1Isor4: ['Bundesliga', 912, 52.5, 67.9, 37, '2023/24-2025/26', 339],
+            l_3FJFUl: ['Ligue 1', 915, 52.3, 63.7, 33, '2023/24-2025/26', 305] },
+  fuori: { l_4DWyTT: ['Championship', 1659, 46.3, 64.8, 17, '2023/24-2025/26', 287], l_4H43wr: ['Eredivisie', 923, 53.7, 68.7, 47, '2023/24-2025/26', 435],
+           l_4QexZg: ['Liga Portugal', 913, 55.0, 72.4, 43, '2023/24-2025/26', 391], l_3hvsne: ['2. Bundesliga', 908, 45.4, 62.8, 16, '2023/24-2025/26', 148],
+           l_2L6d1F: ['First Division A', 931, 50.2, 65.5, 35, '2023/24-2025/26', 330], l_1LMdEO: ['Premiership scozzese', 683, 53.3, 68.9, 41, '2023/24-2025/26', 283],
+           l_4d6Bwl: ['Super League svizzera', 680, 47.1, 66.1, 26, '2023/24-2025/26', 180],
+           l_1W6idJ: ['League Two', 1656, 45.9, 58.6, 14, '2023/24-2025/26', 239], l_0ahLw8: ['League One', 1653, 49.4, 62.7, 15, '2023/24-2025/26', 249],
+           l_0S1uaf: ['Super Lig', 1018, 52.9, 73.0, 32, '2023/24-2025/26', 326], l_3v84VE: ['Liga MX', 667, 51.1, 63.4, 22, '2023/24-2025/26', 145],
+           l_3zsMpo: ['Bundesliga austriaca', 582, 48.5, 64.6, 25, '2023/24-2025/26', 144], l_49Zmno: ['Superligaen', 574, 50.9, 60.9, 29, '2023/24-2025/26', 169],
+           l_4MPd7x: ['A-League', 507, 44.6, 47.0, 16, '2023/24-2025/26', 83], l_1qpFVw: ['Indian Super League', 384, 48.2, 66.7, 18, '2023/24-2025/26', 69],
+           l_0Lpz1f: ['Saudi Pro League', 604, 56.3, 70.6, 44, '2024/25-2025/26', 265],
+           l_0eg6C9: ['MLS', 1581, 47.7, 60.8, 23, '2023-2025', 357], l_0uqFK8: ['Eliteserien', 715, 53.1, 66.7, 34, '2023-2025', 240],
+           l_1XsMdH: ['Allsvenskan', 715, 50.9, 64.9, 29, '2023-2025', 205], l_2ApGa4: ['J. League', 756, 45.5, 54.1, 13, '2024-2025', 98],
+           l_2EKrnc: ['K League 1', 629, 41.5, 54.4, 9, '2024-2026', 57], l_45VZuL: ['Liga Profesional argentina', 508, 41.5, 52.2, 13, '2025', 67],
+           l_1D8Xrl: ['Serie A brasiliana', 374, 50.5, 65.2, 30, '2025', 112],
+           l_49KZaB: ['Eerste Divisie', 377, 47.2, 55.6, 33, '2025/26', 124], l_47077Y: ['3. Liga', 375, 51.5, 59.3, 24, '2025/26', 91],
+           l_0kSJLz: ['Liga I romena', 314, 51.3, 62.3, 25, '2025/26', 77], l_2xBPKk: ['Super Liga serba', 294, 51.4, 69.1, 28, '2025/26', 81],
+           l_0F4I4F: ['1. Liga ceca', 274, 50.7, 64.0, 36, '2025/26', 100], l_16Sq13: ["Ligat ha'Al", 237, 51.9, 63.8, 29, '2025/26', 69],
+           l_4MU9Yh: ['1. liga slovacca', 191, 52.4, 64.3, 29, '2025/26', 56], l_2tFk9k: ['HNL croata', 179, 52.5, 72.4, 32, '2025/26', 58],
+           l_3yVUAO: ['USL Championship', 334, 44.9, 55.6, 22, '2026', 72], l_1xXulJ: ['Primera A colombiana', 324, 47.8, 61.3, 29, '2026', 93],
+           l_3qUkB8: ['Serie B brasiliana', 315, 48.9, 64.1, 20, '2026', 64], l_1dmt9H: ['Serie A ecuadoriana', 247, 48.2, 68.2, 27, '2026', 66],
+           l_3uNwVX: ['Liga 1 peruviana', 244, 51.6, 63.3, 40, '2026', 98], l_20pNSc: ['Super League cinese', 211, 47.9, 56.9, 34, '2026', 72],
+           l_3qNjzC: ['Liga de Primera cilena', 180, 46.7, 59.7, 34, '2026', 62] } };
+const _seResa = M => 200 * Math.sqrt(M[3] / 100 * (1 - M[3] / 100) / M[6]);
 (function () {
   const el = typeof document !== 'undefined' && document.getElementById('pick-soglie');
   if (!el) return;
@@ -2948,9 +2967,9 @@ const PICK_RESA = { tutte: 52.7, casa: 43.0, partite: 5230,
     + ' &middot; <span style="color:var(--red)">&lt;45% &rarr; non selezionare</span>.<br>'
     + `Su tutte le partite il pick azzecca il <b>${PICK_RESA.tutte}%</b> contro il ${PICK_RESA.casa.toFixed(1)}% del &laquo;gioca sempre in casa&raquo;.`;
   const fu = document.getElementById('pick-fuori');
-  if (fu) fu.innerHTML = '<br><b>Valgono solo per questi cinque campionati.</b> Fuori cambiano molto; misurate a parte, pick &ge;55% &rarr; resa, quota del calendario (su tutte): '
-    + Object.values(PICK_RESA.fuori).map(x => `${x[0]} ${x[3].toFixed(1)}%, ${x[4]}% (${x[2].toFixed(1)}%)`).join(' &middot; ')
-    + '. Nelle altre leghe non sono misurate.';
+  const V = Object.values(PICK_RESA.fuori), mm = (k, d) => `${Math.min(...V.map(x => x[k])).toFixed(d)} e il ${Math.max(...V.map(x => x[k])).toFixed(d)}`;
+  if (fu) fu.innerHTML = `<br><b>Valgono solo per questi cinque campionati.</b> Fuori cambiano molto: misurate a parte in ${V.length} leghe, pick &ge;55% &rarr; fra il ${mm(3, 1)}%,`
+    + ` su una quota del calendario fra il ${mm(4, 0)}%. Quella della lega analizzata &egrave; nella nota in cima all'analisi; nelle altre leghe non sono misurate.`;
 })();
 
 // Avviso di sorpresa (b64): per fascia di probabilita' dello sfavorito, e per accordo fra modello ed Elo sul
@@ -3541,9 +3560,9 @@ function renderLeagueNote() {
   if (!lId) { box.innerHTML = ''; return; }
   const M = PICK_RESA.cinque[lId] || PICK_RESA.fuori[lId];
   const nome = M ? M[0] : _escHtml((sel.options[sel.selectedIndex] || {}).text || 'Questa lega');
-  const testo = M ? `col motore attuale il pick esce il <b>${M[2].toFixed(1)}%</b> su tutte le partite e il <b>${M[3].toFixed(1)}%</b> sopra il 55% (${M[4]}% delle partite)`
+  const testo = M ? `col motore attuale il pick esce il <b>${M[2].toFixed(1)}%</b> su tutte le partite e il <b>${M[3].toFixed(1)}%</b> sopra il 55% (&plusmn;${_seResa(M).toFixed(1)}, ${M[4]}% delle partite)`
       + (PICK_RESA.cinque[lId] ? '' : '; le rese del tabellone qui sotto sono misurate sui cinque campionati')
-      + `.<span style="color:var(--dim)"> Misurato su ${M[1]} partite, 2023/24&ndash;2025/26.</span>`
+      + `.<span style="color:var(--dim)"> Misurato su ${M[1]} partite, ${M[5].replace('-', '&ndash;')}.</span>`
     : "lega mai misurata: soglie del pick e rese del tabellone vengono da altre leghe, prendile come indicative.";
   box.innerHTML = '<div class="lnota' + (M ? '' : ' lnota-w') + '"><b>' + nome + '</b> &middot; ' + testo + '</div>';
 }
@@ -3663,7 +3682,7 @@ function _tabTesto(V) {
        + senza.map(v => v.nome + ' ' + (v.edge == null ? 'base ignota' : (v.edge >= 0 ? '+' : '') + v.edge.toFixed(1))).join(', ') : '');
 }
 
-window.__SCANNER_BUILD = '0905-b73';
+window.__SCANNER_BUILD = '0905-b74';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -4891,7 +4910,7 @@ async function avviaScanner() {
 
     const _fuoriTxt = (() => {
       const F = PICK_RESA.fuori[lId], V = Object.values(PICK_RESA.fuori);
-      if (F) return `- Questa lega (${F[0]}) non e' fra i cinque campionati: le soglie qui sopra non valgono. Misurata a parte su ${F[1]} partite: il pick esce il ${F[2].toFixed(1)}% su tutte, e sopra il 55% il ${F[3].toFixed(1)}%, nel ${F[4]}% delle partite.`;
+      if (F) return `- Questa lega (${F[0]}) non e' fra i cinque campionati: le soglie qui sopra non valgono. Misurata a parte su ${F[1]} partite (${F[5]}): il pick esce il ${F[2].toFixed(1)}% su tutte, e sopra il 55% il ${F[3].toFixed(1)}% (+/-${_seResa(F).toFixed(1)} su ${F[6]} partite), nel ${F[4]}% delle partite.`;
       return `- Questa lega non e' mai stata misurata: soglie e confidence sono misurate su altre leghe, prendile come indicative. Nelle ${V.length} leghe provate fuori dai cinque campionati, sopra il 55% il pick e' uscito fra il ${Math.min(...V.map(x => x[3])).toFixed(1)} e il ${Math.max(...V.map(x => x[3])).toFixed(1)}%, in una quota del calendario fra il ${Math.min(...V.map(x => x[4]))} e il ${Math.max(...V.map(x => x[4]))}%.`;
     })();
     const _pickTxt = (() => {

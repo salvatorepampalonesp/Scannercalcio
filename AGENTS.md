@@ -55,7 +55,7 @@ vedi *Le quote automatiche*); se non ci sono, le scrive l'utente. Per misurarle 
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b73`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b74`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -477,7 +477,7 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b73`)
+## Stato attuale (`b74`)
 
 **1X2.** Col motore `b48` il pick azzecca il 52.7% (±1.4) contro il 43.0% del «gioca sempre in
 casa» sulle cinque leghe: 52.7% contro 40.2% in Serie A, 52.7% contro 43.1% in Premier, 53.2%
@@ -515,6 +515,15 @@ Super League svizzera, 3202 partite) le soglie invece stanno tutte dentro i 2se 
 66.2 / 69.9 / 73.6 / 78.7%), ma su meno calendario (29 / 19 / 12 / 7%), e anche lì le leghe si
 separano: sopra il 55% la 2. Bundesliga ha il 16% delle partite, la Scozia il 41%. Dal `b53`
 `PICK_RESA.fuori` ha tutte e sette le leghe.
+
+**Le leghe mai viste** (dal `b74`). Tre batch nuovi (33 file, 7.645 partite, tutte in copia conforme)
+e i batch del `b61` e del `b62`, che lo Scanner non usava: `PICK_RESA.fuori` passa da 7 a 38 leghe,
+quelle con almeno 50 partite col pick sopra il 55%. Lì lo Scanner dice quanto esce il pick invece di
+«lega mai misurata», col suo errore e le stagioni. Sulle 24 leghe dei tre batch nuovi il pick prende il
+48.7% (probabilità media 49.4%) e sopra il 55% il 62.1% ±2.3, sotto il 66.0% della card: fuori dai
+cinque campionati le soglie non valgono, come nel `b52`. Lega per lega va dal 47.0% (A-League) al 73.0%
+(Süper Lig). Rischio sorpresa e livello dei gol reggono; le etichette dei mercati sui numeri promettono
+più di quanto rendono. Vedi *Le leghe mai viste*.
 
 **La confidence dell'1X2 è la probabilità** (dal `b53`). La tabella misurata nel `b38` alzava le
 probabilità timide di allora; col `b48` sono quasi calibrate, e la tabella le alzava troppo. Sulle
@@ -741,6 +750,7 @@ non passa mai +7.1. Trascina con sé il `12`.
 | **Le quattro leghe del `b53`** | **3202** | 2. Bundesliga 908, First Division A 931, Premiership scozzese 683, Super League svizzera 680, 2023/24–2025/26: batch automatico del `b52`, 3202 su 3202 in copia conforme, Elo identico su ogni file; `/advanced` assente sul 2023/24 di Scozia e Svizzera. Aperte solo per il test della confidence nuda; il tabellone non è mai stato guardato |
 | **Le tre leghe nuove col `b48`** | **3495** | Championship 1659, Eredivisie 923, Liga Portugal 913, 2023/24–2025/26: batch automatico del `b51` (probabilità del `b48`), 3495 su 3495 in copia conforme, Elo rifatto dall'archivio identico su ogni file; `/advanced` assente sul 2023/24 di Championship e Liga Portugal. La sezione `TABELLONE` non è mai stata guardata |
 | **Le nove leghe del livello dei gol** | **6472** | Bundesliga austriaca 582, Superligaen 574, Liga MX 667 (2023/24–2025/26), Eliteserien 715, Allsvenskan 715, MLS 1581 (2023–2025), J. League 756 (2024–2025), Liga Profesional 508, Série A brasiliana 374 (2025): batch automatico del `b62`, tutte in copia conforme, Elo identico su ogni file. Aperte solo per il test del livello dei gol (`b63`) |
+| **Le leghe mai viste del `b74`** | **7645** | 33 file di 25 leghe: A-League, Indian Super League, Saudi Pro League 2023/24–2025/26 e K League 1 2024–2026; il 2026 giocato di dieci leghe a calendario solare; il 2025/26 di undici leghe europee, con una sola stagione alle spalle. Batch automatico del `b73`, tutte in copia conforme, Elo identico su ogni file. Super League 1 greca 2025/26 e Saudi Pro League 2023/24 senza stagione alle spalle: fuori da ogni misura. Guardate per 1X2, soglie, sorpresa, gol, numeri e tabellone senza quote (solo descrittivo); le rese del pick sono in `PICK_RESA.fuori`. Vedi *Le leghe mai viste* |
 | **League One, League Two, Süper Lig e il 2026/27** | **4879** | League One 1653, League Two 1656, Süper Lig 1018 (2023/24–2025/26; il 2023/24 con una sola stagione alle spalle) e le partite giocate del 2026/27 di dieci leghe (552): batch automatico del `b61`, tutte in copia conforme, Elo identico su ogni file; `/advanced` assente su League One e League Two. Aperte solo per il test dei mercati della matrice con le quote (`b62`) |
 | **Serie A 2023/24 → 2025/26** | **1134** | **il riferimento**: export `b40`, 1134 su 1134 in copia conforme, una stagione per file, storico 30, `lgN` ≥ 760; `/advanced` assente sul 2023/24 (`riserva-k-motore`) |
 | **Premier 2023/24 → 2025/26** | **1135** | **il riferimento**: export `b41`, 1135 su 1135 in copia conforme, una stagione per file, storico 30, `lgN` ≥ 760, `/advanced` su tutte e tre le stagioni |
@@ -1067,7 +1077,8 @@ misurate a parte (`PICK_RESA.fuori`), per le altre dice che non sono misurate e 
 nelle leghe misurate. Fra i rischi calcolati c'è «Lega fuori dai cinque campionati» (le rese del
 tabellone sono misurate su quelli) o «Lega mai misurata», e la regola sul non promettere di più
 cita la resa «nei cinque campionati misurati». Dal `b53` la confidence è spiegata come «la
-probabilità del pick, già calibrata dal motore».
+probabilità del pick, già calibrata dal motore». Dal `b74` le leghe misurate a parte sono 38, e il
+prompt dice anche le stagioni e il ±2se della resa sopra il 55% (vedi *Le leghe mai viste*).
 
 **Con le quote** (dal `b54`). Se l'utente scrive le quote, `aggiornaQuote` mette dopo il pick un
 blocco «CON LE QUOTE DEL MERCATO»: le quote e il margine, il mercato senza margine, le probabilità
@@ -1404,9 +1415,10 @@ e il file è diventato quello. Le 35 leghe nuove:
   Saudi First Division, Women's Premier League saudita.
 
 Hanno tre stagioni al massimo, dal 2024 (il Paraguay due): con le due stagioni alle spalle che lo
-Scanner carica c'è solo la stagione in corso, anche per un batch. Nessuna è mai stata misurata: lo
-Scanner lo dice («lega mai misurata»), e lì soglie del pick e rese del tabellone senza quote non
-valgono. Quattro hanno le quote automatiche di football-data (`new/CHN.csv`, `FIN`, `IRL`, `ROU`): agganciate 1.736 partite su 1.736, nessuna
+Scanner carica c'è solo la stagione in corso; un batch del 2025/26 (o del 2026) ne ha una o due. Nel
+`b74` 20 sono state misurate con un batch, e 15 hanno abbastanza partite perché lo Scanner dica quanto
+esce il pick (vedi *Le leghe mai viste*). Nelle altre lo Scanner dice «lega mai misurata», e soglie
+del pick e rese del tabellone senza quote lì non valgono. Quattro hanno le quote automatiche di football-data (`new/CHN.csv`, `FIN`, `IRL`, `ROU`): agganciate 1.736 partite su 1.736, nessuna
 sbagliata (vedi *Le quote automatiche*). Sette nomi ora sono di più leghe (`Serie A`, `Serie B`,
 `Premier League`, `Super League`, `Bundesliga`, `Primera Division`, `1. liga`): negli strumenti si
 scrive `PAESE:Nome`.
@@ -1415,6 +1427,130 @@ scrive `PAESE:Nome`.
 sono uguali (una chiamata); senza `--prova` riscrive il file e le due copie. Se l'API non elenca più
 una lega o una stagione che il file ha, si ferma senza riscrivere: i batch e i CSV si appoggiano a
 quelle. Poi, siccome `scanner.html` cambia, build nuova e banco (skill `nuova-build`).
+
+## Le leghe mai viste
+
+**I batch** (10 ottobre 2026). Chiesti dall'utente per «aumentare i numeri che abbiamo», solo per
+guardare: nessuna regola registrata, nessun test. Prima si è controllato col banco che il Comparatore
+desse i numeri del `b73`. Tre batch automatici del `b73`:
+
+- `batch/lontane`: A-League, Indian Super League e Saudi Pro League 2023/24–2025/26, K League 1
+  2024–2026. 12 file, 73 minuti, 14.083 chiamate.
+- `batch/anno2026`: il 2026 giocato di Serie B brasiliana, Liga de Primera cilena, Super League
+  cinese, Primera A colombiana, Serie A ecuadoriana, Veikkausliiga, Premier Division irlandese, K
+  League 2, Liga 1 peruviana e USL Championship. 10 file, 94 minuti, 22.001 chiamate.
+- `batch/europa2526`: il 2025/26 di HNL, 1. Liga ceca, 1. Division danese, 3. Liga, Super League 1
+  greca, Ligat ha'Al, Eerste Divisie, Liga I, Super Liga serba, Challenge League e 1. liga slovacca,
+  con una sola stagione alle spalle (le leghe nuove del catalogo partono dal 2024/25). 11 file, 99
+  minuti, 22.931 chiamate.
+
+In tutto 33 file e 7.645 partite, tutte in copia conforme, con l'Elo rifatto dall'archivio identico su
+ogni file e nessuna chiamata fallita. `controlla-csv.py` su tutti i 110 file dei batch (30.923 partite)
+non trova niente da segnalare.
+
+Due file restano fuori da ogni misura, perché non hanno una stagione alle spalle: la Super League 1
+greca 2025/26 e la Saudi Pro League 2023/24. La PitchAPI ha una partita sola nel 2024/25 greco e nel
+2022/23 saudita, quindi `lgN` parte da 7 e da 10.
+
+**Cosa si vede**, solo descrittivo, sulle altre 24 leghe (7.120 partite;
+`python3 strumenti/sorpresa.py` e `livello-gol.py` sulle cartelle, più una panoramica che non è nel
+repository).
+
+- *1X2.* Il pick prende il 48.7% (probabilità media 49.4%), il «sempre in casa» il 43.1%. I pareggi
+  escono il 25.7% (previsti 25.3%). Pendenza 1 contro 2 0.95, AUC di `1` / `2` / `X` 0.658 / 0.666 /
+  0.556. Per fascia è calibrato, tranne:
+  - fra il 60 e il 70% (previsto 62.2 e 67.4%, esce 58.6 e 64.9%);
+  - sopra il 70% (previsto 74.9%, esce 81.6%).
+- *Le soglie* (≥50 / 55 / 60 / 65 / 70): 58.1 / 62.1 / 66.8 / 73.4 / 81.6% (±1.8 / 2.3 / 2.9 / 3.6 /
+  4.4), su 41 / 26 / 15 / 8 / 4% del calendario. La card dice 61.7 / 66.0 / 69.3 / 73.2 / 77.1:
+  qui fra il 50 e il 60% il pick esce meno, sopra il 70% di più. Fuori dai cinque campionati le soglie
+  non valgono, come nel `b52`.
+- *La sorpresa.* ALTO nel 17.8% delle partite: lo sfavorito, previsto al 33.1%, vince il 34.9% (±2.7).
+  Medio 29.8% previsto e uscito, basso 18.3% e 18.3%. Col disaccordo fra modello ed Elo lo sfavorito
+  vince 2.11 punti più del previsto (±2.62; nel `b64` +2.39). `SORPRESA_TAB` regge.
+- *I gol.* Over 2.5 previsto 53.9%, reale 52.9%; Goal 54.5% e 55.6%; AUC 0.534 e 0.528. Lega per lega
+  l'Over sbaglia da −7.5 a +10.5 punti. Gol su lambda di ruolo 1.025, da 0.91 (Veikkausliiga) a 1.15
+  (Indian Super League). Il fattore del `b63` aiuta poco:
+  - Over 2.5 + Goal −2.72‰ (`z = −2.20`), meglio in 14 leghe su 24;
+  - l'handicap peggiora di 2.15‰ (`z = +5.34`; sulle nove leghe del `b63` +0.10‰).
+- *I mercati sui numeri.* Previsto contro reale, e AUC:
+  - corner 50.8 e 50.2%, 0.522;
+  - tiri in porta 50.7 e 52.9%, 0.566;
+  - gialli 58.4 e 58.7%, 0.561.
+
+  Lega per lega il riferimento sbaglia da −15.6 (corner nella Serie B brasiliana) a +11.2 punti
+  (corner in Cina).
+- *Il tabellone senza quote.* La prima proposta rende +10.3 ±1.1 (cinque campionati +16.8, sette
+  leghe del `b58` +12.9). Per fascia, misurato contro l'etichetta:
+
+  | famiglia | FORTE | GIOCABILE | MARGINALE |
+  |---|---|---|---|
+  | 1X2 | +25.3 (+27.5) | +13.4 (+15.5) | +7.8 (+8.0) |
+  | gol | +8.9, 95 proposte (+2.3) | +4.8 (+6.8) | +2.6 (+4.4) |
+  | numeri | +4.5 (+7.2) | +6.5 (+10.2) | +1.6 (+8.2) |
+
+  L'1X2 rende quanto promette. I numeri no: è il riferimento di lega sbagliato (vedi *Il riferimento
+  di lega vero: misurato*). L'etichetta non è stata toccata, per scelta dell'utente.
+
+Per un test nuovo queste 25 leghe sono già guardate su:
+- 1X2, soglie e sorpresa;
+- livello dei gol e mercati sui numeri;
+- tabellone senza quote.
+
+**Le rese per lega nello Scanner (`b74`).** `PICK_RESA.fuori` dice, lega per lega:
+- quante partite;
+- il pick su tutte;
+- il pick sopra il 55%, e su quante partite;
+- la quota del calendario;
+- le stagioni.
+
+Ci entrano le leghe con almeno 50 partite col pick sopra il 55% (±2se al massimo 13.2 punti, nella
+K League 1). Sono:
+- le 7 di prima;
+- 19 dei batch nuovi;
+- le 12 dei batch del `b61` e del `b62`, misurate da allora ma mai date allo Scanner.
+
+Restano fuori, con meno di 50 partite: 1. Division danese (20), K League 2 (33), Premier Division
+irlandese (44), Veikkausliiga (44), Challenge League (46).
+
+| lega | stagioni | partite | pick su tutte | pick sopra il 55% | quota del calendario |
+|---|---|---|---|---|---|
+| League Two | 2023/24–2025/26 | 1656 | 45.9% | 58.6% ±6.4 | 14% |
+| League One | 2023/24–2025/26 | 1653 | 49.4% | 62.7% ±6.1 | 15% |
+| MLS | 2023–2025 | 1581 | 47.7% | 60.8% ±5.2 | 23% |
+| Süper Lig | 2023/24–2025/26 | 1018 | 52.9% | 73.0% ±4.9 | 32% |
+| J. League | 2024–2025 | 756 | 45.5% | 54.1% ±10.1 | 13% |
+| Eliteserien | 2023–2025 | 715 | 53.1% | 66.7% ±6.1 | 34% |
+| Allsvenskan | 2023–2025 | 715 | 50.9% | 64.9% ±6.7 | 29% |
+| Liga MX | 2023/24–2025/26 | 667 | 51.1% | 63.4% ±8.0 | 22% |
+| K League 1 | 2024–2026 | 629 | 41.5% | 54.4% ±13.2 | 9% |
+| Saudi Pro League | 2024/25–2025/26 | 604 | 56.3% | 70.6% ±5.6 | 44% |
+| Bundesliga austriaca | 2023/24–2025/26 | 582 | 48.5% | 64.6% ±8.0 | 25% |
+| Superligaen | 2023/24–2025/26 | 574 | 50.9% | 60.9% ±7.5 | 29% |
+| Liga Profesional argentina | 2025 | 508 | 41.5% | 52.2% ±12.2 | 13% |
+| A-League | 2023/24–2025/26 | 507 | 44.6% | 47.0% ±11.0 | 16% |
+| Indian Super League | 2023/24–2025/26 | 384 | 48.2% | 66.7% ±11.4 | 18% |
+| Eerste Divisie | 2025/26 | 377 | 47.2% | 55.6% ±8.9 | 33% |
+| 3. Liga | 2025/26 | 375 | 51.5% | 59.3% ±10.3 | 24% |
+| Serie A brasiliana | 2025 | 374 | 50.5% | 65.2% ±9.0 | 30% |
+| USL Championship | 2026 | 334 | 44.9% | 55.6% ±11.7 | 22% |
+| Primera A colombiana | 2026 | 324 | 47.8% | 61.3% ±10.1 | 29% |
+| Serie B brasiliana | 2026 | 315 | 48.9% | 64.1% ±12.0 | 20% |
+| Liga I romena | 2025/26 | 314 | 51.3% | 62.3% ±11.0 | 25% |
+| Super Liga serba | 2025/26 | 294 | 51.4% | 69.1% ±10.3 | 28% |
+| 1. Liga ceca | 2025/26 | 274 | 50.7% | 64.0% ±9.6 | 36% |
+| Serie A ecuadoriana | 2026 | 247 | 48.2% | 68.2% ±11.5 | 27% |
+| Liga 1 peruviana | 2026 | 244 | 51.6% | 63.3% ±9.7 | 40% |
+| Ligat ha'Al | 2025/26 | 237 | 51.9% | 63.8% ±11.6 | 29% |
+| Super League cinese | 2026 | 211 | 47.9% | 56.9% ±11.7 | 34% |
+| 1. liga slovacca | 2025/26 | 191 | 52.4% | 64.3% ±12.8 | 29% |
+| Liga de Primera cilena | 2026 | 180 | 46.7% | 59.7% ±12.5 | 34% |
+| HNL croata | 2025/26 | 179 | 52.5% | 72.4% ±11.7 | 32% |
+
+La nota di lega in cima all'analisi dice la resa sopra il 55% col suo ±2se e le stagioni (`_seResa`),
+e lo stesso fa il mega-prompt. «In breve» resta com'era. La card delle soglie non elenca più le leghe
+una per una: sono 38, e dice l'intervallo. Le rese sono del motore `b48`: l'1X2 non è cambiato da
+allora. Una lega con una stagione sola (2025/26, 2026) va rimisurata quando ne avrà due.
 
 ## Politica sui valori mancanti
 
@@ -1615,7 +1751,7 @@ col movimento ridotto (`reducedMotion: 'reduce'`: i numeri che contano mostrereb
 intermedi), legge «In breve» da `#in-breve` (il riquadro, la sorpresa e le proposte sono tre blocchi)
 e misura le voci del dock e del foglio Altro, Squadre in tutte e tre le sotto-schede.
 
-Esito al `b73` (storico 30; uguale al `b72`), a 390px con tutte le 28 card aperte, scheda per scheda e in tutte e tre le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, 0 px):
+Esito al `b74` (storico 30; uguale al `b73`), a 390px con tutte le 28 card aperte, scheda per scheda e in tutte e tre le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, 0 px):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
@@ -1623,7 +1759,7 @@ Esito al `b73` (storico 30; uguale al `b72`), a 390px con tutte le 28 card apert
 | batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 191 | 0 su 122 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
 | `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 128-158 | 74-83 | 0 |
-| `vecchio`: motore `b72` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 su 191 | 1 (il certificato) | 0 |
+| `vecchio`: motore `b73` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 su 191 | 1 (il certificato) | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -1700,7 +1836,12 @@ esce identico, e quello con le quote lo scrive `aggiornaQuote` con `innerHTML` d
 col `b70`, e al `b72` col `b71`: cambia solo il mega-prompt, che non passa da `safeHtml` (riletto a mano
 su una partita della lega finta, con e senza quote). Al `b73` lo stesso col `b72`: cambiano il catalogo
 delle leghe e `QUOTE_FD`, che la lega finta non tocca. I menu sono provati a parte, nello Scanner e nel
-Comparatore, col file e con la copia di riserva (77 leghe, 53 paesi, la Bundesliga col 2026/27).
+Comparatore, col file e con la copia di riserva (77 leghe, 53 paesi, la Bundesliga col 2026/27). Al `b74`
+lo stesso col `b73`: cambiano le rese per lega di `PICK_RESA`, scritte con `innerHTML` diretto (nota di
+lega, card delle soglie) o nel prompt, e la lega finta ha l'id della Serie A. Il ramo «fuori dai cinque»
+è provato a parte sulla PitchAPI vera: Al Hilal – Al Ittihad del 10/10/2026 (Saudi Pro League 2026/27,
+243 chiamate), con la nota di lega, «In breve» e il prompt che dicono la resa della lega (nota e prompt col ±2se e le
+stagioni), nessun errore, 0 px in ogni scheda.
 
 **Il controllo del `b70`.** Da qui «In breve» controlla anche il rischio sorpresa: con le quote dell'1X2
 `#sorpresa-box` deve essere identico a quello rifatto nella pagina con `rischioSorpresa(…,
@@ -3632,7 +3773,7 @@ scrittura nuova, il messaggio iniziale). Il banco la verifica a parte, premendo 
 | `QUOTE_OU_RESA` | 11.222 partite, 11 leghe · lato più probabile: motore 55.6, mercato 58.9, con le quote 58.9% · giocando dove il motore si discosta −7.5 / −9.9% · sempre −3.7% | misurata `b57` | la card e il blocco gol del mega-prompt la leggono da qui |
 | `QUOTE_COLONNE_OU` | chiusura `AvgC`, `PC`, `B365C`, poi `Avg`, `P`, `B365` (`>2.5` / `<2.5`) | tabella `b57` | le colonne dell'Over/Under nei file principali di football-data (Pinnacle è `PC`, non `PSC` come nell'1X2); ci sono su ogni riga delle 18 leghe provate e dei file della settimana, mai nei file `new` |
 | `QUOTE_RESA` | tutte 53.0 · soglie ≥70 / 65 / 60 / 55 / 50: 78.6 / 74.7 / 71.1 / 67.5 / 64.0% su 14 / 20 / 27 / 37 / 49% del calendario · disaccordo 1321 partite, motore 26.3%, mercato 43.1% | misurata `b54` | combinazione stimata su undici leghe e misurata sulla dodicesima, 11.902 partite; soglie uguali nei cinque campionati e nelle altre sette (≥55: 67.9 e 67.1%). La card delle quote e il mega-prompt la leggono da qui |
-| `PICK_RESA` | tutte 52.7 · casa 43.0 · soglie ≥70 / 65 / 60 / 55 / 50: 77.1 / 73.2 / 69.3 / 66.0 / 61.7% su 9 / 16 / 26 / 38 / 52% del calendario | misurata `b49` | cinque leghe col motore `b48`, 5230 partite (tabella in *Stato attuale*). Dal `b51` una sola copia: la card delle soglie e il mega-prompt la leggono da qui. Si rifà con le tabelle, a ogni motore che sposta l'1X2. Dal `b52` porta `leghe` (le cinque, per id) e `fuori` (Championship 46.3 e 64.8% su 17%, Eredivisie 53.7 e 68.7% su 47%, Liga Portugal 55.0 e 72.4% su 43%: pick su tutte e a ≥55, 3495 partite col `b48`), perché sulle tre leghe nuove le soglie ≥55 / 60 / 65 / 70 escono dai 2se (vedi *Le tre leghe nuove col `b48`: la regola*). Dal `b53` `fuori` ha anche 2. Bundesliga (45.4 e 62.8% su 16%), First Division A (50.2 e 65.5% su 35%), Premiership scozzese (53.3 e 68.9% su 41%) e Super League svizzera (47.1 e 66.1% su 26%), 3202 partite col motore `b52`. Dal `b56` porta anche `cinque`, le cinque leghe una per una nella stessa forma (tabella in *Stato attuale*): con `fuori` scrive la nota di lega in cima all'analisi |
+| `PICK_RESA` | tutte 52.7 · casa 43.0 · soglie ≥70 / 65 / 60 / 55 / 50: 77.1 / 73.2 / 69.3 / 66.0 / 61.7% su 9 / 16 / 26 / 38 / 52% del calendario | misurata `b49` | cinque leghe col motore `b48`, 5230 partite (tabella in *Stato attuale*). Dal `b51` una sola copia: la card delle soglie e il mega-prompt la leggono da qui. Si rifà con le tabelle, a ogni motore che sposta l'1X2. Dal `b52` porta `leghe` (le cinque, per id) e `fuori` (Championship 46.3 e 64.8% su 17%, Eredivisie 53.7 e 68.7% su 47%, Liga Portugal 55.0 e 72.4% su 43%: pick su tutte e a ≥55, 3495 partite col `b48`), perché sulle tre leghe nuove le soglie ≥55 / 60 / 65 / 70 escono dai 2se (vedi *Le tre leghe nuove col `b48`: la regola*). Dal `b53` `fuori` ha anche 2. Bundesliga (45.4 e 62.8% su 16%), First Division A (50.2 e 65.5% su 35%), Premiership scozzese (53.3 e 68.9% su 41%) e Super League svizzera (47.1 e 66.1% su 26%), 3202 partite col motore `b52`. Dal `b56` porta anche `cinque`, le cinque leghe una per una nella stessa forma (tabella in *Stato attuale*): con `fuori` scrive la nota di lega in cima all'analisi. Dal `b74` `fuori` ha 38 leghe (le 31 nuove dai batch del `b61`, del `b62` e del `b73`, quelle con almeno 50 partite col pick sopra il 55%; tabella in *Le leghe mai viste*), e ogni lega porta anche le stagioni e le partite sopra il 55%, da cui la nota di lega e il prompt calcolano il ±2se |
 | retta dei mercati binari | −5.06 + 1.091·p | stimata, riconfermata `b38` e `b41` | 22.584 proposte, errore massimo 2.4 punti; `b41` 7938 proposte, 2.5 |
 | `EDGE_BANDS` | ≥20 / ≥10 / ≥5, guadagno per famiglia (`b50`) | stimata `b38`, riconfermata `b41` e `b49`, per famiglia dal `b50` | 28.230 proposte: +24.6 / +14.8 / +6.3 punti, monotono, segno concorde in 5 stagioni su 5. `b41` (copia conforme): +25.6 / +15.6 / +4.8 sulle 13.148 proposte con base del `b40`, +25.0 / +14.9 / +5.7 sulle 14.742 del `b41`, monotono in 3 stagioni su 3; Premier (≥20 / 10–20 / 5–10) +27.4 / +10.7 / +6.0, LaLiga +25.0 / +13.7 / +7.3, Bundesliga +28.7 / +14.0 / +5.5, Ligue 1 +26.4 / +13.4 / +5.0. `b49` (motore `b48`, cinque leghe): +25.8 / +12.2 / +6.1, monotono in 5 leghe su 5; per famiglia 1X2 +27.5 / +15.5 / +8.0, gol +1.0 / +7.2 / +3.5, numeri +7.2 / +10.2 / +8.2. Dal `b50` l'etichetta mostra questi, per famiglia, con ±2se: 1X2 ±1.6 / ±1.6 / ±1.9 (2891 / 3573 / 2680 proposte), gol ±10.4 / ±2.3 / ±1.7 (92 / 1881 / 3457), numeri ±8.0 / ±2.9 / ±2.4 (133 / 1058 / 1628). Dal `b63` i gol, rifatti col livello dei gol: +2.3 ±12.8 (61) / +6.8 ±2.6 (1445) / +4.4 ±1.7 (3279). Ordinare per guadagno atteso invece che per scarto: no (vedi *Il tabellone per famiglia di mercato: la regola*) |
 | minimo di `leagueBaseRates` | 200 partite | paracadute misurato `b38` | guadagno piatto fra 50 e 500; in produzione arrivano 900+ partite |
@@ -5349,4 +5490,5 @@ invece di dichiarare verificato quello che non lo è.
 | `b70` | il rischio sorpresa con le quote, notato dall'utente: fino al `b69` il riquadro restava quello del motore anche con le quote, e nelle partite ALTO il 43.7% delle volte dava come sfavorita la squadra che il pick con le quote, subito sopra, dava vincente. Con le quote dell'1X2 il riquadro, la giornata (pastiglia, ordinamento, conteggio) e il mega-prompt dicono il rischio delle quote, da una tabella misurata sulle probabilità con le quote (`SORPRESA_QUOTE_TAB`, 11.902 partite di 12 leghe): lo sfavorito con le quote al 30% o più vince il 31.2%, quindi con le quote il rischio non arriva mai ad ALTO, e il disaccordo fra modello ed Elo non c'entra più. Senza quote niente cambia. Banco: col `b69` 0 scritture diverse su 191, una riga del CSV (il certificato); «In breve» controlla anche il rischio, e il controllo di potenza fallisce dove deve |
 | `b71` | l'accordo fra modello ed Elo torna nel rischio sorpresa con le quote, chiesto dall'utente («l'interazione fra Elo e probabilità mi piaceva»): nel `b70` con le quote il riquadro aveva solo la fascia dello sfavorito. `SORPRESA_QUOTE_TAB` ha le celle per accordo e disaccordo, contate sulle 11.902 partite con le quote come la tabella del motore; con le quote il disaccordo pesa poco (sfavorito al 30% o più: 30.7% contro 31.5%), quindi ALTO continua a non uscire. Banco: col `b70` 0 scritture diverse su 191, una riga del CSV (il certificato) |
 | `b72` | il mega-prompt riletto contro il motore e le misure, chiesto dall'utente: le regole di affidabilità delle statistiche previste rimisurate sulle 23.278 partite dei batch (`strumenti/stat-previste.py`; i duelli aerei, contrasti, intercetti e duelli vinti passano a «non usarle», la PPDA a «reggono bene»); l'Elo che sposta anche il Goal, non solo l'1X2; la quota degli xG da palla inattiva detta col suo nome e N/D senza dati; «Gol per xG» generale nella sezione generale; il tabellone che distingue le rese dei gol senza e con le quote. Nessun numero a schermo cambia: col `b71` 0 scritture diverse su 191, una riga del CSV (il certificato). Due voci nuove in *Da fare*: `STAT_SHRINK_TABLE` troppo stretta (pendenze della differenza 1.3–1.5) e i duelli aerei |
+| `b74` | le rese del pick lega per lega fuori dai cinque campionati, chieste dall'utente dopo tre batch di leghe mai viste (33 file, 7.645 partite in copia conforme, solo descrittivi: pick 48.7%, sopra il 55% 62.1% contro il 66.0% della card, sorpresa e livello dei gol che reggono, le etichette dei numeri che promettono troppo). `PICK_RESA.fuori` da 7 a 38 leghe: le 19 dei batch nuovi e le 12 dei batch del `b61` e del `b62` con almeno 50 partite col pick sopra il 55%. Lì la nota di lega, «In breve» e il prompt dicono quanto esce il pick invece di «lega mai misurata» (nota e prompt anche col ±2se e le stagioni); la card delle soglie dice l'intervallo. Probabilità invariate: col `b73` 0 scritture diverse su 191, una riga del CSV (il certificato) |
 | `b73` | il catalogo delle leghe rifatto da `/leagues` della PitchAPI, dopo la domanda dell'utente sulla Bundesliga: `leghe.json` era la copia di settembre e non aveva il 2026/27 di Bundesliga, Champions ed Europa League (e di India e Thailandia), quindi lo Scanner non poteva analizzarlo. Ora 77 leghe invece di 42, nessuna tolta; le stesse nelle due copie di riserva dentro Scanner e Comparatore. Le 35 leghe nuove non sono misurate; Cina, Finlandia, Irlanda e Romania hanno le quote automatiche (1.736 partite su 1.736 agganciate, nessuna sbagliata). `strumenti/catalogo.js` per rifarlo. Nessun numero cambia: col `b72` 0 scritture diverse su 191, una riga del CSV (il certificato); sulla PitchAPI vera Augsburg – Bayern del 10/10/2026 (Bundesliga 2026/27) e FCSB – Oţelul (Liga I) analizzate con le quote automatiche, 0 px |
