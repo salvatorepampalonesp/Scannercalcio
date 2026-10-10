@@ -27,7 +27,7 @@ manager, nessun test runner: si aprono i file nel browser. Tutto il codice sta i
 | `index.html` | menu, due link |
 | `scanner.html` | **il motore**: analizza una partita (Dixon-Coles + Markov inclinati dall'Elo), mercati, statistiche previste, tabellone |
 | `comparatore.html` | **il backtest**: carica `scanner.html` come testo, lo inietta in memoria, lo fa girare su centinaia di partite ed esporta un CSV previsto-vs-reale |
-| `leghe.json` | catalogo leghe/stagioni (id PitchAPI) |
+| `leghe.json` | catalogo leghe/stagioni: la risposta di `/leagues` della PitchAPI, da rifare quando l'API apre una stagione (vedi *Il catalogo delle leghe*) |
 
 Dati da PitchAPI via proxy Cloudflare (`PITCH_BASE` in `scanner.html`). Endpoint per
 partita: `/stats`, `/lineups`, `/advanced`, `/events`, tutti attraverso `fetchMatchRaw`,
@@ -43,10 +43,10 @@ analizza anche una giornata intera: trova le partite del turno nell'archivio di 
 fa il giro completo del motore su ognuna (vedi *La giornata*). La documentazione dell'API
 (51 pagine, settembre 2026) elenca anche statistiche per giocatore (`/players`,
 `/advanced/players`), tiri (`/shots`), `/h2h`, arbitro, heatmap e 42 leghe fra cui coppe e
-competizioni UEFA; nessuna quota dei bookmaker. Le quote 1X2 (card «Con le quote del mercato», dal
-`b54`) e dell'Over/Under 2.5 (dal `b57`) arrivano da sole da football-data.co.uk (dal `b55`),
-attraverso lo stesso worker Cloudflare (strada `/quote/`, vedi *Le quote automatiche*); se non ci
-sono, le scrive l'utente. Per misurarle si usano gli stessi file (`strumenti/quote-bookmaker.py`,
+competizioni UEFA (il 10 ottobre 2026 `/leagues` ne elenca 77); nessuna quota dei bookmaker. Le
+quote 1X2 (card «Con le quote del mercato», dal `b54`) e dell'Over/Under 2.5 (dal `b57`) arrivano
+da sole da football-data.co.uk (dal `b55`), attraverso lo stesso worker Cloudflare (strada `/quote/`,
+vedi *Le quote automatiche*); se non ci sono, le scrive l'utente. Per misurarle si usano gli stessi file (`strumenti/quote-bookmaker.py`,
 `strumenti/quote-gol.py`).
 
 ## Regole di lavoro
@@ -55,7 +55,7 @@ sono, le scrive l'utente. Per misurarle si usano gli stessi file (`strumenti/quo
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b72`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b73`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -477,7 +477,7 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b72`)
+## Stato attuale (`b73`)
 
 **1X2.** Col motore `b48` il pick azzecca il 52.7% (±1.4) contro il 43.0% del «gioca sempre in
 casa» sulle cinque leghe: 52.7% contro 40.2% in Serie A, 52.7% contro 43.1% in Premier, 53.2%
@@ -567,6 +567,12 @@ schede (Partita, Tabellone, Squadre, Statistiche, Mercati, Prompt, Dati) invece 
 e il tabellone è un elenco: prima le proposte con un verdetto, le altre chiuse sotto. Non cambia
 nessun numero. Vedi *La grafica dello Scanner*, «Cosa cambia nel `b66`».
 
+**Il catalogo** (dal `b73`). `leghe.json` e le due copie dentro le pagine sono il catalogo di
+`/leagues` del 10 ottobre 2026: 77 leghe invece di 42, e il 2026/27 di Bundesliga, Champions ed Europa
+League che prima mancava. Le 35 leghe nuove non sono mai state misurate; quattro (Cina, Finlandia,
+Irlanda, Romania) hanno le quote automatiche. Il catalogo non si aggiorna da solo:
+`node strumenti/catalogo.js --prova` dice se l'API ha aperto qualcosa. Vedi *Il catalogo delle leghe*.
+
 **Il tetto, sulle dodici leghe** (11.927 partite, probabilità del `b48`). Il pick prende il 51.0%
 e la sua probabilità media è il 51.7%: il modello è calibrato, e con queste probabilità il 51% è
 quello che ci si deve aspettare. Si perde nelle partite equilibrate: con |p1 − p2| sotto 10 punti
@@ -596,7 +602,7 @@ meno di zero (−0.19 ±0.08 su 1 contro 2, negativo in 12 leghe su 12). Dove mo
 sono d'accordo (11% delle partite) il motore prende il 26.3%, il mercato il 43.1%. E non batte il
 bookmaker: il pick con le quote, giocato sempre alla quota di chiusura, perde il 2.9% della posta;
 dove il motore dà più del mercato si perde l'11–16%. Vedi *Le quote dei bookmaker: la regola*. Dal
-`b55` le quote arrivano da sole da football-data.co.uk per 30 leghe, attraverso il worker: quelle
+`b55` le quote arrivano da sole da football-data.co.uk per 30 leghe (34 dal `b73`), attraverso il worker: quelle
 di chiusura per le partite giocate, quelle di quando il file è pubblicato per le prossime (+1.4 punti
 invece di +2.0). Vedi *Le quote automatiche*. Dal `b57` anche l'Over/Under 2.5, per le 18 leghe coi
 file principali: con le quote l'Over/Under dalla parte più probabile esce il **58.9%** contro il 55.6%
@@ -1370,6 +1376,46 @@ riquadro né nel prompt; 0 px di scorrimento a 390px. Controllo di potenza: spos
 data con cui la giornata analizza ogni partita, il banco fallisce (il sottotitolo e lo storico
 cambiano).
 
+## Il catalogo delle leghe
+
+**Cos'è.** `leghe.json` è la risposta di `/leagues` della PitchAPI, copiata così com'è: per ogni lega
+id, nome, paese, immagine e stagioni. Scanner e Comparatore la leggono all'apertura per i menu di
+paese, lega e stagione; `strumenti/batch-auto.js` e `strumenti/schermate.js` per risolvere i nomi.
+Se il file non arriva, le due pagine usano una copia scritta dentro di loro, con id, nome, paese e
+stagioni: `LEAGUES_CATALOG` nel `catch` di `loadLegheJson` (Scanner) e `CMP_LEAGUES_FALLBACK`
+(Comparatore). Le tre copie vanno tenute uguali.
+
+**Non si aggiorna da solo.** Una stagione che l'API apre dopo l'ultima copia non compare nel menu, e
+lo Scanner non la può analizzare. Fino al `b72` il file era quello caricato a settembre (commit
+`cf9921b`): 42 leghe, e mancava il 2026/27 di Bundesliga, Champions ed Europa League, Indian Super
+League e Thai League 1. Per questo la Bundesliga non è nel batch del 2026/27 (`batch/2627`).
+L'archivio delle coppe europee per il riposo non ne dipendeva: `archivioCoppe` chiede la stagione
+all'API direttamente.
+
+**Il `b73`.** Il 10 ottobre 2026 `/leagues` aveva 77 leghe, senza togliere nessuna lega né stagione,
+e il file è diventato quello. Le 35 leghe nuove:
+- *Europa*: 3. Liga, Eerste Divisie, Challenge League svizzera, 1. Division danese, 1. Liga ceca e
+  slovacca, HNL, Liga I romena, Super Liga serba, Ligat ha'Al, Premier Division irlandese,
+  Veikkausliiga, Virsliga, Besta deild, e la «1. Lig» che l'API mette sotto `INT`;
+- *Americhe*: Serie B e Paulista brasiliane, Primera A colombiana, Liga 1 peruviana, Liga de Primera
+  cilena, Serie A ecuadoriana, Primera Division boliviana e venezuelana, Division Profesional
+  paraguaiana, USL Championship, USL League One, MLS Next Pro, Premier League canadese;
+- *Asia*: Super League cinese, K League 2, J3 League, Pro League emiratina, Qatar Stars League,
+  Saudi First Division, Women's Premier League saudita.
+
+Hanno tre stagioni al massimo, dal 2024 (il Paraguay due): con le due stagioni alle spalle che lo
+Scanner carica c'è solo la stagione in corso, anche per un batch. Nessuna è mai stata misurata: lo
+Scanner lo dice («lega mai misurata»), e lì soglie del pick e rese del tabellone senza quote non
+valgono. Quattro hanno le quote automatiche di football-data (`new/CHN.csv`, `FIN`, `IRL`, `ROU`): agganciate 1.736 partite su 1.736, nessuna
+sbagliata (vedi *Le quote automatiche*). Sette nomi ora sono di più leghe (`Serie A`, `Serie B`,
+`Premier League`, `Super League`, `Bundesliga`, `Primera Division`, `1. liga`): negli strumenti si
+scrive `PAESE:Nome`.
+
+**Per rifarlo.** `node strumenti/catalogo.js --prova` dice cosa è cambiato nell'API e se le tre copie
+sono uguali (una chiamata); senza `--prova` riscrive il file e le due copie. Se l'API non elenca più
+una lega o una stagione che il file ha, si ferma senza riscrivere: i batch e i CSV si appoggiano a
+quelle. Poi, siccome `scanner.html` cambia, build nuova e banco (skill `nuova-build`).
+
 ## Politica sui valori mancanti
 
 - **Conteggi** (big chances, cross, filtranti, tocchi in area, recuperi): molte API omettono
@@ -1569,7 +1615,7 @@ col movimento ridotto (`reducedMotion: 'reduce'`: i numeri che contano mostrereb
 intermedi), legge «In breve» da `#in-breve` (il riquadro, la sorpresa e le proposte sono tre blocchi)
 e misura le voci del dock e del foglio Altro, Squadre in tutte e tre le sotto-schede.
 
-Esito al `b72` (storico 30; uguale al `b71`), a 390px con tutte le 28 card aperte, scheda per scheda e in tutte e tre le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, 0 px):
+Esito al `b73` (storico 30; uguale al `b72`), a 390px con tutte le 28 card aperte, scheda per scheda e in tutte e tre le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, 0 px):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
@@ -1577,7 +1623,7 @@ Esito al `b72` (storico 30; uguale al `b71`), a 390px con tutte le 28 card apert
 | batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 191 | 0 su 122 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
 | `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 128-158 | 74-83 | 0 |
-| `vecchio`: motore `b71` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 su 191 | 1 (il certificato) | 0 |
+| `vecchio`: motore `b72` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 su 191 | 1 (il certificato) | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -1652,7 +1698,9 @@ multigol (gli stessi numeri con altri colori), le due tabelle dei punti attesi (
 controllo col `b69` non vede nessuna scrittura diversa, solo il certificato: il rischio sorpresa del motore
 esce identico, e quello con le quote lo scrive `aggiornaQuote` con `innerHTML` diretto. Al `b71` lo stesso
 col `b70`, e al `b72` col `b71`: cambia solo il mega-prompt, che non passa da `safeHtml` (riletto a mano
-su una partita della lega finta, con e senza quote).
+su una partita della lega finta, con e senza quote). Al `b73` lo stesso col `b72`: cambiano il catalogo
+delle leghe e `QUOTE_FD`, che la lega finta non tocca. I menu sono provati a parte, nello Scanner e nel
+Comparatore, col file e con la copia di riserva (77 leghe, 53 paesi, la Bundesliga col 2026/27).
 
 **Il controllo del `b70`.** Da qui «In breve» controlla anche il rischio sorpresa: con le quote dell'1X2
 `#sorpresa-box` deve essere identico a quello rifatto nella pagina con `rischioSorpresa(…,
@@ -2570,7 +2618,7 @@ fine analisi e a ogni carattere scritto nei campi; «Cambia partita» li svuota.
 ### Le quote automatiche
 
 **Perché.** Col `b54` le quote andavano scritte a mano. PitchAPI non le dà. football-data.co.uk sì,
-per 30 delle 42 leghe di `leghe.json`: nei file di stagione (`mmz4281/{2627}/{I1}.csv`, e per le
+per 30 delle 42 leghe di `leghe.json` (dal `b73` 34 delle 77): nei file di stagione (`mmz4281/{2627}/{I1}.csv`, e per le
 leghe a calendario diverso `new/{SWZ}.csv` con tutte le stagioni) le partite giocate con le quote di
 chiusura, nei file della settimana (`fixtures.csv`, `new_league_fixtures.csv`, quest'ultimo separato
 da tabulazioni) le prossime con le quote di quando il file è pubblicato. Ma una pagina nel browser non
@@ -2609,6 +2657,7 @@ giorno prima), nessuna riga che somigli, due che somigliano, oppure il worker se
 |---|---|---|---|
 | le 12 leghe del test, 11.902 partite (nomi guardati scrivendo le regole) | 11.900 | **0** | 2, due partite del Real Madrid a un giorno di distanza: nel dubbio niente |
 | 18 leghe mai guardate, 2025/26: Serie B, League One e Two, LaLiga2, Ligue 2, Süper Lig, Grecia, Austria, Danimarca, Polonia, Russia, Svezia, Norvegia, Argentina, Brasile, Giappone, Liga MX, MLS (18 chiamate) | 6.158 prima degli alias, 6.339 dopo | **0** | 181 prima, 0 dopo |
+| le 4 leghe del catalogo nuovo (`b73`): Super League cinese, Veikkausliiga e Premier Division irlandese 2025 e 2026, Liga I romena 2024/25 e 2025/26 | 1.736 | **0** | 0 |
 
 Le 181 venivano da sei nomi davvero diversi (Başakşehir e Buyuksehyr, København e FC Copenhagen, AGF e
 Aarhus, OB e Odense, Nizhny Novgorod e Pari NN, Hamarkameratene e HamKam), messi in `QUOTE_ALIAS`. Il
@@ -3574,7 +3623,7 @@ scrittura nuova, il messaggio iniziale). Il banco la verifica a parte, premendo 
 | `CONF_1X2_TABLE` | `[0,0]` + 8 fasce | stimata `b38`, riconfermata `b41` e `b49` | resa del pick per fascia, 1882 partite di Serie A post-`b30`; `b41`, 1134 in copia conforme: 8 fasce su 8 dentro 2se; Premier χ² 11.2 su 8, LaLiga 7.7, Bundesliga 7.1, Ligue 1 5.2. Il punto `[0,0]` (`b41`) serve gli esiti non scelti: hit/p 0.939 / 1.000 / 0.943 / 0.993 / 0.963 in Serie A / Premier / LaLiga / Bundesliga / Ligue 1, contro 0.960 della tabella. `b49` (motore `b48`, 5230 partite): χ² 16.2 su 8, ma fuori lega né le probabilità nude (−0.00043 di Brier, `z = −1.01`) né una tabella rifatta (+0.00007) la battono; esiti non scelti hit/p 0.996. Vedi *Le tabelle col `b48`*. `b52`, tre leghe nuove: χ² 32.2 su 8, **non regge** fuori dai cinque campionati, e la probabilità nuda la batte (Brier +0.00137 per la tabella, `z = +2.68`). **Dal `b53` non è in uso**: resta come manopola (`CONF_1X2_MODE = 'tabella'`) |
 | `CONF_1X2_MODE` | `'nuda'` | procedura, decisa da un test registrato (`b53`) | la confidence dell'1X2 è la probabilità del motore. Registrato prima di aprire 2. Bundesliga, First Division A, Premiership e Super League: la nuda batte la tabella in quattro leghe su quattro, −0.00220 di Brier, `z = −4.09`. `'tabella'` torna a `CONF_1X2_TABLE`, `'retta'` alla retta del `b37` |
 | `QUOTE_COMB` | `W` 3×4, `b` 3 | stimata `b54` | logistica multinomiale sulle quattro variabili grezze `log(p1/pX)`, `log(p2/pX)` del motore e del mercato (quote di chiusura `AvgC`, margine tolto in proporzione), 11.902 partite di dodici leghe, `C = 1` sulle variabili standardizzate e riportata alla scala grezza. Il test registrato (fuori lega): prese +1.95, `z = +7.00`, logloss meglio in 12 leghe su 12. Si rifà con `strumenti/quote-bookmaker.py`, che stampa `W` e `b` identici. Usata solo quando l'utente scrive le quote |
-| `QUOTE_FD` / `QUOTE_PAESE` / `QUOTE_ALIAS` | 30 leghe; 12 paesi; 6 nomi | tabelle (`b55`) | codici di football-data delle leghe di `leghe.json` che ha, verificati scaricando i file; gli alias dai nomi che non si somigliano nelle 18 leghe provate. Vedi *Le quote automatiche* |
+| `QUOTE_FD` / `QUOTE_PAESE` / `QUOTE_ALIAS` | 34 leghe; 16 paesi; 6 nomi | tabelle (`b55`; Cina, Finlandia, Irlanda e Romania dal `b73`) | codici di football-data delle leghe di `leghe.json` che ha, verificati scaricando i file; gli alias dai nomi che non si somigliano nelle 18 leghe provate. Le quattro del `b73`: 1.736 partite su 1.736, nessun alias. Vedi *Le quote automatiche* |
 | `QUOTE_SIM_MIN` / `QUOTE_SIM_STACCO` | 0.5 / 0.3 | a mano, misurate (`b55`) | nessuna partita sbagliata su 11.902 delle dodici leghe e 6.339 di diciotto leghe mai guardate; sono le soglie che fanno preferire «non trovata» a una partita dubbia |
 | `EDGE_BANDS_QUOTE` | FORTE / GIOCABILE / MARGINALE: 1X2 +28.6 / +14.3 / +7.5 (±1.0; 6.700 / 7.988 / 8.022 proposte), gol +20.0 / +11.7 / +6.5 (±4.7 / 1.5 / 1.2; 371 / 4.023 / 6.862) | misurata `b58` | resa sopra il giocarlo alla cieca delle proposte del tabellone con le quote, per fascia di scarto, sulle probabilità con le quote fuori lega: dodici leghe per l'1X2, undici per i gol. In ordine in tutte e due le famiglie. I numeri non hanno quote e restano in `EDGE_BANDS`. `strumenti/quote-tabellone.py` la stampa |
 | `TAB_QUOTE_RESA` | 6.672 partite di 7 leghe: prima proposta +12.9 → +14.6; cinque campionati +16.8 → +19.2; FORTE con una quota alla chiusura −1.8% | misurata `b58` | la nota del tabellone con le quote e il prompt la leggono da qui |
@@ -4987,7 +5036,7 @@ riga porta il suo certificato di copia conforme come a mano. Le chiamate alla Pi
 intercetta Node e le fa lui: la pagina non vede mai la chiave, e nemmeno lo script.
 
 ```bash
-node strumenti/batch-auto.js --leghe "Serie A,Eredivisie,ENG:Championship" --stagioni 2023/2024,2024/2025,2025/2026
+node strumenti/batch-auto.js --leghe "ITA:Serie A,Eredivisie,ENG:Championship" --stagioni 2023/2024,2024/2025,2025/2026
 ```
 
 - `--leghe`: id o nomi di `leghe.json`, `PAESE:Nome` se il nome è ambiguo (`GER:Bundesliga`).
@@ -5300,3 +5349,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b70` | il rischio sorpresa con le quote, notato dall'utente: fino al `b69` il riquadro restava quello del motore anche con le quote, e nelle partite ALTO il 43.7% delle volte dava come sfavorita la squadra che il pick con le quote, subito sopra, dava vincente. Con le quote dell'1X2 il riquadro, la giornata (pastiglia, ordinamento, conteggio) e il mega-prompt dicono il rischio delle quote, da una tabella misurata sulle probabilità con le quote (`SORPRESA_QUOTE_TAB`, 11.902 partite di 12 leghe): lo sfavorito con le quote al 30% o più vince il 31.2%, quindi con le quote il rischio non arriva mai ad ALTO, e il disaccordo fra modello ed Elo non c'entra più. Senza quote niente cambia. Banco: col `b69` 0 scritture diverse su 191, una riga del CSV (il certificato); «In breve» controlla anche il rischio, e il controllo di potenza fallisce dove deve |
 | `b71` | l'accordo fra modello ed Elo torna nel rischio sorpresa con le quote, chiesto dall'utente («l'interazione fra Elo e probabilità mi piaceva»): nel `b70` con le quote il riquadro aveva solo la fascia dello sfavorito. `SORPRESA_QUOTE_TAB` ha le celle per accordo e disaccordo, contate sulle 11.902 partite con le quote come la tabella del motore; con le quote il disaccordo pesa poco (sfavorito al 30% o più: 30.7% contro 31.5%), quindi ALTO continua a non uscire. Banco: col `b70` 0 scritture diverse su 191, una riga del CSV (il certificato) |
 | `b72` | il mega-prompt riletto contro il motore e le misure, chiesto dall'utente: le regole di affidabilità delle statistiche previste rimisurate sulle 23.278 partite dei batch (`strumenti/stat-previste.py`; i duelli aerei, contrasti, intercetti e duelli vinti passano a «non usarle», la PPDA a «reggono bene»); l'Elo che sposta anche il Goal, non solo l'1X2; la quota degli xG da palla inattiva detta col suo nome e N/D senza dati; «Gol per xG» generale nella sezione generale; il tabellone che distingue le rese dei gol senza e con le quote. Nessun numero a schermo cambia: col `b71` 0 scritture diverse su 191, una riga del CSV (il certificato). Due voci nuove in *Da fare*: `STAT_SHRINK_TABLE` troppo stretta (pendenze della differenza 1.3–1.5) e i duelli aerei |
+| `b73` | il catalogo delle leghe rifatto da `/leagues` della PitchAPI, dopo la domanda dell'utente sulla Bundesliga: `leghe.json` era la copia di settembre e non aveva il 2026/27 di Bundesliga, Champions ed Europa League (e di India e Thailandia), quindi lo Scanner non poteva analizzarlo. Ora 77 leghe invece di 42, nessuna tolta; le stesse nelle due copie di riserva dentro Scanner e Comparatore. Le 35 leghe nuove non sono misurate; Cina, Finlandia, Irlanda e Romania hanno le quote automatiche (1.736 partite su 1.736 agganciate, nessuna sbagliata). `strumenti/catalogo.js` per rifarlo. Nessun numero cambia: col `b72` 0 scritture diverse su 191, una riga del CSV (il certificato); sulla PitchAPI vera Augsburg – Bayern del 10/10/2026 (Bundesliga 2026/27) e FCSB – Oţelul (Liga I) analizzate con le quote automatiche, 0 px |

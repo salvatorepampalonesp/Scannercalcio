@@ -7,7 +7,7 @@
 //
 //   node strumenti/schermate.js                                   lega finta del banco, nessuna chiamata
 //   node strumenti/schermate.js --vera "Juventus|Atalanta|2026-09-20"     PitchAPI vera, Serie A
-//   node strumenti/schermate.js --vera "Lausanne|Lugano|2026-09-20" --lega "Super League"
+//   node strumenti/schermate.js --vera "Lausanne|Lugano|2026-09-20" --lega "SUI:Super League"
 //
 // --vera "Casa|Trasferta|AAAA-MM-GG": i nomi come nel menu dello Scanner. La chiave la aggiunge il
 //   proxy dell'ambiente (vedi AGENTS.md, Il batch automatico); un'analisi costa 200-300 chiamate.

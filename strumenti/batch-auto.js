@@ -7,7 +7,7 @@
 // oppure, fuori da un ambiente cloud, la variabile PITCHAPI_KEY. Ogni CSV si salva appena la sua stagione finisce, e una
 // stagione che ha gia' il suo file nella cartella si salta: rilanciare riprende da dove era.
 //
-//   node strumenti/batch-auto.js --leghe "Serie A,Eredivisie" --stagioni 2024/2025,2025/2026
+//   node strumenti/batch-auto.js --leghe "ITA:Serie A,Eredivisie" --stagioni 2024/2025,2025/2026
 //   node strumenti/batch-auto.js --leghe l_0ALvwF --out /percorso/cartella
 //   node strumenti/batch-auto.js --finto ...      la lega finta del banco al posto della PitchAPI
 //
@@ -51,7 +51,7 @@ function risolvi(x) {
   esci(`Lega "${x}" ambigua: ${trov.map(l => l.country_code + ':' + l.name).join(', ')}. Scrivi PAESE:Nome.`);
 }
 const richieste = arg('leghe', '').split(',').map(s => s.trim()).filter(Boolean);
-if (!richieste.length) esci('Indica le leghe: --leghe "Serie A,Premier League" (id o nomi di leghe.json).');
+if (!richieste.length) esci('Indica le leghe: --leghe "ITA:Serie A,ENG:Premier League" (id o nomi di leghe.json).');
 const nomeFile = (l, s) => `Backtest_V97_${l.country_code}_${l.name.replace(/[\s/]+/g, '_')}_${s.replace(/\//g, '-')}.csv`;
 const lavori = [];
 for (const l of richieste.map(risolvi)) for (const s of STAGIONI) {
