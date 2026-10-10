@@ -1,7 +1,8 @@
 # La card «Primo gol» dello Scanner contro il reale (AGENTS.md, La card del primo gol). Solo misura.
 #
 #   python3 strumenti/primo-gol.py --scarica batch48 batch4 batch/2627   scarica i gol delle partite (una chiamata per partita)
-#   python3 strumenti/primo-gol.py batch48 batch4 batch/2627             la misura
+#   python3 strumenti/primo-gol.py batch48 batch4 batch/2627             la misura (l'esplorazione)
+#   python3 strumenti/primo-gol.py --scarica <cartelle del test>         e poi senza --scarica: il test della regola
 #   ... --partita m_4bVd52                                               i due numeri di una partita, da confrontare con lo Scanner
 #
 # La card dice due numeri: il gol prima del 30' e l'Over 0.5 del primo tempo. Lo Scanner li fa cosi':
@@ -22,7 +23,9 @@ PITCH = 'https://pitchapi-proxy.salvatorepampalone-sp.workers.dev'
 CART = 'batch/eventi'
 RIGA_F = "Ambito: livello dei gol (fattore gia' nei lambda di ruolo)"
 GOALS_LEVEL, LIMITE, FINESTRA = 1.051, 30, 500
-QUOTA_FISSA = (0.268, 0.446)  # la quota media dei gol nei primi 30 e 45 minuti, su queste partite: solo descrittiva
+QUOTA_FISSA = (0.268, 0.446)  # la quota media dei gol nei primi 30 e 45 minuti sull'esplorazione: il candidato della regola
+# senza una stagione alle spalle: fuori da ogni misura (AGENTS.md, Le leghe mai viste)
+ESCLUSI = {'Backtest_V97_GRE_Super_League_1_2025-2026.csv', 'Backtest_V97_KSA_Saudi_Pro_League_2023-2024.csv'}
 a = sys.argv[1:]
 SCARICA = '--scarica' in a
 DAL = a[a.index('--dal') + 1] if '--dal' in a else '2025-07-01'
@@ -42,7 +45,7 @@ def ha_fattore(f):
     return any(r.startswith(RIGA_F) for r in io.open(f, encoding='utf-8-sig'))
 
 def leggi(cartelle):
-    F = [f for d in cartelle for f in sorted(glob.glob(os.path.join(d, '*.csv')))]
+    F = [f for d in cartelle for f in sorted(glob.glob(os.path.join(d, '*.csv'))) if os.path.basename(f) not in ESCLUSI]
     T, A = {}, {}
     for f in F:
         ar = archivio(f); lega = os.path.basename(f)[len('Backtest_V97_'):].rsplit('_', 1)[0]
@@ -113,7 +116,7 @@ def main():
     manca = sorted(m for m in serve if not os.path.exists(os.path.join(CART, m + '.json')))
     print(f'partite che servono: {len(serve)}, da scaricare {len(manca)}')
     if SCARICA: scarica(manca); return
-    if manca: print('  (mancano dei gol: lancia con --scarica; le partite senza contano come lo Scanner senza /events)')
+    if manca: print('mancano dei gol: prima --scarica (niente misura su dati a meta\')'); sys.exit(1)
     R = []; scartate = collections.Counter()
     for lega, ar in A.items():
         fin = sorted((m for m in ar.values() if m['stato'] == 'finished'), key=lambda m: m['ora'])
@@ -201,5 +204,20 @@ def main():
     pr = np.array([r['primo'] for r in R if r['primo'] is not None])
     print(f'\nminuto del primo gol (reale): mediana {np.median(pr):.0f}, prima del 15\' {100*(pr <= 15).mean():.1f}%, '
           f'del 30\' {100*(pr <= 30).mean():.1f}%, nel primo tempo {100*(pr < 46).mean():.1f}%; senza gol {100*(tot == 0).mean():.1f}% delle partite')
+    # la regola (AGENTS.md, La card del primo gol: la regola): la quota fissa contro quella delle due squadre, stesso lambda.
+    # Per partita la somma delle due logloss (gol prima del 30' e Over 0.5 nel primo tempo), appaiata.
+    d30 = ll(P['c30'], y30) - ll(P['s30'], y30); dht = ll(P['cht'], yht) - ll(P['sht'], yht); d = d30 + dht
+    grandi = [l for l in sorted(set(leghe)) if (leghe == l).sum() >= 100]
+    meglio = [l for l in grandi if d[leghe == l].mean() < 0]
+    print(f'\n=== la regola: quota fissa {QUOTA_FISSA} meno quella delle due squadre, somma delle due logloss ===')
+    print(f'   insieme {len(d)} partite: {1000*d.mean():+.2f} per mille (z {z(d):+.2f}); '
+          f"gol prima del 30' {1000*d30.mean():+.2f} (z {z(d30):+.2f}), primo tempo {1000*dht.mean():+.2f} (z {z(dht):+.2f})")
+    print(f'   meglio in {len(meglio)} leghe su {len(grandi)} con almeno 100 partite')
+    for l in sorted(set(leghe), key=lambda l: -(leghe == l).sum()):
+        kk = leghe == l
+        print(f'     {l[:28]:28s} {kk.sum():5d}  {1000*d[kk].mean():+7.2f}  quota della lega nei primi 30 e 45 minuti {np.mean([r["l30"] for r, k in zip(R, kk) if k]):.3f} {np.mean([r["lht"] for r, k in zip(R, kk) if k]):.3f}')
+    passa = z(d) <= -2 and len(meglio) > len(grandi) / 2 and d30.mean() <= 0 and dht.mean() <= 0
+    print(f"   esito: {'PASSA' if passa else 'NON PASSA'} (z <= -2: {z(d) <= -2}; piu' di meta' delle leghe: {len(meglio) > len(grandi) / 2}; "
+          f"nessuno dei due peggio: {d30.mean() <= 0 and dht.mean() <= 0})")
 
 main()
