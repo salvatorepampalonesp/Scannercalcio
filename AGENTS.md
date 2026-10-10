@@ -460,8 +460,9 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   quota_di_tempo)`): misurata il 10 ottobre 2026 su 4.496 partite. In media è giusta, ma non distingue
   le partite (AUC 0.51) e vale quanto la frequenza della lega detta uguale per tutte. La quota presa dai
   minuti dei gol delle due squadre fa peggio di una quota fissa (0.268 e 0.446): +3.2‰ e +2.6‰ (`z`
-  +2.2 e +2.6), peggio in 9 leghe su 12. Candidato: la quota fissa, che non costa chiamate. Va registrato
-  e provato su leghe mai aperte per questa domanda. Vedi *La card del primo gol*.
+  +2.2 e +2.6), peggio in 9 leghe su 12. Candidato: la quota fissa, che non costa chiamate. **Regola
+  registrata il 10 ottobre 2026**, da provare su 11.694 partite di 36 leghe mai aperte per questa domanda:
+  vedi *La card del primo gol: la regola*.
 - [ ] **`RESID_GAMMA` da 0.678 a 0.360**, o rimisurarlo. Non sposta probabilità
   (`RESID_ALPHA = 0`), ma la sezione CSV *A/B CORREZIONE RESIDUALE* è calcolata con la
   scala che il `b5` ha dichiarato sbagliata.
@@ -4708,6 +4709,54 @@ Per un test queste 4.496 partite sono ormai guardate per questa domanda. Il cand
 quota fissa: due costanti al posto delle fasce delle due squadre, nessuna chiamata. Va registrato e
 provato su leghe mai aperte per questa domanda, cioè i batch del `b61`, del `b62` e del `b73`, coi loro
 gol da scaricare (`--scarica`).
+
+### La card del primo gol: la regola
+
+Scritta il 10 ottobre 2026, prima di scaricare i gol delle leghe del test. Chiesta dall'utente («registra
+la quota fissa»).
+
+**Perché.** Sulle 4.496 partite dell'esplorazione (le dodici leghe dal 2025/26), la quota fissa ha la
+logloss più bassa di quella delle due squadre in 10 leghe su 12. La somma delle due logloss scende di
+−5.78‰ (`z = −2.72`): −3.16‰ sul 30' (`z = −2.17`) e −2.62‰ sul primo tempo (`z = −2.56`). Sono i
+numeri della tabella sopra, rifatti come li chiede il metro qui sotto.
+
+**Il candidato, con tutto fissato.** Lo stesso λ di oggi (la somma dei lambda di ruolo, col livello dei
+gol del `b63`), e al posto della quota delle due squadre due costanti:
+- gol prima del 30': `1 − exp(−λ·0.268)`;
+- Over 0.5 nel primo tempo: `1 − exp(−λ·0.446)`.
+
+Sono le quote medie dei gol nei primi 30 e 45 minuti sull'esplorazione (`QUOTA_FISSA` in
+`strumenti/primo-gol.py`). Nessuna chiamata, nessun parametro stimato sul test.
+
+**I dati del test.** Le partite in copia conforme giocate dal 1° gennaio 2025 nei batch del `b61`
+(`batch/nuove`), del `b62` (`batch/livello`) e del `b73` (`batch/lontane`, `batch/anno2026`,
+`batch/europa2526`): 11.694 partite di 36 leghe. Restano fuori la Super League 1 greca 2025/26 e la
+Saudi Pro League 2023/24, che non hanno una stagione alle spalle. Di queste leghe si sono guardati 1X2,
+gol, sorpresa e tabellone, ma mai i minuti dei gol. Per la storia delle due squadre servono i gol di
+circa 24.000 partite, una chiamata ciascuna (`--scarica`). Lo strumento non misura finché ne manca una.
+
+**Il metro.** Per partita, la somma delle due logloss (gol prima del 30', Over 0.5 nel primo tempo):
+quota fissa meno quella delle due squadre, appaiata. Le partite sono quelle che lo strumento tiene già:
+- gol degli eventi uguali al punteggio;
+- almeno 50 partite di lega nei 365 giorni prima.
+
+**Passa** se:
+- sull'insieme migliora con `z ≤ −2`;
+- migliora in più di metà delle leghe con almeno 100 partite;
+- nessuno dei due numeri peggiora sull'insieme.
+
+Con l'effetto dell'esplorazione ci si aspetta `z` intorno a −4; con metà dell'effetto, intorno a −2.
+
+**Se passa.** Nello Scanner la card «Primo gol» usa la quota fissa, con una manopola che torna alla quota
+delle due squadre. Cambiano solo i due numeri della card, quello del mega-prompt e il numero chiave di
+Numeri; il CSV non li porta. Build nuova e banco. **Se non passa**, resta tutto com'è e questa sezione
+dice perché.
+
+**Descrittivi**, che non decidono: lo stesso confronto per lega; la quota della lega e la frequenza della
+lega; calibrazione, AUC e Brier della card di oggi; la regola di Poisson; il minuto del primo gol.
+`python3 strumenti/primo-gol.py --dal 2025-01-01 batch/nuove batch/livello batch/lontane batch/anno2026
+batch/europa2526` rifà il test (prima con `--scarica`); senza cartelle del test, sulle tre
+dell'esplorazione, rifà l'esplorazione.
 
 ## I gol
 
