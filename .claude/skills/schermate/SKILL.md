@@ -19,7 +19,7 @@ node strumenti/schermate.js --out <scratchpad>/schermate
 
 ```bash
 node strumenti/schermate.js --vera "Juventus|Atalanta|2026-09-20" --out <scratchpad>/schermate
-node strumenti/schermate.js --vera "Lausanne|Lugano|2026-09-20" --lega "Super League"
+node strumenti/schermate.js --vera "Lausanne|Lugano|2026-09-20" --lega "SUI:Super League"
 ```
 
 - I nomi delle squadre vanno scritti come li mostra il menu dello Scanner. La lega di default è la

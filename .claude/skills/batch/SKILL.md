@@ -14,6 +14,8 @@ AGENTS.md, *Il batch automatico* e *Leggere un CSV del Comparatore*.
 - **Leghe e stagioni** da `leghe.json`: id o nome, `PAESE:Nome` se il nome è ambiguo
   (`GER:Bundesliga`). Le stagioni vanno prese con due stagioni alle spalle in `leghe.json`, come
   le vede lo Scanner. Di default sono 2023/2024–2025/2026; le leghe a anno solare usano `2023,2024,2025`.
+  Se una stagione che l'API ha già non è in `leghe.json`, il catalogo è vecchio:
+  `node strumenti/catalogo.js --prova` lo dice (vedi in AGENTS.md *Il catalogo delle leghe*).
 - **Il motore** è quello della cartella di lavoro: su un branch che cambia `scanner.html`, il
   batch misura il branch.
 - **La chiave** è una credenziale API dell'ambiente: tipo Bearer, sito
