@@ -2,6 +2,7 @@
 #
 #   python3 strumenti/primo-gol.py --scarica batch48 batch4 batch/2627   scarica i gol delle partite (una chiamata per partita)
 #   python3 strumenti/primo-gol.py batch48 batch4 batch/2627             la misura
+#   ... --partita m_4bVd52                                               i due numeri di una partita, da confrontare con lo Scanner
 #
 # La card dice due numeri: il gol prima del 30' e l'Over 0.5 del primo tempo. Lo Scanner li fa cosi':
 # P = 1 - exp(-lambda * quota), con lambda la somma dei lambda di ruolo (col livello dei gol del b63) e quota
@@ -21,10 +22,12 @@ PITCH = 'https://pitchapi-proxy.salvatorepampalone-sp.workers.dev'
 CART = 'batch/eventi'
 RIGA_F = "Ambito: livello dei gol (fattore gia' nei lambda di ruolo)"
 GOALS_LEVEL, LIMITE, FINESTRA = 1.051, 30, 500
+QUOTA_FISSA = (0.268, 0.446)  # la quota media dei gol nei primi 30 e 45 minuti, su queste partite: solo descrittiva
 a = sys.argv[1:]
 SCARICA = '--scarica' in a
 DAL = a[a.index('--dal') + 1] if '--dal' in a else '2025-07-01'
-cartelle = [x for i, x in enumerate(a) if not x.startswith('--') and (i == 0 or a[i - 1] != '--dal')]
+PARTITA = a[a.index('--partita') + 1] if '--partita' in a else None
+cartelle = [x for i, x in enumerate(a) if not x.startswith('--') and (i == 0 or a[i - 1] not in ('--dal', '--partita'))]
 
 def archivio(f):
     out = {}
@@ -88,6 +91,12 @@ def gol(mid):
         _G[mid] = json.load(open(f)) if os.path.exists(f) else None
     return _G[mid]
 
+def esito(mid):
+    g = gol(mid)
+    if not g or not g['ok']: return None
+    pt = [e for e in g['gol'] if e['per'] == 'FirstHalf']
+    return int(any(e['m'] is not None and e['m'] <= 30 for e in pt)), int(bool(pt))
+
 def fascia(mi): return min(5, max(0, (mi - 1) // 15)) if mi is not None else None
 
 def main():
@@ -123,6 +132,9 @@ def main():
                     for e in (gg['gol'] if gg else []):
                         if e['m'] is not None: b[fascia(e['m'])] += 1
             sh = b / b.sum() if b.sum() > 30 else np.full(6, 1 / 6)
+            if t['id'] == PARTITA:
+                print(f"{t['H']} - {t['A']} del {giorno}: lambda {t['lt']:.4f}, gol nella storia {b.astype(int).tolist()}, "
+                      f"gol prima del 30' {100*(1-math.exp(-t['lt']*sh[:2].sum())):.1f}%, Over 0.5 nel primo tempo {100*(1-math.exp(-t['lt']*sh[:3].sum())):.1f}%")
             # la quota della lega: i gol di tutte le partite di lega nei 365 giorni prima, stessa regola delle fasce
             lg = np.zeros(6); da = (t0 - dt.timedelta(days=365)).isoformat()[:19]
             for m in fin:
@@ -131,10 +143,15 @@ def main():
                     for e in (gg['gol'] if gg else []):
                         if e['m'] is not None: lg[fascia(e['m'])] += 1
             shl = lg / lg.sum() if lg.sum() > 30 else np.full(6, 1 / 6)
+            # la frequenza della lega: quante partite di lega nei 365 giorni prima hanno avuto il gol prima del 30' e nel primo tempo
+            fr = [esito(m['id']) for m in fin if m['giorno'] < giorno and m['ora'][:19] > da]
+            fr = [x for x in fr if x]
+            f30 = np.mean([x[0] for x in fr]) if len(fr) >= 50 else None; fht = np.mean([x[1] for x in fr]) if len(fr) >= 50 else None
             pt = [e for e in g['gol'] if e['per'] == 'FirstHalf']
             y30 = int(any(e['m'] is not None and e['m'] <= 30 for e in pt)); yht = int(bool(pt))
             primo = min((e['m'] + (e['add'] or 0) / 100 for e in g['gol'] if e['m'] is not None), default=None)
-            R.append(dict(lega=lega, lt=t['lt'], s30=sh[:2].sum(), sht=sh[:3].sum(), l30=shl[:2].sum(), lht=shl[:3].sum(),
+            if f30 is None: scartate['meno di 50 partite di lega nei 365 giorni prima'] += 1; continue
+            R.append(dict(lega=lega, lt=t['lt'], s30=sh[:2].sum(), sht=sh[:3].sum(), l30=shl[:2].sum(), lht=shl[:3].sum(), f30=f30, fht=fht,
                           y30=y30, yht=yht, ng=b.sum(), tot=t['hg'] + t['ag'], primo=primo))
     print('scartate:', dict(scartate) or 'nessuna')
     if not R: return
@@ -142,6 +159,7 @@ def main():
     leghe = np.array([r['lega'] for r in R]); tot = np.array([r['tot'] for r in R])
     P = {k: 1 - np.exp(-lt * np.array([r[k] for r in R])) for k in ('s30', 'sht', 'l30', 'lht')}
     P['u30'] = 1 - np.exp(-lt * 2 / 6); P['uht'] = 1 - np.exp(-lt * 3 / 6)
+    P['c30'] = 1 - np.exp(-lt * QUOTA_FISSA[0]); P['cht'] = 1 - np.exp(-lt * QUOTA_FISSA[1])
     ll = lambda p, y: -(y * np.log(np.clip(p, 1e-9, 1)) + (1 - y) * np.log(np.clip(1 - p, 1e-9, 1)))
     z = lambda d: d.mean() / d.std(ddof=1) * math.sqrt(len(d))
     print(f'\npartite misurate: {len(R)}; gol nella storia delle due squadre (mediana) {np.median([r["ng"] for r in R]):.0f}, '
@@ -157,9 +175,19 @@ def main():
             if kk.sum() >= 50: print(f'     {int(100*a_):2d}-{min(100, int(100*b_)):3d}%: {kk.sum():5d} partite, previsto {100*p[kk].mean():.1f}, esce {100*y[kk].mean():.1f} ±{200*math.sqrt(y[kk].mean()*(1-y[kk].mean())/kk.sum()):.1f}')
         au = [(roc_auc_score(y[leghe == l], p[leghe == l]), (leghe == l).sum()) for l in sorted(set(leghe)) if 0 < y[leghe == l].sum() < (leghe == l).sum()]
         print(f'  AUC dentro la lega (media pesata) {sum(x*n for x, n in au)/sum(n for _, n in au):.3f}, da {min(x for x, _ in au):.3f} a {max(x for x, _ in au):.3f}')
-        for alt, nm in ((kl, 'la quota della lega (365 giorni prima)'), (ku, 'la quota uniforme (1/6 per fascia)')):
+        P['f' + k[1:]] = np.array([r['f' + k[1:]] for r in R])
+        for alt, nm in ((kl, 'la quota della lega (365 giorni prima)'), (ku, 'la quota uniforme (1/6 per fascia)'), ('c' + k[1:], f'una quota fissa per tutte le leghe ({QUOTA_FISSA})'), ('f' + k[1:], 'la frequenza della lega (365 giorni prima), uguale per tutte le partite')):
             d = ll(p, y) - ll(P[alt], y); per = [ (ll(p, y) - ll(P[alt], y))[leghe == l].mean() < 0 for l in sorted(set(leghe))]
             print(f'  la quota delle due squadre contro {nm}: {1000*d.mean():+.2f} per mille (z {z(d):+.2f}), meglio in {sum(per)} leghe su {len(per)}')
+        # ricalibrata fuori lega: logit(P) = a + b*logit(previsione dello Scanner), stimata sulle altre leghe
+        lo = lambda x: np.log(np.clip(x, 1e-6, 1 - 1e-6) / (1 - np.clip(x, 1e-6, 1 - 1e-6)))
+        from sklearn.linear_model import LogisticRegression
+        pr = np.zeros(len(y)); bb = []
+        for l in sorted(set(leghe)):
+            kk = leghe == l
+            m_ = LogisticRegression(C=1e6).fit(lo(p[~kk])[:, None], y[~kk]); pr[kk] = m_.predict_proba(lo(p[kk])[:, None])[:, 1]; bb.append(m_.coef_[0][0])
+        d = ll(pr, y) - ll(P['f' + k[1:]], y)
+        print(f'  ricalibrata fuori lega (pendenza sul logit {min(bb):.2f}-{max(bb):.2f}) contro la frequenza della lega: {1000*d.mean():+.2f} per mille (z {z(d):+.2f})')
         print('  per lega (partite, previsto, reale):')
         for l in sorted(set(leghe), key=lambda l: -(leghe == l).sum()):
             kk = leghe == l

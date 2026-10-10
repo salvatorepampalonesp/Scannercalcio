@@ -456,9 +456,12 @@ qui ha bisogno di dati nuovi, non di rifare questi.
 
 - [ ] **Doppie chance e gol con confidence**: la tabella è confusa, e sui gol poggia su
   probabilità che discriminano poco.
-- [ ] **La card «Sopravvivenza (Goal Timing)»** è `1 − exp(−λ_totale × quota_di_tempo)`, con
-  la quota presa dalla distribuzione dei minuti dei gol in sei fasce da 15' (uniforme sotto i
-  30 gol). È corretta, ma il nome promette un'analisi di sopravvivenza che non fa.
+- [ ] **La card «Primo gol»** (gol prima del 30' e Over 0.5 nel primo tempo, `1 − exp(−λ_totale ×
+  quota_di_tempo)`): misurata il 10 ottobre 2026 su 4.496 partite. In media è giusta, ma non distingue
+  le partite (AUC 0.51) e vale quanto la frequenza della lega detta uguale per tutte. La quota presa dai
+  minuti dei gol delle due squadre fa peggio di una quota fissa (0.268 e 0.446): +3.2‰ e +2.6‰ (`z`
+  +2.2 e +2.6), peggio in 9 leghe su 12. Candidato: la quota fissa, che non costa chiamate. Va registrato
+  e provato su leghe mai aperte per questa domanda. Vedi *La card del primo gol*.
 - [ ] **`RESID_GAMMA` da 0.678 a 0.360**, o rimisurarlo. Non sposta probabilità
   (`RESID_ALPHA = 0`), ma la sezione CSV *A/B CORREZIONE RESIDUALE* è calcolata con la
   scala che il `b5` ha dichiarato sbagliata.
@@ -4085,6 +4088,7 @@ misurate.
 | Una taratura dell'1X2 per giornata (prime 5, 6–10, resto) (solo descrittivo) | **no** | +0.06‰ fuori lega: le prime giornate non sono più timide né più sicure delle altre |
 | La motivazione di fine stagione (ultime 6 giornate, chi può ancora cambiare zona) (solo descrittivo) | **contro il motore sì, contro il mercato no** | 2.671 partite senza pari: −3.43‰ fuori lega (`z = −2.05`), 15 leghe su 24; dato il mercato −0.03 (`z = −0.26`). Pareggi vicini al previsto. Quando nessuna delle due ha obiettivi si segna di più (3.16 gol a partita, 2.81 quando li hanno tutte e due): l'Over 2.5 esce il 62.6% contro il 59.4% del mercato, ma dato il mercato non aggiunge niente (`z = +0.26`). Vedi *Da fare* |
 | Restringere il totale dei lambda di ruolo, che è troppo largo (pendenza dei gol veri sul lambda totale 0.71) (solo descrittivo) | **vale un millesimo** | Over 2.5 + Goal −0.97‰ (`z = −2.43`), 18 leghe su 24, `c` 0.7 verso la media della lega-stagione presa col senno di poi; per vederlo su partite nuove ne servirebbero circa 30.000. Vedi *Il Dixon-Coles contro i risultati reali* |
+| La quota del tempo dai minuti dei gol delle due squadre (card «Primo gol») (solo descrittivo) | **peggio di una quota fissa** | 4.496 partite di dodici leghe dal 2025/26: gol prima del 30' +3.2‰, Over 0.5 nel primo tempo +2.6‰ (`z` +2.2 e +2.6), peggio in 9 leghe su 12. La card intera vale quanto la frequenza della lega (AUC 0.51). Vedi *La card del primo gol* |
 | Il disaccordo fra modello ed Elo come segnale di sorpresa | **è il candidato Elo visto da un'altra parte** (`b42`) | fuori lega −0.0037 (`z = −2.47`), prese +0.57 punti, Ligue 1 di nuovo contraria (+0.0020). Nelle 717 partite (14%) in cui modello ed Elo indicano favoriti diversi il pick prende il 37.7% (41.4% col disaccordo in regressione), contro il 55.2% delle altre. A parità di partite giocate la selezione non migliora (top 20%: 72.8 contro 73.2%) |
 
 **Le cose che hanno retto**, in ordine di quanto valgono:
@@ -4646,6 +4650,64 @@ come dice il log-odds del modello, prima dell'inclinazione, con lo stesso totale
 - **Il peso del Markov nell'ensemble è piatto**: logloss 1.00981 a 0, 1.00957 a 0.30, 1.00952 a 0.50,
   1.00977 a 1; fuori lega si sceglie 0.5 in 18 leghe su 24, ma contro lo 0.30 in uso fa +0.05‰ (`z =
   +0.73`). `ENS_W` resta.
+
+## La card del primo gol
+
+Chiesto dall'utente: «controlliamo la stats primo goal e probabilità over 0.5 primo tempo». Solo
+misura, 10 ottobre 2026: il motore non cambia.
+
+**Cosa dice la card.** «Primo gol», nella scheda Numeri, dà due numeri: il gol prima del 30' (`surv-30`)
+e l'Over 0.5 del primo tempo (`surv-45`). Tutti e due sono `1 − exp(−λ·quota)`:
+- λ è la somma dei lambda di ruolo, col livello dei gol del `b63`;
+- la quota è la parte dei gol caduti nei primi 30 o 45 minuti. Si conta sui minuti dei gol delle ultime
+  30 partite di lega delle due squadre, fatti e subiti, in sei fasce da 15'. Sotto i 31 gol è uniforme.
+
+Il primo numero va anche nel mega-prompt.
+
+**La misura.** `strumenti/primo-gol.py` rifà i due numeri dall'archivio in fondo ai CSV e dai gol di
+`/matches/{id}/events`. Le partite sono 9.445, una chiamata ciascuna, tenute in `batch/eventi/`, fuori da
+git. Lo strumento confronta i due numeri col minuto vero del primo gol.
+
+La prova di coincidenza è sulla PitchAPI vera: Juventus – Lazio dell'8 febbraio 2026 dà 47.7% e 66.3%
+sia nello Scanner sia nello strumento.
+
+I bersagli sono le partite in copia conforme dal 2025/26 delle dodici leghe (`batch48`, `batch4`,
+`batch/2627`): 4.496. Ne restano fuori 32, dove i gol degli eventi non tornano col punteggio. La storia
+delle due squadre ha in mediana 159 gol; 18 partite stanno sotto i 31 e usano la quota uniforme.
+
+| | gol prima del 30' | Over 0.5 nel primo tempo |
+|---|---|---|
+| previsto / reale | 52.7 / 53.5% | 71.3 / 72.0% |
+| AUC dentro la lega | 0.515 (da 0.462 a 0.562) | 0.512 (da 0.463 a 0.570) |
+| Brier, e quello di una costante | 0.2496 / 0.2488 | 0.2017 / 0.2016 |
+| quota delle due squadre contro una quota fissa (0.268 e 0.446) | +3.16‰ (`z` +2.17), meglio in 3 leghe su 12 | +2.62‰ (`z` +2.56), 3 su 12 |
+| contro la quota della lega nei 365 giorni prima | +3.31‰ (`z` +2.53), 3 su 12 | +2.45‰ (`z` +2.63), 4 su 12 |
+| contro la quota uniforme | −8.63‰ (`z` −2.95), 8 su 12 | −0.77‰ (`z` −0.44), 8 su 12 |
+| contro la frequenza della lega nei 365 giorni prima, uguale per tutte le partite | +1.29‰ (`z` +0.71) | +1.06‰ (`z` +0.64) |
+| ricalibrata fuori lega, contro la stessa frequenza | −1.31‰ (`z` −1.04), pendenza sul logit 0.36–0.46 | +0.29‰ (`z` +0.22), 0.40–0.67 |
+
+- *In media è giusta, ma non distingue le partite.* L'AUC è 0.51, e la card vale quanto dire a ogni
+  partita la frequenza della sua lega.
+- *È troppo aperta.* Per il 30', per fascia (previsto, poi uscito): 37.3 → 48.7 (113 partite), 46.4 →
+  49.5, 54.7 → 55.2, 62.7 → 57.4. Ricalibrata, la pendenza sul logit è circa 0.4.
+- *La quota delle due squadre è rumore.* Fa peggio di quella della lega e di una quota fissa, in 8–9 leghe
+  su 12. 159 gol in sei fasce sono pochi, e il minuto in cui una squadra segna non è una sua proprietà.
+- *La regola di Poisson regge.* Dato il totale dei gol, il primo tempo senza gol esce come dice la
+  binomiale con quota 0.446: con 1 gol 55.8 contro 55.4%, 2 gol 32.9 contro 30.7, 3 gol 15.5 contro
+  17.0, 4 gol 8.6 contro 9.4, 5 gol 2.4 contro 5.2.
+- *Il primo gol, nel reale.* Arriva in mediana al 25'. Nelle partite con gol arriva prima del 30' nel
+  57.0% e nel primo tempo nel 76.7%; il 6.1% delle partite finisce senza gol.
+- *Il 7 ottobre* la stessa misura dell'Over 0.5 era già stata fatta, su Serie A 2025/26 e coi punteggi a
+  fine primo tempo di football-data per le dodici leghe, e diceva lo stesso: calibrato, AUC 0.54–0.56, la
+  forma delle squadre non aggiunge niente. Non era stata scritta qui.
+- *Visto strada facendo.* Mentre lo scarico girava, la PitchAPI rispondeva 429, e lo Scanner sulla stessa
+  partita diceva 50.9% e 69.4% invece di 47.7% e 66.3%. È la chiamata fallita che resta in memoria per
+  tutta la sessione (vedi *Il Comparatore stampa come lo Scanner*, «Cosa resta fuori»).
+
+Per un test queste 4.496 partite sono ormai guardate per questa domanda. Il candidato più semplice è la
+quota fissa: due costanti al posto delle fasce delle due squadre, nessuna chiamata. Va registrato e
+provato su leghe mai aperte per questa domanda, cioè i batch del `b61`, del `b62` e del `b73`, coi loro
+gol da scaricare (`--scarica`).
 
 ## I gol
 
