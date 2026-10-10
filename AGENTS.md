@@ -55,7 +55,7 @@ vedi *Le quote automatiche*); se non ci sono, le scrive l'utente. Per misurarle 
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b74`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b75`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -456,13 +456,11 @@ qui ha bisogno di dati nuovi, non di rifare questi.
 
 - [ ] **Doppie chance e gol con confidence**: la tabella è confusa, e sui gol poggia su
   probabilità che discriminano poco.
-- [ ] **La card «Primo gol»** (gol prima del 30' e Over 0.5 nel primo tempo, `1 − exp(−λ_totale ×
-  quota_di_tempo)`): misurata il 10 ottobre 2026 su 4.496 partite. In media è giusta, ma non distingue
-  le partite (AUC 0.51) e vale quanto la frequenza della lega detta uguale per tutte. La quota presa dai
-  minuti dei gol delle due squadre fa peggio di una quota fissa (0.268 e 0.446): +3.2‰ e +2.6‰ (`z`
-  +2.2 e +2.6), peggio in 9 leghe su 12. Candidato: la quota fissa, che non costa chiamate. **Regola
-  registrata il 10 ottobre 2026**, da provare su 11.694 partite di 36 leghe mai aperte per questa domanda:
-  vedi *La card del primo gol: la regola*.
+- [x] ~~**La card «Primo gol»**~~ — **passato, nello Scanner dal `b75`.** La card usa una quota fissa
+  dei gol nei primi 30 e 45 minuti (0.268 e 0.446) invece di quella presa dai minuti dei gol delle due
+  squadre. Regola registrata prima; su 11.633 partite di 36 leghe mai aperte per questa domanda −7.30‰
+  (`z = −4.93`), meglio in 29 leghe su 36. Ora è calibrata, ma distingue poco le partite (AUC 0.53).
+  Vedi *La card del primo gol: la regola*, «Esito».
 - [ ] **`RESID_GAMMA` da 0.678 a 0.360**, o rimisurarlo. Non sposta probabilità
   (`RESID_ALPHA = 0`), ma la sezione CSV *A/B CORREZIONE RESIDUALE* è calcolata con la
   scala che il `b5` ha dichiarato sbagliata.
@@ -481,7 +479,7 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b74`)
+## Stato attuale (`b75`)
 
 **1X2.** Col motore `b48` il pick azzecca il 52.7% (±1.4) contro il 43.0% del «gioca sempre in
 casa» sulle cinque leghe: 52.7% contro 40.2% in Serie A, 52.7% contro 43.1% in Premier, 53.2%
@@ -579,6 +577,12 @@ sorpresa, le tre proposte migliori del tabellone e le formazioni. L'analisi è d
 schede (Partita, Tabellone, Squadre, Statistiche, Mercati, Prompt, Dati) invece che una pagina sola,
 e il tabellone è un elenco: prima le proposte con un verdetto, le altre chiuse sotto. Non cambia
 nessun numero. Vedi *La grafica dello Scanner*, «Cosa cambia nel `b66`».
+
+**Il primo gol** (dal `b75`). La card «Primo gol» usa per tutte le partite la stessa quota dei gol nei
+primi 30 e 45 minuti (26.8 e 44.6%), invece di quella presa dai minuti dei gol delle due squadre, che era
+rumore. La regola era registrata prima: su 11.633 partite di 36 leghe −7.30‰ di logloss (`z = −4.93`),
+meglio in 29 leghe su 36. Ora la card è calibrata, ma distingue poco le partite (AUC 0.53): vale poco più
+della frequenza della lega. Vedi *La card del primo gol*.
 
 **Il catalogo** (dal `b73`). `leghe.json` e le due copie dentro le pagine sono il catalogo di
 `/leagues` del 10 ottobre 2026: 77 leghe invece di 42, e il 2026/27 di Bundesliga, Champions ed Europa
@@ -753,9 +757,9 @@ non passa mai +7.1. Trascina con sé il `12`.
 | **Le cinque leghe col `b48`** | **5230** | **il riferimento dal `b49`** per soglie, confidence e tabellone: batch automatico `b48`, stesse stagioni e partite delle righe sotto, 5230 su 5230 in copia conforme, Elo rifatto dall'archivio identico su ogni file |
 | **Le quattro leghe del `b53`** | **3202** | 2. Bundesliga 908, First Division A 931, Premiership scozzese 683, Super League svizzera 680, 2023/24–2025/26: batch automatico del `b52`, 3202 su 3202 in copia conforme, Elo identico su ogni file; `/advanced` assente sul 2023/24 di Scozia e Svizzera. Aperte solo per il test della confidence nuda; il tabellone non è mai stato guardato |
 | **Le tre leghe nuove col `b48`** | **3495** | Championship 1659, Eredivisie 923, Liga Portugal 913, 2023/24–2025/26: batch automatico del `b51` (probabilità del `b48`), 3495 su 3495 in copia conforme, Elo rifatto dall'archivio identico su ogni file; `/advanced` assente sul 2023/24 di Championship e Liga Portugal. La sezione `TABELLONE` non è mai stata guardata |
-| **Le nove leghe del livello dei gol** | **6472** | Bundesliga austriaca 582, Superligaen 574, Liga MX 667 (2023/24–2025/26), Eliteserien 715, Allsvenskan 715, MLS 1581 (2023–2025), J. League 756 (2024–2025), Liga Profesional 508, Série A brasiliana 374 (2025): batch automatico del `b62`, tutte in copia conforme, Elo identico su ogni file. Aperte solo per il test del livello dei gol (`b63`) |
-| **Le leghe mai viste del `b74`** | **7645** | 33 file di 25 leghe: A-League, Indian Super League, Saudi Pro League 2023/24–2025/26 e K League 1 2024–2026; il 2026 giocato di dieci leghe a calendario solare; il 2025/26 di undici leghe europee, con una sola stagione alle spalle. Batch automatico del `b73`, tutte in copia conforme, Elo identico su ogni file. Super League 1 greca 2025/26 e Saudi Pro League 2023/24 senza stagione alle spalle: fuori da ogni misura. Guardate per 1X2, soglie, sorpresa, gol, numeri e tabellone senza quote (solo descrittivo); le rese del pick sono in `PICK_RESA.fuori`. Vedi *Le leghe mai viste* |
-| **League One, League Two, Süper Lig e il 2026/27** | **4879** | League One 1653, League Two 1656, Süper Lig 1018 (2023/24–2025/26; il 2023/24 con una sola stagione alle spalle) e le partite giocate del 2026/27 di dieci leghe (552): batch automatico del `b61`, tutte in copia conforme, Elo identico su ogni file; `/advanced` assente su League One e League Two. Aperte solo per il test dei mercati della matrice con le quote (`b62`) |
+| **Le nove leghe del livello dei gol** | **6472** | Bundesliga austriaca 582, Superligaen 574, Liga MX 667 (2023/24–2025/26), Eliteserien 715, Allsvenskan 715, MLS 1581 (2023–2025), J. League 756 (2024–2025), Liga Profesional 508, Série A brasiliana 374 (2025): batch automatico del `b62`, tutte in copia conforme, Elo identico su ogni file. Aperte solo per il test del livello dei gol (`b63`); le partite dal 2025 anche per la card del primo gol (`b75`) |
+| **Le leghe mai viste del `b74`** | **7645** | 33 file di 25 leghe: A-League, Indian Super League, Saudi Pro League 2023/24–2025/26 e K League 1 2024–2026; il 2026 giocato di dieci leghe a calendario solare; il 2025/26 di undici leghe europee, con una sola stagione alle spalle. Batch automatico del `b73`, tutte in copia conforme, Elo identico su ogni file. Super League 1 greca 2025/26 e Saudi Pro League 2023/24 senza stagione alle spalle: fuori da ogni misura. Guardate per 1X2, soglie, sorpresa, gol, numeri e tabellone senza quote (solo descrittivo); le rese del pick sono in `PICK_RESA.fuori`; anche per la card del primo gol (`b75`). Vedi *Le leghe mai viste* |
+| **League One, League Two, Süper Lig e il 2026/27** | **4879** | League One 1653, League Two 1656, Süper Lig 1018 (2023/24–2025/26; il 2023/24 con una sola stagione alle spalle) e le partite giocate del 2026/27 di dieci leghe (552): batch automatico del `b61`, tutte in copia conforme, Elo identico su ogni file; `/advanced` assente su League One e League Two. Aperte solo per il test dei mercati della matrice con le quote (`b62`); le partite dal 2025 di League One, League Two e Süper Lig anche per la card del primo gol (`b75`) |
 | **Serie A 2023/24 → 2025/26** | **1134** | **il riferimento**: export `b40`, 1134 su 1134 in copia conforme, una stagione per file, storico 30, `lgN` ≥ 760; `/advanced` assente sul 2023/24 (`riserva-k-motore`) |
 | **Premier 2023/24 → 2025/26** | **1135** | **il riferimento**: export `b41`, 1135 su 1135 in copia conforme, una stagione per file, storico 30, `lgN` ≥ 760, `/advanced` su tutte e tre le stagioni |
 | **LaLiga 2023/24 → 2025/26** | **1134** | **prima lega di prova del candidato Elo**: export `b41`, 1134 su 1134 in copia conforme, `lgN` ≥ 759; `/advanced` assente sul 2023/24 |
@@ -1499,7 +1503,8 @@ repository).
 Per un test nuovo queste 25 leghe sono già guardate su:
 - 1X2, soglie e sorpresa;
 - livello dei gol e mercati sui numeri;
-- tabellone senza quote.
+- tabellone senza quote;
+- minuti dei gol (la card del primo gol, `b75`).
 
 **Le rese per lega nello Scanner (`b74`).** `PICK_RESA.fuori` dice, lega per lega:
 - quante partite;
@@ -1701,7 +1706,7 @@ niente. Controlla:
   testo; all'apertura il Comparatore ripristina la copia salvata in localStorage, che puo'
   essere vecchia) e che le build coincidano;
 - **ogni** manopola del motore contro il suo default letto dal sorgente
-  (`cmpEngineDefaults`, 30 manopole dal `b48`, 31 dal `b63` con `GOALS_LEVEL`), piu' `CMP_K_LIST[0]` contro `SHRINK_K`;
+  (`cmpEngineDefaults`, 30 manopole dal `b48`, 31 dal `b63` con `GOALS_LEVEL`, 32 dal `b75` con `PRIMO_GOL_QUOTA`), piu' `CMP_K_LIST[0]` contro `SHRINK_K`;
 - lo storico per squadra contro quello dello Scanner (`window.__ENGINE_LIMIT`);
 - che la partita sia della stagione per cui e' caricato il database.
 
@@ -1755,7 +1760,7 @@ col movimento ridotto (`reducedMotion: 'reduce'`: i numeri che contano mostrereb
 intermedi), legge «In breve» da `#in-breve` (il riquadro, la sorpresa e le proposte sono tre blocchi)
 e misura le voci del dock e del foglio Altro, Squadre in tutte e tre le sotto-schede.
 
-Esito al `b74` (storico 30; uguale al `b73`), a 390px con tutte le 28 card aperte, scheda per scheda e in tutte e tre le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, 0 px):
+Esito al `b75` (storico 30; uguale al `b74`), a 390px con tutte le 28 card aperte, scheda per scheda e in tutte e tre le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, 0 px):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
@@ -1763,7 +1768,7 @@ Esito al `b74` (storico 30; uguale al `b73`), a 390px con tutte le 28 card apert
 | batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 191 | 0 su 122 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
 | `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 128-158 | 74-83 | 0 |
-| `vecchio`: motore `b73` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 su 191 | 1 (il certificato) | 0 |
+| `vecchio`: motore `b74` caricato (controllo) | 0/3, «motore caricato diverso ...» | 2 su 191 (`surv-30`, `surv-45`) | 1 (il certificato) | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -1845,7 +1850,9 @@ lo stesso col `b73`: cambiano le rese per lega di `PICK_RESA`, scritte con `inne
 lega, card delle soglie) o nel prompt, e la lega finta ha l'id della Serie A. Il ramo «fuori dai cinque»
 è provato a parte sulla PitchAPI vera: Al Hilal – Al Ittihad del 10/10/2026 (Saudi Pro League 2026/27,
 243 chiamate), con la nota di lega, «In breve» e il prompt che dicono la resa della lega (nota e prompt col ±2se e le
-stagioni), nessun errore, 0 px in ogni scheda.
+stagioni), nessun errore, 0 px in ogni scheda. Al `b75` il controllo col `b74` vede 2 scritture diverse,
+i due numeri della card del primo gol (`surv-30`, `surv-45`), e il certificato; il numero del mega-prompt
+e il numero chiave di Numeri cambiano con loro, ma non passano da `safeHtml`.
 
 **Il controllo del `b70`.** Da qui «In breve» controlla anche il rischio sorpresa: con le quote dell'1X2
 `#sorpresa-box` deve essere identico a quello rifatto nella pagina con `rischioSorpresa(…,
@@ -3755,6 +3762,7 @@ scrittura nuova, il messaggio iniziale). Il banco la verifica a parte, premendo 
 | `SORPRESA_TAB` | 6 fasce dello sfavorito × accordo / disaccordo fra modello ed Elo: partite, vince lo sfavorito, pareggio, vince il favorito | misurata `b64` | 23.278 partite in copia conforme di 24 leghe (batch `b48`–`b62`, 2023–2026), `strumenti/sorpresa.py`; col disaccordo lo sfavorito vince +2.39 ±1.49 punti oltre il previsto, uguale nelle due metà delle leghe. Non tocca le probabilità: è la frequenza detta dall'avviso. Vedi *L'avviso di sorpresa* |
 | `SORPRESA_QUOTE_TAB` | 5 fasce dello sfavorito con le quote × tutte / accordo / disaccordo fra modello ed Elo: partite, vince lo sfavorito, pareggio, vince il favorito | misurata `b70`, accordo e disaccordo dal `b71` | 11.902 partite di 12 leghe con le quote di chiusura, probabilità con `QUOTE_COMB`; fuori lega la stessa entro 0.3 punti. Il disaccordo modello/Elo pesa poco (30% o più: 30.7 contro 31.5%). Con le soglie di sempre il rischio con le quote non arriva ad ALTO. `strumenti/sorpresa-quote.py`, sezione 5. Vedi *L'avviso di sorpresa*, «Con le quote» |
 | `GOALS_LEVEL` | 1.051 | stimata e registrata `b62`, nel motore `b63` | gol/lambda di ruolo su 16.254 partite di quindici leghe (2023/24–2025/26), stabile per stagione (1.044–1.061) e per fonte degli xG; fuori lega Over 2.5 −2.74‰ (`z = −4.80`) e Goal −2.69‰ (`z = −6.27`), 13 leghe su 15. Test registrato su nove leghe mai aperte, 6.472 partite: −3.80‰ (`z = −2.99`), 6 su 9. Vedi *Il livello dei gol: la regola* |
+| `PRIMO_GOL_QUOTA` / `PRIMO_GOL_FISSA` | `'fissa'` / 0.268, 0.446 | misurata, test registrato `b75` | la quota media dei gol nei primi 30 e 45 minuti su 4.496 partite di dodici leghe dal 2025/26 (`QUOTA_FISSA` di `strumenti/primo-gol.py`); test su 11.633 partite di 36 leghe mai aperte per questa domanda: −7.30‰ (`z = −4.93`), 29 leghe su 36. `'squadre'` torna alla quota dei minuti dei gol delle due squadre. Vedi *La card del primo gol: la regola* |
 | `SOT_PER_GOAL` | 3.25 | misurata | LaLiga 3.19, Premier 3.04, Serie A 3.33. Tocca solo il livello |
 | `GOALS_SOT_CAP` | 0.20 | paracadute misurato | morde nello 0.18% |
 | `OL_BETA` / `T1` / `T2` | 2.056 / −0.475 / +0.671 | stimata `b20` | massima verosimiglianza su 1743 partite, leave-one-league-out, sulla variabile di **ruolo** (media +0.196). Peso 0 |
@@ -4089,7 +4097,7 @@ misurate.
 | Una taratura dell'1X2 per giornata (prime 5, 6–10, resto) (solo descrittivo) | **no** | +0.06‰ fuori lega: le prime giornate non sono più timide né più sicure delle altre |
 | La motivazione di fine stagione (ultime 6 giornate, chi può ancora cambiare zona) (solo descrittivo) | **contro il motore sì, contro il mercato no** | 2.671 partite senza pari: −3.43‰ fuori lega (`z = −2.05`), 15 leghe su 24; dato il mercato −0.03 (`z = −0.26`). Pareggi vicini al previsto. Quando nessuna delle due ha obiettivi si segna di più (3.16 gol a partita, 2.81 quando li hanno tutte e due): l'Over 2.5 esce il 62.6% contro il 59.4% del mercato, ma dato il mercato non aggiunge niente (`z = +0.26`). Vedi *Da fare* |
 | Restringere il totale dei lambda di ruolo, che è troppo largo (pendenza dei gol veri sul lambda totale 0.71) (solo descrittivo) | **vale un millesimo** | Over 2.5 + Goal −0.97‰ (`z = −2.43`), 18 leghe su 24, `c` 0.7 verso la media della lega-stagione presa col senno di poi; per vederlo su partite nuove ne servirebbero circa 30.000. Vedi *Il Dixon-Coles contro i risultati reali* |
-| La quota del tempo dai minuti dei gol delle due squadre (card «Primo gol») (solo descrittivo) | **peggio di una quota fissa** | 4.496 partite di dodici leghe dal 2025/26: gol prima del 30' +3.2‰, Over 0.5 nel primo tempo +2.6‰ (`z` +2.2 e +2.6), peggio in 9 leghe su 12. La card intera vale quanto la frequenza della lega (AUC 0.51). Vedi *La card del primo gol* |
+| La quota del tempo dai minuti dei gol delle due squadre (card «Primo gol») | **peggio di una quota fissa**, sostituita nel `b75` | esplorazione, 4.496 partite di dodici leghe dal 2025/26: gol prima del 30' +3.2‰, Over 0.5 nel primo tempo +2.6‰ (`z` +2.2 e +2.6), peggio in 9 leghe su 12. Test registrato su 11.633 partite di 36 leghe: la quota fissa −7.30‰ (`z = −4.93`), 29 leghe su 36. Vedi *La card del primo gol* |
 | Il disaccordo fra modello ed Elo come segnale di sorpresa | **è il candidato Elo visto da un'altra parte** (`b42`) | fuori lega −0.0037 (`z = −2.47`), prese +0.57 punti, Ligue 1 di nuovo contraria (+0.0020). Nelle 717 partite (14%) in cui modello ed Elo indicano favoriti diversi il pick prende il 37.7% (41.4% col disaccordo in regressione), contro il 55.2% delle altre. A parità di partite giocate la selezione non migliora (top 20%: 72.8 contro 73.2%) |
 
 **Le cose che hanno retto**, in ordine di quanto valgono:
@@ -4109,6 +4117,7 @@ misurate.
 | **Le quote dell'Over e la matrice allineata** (`b57`) | registrata prima, 11.222 partite di undici leghe, fuori lega: Over 2.5 −0.0131 di logloss (`z = −8.49`), Goal −0.0068 (`z = −6.00`), Over 1.5 −0.0093, Over 3.5 −0.0111; 11 leghe su 11 (l'Over 3.5 10). Il livello dei gol, con le quote, torna: Over previsto 54.0% contro 53.9% reale |
 | **Le quote del mercato nell'1X2** (`b54`) | registrata prima, 11.902 partite di dodici leghe, fuori lega: prese 51.04 → 52.99% (+1.95, `z = +7.00`), logloss −0.01772, dodici leghe su dodici. Il guadagno è del mercato: il motore, dato il mercato, pesa meno di zero |
 | **La confidence dell'1X2 uguale alla probabilità** (`b53`) | registrata prima, su quattro leghe mai aperte: Brier −0.00220, `z = −4.09`, quattro leghe su quattro; sulle tre leghe del `b52` −0.00137 (`z = −2.68`) |
+| **La quota fissa del primo gol** (`b75`) | registrata prima, 11.633 partite di 36 leghe mai aperte per questa domanda: somma delle logloss del gol prima del 30' e dell'Over 0.5 nel primo tempo −7.30‰ (`z = −4.93`), 29 leghe su 36; la card diventa calibrata |
 | **L'arbitro nei gialli, Serie A e LaLiga** (non ancora nello Scanner) | registrato prima, 850 partite del 2025/26 e del 2026/27: conteggio dei gialli −18.88‰ (`z = −3.37`), Over 3.5 −13.44‰ (`z = −2.85`), meglio in 2 leghe su 2 |
 | **Lo squilibrio sui tiri in porta** (`b42`) | registrato prima di vedere due leghe e passato su tutte e due; cinque leghe −0.0029 di logloss dell'Over 8.5, `z = −3.10`, positivo in 14 stagioni su 15 |
 
@@ -4654,10 +4663,11 @@ come dice il log-odds del modello, prima dell'inclinazione, con lo stesso totale
 
 ## La card del primo gol
 
-Chiesto dall'utente: «controlliamo la stats primo goal e probabilità over 0.5 primo tempo». Solo
-misura, 10 ottobre 2026: il motore non cambia.
+Chiesto dall'utente: «controlliamo la stats primo goal e probabilità over 0.5 primo tempo». Misura del
+10 ottobre 2026; dal `b75` la card usa una quota fissa, dopo un test registrato (vedi *La card del primo
+gol: la regola*).
 
-**Cosa dice la card.** «Primo gol», nella scheda Numeri, dà due numeri: il gol prima del 30' (`surv-30`)
+**Cosa diceva la card, fino al `b74`.** «Primo gol», nella scheda Numeri, dà due numeri: il gol prima del 30' (`surv-30`)
 e l'Over 0.5 del primo tempo (`surv-45`). Tutti e due sono `1 − exp(−λ·quota)`:
 - λ è la somma dei lambda di ruolo, col livello dei gol del `b63`;
 - la quota è la parte dei gol caduti nei primi 30 o 45 minuti. Si conta sui minuti dei gol delle ultime
@@ -4757,6 +4767,72 @@ lega; calibrazione, AUC e Brier della card di oggi; la regola di Poisson; il min
 `python3 strumenti/primo-gol.py --dal 2025-01-01 batch/nuove batch/livello batch/lontane batch/anno2026
 batch/europa2526` rifà il test (prima con `--scarica`); senza cartelle del test, sulle tre
 dell'esplorazione, rifà l'esplorazione.
+
+**Esito: passa.** I gol delle 23.935 partite sono arrivati tutti; 287 chiamate respinte dalla PitchAPI
+sono state rifatte. Delle 11.694 partite del test se ne misurano 11.633:
+- 11 escono perché i gol degli eventi non tornano col punteggio;
+- 50 perché hanno meno di 50 partite di lega nei 365 giorni prima.
+
+| | quota fissa meno quella delle due squadre | `z` |
+|---|---|---|
+| **somma delle due logloss** (il test) | **−7.30‰** | **−4.93** |
+| gol prima del 30' | −4.42‰ | −4.38 |
+| Over 0.5 nel primo tempo | −2.88‰ | −4.07 |
+
+Meglio in 29 leghe su 36, tutte con almeno 100 partite, e nessuno dei due numeri peggiora. L'effetto è
+più grande che nell'esplorazione (−5.78‰).
+
+Peggio in sette leghe:
+
+| lega | differenza | quota della lega (30' / 45') |
+|---|---|---|
+| J. League | +12.2‰ | 0.263 / 0.420 |
+| HNL croata | +11.8‰ | 0.300 / 0.482 |
+| Superligaen | +9.3‰ | 0.297 / 0.477 |
+| K League 1 | +7.5‰ | 0.215 / 0.396 |
+| 1. Division danese | +6.8‰ | 0.294 / 0.458 |
+| USL Championship | +2.8‰ | 0.281 / 0.439 |
+| Série A brasiliana | +0.3‰ | 0.264 / 0.456 |
+
+*Trovato dopo*: sono quasi tutte leghe la cui quota sta lontana da quella fissa (0.268 e 0.446). La quota
+della lega però non fa meglio della fissa, vedi sotto.
+
+**Descrittivi**, sulle partite del test.
+
+*La card di oggi.*
+- Previsto contro reale: 51.3 contro 51.4% al 30', 70.1 contro 69.7% nel primo tempo.
+- AUC 0.511 e 0.521.
+- È troppo aperta: ricalibrata, la pendenza sul logit è 0.48–0.55 e 0.56–0.64. Al 30', sotto il 40%
+  (in media 37.2) esce il 45.9%, fra il 60 e il 70% (63.0) il 57.1%; nel primo tempo, sopra l'80%
+  (81.6) esce il 73.6%.
+
+*Con la quota fissa.*
+- Previsto contro reale: 52.2 contro 51.4% al 30', 70.5 contro 69.7% nel primo tempo.
+- È calibrata: pendenza sul logit 1.04–1.17 e 0.92–1.01. Al 30': 47.2 → 45.5, 54.0 → 53.8, 61.9 →
+  61.0. Nel primo tempo: 66.7 → 65.4, 73.6 → 73.2.
+- AUC 0.531 e 0.536: l'ordine lo dà solo λ.
+- Contro la frequenza della lega, detta uguale per tutte, −1.86‰ (`z = −1.92`) e −2.32‰ (`z = −2.38`):
+  ora la card aggiunge qualcosa, poco, alla frequenza della lega.
+
+*Il resto.*
+- La quota della lega nei 365 giorni prima vale quanto la fissa (−0.05‰ e −0.21‰ per la fissa, `z`
+  −0.08 e −0.61). Non serve scaricare i minuti dei gol di tutta la lega.
+- La regola di Poisson regge anche qui (1 / 2 / 3 / 4 / 5 gol, primo tempo senza gol contro la
+  binomiale): 58.4 contro 55.6, 31.2 contro 31.0, 15.6 contro 17.2, 8.4 contro 9.6, 4.0 contro 5.3.
+- Il primo gol arriva in mediana al 26'. Nelle partite con gol arriva prima del 30' nel 55.6% e nel
+  primo tempo nel 75.4%. Il 7.5% delle partite finisce senza gol.
+
+**Nel motore (`b75`).** `window.PRIMO_GOL_QUOTA = 'fissa'` (`'squadre'` torna a prima) e
+`PRIMO_GOL_FISSA = [0.268, 0.446]`, con lo stesso λ di prima. Cambiano:
+- i due numeri della card;
+- il numero del mega-prompt;
+- il numero chiave della card in Numeri.
+
+La nota della card dice da dove vengono. I minuti dei gol delle due squadre restano nella card «Quando
+segnano», che li mostra e basta. Il CSV non porta questi numeri. Il Comparatore segue da solo, e il
+certificato conta la manopola nuova. Sulla PitchAPI vera, Juventus – Lazio dell'8 febbraio 2026 (241 chiamate): lo
+Scanner dice 49.8% e 68.3% (col `b74` 47.7% e 66.3%), come lo strumento (`--partita m_4bVd52`). Nessun
+errore, 0 px in ogni scheda.
 
 ## I gol
 
@@ -5603,3 +5679,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b72` | il mega-prompt riletto contro il motore e le misure, chiesto dall'utente: le regole di affidabilità delle statistiche previste rimisurate sulle 23.278 partite dei batch (`strumenti/stat-previste.py`; i duelli aerei, contrasti, intercetti e duelli vinti passano a «non usarle», la PPDA a «reggono bene»); l'Elo che sposta anche il Goal, non solo l'1X2; la quota degli xG da palla inattiva detta col suo nome e N/D senza dati; «Gol per xG» generale nella sezione generale; il tabellone che distingue le rese dei gol senza e con le quote. Nessun numero a schermo cambia: col `b71` 0 scritture diverse su 191, una riga del CSV (il certificato). Due voci nuove in *Da fare*: `STAT_SHRINK_TABLE` troppo stretta (pendenze della differenza 1.3–1.5) e i duelli aerei |
 | `b74` | le rese del pick lega per lega fuori dai cinque campionati, chieste dall'utente dopo tre batch di leghe mai viste (33 file, 7.645 partite in copia conforme, solo descrittivi: pick 48.7%, sopra il 55% 62.1% contro il 66.0% della card, sorpresa e livello dei gol che reggono, le etichette dei numeri che promettono troppo). `PICK_RESA.fuori` da 7 a 38 leghe: le 19 dei batch nuovi e le 12 dei batch del `b61` e del `b62` con almeno 50 partite col pick sopra il 55%. Lì la nota di lega, «In breve» e il prompt dicono quanto esce il pick invece di «lega mai misurata» (nota e prompt anche col ±2se e le stagioni); la card delle soglie dice l'intervallo. Probabilità invariate: col `b73` 0 scritture diverse su 191, una riga del CSV (il certificato) |
 | `b73` | il catalogo delle leghe rifatto da `/leagues` della PitchAPI, dopo la domanda dell'utente sulla Bundesliga: `leghe.json` era la copia di settembre e non aveva il 2026/27 di Bundesliga, Champions ed Europa League (e di India e Thailandia), quindi lo Scanner non poteva analizzarlo. Ora 77 leghe invece di 42, nessuna tolta; le stesse nelle due copie di riserva dentro Scanner e Comparatore. Le 35 leghe nuove non sono misurate; Cina, Finlandia, Irlanda e Romania hanno le quote automatiche (1.736 partite su 1.736 agganciate, nessuna sbagliata). `strumenti/catalogo.js` per rifarlo. Nessun numero cambia: col `b72` 0 scritture diverse su 191, una riga del CSV (il certificato); sulla PitchAPI vera Augsburg – Bayern del 10/10/2026 (Bundesliga 2026/27) e FCSB – Oţelul (Liga I) analizzate con le quote automatiche, 0 px |
+| `b75` | la card «Primo gol» con una quota fissa dei gol nei primi 30 e 45 minuti (0.268 e 0.446) al posto di quella presa dai minuti dei gol delle due squadre, chiesta dall'utente dopo la misura del 10 ottobre (la card non distingueva le partite, AUC 0.51, e la quota delle squadre era rumore). Regola registrata e unita su main prima di scaricare i gol del test; su 11.633 partite di 36 leghe dei batch del `b61`, del `b62` e del `b73` la somma delle due logloss scende di 7.30‰ (`z = −4.93`), 29 leghe su 36, e la card diventa calibrata. Manopola `PRIMO_GOL_QUOTA` (`'squadre'` torna a prima). Col `b74` 2 scritture diverse su 191 (i due numeri della card), una riga del CSV (il certificato); `strumenti/primo-gol.py` |
