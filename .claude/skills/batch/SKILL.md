@@ -67,3 +67,6 @@ se la sessione resta ferma, il computer si spegne e `batch/` sparisce.
   tempo.
 - In AGENTS.md la tabella *Campioni su cui si è misurato* prende una riga, che dice per quale
   domanda quelle leghe sono state aperte. Da lì in poi non sono più vergini per quella domanda.
+- Una lega fuori dai cinque campionati con almeno 50 partite col pick sopra il 55% può entrare in
+  `PICK_RESA.fuori` (dal `b74`, vedi in AGENTS.md *Le leghe mai viste*): è solo testo, ma cambia
+  `scanner.html`, quindi con il permesso dell'utente e con la skill `nuova-build`.
