@@ -1,14 +1,14 @@
-# La card «Primo gol» dello Scanner contro il reale (AGENTS.md, La card del primo gol). Solo misura.
+# La card «Primo gol» dello Scanner contro il reale, e il test della quota fissa (AGENTS.md, La card del primo gol).
 #
 #   python3 strumenti/primo-gol.py --scarica batch48 batch4 batch/2627   scarica i gol delle partite (una chiamata per partita)
 #   python3 strumenti/primo-gol.py batch48 batch4 batch/2627             la misura (l'esplorazione)
 #   python3 strumenti/primo-gol.py --scarica <cartelle del test>         e poi senza --scarica: il test della regola
 #   ... --partita m_4bVd52                                               i due numeri di una partita, da confrontare con lo Scanner
 #
-# La card dice due numeri: il gol prima del 30' e l'Over 0.5 del primo tempo. Lo Scanner li fa cosi':
-# P = 1 - exp(-lambda * quota), con lambda la somma dei lambda di ruolo (col livello dei gol del b63) e quota
-# la parte dei gol che cade nei primi 30 o 45 minuti, contata sui minuti dei gol delle ultime 30 partite di
-# lega delle due squadre (fatti e subiti, 500 giorni, sei fasce da 15'; sotto i 31 gol la quota e' uniforme).
+# La card dice due numeri: il gol prima del 30' e l'Over 0.5 del primo tempo, P = 1 - exp(-lambda * quota), con
+# lambda la somma dei lambda di ruolo (col livello dei gol del b63). Fino al b74 la quota era la parte dei gol
+# caduti nei primi 30 o 45 minuti, contata sui minuti dei gol delle ultime 30 partite di lega delle due squadre
+# (fatti e subiti, 500 giorni, sei fasce da 15'; sotto i 31 gol uniforme); dal b75 e' QUOTA_FISSA.
 # Qui si rifa' uguale dall'archivio in fondo al CSV e dai gol di /matches/{id}/events, e si confronta col
 # minuto vero del primo gol. Partite bersaglio: quelle dei CSV dal --dal (di default il 2025/26 e dopo).
 # I gol si tengono in batch/eventi/ (fuori da git): una partita giocata non cambia.
@@ -23,7 +23,7 @@ PITCH = 'https://pitchapi-proxy.salvatorepampalone-sp.workers.dev'
 CART = 'batch/eventi'
 RIGA_F = "Ambito: livello dei gol (fattore gia' nei lambda di ruolo)"
 GOALS_LEVEL, LIMITE, FINESTRA = 1.051, 30, 500
-QUOTA_FISSA = (0.268, 0.446)  # la quota media dei gol nei primi 30 e 45 minuti sull'esplorazione: il candidato della regola
+QUOTA_FISSA = (0.268, 0.446)  # la quota media dei gol nei primi 30 e 45 minuti sull'esplorazione: PRIMO_GOL_FISSA dello Scanner dal b75
 # senza una stagione alle spalle: fuori da ogni misura (AGENTS.md, Le leghe mai viste)
 ESCLUSI = {'Backtest_V97_GRE_Super_League_1_2025-2026.csv', 'Backtest_V97_KSA_Saudi_Pro_League_2023-2024.csv'}
 a = sys.argv[1:]
@@ -137,7 +137,8 @@ def main():
             sh = b / b.sum() if b.sum() > 30 else np.full(6, 1 / 6)
             if t['id'] == PARTITA:
                 print(f"{t['H']} - {t['A']} del {giorno}: lambda {t['lt']:.4f}, gol nella storia {b.astype(int).tolist()}, "
-                      f"gol prima del 30' {100*(1-math.exp(-t['lt']*sh[:2].sum())):.1f}%, Over 0.5 nel primo tempo {100*(1-math.exp(-t['lt']*sh[:3].sum())):.1f}%")
+                      f"quota delle squadre (fino al b74): gol prima del 30' {100*(1-math.exp(-t['lt']*sh[:2].sum())):.1f}%, Over 0.5 nel primo tempo {100*(1-math.exp(-t['lt']*sh[:3].sum())):.1f}%; "
+                      f"quota fissa (dal b75): {100*(1-math.exp(-t['lt']*QUOTA_FISSA[0])):.1f}% e {100*(1-math.exp(-t['lt']*QUOTA_FISSA[1])):.1f}%")
             # la quota della lega: i gol di tutte le partite di lega nei 365 giorni prima, stessa regola delle fasce
             lg = np.zeros(6); da = (t0 - dt.timedelta(days=365)).isoformat()[:19]
             for m in fin:

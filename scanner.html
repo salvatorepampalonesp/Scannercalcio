@@ -673,7 +673,7 @@ body.vista-partita .dock{display:flex}
     <button type="button" class="btn btn-ghost ab-back" id="btn-nuova" onclick="tornaIndietro()" aria-label="Indietro"><svg class="ic" aria-hidden="true"><use href="#i-arrow-left"/></svg><span>Cambia partita</span></button>
     <span class="ab-tit" id="ab-tit"><b></b><small></small></span>
     <span class="ab-spazio"></span>
-    <span class="tag" id="build-ver">build 0905-b74</span>
+    <span class="tag" id="build-ver">build 0905-b75</span>
   </div>
 </header>
 
@@ -1079,7 +1079,7 @@ body.vista-partita .dock{display:flex}
       <details class="card">
         <summary><div class="section-title"><span class="ico"><svg class="ic" aria-hidden="true"><use href="#i-timer"/></svg></span><span class="t">Primo gol<small>Probabilit&agrave; per tempo di gioco</small></span><span class="scope scope-ruolo">RUOLO &middot; casa/trasferta</span></div><span class="chiave" data-chiave="primo"></span><svg class="ic chev" aria-hidden="true"><use href="#i-caret-down"/></svg></summary>
         <div class="stack">
-          <div class="note">Modello esponenziale calcolato sull'intensit&agrave; di gioco.</div>
+          <div class="note">Dai gol attesi della partita, con la parte dei gol che cade nei primi 30 e 45 minuti uguale per tutte (26.8% e 44.6%): misurato su 11.633 partite di 36 leghe, &egrave; pi&ugrave; giusto che prenderla dai minuti dei gol delle due squadre.</div>
           <div class="inset"><div class="note">Probabilit&agrave; 1&deg; gol prima del 30:00'</div><div style="font-size:26px;font-weight:850;letter-spacing:-.03em;color:var(--purple)" id="surv-30">--%</div></div>
           <div class="inset"><div class="note">Probabilit&agrave; Over 0.5 primo tempo (45:00')</div><div style="font-size:26px;font-weight:850;letter-spacing:-.03em;color:var(--purple)" id="surv-45">--%</div></div>
         </div>
@@ -3682,7 +3682,7 @@ function _tabTesto(V) {
        + senza.map(v => v.nome + ' ' + (v.edge == null ? 'base ignota' : (v.edge >= 0 ? '+' : '') + v.edge.toFixed(1))).join(', ') : '');
 }
 
-window.__SCANNER_BUILD = '0905-b74';
+window.__SCANNER_BUILD = '0905-b75';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -3961,6 +3961,10 @@ window.GOALS_SOT_W  = (typeof window.GOALS_SOT_W  === 'number') ? window.GOALS_S
 // il lambda di ruolo sta sotto i gol veri del 5%: fattore misurato, non il disallineamento di unita'
 // corretto alla radice (AGENTS.md, Il livello dei gol: la regola). Non tocca l'1X2 (lambda completi).
 window.GOALS_LEVEL  = (typeof window.GOALS_LEVEL  === 'number') ? window.GOALS_LEVEL  : 1.051;
+// la stessa quota per tutte le partite batte quella dei minuti dei gol delle due squadre
+// (AGENTS.md, La card del primo gol: la regola); 'squadre' torna a prima
+window.PRIMO_GOL_QUOTA = (typeof window.PRIMO_GOL_QUOTA === 'string') ? window.PRIMO_GOL_QUOTA : 'fissa';
+const PRIMO_GOL_FISSA = [0.268, 0.446];
 
 // media pesata fra due stime del lambda, NON un moltiplicatore: un fattore limitato
 // lascia il rango dominato dal Dixon-Coles e non sposta niente (AGENTS.md, I gol)
@@ -4255,7 +4259,8 @@ async function avviaScanner() {
     const shape = _bSum > 30 ? _bTot.map(v => v/_bSum) : [1/6,1/6,1/6,1/6,1/6,1/6];
     const lamTot = lamH_role + lamA_role;
     const shareTo = (n) => shape.slice(0,n).reduce((a,b)=>a+b,0);
-    const probGoal30 = 1 - Math.exp(-lamTot * shareTo(2)); const probGoalHT = 1 - Math.exp(-lamTot * shareTo(3));
+    const _qFissa = window.PRIMO_GOL_QUOTA === 'fissa';
+    const probGoal30 = 1 - Math.exp(-lamTot * (_qFissa ? PRIMO_GOL_FISSA[0] : shareTo(2))); const probGoalHT = 1 - Math.exp(-lamTot * (_qFissa ? PRIMO_GOL_FISSA[1] : shareTo(3)));
 
     const formH_disp = dH.overall.features.modulo_main || 'N/D'; const formA_disp = dA.overall.features.modulo_main || 'N/D';
     const statsVsFormH_over = getStatsVsFormation(dH, formA_disp, false); const statsVsFormA_over = getStatsVsFormation(dA, formH_disp, false);
