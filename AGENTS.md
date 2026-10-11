@@ -467,8 +467,10 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   - le ultime 3 e 5 della progressione;
   - lo stile del funnel, quasi sempre «Equilibrato».
 
-  Da decidere con l'utente: toglierli, dire a schermo quanto valgono, o correggerli con una regola. Vedi *Le card
-  di Numeri*.
+  L'utente ha scelto di correggerli coi metodi della statistica. Regola registrata l'11 ottobre 2026: restringimenti
+  (James-Stein, Gamma-Poisson, Dirichlet) e ricalibrazioni, uno per card, da provare su 2024/25 delle cinque leghe e
+  2025/26 di sette leghe con `--scritture`. Ordered Logit e trend non hanno un candidato. Vedi *Le card di Numeri: la
+  regola*.
 - [ ] **Doppie chance e gol con confidence**: la tabella è confusa, e sui gol poggia su
   probabilità che discriminano poco.
 - [x] ~~**La card «Primo gol»**~~ — **passato, nello Scanner dal `b75`.** La card usa una quota fissa
@@ -4977,7 +4979,9 @@ quanto la frequenza della lega.
 - Tiri in porta: correlazione 0.13, AUC 0.55–0.56, quanto la frequenza.
 - Gialli: correlazione 0.19, AUC 0.59–0.60, meglio della frequenza (Over 3.5 −16.8‰, `z = −3.2`).
 - Falli: correlazione 0.34, il migliore della card.
-- Almeno un rosso: AUC 0.49–0.51, 30–38‰ peggio della frequenza (`z = +4.8`).
+- Almeno un rosso: AUC 0.50–0.51. Fa 33‰ peggio della frequenza nella colonna generale e 118‰ in quella di
+  ruolo, che è quella evidenziata (`z` +4.4 e +5.5). La colonna di ruolo dice «0.0%» in 149 partite, e in 22 di
+  queste un rosso c'è stato. La prima versione di `numeri.py` contava quegli zeri come dati mancanti e diceva 30–38‰.
 
 *11. Z-score ed efficienza.*
 - Lo z-score correla 0.18 con l'NPxG della partita e 0.16 coi gol. Le etichette separano: «Dom. Att» NPxG 1.55 e
@@ -4997,8 +5001,94 @@ quanto la frequenza della lega.
 *14. Elo e trend.*
 - La differenza Elo ha AUC 0.740. L'Elo da solo è troppo sicuro (pendenza 0.83), il modello timido (1.27): il
   quadro di *Markov, Dixon-Coles ed Elo*.
-- Il trend contro i punti meno attesi: −0.006 e +0.001. Non dice niente: è la voce di *Da fare* sulla pendenza
+- Il trend contro i punti meno attesi: +0.006 e +0.001. Non dice niente: è la voce di *Da fare* sulla pendenza
   dell'Elo, misurata qui solo come numero a schermo.
+
+### Le card di Numeri: la regola
+
+Scritta l'11 ottobre 2026, prima di aprire i dati del test: il batch è partito, e dei suoi file non si è letta
+nessuna riga. Chiesta dall'utente: «proviamo a correggerle tutte, proponi metodi matematici».
+
+**I metodi.** Quasi tutte le card che non reggono hanno lo stesso difetto: mostrano una media di poche partite come
+se fosse una proprietà della squadra. La correzione è il restringimento (empirical Bayes): una stima rumorosa si
+avvicina a un riferimento comune in proporzione al suo rumore.
+- *Il restringimento di James-Stein*: si mostra `m + w·(media − m)`, con `w = τ² / (τ² + s²/n)`. `τ²` è la varianza
+  vera fra le squadre, `s²/n` il rumore di una media di `n` partite, tutte e due stimate coi momenti.
+- *Gamma-Poisson* per un tasso di eventi rari: `(eventi + α·m) / (partite + α)`.
+- *Dirichlet* per una distribuzione: `(conteggi + α·forma) / (n + α)`.
+- *Ricalibrazione logistica* per una probabilità con un livello o una pendenza sbagliati.
+
+Due card non hanno un candidato:
+- *L'Ordered Logit* sulle cinque leghe 2023/24–2025/26 è già calibrato: ricalibrato fuori lega fa −0.1‰. È più
+  debole del verdetto perché guarda solo gli NPxG, e nessuna ricalibrazione glielo toglie.
+- *Il trend dell'Elo* non prevede niente. Sulle 12 leghe (11.927 partite), dato il verdetto, la pendenza
+  `penH − penA` aggiunge −0.14‰ fuori lega (`z = −0.58`): un rating che cammina a caso non ha una velocità da
+  stimare.
+
+**I candidati**, tutti fissati in `REGOLA`, in testa a `strumenti/numeri-correzioni.py`. L'esplorazione è sulle
+1.743 partite del 2025/26 dei cinque campionati (`batch/numeri`), e i parametri sono stimati sugli stessi dati,
+tranne il KNN 1X2 (fuori lega). Ogni riga confronta il candidato con quello che lo schermo mostra oggi, appaiato.
+
+| card | candidato | parametri | esplorazione | leghe |
+|---|---|---|---|---|
+| Quando segnano | la stessa forma per tutte (Dirichlet con `α` infinito: da 300 in su vale uguale) | 12.1 / 12.8 / 18.5 / 16.3 / 15.7 / 24.7% | fascia del gol −31.4‰ (`z = −8.5`) | 5 su 5 |
+| Rosso | Gamma-Poisson sui rossi di ogni squadra | `m` 0.0931, `α` 60 | −110.9‰ (`z = −5.3`) | 5 su 5 |
+| Corner | binomiale negativa, `λ = c0 + β·(media della coppia − c0)` | `c0` 9.59, `β` 0.643, `k` 57.2 | Over 8.5 + 9.5 + 10.5 −12.0‰ (`z = −1.3`) | 3 su 5 |
+| Cecchino (xGOT − NPxG) | James-Stein | `m` 0.137, `w` 0.270 | errore quadratico `z = −5.2` | 5 su 5 |
+| Quota da palla inattiva | rapporto delle somme sulle stesse partite, poi James-Stein | `m` 24.77%, `w` 0.541 | errore quadratico `z = −8.2` | 5 su 5 |
+| Efficienza (gol / xG) | James-Stein: `1 + w·(eff − 1)`, in pratica 1 | `w` 0.035 | gol meno xG `z = −4.1` | 5 su 5 |
+| Recuperi entro 5" | mio + concesso dall'avversario, ristretto verso la media della coppia | `s` 0.279 | differenza casa meno trasferta `z = −10.6` | 5 su 5 |
+| Choke Index | dai recuperi e dal tempo di recupero corretti come sopra | `s` 0.279 e 0.808 | differenza `z = −11.2` | 5 su 5 |
+| Punti contro il modulo | i punti a partita su tutte (restringimento pieno: più si restringe, meglio va) | | punti della partita `z = −10.6` | 5 su 5 |
+| Progressione, ultime 5 e 3 | `media lunga + r·(ultime n − media lunga)` | `r` 0.166 e 0.141 | contro la media lunga −0.40% e −0.50% (`z` −4.6 e −5.1) | 5 su 5 |
+| Stile del funnel | casa, equilibrio o trasferta, dal baricentro previsto casa meno trasferta | soglia ±1.5 m | gruppi 34 / 31 / 36%, baricentro reale +7.8 / +2.9 / −2.7 m (`z` +10.3 e +11.6) | |
+| Capocannoniere | `1 − exp(−c·λ·(gol + 1) / (gol della squadra + 8))` | `c` 0.723 | contro una frequenza fissa del 18.8% −15.9‰ (`z = −4.8`), AUC 0.616 | 4 su 5 |
+| KNN Goal e Over 2.5 | `σ(a + b·logit)` | `a` 0.200 / 0.210, `b` 0.187 / 0.338 | −31.5‰ e −33.7‰ (`z` −5.1 e −5.2) | 4 e 5 su 5 |
+| KNN 1X2 | logistica multinomiale su `log(p1/pX)` e `log(p2/pX)` | `W` e `b` in `REGOLA` | fuori lega −23.6‰ (`z = −7.4`) | 5 su 5 |
+
+Il giudizio dei punti attesi non ha un candidato da provare: la fortuna delle ultime 30 non si ripete (sulle 278
+squadre oltre 2 deviazioni, +0.007 ±0.142 punti oltre il verdetto nel verso della fortuna). La card la direbbe
+«fortuna» o «sfortuna» oltre 2 deviazioni, con «non si ripete»: il test lo riguarda come controllo.
+
+**I dati del test.** Due batch con `--scritture`, motore `b75`:
+- `batch/numeri-prova1`: le cinque leghe 2024/25;
+- `batch/numeri-prova2`: il 2025/26 di Championship, Eredivisie, Liga Portugal, 2. Bundesliga, First Division A,
+  Premiership scozzese e Super League svizzera.
+
+Nessuna di queste partite è mai stata aperta per Numeri. I corner previsti delle cinque leghe 2024/25 sono stati
+guardati nel livello (*Il riferimento di lega vero: misurato*), mai con questo candidato. Il KNN 1X2 si prova sui
+CSV di tutti i batch, tolte le cinque leghe 2023/24–2025/26 di `batch48` e i due file senza una stagione alle
+spalle. Il KNN, in quei CSV, non è mai stato guardato.
+
+**Il metro.** Per ogni card, la perdita del candidato meno quella del numero di oggi, appaiata: logloss per le
+probabilità, errore quadratico per i numeri. **Passa** se scende con `z ≤ −2` sull'insieme e in più di metà delle
+leghe con almeno 50 osservazioni. Due eccezioni:
+- lo stile passa se ogni gruppo ha almeno il 20% delle partite e il baricentro reale separa i gruppi vicini con
+  `z ≥ 2`;
+- la fortuna è un controllo: la frase «non si ripete» è confermata se i punti oltre il verdetto, nel verso della
+  fortuna, stanno entro ±2se da zero.
+
+`python3 strumenti/numeri-correzioni.py --prova batch/numeri-prova1 batch/numeri-prova2 --csv batch48 batch4
+batch/nuove batch/livello batch/lontane batch/anno2026 batch/europa2526 batch/2627` rifà il test; senza `--prova`
+rifà l'esplorazione.
+
+**Se passano.** Ogni card che passa entra nello Scanner col suo candidato, in una build nuova col banco:
+- *Quando segnano*: per ogni fascia, la probabilità di almeno un gol nella partita, `1 − exp(−λ·quota)`; i
+  conteggi delle squadre restano sotto, come storico;
+- *Rosso*: tutte e due le colonne col Gamma-Poisson, ognuna coi rossi del suo campione;
+- *Corner*: il totale e le linee Over col `λ` ristretto;
+- *Cecchino, palla inattiva, efficienza*: il numero ristretto. Le frasi si accendono sul numero ristretto, con le
+  soglie di oggi;
+- *Recuperi e Choke Index*: i valori della partita, con quello che l'avversario concede;
+- *Modulo*: i punti a partita su tutte, con accanto quante partite contro quel modulo;
+- *Progressione*: le ultime 5 e 3 ristrette;
+- *Stile*: «la casa gioca più alta», «equilibrio», «la trasferta gioca più alta»;
+- *Punti attesi*: «fortuna» o «sfortuna» con «non si ripete», se il controllo lo conferma;
+- *Capocannoniere*: accanto a ognuno dei tre marcatori, la probabilità che segni;
+- *KNN*: le probabilità ricalibrate, nella card e nel CSV.
+
+Le card che non passano restano come sono, e questa sezione dice perché. Ordered Logit e trend li decide
+l'utente.
 
 ## I gol
 

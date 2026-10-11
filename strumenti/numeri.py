@@ -60,6 +60,7 @@ def n0(h):
     if not t or t.startswith('N/D') or t.startswith('--') or t.startswith('N/A'): return None
     v = numeri(t); return v[0] if v else None
 def pc(h): v = n0(h); return None if v is None else v / 100
+def vnan(v): return np.nan if v is None else v   # lo zero e' un valore: «0.0%» a schermo conta
 def celle(h):
     righe = re.findall(r'<tr[^>]*>(.*?)</tr>', h or '', re.S)
     return [[testo(c).strip() for c in re.findall(r'<t[dh][^>]*>(.*?)</t[dh]>', r, re.S)] for r in righe]
@@ -151,19 +152,19 @@ EV = {'1': ESITO == 0, 'x': ESITO == 1, '2': ESITO == 2, '1x': ESITO != 2, 'x2':
       'gg': (GH > 0) & (GA > 0), 'ov': TOT > 2}
 for k, nome in (('1', '1'), ('x', 'X'), ('2', '2'), ('1x', '1X'), ('x2', 'X2'), ('12', '12'), ('gg', 'Goal'), ('ov', 'Over 2.5')):
     for amb in ('over', 'role'):
-        bin_(f'{nome} {"generale" if amb == "over" else "ruolo"}', [pc(g['W'].get(f'p{k}-{amb}' if k not in ('gg', 'ov') else f'{k}-{amb}')) or np.nan for g in GIRI], EV[k], LG)
+        bin_(f'{nome} {"generale" if amb == "over" else "ruolo"}', [vnan(pc(g['W'].get(f'p{k}-{amb}' if k not in ('gg', 'ov') else f'{k}-{amb}'))) for g in GIRI], EV[k], LG)
 print('  doppie chance, Goal e Over del Dixon-Coles e del KNN:')
 for pre, nome in (('mdl-dc', 'DC'), ('mdl-knn', 'KNN')):
     for k, ev in (('1x', '1x'), ('x2', 'x2'), ('12', '12'), ('gg', 'gg'), ('ng', None), ('ov', 'ov'), ('un', None)):
         y = EV[ev] if ev else (~EV['gg'] if k == 'ng' else ~EV['ov'])
-        bin_(f'{nome} {k.upper()}', [pc(g['W'].get(f'{pre}-{k}')) or np.nan for g in GIRI], y, LG)
+        bin_(f'{nome} {k.upper()}', [vnan(pc(g['W'].get(f'{pre}-{k}'))) for g in GIRI], y, LG)
 print('  le confidence (il numero a schermo, da 0 a 100, contro quante volte esce):')
 for k, ev in (('p1', '1'), ('px', 'x'), ('p2', '2'), ('1x', '1x'), ('x2', 'x2'), ('12', '12'), ('gg', 'gg'), ('ov', 'ov')):
-    p = np.array([(n0(g['W'].get('conf-' + k)) or np.nan) / 100 for g in GIRI]); r = bin_(f'confidence {k.upper()}', p, EV[ev], LG)
+    p = np.array([(vnan(n0(g['W'].get('conf-' + k)))) / 100 for g in GIRI]); r = bin_(f'confidence {k.upper()}', p, EV[ev], LG)
 for k, y in (('ng', ~EV['gg']), ('un', ~EV['ov'])):
-    p = np.array([(n0(g['W'].get('conf-' + k)) or np.nan) / 100 for g in GIRI]); bin_(f'confidence {k.upper()}', p, y, LG)
+    p = np.array([(vnan(n0(g['W'].get('conf-' + k)))) / 100 for g in GIRI]); bin_(f'confidence {k.upper()}', p, y, LG)
 pick = np.array([np.argmax([pc(g['W'].get(f'mdl-ens-{s}')) or 0 for s in ('1', 'x', '2')]) for g in GIRI])
-cg = np.array([(n0(g['W'].get('master-conf')) or np.nan) / 100 for g in GIRI])
+cg = np.array([(vnan(n0(g['W'].get('master-conf')))) / 100 for g in GIRI])
 r = bin_('confidence globale (il pick)', cg, (pick == ESITO).astype(float), LG); fasce('confidence globale', cg, (pick == ESITO), [0, .4, .45, .5, .55, .6, .65, .7, 1.01])
 SOGLIE = json.loads(re.search(r'soglie: (\[\[.*?\]\]),', io.open('scanner.html', encoding='utf-8').read()).group(1))
 pp = np.array([max(pc(g['W'].get(f'mdl-ens-{s}')) or 0 for s in ('1', 'x', '2')) for g in GIRI]); ok = pick == ESITO
@@ -352,7 +353,7 @@ for g in GIRI:
     if len(mm) != g['gh'] + g['ga']: y30.append(np.nan); yht.append(np.nan); continue
     y30.append(float(any(m <= 30 for m in mm))); yht.append(float(any(m <= 45 for m in mm)))
 for idp, nome, y in (('surv-30', 'gol prima del 30\'', y30), ('surv-45', 'Over 0.5 nel primo tempo', yht)):
-    p = [pc(g['W'].get(idp)) or np.nan for g in GIRI]; bin_(nome, p, y, LG); fasce(nome, p, y, [0, .4, .5, .6, .7, .8, .9, 1.01])
+    p = [vnan(pc(g['W'].get(idp))) for g in GIRI]; bin_(nome, p, y, LG); fasce(nome, p, y, [0, .4, .5, .6, .7, .8, .9, 1.01])
 
 # ===================================================================================================
 print('\n=== 9. Risultati esatti, handicap e multigol ===')
@@ -407,7 +408,7 @@ for idp, nome, k in (('cor-tot', 'corner totali', 'cor'), ('sot-tot', 'tiri in p
         R = [(g['lega'], n0(g['W'].get(f'{idp}-{amb}')), tot(g, k)) for g in GIRI if n0(g['W'].get(f'{idp}-{amb}')) is not None and tot(g, k) is not None]
         cont(f'{nome} ({"generale" if amb == "over" else "ruolo"})', col(R, 1), col(R, 2), np.array([r[0] for r in R]))
 for amb in ('over', 'role'):
-    p = [pc(g['W'].get(f'red-tot-{amb}')) or np.nan for g in GIRI]
+    p = [vnan(pc(g['W'].get(f'red-tot-{amb}'))) for g in GIRI]
     y = [float(tot(g, 'red_cards') > 0) if tot(g, 'red_cards') is not None else np.nan for g in GIRI]
     bin_(f'almeno un rosso ({"generale" if amb == "over" else "ruolo"})', p, y, LG)
 ML = collections.defaultdict(list)
@@ -479,15 +480,15 @@ for amb, nome in (('ov', 'generale'), ('ro', 'ruolo')):
 
 # ===================================================================================================
 print('\n=== 14. Elo e trend ===')
-de = np.array([(n0(g['W'].get('elo-h-ov')) or np.nan) - (n0(g['W'].get('elo-a-ov')) or np.nan) for g in GIRI])
+de = np.array([(vnan(n0(g['W'].get('elo-h-ov')))) - (vnan(n0(g['W'].get('elo-a-ov')))) for g in GIRI])
 k = (ESITO != 1) & ~np.isnan(de)
 print(f'   differenza Elo (casa meno trasferta), sulle {k.sum()} partite senza pari: AUC della vittoria casa {auc_lega(de[k], (ESITO[k]==0).astype(float), LG[k]):.3f}')
 k12 = ESITO != 1
 for kk, nome in (('lgElo', 'l\'Elo da solo'), ('lgModel', 'il modello da solo')):
     lg_ = np.array([g['csv'].get(kk) if g['csv'].get(kk) is not None else np.nan for g in GIRI])
     bin_(f'1 contro 2 secondo {nome} (riquadro «Come entra»)', 1 / (1 + np.exp(-lg_[k12])), (ESITO[k12] == 0).astype(float), LG[k12])
-tr = np.array([(n0(g['W'].get('elo-h-tr')) or np.nan) - (n0(g['W'].get('elo-a-tr')) or np.nan) for g in GIRI])
-res = np.array([punti(g, 'h') - (ep_master(g, 'h') or np.nan) for g in GIRI])
+tr = np.array([(vnan(n0(g['W'].get('elo-h-tr')))) - (vnan(n0(g['W'].get('elo-a-tr')))) for g in GIRI])
+res = np.array([punti(g, 'h') - (vnan(ep_master(g, 'h'))) for g in GIRI])
 cont('trend, casa meno trasferta, contro punti casa meno attesi', tr, res, LG, livello=False)
 R = lati(lambda g, l: (n0(g['W'].get(f'elo-{l}-tr')), punti(g, l) - ep_master(g, l)) if n0(g['W'].get(f'elo-{l}-tr')) is not None and ep_master(g, l) is not None else None)
 cont('trend di una squadra contro i suoi punti meno attesi', col(R, 1), col(R, 2), np.array([r[0] for r in R]), livello=False)
