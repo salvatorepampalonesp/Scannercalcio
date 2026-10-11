@@ -658,6 +658,13 @@ matrice con le quote: la regola*. Le quote del Goal (Footiqo, 1xBet, cinque camp
 niente: la matrice allineata ordina il Goal meglio della sua quota, che ne correggerebbe solo il livello
 (−1.7‰, `z = −1.73`). Vedi *Le quote del Goal: la regola*.
 
+**Il motore contro il mercato** (misura dell'11 ottobre 2026). Su ogni mercato quotato (1X2, Over/Under da 0.5 a 4.5,
+handicap asiatico, Goal) il mercato sta più vicino al vero del motore, e dato il mercato il motore non aggiunge niente.
+Giocare la favorita del mercato alla chiusura rende −3.1% della posta, il pick del motore −5.8%; dove i due non sono
+d'accordo la favorita vince il 42.7%, il pick del motore il 26.1%. Il valore del motore sta dove le quote non ci sono:
+le 43 leghe senza quote automatiche, i gialli (con l'arbitro, in Serie A e LaLiga), falli, tiri, i giocatori. Vedi *Il
+motore contro il mercato*.
+
 **Battere il bookmaker** (ricerca registrata, `b58`): con questi dati no. Il mercato non va dove dice
 il motore; giocare il motore alle quote di qualche giorno prima perde in CLV (−6.5% alla media, −1.3%
 al prezzo migliore); il prezzo migliore contro il consenso sembra valere solo col CLV calcolato in
@@ -3039,6 +3046,61 @@ sotto il nome. Cancellate le quote torna il tabellone del motore. `window.__VERD
 motore (lo legge il Comparatore); quello con le quote sta in `window.__VERDETTI_QUOTE`. Con le sole
 quote dell'Over il tabellone resta del motore: il test aveva sempre anche l'1X2.
 
+### Il motore contro il mercato
+
+Chiesto dall'utente: «cosa aggiunge il motore? Che valore aggiunto mi dà rispetto a giocare la quotata meglio?».
+Solo descrittivo, 11 ottobre 2026. `python3 strumenti/motore-mercato.py` rifà tutto in una ventina di minuti.
+
+**Il metro**, lo stesso su ogni mercato che ha una quota:
+- chi sta più vicino al vero (logloss), e quante volte esce il lato più probabile di ciascuno;
+- cosa aggiunge il motore dato il mercato: motore + mercato contro il mercato ricalibrato, stimati fuori lega, e il
+  peso del motore in una logistica col mercato;
+- quando motore e mercato non sono d'accordo sul lato, chi ha ragione;
+- quanto rende alla quota di chiusura giocare sempre la favorita del mercato, sempre il lato del motore, o il lato del
+  motore solo dove il mercato dice il contrario.
+
+Il motore è quello di oggi: 1X2 dal ramo completo, gli altri mercati dalla matrice di ruolo col livello dei gol del
+`b63` (aggiunto sui CSV che non lo hanno; la matrice si rifà dal CSV entro 0.072 punti). I campioni:
+- le undici leghe coi file principali di football-data, 2023/24–2025/26, quote di chiusura medie (`AvgC`);
+- League One, League Two, Süper Lig 2023/24–2025/26 e il 2026/27 di dieci leghe, le stesse quote;
+- i cinque campionati con le quote di chiusura di 1xBet (Footiqo): Goal e Over/Under da 0.5 a 4.5.
+
+| mercato | partite | logloss motore / mercato | il motore aggiunge, dato il mercato | lato più probabile: motore / mercato | in disaccordo: quanto, ha ragione il motore / il mercato | alla chiusura: favorita / lato del motore / motore contro il mercato |
+|---|---|---|---|---|---|---|
+| 1X2, undici leghe | 11.222 | 0.9911 / 0.9744 | −0.30‰ (`z` −0.89), peso −0.21 ±0.07 | 51.3 / 53.1% | 10.9%: 26.1 / 42.7% | −3.1 / −5.8 / −23.1% |
+| 1X2, campione nuovo | 4.849 | 1.0199 / 1.0048 | +0.65‰ (`z` +1.54) | 48.9 / 51.1% | 14.0%: 28.3 / 43.7% | −1.8 / −4.4 / −17.4% |
+| Over/Under 2.5, undici leghe | 11.222 | 0.6797 / 0.6690 | +0.28‰ (`z` +4.67), peso +0.00 | 56.5 / 58.9% | 22.2%: 44.6 / 55.4% | −3.5 / −4.6 / −8.1% |
+| Over/Under 2.5, campione nuovo | 4.849 | 0.6871 / 0.6756 | +0.42‰ (`z` +1.93) | 54.3 / 56.5% | 27.1%: 46.0 / 54.0% | −5.1 / −5.7 / −7.7% |
+| handicap asiatico, undici leghe | 10.485 | 0.7091 / 0.6926 | −0.23‰ (`z` −0.96), peso −0.15 ±0.05 | 49.4 / 51.7% | 40.9%: 47.1 / 52.9% | −4.7 / −6.3 / −6.6% |
+| handicap asiatico, campione nuovo | 4.528 | 0.7074 / 0.6931 | +0.06‰ (`z` +1.68) | 49.7 / 51.4% | 41.4%: 47.9 / 52.1% | −5.9 / −6.5 / −6.0% |
+| Goal/NoGoal, 1xBet | 5.434 | 0.6871 / 0.6782 | +0.33‰ (`z` +1.46) | 55.0 / 56.7% | 22.7%: 46.1 / 53.9% | −4.1 / −4.4 / −6.0% |
+| Over/Under 1.5, 1xBet | 5.434 | 0.5236 / 0.5161 | +0.13‰ (`z` +1.61) | 77.6 / 77.6% | mai | −2.0 / −2.0 |
+| Over/Under 2.5, 1xBet | 5.434 | 0.6773 / 0.6657 | +0.46‰ (`z` +2.69) | 56.7 / 60.0% | 23.8%: 42.9 / 57.1% | −0.8 / −3.0 / −7.9% |
+| Over/Under 3.5, 1xBet | 5.434 | 0.6098 / 0.5979 | +0.22‰ (`z` +0.86) | 68.5 / 68.4% | 5.0%: 50.6 / 49.4% | −3.2 / −2.1 / +7.7% ±13.0 (271 giocate) |
+
+Over/Under 0.5 e 4.5 dicono lo stesso: il lato è sempre quello, la logloss del mercato è un po' più bassa.
+
+**Cosa vuol dire.**
+- *Su ogni mercato quotato il mercato sta più vicino al vero*, e il motore, dato il mercato, non aggiunge niente: il
+  suo peso è zero o negativo, e la combinazione fa uguale o peggio del mercato ricalibrato da solo.
+- *Giocare la favorita del mercato rende più che giocare il pick del motore*: sull'1X2 −3.1% della posta contro
+  −5.8%, perché la favorita perde solo il margine. Dove i due non sono d'accordo (una partita su nove) la favorita del
+  mercato vince il 42.7%, il pick del motore il 26.1%: seguire il motore lì perde il 23%.
+- *Il mercato sceglie meglio anche le partite*: il 10 / 20 / 30% più sicuro per il motore esce il 76.6 / 71.7 / 67.1%,
+  per il mercato il 79.1 / 73.9 / 69.6%.
+- *Il valore del motore sta dove le quote non ci sono*:
+  - le leghe senza quote automatiche (43 delle 77 del catalogo), dove le sue probabilità sono calibrate (vedi *Le
+    leghe mai viste*);
+  - i mercati che football-data non quota: gialli (AUC 0.59–0.65, meglio della frequenza della lega; con l'arbitro, in
+    Serie A e LaLiga, −18.9‰ sul conteggio), falli, tiri in porta, i giocatori. Corner e rosso, dal `b76`, valgono quanto
+    la frequenza della lega;
+  - il tempo prima che le quote escano.
+- Con le quote, lo Scanner usa già il mercato (`b54`, `b57`, `b58`, `b62`): il valore delle quote arriva all'utente
+  attraverso quella strada, non attraverso il motore.
+
+Se il motore batta il bookmaker sui gialli o sui corner non si può sapere senza le loro quote storiche (vedi *Le
+quote di corner e cartellini: la regola*).
+
 ### Battere il bookmaker: la regola della ricerca
 
 Scritta prima di guardare le quote di prima della partita e le quote massime accanto ai risultati,
@@ -4121,6 +4183,7 @@ misurate.
 | Correggere il livello dei gol col rapporto gol/NPxG (di lega o delle due squadre) invece che con un fattore costante | **non aggiunge niente** (`b63`) | fuori lega su quindici leghe: lega −2.56‰ sull'Over, coppia −2.75‰, costante −2.74‰. Sulle stagioni lo sbaglio segue il rapporto (correlazione −0.69), ma partita per partita il rapporto stimato prima della data non lo prevede meglio di una costante. Vedi *Il livello dei gol: la regola* |
 | La frequenza vera di lega come riferimento di corner, tiri e gialli | **vale poco** | ricostruita dai CSV: previsione −2.2‰ sui corner delle cinque leghe (`z = −1.15`), bene solo dove sbagliava di molto (Bundesliga corner, Eredivisie gialli); tabellone +16.5 → +15.7…+16.2. Vedi *Il riferimento di lega vero: misurato* |
 | Giocare l'Over o l'Under dove il motore si discosta dal mercato | **no** (`b57`) | 11.222 partite, chiusura: scarto 3+ punti 7.354 giocate, −7.5% della posta; 5+ −9.9%; 8+ −8.7%. Il lato più probabile sempre giocato: motore −5.6%, mercato −3.5%, con le quote −3.7% (margine 5.8%) |
+| Giocare il lato del motore invece della favorita del mercato, mercato per mercato (solo descrittivo) | **no** | 1X2, Over/Under 0.5–4.5, handicap asiatico, Goal, su tre campioni (11.222, 4.849 e 5.434 partite): il mercato sta più vicino al vero su ogni mercato, e dato il mercato il motore pesa zero o meno. Sull'1X2 la favorita alla chiusura rende −3.1%, il pick del motore −5.8%, il lato del motore dove il mercato dice il contrario −23.1%. Vedi *Il motore contro il mercato* |
 | Giocare dove il motore dà a un esito più del mercato (le «value bet» del motore) | **no** (`b54`) | 11.902 partite, quote medie di chiusura: motore sopra il mercato di 3+ punti 7.504 giocate, escono il 32.6% contro il 34.2% del mercato, −11.6% della posta; 5+ −15.8%, 8+ −13.0%, 12+ −16.0%. Dato il mercato il motore pesa −0.19 ±0.08 (1 contro 2), negativo in 12 leghe su 12. Anche il pick sempre giocato perde: motore −6.0%, mercato −3.2%, con le quote −2.9% (margine medio 5.7%) |
 | Il Markov al posto del Dixon-Coles, o con più peso nell'ensemble (solo descrittivo) | **sono lo stesso modello** | 23.278 partite di 24 leghe: logloss 1X2 1.0098 tutti e due (lambda completi, dopo l'Elo), log(p1/p2) correlato 0.9998; il Markov dà il pareggio 1.5 punti più alto del Dixon-Coles (26.7% contro 25.5% veri). Peso nell'ensemble piatto fra 0.3 e 0.6, fuori lega contro lo 0.30 +0.05‰ (`z = +0.73`). Elo + Markov a pesi liberi vale quanto Elo + DC (−2.97 contro −2.91‰). Vedi *Markov, Dixon-Coles ed Elo* |
 | Il vantaggio campo di ogni squadra (scarto casa/trasferta della sua differenza reti dalla media di lega, ristretto con `n/(n+20)`), sopra l'1X2 (solo descrittivo) | **no** | 17.337 partite senza pari di 24 leghe, dall'archivio, fuori lega: −0.07‰ (`z = −0.62`), 13 leghe su 24; casa e trasferta separate −0.03‰. Il vantaggio campo vero è quello della lega, che il motore ha già |
