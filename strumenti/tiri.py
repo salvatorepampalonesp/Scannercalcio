@@ -1,6 +1,10 @@
 # I tiri uno per uno e la curva di pressione delle partite di lega dei batch (PitchAPI /shots, /momentum, /events).
 #
-#   python3 strumenti/tiri.py --scarica [cartelle]     # una chiamata per partita e per endpoint, in batch/tiri e batch/eventi
+#   python3 strumenti/tiri.py --scarica [cartelle] [--tetto N]   # una chiamata per partita e per endpoint, in batch/tiri e batch/eventi
+#
+# Le chiamate passano dal worker Cloudflare dello Scanner, che nel piano gratuito ne regge 100.000 al giorno (si
+# azzerano a mezzanotte UTC), anche per l'utente al telefono. --tetto (di default 25.000, ripetizioni comprese) ferma
+# il giro prima: le partite rimaste si riprendono rilanciando.
 #
 # Le partite sono quelle concluse dell'ARCHIVIO DI LEGA in fondo ai CSV delle cartelle (di default tutte quelle dei
 # batch). Ogni partita e' un file JSON compatto in batch/tiri, fuori da git; i gol degli eventi vanno in batch/eventi,
@@ -32,6 +36,7 @@ _CHIAVE = os.environ.get('PITCHAPI_KEY')
 # la PitchAPI respinge (429, Retry-After 1) oltre circa 10 chiamate al secondo: un solo ritmo per tutti i fili
 RITMO = 8.0
 _LOCK, _PROSSIMA = threading.Lock(), [0.0]
+TETTO, _FATTE = 25000, [0]
 def _turno(ritardo=0.0):
     with _LOCK:
         t = max(time.time(), _PROSSIMA[0]) + ritardo; _PROSSIMA[0] = t + 1.0 / RITMO
@@ -41,6 +46,9 @@ def chiama(path):
     h = {'User-Agent': 'Mozilla/5.0'}
     if _CHIAVE: h['X-API-KEY'] = _CHIAVE
     for prova in range(8):
+        with _LOCK:
+            if _FATTE[0] >= TETTO: return None, None
+            _FATTE[0] += 1
         _turno()
         try:
             with urllib.request.urlopen(urllib.request.Request(PITCH + path, headers=h), context=_CTX, timeout=30) as r:
@@ -90,10 +98,12 @@ def scarica(ids, fili=10):
         for i, r in enumerate(ex.map(uno, ids)):
             conto[r] += 1
             if (i + 1) % 1000 == 0: print(f'  {i + 1}/{len(ids)} in {time.time() - t0:.0f}s', dict(conto), flush=True)
-    print('scaricate:', dict(conto), flush=True)
+    print('scaricate:', dict(conto), f'chiamate {_FATTE[0]}', flush=True)
+    if _FATTE[0] >= TETTO: print(f'tetto di {TETTO} chiamate raggiunto: rilanciare dopo la mezzanotte UTC', flush=True)
 
 if __name__ == '__main__' and '--scarica' in sys.argv:
-    cart = [a for a in sys.argv[1:] if not a.startswith('--')] or CARTELLE
+    if '--tetto' in sys.argv: TETTO = int(sys.argv[sys.argv.index('--tetto') + 1])
+    cart = [a for a in sys.argv[1:] if not a.startswith('--') and not a.isdigit()] or CARTELLE
     # in ordine di cartella: le prime (le leghe dove si esplora) arrivano per prime
     ids, visti = [], set()
     for c in cart:

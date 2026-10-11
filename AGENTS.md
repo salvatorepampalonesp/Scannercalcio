@@ -6203,6 +6203,11 @@ node strumenti/batch-auto.js --leghe "ITA:Serie A,Eredivisie,ENG:Championship" -
   `python3 strumenti/elo-archivio.py <csv>` deve dire COINCIDE. I 404 si contano a parte
   («senza dati»): sono le `/advanced` delle stagioni che non le hanno, una chiamata su quattro,
   e quelle righe escono `riserva-k-motore` come a mano.
+- **Le chiamate passano dal worker dello Scanner**, che nel piano gratuito di Cloudflare ne regge
+  100.000 al giorno, azzerate a mezzanotte UTC, e sono le stesse che servono all'utente al telefono.
+  L'11 ottobre 2026 i batch di Numeri (33.124 chiamate) e lo scarico dei tiri e della pressione (circa
+  120.000) le hanno finite. Un giro grosso si divide su più giorni: `strumenti/tiri.py` si ferma da solo a
+  `--tetto` chiamate (di default 25.000), e un batch automatico si stima prima, dal numero delle partite.
 - Il batch vive nel computer della sessione: se la sessione resta inattiva il computer può
   essere spento, e con lui `batch/`. Ogni file finito va mandato all'utente appena salvato.
 - `--scritture` registra anche, per il primo giro di ogni partita, ogni scrittura a schermo del motore
