@@ -454,6 +454,21 @@ qui ha bisogno di dati nuovi, non di rifare questi.
 
 ### 5. UI e pulizie
 
+- [ ] **Le card di Numeri che non reggono.** Misurate l'11 ottobre 2026 sul 2025/26 dei cinque campionati (1.743
+  partite). Non reggono contro il reale:
+  - il KNN (1X2, Goal, Over) e l'Ordered Logit;
+  - corner e rosso;
+  - i minuti di «Quando segnano»;
+  - cecchino, efficienza e quota da palla inattiva;
+  - recuperi e Choke Index fra le due squadre;
+  - i giudizi over/underperformance;
+  - il trend dell'Elo;
+  - i punti contro il modulo avversario;
+  - le ultime 3 e 5 della progressione;
+  - lo stile del funnel, quasi sempre «Equilibrato».
+
+  Da decidere con l'utente: toglierli, dire a schermo quanto valgono, o correggerli con una regola. Vedi *Le card
+  di Numeri*.
 - [ ] **Doppie chance e gol con confidence**: la tabella è confusa, e sui gol poggia su
   probabilità che discriminano poco.
 - [x] ~~**La card «Primo gol»**~~ — **passato, nello Scanner dal `b75`.** La card usa una quota fissa
@@ -583,6 +598,12 @@ primi 30 e 45 minuti (26.8 e 44.6%), invece di quella presa dai minuti dei gol d
 rumore. La regola era registrata prima: su 11.633 partite di 36 leghe −7.30‰ di logloss (`z = −4.93`),
 meglio in 29 leghe su 36. Ora la card è calibrata, ma distingue poco le partite (AUC 0.53): vale poco più
 della frequenza della lega. Vedi *La card del primo gol*.
+
+**Le card di Numeri** (misura dell'11 ottobre 2026). Su 1.743 partite del 2025/26 dei cinque campionati, ogni
+numero delle 14 card contro il reale. Reggono 1X2, confidence, Markov, handicap, risultati esatti, gialli, falli,
+Elo e le medie lunghe delle statistiche (correlazione 0.3–0.5). Goal, Over, multigol totali, tiri in porta e primo
+gol sono calibrati ma valgono quanto la frequenza della lega. Non reggono il KNN, l'Ordered Logit, corner e rosso,
+i minuti dei gol delle squadre, l'efficienza, i giudizi e il trend. Vedi *Le card di Numeri*.
 
 **Il catalogo** (dal `b73`). `leghe.json` e le due copie dentro le pagine sono il catalogo di
 `/leagues` del 10 ottobre 2026: 77 leghe invece di 42, e il 2026/27 di Bundesliga, Champions ed Europa
@@ -758,6 +779,7 @@ non passa mai +7.1. Trascina con sé il `12`.
 | **Le quattro leghe del `b53`** | **3202** | 2. Bundesliga 908, First Division A 931, Premiership scozzese 683, Super League svizzera 680, 2023/24–2025/26: batch automatico del `b52`, 3202 su 3202 in copia conforme, Elo identico su ogni file; `/advanced` assente sul 2023/24 di Scozia e Svizzera. Aperte solo per il test della confidence nuda; il tabellone non è mai stato guardato |
 | **Le tre leghe nuove col `b48`** | **3495** | Championship 1659, Eredivisie 923, Liga Portugal 913, 2023/24–2025/26: batch automatico del `b51` (probabilità del `b48`), 3495 su 3495 in copia conforme, Elo rifatto dall'archivio identico su ogni file; `/advanced` assente sul 2023/24 di Championship e Liga Portugal. La sezione `TABELLONE` non è mai stata guardata |
 | **Le nove leghe del livello dei gol** | **6472** | Bundesliga austriaca 582, Superligaen 574, Liga MX 667 (2023/24–2025/26), Eliteserien 715, Allsvenskan 715, MLS 1581 (2023–2025), J. League 756 (2024–2025), Liga Profesional 508, Série A brasiliana 374 (2025): batch automatico del `b62`, tutte in copia conforme, Elo identico su ogni file. Aperte solo per il test del livello dei gol (`b63`); le partite dal 2025 anche per la card del primo gol (`b75`) |
+| **Le cinque leghe, giro registrato** | **1743** | Il 2025/26 dei cinque campionati col batch del `b75` e `--scritture` (`batch/numeri`): ogni numero a schermo e i valori estratti da ogni partita dello storico, 1.743 su 1.743 in copia conforme, Elo identico su ogni file. Guardate per tutte le card di Numeri. Vedi *Le card di Numeri* |
 | **Le leghe mai viste del `b74`** | **7645** | 33 file di 25 leghe: A-League, Indian Super League, Saudi Pro League 2023/24–2025/26 e K League 1 2024–2026; il 2026 giocato di dieci leghe a calendario solare; il 2025/26 di undici leghe europee, con una sola stagione alle spalle. Batch automatico del `b73`, tutte in copia conforme, Elo identico su ogni file. Super League 1 greca 2025/26 e Saudi Pro League 2023/24 senza stagione alle spalle: fuori da ogni misura. Guardate per 1X2, soglie, sorpresa, gol, numeri e tabellone senza quote (solo descrittivo); le rese del pick sono in `PICK_RESA.fuori`; anche per la card del primo gol (`b75`). Vedi *Le leghe mai viste* |
 | **League One, League Two, Süper Lig e il 2026/27** | **4879** | League One 1653, League Two 1656, Süper Lig 1018 (2023/24–2025/26; il 2023/24 con una sola stagione alle spalle) e le partite giocate del 2026/27 di dieci leghe (552): batch automatico del `b61`, tutte in copia conforme, Elo identico su ogni file; `/advanced` assente su League One e League Two. Aperte solo per il test dei mercati della matrice con le quote (`b62`); le partite dal 2025 di League One, League Two e Süper Lig anche per la card del primo gol (`b75`) |
 | **Serie A 2023/24 → 2025/26** | **1134** | **il riferimento**: export `b40`, 1134 su 1134 in copia conforme, una stagione per file, storico 30, `lgN` ≥ 760; `/advanced` assente sul 2023/24 (`riserva-k-motore`) |
@@ -4834,6 +4856,150 @@ certificato conta la manopola nuova. Sulla PitchAPI vera, Juventus – Lazio del
 Scanner dice 49.8% e 68.3% (col `b74` 47.7% e 66.3%), come lo strumento (`--partita m_4bVd52`). Nessun
 errore, 0 px in ogni scheda.
 
+## Le card di Numeri
+
+Chiesto dall'utente: «controlliamo tutte le schede della tab Numeri per vedere quanto si avvicinano al reale,
+tutte intendo tutte». Solo misura, 11 ottobre 2026: il motore non cambia, e cosa fare lo decide l'utente.
+
+**Come si misura.** Le card di Numeri sono 14, e molti loro numeri non sono nel CSV. Per questo
+`strumenti/batch-auto.js --scritture` fa il batch vero del Comparatore e registra due cose:
+- ogni scrittura a schermo del motore nel primo giro di ogni partita, quello dello Scanner (`scritture.jsonl`);
+- i valori che il motore estrae da ogni partita dello storico (`dettagli.jsonl`, chiave partita|squadra).
+
+Il reale di una partita, per una squadra, è quello che il motore stesso estrae da quella partita quando entra
+nello storico delle partite dopo: stesse fonti, stesse regole. Il campione è il 2025/26 dei cinque campionati
+(`batch/numeri`):
+- 1.743 partite in copia conforme;
+- l'Elo rifatto dall'archivio identico in tutti e 5 i file;
+- 14.591 chiamate;
+- il reale avanzato per tutte e due le squadre in 1.695 partite (manca l'ultima partita di ogni squadra).
+
+`python3 strumenti/numeri.py batch/numeri` rifà tutto in un minuto.
+
+Per ogni numero si guarda:
+- il livello, cioè previsto contro reale;
+- quanto segue il reale partita per partita: correlazione e pendenza dentro la lega, AUC per le probabilità;
+- se fa meglio di un numero uguale per tutte le partite della lega, cioè la media o la frequenza del campione,
+  un riferimento un po' favorito.
+
+Queste partite sono fra quelle su cui sono misurate le soglie del pick: per quelle è un controllo di coerenza,
+non una prova.
+
+**Il quadro**, card per card:
+
+| card | regge | calibrato ma non distingue | non regge |
+|---|---|---|---|
+| Confidence e modelli | 1X2 di Dixon-Coles, Markov ed ensemble; le confidence | Goal e Over 2.5 (generale e ruolo) | KNN e Ordered Logit, il Goal e l'Over del KNN |
+| Qualità del tiro | NPxG, xGOT e Big Chances medi | | xGOT meno NPxG, quota da palla inattiva, due frasi su tre |
+| Non possesso | altezza difensiva | | lunghezza, recuperi e Choke Index fra le due squadre, la frase sulla riaggressione |
+| Funnel offensivo | baricentro, ingressi nell'ultimo terzo, tocchi in area | | penetrazione; lo stile è quasi sempre «Equilibrato» |
+| Punti attesi | i punti a partita, poco | | il giudizio over/underperformance; il capocannoniere segna meno di quanto dicono i suoi gol |
+| Progressione storica | la media lunga | | le ultime 3 e 5 |
+| Quando segnano | | | i minuti delle due squadre valgono quanto una distribuzione piatta |
+| Primo gol | | sì, dal `b75` | |
+| Risultati esatti, handicap, multigol | esatti, handicap, multigol per squadra | multigol totali | |
+| Corner, tiri, cartellini | gialli, falli | tiri in porta | corner, rosso |
+| Z-score ed efficienza | z-score, gol e xG medi | | efficienza (gol / xG) |
+| KNN e moduli | | punti nelle partite simili | punti contro il modulo avversario |
+| Markov | i cinque esiti | | |
+| Elo e trend | la differenza Elo | | il trend |
+
+**I numeri.**
+
+*1. Confidence e modelli.*
+- 1X2: logloss dell'ensemble 0.9958, −73‰ contro la frequenza della lega (`z = −7.8`), pick al 51.2%. Dixon-Coles e
+  Markov, di ruolo e generali, fanno lo stesso (0.996–0.998). Il KNN fa 1.0341 (−35‰) e l'Ordered Logit 1.0248
+  (−44‰): stanno nettamente sotto, e nel verdetto pesano zero.
+- Generale contro ruolo: sull'1X2 uguali. Sul Goal il ruolo prevede 52.3% (reale 53.9%), il generale 48.5%;
+  sull'Over 52.3 e 47.8% (reale 53.1%). Ma il Goal di ruolo ha AUC 0.522 e fa +5.8‰ contro la frequenza della
+  lega, l'Over 0.534 e +0.6‰: in questo campione i mercati gol valgono quanto la frequenza della lega.
+- Il KNN su doppie chance, Goal e Over: dice 1X al 75.7% (reale 69.4%), Goal al 44.6% (53.9%), Over al 44.3%
+  (53.1%), con AUC 0.51–0.54. Fa 36–37‰ peggio della frequenza della lega (`z` +4.3 e +5.3).
+- Le confidence: quelle dell'1X2 sono calibrate (1 42.0 contro 43.9%, X 25.3 contro 25.4%, 2 32.6 contro
+  30.6%). Quelle dei mercati a due esiti stanno entro 2 punti, tranne il 12 (77.9 contro 74.6%). La confidence
+  globale sta entro 4 punti in ogni fascia. Le soglie del pick tornano con la card (≥55%: 65.2 contro 66.0%).
+
+*2. Qualità del tiro* (medie delle ultime 30 contro la partita; correlazione dentro la lega):
+- NPxG 0.34, xGOT 0.28, Big Chances 0.28, Big Chances sprecate 0.20; casa meno trasferta NPxG 0.46. Il livello
+  è giusto.
+- xGOT meno NPxG (il «cecchino») 0.04, quota dei pericoli da palla inattiva 0.07: non si ripetono da una partita
+  all'altra.
+- Le frasi, quando segnalano una squadra, quante volte nella partita quella squadra sta davanti:
+  - «Cecchini»: 53.5% ±3.4;
+  - «Palle inattive»: 52.0% ±2.4;
+  - «Spreco»: 60.3% ±3.0, ma è il volume: chi crea più Big Chances ne spreca di più.
+
+*3. Non possesso.*
+- Altezza difensiva 0.29 (casa meno trasferta 0.41), lunghezza 0.13, recuperi entro 5" 0.20, Choke Index 0.18.
+- Fra le due squadre recuperi e Choke non tengono: casa meno trasferta 0.01 e 0.07.
+- Le frasi: «Riaggressione» 48.6% ±7.5 (177 partite), «Compattezza» 62.9% ±12.3 (62 partite).
+
+*4. Funnel offensivo.*
+- Baricentro 0.38 (casa meno trasferta 0.53), ingressi nell'ultimo terzo 0.50 (0.61), tocchi in area 0.44
+  (0.58), penetrazione 0.16.
+- Lo stile è «Equilibrato» in 1.627 partite su 1.695, «Box-to-Box» in 68, «Dominio vs Muro» mai.
+
+*5. Punti attesi.*
+- Correlazione coi punti della partita: punti a partita veri 0.255, attesi dagli xG 0.270; per riferimento,
+  quelli del verdetto 1X2 0.398.
+- Il giudizio non dice niente. Punti veri meno attesi dal verdetto:
+  - «In linea» −0.03 ±0.05;
+  - «Lieve underperformance» +0.11 ±0.10;
+  - «Lieve overperformance» −0.01 ±0.11;
+  - «significativa» +0.01 e −0.04, ±0.17 e ±0.23.
+- Il primo dei tre marcatori segna nel 18.8% delle partite, contro il 27.2% che danno i suoi gol a partita: è
+  scelto perché ha segnato di più, e non sempre gioca.
+
+*6. Progressione storica.* Per tutte e sei le metriche, più lunga è la media più si avvicina:
+- correlazione da «ultime 3» a «tutte»: conduzioni progressive 0.375 → 0.438, ingressi 0.394 → 0.492, contrasti
+  0.133 → 0.175;
+- le ultime 3 fanno peggio della media della lega su cambi di gioco, contrasti e duelli aerei.
+
+*7. Quando segnano.* La fascia di 15 minuti in cui cadono i gol della partita (4.682 gol):
+- coi minuti delle due squadre (chi segna e chi subisce) vale quanto una distribuzione piatta (−1.1‰);
+- fa 34‰ peggio della forma della lega (`z = −9.3`).
+
+La forma vera è 12.1 / 12.8 / 18.5 / 16.3 / 15.7 / 24.7%: con circa 60 gol per squadra in sei fasce, il rumore
+si mangia tutta la forma.
+
+*8. Primo gol* (`b75`, quota fissa): calibrato (52.4 contro 50.7%, 70.8 contro 70.4%), AUC 0.51 e 0.54, vale
+quanto la frequenza della lega.
+
+*9. Risultati esatti, handicap, multigol.*
+- I sei risultati mostrati danno insieme il 55.7%, ed esce uno di loro il 56.7%; uno per uno entro 1.7 punti.
+- Handicap calibrato su tutte le linee, AUC 0.70.
+- Multigol totali calibrati ma AUC 0.51–0.54, un filo peggio della frequenza. Multigol per squadra AUC
+  0.53–0.64; lo 0-1 batte la frequenza (`z` −3.8 e −2.8).
+
+*10. Corner, tiri e cartellini.*
+- Corner: totale correlato 0.07, linee Over con AUC 0.51–0.53, previste 3–4 punti sopra il vero (Over 8.5
+  63.4 contro 59.5%), 7.6‰ peggio della frequenza (`z = +2.1`).
+- Tiri in porta: correlazione 0.13, AUC 0.55–0.56, quanto la frequenza.
+- Gialli: correlazione 0.19, AUC 0.59–0.60, meglio della frequenza (Over 3.5 −16.8‰, `z = −3.2`).
+- Falli: correlazione 0.34, il migliore della card.
+- Almeno un rosso: AUC 0.49–0.51, 30–38‰ peggio della frequenza (`z = +4.8`).
+
+*11. Z-score ed efficienza.*
+- Lo z-score correla 0.18 con l'NPxG della partita e 0.16 coi gol. Le etichette separano: «Dom. Att» NPxG 1.55 e
+  gol 1.80, «→ Eq.» 1.25 e 1.35, «Dom. Dif» 1.09 e 1.17.
+- Gol e xG medi correlano 0.27 e 0.33.
+- L'efficienza (gol / xG) contro gol meno xG della partita: 0.01. Non si ripete.
+
+*12. KNN e moduli.*
+- I punti contro il modulo avversario correlano 0.18 e fanno peggio della media della lega (−9.7%, di ruolo
+  −20.6%), contro lo 0.255 dei punti a partita su tutte. Il modulo mostrato è quello giocato nel 56.6% delle
+  partite.
+- I punti nelle partite simili del KNN correlano 0.25, quanto i punti a partita.
+
+*13. Markov.* I cinque esiti sono calibrati: −82‰ contro la frequenza (`z = −7.7`), vittoria di 2+ in casa AUC
+0.71.
+
+*14. Elo e trend.*
+- La differenza Elo ha AUC 0.740. L'Elo da solo è troppo sicuro (pendenza 0.83), il modello timido (1.27): il
+  quadro di *Markov, Dixon-Coles ed Elo*.
+- Il trend contro i punti meno attesi: −0.006 e +0.001. Non dice niente: è la voce di *Da fare* sulla pendenza
+  dell'Elo, misurata qui solo come numero a schermo.
+
 ## I gol
 
 `sum_sot` (somma dei tiri in porta previsti delle due squadre) entra come **seconda stima del
@@ -5391,6 +5557,10 @@ node strumenti/batch-auto.js --leghe "ITA:Serie A,Eredivisie,ENG:Championship" -
   e quelle righe escono `riserva-k-motore` come a mano.
 - Il batch vive nel computer della sessione: se la sessione resta inattiva il computer può
   essere spento, e con lui `batch/`. Ogni file finito va mandato all'utente appena salvato.
+- `--scritture` registra anche, per il primo giro di ogni partita, ogni scrittura a schermo del motore
+  (`scritture.jsonl`), e i valori che il motore estrae da ogni partita dello storico (`dettagli.jsonl`). Lo
+  `scanner.html` servito è strumentato come nel banco: il CSV resta in copia conforme. Serve a misurare quello che
+  il CSV non porta (vedi *Le card di Numeri*).
 - `--finto` sostituisce la PitchAPI con la lega finta del banco (`banco-parita.js` si può
   importare, ed esporta la sua `api`). Verificato così: il CSV di Serie A 2025/26 finto è
   identico riga per riga a quello del batch del banco, tranne l'ora di generazione, e l'Elo
