@@ -176,6 +176,10 @@ details.cosa>div{font-size:12.5px;line-height:1.6;color:var(--n-500);padding-bot
   <section class="scarica" id="scarica" aria-labelledby="sc-tit">
     <h2 id="sc-tit">Le statistiche di una partita</h2>
     <p class="sc-desc">Tutto quello che la PitchAPI sa di una partita, in un file da aprire con Excel. Per controllare a mano i numeri dello Scanner.</p>
+    <div class="campo">
+      <label for="sc-chiave">API key (PitchAPI)</label>
+      <input id="sc-chiave" type="password" autocomplete="off" spellcheck="false" placeholder="La stessa dello Scanner">
+    </div>
     <div class="campi-3">
       <div><label for="sc-paese">Paese</label><select id="sc-paese"><option value="">Caricamento</option></select></div>
       <div><label for="sc-lega">Lega</label><select id="sc-lega" disabled><option value="">Scegli il paese</option></select></div>
@@ -234,6 +238,9 @@ details.cosa>div{font-size:12.5px;line-height:1.6;color:var(--n-500);padding-bot
     ['giocatori avanzate', '/advanced/players'], ['formazioni', '/lineups'], ['eventi', '/events'], ['tiri', '/shots'],
     ['pressione', '/momentum'], ['scontri diretti', '/h2h'], ['rete dei passaggi', '/advanced/network'], ['mappe di calore', '/heatmaps']];
   let CATALOGO = [], PARTITE = [], SCARICATO = null;
+  const rifiuto = e => e === 401 || e === 403
+    ? `La PitchAPI non accetta la API key (${e}). Controlla di averla scritta giusta.`
+    : `La PitchAPI non ha risposto (${e}). Riprova tra qualche minuto.`;
   const stato = (html, cls, frazione) => {
     const el = $('sc-stato'); el.className = 'stato' + (cls ? ' ' + cls : '');
     el.innerHTML = html + (frazione != null ? `<span class="barra"><i style="transform:scaleX(${frazione.toFixed(3)})"></i></span>` : '');
@@ -242,12 +249,16 @@ details.cosa>div{font-size:12.5px;line-height:1.6;color:var(--n-500);padding-bot
     sel.innerHTML = ''; sel.add(new Option(vuota, ''));
     voci.forEach(([v, t]) => sel.add(new Option(t, v)));
   };
+  const CHIAVE = 'pitchapi_key';
+  try { const k = localStorage.getItem(CHIAVE); if (k) $('sc-chiave').value = k; } catch (e) {}
+  const chiave = () => $('sc-chiave').value.trim();
   const chiama = async (path) => {
     for (let prova = 0; prova < 3; prova++) {
       try {
-        const r = await fetch(PITCH_BASE + path, { headers: { 'X-API-KEY': '' } });
+        const r = await fetch(PITCH_BASE + path, { headers: { 'X-API-KEY': chiave() } });
         if (r.status === 429) { await new Promise(f => setTimeout(f, 1200 * (prova + 1))); continue; }
         if (!r.ok) return { errore: r.status };
+        try { localStorage.setItem(CHIAVE, chiave()); } catch (e) {}
         return { dati: await r.json() };
       } catch (e) { if (prova === 2) return { errore: 'rete' }; await new Promise(f => setTimeout(f, 800)); }
     }
@@ -288,12 +299,13 @@ details.cosa>div{font-size:12.5px;line-height:1.6;color:var(--n-500);padding-bot
   $('sc-stagione').addEventListener('change', async () => {
     const lid = $('sc-lega').value, s = $('sc-stagione').value;
     if (!lid || !s) return svuotaPartite('Scegli la stagione');
+    if (!chiave()) { svuotaPartite('Scrivi la API key'); stato('Scrivi la API key della PitchAPI, la stessa dello Scanner: senza, la PitchAPI non risponde.', 'err'); $('sc-chiave').focus(); return; }
     svuotaPartite('Carico le partite');
     stato('Carico le partite della stagione...');
     const lista = d => { if (!d) return []; const x = d.data !== undefined ? d.data : d; return Array.isArray(x) ? x : (x && Array.isArray(x.matches) ? x.matches : []); };
     const r = await chiama(`/leagues/${lid}/matches?season=${encodeURIComponent(s)}&status=all`);
     const L = lista(r.dati);
-    if (!L.length) { svuotaPartite('Nessuna partita'); stato(r.errore ? `La PitchAPI non ha risposto (${r.errore}). Riprova tra qualche secondo.` : 'La PitchAPI non ha partite per questa stagione.', 'err'); return; }
+    if (!L.length) { svuotaPartite('Nessuna partita'); stato(r.errore ? rifiuto(r.errore) : 'La PitchAPI non ha partite per questa stagione.', 'err'); return; }
     PARTITE = L.filter(m => m && m.id && m.home_team && m.away_team && !['postponed', 'cancelled'].includes(m.status))
       .sort((a, b) => String(a.time_utc).localeCompare(String(b.time_utc)));
     elenca(); $('sc-partita').disabled = false; $('sc-cerca').disabled = false;
@@ -301,6 +313,7 @@ details.cosa>div{font-size:12.5px;line-height:1.6;color:var(--n-500);padding-bot
     stato(`<b>${PARTITE.length}</b> partite in archivio, ${giocate} giocate. Scegline una.`);
   });
   $('sc-cerca').addEventListener('input', elenca);
+  $('sc-chiave').addEventListener('change', () => { if ($('sc-stagione').value && !PARTITE.length) $('sc-stagione').dispatchEvent(new Event('change')); });
   $('sc-partita').addEventListener('change', () => {
     SCARICATO = null; const ok = !!$('sc-partita').value; $('sc-csv').disabled = $('sc-json').disabled = !ok;
     if (ok) stato('Pronta: 12 chiamate alla PitchAPI, qualche secondo.');
@@ -333,10 +346,11 @@ details.cosa>div{font-size:12.5px;line-height:1.6;color:var(--n-500);padding-bot
   };
   const fine = (R, cosa) => {
     const n = Object.keys(R.risposte).length, manca = Object.entries(R.errori);
+    if (!n) { SCARICATO = null; return stato('Nessuna risposta. ' + rifiuto(manca.length ? manca[0][1] : 'rete'), 'err'); }
     stato(`Fatto: ${cosa}, ${n} risposte su ${PEZZI.length}.` + (manca.length ? ` Mancano ${manca.map(([k, v]) => `${k} (${v})`).join(', ')}.` : ''), manca.length === PEZZI.length ? 'err' : 'ok');
   };
-  $('sc-csv').addEventListener('click', async () => { const R = await scarica(); if (!R) return; salva('﻿' + CSV(R), nomeFile(R, 'csv'), 'text/csv;charset=utf-8'); fine(R, 'CSV salvato'); });
-  $('sc-json').addEventListener('click', async () => { const R = await scarica(); if (!R) return; salva(JSON.stringify({ partita: R.id, risposte: R.risposte, errori: R.errori }, null, 1), nomeFile(R, 'json'), 'application/json'); fine(R, 'JSON salvato'); });
+  $('sc-csv').addEventListener('click', async () => { const R = await scarica(); if (!R) return; if (Object.keys(R.risposte).length) salva('﻿' + CSV(R), nomeFile(R, 'csv'), 'text/csv;charset=utf-8'); fine(R, 'CSV salvato'); });
+  $('sc-json').addEventListener('click', async () => { const R = await scarica(); if (!R) return; if (Object.keys(R.risposte).length) salva(JSON.stringify({ partita: R.id, risposte: R.risposte, errori: R.errori }, null, 1), nomeFile(R, 'json'), 'application/json'); fine(R, 'JSON salvato'); });
 
   // --- il CSV: una sezione per ogni risposta, punto e virgola, decimali con la virgola ---
   const cella = v => {
