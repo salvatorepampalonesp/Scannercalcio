@@ -3,3 +3,8 @@
 __pycache__/
 /batch4/
 graphify-out/
+# impeccable: l'eseguibile lo scarica il suo lanciatore, gli hook e la cache restano locali
+.claude/skills/impeccable/scripts/bin/
+.claude/settings.local.json
+.impeccable/config.local.json
+.impeccable/hook.cache.json

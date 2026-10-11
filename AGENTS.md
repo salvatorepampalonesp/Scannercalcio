@@ -110,6 +110,31 @@ vedi *Le quote automatiche*); se non ci sono, le scrive l'utente. Per misurarle 
   segue taste** (`redesign-existing-projects` e `design-taste-frontend`, dal `b78`): chi la tocca rilegge
   le loro regole, e in *La grafica dello Scanner*, «Cosa cambia nel `b78`», quali valgono qui. `graphify` scrive in `graphify-out/`, fuori
   da git.
+- **impeccable** (`pbakaus/impeccable`, 4.5.2, Apache 2.0). L'ha installato l'utente l'11 ottobre 2026 con
+  `npx impeccable install`, e si aggiorna con `npx impeccable update`, non con `skills-lock.json`. Ha messo:
+  - la skill `impeccable`, coi suoi comandi (audit, critique, polish, typeset, layout, harden…);
+  - quattro agenti `impeccable-*` in `.claude/agents/`;
+  - un rilevatore di difetti grafici: `.claude/skills/impeccable/scripts/impeccable detect <file>`.
+
+  Cosa resta fuori da git:
+  - *L'eseguibile* (20 MB) non è nel repository: il lanciatore lo scarica da GitHub al primo uso e lo verifica
+    con lo sha256. L'installazione e l'aggiornamento vogliono `impeccable.style` fra i domini permessi
+    dell'ambiente.
+  - *Gli hook* (il rilevatore dopo ogni modifica di un file grafico e a fine turno) stanno in
+    `.claude/settings.local.json`, locale. In una sessione cloud nuova non ci sono.
+
+  Dove dice altro da taste, sulla grafica vale taste. Per esempio il rilevatore segna Geist come carattere
+  troppo usato, e taste l'ha scelto. Dove dice altro da questo file, vale questo file.
+
+  Il primo giro del rilevatore, sul `b78`, ha trovato (nessuno corretto):
+  - nella home 2 segnalazioni: l'icona in un riquadro sopra il titolo, e Geist;
+  - nello Scanner 24: 14 card senza margine interno, 6 contrasti bassi, 2 testi sotto i 12 px, Geist e Geist
+    Mono. Più un avviso su 44 lineette lunghe, ma sono i `--` dei segnaposto: lineette lunghe a schermo non
+    ce ne sono;
+  - nel Comparatore 7: contrasti bassi e testo a 11 px. Uno dei contrasti, a 1.3:1 sul segno dei passi
+    (`.step-n`), è falso: il numero lì ha `font-size:0`.
+
+  `/impeccable init`, che scrive PRODUCT.md e DESIGN.md, non è stato lanciato.
 
 ## Da fare
 
