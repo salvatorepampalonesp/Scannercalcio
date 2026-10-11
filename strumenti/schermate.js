@@ -16,6 +16,8 @@
 // --out: di default <cartella temporanea>/schermate. --nome: prefisso dei file (finta o vera).
 // --larghezza: di default 390. --ridotto: movimento ridotto (i numeri finali, senza animazioni).
 // --tema scuro|chiaro: lo schema di colori del sistema (di default scuro). La scelta fatta nella pagina vince.
+// --istantanee: salva anche la pagina di ogni scheda dopo l'analisi, senza script e con le details aperte
+//   (<nome>-pagina-<scheda>.html), da dare al rilevatore di impeccable: detect <url> --viewport 390x844.
 // Esce con 1 se ci sono errori nella pagina, l'anello non si chiude o una scheda scorre di lato.
 'use strict';
 const { spawnSync } = require('child_process');
@@ -41,6 +43,7 @@ const NOME = arg('nome', VERA ? 'vera' : 'finta');
 const W = +arg('larghezza', 390);
 const TEMA = arg('tema', 'scuro') === 'chiaro' ? 'light' : 'dark';
 const RIDOTTO = process.argv.includes('--ridotto');
+const ISTANTANEE = process.argv.includes('--istantanee');
 const KEY = process.env.PITCHAPI_KEY || '';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 function esci(msg) { console.error(msg); process.exit(1); }
@@ -167,6 +170,23 @@ if (VERA) {
     for (const k of ['formazioni', 'giocatori', 'ambiti']) { squadreVai(k); misura('squadre/' + k); }
     schedaVai('partita', false); return r;
   });
+  if (ISTANTANEE) {
+    const pagine = await page.evaluate(tema => {
+      document.querySelectorAll('.foglio').forEach(f => { f.hidden = true; });
+      const r = {}, salva = nome => {
+        document.querySelectorAll('details').forEach(d => { d.open = true; });
+        const c = document.documentElement.cloneNode(true);
+        c.querySelectorAll('script').forEach(x => x.remove());
+        c.setAttribute('data-tema', tema === 'light' ? 'chiaro' : 'scuro');
+        r[nome] = '<!doctype html>\n' + c.outerHTML;
+      };
+      for (const k of ['partita', 'tabellone', 'numeri', 'prompt', 'dati']) { schedaVai(k, false); salva(k); }
+      for (const k of ['formazioni', 'giocatori', 'ambiti']) { squadreVai(k); salva('squadre-' + k); }
+      schedaVai('partita', false); return r;
+    }, TEMA);
+    for (const [k, html] of Object.entries(pagine)) fs.writeFileSync(path.join(OUT, `${NOME}-pagina-${k}.html`), html);
+    console.log(`${Object.keys(pagine).length} pagine salvate per il rilevatore in ${OUT}`);
+  }
   const larghe = Object.entries(scorre).filter(([, v]) => v > 0);
   console.log('scorrimento laterale: ' + Object.entries(scorre).map(([k, v]) => `${k} ${v}`).join(', '));
   console.log(errori.length ? errori.slice(0, 15).join('\n') : 'nessun errore nella pagina');

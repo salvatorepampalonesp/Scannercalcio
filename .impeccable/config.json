@@ -1,0 +1,38 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "geist",
+        "createdAt": "2026-10-11T22:55:11.359Z",
+        "reason": "Utente: la grafica segue taste-skill (b78), che ha scelto Geist al posto di Inter"
+      },
+      {
+        "rule": "overused-font",
+        "value": "geist mono",
+        "createdAt": "2026-10-11T22:55:11.369Z",
+        "reason": "Utente: la grafica segue taste-skill (b78), Geist Mono per i numeri in colonna"
+      },
+      {
+        "rule": "em-dash-overuse",
+        "value": "*",
+        "files": [
+          "scanner.html"
+        ],
+        "createdAt": "2026-10-11T22:55:11.380Z",
+        "reason": "Agente: sono i 185 segnaposto -- delle card prima dell'analisi, mai a schermo; sulla pagina analizzata il rilevatore non trova lineette"
+      },
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          "scanner.html"
+        ],
+        "createdAt": "2026-10-11T22:55:11.391Z",
+        "reason": "Agente: details.card e foglio-tema non hanno sfondo (CSS details.card{background:none}); sulla pagina analizzata a 390px il rilevatore non trova margini stretti"
+      }
+    ]
+  }
+}
