@@ -102,11 +102,19 @@ vedi *Le quote automatiche*); se non ci sono, le scrive l'utente. Per misurarle 
   di gusto grafico di `Leonxlnx/taste-skill` (`design-taste-frontend` e la sua v1,
   `redesign-existing-projects`, `high-end-visual-design`, `minimalist-ui`, `industrial-brutalist-ui`,
   `gpt-taste`, `image-to-code`, `imagegen-frontend-web` e `-mobile`, `brandkit`, `stitch-design-taste`,
-  `full-output-enforcement`). Da dove vengono lo dice
+  `full-output-enforcement`). Dal 12 ottobre 2026 anche le 15 skill di `emilkowalski/skill` (Emil Kowalski):
+  - animazioni: `animate`, `animation-vocabulary`, `animation-performance`, `find-animation-opportunities`,
+    `improve-animations`, `review-animations`;
+  - design: `emil-design-eng`, `apple-design`, `break-ui`, `prototype`, `pick-ui-library`;
+  - telefono: `mobile-native`;
+  - fuori da questo progetto: `ask-sonner` (React), `animate-expo` (React Native), `write-swift`.
+
+  Da dove vengono lo dice
   `skills-lock.json` (si aggiornano con `npx skills update`); `graphify` e i due agenti sono copiati
   a mano dai loro repository. Dove dicono altro da questo file vale questo file: niente commenti
   `ponytail:` nel JS, i resoconti restano coi numeri, e niente CDN, GSAP, Tailwind o pacchetti npm
-  che le skill di gusto propongono (le pagine restano un file solo, senza dipendenze). **La grafica
+  che le skill di gusto e di animazione propongono (Motion, Sonner e le librerie di `pick-ui-library`: le pagine
+  restano un file solo, senza dipendenze). **La grafica
   segue taste** (`redesign-existing-projects` e `design-taste-frontend`, dal `b78`) **e impeccable** (dal
   `b79`): chi la tocca rilegge le loro regole, e in *La grafica dello Scanner*, «Cosa cambia nel `b78`» e
   «Cosa cambia nel `b79`», quali valgono qui. `graphify` scrive in `graphify-out/`, fuori
