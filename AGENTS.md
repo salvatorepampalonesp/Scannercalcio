@@ -55,7 +55,7 @@ vedi *Le quote automatiche*); se non ci sono, le scrive l'utente. Per misurarle 
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b76`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b77`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -98,10 +98,15 @@ vedi *Le quote automatiche*); se non ci sono, le scrive l'utente. Per misurarle 
   (sei skill), front-end e design (`frontend-design`, `frontend-ui-engineering`, `transitions-dev`,
   `transitions-polish`, `accessibility-review`, `ux-copy`), sicurezza e velocità
   (`security-and-hardening`, `performance-optimization`, e gli agenti `security-auditor` e
-  `web-performance-auditor` in `.claude/agents/`), `graphify`. Da dove vengono lo dice
+  `web-performance-auditor` in `.claude/agents/`), `graphify`. Dall'11 ottobre 2026 anche le 13 skill
+  di gusto grafico di `Leonxlnx/taste-skill` (`design-taste-frontend` e la sua v1,
+  `redesign-existing-projects`, `high-end-visual-design`, `minimalist-ui`, `industrial-brutalist-ui`,
+  `gpt-taste`, `image-to-code`, `imagegen-frontend-web` e `-mobile`, `brandkit`, `stitch-design-taste`,
+  `full-output-enforcement`). Da dove vengono lo dice
   `skills-lock.json` (si aggiornano con `npx skills update`); `graphify` e i due agenti sono copiati
   a mano dai loro repository. Dove dicono altro da questo file vale questo file: niente commenti
-  `ponytail:` nel JS, e i resoconti restano coi numeri. `graphify` scrive in `graphify-out/`, fuori
+  `ponytail:` nel JS, i resoconti restano coi numeri, e niente CDN, GSAP, Tailwind o pacchetti npm
+  che le skill di gusto propongono (le pagine restano un file solo, senza dipendenze). `graphify` scrive in `graphify-out/`, fuori
   da git.
 
 ## Da fare
@@ -242,11 +247,10 @@ Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export rec
   è sulle stesse partite su cui è fatta `SORPRESA_TAB`: va scritta una regola e provata su partite nuove
   (il 2026/27 man mano che si gioca) prima di mettere il numero nello Scanner. Vedi *L'avviso di
   sorpresa*, «Contro le quote e nel tabellone».
-- [ ] **Il maestro mercato: il test.** Regola registrata l'11 ottobre 2026: le probabilità del motore imparate dal
-  mercato (ridge dalle 65 variabili del motore all'1X2 e ai lambda del mercato), poi usate senza quote. Fuori lega sulle
-  14 leghe dell'allenamento 1X2 −4.20‰ (`z = −6.11`, 14 su 14) e risultato esatto −12.93‰ (`z = −9.9`, 14 su 14). Il
-  test è sui risultati di 34 leghe mai usate per questo (`batch/livello` e i tre batch del `b74`). Vedi *Il maestro
-  mercato: la regola*.
+- [x] ~~**Il maestro mercato: il test.**~~ — **passato, tutti e due i test** (11 ottobre 2026). Le probabilità del motore
+  imparate dal mercato (ridge dalle 65 variabili del motore all'1X2 e ai lambda del mercato), poi usate senza quote. Sui
+  risultati di 33 leghe mai usate per questo (13.592 partite): 1X2 −4.37‰ (`z = −5.30`, 25 su 33), risultato esatto
+  −13.41‰ (`z = −8.88`, 31 su 33), Over 2.5 −3.50‰, differenza reti −8.14‰. Vedi *Il maestro mercato: la regola*.
 - [ ] **I tocchi in area nell'1X2: il test sulle partite nuove.** Regola registrata il 2 ottobre 2026:
   Elo, modello e tocchi nell'area avversaria previsti, con pesi già fissati, contro il motore, sulle partite
   giocate dal 3 ottobre 2026 nelle 24 leghe dei batch. Nell'esplorazione (le 24 leghe, già tutte guardate)
@@ -498,9 +502,33 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b76`)
+## Stato attuale (`b77`)
 
-**1X2.** Col motore `b48` il pick azzecca il 52.7% (±1.4) contro il 43.0% del «gioca sempre in
+**Il maestro mercato** (dal `b77`). Senza quote, l'1X2 del verdetto e la matrice dei gol (Over/Under, Goal, multigol,
+risultati esatti, handicap, tempi dei gol) non escono più dall'ensemble del motore ma dal maestro. È una ridge che dalle
+65 variabili del motore stima quello che il mercato dice della partita, imparata sulle quote di chiusura di 14 leghe e
+usata senza quote. Regola registrata prima, test sui risultati di 33 leghe mai usate per questo (13.592 partite):
+- 1X2 −4.37‰ (`z = −5.30`, 25 leghe su 33);
+- risultato esatto −13.41‰ (`z = −8.88`, 31 su 33);
+- Over 2.5 −3.50‰, Goal −1.93‰, differenza reti −8.14‰.
+
+È la prima cosa che chiude una parte della distanza dal mercato: un quarto sull'1X2, il 40% sul risultato esatto. Le
+soglie del pick, rimisurate fuori lega sui cinque campionati (5.230 partite, stesse del `b49`):
+
+| soglia sul pick | partite | quota del calendario | azzecca | ±2se | motore `b48`, stesse partite |
+|---|---|---|---|---|---|
+| ≥50% | 2587 | 49% | 62.8% | 1.9 | 61.6% su 52% |
+| ≥55% | 1841 | 35% | 67.4% | 2.2 | 66.0% su 38% |
+| ≥60% | 1268 | 24% | 72.2% | 2.5 | 69.3% su 26% |
+| ≥65% | 839 | 16% | 76.0% | 2.9 | 73.3% su 16% |
+| ≥70% | 473 | 9% | 79.1% | 3.7 | 77.0% su 9% |
+
+Su tutte 53.3% (motore 52.7%). Senza quote il tabellone ora rende come promette anche sui gol: una proposta gol
+GIOCABILE +13.2 punti sopra il giocarla alla cieca, contro +7.4 del motore. Con le quote non cambia niente: combinare il
+mercato col maestro o col motore dà lo stesso (+0.18‰, `z = +0.96`), e `QUOTE_COMB` continua a ricevere l'1X2 del
+motore. Vedi *Il maestro mercato: la regola*, «Nel motore (`b77`)».
+
+**1X2 del motore, prima del maestro.** Col motore `b48` il pick azzecca il 52.7% (±1.4) contro il 43.0% del «gioca sempre in
 casa» sulle cinque leghe: 52.7% contro 40.2% in Serie A, 52.7% contro 43.1% in Premier, 53.2%
 contro 45.8% in LaLiga, 52.5% contro 42.0% in Bundesliga, 52.3% contro 43.9% in Ligue 1, fermo da
 venti build. Il valore sta nella **fascia alta**, che la card mostra con la resa misurata in
@@ -1745,7 +1773,7 @@ niente. Controlla:
   testo; all'apertura il Comparatore ripristina la copia salvata in localStorage, che puo'
   essere vecchia) e che le build coincidano;
 - **ogni** manopola del motore contro il suo default letto dal sorgente
-  (`cmpEngineDefaults`, 30 manopole dal `b48`, 31 dal `b63` con `GOALS_LEVEL`, 32 dal `b75` con `PRIMO_GOL_QUOTA`, 33 dal `b76` con `NUMERI_CORREZIONI`), piu' `CMP_K_LIST[0]` contro `SHRINK_K`;
+  (`cmpEngineDefaults`, 30 manopole dal `b48`, 31 dal `b63` con `GOALS_LEVEL`, 32 dal `b75` con `PRIMO_GOL_QUOTA`, 33 dal `b76` con `NUMERI_CORREZIONI`, 34 dal `b77` con `MAESTRO`), piu' `CMP_K_LIST[0]` contro `SHRINK_K`;
 - lo storico per squadra contro quello dello Scanner (`window.__ENGINE_LIMIT`);
 - che la partita sia della stagione per cui e' caricato il database.
 
@@ -1770,7 +1798,7 @@ dall'id della partita e servita al posto di PitchAPI, con una neopromossa e senz
 `/advanced` sulla stagione piu' vecchia come l'API vera. Lo Scanner si guida come lo usa
 l'utente (`caricaSquadreLega` e `avviaScanner` sulle partite di una data), il Comparatore gira
 in ogni modalita', e si confrontano **ogni scrittura a schermo del motore** (`safeTxt` e
-`safeHtml`, strumentate nei due file allo stesso modo: 190 per partita) e **122 righe del CSV**
+`safeHtml`, strumentate nei due file allo stesso modo: 201 per partita dal `b77`) e **122 righe del CSV**
 che riportano un numero dello Scanner (1X2, confidence di tutti i mercati, i sei modelli,
 GG e Over, corner/tiri/gialli e le loro linee, handicap, multigol, Elo, tabellone voce per
 voce, certificato, dal `b43` gli indici delle formazioni, dal `b44` quelli della stanchezza, dal
@@ -1799,15 +1827,15 @@ col movimento ridotto (`reducedMotion: 'reduce'`: i numeri che contano mostrereb
 intermedi), legge «In breve» da `#in-breve` (il riquadro, la sorpresa e le proposte sono tre blocchi)
 e misura le voci del dock e del foglio Altro, Squadre in tutte e tre le sotto-schede.
 
-Esito al `b76` (storico 30; uguale al `b75`), a 390px con tutte le 28 card aperte, scheda per scheda e in tutte e tre le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, 0 px):
+Esito al `b77` (storico 30; uguale al `b76`), a 390px con tutte le 28 card aperte, scheda per scheda e in tutte e tre le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, 0 px):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
-| una partita, tutte del giorno, intervallo | 3/3 | 0 su 191 | 0 su 122 | 0 |
-| batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 191 | 0 su 122 | 0 |
+| una partita, tutte del giorno, intervallo | 3/3 | 0 su 201 | 0 su 122 | 0 |
+| batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 201 | 0 su 122 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
-| `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 128-158 | 74-83 | 0 |
-| `vecchio`: motore `b74` caricato (controllo) | 0/3, «motore caricato diverso ...» | 2 su 191 (`surv-30`, `surv-45`) | 1 (il certificato) | 0 |
+| `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 140-165 | 75-82 | 0 |
+| `vecchio`: motore `b76` caricato (controllo) | 0/3, «motore caricato diverso ...» | 48 su 201 | 38-42 | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -1894,7 +1922,14 @@ i due numeri della card del primo gol (`surv-30`, `surv-45`), e il certificato; 
 e il numero chiave di Numeri cambiano con loro, ma non passano da `safeHtml`. Al `b76` il controllo col `b75` vede
 41-42 scritture diverse su 191 (44 id in tutto, tutti delle card di Numeri, più la riga dei corner di «Ruolo e generale»,
 le linee dei corner e il tabellone, dove cambia lo scarto dei corner) e 10-19 righe del CSV: KNN 1, X e 2, corner attesi,
-le quattro linee dei corner, le righe del tabellone che si spostano, il certificato.
+le quattro linee dei corner, le righe del tabellone che si spostano, il certificato. Al `b77` il controllo col `b76` vede
+48 scritture diverse su 201: 10 sono gli id nuovi della card dei modelli (`mdl-mot-*`, `mdl-ver-*`), che il `b76` non scrive;
+poi il verdetto 1X2 e le sue confidence, le quote eque, le doppie chance, Goal e Over, risultati esatti, handicap, multigol,
+tempi dei gol e primo gol, il rischio sorpresa e il tabellone, cioè tutto quello che esce dal maestro; e la spunta ✓ che
+sparisce da «Ruolo e generale» (stessi numeri). Nel CSV 38-42 righe: le stesse, le sei righe `Maestro:` nuove e il certificato.
+Il primo giro del banco ha fallito su due righe in tutte le modalità: «Over 2.5 (multi-linea)» e «GG (da matrice)» si
+confrontavano con la colonna «Dixon-Coles di ruolo» della card dei modelli, che dal `b77` descrive il motore; ora con la riga
+«Verdetto (maestro)», che è la matrice da cui il CSV le prende.
 
 **Il controllo del `b70`.** Da qui «In breve» controlla anche il rischio sorpresa: con le quote dell'1X2
 `#sorpresa-box` deve essere identico a quello rifatto nella pagina con `rischioSorpresa(…,
@@ -3198,6 +3233,97 @@ Se uno dei due non passa, quella parte resta com'è, e questa sezione dice perch
 pick per fascia; il pareggio previsto; Over e Goal previsti contro il reale. `python3 strumenti/maestro.py --prova
 batch/livello batch/lontane batch/anno2026 batch/europa2526` rifà il test; `--allena` rifà i numeri del candidato.
 
+**Esito: passano tutti e due.** 13.592 partite di 33 leghe, tutte con almeno 100 partite. La regola diceva 34 contando
+anche la Super League greca, che però aveva esclusa: i dati sono quelli descritti.
+
+| test | maestro contro motore | `z` | leghe meglio | esito |
+|---|---|---|---|---|
+| 1X2 | −4.37‰ | −5.30 | 25 su 33 | **passa** (prese 48.71 → 48.95%, +0.24, `z = +1.15`) |
+| risultato esatto | −13.41‰ | −8.88 | 31 su 33 | **passa** (guardia Over 2.5 + Goal −5.44‰, `z = −3.76`) |
+
+Gli altri mercati della matrice, solo descrittivi:
+
+| mercato | maestro contro motore | `z` | leghe meglio |
+|---|---|---|---|
+| Over 1.5 | −2.96‰ | −3.77 | 29 su 33 |
+| Over 2.5 | −3.50‰ | −3.79 | 26 su 33 |
+| Over 3.5 | −4.24‰ | −4.51 | 25 su 33 |
+| Goal | −1.93‰ | −2.69 | 24 su 33 |
+| differenza reti | −8.14‰ | −7.80 | 28 su 33 |
+
+Sono i numeri dell'esplorazione (1X2 −4.20, esatto −12.93‰) su leghe che il maestro non ha mai visto, lontane da
+quelle dell'allenamento: Asia, Americhe, seconde serie europee.
+
+Descrittivi:
+- *1X2 per lega*: peggio in 8 leghe su 33. Le più lontane sono la Liga 1 peruviana (+12.3‰) e la Challenge League
+  svizzera (+12.3‰), su 244 e 178 partite. Le più vicine al motore sono la Superligaen (+1.3‰) e la Liga I (+1.0‰).
+- *Gol per lega*: peggio sul risultato esatto solo in Colombia (+23.7‰) e in Perù (+19.3‰), dove peggiorano anche Over
+  e Goal (+14 / +22‰). Trovato dopo, senza spiegazione: due leghe sudamericane a calendario solare, con una stagione sola.
+- *La taratura del pick*: col maestro sotto il 45% previsto 40.2 ed esce 40.6; 45–55% 49.7 e 50.2; 55–65% 59.2 e 58.4;
+  sopra il 65% 71.0 ed esce 76.0. Il motore: 40.4 e 40.6, 49.6 e 48.7, 59.2 e 57.7, 70.7 e 73.6. In cima restano tutti e
+  due timidi.
+- *Il pareggio* previsto 26.1% (motore 25.8%), reale 25.6%.
+- *Over 2.5* previsto 51.5% (motore 53.1%), reale 52.8%; *Goal* 53.1% (motore 54.3%), reale 54.7%. Il maestro sta un
+  punto e mezzo sotto il vero, il motore mezzo punto sopra, e il maestro prevede meglio lo stesso: ordina meglio.
+
+Si mette nello Scanner (`b77`), con quello che la regola diceva di rimisurare.
+
+**Nel motore (`b77`).** `window.MAESTRO = 'si'` (`'no'` torna al `b76`), coi numeri di `MAESTRO_REG`, uguali a
+`strumenti/maestro_regola.json`.
+- *Dove.* Il blocco sta fra l'ensemble del motore (`m1e`, `mXe`, `m2e`) e l'1X2 stampato (`m1`, `mX`, `m2`).
+- *Le variabili.* Ognuna viene dalla stessa variabile da cui il Comparatore scrive la riga del CSV: `__ELO_DEBUG_OVER`,
+  `__UNIT_DEBUG`, `__SCOPE_DEBUG`, `__GOALS_DEBUG`, `__ELO_TREND`, i lambda di ruolo e completi, la matrice di ruolo
+  del motore. Le statistiche previste sono quelle di `cmpExtractPrev`, con la sua media che dà `null` su un elenco
+  vuoto: quella del motore dà 0, e su una squadra senza partite di ruolo lo Scanner leggeva 0 dove il CSV aveva la
+  media generale.
+- *Le statistiche previste* (`__PRED_STATS`) ora si calcolano prima del maestro: non dipendono dall'1X2.
+- *Le uscite.* Col maestro acceso:
+  - 1X2, doppie chance e confidence vengono dal maestro;
+  - la matrice dei gol `dcMat`, e con lei `lamH_mix`/`lamA_mix`, multigol, handicap, risultati esatti, il totale dei
+    tempi dei gol e il primo gol, viene dai suoi lambda;
+  - Goal e Over del tabellone e dei badge escono da `probsFromMatrix(dcMat)`;
+  - i badge delle doppie chance prendono le doppie chance del verdetto (`m1 + mX`…), non più quelle del Dixon-Coles di
+    ruolo.
+- *Le card del motore.* «Ruolo e generale» e i modelli restano la descrizione dei rami del motore, e la spunta non
+  c'è più. La card dei modelli ha due righe nuove: «Ensemble del motore» accanto a «Verdetto (maestro)», e il verdetto
+  per doppie chance, Goal e Over.
+- *Le quote.* `__QUOTE_CTX` porta l'1X2 del motore (`pm`), che resta l'ingresso di `QUOTE_COMB`, e i lambda del
+  maestro (`lam`).
+- *Il CSV.* Esporta l'1X2 e i lambda di ruolo del motore prima del maestro (righe `Maestro: …`, da `__MAESTRO_DEBUG`).
+  Lo strumento li legge al posto di `1`, `X`, `2` e `Ambito: lambda … (ruolo)`, che dal `b77` sono del maestro: così si
+  può riallenare dai CSV nuovi.
+
+**Rimisurato**, con le previsioni fuori lega sulle leghe dell'allenamento e coi numeri registrati sulle altre
+(`python3 strumenti/maestro.py --rimisura`):
+- `PICK_RESA`: tabella in *Stato attuale*. In `fuori` restano 34 leghe con almeno 50 partite col pick sopra il 55%:
+  - escono K League 1 (49), Serie B brasiliana (32), 1. liga slovacca (45), USL Championship (48) e la Liga de Primera
+    cilena (45);
+  - entra la Premier Division irlandese (50).
+- `SORPRESA_TAB`, sulle stesse 23.278 partite. Il maestro ha già messo nelle probabilità il disaccordo fra modello ed
+  Elo: residuo dello sfavorito −0.54 ±1.46 col disaccordo, −0.87 ±0.59 con l'accordo (col motore +2.39 e −0.29).
+  ALTO resta solo con lo sfavorito al 35% o più e il disaccordo (36.0% su 652 partite, una su 35).
+- `EDGE_BANDS`, 1X2 e gol, sui cinque campionati (FORTE / GIOCABILE / MARGINALE, guadagno sopra il giocarlo sempre):
+  - 1X2 +29.5 / +17.1 / +9.0 (motore +27.6 / +15.5 / +8.3);
+  - gol +24.3 ±11.6 (55 proposte) / +13.2 ±3.5 (744) / +6.8 ±1.9 (2.801), contro +0.3 / +7.4 / +3.1 del motore;
+  - i numeri non cambiano;
+  - la proposta in cima rende +16.97 contro +16.78.
+- *La retta dei binari* regge: errore massimo 1.7 punti per fascia (70–80%: retta 76.1, esce 74.5). Resta.
+- `QUOTE_RESA`:
+  - il pick del motore senza quote ora esce il 51.7% (era 51.0);
+  - motore e mercato non sono d'accordo nell'8.8% delle partite (era 11.1), e lì il maestro prende il 28.3%, il mercato
+    il 42.1%.
+- `QUOTE_OU_RESA`: il lato più probabile dell'Over/Under senza quote esce il 57.6% (era 56.5% sulle stesse partite; il
+  55.6% del `b57` era senza il livello dei gol).
+- Restano com'erano:
+  - `QUOTE_COMB`, `QUOTE_OU` (il motore pesa 0.004), la matrice allineata, `SORPRESA_QUOTE_TAB`, `EDGE_BANDS_QUOTE` e
+    `TAB_QUOTE_RESA`: con le quote vale il mercato, e `QUOTE_COMB` riceve sempre l'1X2 del motore;
+  - il ROI di `QUOTE_OU_RESA.valore` (giocare dove il motore si discosta dal mercato) è del `b57` e non è rimisurato.
+
+**Verificato.** `python3 strumenti/maestro.py --schermo <cartella>` rifà dalle variabili del CSV, coi numeri della
+regola, l'1X2 e i lambda che lo Scanner ha stampato. Sul batch finto del `b77` (89 partite) stanno entro 0.094 punti e
+0.0025, cioè l'arrotondamento del CSV. Controllo di potenza: con un coefficiente spostato di 0.05 escono 2.15 punti, e lo
+strumento esce con 1.
+
 ### Battere il bookmaker: la regola della ricerca
 
 Scritta prima di guardare le quote di prima della partita e le quote massime accanto ai risultati,
@@ -3948,10 +4074,11 @@ scrittura nuova, il messaggio iniziale). Il banco la verifica a parte, premendo 
 | `SHRINK_K` | 4 | misurata `b35`–`b37`, riconfermata `b41` | 12 e 28 peggiori a 5σ; sotto 4 migliora l'1X2 (−0.0016, `z = −3.03`) ma i gol pagano +0.0056. `b41`, copia conforme e zero clamp: a 2 l'1X2 −0.00069 (`z = −3.30`), la somma +0.00155; Premier −0.00079 (`z = −3.42`) e +0.00136; LaLiga −0.00052 e +0.00025; Bundesliga −0.00052 e +0.00321 (`z = 3.40`); Ligue 1 +0.00001 e +0.00087 |
 | `SHRINK_LAM_K` | 3 | a mano, misurata `b37` e `b41` | `b37`: ottimo del Brier Over fra 5 e 8, `z = −1.82`, segno ribaltato nel 2022/23. `b41`: in Serie A monotono fino a 20, miglior `z = −1.99` a 5, 3 stagioni su 3; in Premier il 2023/24 si ribalta (+0.00131 a 5, +0.0081 a 20); in LaLiga piatta a 5 e peggio da 8 in su; in Bundesliga meglio a 5 (`z = −2.69`, 3 stagioni su 3); in Ligue 1 meglio a 5 (`z = −1.26`). Tre leghe sì, una no, una ribaltata: resta 3 |
 | `GOALS_SOT_W` | 0.50 | stimata `b12`, confermata `b14` e `b41` | AUC Over 2.5 da 0.554/0.495/0.501 a 0.572/0.514/0.521; cinque leghe +2.18σ. `b41` in copia conforme: la Serie A punisce 0 (+0.0066, `z = 2.03`), la Premier punisce 1 (+0.0062, `z = 2.30`), LaLiga e Ligue 1 hanno l'ottimo a 0.50, la Bundesliga fra 0.25 e 0.50 |
-| `SORPRESA_TAB` | 6 fasce dello sfavorito × accordo / disaccordo fra modello ed Elo: partite, vince lo sfavorito, pareggio, vince il favorito | misurata `b64` | 23.278 partite in copia conforme di 24 leghe (batch `b48`–`b62`, 2023–2026), `strumenti/sorpresa.py`; col disaccordo lo sfavorito vince +2.39 ±1.49 punti oltre il previsto, uguale nelle due metà delle leghe. Non tocca le probabilità: è la frequenza detta dall'avviso. Vedi *L'avviso di sorpresa* |
+| `SORPRESA_TAB` | 6 fasce dello sfavorito × accordo / disaccordo fra modello ed Elo: partite, vince lo sfavorito, pareggio, vince il favorito | misurata `b64`, rimisurata `b77` sulle probabilità del maestro (fuori lega): col maestro il disaccordo non aggiunge più niente (residuo −0.54 ±1.46) | 23.278 partite in copia conforme di 24 leghe (batch `b48`–`b62`, 2023–2026), `strumenti/sorpresa.py`; col disaccordo lo sfavorito vince +2.39 ±1.49 punti oltre il previsto, uguale nelle due metà delle leghe. Non tocca le probabilità: è la frequenza detta dall'avviso. Vedi *L'avviso di sorpresa* |
 | `SORPRESA_QUOTE_TAB` | 5 fasce dello sfavorito con le quote × tutte / accordo / disaccordo fra modello ed Elo: partite, vince lo sfavorito, pareggio, vince il favorito | misurata `b70`, accordo e disaccordo dal `b71` | 11.902 partite di 12 leghe con le quote di chiusura, probabilità con `QUOTE_COMB`; fuori lega la stessa entro 0.3 punti. Il disaccordo modello/Elo pesa poco (30% o più: 30.7 contro 31.5%). Con le soglie di sempre il rischio con le quote non arriva ad ALTO. `strumenti/sorpresa-quote.py`, sezione 5. Vedi *L'avviso di sorpresa*, «Con le quote» |
 | `GOALS_LEVEL` | 1.051 | stimata e registrata `b62`, nel motore `b63` | gol/lambda di ruolo su 16.254 partite di quindici leghe (2023/24–2025/26), stabile per stagione (1.044–1.061) e per fonte degli xG; fuori lega Over 2.5 −2.74‰ (`z = −4.80`) e Goal −2.69‰ (`z = −6.27`), 13 leghe su 15. Test registrato su nove leghe mai aperte, 6.472 partite: −3.80‰ (`z = −2.99`), 6 su 9. Vedi *Il livello dei gol: la regola* |
 | `PRIMO_GOL_QUOTA` / `PRIMO_GOL_FISSA` | `'fissa'` / 0.268, 0.446 | misurata, test registrato `b75` | la quota media dei gol nei primi 30 e 45 minuti su 4.496 partite di dodici leghe dal 2025/26 (`QUOTA_FISSA` di `strumenti/primo-gol.py`); test su 11.633 partite di 36 leghe mai aperte per questa domanda: −7.30‰ (`z = −4.93`), 29 leghe su 36. `'squadre'` torna alla quota dei minuti dei gol delle due squadre. Vedi *La card del primo gol: la regola* |
+| `MAESTRO` / `MAESTRO_REG` | `'si'` / 65 variabili, medie, deviazioni, mediane e i 66×4 coefficienti di `strumenti/maestro_regola.json` | stimati `b77` sul mercato, test registrato | ridge (`α` 10) dalle variabili del motore all'1X2 e ai lambda del mercato di chiusura, 16.071 partite di 14 leghe coi file principali di football-data; test sui risultati di 33 leghe mai usate (13.592 partite): 1X2 −4.37‰ (`z = −5.30`, 25 su 33), risultato esatto −13.41‰ (`z = −8.88`, 31 su 33). `'no'` torna al `b76`. Vedi *Il maestro mercato: la regola* |
 | `NUMERI_CORREZIONI` / `NUMERI_REG` | `'si'` / 21 parametri, uguali a `REGOLA` di `strumenti/numeri-correzioni.py` | stimati sull'esplorazione, test registrato `b76` | stimati sulle 1.743 partite del 2025/26 dei cinque campionati (`batch/numeri`), fuori lega dove serve; test su 3.976 partite mai aperte per Numeri (`batch/numeri-prova1`, `-prova2`): passano tutti e 17, da `z` −2.7 a −17.1, e il KNN 1X2 su 25.168 partite di 42 leghe (−21.9‰, `z` −14.9). `'no'` torna al `b75`. Vedi *Le card di Numeri: la regola* |
 | `SOT_PER_GOAL` | 3.25 | misurata | LaLiga 3.19, Premier 3.04, Serie A 3.33. Tocca solo il livello |
 | `GOALS_SOT_CAP` | 0.20 | paracadute misurato | morde nello 0.18% |
@@ -3972,12 +4099,12 @@ scrittura nuova, il messaggio iniziale). Il banco la verifica a parte, premendo 
 | `TAB_QUOTE_RESA` | 6.672 partite di 7 leghe: prima proposta +12.9 → +14.6; cinque campionati +16.8 → +19.2; FORTE con una quota alla chiusura −1.8% | misurata `b58` | la nota del tabellone con le quote e il prompt la leggono da qui |
 | `QUOTE_OU` | intercetta 0.01328 · motore 0.0036 · mercato 1.12404 | stimata `b57` | logistica su `logit(pOver 2.5)` del motore e del mercato (chiusura `AvgC`, margine tolto in proporzione), 11.222 partite di undici leghe, `C = 1` sulle variabili standardizzate e riportata alla scala grezza. Test registrato fuori lega: −0.01312 di logloss, `z = −8.49`, 11 leghe su 11. Il peso del motore è zero: la combinazione è il mercato allargato. `strumenti/quote-gol.py` la stampa identica; il JS riproduce la matrice allineata dello script entro 4e-13 |
 | `MATRICE_QUOTE_RESA` | 4.849 partite, 4 blocchi, `z` risultati esatti −8.60 · multigol −8.93 · handicap −4.80 | misurata `b62` | il test registrato dei mercati della matrice con le quote (vedi *I mercati della matrice con le quote: la regola*); la nota della card «Risultati esatti, handicap e multigol» la legge da qui |
-| `QUOTE_OU_RESA` | 11.222 partite, 11 leghe · lato più probabile: motore 55.6, mercato 58.9, con le quote 58.9% · giocando dove il motore si discosta −7.5 / −9.9% · sempre −3.7% | misurata `b57` | la card e il blocco gol del mega-prompt la leggono da qui |
+| `QUOTE_OU_RESA` | 11.222 partite, 11 leghe · lato più probabile: motore 55.6 (dal `b77`, col maestro, 57.6), mercato 58.9, con le quote 58.9% · giocando dove il motore si discosta −7.5 / −9.9% · sempre −3.7% | misurata `b57` | la card e il blocco gol del mega-prompt la leggono da qui |
 | `QUOTE_COLONNE_OU` | chiusura `AvgC`, `PC`, `B365C`, poi `Avg`, `P`, `B365` (`>2.5` / `<2.5`) | tabella `b57` | le colonne dell'Over/Under nei file principali di football-data (Pinnacle è `PC`, non `PSC` come nell'1X2); ci sono su ogni riga delle 18 leghe provate e dei file della settimana, mai nei file `new` |
-| `QUOTE_RESA` | tutte 53.0 · soglie ≥70 / 65 / 60 / 55 / 50: 78.6 / 74.7 / 71.1 / 67.5 / 64.0% su 14 / 20 / 27 / 37 / 49% del calendario · disaccordo 1321 partite, motore 26.3%, mercato 43.1% | misurata `b54` | combinazione stimata su undici leghe e misurata sulla dodicesima, 11.902 partite; soglie uguali nei cinque campionati e nelle altre sette (≥55: 67.9 e 67.1%). La card delle quote e il mega-prompt la leggono da qui |
-| `PICK_RESA` | tutte 52.7 · casa 43.0 · soglie ≥70 / 65 / 60 / 55 / 50: 77.1 / 73.2 / 69.3 / 66.0 / 61.7% su 9 / 16 / 26 / 38 / 52% del calendario | misurata `b49` | cinque leghe col motore `b48`, 5230 partite (tabella in *Stato attuale*). Dal `b51` una sola copia: la card delle soglie e il mega-prompt la leggono da qui. Si rifà con le tabelle, a ogni motore che sposta l'1X2. Dal `b52` porta `leghe` (le cinque, per id) e `fuori` (Championship 46.3 e 64.8% su 17%, Eredivisie 53.7 e 68.7% su 47%, Liga Portugal 55.0 e 72.4% su 43%: pick su tutte e a ≥55, 3495 partite col `b48`), perché sulle tre leghe nuove le soglie ≥55 / 60 / 65 / 70 escono dai 2se (vedi *Le tre leghe nuove col `b48`: la regola*). Dal `b53` `fuori` ha anche 2. Bundesliga (45.4 e 62.8% su 16%), First Division A (50.2 e 65.5% su 35%), Premiership scozzese (53.3 e 68.9% su 41%) e Super League svizzera (47.1 e 66.1% su 26%), 3202 partite col motore `b52`. Dal `b56` porta anche `cinque`, le cinque leghe una per una nella stessa forma (tabella in *Stato attuale*): con `fuori` scrive la nota di lega in cima all'analisi. Dal `b74` `fuori` ha 38 leghe (le 31 nuove dai batch del `b61`, del `b62` e del `b73`, quelle con almeno 50 partite col pick sopra il 55%; tabella in *Le leghe mai viste*), e ogni lega porta anche le stagioni e le partite sopra il 55%, da cui la nota di lega e il prompt calcolano il ±2se |
+| `QUOTE_RESA` | tutte 53.0 · soglie ≥70 / 65 / 60 / 55 / 50: 78.6 / 74.7 / 71.1 / 67.5 / 64.0% su 14 / 20 / 27 / 37 / 49% del calendario · disaccordo 1321 partite, motore 26.3%, mercato 43.1% (dal `b77` col maestro: motore 51.7%, disaccordo 1046 partite, maestro 28.3%, mercato 42.1%) | misurata `b54` | combinazione stimata su undici leghe e misurata sulla dodicesima, 11.902 partite; soglie uguali nei cinque campionati e nelle altre sette (≥55: 67.9 e 67.1%). La card delle quote e il mega-prompt la leggono da qui |
+| `PICK_RESA` | dal `b77`, col maestro: tutte 53.3 · casa 43.0 · soglie ≥70 / 65 / 60 / 55 / 50: 79.1 / 76.0 / 72.2 / 67.4 / 62.8% su 9 / 16 / 24 / 35 / 49% del calendario; `fuori` 34 leghe. Fino al `b76`: tutte 52.7 · soglie 77.1 / 73.2 / 69.3 / 66.0 / 61.7% su 9 / 16 / 26 / 38 / 52% | misurata `b49`, rimisurata `b77` (fuori lega) | cinque leghe col motore `b48`, 5230 partite (tabella in *Stato attuale*). Dal `b51` una sola copia: la card delle soglie e il mega-prompt la leggono da qui. Si rifà con le tabelle, a ogni motore che sposta l'1X2. Dal `b52` porta `leghe` (le cinque, per id) e `fuori` (Championship 46.3 e 64.8% su 17%, Eredivisie 53.7 e 68.7% su 47%, Liga Portugal 55.0 e 72.4% su 43%: pick su tutte e a ≥55, 3495 partite col `b48`), perché sulle tre leghe nuove le soglie ≥55 / 60 / 65 / 70 escono dai 2se (vedi *Le tre leghe nuove col `b48`: la regola*). Dal `b53` `fuori` ha anche 2. Bundesliga (45.4 e 62.8% su 16%), First Division A (50.2 e 65.5% su 35%), Premiership scozzese (53.3 e 68.9% su 41%) e Super League svizzera (47.1 e 66.1% su 26%), 3202 partite col motore `b52`. Dal `b56` porta anche `cinque`, le cinque leghe una per una nella stessa forma (tabella in *Stato attuale*): con `fuori` scrive la nota di lega in cima all'analisi. Dal `b74` `fuori` ha 38 leghe (le 31 nuove dai batch del `b61`, del `b62` e del `b73`, quelle con almeno 50 partite col pick sopra il 55%; tabella in *Le leghe mai viste*), e ogni lega porta anche le stagioni e le partite sopra il 55%, da cui la nota di lega e il prompt calcolano il ±2se |
 | retta dei mercati binari | −5.06 + 1.091·p | stimata, riconfermata `b38` e `b41` | 22.584 proposte, errore massimo 2.4 punti; `b41` 7938 proposte, 2.5 |
-| `EDGE_BANDS` | ≥20 / ≥10 / ≥5, guadagno per famiglia (`b50`) | stimata `b38`, riconfermata `b41` e `b49`, per famiglia dal `b50` | 28.230 proposte: +24.6 / +14.8 / +6.3 punti, monotono, segno concorde in 5 stagioni su 5. `b41` (copia conforme): +25.6 / +15.6 / +4.8 sulle 13.148 proposte con base del `b40`, +25.0 / +14.9 / +5.7 sulle 14.742 del `b41`, monotono in 3 stagioni su 3; Premier (≥20 / 10–20 / 5–10) +27.4 / +10.7 / +6.0, LaLiga +25.0 / +13.7 / +7.3, Bundesliga +28.7 / +14.0 / +5.5, Ligue 1 +26.4 / +13.4 / +5.0. `b49` (motore `b48`, cinque leghe): +25.8 / +12.2 / +6.1, monotono in 5 leghe su 5; per famiglia 1X2 +27.5 / +15.5 / +8.0, gol +1.0 / +7.2 / +3.5, numeri +7.2 / +10.2 / +8.2. Dal `b50` l'etichetta mostra questi, per famiglia, con ±2se: 1X2 ±1.6 / ±1.6 / ±1.9 (2891 / 3573 / 2680 proposte), gol ±10.4 / ±2.3 / ±1.7 (92 / 1881 / 3457), numeri ±8.0 / ±2.9 / ±2.4 (133 / 1058 / 1628). Dal `b63` i gol, rifatti col livello dei gol: +2.3 ±12.8 (61) / +6.8 ±2.6 (1445) / +4.4 ±1.7 (3279). Ordinare per guadagno atteso invece che per scarto: no (vedi *Il tabellone per famiglia di mercato: la regola*) |
+| `EDGE_BANDS` | ≥20 / ≥10 / ≥5, guadagno per famiglia (`b50`) | stimata `b38`, riconfermata `b41` e `b49`, per famiglia dal `b50` | 28.230 proposte: +24.6 / +14.8 / +6.3 punti, monotono, segno concorde in 5 stagioni su 5. `b41` (copia conforme): +25.6 / +15.6 / +4.8 sulle 13.148 proposte con base del `b40`, +25.0 / +14.9 / +5.7 sulle 14.742 del `b41`, monotono in 3 stagioni su 3; Premier (≥20 / 10–20 / 5–10) +27.4 / +10.7 / +6.0, LaLiga +25.0 / +13.7 / +7.3, Bundesliga +28.7 / +14.0 / +5.5, Ligue 1 +26.4 / +13.4 / +5.0. `b49` (motore `b48`, cinque leghe): +25.8 / +12.2 / +6.1, monotono in 5 leghe su 5; per famiglia 1X2 +27.5 / +15.5 / +8.0, gol +1.0 / +7.2 / +3.5, numeri +7.2 / +10.2 / +8.2. Dal `b50` l'etichetta mostra questi, per famiglia, con ±2se: 1X2 ±1.6 / ±1.6 / ±1.9 (2891 / 3573 / 2680 proposte), gol ±10.4 / ±2.3 / ±1.7 (92 / 1881 / 3457), numeri ±8.0 / ±2.9 / ±2.4 (133 / 1058 / 1628). Dal `b63` i gol, rifatti col livello dei gol: +2.3 ±12.8 (61) / +6.8 ±2.6 (1445) / +4.4 ±1.7 (3279). Dal `b77`, col maestro (fuori lega): 1X2 +29.5 ±1.6 (2463) / +17.1 ±1.4 (3692) / +9.0 ±1.7 (2912), gol +24.3 ±11.6 (55) / +13.2 ±3.5 (744) / +6.8 ±1.9 (2801); i numeri restano del `b49`. Ordinare per guadagno atteso invece che per scarto: no (vedi *Il tabellone per famiglia di mercato: la regola*) |
 | minimo di `leagueBaseRates` | 200 partite | paracadute misurato `b38` | guadagno piatto fra 50 e 500; in produzione arrivano 900+ partite |
 | emivita | 106 giorni | a mano | uguale nei due file |
 | storico per squadra (`history-limit`) | 30 | scelta dell'utente (`b40`) | il batch base dell'utente e lo storico delle tarature `b24`–`b38`; fino al `b39` lo Scanner stampava a 15. Il Comparatore lo legge dallo Scanner in tutte le modalita' |
@@ -5952,6 +6079,11 @@ Le confidence dell'1X2 (`Confidence Globale` e la colonna Confidence delle righe
 dal `b53` sono la probabilità arrotondata; nei file fino al `b52` sono `CONF_1X2_TABLE` applicata
 alla probabilità. Chi confronta file di build diverse le ricalcola dalla probabilità.
 
+Dal `b77` le righe `1`, `X`, `2`, `Ambito: lambda casa/trasf. (ruolo)` e tutti i mercati gol (Over/Under, GG, multigol,
+handicap, tabellone) sono del maestro. L'1X2 e i lambda di ruolo del motore prima del maestro stanno nelle righe
+`Maestro: 1/X/2 del motore` e `Maestro: lambda casa/trasf. del motore (ruolo)`, con `Maestro: attivo`. Chi misura il
+motore di prima, o riallena il maestro, legge quelle: `strumenti/maestro.py` lo fa da solo.
+
 Dal `b76` le righe `KNN 1`, `KNN X` e `KNN 2` sono le probabilità del KNN ricalibrate, e le righe dei corner
 (attesi, linee Over, dispersione) vengono dal `λ` ristretto con la `k` fissa a 57.2 (vedi *Le card di Numeri: la
 regola*). Chi confronta file di build diverse sui corner o sul KNN tiene separati quelli fino al `b75`.
@@ -6042,6 +6174,10 @@ python3 -m http.server 8204 &
 # 5. le schermate dello Scanner a 390px, ogni scheda, scorrimento ed errori (~40 secondi)
 node strumenti/schermate.js --out <cartella>            # lega finta; esce con 1 se qualcosa scorre
 node strumenti/schermate.js --vera "Juventus|Atalanta|2026-09-20"   # PitchAPI vera, ~250 chiamate
+
+# 7. se si tocca il motore prima del maestro: lo Scanner calcola il maestro come lo strumento? (~1 minuto, lega finta)
+node strumenti/batch-auto.js --finto --leghe "ITA:Serie A" --stagioni 2025/2026 --out <cartella>
+python3 strumenti/maestro.py --schermo <cartella>                     # esce con 1 se 1X2 o lambda escono dall'arrotondamento
 
 # 6. se si toccano le card di Numeri: lo schermo dice i numeri della regola? (~2 minuti, lega finta)
 node strumenti/batch-auto.js --finto --scritture --leghe "ITA:Serie A" --stagioni 2025/2026 --out <cartella>
@@ -6206,3 +6342,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b73` | il catalogo delle leghe rifatto da `/leagues` della PitchAPI, dopo la domanda dell'utente sulla Bundesliga: `leghe.json` era la copia di settembre e non aveva il 2026/27 di Bundesliga, Champions ed Europa League (e di India e Thailandia), quindi lo Scanner non poteva analizzarlo. Ora 77 leghe invece di 42, nessuna tolta; le stesse nelle due copie di riserva dentro Scanner e Comparatore. Le 35 leghe nuove non sono misurate; Cina, Finlandia, Irlanda e Romania hanno le quote automatiche (1.736 partite su 1.736 agganciate, nessuna sbagliata). `strumenti/catalogo.js` per rifarlo. Nessun numero cambia: col `b72` 0 scritture diverse su 191, una riga del CSV (il certificato); sulla PitchAPI vera Augsburg – Bayern del 10/10/2026 (Bundesliga 2026/27) e FCSB – Oţelul (Liga I) analizzate con le quote automatiche, 0 px |
 | `b75` | la card «Primo gol» con una quota fissa dei gol nei primi 30 e 45 minuti (0.268 e 0.446) al posto di quella presa dai minuti dei gol delle due squadre, chiesta dall'utente dopo la misura del 10 ottobre (la card non distingueva le partite, AUC 0.51, e la quota delle squadre era rumore). Regola registrata e unita su main prima di scaricare i gol del test; su 11.633 partite di 36 leghe dei batch del `b61`, del `b62` e del `b73` la somma delle due logloss scende di 7.30‰ (`z = −4.93`), 29 leghe su 36, e la card diventa calibrata. Manopola `PRIMO_GOL_QUOTA` (`'squadre'` torna a prima). Col `b74` 2 scritture diverse su 191 (i due numeri della card), una riga del CSV (il certificato); `strumenti/primo-gol.py` |
 | `b76` | le card di Numeri corrette, chieste dall'utente dopo la misura dell'11 ottobre («non può essere così scarsa la matematica»): restringimenti James-Stein, Gamma-Poisson e Dirichlet e ricalibrazioni logistiche per rosso, corner, minuti dei gol, cecchino, palla inattiva, efficienza, recuperi e Choke Index, modulo, ultime 3 e 5, stile, giudizio della fortuna, capocannoniere e KNN. Regola registrata e unita su main prima di aprire i dati del test; su 3.976 partite mai aperte per Numeri passano tutte e 17, da `z` −2.7 (corner) a −17.1 (recuperi). I numeri diventano onesti, non più informativi: rosso e corner valgono quanto la frequenza della lega. Manopola `NUMERI_CORREZIONI` (`'no'` torna a prima). Col `b75` 41-42 scritture diverse su 191, 10-19 righe del CSV (KNN, corner, tabellone, certificato); `strumenti/numeri-correzioni.py`, `strumenti/numeri-schermo.py` |
+| `b77` | il maestro mercato: senza quote, l'1X2 e la matrice dei gol escono da una ridge che dalle 65 variabili del motore stima quello che il mercato direbbe, imparata sulle quote di chiusura di 14 leghe (16.071 partite). Chiesto dall'utente («sei tu che devi cercare in lungo e largo una soluzione»), dopo una ricerca che ha scartato COM-Poisson, pi-rating, Dixon-Coles di lega sui gol e il ritmo dei gol per punteggio e minuto. Regola registrata e unita su main prima del test; sui risultati di 33 leghe mai usate (13.592 partite) 1X2 −4.37‰ (`z = −5.30`, 25 su 33) e risultato esatto −13.41‰ (`z = −8.88`, 31 su 33). Rimisurate `PICK_RESA` (pick 52.7 → 53.3%, ≥65% 73.3 → 76.0%), `SORPRESA_TAB`, `EDGE_BANDS` (gol GIOCABILE +7.4 → +13.2), `QUOTE_RESA` e `QUOTE_OU_RESA`; con le quote non cambia niente. Manopola `MAESTRO` (`'no'` torna a prima); `strumenti/maestro.py` (`--allena`, `--prova`, `--rimisura`, `--schermo`). Col `b76` 48 scritture diverse su 201 (10 sono gli id nuovi), 38-42 righe del CSV; sulla PitchAPI vera Juventus – Lazio dell'8 febbraio 2026 senza errori, 0 px |

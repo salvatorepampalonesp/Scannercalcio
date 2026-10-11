@@ -656,8 +656,9 @@ function csvChecks(S, csv, col) {
                                     ['nH', 'Elo: partite nella serie casa', 0], ['nA', 'Elo: partite nella serie trasferta', 0],
                                     ['ingresso', 'Elo: ingresso delle neopromosse (livello della stagione)', 0.0051]])
     cmp('Elo ' + k, S.trend[k], cell(lbl, 0), tol);
-  cmp('Over 2.5 (multi-linea)', R['mdl-dc-ov'], cell('Over 2.5', 0, '--- OVER/UNDER MULTI-LINEA (prob DC vs reale) ---'));
-  cmp('GG (da matrice)', R['mdl-dc-gg'], cell('GG (da matrice)', 0));
+  // la matrice dei gol del verdetto (dal b77 quella del maestro): la riga «Verdetto» della card dei modelli
+  cmp('Over 2.5 (multi-linea)', R['mdl-ver-ov'], cell('Over 2.5', 0, '--- OVER/UNDER MULTI-LINEA (prob DC vs reale) ---'));
+  cmp('GG (da matrice)', R['mdl-ver-gg'], cell('GG (da matrice)', 0));
   { const cc = cell('COPIA CONFORME DELLO SCANNER', 0); out.push({ what: 'certificato di copia conforme', scanner: 'SI', csv: cc == null ? '(assente)' : cc, ok: cc === 'SI' }); }
   // le formazioni: il CSV deve riportare gli indici che lo Scanner ha calcolato
   const LU = "--- FORMAZIONI (misura: non entrano nelle probabilita') ---", L = S.lineup;

@@ -85,6 +85,11 @@ Ci mette 3–5 minuti: lancialo in background. Deve uscire con 0. Il dettaglio �
   le formule della regola: un batch finto con `--scritture`, poi `python3 strumenti/numeri-schermo.py <cartella>`, che
   deve uscire con 0 (AGENTS.md, *Le card di Numeri: la regola*, «Verificato»). Il banco dice solo che Scanner e
   Comparatore stampano lo stesso numero, non che il numero è quello provato.
+- Se tocchi il motore prima del maestro (Elo, lambda, statistiche previste, ensemble) o `MAESTRO_REG`, rifai il
+  confronto fra il maestro dello Scanner e lo strumento: un batch finto, poi `python3 strumenti/maestro.py --schermo
+  <cartella>`, che deve uscire con 0 (AGENTS.md, *Il maestro mercato: la regola*, «Verificato»). Il maestro legge 65
+  variabili del motore: se ne cambia una, i suoi coefficienti non valgono più, e va riallenato (`--allena`) e
+  riprovato.
 
 ## 4. AGENTS.md
 
