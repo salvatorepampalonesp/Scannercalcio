@@ -242,6 +242,11 @@ Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export rec
   è sulle stesse partite su cui è fatta `SORPRESA_TAB`: va scritta una regola e provata su partite nuove
   (il 2026/27 man mano che si gioca) prima di mettere il numero nello Scanner. Vedi *L'avviso di
   sorpresa*, «Contro le quote e nel tabellone».
+- [ ] **Il maestro mercato: il test.** Regola registrata l'11 ottobre 2026: le probabilità del motore imparate dal
+  mercato (ridge dalle 65 variabili del motore all'1X2 e ai lambda del mercato), poi usate senza quote. Fuori lega sulle
+  14 leghe dell'allenamento 1X2 −4.20‰ (`z = −6.11`, 14 su 14) e risultato esatto −12.93‰ (`z = −9.9`, 14 su 14). Il
+  test è sui risultati di 34 leghe mai usate per questo (`batch/livello` e i tre batch del `b74`). Vedi *Il maestro
+  mercato: la regola*.
 - [ ] **I tocchi in area nell'1X2: il test sulle partite nuove.** Regola registrata il 2 ottobre 2026:
   Elo, modello e tocchi nell'area avversaria previsti, con pesi già fissati, contro il motore, sulle partite
   giocate dal 3 ottobre 2026 nelle 24 leghe dei batch. Nell'esplorazione (le 24 leghe, già tutte guardate)
@@ -3100,6 +3105,98 @@ Over/Under 0.5 e 4.5 dicono lo stesso: il lato è sempre quello, la logloss del 
 
 Se il motore batta il bookmaker sui gialli o sui corner non si può sapere senza le loro quote storiche (vedi *Le
 quote di corner e cartellini: la regola*).
+
+### Il maestro mercato: la regola
+
+Scritta l'11 ottobre 2026, prima di aprire le leghe del test: di quei file, per questa domanda, non si è letta nessuna
+riga. Chiesta dall'utente: «io voglio migliorare il mio motore… sei tu che devi cercare in lungo e largo una soluzione».
+
+**Cosa si è cercato prima**, sulle 12 leghe di `batch48` e `batch4` (solo esplorazione, nessuna regola):
+- *Gol sottodispersi* (COM-Poisson, la varianza sotto la media). Dato il lambda la varianza dei gol è 0.96–0.97 della
+  media, quasi Poisson: col parametro migliore (ν 1.05) il risultato esatto migliora di 0.43‰ e l'Over peggiora.
+  Niente.
+- *Pi-rating* (Constantinou e Fenton) al posto dell'Elo, e un Dixon-Coles di lega stimato ogni giorno sui gol. Sopra
+  Elo e modello con pesi liberi aggiungono −0.98‰ (`z = −1.96`) e −0.03‰. I gol, l'Elo li sa già.
+- *Il ritmo dei gol che cambia col punteggio e col minuto* (Dixon e Robinson, 1998), stimato sui minuti dei gol di 19.230
+  partite di 24 leghe: chi è avanti di uno segna il 9% meno, e il ritmo sale del 50% dalla prima mezz'ora all'ultima.
+  Contro la matrice di ruolo, fuori lega: risultato esatto −1.14‰ (`z = −2.20`), differenza reti −0.85‰. Poco.
+- *Dove il motore perde contro il mercato.* La distanza è uguale in tutta la stagione: +10 / +26‰ per fascia di
+  giornate, le prime 6 giornate non pesano più delle altre. Il mercato non sa solo i mercati estivi: valuta meglio le
+  squadre sempre.
+
+**L'idea.** Il mercato è un bersaglio molto meno rumoroso del risultato: una partita finisce 1, X o 2, il mercato dice
+quanto valeva. Si stima come il mercato pesa quello che il motore già sa, e poi lo si usa senza quote. Tecnicamente è
+una distillazione: una regressione ridge dalle variabili del motore alle quantità del mercato, invece che ai risultati.
+Il motore non vede le quote: le impara una volta, e poi fa da solo.
+
+**L'esplorazione**, sulle 14 leghe coi file principali di football-data (`batch48`, `batch4`, `batch/2627`,
+`batch/nuove`: 16.071 partite con le quote di chiusura di 1X2 e Over 2.5), fuori lega, contro il motore:
+
+| | 1X2 | prese | risultato esatto | Over 2.5 | Goal | differenza reti |
+|---|---|---|---|---|---|---|
+| imparando dal mercato, 65 variabili | −4.20‰ (`z = −6.11`), 14 su 14 | 50.58 → 51.27% | −12.93‰ (`z = −9.9`), 14 su 14 | −4.19‰ (11 su 14) | −3.40‰ (13 su 14) | −6.14‰ (14 su 14) |
+| la stessa cosa sulle 12 leghe, con tutte le 233 righe del CSV | −5.37‰ | 51.04 → 51.81% | | | | |
+| imparando dai risultati, 233 righe | −1.65‰ (`z = −1.27`) | | | | | |
+| il mercato stesso (il tetto) | −17.40‰ | | −33.47‰ | −10.68‰ | −5.17‰ | −22.25‰ |
+
+- Con le stesse variabili, imparare dal mercato vale tre volte imparare dai risultati, e non si adatta al rumore.
+- Chiude un quarto della distanza dal mercato sull'1X2 e il 40% sul risultato esatto.
+- *Nel tempo*: allenato sul 2023/24–2024/25 e misurato dopo (5.691 partite), 1X2 −4.13‰ (`z = −3.45`), risultato
+  esatto −14.45‰ (`z = −6.6`).
+- *Le formazioni* (peso, gol e cambi degli assenti, allenatore) le pesa anche il mercato, ma valgono poco: senza, l'1X2
+  passa da −4.54 a −4.16‰. Nello Scanner prima del fischio sono spesso solo probabili, e il backtest le ha sempre
+  confermate: fuori dal candidato, come il riposo (−4.20 senza nessuno dei due).
+- Il ridge fa come gli alberi (gradient boosting −5.42‰ sull'1X2, −12.27‰ sull'esatto). Il pi-rating non aggiunge
+  niente. L'1X2 ricavato dai lambda imparati vale meno di quello imparato direttamente (−3.33 contro −4.54‰). Una
+  ritaratura sui risultati aggiunge −0.25‰, una scala sui lambda niente: fuori dal candidato.
+
+**Il candidato, con tutto fissato** (`strumenti/maestro.py`, numeri in `strumenti/maestro_regola.json`, stimati su
+tutte le 16.071 partite):
+- *Le variabili*, 65, tutte del motore e tutte nel CSV:
+  - log-odds dell'Elo e del modello, differenza Elo, HFA, rating delle due squadre;
+  - i lambda di ruolo (col livello del `b63`) e completi, `rho`, il lambda dai tiri in porta, i rigori;
+  - attacco e difesa delle due squadre, le medie gol di lega, la pendenza dell'Elo;
+  - le partite di ruolo e della serie dell'Elo;
+  - differenza e somma delle statistiche previste delle due squadre (NPxG, xG, xGOT, tiri in porta, corner, possesso,
+    tocchi in area, big chances e sprecate, gol, xG da palla inattiva, falli, gialli, field tilt, PPDA, ingressi
+    nell'ultimo terzo, altezza difensiva);
+  - Over 2.5, Goal e 1 contro 2 della matrice di ruolo, e l'1X2 del motore.
+
+  Standardizzate con media e deviazione dell'allenamento; una variabile mancante prende la mediana dell'allenamento.
+- *Le uscite*, quattro, con la ridge (`α` 10): `T1 = log(p1/pX)` e `T2 = log(p2/pX)` dell'1X2 del mercato senza
+  margine (in proporzione), e il log dei due lambda della matrice allineata a 1X2 e Over 2.5 del mercato (`b57`).
+- *Senza quote*: 1X2 = softmax(T1, 0, T2); gol = Dixon-Coles 11×11 coi due lambda `exp(T3)`, `exp(T4)` e il `rho` del
+  motore, da cui risultato esatto, Over/Under, Goal, multigol, handicap.
+
+**I dati del test**: i risultati delle partite in copia conforme di `batch/livello` (9 leghe: Bundesliga austriaca,
+Superligaen, Liga MX, Eliteserien, Allsvenskan, MLS, J. League, Liga Profesional, Série A brasiliana) e dei tre batch del
+`b74` (`batch/lontane`, `batch/anno2026`, `batch/europa2526`: 25 leghe, fuori la Super League 1 greca 2025/26 e la
+Saudi Pro League 2023/24). Circa 13.600 partite di 34 leghe, nessuna fra quelle dell'allenamento. Non servono quote: si
+misura sul risultato.
+
+**Il metro e quando passa.** Appaiato partita per partita contro quello che il motore stampa oggi.
+- *1X2*: logloss dell'1X2 del maestro contro quello del motore. Passa con `z ≤ −2`, meglio in più di metà delle leghe con
+  almeno 100 partite, e le prese del pick che non calano oltre −2 errori standard.
+- *Gol*: logloss del risultato esatto della matrice del maestro contro la matrice di ruolo del motore. Passa con `z ≤ −2`
+  e meglio in più di metà delle leghe con almeno 100 partite, se Over 2.5 + Goal insieme non peggiorano sull'insieme.
+
+Sono due test, e ognuno decide per sé.
+
+**Se passano.** Nello Scanner una manopola (`MAESTRO`, che a `'no'` torna a oggi) e le 65 variabili calcolate dalle
+stesse variabili da cui le prende il CSV:
+- *se passa l'1X2*: l'1X2 del verdetto, le doppie chance e le confidence vengono dal maestro;
+- *se passano i gol*: la matrice dei gol, cioè Over/Under, Goal, multigol, risultato esatto, handicap e tempi dei gol.
+
+Va rimisurato, sulle probabilità nuove, tutto quello che ne dipende:
+- `PICK_RESA` (soglie e rese per lega) e `SORPRESA_TAB`;
+- le rese del tabellone senza quote (`EDGE_BANDS`, 1X2 e gol) e la retta della confidence dei binari;
+- `QUOTE_COMB` e `QUOTE_OU`, che combinano il motore col mercato.
+
+Se uno dei due non passa, quella parte resta com'è, e questa sezione dice perché.
+
+**Descrittivi**, che non decidono: Over 1.5, 2.5, 3.5, Goal e differenza reti uno per uno; ogni lega; la taratura del
+pick per fascia; il pareggio previsto; Over e Goal previsti contro il reale. `python3 strumenti/maestro.py --prova
+batch/livello batch/lontane batch/anno2026 batch/europa2526` rifà il test; `--allena` rifà i numeri del candidato.
 
 ### Battere il bookmaker: la regola della ricerca
 
