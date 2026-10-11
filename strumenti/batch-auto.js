@@ -10,6 +10,9 @@
 //   node strumenti/batch-auto.js --leghe "ITA:Serie A,Eredivisie" --stagioni 2024/2025,2025/2026
 //   node strumenti/batch-auto.js --leghe l_0ALvwF --out /percorso/cartella
 //   node strumenti/batch-auto.js --finto ...      la lega finta del banco al posto della PitchAPI
+//   node strumenti/batch-auto.js --scritture ...  in piu' registra ogni scrittura a schermo del motore (il primo giro di
+//                                                 ogni partita) in scritture.jsonl, e i valori che il motore estrae da ogni
+//                                                 partita dello storico in dettagli.jsonl (AGENTS.md, Le card di Numeri)
 //
 // --leghe: id di leghe.json o nomi; se un nome e' ambiguo, PAESE:Nome (GER:Bundesliga).
 // --stagioni: di default 2023/2024, 2024/2025 e 2025/2026 (le stagioni con due alle spalle).
@@ -32,6 +35,7 @@ const ROOT = path.resolve(__dirname, '..');
 const PITCH = 'https://pitchapi-proxy.salvatorepampalone-sp.workers.dev';
 const arg = (nome, def) => { const i = process.argv.indexOf('--' + nome); return i > 0 && process.argv[i + 1] ? process.argv[i + 1] : def; };
 const FINTO = process.argv.includes('--finto');
+const SCRITTURE = process.argv.includes('--scritture');
 const OUT = path.resolve(arg('out', path.join(ROOT, 'batch')));
 const STAGIONI = arg('stagioni', '2023/2024,2024/2025,2025/2026').split(',').map(s => s.trim()).filter(Boolean);
 const KEY = process.env.PITCHAPI_KEY || '';
@@ -83,6 +87,18 @@ async function pitch(url) {
       return { status: 599, body: JSON.stringify({ error: String(e.cause ? (e.cause.code || e.cause.message) : e.message) }) };
     }
   }
+}
+
+// la stessa strumentazione del banco (safeTxt/safeHtml), piu' i valori estratti da ogni partita dello storico
+const REC_TXT = "const safeTxt = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };";
+const REC_HTML = "const safeHtml = (id, val) => { const el = document.getElementById(id); if (el) el.innerHTML = val; };";
+const DET_FINE = "      lu: _luSide(lineupsRes, isH)\n    };\n";
+function strumenta(src) {
+  if (!src.includes(REC_TXT) || !src.includes(REC_HTML) || !src.includes(DET_FINE)) esci('scanner.html ha cambiato forma: aggiorna la strumentazione di --scritture.');
+  return src.replace(REC_TXT, "const safeTxt = (id, val) => { try { window.__REC_CUR.push(['t', id, String(val)]); } catch (e) {} const el = document.getElementById(id); if (el) el.textContent = val; };")
+            .replace(REC_HTML, "const safeHtml = (id, val) => { try { window.__REC_CUR.push(['h', id, String(val)]); } catch (e) {} const el = document.getElementById(id); if (el) el.innerHTML = val; };")
+            .replace(DET_FINE, DET_FINE + "    try { const _k = m.id + '|' + teamId; window.__DET_VISTI = window.__DET_VISTI || new Set(); "
+              + "if (!window.__DET_VISTI.has(_k)) { window.__DET_VISTI.add(_k); const { lu, ...r } = matchDetails[m.id]; window.__salvaDet(JSON.stringify({ k: _k, d: r })); } } catch (e) {}\n");
 }
 
 function serve() {
@@ -139,6 +155,14 @@ function serve() {
     const r = await pitch(route.request().url());
     return route.fulfill({ status: r.status, headers: { ...CORS, 'content-type': 'application/json' }, body: r.body });
   });
+  if (SCRITTURE) {
+    const fGiri = fs.createWriteStream(path.join(OUT, 'scritture.jsonl'), { flags: 'a' });
+    const fDet = fs.createWriteStream(path.join(OUT, 'dettagli.jsonl'), { flags: 'a' });
+    await ctx.exposeBinding('__salvaGiro', (src, riga) => { fGiri.write(riga + '\n'); });
+    await ctx.exposeBinding('__salvaDet', (src, riga) => { fDet.write(riga + '\n'); });
+    await ctx.route(base + '/scanner.html*', route => route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8',
+      body: strumenta(fs.readFileSync(path.join(ROOT, 'scanner.html'), 'utf8')) }));
+  }
   const page = await ctx.newPage();
   page.setDefaultTimeout(0);
   page.on('dialog', d => d.accept());
@@ -151,6 +175,18 @@ function serve() {
   const motore = await page.evaluate(() => ({ build: window.__SCANNER_BUILD, comp: window.__CMP_BUILD, storico: window.__ENGINE_LIMIT }));
   scrivi(`motore ${motore.build}, Comparatore ${motore.comp}, storico ${motore.storico} partite`, true);
   if (motore.build !== motore.comp) scrivi('ATTENZIONE: le build di motore e Comparatore non coincidono.', true);
+  // il primo giro di ogni partita (k = SHRINK_K del motore) e' quello dello Scanner: si registra solo quello
+  if (SCRITTURE) await page.evaluate(() => {
+    const orig = window.avviaScanner, v = id => { const e = document.getElementById(id); return e ? e.value : null; };
+    window.avviaScanner = async function () {
+      window.__REC_CUR = [];
+      const k = window.SHRINK_K, r = await orig.apply(this, arguments);
+      if (k === window.__ENGINE_DEFAULTS.SHRINK_K)
+        window.__salvaGiro(JSON.stringify({ data: v('target-date'), casa: v('sel-home'), trasf: v('sel-away'), lega: v('sel-league'),
+                                            esito: window.__ESITO || null, rec: window.__REC_CUR }));
+      return r;
+    };
+  });
 
   // il log del Comparatore finisce nel file, e a schermo le righe che contano
   let letti = 0;
