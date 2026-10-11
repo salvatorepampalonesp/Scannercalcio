@@ -55,7 +55,7 @@ vedi *Le quote automatiche*); se non ci sono, le scrive l'utente. Per misurarle 
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b78`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b79`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -107,8 +107,9 @@ vedi *Le quote automatiche*); se non ci sono, le scrive l'utente. Per misurarle 
   a mano dai loro repository. Dove dicono altro da questo file vale questo file: niente commenti
   `ponytail:` nel JS, i resoconti restano coi numeri, e niente CDN, GSAP, Tailwind o pacchetti npm
   che le skill di gusto propongono (le pagine restano un file solo, senza dipendenze). **La grafica
-  segue taste** (`redesign-existing-projects` e `design-taste-frontend`, dal `b78`): chi la tocca rilegge
-  le loro regole, e in *La grafica dello Scanner*, «Cosa cambia nel `b78`», quali valgono qui. `graphify` scrive in `graphify-out/`, fuori
+  segue taste** (`redesign-existing-projects` e `design-taste-frontend`, dal `b78`) **e impeccable** (dal
+  `b79`): chi la tocca rilegge le loro regole, e in *La grafica dello Scanner*, «Cosa cambia nel `b78`» e
+  «Cosa cambia nel `b79`», quali valgono qui. `graphify` scrive in `graphify-out/`, fuori
   da git.
 - **impeccable** (`pbakaus/impeccable`, 4.5.2, Apache 2.0). L'ha installato l'utente l'11 ottobre 2026 con
   `npx impeccable install`, e si aggiorna con `npx impeccable update`, non con `skills-lock.json`. Ha messo:
@@ -126,13 +127,19 @@ vedi *Le quote automatiche*); se non ci sono, le scrive l'utente. Per misurarle 
   Dove dice altro da taste, sulla grafica vale taste. Per esempio il rilevatore segna Geist come carattere
   troppo usato, e taste l'ha scelto. Dove dice altro da questo file, vale questo file.
 
-  Il primo giro del rilevatore, sul `b78`, ha trovato (nessuno corretto):
+  Il primo giro del rilevatore, sul `b78`, ha trovato (corretto nel `b79`, vedi *La grafica dello Scanner*,
+  «Cosa cambia nel `b79`»):
   - nella home 2 segnalazioni: l'icona in un riquadro sopra il titolo, e Geist;
   - nello Scanner 24: 14 card senza margine interno, 6 contrasti bassi, 2 testi sotto i 12 px, Geist e Geist
     Mono. Più un avviso su 44 lineette lunghe, ma sono i `--` dei segnaposto: lineette lunghe a schermo non
     ce ne sono;
   - nel Comparatore 7: contrasti bassi e testo a 11 px. Uno dei contrasti, a 1.3:1 sul segno dei passi
     (`.step-n`), è falso: il numero lì ha `font-size:0`.
+
+  Le eccezioni del rilevatore stanno in `.impeccable/config.json`, ognuna col suo motivo: Geist e Geist Mono
+  (li ha scelti taste), le lineette e i margini stretti di `scanner.html` letto come file (sono i segnaposto `--`
+  e le `details.card` senza sfondo; sulla pagina analizzata non ci sono). Si aggiungono solo con
+  `impeccable hooks ignore-value`, mai a mano.
 
   `/impeccable init`, che scrive PRODUCT.md e DESIGN.md, non è stato lanciato.
 
@@ -533,7 +540,7 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b77`)
+## Stato attuale (`b79`)
 
 **Il maestro mercato** (dal `b77`). Senza quote, l'1X2 del verdetto e la matrice dei gol (Over/Under, Goal, multigol,
 risultati esatti, handicap, tempi dei gol) non escono più dall'ensemble del motore ma dal maestro. È una ridge che dalle
@@ -777,8 +784,10 @@ dock in fondo, l'anello dell'analisi in corso, Numeri a fisarmonica col numero c
 Comparatore negli stessi colori. Dal `b78` le regole di taste-skill: Geist e Geist Mono al posto di Inter,
 zinc neutro scuro e chiaro con un solo accento smeraldo al posto del blu-viola, niente emoji, lineette lunghe,
 etichette maiuscole, bagliori, rimbalzi e numeri che contano; nella home lo scarico di tutte le statistiche
-di una partita. Vedi *La grafica dello Scanner*, «Cosa cambia nel `b78`», e *La home e lo scarico di una
-partita*.
+di una partita. Dal `b79` le regole di impeccable sopra quelle di taste: contrasti da 4.5:1 anche nel tema
+chiaro, testo mai sotto i 12 px, la lega accanto alla data invece che sopra il titolo, e le animazioni ridotte a
+transizioni brevi più un solo momento d'autore, il verdetto che si compone a fine analisi. Vedi *La grafica
+dello Scanner*, «Cosa cambia nel `b78`» e «Cosa cambia nel `b79`», e *La home e lo scarico di una partita*.
 
 **La selezione vale più dell'accuratezza.** Prima di aggiungere una feature, chiedersi se
 il segnale non sia già nell'output, solo mal etichettato.
@@ -1448,6 +1457,69 @@ si usano dipendenze. Per le animazioni non è servito `find-skills`: taste ha le
 - *Verificato*: banco verde a 390px; `strumenti/schermate.js` ha l'opzione `--tema chiaro`, e sulla lega finta e su
   Juventus – Lazio vera, in scuro e in chiaro, nessun errore e 0 px di scorrimento in ogni scheda.
 
+**Cosa cambia nel `b79`.** Chiesto dall'utente: «secondo queste regole [impeccable], senza dimenticare quelle di
+taste, correggi il sito; vedi se sistema anche le animazioni». È un raffinamento, non un redesign: la grafica del
+`b78` resta.
+
+- *Il metodo.* Le pagine sono un'interfaccia di lavoro, quindi in impeccable sono in modalità Operate:
+  - familiarità prima dell'espressione;
+  - transizioni da 150 a 300 ms;
+  - nessuna coreografia all'apertura;
+  - un solo momento d'autore.
+
+  Prima l'audit (`audit`), poi `polish` e `animate`. Il rilevatore ha girato due volte:
+  - sui file;
+  - sulla pagina dopo un'analisi.
+
+  Per la seconda, `strumenti/schermate.js --istantanee` salva ogni scheda dopo l'analisi, senza script e con le
+  `details` aperte, e il rilevatore la legge da un server locale:
+  `impeccable detect <url> --viewport 390x844`, con `IMPECCABLE_BROWSER` sul Chromium di `/opt/pw-browsers`
+  lanciato con `--no-sandbox`. Letta così, la pagina aveva 48 segnalazioni vere, 31 nel tema chiaro e 17 nello scuro (contrasti e
+  testi piccoli). Quasi tutte quelle del file statico erano false.
+- *Contrasti.* I colori di dato hanno una variante per il testo (`--c-ok-t`, `--c-warn-t`, `--c-err-t`):
+  - nel tema scuro sono gli stessi colori;
+  - nel tema chiaro sono più scuri e reggono 4.5:1 anche sulle pastiglie colorate. FORTE, per esempio, passa da
+    3.2:1 a più di 4.5:1.
+
+  Nel tema chiaro gli alias che il motore usa negli stili in linea (`--ok`, `--green`, `--accent`, `--orange`,
+  `--red`, `--err`, `--blue`) puntano alle varianti per il testo. Fuori dal tema chiaro niente cambia. I segnaposto
+  dei campi passano a `--n-500`.
+- *Testi.* Mai sotto i 12 px: pastiglie, dock, note piccole, registro, prompt, e gli 11 e 11.5 px scritti in
+  linea dal motore. Nel Comparatore il titolo sale a 20 px, per un salto di scala da 1.25.
+- *Il titolo della partita.* L'occhiello «Serie A · pre-partita» sopra il titolo era un divieto di impeccable. Ora
+  c'è il titolo, poi una riga con la lega in una pastiglia e la data. L'occhiello lo scrive ancora
+  `renderLeagueNote`, solo col nome della lega. Nella home l'icona non è più in un riquadro sopra il titolo:
+  sta accanto.
+- *Il setup.* Nei menu i segnaposto «-- Seleziona --» erano tagliati a «-- Selezi» a 390 px, e i `--` il rilevatore
+  li contava come lineette. Ora sono «Scegli» e «Scegli la squadra di casa». Sul telefono Paese e Lega stanno
+  affiancati, la Stagione sotto.
+- *Le superfici del browser.* Barre di scorrimento e `accent-color` nei colori della pagina, nelle tre pagine.
+- *Le animazioni*, che erano il difetto maggiore: a ogni cambio di scheda partiva una cascata di blocchi a
+  scaletta, fino a 740 ms. Ora:
+  - **un cambio di stato è una dissolvenza**: schede, sotto-schede, blocchi nuovi e fisarmoniche compaiono tutti
+    insieme, 220 ms, con 4 px di spostamento (`appare`);
+  - **un solo momento d'autore, il verdetto che si compone** (`rivela`), a fine analisi e a ogni partita nuova della
+    giornata. Il pick sale dalla sua linea (clip-path, 560 ms), la barra dell'1X2 si stende da sinistra a
+    destra (720 ms), la probabilità arriva quando la barra è piena;
+  - **il manubrio del tabellone** si stende dalla base di lega alla probabilità, verso destra o verso sinistra,
+    una volta per analisi. Le barre dei giocatori crescono quando arrivano;
+  - **le durate**: indicatori del dock e dei segmenti 280 ms, foglio dal basso 360 ms in entrata e 220 in uscita,
+    anello 240 e 200. Ogni uscita è più veloce dell'entrata;
+  - **il movimento ridotto non spegne più tutto.** Restano le dissolvenze (al massimo 160 ms, senza attese) e le
+    transizioni di colore e opacità. Spariscono gli spostamenti: `anim` toglie `transform`, `clipPath` e
+    `strokeDasharray` dai fotogrammi, e il CSS lascia le transizioni solo su colore, sfondo, bordo, opacità e
+    ombra.
+- *Cosa non cambia*: motore, numeri, id. Il banco col motore `b78` vede 0 scritture diverse su 201: l'occhiello e i
+  segnaposto dei menu non passano da `safeTxt`. Cambia una riga del CSV, il certificato.
+- *Verificato*:
+  - banco verde a 390px;
+  - schermate sulla lega finta in scuro, in chiaro e a 1280 px: nessun errore, 0 px di scorrimento in ogni scheda;
+  - fotogrammi del verdetto che si compone;
+  - home e Comparatore a 390 px in tutti e due i temi.
+
+  Il rilevatore, dopo, sulla pagina analizzata (otto schede, due temi): 0 segnalazioni, con Geist fra le
+  eccezioni. Sulla home e sul Comparatore, a 390 e 1280 px: 0.
+
 **Cosa non cambia, e non deve cambiare.**
 
 - **Tutti gli id della pagina del `b58` ci sono ancora** (233, confrontati con un elenco preso prima
@@ -1953,7 +2025,7 @@ col movimento ridotto (`reducedMotion: 'reduce'`: i numeri che contano mostrereb
 intermedi), legge «In breve» da `#in-breve` (il riquadro, la sorpresa e le proposte sono tre blocchi)
 e misura le voci del dock e del foglio Altro, Squadre in tutte e tre le sotto-schede.
 
-Esito al `b78` (storico 30; uguale al `b77`), a 390px con tutte le 28 card aperte, scheda per scheda e in tutte e tre le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, 0 px):
+Esito al `b79` (storico 30; uguale al `b77` e al `b78`), a 390px con tutte le 28 card aperte, scheda per scheda e in tutte e tre le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, 0 px):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
@@ -1961,7 +2033,7 @@ Esito al `b78` (storico 30; uguale al `b77`), a 390px con tutte le 28 card apert
 | batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 201 | 0 su 122 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
 | `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 140-165 | 75-82 | 0 |
-| `vecchio`: motore `b77` caricato (controllo) | 0/3, «motore caricato diverso ...» | 8 su 201 | 1 (il certificato) | 0 |
+| `vecchio`: motore `b78` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 su 201 | 1 (il certificato) | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -2057,7 +2129,8 @@ Il primo giro del banco ha fallito su due righe in tutte le modalità: «Over 2.
 confrontavano con la colonna «Dixon-Coles di ruolo» della card dei modelli, che dal `b77` descrive il motore; ora con la riga
 «Verdetto (maestro)», che è la matrice da cui il CSV le prende. Al `b78` il controllo col `b77` vede 8 scritture diverse
 su 201, tutte di testo (emoji e lineette lunghe tolte da narrazioni, titoli del KNN e rischio sorpresa), e una riga del
-CSV, il certificato.
+CSV, il certificato. Al `b79` il controllo col `b78` non vede nessuna scrittura diversa, solo il certificato: cambiano
+il foglio di stile, le animazioni, l'occhiello della lega e i segnaposto dei menu, che non passano da `safeTxt`.
 
 **Il controllo del `b70`.** Da qui «In breve» controlla anche il rischio sorpresa: con le quote dell'1X2
 `#sorpresa-box` deve essere identico a quello rifatto nella pagina con `rischioSorpresa(…,
@@ -6560,3 +6633,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b76` | le card di Numeri corrette, chieste dall'utente dopo la misura dell'11 ottobre («non può essere così scarsa la matematica»): restringimenti James-Stein, Gamma-Poisson e Dirichlet e ricalibrazioni logistiche per rosso, corner, minuti dei gol, cecchino, palla inattiva, efficienza, recuperi e Choke Index, modulo, ultime 3 e 5, stile, giudizio della fortuna, capocannoniere e KNN. Regola registrata e unita su main prima di aprire i dati del test; su 3.976 partite mai aperte per Numeri passano tutte e 17, da `z` −2.7 (corner) a −17.1 (recuperi). I numeri diventano onesti, non più informativi: rosso e corner valgono quanto la frequenza della lega. Manopola `NUMERI_CORREZIONI` (`'no'` torna a prima). Col `b75` 41-42 scritture diverse su 191, 10-19 righe del CSV (KNN, corner, tabellone, certificato); `strumenti/numeri-correzioni.py`, `strumenti/numeri-schermo.py` |
 | `b77` | il maestro mercato: senza quote, l'1X2 e la matrice dei gol escono da una ridge che dalle 65 variabili del motore stima quello che il mercato direbbe, imparata sulle quote di chiusura di 14 leghe (16.071 partite). Chiesto dall'utente («sei tu che devi cercare in lungo e largo una soluzione»), dopo una ricerca che ha scartato COM-Poisson, pi-rating, Dixon-Coles di lega sui gol e il ritmo dei gol per punteggio e minuto. Regola registrata e unita su main prima del test; sui risultati di 33 leghe mai usate (13.592 partite) 1X2 −4.37‰ (`z = −5.30`, 25 su 33) e risultato esatto −13.41‰ (`z = −8.88`, 31 su 33). Rimisurate `PICK_RESA` (pick 52.7 → 53.3%, ≥65% 73.3 → 76.0%), `SORPRESA_TAB`, `EDGE_BANDS` (gol GIOCABILE +7.4 → +13.2), `QUOTE_RESA` e `QUOTE_OU_RESA`; con le quote non cambia niente. Manopola `MAESTRO` (`'no'` torna a prima); `strumenti/maestro.py` (`--allena`, `--prova`, `--rimisura`, `--schermo`). Col `b76` 48 scritture diverse su 201 (10 sono gli id nuovi), 38-42 righe del CSV; sulla PitchAPI vera Juventus – Lazio dell'8 febbraio 2026 senza errori, 0 px |
 | `b78` | la grafica con le regole di taste-skill (`redesign-existing-projects` e `design-taste-frontend`), chiesta dall'utente perché «non sembri slop»: Geist e Geist Mono al posto di Inter, zinc neutro scuro e chiaro (automatico o scelto, per le tre pagine) con un solo accento smeraldo al posto del blu-viola, forme fisse (12, 8, 6, 2 px), etichette in tondo, niente passi numerati, emoji, lineette lunghe, aloni, rimbalzi, onda al tocco né numeri che contano; animazioni solo di transform e opacity, spente col movimento ridotto. Nella home lo scarico di tutte le statistiche di una partita (12 endpoint della PitchAPI in un CSV per Excel e un JSON). Numeri invariati: col `b77` 8 scritture diverse su 201, tutte di testo, e il certificato; schermate in scuro e in chiaro, lega finta e Juventus – Lazio vera, 0 px |
+| `b79` | le regole di impeccable sopra quelle di taste, chieste dall'utente («correggi il sito, vedi se sistema anche le animazioni»): audit col rilevatore anche sulla pagina dopo un'analisi (`schermate.js --istantanee`), poi i contrasti da 4.5:1 nel tema chiaro (varianti per il testo dei colori di dato), testo mai sotto i 12 px, la lega accanto alla data invece che sopra il titolo, i menu del setup senza `--` e non tagliati, l'icona della home accanto al titolo. Le animazioni: via le cascate a ogni cambio di scheda (dissolvenze da 220 ms), un solo momento d'autore (il verdetto che si compone a fine analisi), il manubrio del tabellone che si stende dalla base, e il movimento ridotto che tiene le dissolvenze invece di spegnere tutto. Numeri invariati: col `b78` 0 scritture diverse su 201, una riga del CSV (il certificato); il rilevatore sulla pagina analizzata da 48 segnalazioni a 0 |

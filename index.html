@@ -33,6 +33,7 @@
   --ease:cubic-bezier(.16,1,.3,1);
   --color-divider:color-mix(in srgb,var(--color-text) 13%,transparent);
   --c-ok:var(--color-accent);
+  --c-ok-t:var(--color-accent); --c-warn-t:var(--c-warn); --c-err-t:var(--c-err);
   --r-sm:6px; --r-md:8px; --r-lg:12px;
   --shadow-sm:0 0 0 1px var(--n-800);
   --shadow-md:0 0 0 1px var(--n-800),0 8px 20px var(--ombra);
@@ -48,6 +49,7 @@
   --c-home:oklch(0.52 0.15 250); --c-home-t:oklch(0.46 0.14 250);
   --c-away:oklch(0.56 0.18 25);  --c-away-t:oklch(0.50 0.17 25);
   --c-warn:oklch(0.55 0.13 65); --c-err:oklch(0.53 0.19 27);
+  --c-ok-t:oklch(0.44 0.10 160); --c-warn-t:oklch(0.47 0.12 65); --c-err-t:oklch(0.47 0.18 27);
   --ombra:rgb(24 24 32 / .14); --velo:rgb(10 10 12 / .42);
 }}
 :root[data-tema="chiaro"]{
@@ -60,11 +62,12 @@
   --c-home:oklch(0.52 0.15 250); --c-home-t:oklch(0.46 0.14 250);
   --c-away:oklch(0.56 0.18 25);  --c-away-t:oklch(0.50 0.17 25);
   --c-warn:oklch(0.55 0.13 65); --c-err:oklch(0.53 0.19 27);
+  --c-ok-t:oklch(0.44 0.10 160); --c-warn-t:oklch(0.47 0.12 65); --c-err-t:oklch(0.47 0.18 27);
   --ombra:rgb(24 24 32 / .14); --velo:rgb(10 10 12 / .42);
 }
 
 *{box-sizing:border-box;margin:0;padding:0}
-html{background:var(--color-bg);-webkit-text-size-adjust:100%}
+html{background:var(--color-bg);-webkit-text-size-adjust:100%;scrollbar-color:var(--n-700) transparent;accent-color:var(--color-accent)}
 body{font-family:var(--font);font-size:14px;line-height:1.5;background:var(--color-bg);color:var(--color-text);-webkit-font-smoothing:antialiased;
   min-height:100dvh;display:flex;flex-direction:column;padding:max(28px,env(safe-area-inset-top)) 16px max(20px,env(safe-area-inset-bottom))}
 ::selection{background:color-mix(in srgb,var(--color-accent) 30%,transparent)}
@@ -77,10 +80,10 @@ h1{font-size:34px;font-weight:600;letter-spacing:-.035em;line-height:1.05;text-w
 h2{font-size:21px;font-weight:600;letter-spacing:-.025em;line-height:1.2}
 p{text-wrap:pretty}
 
-/* apertura: marchio, titolo, una frase */
+/* apertura: il marchio accanto al titolo, una frase */
 .apertura{padding:8px 0 4px}
-.marchio{width:44px;height:44px;border-radius:var(--r-lg);display:grid;place-items:center;font-size:22px;color:var(--color-accent);
-  background:var(--color-surface);box-shadow:var(--shadow-sm);margin-bottom:20px}
+.marchio{display:flex;align-items:center;gap:12px}
+.marchio .ic{font-size:30px;color:var(--color-accent)}
 .apertura p{margin-top:10px;font-size:15px;color:var(--n-500);max-width:44ch}
 
 /* le due voci: righe, non card */
@@ -106,7 +109,7 @@ input,select{width:100%;min-height:46px;padding:0 12px;font:400 15px/1.3 var(--f
 input:hover:not(:disabled),select:hover:not(:disabled){border-color:color-mix(in srgb,var(--color-text) 40%,transparent)}
 input:focus-visible,select:focus-visible{border-color:var(--color-accent);outline:2px solid var(--color-accent);outline-offset:0}
 input:disabled,select:disabled{opacity:.55;cursor:not-allowed}
-input::placeholder{color:var(--n-600)}
+input::placeholder{color:var(--n-500)}
 select{appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:36px;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath fill='%2388888f' d='M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z'/%3E%3C/svg%3E");
   background-repeat:no-repeat;background-position:right 13px center;background-size:14px}
@@ -130,7 +133,7 @@ select{appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:36px
 .btn-primary:hover:not(:disabled){background:color-mix(in oklab,var(--color-accent) 86%,var(--color-text))}
 .stato{font-size:13px;line-height:1.5;color:var(--n-400);min-height:20px;font-variant-numeric:tabular-nums}
 .stato:empty{display:none}
-.stato.ok{color:var(--color-accent)} .stato.err{color:var(--c-err)}
+.stato.ok{color:var(--c-ok-t)} .stato.err{color:var(--c-err-t)}
 .stato b{font-weight:500;color:var(--color-text)}
 .barra{height:3px;border-radius:2px;background:var(--n-800);overflow:hidden;margin-top:8px}
 .barra i{display:block;height:100%;background:var(--color-accent);transform-origin:left center;transition:transform .3s var(--ease)}
@@ -147,7 +150,9 @@ details.cosa>div{font-size:12.5px;line-height:1.6;color:var(--n-500);padding-bot
 .seg button{height:34px;padding:0 12px;border:0;border-radius:var(--r-sm);background:none;font:500 13px/1 var(--font);color:var(--n-500);cursor:pointer;
   transition:color .2s var(--ease),background .2s var(--ease)}
 .seg button.on{background:var(--n-800);color:var(--color-text)}
-@media (prefers-reduced-motion: reduce){*,*::before,*::after{transition-duration:.01ms !important;animation-duration:.01ms !important}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;
+  transition-property:color,background-color,border-color,opacity,box-shadow,outline-color !important}}
+@media (prefers-reduced-motion: reduce){.voce:active,.btn:active:not(:disabled){transform:none}}
 
 </style>
 </head>
@@ -155,8 +160,7 @@ details.cosa>div{font-size:12.5px;line-height:1.6;color:var(--n-500);padding-bot
 <svg class="sprite" width="0" height="0" aria-hidden="true" focusable="false"><defs><symbol id="i-crosshair" viewBox="0 0 256 256"><path d="M232,120h-8.34A96.14,96.14,0,0,0,136,32.34V24a8,8,0,0,0-16,0v8.34A96.14,96.14,0,0,0,32.34,120H24a8,8,0,0,0,0,16h8.34A96.14,96.14,0,0,0,120,223.66V232a8,8,0,0,0,16,0v-8.34A96.14,96.14,0,0,0,223.66,136H232a8,8,0,0,0,0-16Zm-96,87.6V200a8,8,0,0,0-16,0v7.6A80.15,80.15,0,0,1,48.4,136H56a8,8,0,0,0,0-16H48.4A80.15,80.15,0,0,1,120,48.4V56a8,8,0,0,0,16,0V48.4A80.15,80.15,0,0,1,207.6,120H200a8,8,0,0,0,0,16h7.6A80.15,80.15,0,0,1,136,207.6ZM128,88a40,40,0,1,0,40,40A40,40,0,0,0,128,88Zm0,64a24,24,0,1,1,24-24A24,24,0,0,1,128,152Z"/></symbol><symbol id="i-target" viewBox="0 0 256 256"><path d="M221.87,83.16A104.1,104.1,0,1,1,195.67,49l22.67-22.68a8,8,0,0,1,11.32,11.32l-96,96a8,8,0,0,1-11.32-11.32l27.72-27.72a40,40,0,1,0,17.87,31.09,8,8,0,1,1,16-.9,56,56,0,1,1-22.38-41.65L184.3,60.39a87.88,87.88,0,1,0,23.13,29.67,8,8,0,0,1,14.44-6.9Z"/></symbol><symbol id="i-chart-bar" viewBox="0 0 256 256"><path d="M224,200h-8V40a8,8,0,0,0-8-8H152a8,8,0,0,0-8,8V80H96a8,8,0,0,0-8,8v40H48a8,8,0,0,0-8,8v64H32a8,8,0,0,0,0,16H224a8,8,0,0,0,0-16ZM160,48h40V200H160ZM104,96h40V200H104ZM56,144H88v56H56Z"/></symbol><symbol id="i-caret-right" viewBox="0 0 256 256"><path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"/></symbol><symbol id="i-device-mobile" viewBox="0 0 256 256"><path d="M176,16H80A24,24,0,0,0,56,40V216a24,24,0,0,0,24,24h96a24,24,0,0,0,24-24V40A24,24,0,0,0,176,16ZM72,64H184V192H72Zm8-32h96a8,8,0,0,1,8,8v8H72V40A8,8,0,0,1,80,32Zm96,192H80a8,8,0,0,1-8-8v-8H184v8A8,8,0,0,1,176,224Z"/></symbol><symbol id="i-download-simple" viewBox="0 0 256 256"><path d="M224,144v64a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V144a8,8,0,0,1,16,0v56H208V144a8,8,0,0,1,16,0Zm-101.66,5.66a8,8,0,0,0,11.32,0l40-40a8,8,0,0,0-11.32-11.32L136,124.69V32a8,8,0,0,0-16,0v92.69L93.66,98.34a8,8,0,0,0-11.32,11.32Z"/></symbol><symbol id="i-magnifying-glass" viewBox="0 0 256 256"><path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"/></symbol><symbol id="i-check-circle" viewBox="0 0 256 256"><path d="M173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34ZM232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"/></symbol><symbol id="i-warning" viewBox="0 0 256 256"><path d="M236.8,188.09,149.35,36.22h0a24.76,24.76,0,0,0-42.7,0L19.2,188.09a23.51,23.51,0,0,0,0,23.72A24.35,24.35,0,0,0,40.55,224h174.9a24.35,24.35,0,0,0,21.33-12.19A23.51,23.51,0,0,0,236.8,188.09ZM222.93,203.8a8.5,8.5,0,0,1-7.48,4.2H40.55a8.5,8.5,0,0,1-7.48-4.2,7.59,7.59,0,0,1,0-7.72L120.52,44.21a8.75,8.75,0,0,1,15,0l87.45,151.87A7.59,7.59,0,0,1,222.93,203.8ZM120,144V104a8,8,0,0,1,16,0v40a8,8,0,0,1-16,0Zm20,36a12,12,0,1,1-12-12A12,12,0,0,1,140,180Z"/></symbol><symbol id="i-database" viewBox="0 0 256 256"><path d="M128,24C74.17,24,32,48.6,32,80v96c0,31.4,42.17,56,96,56s96-24.6,96-56V80C224,48.6,181.83,24,128,24Zm80,104c0,9.62-7.88,19.43-21.61,26.92C170.93,163.35,150.19,168,128,168s-42.93-4.65-58.39-13.08C55.88,147.43,48,137.62,48,128V111.36c17.06,15,46.23,24.64,80,24.64s62.94-9.68,80-24.64ZM69.61,53.08C85.07,44.65,105.81,40,128,40s42.93,4.65,58.39,13.08C200.12,60.57,208,70.38,208,80s-7.88,19.43-21.61,26.92C170.93,115.35,150.19,120,128,120s-42.93-4.65-58.39-13.08C55.88,99.43,48,89.62,48,80S55.88,60.57,69.61,53.08ZM186.39,202.92C170.93,211.35,150.19,216,128,216s-42.93-4.65-58.39-13.08C55.88,195.43,48,185.62,48,176V159.36c17.06,15,46.23,24.64,80,24.64s62.94-9.68,80-24.64V176C208,185.62,200.12,195.43,186.39,202.92Z"/></symbol></defs></svg>
 <main class="wrap">
   <section class="apertura">
-    <div class="marchio" aria-hidden="true"><svg class="ic"><use href="#i-crosshair"/></svg></div>
-    <h1>Scanner Calcio</h1>
+    <h1 class="marchio"><svg class="ic" aria-hidden="true"><use href="#i-crosshair"/></svg>Scanner Calcio</h1>
     <p>Analisi pre-partita con probabilit&agrave; misurate, e un backtest che le confronta coi risultati veri.</p>
   </section>
 

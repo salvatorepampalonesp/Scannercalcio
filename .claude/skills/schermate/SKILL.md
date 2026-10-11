@@ -47,6 +47,15 @@ Altre opzioni:
 
 - `--ridotto`: movimento ridotto (dal `b78` i numeri non contano più da zero: serve solo a togliere le entrate);
 - `--tema chiaro`: lo schema di colori chiaro del sistema (di default scuro); dal `b78` le pagine hanno tutti e due i temi, e una modifica alla grafica si guarda in tutti e due;
+- `--istantanee`: salva anche ogni scheda dopo l'analisi (`<nome>-pagina-<scheda>.html`, senza script, con le
+  `details` aperte e il tema fissato). Serve al rilevatore di impeccable, che sul file statico non vede la pagina
+  analizzata. Da quella cartella:
+  ```bash
+  python3 -m http.server 8391 &
+  printf '#!/bin/sh\nexec /opt/pw-browsers/chromium-1194/chrome-linux/chrome --no-sandbox "$@"\n' > <scratchpad>/chrome-ns && chmod +x <scratchpad>/chrome-ns
+  IMPECCABLE_BROWSER=<scratchpad>/chrome-ns .claude/skills/impeccable/scripts/impeccable detect --viewport 390x844 http://localhost:8391/scuro-pagina-numeri.html
+  ```
+  Una modifica alla grafica si chiude con 0 segnalazioni in tutte le schede e in tutti e due i temi (dal `b79`);
 - `--larghezza 1280`: la vista del computer;
 - `--nome`: il prefisso dei file.
 

@@ -18,8 +18,12 @@
    (smeraldo, che e' anche il colore delle proposte buone); casa, trasferta,
    attenzione ed errore sono colori di dato, non accenti.
    Forme: contenitori 12px, controlli 8px, etichette 6px, barre 2px.
-   Movimento: solo transform e opacity, cubic-bezier(.16,1,.3,1), niente
-   rimbalzi ne' bagliori, tutto spento con prefers-reduced-motion.
+   Movimento (b79, regole di impeccable): una curva sola, cubic-bezier(.16,1,.3,1);
+   le schede compaiono con una dissolvenza breve, il solo momento d'autore e' il
+   verdetto che si compone a fine analisi; col movimento ridotto restano le
+   dissolvenze, senza spostamenti.
+   Testo mai sotto i 12px; i colori di dato hanno una variante per il testo
+   (--c-ok-t, --c-warn-t, --c-err-t) che nel tema chiaro regge 4.5:1.
    Gli alias del b59 restano: le classi che il motore scrive nel suo HTML
    cambiano aspetto senza toccare il motore. Gli stili inline del motore si
    battono solo con !important (regole in fondo).
@@ -40,6 +44,7 @@
   --ease:cubic-bezier(.16,1,.3,1);
   --color-divider:color-mix(in srgb,var(--color-text) 13%,transparent);
   --c-ok:var(--color-accent);
+  --c-ok-t:var(--color-accent); --c-warn-t:var(--c-warn); --c-err-t:var(--c-err);
   --r-sm:6px; --r-md:8px; --r-lg:12px;
   --shadow-sm:0 0 0 1px var(--n-800);
   --shadow-md:0 0 0 1px var(--n-800),0 8px 20px var(--ombra);
@@ -67,6 +72,9 @@
   --c-home:oklch(0.52 0.15 250); --c-home-t:oklch(0.46 0.14 250);
   --c-away:oklch(0.56 0.18 25);  --c-away-t:oklch(0.50 0.17 25);
   --c-warn:oklch(0.55 0.13 65); --c-err:oklch(0.53 0.19 27);
+  --c-ok-t:oklch(0.44 0.10 160); --c-warn-t:oklch(0.47 0.12 65); --c-err-t:oklch(0.47 0.18 27);
+  --ok:var(--c-ok-t); --green:var(--c-ok-t); --accent:var(--c-ok-t); --accent2:var(--c-ok-t); --orange:var(--c-warn-t); --warn:var(--c-warn-t);
+  --red:var(--c-away-t); --err:var(--c-err-t); --blue:var(--c-home-t);
   --ombra:rgb(24 24 32 / .14); --velo:rgb(10 10 12 / .42);
 }}
 :root[data-tema="chiaro"]{
@@ -79,10 +87,13 @@
   --c-home:oklch(0.52 0.15 250); --c-home-t:oklch(0.46 0.14 250);
   --c-away:oklch(0.56 0.18 25);  --c-away-t:oklch(0.50 0.17 25);
   --c-warn:oklch(0.55 0.13 65); --c-err:oklch(0.53 0.19 27);
+  --c-ok-t:oklch(0.44 0.10 160); --c-warn-t:oklch(0.47 0.12 65); --c-err-t:oklch(0.47 0.18 27);
+  --ok:var(--c-ok-t); --green:var(--c-ok-t); --accent:var(--c-ok-t); --accent2:var(--c-ok-t); --orange:var(--c-warn-t); --warn:var(--c-warn-t);
+  --red:var(--c-away-t); --err:var(--c-err-t); --blue:var(--c-home-t);
   --ombra:rgb(24 24 32 / .14); --velo:rgb(10 10 12 / .42);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html{-webkit-text-size-adjust:100%;background:var(--color-bg);scroll-padding-top:72px}
+html{-webkit-text-size-adjust:100%;background:var(--color-bg);scroll-padding-top:72px;scrollbar-color:var(--n-700) transparent;accent-color:var(--color-accent)}
 body{
   font-family:var(--font);
   font-size:14px;line-height:1.5;font-weight:400;background:var(--color-bg);color:var(--color-text);
@@ -105,7 +116,6 @@ code{font-family:var(--mono);font-size:.92em;background:var(--n-900);padding:1px
 .wrap,.container{max-width:760px;margin:0 auto;padding-inline:20px}
 [hidden]{display:none !important}
 .fuori-scheda{display:none !important}
-.occhiello{font-size:12.5px;color:var(--n-500);font-weight:500}
 .riga-sep{height:1px;background:var(--riga);border:0}
 
 /* ---------- bottoni, tag, campi ---------- */
@@ -129,12 +139,12 @@ code{font-family:var(--mono);font-size:.92em;background:var(--n-900);padding:1px
 .btn-sm{min-height:40px;padding:6px 12px;font-size:13px}
 .btn-full,.btn-block{width:100%}
 .btn-grande{min-height:50px;font-size:15px}
-.tag,.badge,.pill{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;letter-spacing:0;padding:3px 9px;border-radius:var(--r-sm);
+.tag,.badge,.pill{display:inline-flex;align-items:center;gap:4px;font-size:12px;letter-spacing:0;padding:3px 9px;border-radius:var(--r-sm);
   background:var(--n-800);color:var(--n-100);white-space:nowrap;font-weight:400;border:0}
-.tag-ok{background:color-mix(in oklab,var(--c-ok) 13%,transparent);color:var(--c-ok)}
-.tag-forte{background:color-mix(in oklab,var(--c-ok) 26%,transparent);color:var(--c-ok)}
-.tag-warn{background:color-mix(in oklab,var(--c-warn) 13%,transparent);color:var(--c-warn)}
-.tag-err{background:color-mix(in oklab,var(--c-err) 14%,transparent);color:var(--c-err)}
+.tag-ok{background:color-mix(in oklab,var(--c-ok) 13%,transparent);color:var(--c-ok-t)}
+.tag-forte{background:color-mix(in oklab,var(--c-ok) 22%,transparent);color:var(--c-ok-t)}
+.tag-warn{background:color-mix(in oklab,var(--c-warn) 13%,transparent);color:var(--c-warn-t)}
+.tag-err{background:color-mix(in oklab,var(--c-err) 14%,transparent);color:var(--c-err-t)}
 .tag-home{background:color-mix(in oklab,var(--c-home) 14%,transparent);color:var(--c-home-t)}
 label{display:block;font-size:12.5px;font-weight:500;color:color-mix(in srgb,var(--color-text) 72%,transparent);margin-bottom:6px}
 input,select,textarea{
@@ -144,7 +154,7 @@ input,select,textarea{
 }
 input:hover,select:hover,textarea:hover{border-color:color-mix(in srgb,var(--color-text) 45%,transparent)}
 input:focus-visible,select:focus-visible,textarea:focus-visible{border-color:var(--color-accent);outline:2px solid var(--color-accent);outline-offset:0}
-input::placeholder{color:var(--n-600)}
+input::placeholder{color:var(--n-500)}
 select{appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:38px;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath fill='%2388888f' d='M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z'/%3E%3C/svg%3E");
   background-repeat:no-repeat;background-position:right 14px center;background-size:15px}
@@ -231,6 +241,10 @@ details.info>div b{color:var(--color-text);font-weight:500}
 .campi-2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
 .campi-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .campi-2>*,.campi-3>*{min-width:0}
+@media(max-width:600px){
+  .campi-3{grid-template-columns:minmax(0,2fr) minmax(0,3fr);grid-template-areas:"paese lega" "stagione stagione"}
+  .campi-3>:nth-child(1){grid-area:paese} .campi-3>:nth-child(2){grid-area:lega} .campi-3>:nth-child(3){grid-area:stagione}
+}
 .campo-sq{position:relative}
 .campo-sq::before{content:"";position:absolute;left:14px;bottom:19px;width:10px;height:10px;border-radius:50%;background:var(--c-home);pointer-events:none}
 .campo-sq.t-2::before{background:var(--c-away)}
@@ -289,9 +303,10 @@ details.info>div b{color:var(--color-text);font-weight:500}
 /* ---------- la partita ---------- */
 #dashboard-area.g-attesa>:not(#giornata-bar){display:none}
 .match-hero{display:flex;flex-direction:column;gap:6px;padding:4px 0 18px;text-align:left;background:none;border:0}
-.match-hero .eyebrow{font-size:13px;font-weight:500;color:var(--n-400)}
+.hero-meta{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;font-size:13px;color:var(--n-500)}
+.match-hero .eyebrow{display:inline-flex;align-items:center;font-size:12px;font-weight:500;padding:2px 8px;border-radius:var(--r-sm);background:var(--n-800);color:var(--n-200)}
 #ui-title{font-size:28px;font-weight:600;letter-spacing:-.03em;line-height:1.1}
-#ui-subtitle{font-size:13px;color:var(--n-500)}
+#ui-subtitle{min-width:0}
 #ui-streak{order:3;display:grid;grid-template-columns:auto 1fr;gap:6px 12px;align-items:center;margin-top:6px;font-size:12px}
 #ui-streak:empty{display:none}
 .fs-riga{display:contents}
@@ -323,7 +338,7 @@ body:not([data-scheda="partita"]) .match-hero{display:none}
 .ib-col span{font-size:12px;color:var(--c-home)}
 .ib-col .cx span{color:var(--n-400)} .ib-col .c2 span{color:var(--c-away)}
 .ib-col b{font-size:18px;font-weight:500}
-.ib-col small{font-size:11px;color:var(--n-500)}
+.ib-col small{font-size:12px;color:var(--n-500)}
 .ib-soglia{margin:0;font-size:13px;line-height:1.55;color:var(--n-400)}
 .ib-soglia b{color:var(--color-text);font-weight:500}
 .ib-prop{display:flex;flex-direction:column}
@@ -341,22 +356,22 @@ body:not([data-scheda="partita"]) .match-hero{display:none}
 .ib-f b{font-weight:500}
 .ib-f small{font-size:12.5px;color:var(--n-500)}
 .qd{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--c-warn);flex:none;vertical-align:middle}
-.vtag{font-size:11.5px;padding:3px 9px;border-radius:var(--r-sm);white-space:nowrap;flex:none;font-variant-numeric:tabular-nums;
-  background:color-mix(in oklab,var(--vc,var(--c-ok)) 13%,transparent);color:var(--vc,var(--c-ok))}
-.vtag.forte{background:color-mix(in oklab,var(--c-ok) 26%,transparent)}
-.v-forte,.v-giocabile{--vc:var(--c-ok)} .v-marginale{--vc:var(--c-warn)}
+.vtag{font-size:12px;padding:3px 9px;border-radius:var(--r-sm);white-space:nowrap;flex:none;font-variant-numeric:tabular-nums;
+  background:color-mix(in oklab,var(--vc,var(--c-ok)) 13%,transparent);color:var(--vt,var(--c-ok-t))}
+.vtag.forte{background:color-mix(in oklab,var(--c-ok) 22%,transparent)}
+.v-forte,.v-giocabile{--vc:var(--c-ok);--vt:var(--c-ok-t)} .v-marginale{--vc:var(--c-warn);--vt:var(--c-warn-t)}
 
 /* il rischio sorpresa: un misuratore a tre tacche */
-.sorpresa{display:flex;flex-direction:column;gap:2px;padding:12px 14px;border-radius:var(--r-md);background:var(--color-surface);font-size:14px;--sc:var(--c-ok)}
-.sorpresa.s-medio{--sc:var(--c-warn);background:color-mix(in oklab,var(--c-warn) 8%,var(--color-surface))}
-.sorpresa.s-alto{--sc:var(--c-err);background:color-mix(in oklab,var(--c-err) 9%,var(--color-surface))}
+.sorpresa{display:flex;flex-direction:column;gap:2px;padding:12px 14px;border-radius:var(--r-md);background:var(--color-surface);font-size:14px;--sc:var(--c-ok);--sct:var(--c-ok-t)}
+.sorpresa.s-medio{--sc:var(--c-warn);--sct:var(--c-warn-t);background:color-mix(in oklab,var(--c-warn) 8%,var(--color-surface))}
+.sorpresa.s-alto{--sc:var(--c-err);--sct:var(--c-err-t);background:color-mix(in oklab,var(--c-err) 9%,var(--color-surface))}
 .so-top{display:flex;align-items:center;gap:10px}
 .so-metro{display:inline-flex;gap:2px;align-items:flex-end;flex:none}
 .so-metro i{width:4px;border-radius:1px;background:var(--n-700)}
 .so-metro i:nth-child(1){height:6px} .so-metro i:nth-child(2){height:9px} .so-metro i:nth-child(3){height:12px}
 .so-metro.l1 i:nth-child(1),.so-metro.l2 i:nth-child(-n+2),.so-metro.l3 i{background:var(--sc)}
 .sorpresa-t{flex:1;font-weight:500;min-width:0}
-.sorpresa-t b{color:var(--sc);font-weight:500}
+.sorpresa-t b{color:var(--sct);font-weight:500}
 .so-u{font-size:13px;color:var(--n-400);font-variant-numeric:tabular-nums;white-space:nowrap}
 .so-txt{font-size:12.5px;line-height:1.5;color:var(--n-400);padding-left:22px}
 .so-txt b{color:var(--color-text);font-weight:500}
@@ -395,10 +410,10 @@ details.so-info>div b{color:var(--color-text);font-weight:500}
 .table-ui tr:last-child{background:none}
 .table-ui td:first-child,.table-ui th:first-child{text-align:left}
 .table-ui td:first-child{color:var(--n-400)}
-.td-highlight{color:var(--c-ok) !important;font-weight:500}
-.td-highlight-red{color:var(--c-away) !important;font-weight:500}
+.td-highlight{color:var(--c-ok-t) !important;font-weight:500}
+.td-highlight-red{color:var(--c-away-t) !important;font-weight:500}
 .n-badge{color:var(--n-600)}
-.vchip{display:inline-block;padding:3px 9px;border-radius:var(--r-sm);font-size:11px;letter-spacing:.02em;white-space:nowrap;color:var(--n-100);background:var(--n-800)}
+.vchip{display:inline-block;padding:3px 9px;border-radius:var(--r-sm);font-size:12px;letter-spacing:.02em;white-space:nowrap;color:var(--n-100);background:var(--n-800)}
 
 /* ---------- il tabellone: un manubrio sull'asse 0-100 ---------- */
 #card-verdetti{background:none;padding:0;margin:0;display:flex;flex-direction:column;gap:14px}
@@ -409,7 +424,7 @@ details.so-info>div b{color:var(--color-text);font-weight:500}
 .lnota b{color:var(--color-text);font-weight:500}
 .lnota-w::before{background:var(--c-warn)}
 #league-note:empty,#verdetti-quote:empty{display:none}
-.qnota>summary b{color:var(--c-warn);font-weight:500}
+.qnota>summary b{color:var(--c-warn-t);font-weight:500}
 .tv-lista{display:flex;flex-direction:column}
 .tv-leg{display:flex;align-items:center;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--n-500);padding-bottom:4px}
 .tv-leg span{display:inline-flex;align-items:center;gap:6px}
@@ -426,7 +441,7 @@ details.so-info>div b{color:var(--color-text);font-weight:500}
 .tv-p small{font-size:12px;color:var(--n-500)}
 .tv-db{position:relative;height:14px;margin:0 6px}
 .tv-db::before{content:none}
-.tv-db .s{position:absolute;top:5px;height:4px;border-radius:2px;background:var(--vc)}
+.tv-db .s{position:absolute;top:5px;height:4px;border-radius:2px;background:var(--vc);transform-origin:left center}
 .tv-db .l{position:absolute;top:2px;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:var(--color-bg);box-shadow:inset 0 0 0 2px var(--n-500)}
 .tv-db .m{position:absolute;top:1px;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:var(--vc)}
 .tv-bot{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -463,9 +478,9 @@ details.tv-altri>summary{display:flex;align-items:center;gap:10px;min-height:48p
 .fz-testa b{font-size:16px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .pt{width:10px;height:10px;border-radius:50%;background:var(--c-home);flex:none;display:inline-block}
 .pt.t-2{background:var(--c-away)}
-.fz-stato{flex:none;font-size:11.5px;padding:2px 8px;border-radius:var(--r-sm);white-space:nowrap;background:var(--n-800);color:var(--n-100)}
-.fz-stato.ok{background:color-mix(in oklab,var(--c-ok) 13%,transparent);color:var(--c-ok)}
-.fz-stato.prob{background:color-mix(in oklab,var(--c-warn) 13%,transparent);color:var(--c-warn)}
+.fz-stato{flex:none;font-size:12px;padding:2px 8px;border-radius:var(--r-sm);white-space:nowrap;background:var(--n-800);color:var(--n-100)}
+.fz-stato.ok{background:color-mix(in oklab,var(--c-ok) 13%,transparent);color:var(--c-ok-t)}
+.fz-stato.prob{background:color-mix(in oklab,var(--c-warn) 13%,transparent);color:var(--c-warn-t)}
 .cfr{display:flex;flex-direction:column}
 .cfr-r{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:10px;align-items:baseline;padding:9px 0;
   font-variant-numeric:tabular-nums;background:var(--riga) no-repeat bottom/100% 1px}
@@ -481,14 +496,14 @@ details.tv-altri>summary{display:flex;align-items:center;gap:10px;min-height:48p
 .fz-lab+.fz-lab,.fz-nomi+.fz-lab,.fz-sub+.fz-lab{margin-top:6px}
 .fz-nomi{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .fz-col.dx .fz-nomi{justify-content:flex-end}
-.fz-nome{font-size:11.5px;padding:3px 9px;border-radius:var(--r-sm);background:var(--n-800);color:var(--n-100);white-space:nowrap}
-.fz-nome i{font-style:normal;margin-left:4px;color:var(--c-warn)}
-.fz-nome.fuori{background:color-mix(in oklab,var(--c-err) 14%,transparent);color:var(--c-err)}
-.fz-nome.dentro{background:color-mix(in oklab,var(--c-ok) 13%,transparent);color:var(--c-ok)}
+.fz-nome{font-size:12px;padding:3px 9px;border-radius:var(--r-sm);background:var(--n-800);color:var(--n-100);white-space:nowrap}
+.fz-nome i{font-style:normal;margin-left:4px;color:var(--c-warn-t)}
+.fz-nome.fuori{background:color-mix(in oklab,var(--c-err) 14%,transparent);color:var(--c-err-t)}
+.fz-nome.dentro{background:color-mix(in oklab,var(--c-ok) 13%,transparent);color:var(--c-ok-t)}
 .fz-nomi .ic{color:var(--n-500)}
 .fz-sub,.fz-vuoto{font-size:12.5px;color:var(--n-400);line-height:1.5}
-.fz-nuovo{font-size:10px;padding:1px 6px;border-radius:4px;margin-left:6px;background:color-mix(in oklab,var(--c-warn) 18%,transparent);color:var(--c-warn);vertical-align:2px}
-.fz-warn{color:var(--c-warn)}
+.fz-nuovo{font-size:12px;padding:1px 6px;border-radius:4px;margin-left:6px;background:color-mix(in oklab,var(--c-warn) 16%,transparent);color:var(--c-warn-t);vertical-align:1px}
+.fz-warn{color:var(--c-warn-t)}
 .fz-avviso{margin-top:14px;padding:12px 14px;border-radius:var(--r-md);background:color-mix(in oklab,var(--c-warn) 8%,var(--color-surface));font-size:12.5px;line-height:1.6;color:var(--n-300)}
 .fz-avviso b{color:var(--color-text);font-weight:500}
 .fz-nota,.fz-info{display:flex;gap:8px;margin-top:12px;font-size:12px;line-height:1.5;color:var(--n-500)}
@@ -498,7 +513,7 @@ details.tv-altri>summary{display:flex;align-items:center;gap:10px;min-height:48p
 .gi-box:empty{display:none}
 .gi-chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 -20px 12px;padding:0 20px}
 .gi-chips::-webkit-scrollbar{display:none}
-.gi-chip{flex:none;height:36px;padding:0 12px;border:0;border-radius:var(--r-md);font:inherit;font-size:13px;background:transparent;
+.gi-chip{flex:none;height:40px;padding:0 12px;border:0;border-radius:var(--r-md);font:inherit;font-size:13px;background:transparent;
   box-shadow:inset 0 0 0 1px var(--color-divider);color:var(--n-400);cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent}
 .gi-chip.on{background:var(--color-accent);box-shadow:none;color:var(--on-accent);font-weight:500}
 .gi-head{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 10px;margin:4px 0 10px}
@@ -517,19 +532,19 @@ details.tv-altri>summary{display:flex;align-items:center;gap:10px;min-height:48p
 .gi-row{padding:9px 0}
 .gi-nome{display:flex;align-items:center;gap:6px;font-weight:500;min-width:0}
 .gi-nome span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.gi-xi{font-size:10px;line-height:16px;padding:0 5px;border-radius:4px;background:color-mix(in oklab,var(--t) 22%,transparent);color:var(--tt);flex:none;font-weight:400}
+.gi-xi{font-size:12px;line-height:18px;padding:0 5px;border-radius:4px;background:color-mix(in oklab,var(--t) 22%,transparent);color:var(--tt);flex:none;font-weight:400}
 .gi-sub{font-size:12px;color:var(--n-500);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gi-u5{display:flex;gap:3px;justify-content:center}
 .gi-u5 i{width:9px;height:9px;border-radius:50%;background:var(--n-800)}
 .gi-u5 i.si{background:var(--t)}
 .gi-pct{display:flex;flex-direction:column;align-items:flex-end;gap:3px;--pc:var(--n-400)}
-.gi-pct.alto{--pc:var(--c-ok)} .gi-pct.medio{--pc:var(--color-text)}
+.gi-pct.alto{--pc:var(--c-ok-t)} .gi-pct.medio{--pc:var(--color-text)}
 .gi-pct b{font-size:16px;font-weight:500;color:var(--pc);font-variant-numeric:tabular-nums}
-.gi-pct small{font-size:11px;color:var(--n-500);font-variant-numeric:tabular-nums}
+.gi-pct small{font-size:12px;color:var(--n-500);font-variant-numeric:tabular-nums}
 .gi-trk{display:block;width:100%;height:3px;border-radius:2px;overflow:hidden}
-.gi-trk i{display:block;height:100%;background:var(--pc,var(--color-accent))}
+.gi-trk i{display:block;height:100%;background:var(--pc,var(--color-accent));transform-origin:left center}
 .gi-vuoto{padding:12px 0;font-size:12.5px;color:var(--n-500)}
-.gi-avviso{margin:4px 0 6px;font-size:12px;color:var(--c-warn)}
+.gi-avviso{margin:4px 0 6px;font-size:12px;color:var(--c-warn-t)}
 .gi-load{font-size:12.5px;color:var(--n-400)}
 .gi-load b{color:var(--color-text);font-weight:500}
 .gi-load .gi-trk{height:4px;margin-top:8px;background:var(--n-800)}
@@ -543,10 +558,10 @@ details.tv-altri>summary{display:flex;align-items:center;gap:10px;min-height:48p
 #sez-mercati{margin-top:18px}
 #sez-mercati h3{font-size:13px;color:var(--n-400);font-weight:500}
 #sez-mercati span{display:none}
-.scope{display:inline-block;font-size:11.5px;letter-spacing:0;padding:3px 9px;border-radius:var(--r-sm);white-space:nowrap;background:var(--n-800);color:var(--n-100);vertical-align:middle}
+.scope{display:inline-block;font-size:12px;letter-spacing:0;padding:3px 9px;border-radius:var(--r-sm);white-space:nowrap;background:var(--n-800);color:var(--n-100);vertical-align:middle}
 .scope-gen{background:var(--n-800);color:var(--n-100)}
 .scope-ruolo{background:color-mix(in oklab,var(--c-home) 14%,transparent);color:var(--c-home-t)}
-.scope-mix{background:color-mix(in oklab,var(--c-warn) 13%,transparent);color:var(--c-warn)}
+.scope-mix{background:color-mix(in oklab,var(--c-warn) 13%,transparent);color:var(--c-warn-t)}
 [data-scheda="numeri"]>.grid-2,[data-scheda="dati"]>.grid-2{display:block}
 details.card{background:none;border-radius:0;padding:0;margin:0;box-shadow:none}
 details.card+details.card,details.card+.grid-2>details.card:first-child,.grid-2+details.card,.grid-2>details.card+details.card,.grid-2+.grid-2>details.card:first-child{background:var(--riga) no-repeat top/100% 1px}
@@ -565,8 +580,8 @@ details.card .tbl-scroll{margin:0}
 .odds-box,.tdi-box{background:var(--n-900);border-radius:var(--r-md);padding:12px;text-align:center}
 .odds-val{font-size:20px;font-weight:500;letter-spacing:-.02em}
 #exact-scores .card-small{margin:0;text-align:center;background:var(--n-900) !important;border:0 !important}
-.log-box{background:var(--n-900);border-radius:var(--r-md);padding:10px;font-family:var(--mono);font-size:11px;color:var(--n-300);max-height:280px;overflow:auto;line-height:1.55}
-.log-box .table-ui td,.log-box .table-ui th{padding:5px 6px;font-size:11px}
+.log-box{background:var(--n-900);border-radius:var(--r-md);padding:10px;font-family:var(--mono);font-size:12px;color:var(--n-300);max-height:280px;overflow:auto;line-height:1.55}
+.log-box .table-ui td,.log-box .table-ui th{padding:5px 6px;font-size:12px}
 .bucket-bar{background:var(--n-800);border-radius:4px;overflow:hidden}
 .hidden{display:none}
 .bg-v,.bg-hf{background:color-mix(in oklab,var(--c-ok) 12%,transparent)}
@@ -578,7 +593,7 @@ details.card .tbl-scroll{margin:0}
 #sez-prompt{background:none;padding:0;margin:0}
 #sez-prompt .section-title{font-size:22px;letter-spacing:-.025em;margin-bottom:14px}
 #sez-prompt .section-title .ico{display:none}
-#ai-prompt{font-family:var(--mono);font-size:11.5px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;overflow:auto;
+#ai-prompt{font-family:var(--mono);font-size:12px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;overflow:auto;
   background:var(--color-surface);border:0;color:var(--n-300);border-radius:var(--r-md);padding:14px;min-height:420px}
 #sez-dati{margin-bottom:8px}
 
@@ -604,7 +619,7 @@ details.card .tbl-scroll{margin:0}
 .g-stat b{font-size:24px;font-weight:500;font-variant-numeric:tabular-nums;line-height:1.2}
 .g-stat b small{font-size:14px;color:var(--n-500);font-weight:400}
 .g-stat>div>span{font-size:12px;color:var(--n-500)}
-.g-stat .al b{color:var(--c-err)} .g-stat .ok b{color:var(--c-ok)}
+.g-stat .al b{color:var(--c-err-t)} .g-stat .ok b{color:var(--c-ok-t)}
 .g-prog{height:4px;border-radius:2px;background:var(--n-800);overflow:hidden}
 .g-prog i{display:block;height:100%;background:var(--color-accent);transition:width .3s}
 .g-stato{font-size:12.5px;color:var(--n-400);line-height:1.5}
@@ -630,15 +645,15 @@ details.g-tutte>summary{display:flex;align-items:center;gap:8px;min-height:44px;
 .g-bar i{display:block;border-radius:1px;background:var(--c-home)}
 .g-bar i:nth-child(2){background:var(--n-600)} .g-bar i:nth-child(3){background:var(--c-away)}
 .g-det b{font-weight:400;color:var(--n-500)} .g-det b.g-max{color:var(--color-text);font-weight:500}
-.g-chip{font-size:11.5px;padding:1px 7px;border-radius:var(--r-sm);white-space:nowrap;background:var(--n-800);color:var(--n-100)}
-.g-chip.s-alto{background:color-mix(in oklab,var(--c-err) 14%,transparent);color:var(--c-err)}
-.g-chip.s-medio{background:color-mix(in oklab,var(--c-warn) 13%,transparent);color:var(--c-warn)}
-.g-chip.v-ok{background:color-mix(in oklab,var(--c-ok) 13%,transparent);color:var(--c-ok)}
-.g-chip.v-marg{background:color-mix(in oklab,var(--c-warn) 13%,transparent);color:var(--c-warn)}
+.g-chip{font-size:12px;padding:1px 7px;border-radius:var(--r-sm);white-space:nowrap;background:var(--n-800);color:var(--n-100)}
+.g-chip.s-alto{background:color-mix(in oklab,var(--c-err) 14%,transparent);color:var(--c-err-t)}
+.g-chip.s-medio{background:color-mix(in oklab,var(--c-warn) 13%,transparent);color:var(--c-warn-t)}
+.g-chip.v-ok{background:color-mix(in oklab,var(--c-ok) 13%,transparent);color:var(--c-ok-t)}
+.g-chip.v-marg{background:color-mix(in oklab,var(--c-warn) 13%,transparent);color:var(--c-warn-t)}
 .g-fondo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin:18px 0 0}
 .g-fondo .btn{min-width:0;flex-direction:column;align-items:flex-start;gap:0;text-align:left;padding:8px 12px;min-height:52px}
 .g-fondo .btn.dx{align-items:flex-end;text-align:right}
-.g-fondo .btn small{font-size:11px;color:var(--n-500);font-weight:400}
+.g-fondo .btn small{font-size:12px;color:var(--n-500);font-weight:400}
 .g-fondo .btn span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 body:not([data-scheda="partita"]) #giornata-bar{display:none !important}
 
@@ -648,7 +663,7 @@ body:not([data-scheda="partita"]) #giornata-bar{display:none !important}
   box-shadow:var(--shadow-lg)}
 body.vista-partita .dock{display:flex}
 .dock-ind{position:absolute;left:0;top:5px;width:66px;height:50px;border-radius:var(--r-md);background:var(--n-800);pointer-events:none;opacity:0}
-.dock button{position:relative;z-index:1;width:66px;height:50px;border:0;background:none;font:inherit;font-size:11px;color:var(--n-400);cursor:pointer;
+.dock button{position:relative;z-index:1;width:66px;height:50px;border:0;background:none;font:inherit;font-size:12px;color:var(--n-400);cursor:pointer;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-radius:var(--r-md);transition:color .2s var(--ease);-webkit-tap-highlight-color:transparent}
 .dock button .ic{font-size:19px}
 .dock button.on{color:var(--color-text)}
@@ -681,7 +696,8 @@ body.vista-partita .dock{display:flex}
 [style*="font-weight:bold"],[style*="font-weight: bold"],[style*="font-weight:700"],[style*="font-weight:750"],
 [style*="font-weight:800"],[style*="font-weight:850"],[style*="font-weight:900"]{font-weight:600 !important}
 [style*="font-size:9px"],[style*="font-size: 9px"],[style*="font-size:9.5px"],
-[style*="font-size:10px"],[style*="font-size: 10px"]{font-size:11.5px !important}
+[style*="font-size:10px"],[style*="font-size: 10px"],[style*="font-size:11px"],[style*="font-size: 11px"],
+[style*="font-size:11.5px"],[style*="font-size: 11.5px"]{font-size:12px !important}
 .c-blue,.c-red,.c-green,.c-amber,.c-teal,.c-violet,.c-pink,.c-slate,.c-indigo,.c-sky{--c:var(--color-accent)}
 
 @media(max-width:600px){
@@ -702,8 +718,10 @@ body.vista-partita .dock{display:flex}
   .dock-ind{width:60px}
 }
 @media (prefers-reduced-motion: reduce){
-  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important;scroll-behavior:auto !important}
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;scroll-behavior:auto !important;
+    transition-property:color,background-color,border-color,opacity,box-shadow,outline-color !important}
   .cv-st .r svg{animation:none}
+  .btn:active{transform:none}
 }
 </style>
 </head>
@@ -716,7 +734,7 @@ body.vista-partita .dock{display:flex}
     <button type="button" class="btn btn-ghost ab-back" id="btn-nuova" onclick="tornaIndietro()" aria-label="Indietro"><svg class="ic" aria-hidden="true"><use href="#i-arrow-left"/></svg><span>Cambia partita</span></button>
     <span class="ab-tit" id="ab-tit"><b></b><small></small></span>
     <span class="ab-spazio"></span>
-    <span class="tag" id="build-ver">build 0905-b78</span>
+    <span class="tag" id="build-ver">build 0905-b79</span>
   </div>
 </header>
 
@@ -733,9 +751,9 @@ body.vista-partita .dock{display:flex}
       <div class="passo"><span><b>Database della lega</b><small>Lega e stagione: si scaricano tre stagioni di partite, in memoria per tutta la sessione.</small></span></div>
       <div><label for="api-key">API key (PitchAPI)</label><input id="api-key" type="password" value="" autocomplete="off"></div>
       <div class="campi-3">
-        <div><label for="sel-country">Paese</label><select id="sel-country" onchange="updateLeagues()"><option value="">-- In caricamento... --</option></select></div>
-        <div><label for="sel-league">Lega</label><select id="sel-league" onchange="updateSeasons()"><option value="">-- Seleziona --</option></select></div>
-        <div><label for="sel-season">Stagione</label><select id="sel-season"><option value="">-- Seleziona --</option></select></div>
+        <div><label for="sel-country">Paese</label><select id="sel-country" onchange="updateLeagues()"><option value="">Caricamento</option></select></div>
+        <div><label for="sel-league">Lega</label><select id="sel-league" onchange="updateSeasons()"><option value="">Scegli</option></select></div>
+        <div><label for="sel-season">Stagione</label><select id="sel-season"><option value="">Scegli</option></select></div>
       </div>
       <button class="btn btn-primary btn-full btn-grande" id="btn-carica" onclick="caricaSquadreLega()">Carica il database</button>
       <div id="console-loader"></div>
@@ -761,10 +779,9 @@ body.vista-partita .dock{display:flex}
     <section class="card giornata c-teal" id="giornata-bar" style="display:none"></section>
 
     <div class="match-hero">
-      <div class="eyebrow">Analisi pre-partita</div>
       <h2 id="ui-title">Home vs Away</h2>
+      <p class="hero-meta"><span class="eyebrow">Analisi</span><span id="ui-subtitle">Motore V9.7</span></p>
       <div id="ui-streak"></div>
-      <p id="ui-subtitle">Motore: V9.7 - Analisi Integrale su NPxG, Qualita' e Tracking Data</p>
     </div>
 
     <nav class="dock" id="nav-sezioni" aria-label="Schede">
@@ -1307,12 +1324,12 @@ let globalLeagueMatchesCache = [];
 async function loadLegheJson() {
     try {
         const cSel = document.getElementById('sel-country');
-        cSel.innerHTML = '<option value="">Caricamento...</option>';
+        cSel.innerHTML = '<option value="">Caricamento</option>';
         const res = await fetch('leghe.json');
         if (res.ok) {
             const json = await res.json();
             LEAGUES_CATALOG = json.data?.leagues || json.leagues || [];
-            cSel.innerHTML = '<option value="">-- Seleziona --</option>';
+            cSel.innerHTML = '<option value="">Scegli</option>';
             const countries = [...new Set(LEAGUES_CATALOG.map(l => l.country_code))].sort();
             countries.forEach(c => cSel.add(new Option(c, c)));
         } else { throw new Error(); }
@@ -1321,7 +1338,7 @@ async function loadLegheJson() {
         LEAGUES_CATALOG = [{"id":"l_1rPvVD","name":"1. Division","country_code":"DEN","seasons":["2024/2025","2025/2026","2026/2027"]},{"id":"l_1BFfna","name":"1. Lig","country_code":"INT","seasons":["2024/2025","2025/2026","2026/2027"]},{"id":"l_0F4I4F","name":"1. Liga","country_code":"CZE","seasons":["2024/2025","2025/2026","2026/2027"]},{"id":"l_4MU9Yh","name":"1. liga","country_code":"SVK","seasons":["2024/2025","2025/2026","2026/2027"]},{"id":"l_3hvsne","name":"2. Bundesliga","country_code":"GER","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_47077Y","name":"3. Liga","country_code":"GER","seasons":["2024/2025","2025/2026","2026/2027"]},{"id":"l_4MPd7x","name":"A-League","country_code":"AUS","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_1XsMdH","name":"Allsvenskan","country_code":"SWE","seasons":["2021","2022","2023","2024","2025","2026"]},{"id":"l_1TTHxD","name":"Besta deild","country_code":"ISL","seasons":["2024","2025","2026"]},{"id":"l_1Isor4","name":"Bundesliga","country_code":"GER","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_3zsMpo","name":"Bundesliga","country_code":"AUT","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_4auCPk","name":"Challenge League","country_code":"SUI","seasons":["2024/2025","2025/2026","2026/2027"]},{"id":"l_1pQOHK","name":"Challenger Pro League","country_code":"BEL","seasons":["2025/2026","2026/2027"]},{"id":"l_0bfbkO","name":"Champions League","country_code":"INT-2","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_4DWyTT","name":"Championship","country_code":"ENG","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_2WZ2tt","name":"Conference League","country_code":"INT-2","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026"]},{"id":"l_4FPF2L","name":"Division Profesional","country_code":"PAR","seasons":["2025","2026"]},{"id":"l_49KZaB","name":"Eerste Divisie","country_code":"NED","seasons":["2024/2025","2025/2026","2026/2027"]},{"id":"l_214sqK","name":"Ekstraklasa","country_code":"POL","seasons":["2025/2026","2026/2027"]},{"id":"l_0uqFK8","name":"Eliteserien","country_code":"NOR","seasons":["2021","2022","2023","2024","2025","2026"]},{"id":"l_4H43wr","name":"Eredivisie","country_code":"NED","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_38d9HA","name":"Europa League","country_code":"INT-2","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_2L6d1F","name":"First Division A","country_code":"BEL","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_2tFk9k","name":"HNL","country_code":"CRO","seasons":["2024/2025","2025/2026","2026/2027"]},{"id":"l_1qpFVw","name":"Indian Super League","country_code":"IND","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_2ApGa4","name":"J. League","country_code":"JPN","seasons":["2022","2023","2024","2025","2026"]},{"id":"l_3fglZv","name":"J3 League","country_code":"JPN","seasons":["2024","2025","2026/2027"]},{"id":"l_2EKrnc","name":"K League 1","country_code":"KOR","seasons":["2022","2023","2024","2025","2026"]},{"id":"l_271pqa","name":"K League 2","country_code":"KOR","seasons":["2024","2025","2026"]},{"id":"l_0ErfuF","name":"LaLiga","country_code":"ESP","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_3kyHLd","name":"LaLiga2","country_code":"ESP","seasons":["2025/2026","2026/2027"]},{"id":"l_0ahLw8","name":"League One","country_code":"ENG","seasons":["2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_1W6idJ","name":"League Two","country_code":"ENG","seasons":["2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_3uNwVX","name":"Liga 1","country_code":"PER","seasons":["2024","2025","2026"]},{"id":"l_0kSJLz","name":"Liga I","country_code":"ROU","seasons":["2024/2025","2025/2026","2026/2027"]},{"id":"l_3v84VE","name":"Liga MX","country_code":"MEX","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_4QexZg","name":"Liga Portugal","country_code":"POR","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_45VZuL","name":"Liga Profesional","country_code":"ARG","seasons":["2023","2024","2025","2026"]},{"id":"l_3qNjzC","name":"Liga de Primera","country_code":"CHI","seasons":["2024","2025","2026"]},{"id":"l_16Sq13","name":"Ligat ha'Al","country_code":"ISR","seasons":["2024/2025","2025/2026","2026/2027"]},{"id":"l_3FJFUl","name":"Ligue 1","country_code":"FRA","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_0275VP","name":"Ligue 2","country_code":"FRA","seasons":["2025/2026","2026/2027"]},{"id":"l_0eg6C9","name":"MLS","country_code":"USA","seasons":["2021","2022","2023","2024","2025","2026"]},{"id":"l_3Tn1kG","name":"MLS Next Pro","country_code":"USA","seasons":["2024","2025","2026"]},{"id":"l_4V6jPs","name":"Paulista A1","country_code":"BRA","seasons":["2024","2025","2026"]},{"id":"l_1eJSA7","name":"Premier Division","country_code":"IRL","seasons":["2024","2025","2026"]},{"id":"l_4WFCIZ","name":"Premier League","country_code":"ENG","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_2Mh0jT","name":"Premier League","country_code":"RUS","seasons":["2025/2026","2026/2027"]},{"id":"l_46aZMC","name":"Premier League","country_code":"EGY","seasons":["2025/2026","2026/2027"]},{"id":"l_3UiOcj","name":"Premier League","country_code":"CAN","seasons":["2024","2025","2026"]},{"id":"l_1Kknkl","name":"Premier Soccer League","country_code":"RSA","seasons":["2025/2026","2026/2027"]},{"id":"l_1LMdEO","name":"Premiership","country_code":"SCO","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_1xXulJ","name":"Primera A","country_code":"COL","seasons":["2024","2025","2026"]},{"id":"l_4dzm4e","name":"Primera Division","country_code":"BOL","seasons":["2024","2025","2026"]},{"id":"l_1TVRZW","name":"Primera Division","country_code":"VEN","seasons":["2024","2025","2026"]},{"id":"l_0aEfof","name":"Pro League","country_code":"UAE","seasons":["2024/2025","2025/2026","2026/2027"]},{"id":"l_3wr44B","name":"Qatar Stars League","country_code":"QAT","seasons":["2024/2025","2025/2026","2026/2027"]},{"id":"l_3CB6qX","name":"Saudi First Division","country_code":"KSA","seasons":["2024/2025","2025/2026","2026/2027"]},{"id":"l_0Lpz1f","name":"Saudi Pro League","country_code":"KSA","seasons":["2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_1dmt9H","name":"Serie A","country_code":"ECU","seasons":["2024","2025","2026"]},{"id":"l_1D8Xrl","name":"Serie A","country_code":"BRA","seasons":["2023","2024","2025","2026"]},{"id":"l_0ALvwF","name":"Serie A","country_code":"ITA","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_3qUkB8","name":"Serie B","country_code":"BRA","seasons":["2024","2025","2026"]},{"id":"l_0jy5yE","name":"Serie B","country_code":"ITA","seasons":["2025/2026","2026/2027"]},{"id":"l_4d6Bwl","name":"Super League","country_code":"SUI","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_20pNSc","name":"Super League","country_code":"CHN","seasons":["2024","2025","2026"]},{"id":"l_3xwVF2","name":"Super League 1","country_code":"GRE","seasons":["2024/2025","2025/2026","2026/2027"]},{"id":"l_0S1uaf","name":"Super Lig","country_code":"TUR","seasons":["2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_2xBPKk","name":"Super Liga","country_code":"SRB","seasons":["2024/2025","2025/2026","2026/2027"]},{"id":"l_49Zmno","name":"Superligaen","country_code":"DEN","seasons":["2021/2022","2022/2023","2023/2024","2024/2025","2025/2026","2026/2027"]},{"id":"l_3hW1NO","name":"Thai League 1","country_code":"THA","seasons":["2025/2026","2026/2027"]},{"id":"l_3yVUAO","name":"USL Championship","country_code":"USA","seasons":["2024","2025","2026"]},{"id":"l_3Kf7Ni","name":"USL League One","country_code":"USA","seasons":["2024","2025","2026"]},{"id":"l_3Ci5Cg","name":"Veikkausliiga","country_code":"FIN","seasons":["2024","2025","2026"]},{"id":"l_45xKXM","name":"Virsliga","country_code":"LVA","seasons":["2024","2025","2026"]},{"id":"l_1SGwQT","name":"Women's Premier League","country_code":"KSA","seasons":["2024/2025","2025/2026","2026/2027"]},{"id":"l_1XLtP0","name":"World Cup","country_code":"INT","seasons":["2022","2026"]}];
         const cSel = document.getElementById('sel-country');
         if(cSel) {
-            cSel.innerHTML = '<option value="">-- Seleziona --</option>';
+            cSel.innerHTML = '<option value="">Scegli</option>';
             const countries = [...new Set(LEAGUES_CATALOG.map(l => l.country_code))].sort();
             countries.forEach(c => cSel.add(new Option(c, c)));
         }
@@ -1341,7 +1358,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function updateLeagues() {
   const cCode = document.getElementById('sel-country').value;
   const lSel = document.getElementById('sel-league');
-  lSel.innerHTML = '<option value="">-- Lega --</option>';
+  lSel.innerHTML = '<option value="">Scegli</option>';
   const leagues = LEAGUES_CATALOG.filter(l => l.country_code === cCode).sort((a,b)=>a.name.localeCompare(b.name));
   leagues.forEach(l => lSel.add(new Option(l.name, l.id)));
 }
@@ -1349,7 +1366,7 @@ function updateLeagues() {
 function updateSeasons() {
   const lId = document.getElementById('sel-league').value;
   const sSel = document.getElementById('sel-season');
-  sSel.innerHTML = '<option value="">-- Stagione --</option>';
+  sSel.innerHTML = '<option value="">Scegli</option>';
   const league = LEAGUES_CATALOG.find(l => l.id === lId);
   if(league) league.seasons.slice().reverse().forEach(s => sSel.add(new Option(s, s)));
 }
@@ -2207,7 +2224,7 @@ function mostraRoster(lId) {
   baseMatches.forEach(m => { if(m.home_team?.id) teamsMap.set(m.home_team.id, m.home_team.name); if(m.away_team?.id) teamsMap.set(m.away_team.id, m.away_team.name); });
   const teams = Array.from(teamsMap.entries()).map(([id, name]) => ({id, name})).sort((a,b) => a.name.localeCompare(b.name));
   const selH = document.getElementById('sel-home'); const selA = document.getElementById('sel-away');
-  selH.innerHTML = '<option value="">-- Seleziona Casa --</option>'; selA.innerHTML = '<option value="">-- Seleziona Trasferta --</option>';
+  selH.innerHTML = '<option value="">Scegli la squadra di casa</option>'; selA.innerHTML = '<option value="">Scegli la squadra in trasferta</option>';
   teams.forEach(t => { selH.add(new Option(t.name, t.id)); selA.add(new Option(t.name, t.id)); });
   document.getElementById('matchup-builder').style.display = 'flex';
   return teams.length;
@@ -3626,7 +3643,7 @@ function renderLeagueNote() {
   if (!box) return;
   const lId = sel ? sel.value : '';
   const eb = document.querySelector('.match-hero .eyebrow');
-  if (eb instanceof Element) eb.textContent = (lId && (sel.options[sel.selectedIndex] || {}).text || 'Analisi') + ' \u00b7 pre-partita';
+  if (eb instanceof Element) eb.textContent = lId && (sel.options[sel.selectedIndex] || {}).text || 'Analisi';
   if (!lId) { box.innerHTML = ''; return; }
   const M = PICK_RESA.cinque[lId] || PICK_RESA.fuori[lId];
   const nome = M ? M[0] : _escHtml((sel.options[sel.selectedIndex] || {}).text || 'Questa lega');
@@ -3752,7 +3769,7 @@ function _tabTesto(V) {
        + senza.map(v => v.nome + ' ' + (v.edge == null ? 'base ignota' : (v.edge >= 0 ? '+' : '') + v.edge.toFixed(1))).join(', ') : '');
 }
 
-window.__SCANNER_BUILD = '0905-b78';
+window.__SCANNER_BUILD = '0905-b79';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -5402,10 +5419,19 @@ async function copiaPrompt() {
   if (!(nav instanceof Element)) return;
   const $ = s => document.querySelector(s), $$ = (s, r) => [...(r || document).querySelectorAll(s)];
   const RID = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
-  const muovi = () => !(RID && RID.matches) && typeof Element.prototype.animate === 'function';
-  // una curva sola, senza rimbalzi: le animazioni dicono un cambio di stato, non decorano
-  const OUT = 'cubic-bezier(.16,1,.3,1)';
-  const anim = (el, kf, o) => { if (!(el instanceof Element) || !muovi()) return null; try { return el.animate(kf, o); } catch (e) { return null; } };
+  const ridotto = () => !!(RID && RID.matches) || typeof Element.prototype.animate !== 'function';
+  // una curva sola, senza rimbalzi: le animazioni dicono un cambio di stato, non decorano.
+  // Col movimento ridotto restano le dissolvenze, brevi e senza attese; gli spostamenti no.
+  const OUT = 'cubic-bezier(.16,1,.3,1)', SPAZIO = ['transform', 'clipPath', 'strokeDasharray'];
+  const anim = (el, kf, o) => {
+    if (!(el instanceof Element) || typeof el.animate !== 'function') return null;
+    if (RID && RID.matches) {
+      kf = kf.map(f => Object.fromEntries(Object.entries(f).filter(([p]) => !SPAZIO.includes(p))));
+      if (!kf.some(f => Object.keys(f).some(p => p !== 'offset' && p !== 'easing'))) return null;
+      o = Object.assign({}, o, { duration: Math.min(o.duration || 0, 160), delay: 0 });
+    }
+    try { return el.animate(kf, o); } catch (e) { return null; }
+  };
 
   const val = id => { const v = parseFloat((document.getElementById(id) || {}).textContent || ''); return isFinite(v) ? v : null; };
   const barra = () => {
@@ -5428,19 +5454,37 @@ async function copiaPrompt() {
     + '#card-formazioni > details, .group-head, [data-scheda="numeri"] > details, [data-scheda="numeri"] > .grid-2 > details, #sez-prompt > *, [data-scheda="dati"] > details, #cache-info')
     .forEach(el => el.setAttribute('data-in', ''));
 
-  const entra = (root, o = {}) => {
-    if (!(root instanceof Element) || !muovi()) return;
-    const base = o.base != null ? o.base : 40, passo = o.passo || 35;
-    const ins = $$('[data-in]', root).filter(el => el.getClientRects().length);
-    if (root.hasAttribute('data-in') && root.getClientRects().length) ins.unshift(root);
-    ins.forEach((el, i) => { const d = base + Math.min(i, 8) * passo; el.__d = d;
-      anim(el, [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 420, delay: d, easing: OUT, fill: 'backwards' }); });
-    const dDi = el => { let p = el; while (p && p !== root.parentElement) { if (p.__d != null && ins.includes(p)) return p.__d; p = p.parentElement; } return base; };
-    $$('[data-fill]', root).forEach(el => { if (!el.getClientRects().length) return; el.style.transformOrigin = 'left center';
-      anim(el, [{ transform: 'scaleX(0)' }, { transform: 'none' }], { duration: 600, delay: dDi(el) + 80, easing: OUT, fill: 'backwards' }); });
-    $$('[data-pop]', root).forEach(el => { if (el.getClientRects().length)
-      anim(el, [{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: dDi(el), easing: OUT, fill: 'backwards' }); });
+  // una scheda, una sotto-scheda o un blocco nuovo compaiono tutti insieme, con una dissolvenza breve:
+  // e' un cambio di stato, non una coreografia
+  const appare = root => {
+    if (!(root instanceof Element)) return;
+    const fuori = el => { const p = el.parentElement && el.parentElement.closest('[data-in]'); return !p || !root.contains(p); };
+    const ins = root.hasAttribute('data-in') ? [root] : $$('[data-in]', root).filter(fuori);
+    ins.filter(el => el.getClientRects().length)
+      .forEach(el => anim(el, [{ opacity: 0, transform: 'translateY(4px)' }, { opacity: 1, transform: 'none' }], { duration: 220, easing: OUT }));
   };
+  // l'unico momento d'autore: a fine analisi il verdetto si compone. Il pick sale dalla sua linea,
+  // la barra dell'1X2 si stende da sinistra a destra, la probabilita' arriva quando la barra e' piena
+  const rivela = () => {
+    if (!(dash instanceof Element)) return;
+    appare(dash);
+    const ib = $('#in-breve'); if (!(ib instanceof Element)) return;
+    anim(ib.querySelector('.ib-big'), [{ clipPath: 'inset(100% 0 0 0)', transform: 'translateY(14px)' }, { clipPath: 'inset(0 0 0 0)', transform: 'none' }], { duration: 560, easing: OUT, fill: 'backwards' });
+    anim(ib.querySelector('.ib-barra'), [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], { duration: 720, delay: 80, easing: OUT, fill: 'backwards' });
+    anim(ib.querySelector('.ib-pp'), [{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 420, easing: OUT, fill: 'backwards' });
+  };
+  // il manubrio del tabellone si stende dalla base di lega alla probabilita', una volta per analisi
+  let manubriFatti = null;
+  const manubri = () => {
+    $$('#verdetti-body .tv-db').filter(d => d.getClientRects().length).slice(0, 8).forEach((d, i) => {
+      const s = d.querySelector('.s'), l = d.querySelector('.l'), m = d.querySelector('.m'); if (!s || !l || !m) return;
+      s.style.transformOrigin = parseFloat(m.style.left) < parseFloat(l.style.left) ? 'right center' : 'left center';
+      anim(s, [{ transform: 'scaleX(0)' }, { transform: 'none' }], { duration: 480, delay: 60 + 40 * i, easing: OUT, fill: 'backwards' });
+      anim(m, [{ opacity: 0 }, { opacity: 1 }], { duration: 200, delay: 360 + 40 * i, easing: OUT, fill: 'backwards' });
+    });
+  };
+  const barre = root => $$('.gi-trk i', root).filter(b => b.getClientRects().length).slice(0, 24)
+    .forEach((b, i) => anim(b, [{ transform: 'scaleX(0)' }, { transform: 'none' }], { duration: 420, delay: Math.min(i, 8) * 25, easing: OUT, fill: 'backwards' }));
 
   const segPrec = new Map();
   const posaSeg = (c, anima) => {
@@ -5448,7 +5492,7 @@ async function copiaPrompt() {
     const i = c.querySelector('.seg-ind'), b = c.querySelector('button.on'); if (!i || !b || !b.offsetWidth) return;
     const key = c.dataset.seg || c.id, x = b.offsetLeft, w = b.offsetWidth, p = segPrec.get(key);
     i.style.transform = `translateX(${x}px)`; i.style.width = w + 'px'; i.style.opacity = '1';
-    if (anima && p && p.x !== x) anim(i, [{ transform: `translateX(${p.x}px)` }, { transform: `translateX(${x}px)` }], { duration: 320, easing: OUT });
+    if (anima && p && p.x !== x) anim(i, [{ transform: `translateX(${p.x}px)` }, { transform: `translateX(${x}px)` }], { duration: 280, easing: OUT });
     segPrec.set(key, { x, w });
   };
   let indX = null;
@@ -5457,7 +5501,7 @@ async function copiaPrompt() {
     const x = on.offsetLeft, w = on.offsetWidth;
     ind.style.transform = `translateX(${x}px)`; ind.style.width = w + 'px'; ind.style.opacity = '1';
     if (anima && indX != null && indX !== x) {
-      anim(ind, [{ transform: `translateX(${indX}px)` }, { transform: `translateX(${x}px)` }], { duration: 320, easing: OUT });
+      anim(ind, [{ transform: `translateX(${indX}px)` }, { transform: `translateX(${x}px)` }], { duration: 280, easing: OUT });
     }
     indX = x;
   };
@@ -5485,8 +5529,8 @@ async function copiaPrompt() {
     if (!(foglio instanceof Element) || !foglio.hidden) return;
     foglio.hidden = false;
     const p = foglio.querySelector('.foglio-pan'), v = foglio.querySelector('.foglio-velo');
-    anim(v, [{ opacity: 0 }, { opacity: 1 }], { duration: 300, easing: OUT });
-    anim(p, [{ transform: 'translateY(105%)' }, { transform: 'none' }], { duration: 420, easing: OUT });
+    anim(v, [{ opacity: 0 }, { opacity: 1 }], { duration: 240, easing: OUT });
+    anim(p, [{ transform: 'translateY(105%)' }, { transform: 'none' }], { duration: 360, easing: OUT });
     posaSeg($('#tema-seg'), false);
     const r = p.querySelector('.foglio-riga'); if (r) try { r.focus({ preventScroll: true }); } catch (e) {}
   };
@@ -5495,8 +5539,8 @@ async function copiaPrompt() {
     const p = foglio.querySelector('.foglio-pan'), v = foglio.querySelector('.foglio-velo');
     const fine = () => { foglio.hidden = true; [p, v].forEach(x => x.getAnimations && x.getAnimations().forEach(a => a.cancel())); if (poi) poi(); };
     if (subito) return fine();
-    anim(v, [{ opacity: 1 }, { opacity: 0 }], { duration: 240, easing: OUT, fill: 'forwards' });
-    const a = anim(p, [{ transform: 'none' }, { transform: 'translateY(105%)' }], { duration: 280, easing: OUT, fill: 'forwards' });
+    const b = anim(v, [{ opacity: 1 }, { opacity: 0 }], { duration: 180, easing: OUT, fill: 'forwards' });
+    const a = anim(p, [{ transform: 'none' }, { transform: 'translateY(105%)' }], { duration: 220, easing: OUT, fill: 'forwards' }) || b;
     if (a) a.onfinish = fine; else fine();
   };
   nav.addEventListener('click', ev => {
@@ -5515,7 +5559,7 @@ async function copiaPrompt() {
     dash.dataset.sq = k;
     $$('button[data-sq]', sq).forEach(b => { b.classList.toggle('on', b.dataset.sq === k); b.setAttribute('aria-selected', String(b.dataset.sq === k)); });
     posaSeg(sq, anima);
-    if (anima) { const p = dash.querySelector(`[data-sq-p="${k}"]`); entra(p, { base: 40 }); }
+    if (anima) $$(`[data-sq-p="${k}"]`, dash).forEach(appare);
   };
   if (sq instanceof Element) sq.addEventListener('click', ev => { const b = ev.target.closest('[data-sq]'); if (b) sotto(b.dataset.sq, true); });
 
@@ -5528,7 +5572,7 @@ async function copiaPrompt() {
     const lega = sl && sl.selectedIndex >= 0 ? (sl.options[sl.selectedIndex] || {}).text || '' : '';
     $('#db-riga-txt').textContent = [[lega, ss ? ss.value : ''].filter(Boolean).join(' '), globalLeagueMatchesCache.length + ' partite in memoria'].filter(Boolean).join(' · ');
     const era = db.hidden; db.hidden = false; dbp.hidden = true;
-    if (era) entra($('#setup-card'), { base: 40 });
+    if (era) appare(mb);
   };
   if (mb instanceof Element) new MutationObserver(dbRiga).observe(mb, { attributes: true, attributeFilter: ['style'] });
   const temaSeg = $('#tema-seg');
@@ -5546,7 +5590,7 @@ async function copiaPrompt() {
   });
   temaPosa(false);
   const dbc = $('#db-cambia');
-  if (dbc instanceof Element) dbc.addEventListener('click', () => { db.hidden = true; dbp.hidden = false; entra(dbp, { base: 0 }); });
+  if (dbc instanceof Element) dbc.addEventListener('click', () => { db.hidden = true; dbp.hidden = false; appare(dbp); });
   $$('[data-passo]').forEach(b => b.addEventListener('click', () => {
     const i = $('#history-limit'); if (!(i instanceof HTMLInputElement)) return;
     const v = Math.max(+i.min || 5, Math.min(+i.max || 100, (parseInt(i.value, 10) || 30) + 5 * +b.dataset.passo));
@@ -5554,8 +5598,8 @@ async function copiaPrompt() {
   }));
 
   document.addEventListener('toggle', ev => {
-    const d = ev.target; if (!(d instanceof HTMLDetailsElement) || !d.open || !muovi()) return;
-    [...d.children].filter(c => c.tagName !== 'SUMMARY').forEach(c => { anim(c, [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 320, easing: OUT }); entra(c, { base: 60, passo: 30 }); });
+    const d = ev.target; if (!(d instanceof HTMLDetailsElement) || !d.open) return;
+    [...d.children].filter(c => c.tagName !== 'SUMMARY').forEach(c => anim(c, [{ opacity: 0, transform: 'translateY(4px)' }, { opacity: 1, transform: 'none' }], { duration: 220, easing: OUT }));
   }, true);
 
   const txt = id => { const el = document.getElementById(id); return el ? el.textContent.replace(/\s+/g, ' ').trim() : ''; };
@@ -5591,7 +5635,7 @@ async function copiaPrompt() {
     C.passi.forEach((p, j) => { const r = $(`#cv-passi .cv-riga[data-i="${j}"]`); if (!r) return;
       const st = j < i ? 'fatto' : j === i ? 'corre' : '';
       if (st !== r.__st) { if (st === 'fatto') anim(r.querySelector('.d'), [{ opacity: 0 }, { opacity: 1 }], { duration: 240, easing: OUT });
-        if (st === 'corre') anim(r, [{ transform: 'translateX(-8px)' }, { transform: 'none' }], { duration: 420, easing: OUT });
+        if (st === 'corre') anim(r, [{ transform: 'translateX(-6px)' }, { transform: 'none' }], { duration: 240, easing: OUT });
         r.__st = st; r.className = 'cv-riga' + (st ? ' ' + st : ''); }
       if (p.nn != null) r.querySelector('.cv-n').textContent = p.nn; });
     C.i = i;
@@ -5624,8 +5668,8 @@ async function copiaPrompt() {
   const cvChiudi = subito => {
     if (!(cv instanceof Element) || cv.hidden) return;
     if (C) C.chiuso = true;
-    if (subito || !muovi()) { cv.hidden = true; return; }
-    const a = anim(cv, [{ opacity: 1 }, { opacity: 0 }], { duration: 320, easing: OUT, fill: 'forwards' });
+    if (subito) { cv.hidden = true; return; }
+    const a = anim(cv, [{ opacity: 1 }, { opacity: 0 }], { duration: 200, easing: OUT, fill: 'forwards' });
     if (a) a.onfinish = () => { cv.hidden = true; a.cancel(); }; else cv.hidden = true;
   };
   const cvx = $('#cv-chiudi'); if (cvx instanceof Element) cvx.addEventListener('click', () => cvChiudi(true));
@@ -5636,24 +5680,24 @@ async function copiaPrompt() {
       posaDock(prima != null && k !== prima);
       abTitolo();
       if (k === 'squadre') requestAnimationFrame(() => posaSeg(sq, false));
-      if (prima != null && k !== prima && dash instanceof Element) entra(dash, { base: 40 });
+      if (prima != null && k !== prima && dash instanceof Element) appare(dash);
+      if (k === 'tabellone' && ultimoEsito && manubriFatti !== ultimoEsito) { manubriFatti = ultimoEsito; requestAnimationFrame(manubri); }
     },
     sotto: k => sotto(k, false),
     inBreve: () => {
       chiavi();
       if (window.__ESITO && window.__ESITO !== ultimoEsito) {
         ultimoEsito = window.__ESITO;
-        if (dash instanceof Element && document.body.classList.contains('vista-partita') && (!C || C.chiuso)) requestAnimationFrame(() => entra(dash));
+        if (dash instanceof Element && document.body.classList.contains('vista-partita') && (!C || C.chiuso)) requestAnimationFrame(rivela);
         else if (C && !C.chiuso) C.entra = true;
       }
     },
-    blocco: el => { entra(el, { base: 20, passo: 35 }); $$('.seg-x', el).forEach(s => posaSeg(s, true)); },
+    blocco: el => { appare(el); barre(el); $$('.seg-x', el).forEach(s => posaSeg(s, true)); },
     giornata: (bar, verso) => {
       $$('.seg-x', bar).forEach(s => posaSeg(s, true));
       if (verso) { const sl = bar.querySelector('.g-slide');
-        anim(sl, [{ transform: `translateX(${verso * 24}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 360, easing: OUT });
-        entra(sl, { base: 140, passo: 45 }); }
-      else if (!bar.__visto && bar.getClientRects().length) { bar.__visto = true; entra(bar); }
+        anim(sl, [{ transform: `translateX(${verso * 20}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 280, easing: OUT }); }
+      else if (!bar.__visto && bar.getClientRects().length) { bar.__visto = true; appare(bar); }
     },
     caricaInizia: () => {
       if (!(cv instanceof Element)) return;
@@ -5670,12 +5714,11 @@ async function copiaPrompt() {
       const c = $('#cv-prog'); if (c) c.setAttribute('stroke-dasharray', '0 628.3');
       $('#cv-pct').textContent = '0%';
       cv.hidden = false; cv.style.opacity = '';
-      anim(cv, [{ opacity: 0 }, { opacity: 1 }], { duration: 260, easing: OUT });
+      anim(cv, [{ opacity: 0 }, { opacity: 1 }], { duration: 240, easing: OUT });
       cvPasso(0, 0);
-      entra(cv, { base: 0, passo: 40 });
     },
     caricaFine: async () => {
-      if (!C || C.chiuso || !(cv instanceof Element) || cv.hidden) { if (C && C.entra && dash instanceof Element) entra(dash); return; }
+      if (!C || C.chiuso || !(cv instanceof Element) || cv.hidden) { if (C && C.entra && dash instanceof Element) rivela(); return; }
       const ok = dash instanceof Element && dash.style.display === 'block' && !!window.__ESITO;
       if (!ok) { cvChiudi(true); C = null; return; }
       cvPasso(5, 0);
@@ -5685,8 +5728,8 @@ async function copiaPrompt() {
       C.passi[5].nn = window.__QUOTE_P ? 'con le quote' : (window.__QUOTE_FONTE ? 'trovate' : 'nessuna');
       cvPasso(6, 0); cvProg(1);
       $('#cv-pronta').classList.add('si');
-      anim($('#cv-pronta'), [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 320, easing: OUT });
-      setTimeout(() => { if (C && !C.chiuso) { cvChiudi(false); requestAnimationFrame(() => entra(dash)); } }, muovi() ? 900 : 0);
+      anim($('#cv-pronta'), [{ opacity: 0, transform: 'translateY(4px)' }, { opacity: 1, transform: 'none' }], { duration: 240, easing: OUT });
+      setTimeout(() => { if (C && !C.chiuso) { cvChiudi(false); requestAnimationFrame(rivela); } }, ridotto() ? 0 : 700);
     }
   };
   schedaVai('partita', false);
