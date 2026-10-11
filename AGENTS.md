@@ -24,7 +24,7 @@ manager, nessun test runner: si aprono i file nel browser. Tutto il codice sta i
 
 | file | ruolo |
 |---|---|
-| `index.html` | menu, due link |
+| `index.html` | la home: i due link e lo scarico di tutte le statistiche di una partita (vedi *La home e lo scarico di una partita*) |
 | `scanner.html` | **il motore**: analizza una partita (Dixon-Coles + Markov inclinati dall'Elo), mercati, statistiche previste, tabellone |
 | `comparatore.html` | **il backtest**: carica `scanner.html` come testo, lo inietta in memoria, lo fa girare su centinaia di partite ed esporta un CSV previsto-vs-reale |
 | `leghe.json` | catalogo leghe/stagioni: la risposta di `/leagues` della PitchAPI, da rifare quando l'API apre una stagione (vedi *Il catalogo delle leghe*) |
@@ -55,7 +55,7 @@ vedi *Le quote automatiche*); se non ci sono, le scrive l'utente. Per misurarle 
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b77`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b78`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -106,7 +106,9 @@ vedi *Le quote automatiche*); se non ci sono, le scrive l'utente. Per misurarle 
   `skills-lock.json` (si aggiornano con `npx skills update`); `graphify` e i due agenti sono copiati
   a mano dai loro repository. Dove dicono altro da questo file vale questo file: niente commenti
   `ponytail:` nel JS, i resoconti restano coi numeri, e niente CDN, GSAP, Tailwind o pacchetti npm
-  che le skill di gusto propongono (le pagine restano un file solo, senza dipendenze). `graphify` scrive in `graphify-out/`, fuori
+  che le skill di gusto propongono (le pagine restano un file solo, senza dipendenze). **La grafica
+  segue taste** (`redesign-existing-projects` e `design-taste-frontend`, dal `b78`): chi la tocca rilegge
+  le loro regole, e in *La grafica dello Scanner*, «Cosa cambia nel `b78`», quali valgono qui. `graphify` scrive in `graphify-out/`, fuori
   da git.
 
 ## Da fare
@@ -747,7 +749,11 @@ frequenza, una barra e le ultime 5 a pallini. Dal `b61` quella delle formazioni:
 squadra, e chi manca detto per nome. Dal `b66` il riquadro «In breve», le schede e il tabellone a
 elenco. Dal `b69` la grafica «Nocturne» del progetto Claude Design dell'utente, con le animazioni: il
 dock in fondo, l'anello dell'analisi in corso, Numeri a fisarmonica col numero chiave, la home e il
-Comparatore negli stessi colori. Vedi *La grafica dello Scanner*.
+Comparatore negli stessi colori. Dal `b78` le regole di taste-skill: Geist e Geist Mono al posto di Inter,
+zinc neutro scuro e chiaro con un solo accento smeraldo al posto del blu-viola, niente emoji, lineette lunghe,
+etichette maiuscole, bagliori, rimbalzi e numeri che contano; nella home lo scarico di tutte le statistiche
+di una partita. Vedi *La grafica dello Scanner*, «Cosa cambia nel `b78`», e *La home e lo scarico di una
+partita*.
 
 **La selezione vale più dell'accuratezza.** Prima di aggiungere una feature, chiedersi se
 il segnale non sia già nell'output, solo mal etichettato.
@@ -1362,6 +1368,61 @@ la chiusura dell'anello quando il motore si ferma. Sul banco, la stessa analisi 
 e col `b69` (9.9 e 7.5 secondi a cache fredda sulla lega finta, 36 ms a cache calda): la grafica non
 rallenta il motore.
 
+**Cosa cambia nel `b78`.** Chiesto dall'utente: «utilizzando le regole di taste-skill rifai la grafica così non
+sembrerà slop». Le regole vengono da due skill di `Leonxlnx/taste-skill`:
+- `redesign-existing-projects`: prima l'audit, poi interventi mirati che non rompono niente (carattere, colore,
+  stati, spaziature, componenti, nell'ordine);
+- `design-taste-frontend`: le regole di gusto.
+
+La seconda è scritta per landing page e dice di sé che cruscotti e interfacce dense di dati sono fuori dal suo campo.
+Qui valgono le regole che si trasferiscono (caratteri, colore, forme, movimento, testi), non quelle delle landing
+(hero, bento, immagini). I design system che propone per i cruscotti (Fluent, Carbon) sono pacchetti npm, e qui non
+si usano dipendenze. Per le animazioni non è servito `find-skills`: taste ha le sue regole (sezioni 5, 6 e 7).
+
+- *La lettura* (la riga che taste chiede prima di disegnare): strumento personale di analisi pre-partita, usato
+  soprattutto dal telefono, con un linguaggio da strumento di misura sobrio. Dial: varianza 3, movimento 4,
+  densità 7.
+- *Cosa ha trovato l'audit*:
+  - Inter dappertutto, il carattere che taste indica come il primo segno di una grafica fatta da un'IA;
+  - fondo blu-viola con un accento lavanda (`#9184d9`), la «regola lila»;
+  - solo i pesi 400 e 500;
+  - etichette maiuscole spaziate sopra ogni blocco, e i passi numerati del setup e del Comparatore;
+  - l'alone che pulsava dietro «Analizza la partita» e il bagliore sull'anello dell'analisi;
+  - animazioni decorative: numeri che contano da zero, rimbalzi, onda al tocco, sfocatura in entrata,
+    fisarmoniche che animano l'altezza;
+  - emoji come icone o come segni (🎯, ⚖️, 👥, 🤖, 🔥, e una novantina fra narrazioni dello Scanner e registro
+    del Comparatore);
+  - lineette lunghe a schermo e fino a quattro punti separatori in una riga;
+  - solo il tema scuro.
+- *Cosa è cambiato*:
+  - **caratteri**: Geist (400-600) per il testo; Geist Mono per i numeri piccoli in colonna (celle delle tabelle,
+    numero chiave di Numeri, build); i numeri grandi in Geist con cifre tabulari, perché in Geist Mono il punto
+    decimale lascia un buco («69 . 2%»). Sottoinsieme latino in base64, 33 KB contro i 64 di Inter; licenza
+    in `fonts/OFL-Geist.txt`. Titoli a 600, `text-wrap: balance` e `pretty`;
+  - **colore**: zinc neutro, scuro e chiaro. Il tema segue il sistema, oppure si sceglie (Auto, Scuro, Chiaro) nel
+    foglio «Altro» dello Scanner o nel piede della home; la scelta sta in `localStorage` (`scanner_tema`) e vale per
+    le tre pagine, con uno script nella testa della pagina che la applica prima che si disegni. Un solo accento,
+    smeraldo, che è anche il colore delle proposte buone; i bottoni principali sono pieni con il testo scuro. Casa,
+    trasferta, attenzione ed errore restano colori di dato. Niente nero o bianco puri, ombre tinte;
+  - **forme**: contenitori 12px, controlli 8px, etichette 6px, barre 2px;
+  - **etichette** in tondo e non più in maiuscolo; via i numeri dei passi; il segmento scelto e la scheda attiva
+    hanno un fondo neutro, l'icona della scheda attiva l'accento;
+  - **movimento**: una curva sola, `cubic-bezier(.16,1,.3,1)`, e solo `transform` e `opacity`. Restano l'entrata dei
+    blocchi (opacità e 8px, 420 ms, a cascata breve), le barre che crescono, gli indicatori di scheda e dei segmenti
+    che scivolano, il foglio dal basso, il contenuto delle fisarmoniche che compare. Tolti i numeri che contano da zero
+    (chi legge deve vedere subito il numero vero), i rimbalzi, l'onda al tocco, l'alone, la sfocatura, l'altezza
+    animata. Il «premuto» lo fa il CSS (`scale(.98)`). Tutto spento con `prefers-reduced-motion`;
+  - **icone** Phosphor al posto delle emoji; nel registro del Comparatore «❌» è diventato «ERRORE:», e banco e batch
+    automatico cercano anche quello;
+  - **testi**: niente lineette lunghe a schermo (le righe del CSV restano come sono, le leggono gli strumenti), un
+    punto separatore per riga al massimo, la card delle soglie con una soglia per riga;
+  - **tabellone**: tolto il binario grigio sotto il manubrio, resta il tratto dalla base alla probabilità.
+- *Cosa non cambia*: motore, numeri, id (più quelli del tema, `tema-seg`). Il banco vede, col motore `b77`, 8
+  scritture diverse su 201, tutte di testo (emoji e lineette tolte da narrazioni, titoli del KNN, rischio sorpresa), e
+  il certificato.
+- *Verificato*: banco verde a 390px; `strumenti/schermate.js` ha l'opzione `--tema chiaro`, e sulla lega finta e su
+  Juventus – Lazio vera, in scuro e in chiaro, nessun errore e 0 px di scorrimento in ogni scheda.
+
 **Cosa non cambia, e non deve cambiare.**
 
 - **Tutti gli id della pagina del `b58` ci sono ancora** (233, confrontati con un elenco preso prima
@@ -1465,6 +1526,33 @@ stampa le stesse 191 scritture; avanti e indietro tornano alla stessa partita; n
 riquadro né nel prompt; 0 px di scorrimento a 390px. Controllo di potenza: spostando di un giorno la
 data con cui la giornata analizza ogni partita, il banco fallisce (il sottotitolo e lo storico
 cambiano).
+
+## La home e lo scarico di una partita
+
+Chiesto dall'utente nel `b78`: «una funzione nella pagina iniziale per scaricare tutte le stats di una partita di un
+determinato anno, così posso confrontare anche a mano i risultati». In `index.html`, sotto le due voci (Scanner e
+Comparatore):
+
+- **la partita**: paese, lega e stagione dal catalogo (`leghe.json`); le partite della stagione da
+  `/leagues/{id}/matches?season=…&status=all` (una chiamata, le partite sono in `data.matches`), filtrabili per
+  squadra, rinviate e annullate escluse;
+- **«Scarica il CSV»** fa 12 chiamate: `/matches/{id}` e `/stats`, `/advanced`, `/players`, `/advanced/players`,
+  `/lineups`, `/events`, `/shots`, `/momentum`, `/h2h`, `/advanced/network`, `/heatmaps`. Salva un CSV per Excel
+  (punto e virgola, decimali con la virgola, BOM UTF-8) con una sezione per risposta:
+  - la partita, con arbitro e stadio;
+  - le statistiche di squadra per tutta la partita e per tempo;
+  - le avanzate di squadra (xT, VAEP, PV, passaggi, conduzioni, creazione, difesa, territorio, ritmo);
+  - le formazioni (titolari e panchina, modulo, allenatore, se confermate), gli eventi, ogni tiro;
+  - la pressione minuto per minuto, le statistiche e le avanzate di ogni giocatore, la rete dei passaggi;
+  - gli scontri diretti.
+
+  Le mappe di calore stanno solo nel JSON;
+- **«JSON completo»** salva le risposte così come arrivano, e riusa lo scarico del CSV se c'è già;
+- quello che manca lo dice la riga di stato e una sezione del CSV («NON DISPONIBILI»), col codice dell'API.
+
+Passa dal worker (`PITCH_BASE`) come lo Scanner, senza chiave nella pagina, e riprova sui 429. Sta fuori dal motore
+e dal Comparatore, che non la vedono. Provata in Chromium a 390px sulla PitchAPI vera (Serie A 2025/26, Juventus –
+Lazio): 13 chiamate, 12 risposte su 12, un CSV di 507 righe, nessun errore, 0 px di scorrimento.
 
 ## Il catalogo delle leghe
 
@@ -1831,7 +1919,7 @@ col movimento ridotto (`reducedMotion: 'reduce'`: i numeri che contano mostrereb
 intermedi), legge «In breve» da `#in-breve` (il riquadro, la sorpresa e le proposte sono tre blocchi)
 e misura le voci del dock e del foglio Altro, Squadre in tutte e tre le sotto-schede.
 
-Esito al `b77` (storico 30; uguale al `b76`), a 390px con tutte le 28 card aperte, scheda per scheda e in tutte e tre le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, 0 px):
+Esito al `b78` (storico 30; uguale al `b77`), a 390px con tutte le 28 card aperte, scheda per scheda e in tutte e tre le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, 0 px):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
@@ -1839,7 +1927,7 @@ Esito al `b77` (storico 30; uguale al `b76`), a 390px con tutte le 28 card apert
 | batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 201 | 0 su 122 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
 | `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 140-165 | 75-82 | 0 |
-| `vecchio`: motore `b76` caricato (controllo) | 0/3, «motore caricato diverso ...» | 48 su 201 | 38-42 | 0 |
+| `vecchio`: motore `b77` caricato (controllo) | 0/3, «motore caricato diverso ...» | 8 su 201 | 1 (il certificato) | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -1933,7 +2021,9 @@ tempi dei gol e primo gol, il rischio sorpresa e il tabellone, cioè tutto quell
 sparisce da «Ruolo e generale» (stessi numeri). Nel CSV 38-42 righe: le stesse, le sei righe `Maestro:` nuove e il certificato.
 Il primo giro del banco ha fallito su due righe in tutte le modalità: «Over 2.5 (multi-linea)» e «GG (da matrice)» si
 confrontavano con la colonna «Dixon-Coles di ruolo» della card dei modelli, che dal `b77` descrive il motore; ora con la riga
-«Verdetto (maestro)», che è la matrice da cui il CSV le prende.
+«Verdetto (maestro)», che è la matrice da cui il CSV le prende. Al `b78` il controllo col `b77` vede 8 scritture diverse
+su 201, tutte di testo (emoji e lineette lunghe tolte da narrazioni, titoli del KNN e rischio sorpresa), e una riga del
+CSV, il certificato.
 
 **Il controllo del `b70`.** Da qui «In breve» controlla anche il rischio sorpresa: con le quote dell'1X2
 `#sorpresa-box` deve essere identico a quello rifatto nella pagina con `rischioSorpresa(…,
@@ -6205,15 +6295,15 @@ trascrizione.
 
 ## Leggere il log del Comparatore
 
-Quattro messaggi che sembrano bug e non lo sono:
+Quattro messaggi che sembrano bug e non lo sono (dal `b78` senza emoji; un errore comincia con `ERRORE:`):
 
-- **`⚠️ data fuori dallo storico caricato (…)`** e **`Nessuna partita per <data>`**: la data
+- **`data fuori dallo storico caricato (…)`** e **`Nessuna partita per <data>`**: la data
   non è coperta dall'archivio scaricato (le stagioni le sceglie la dropdown, e l'API non ha
   ancora la stagione in corso). «Si gioca il *g±n*» vuol dire turno di sosta.
 - **`Il V9.7 non ha esposto _V97_probs`**: `avviaScanner` è uscito prima della riga
   dell'hook. Quasi sempre è il guardrail «Storico insufficiente» su una **neopromossa** nelle
   prime giornate.
-- **`⚠️ RISERVA: le metriche avanzate NON vengono dal motore ma da cmpDcPredict`**, seguito
+- **`RISERVA: le metriche avanzate NON vengono dal motore ma da cmpDcPredict`**, seguito
   da **`Estratti da 0/0 match storici`**: `R.predStats` era vuoto e nemmeno la riserva ha
   trovato partite. Nei backtest riusciti la riga è `→ Metriche avanzate: previste dal motore`.
 - **«Hook iniettato dopo l'ensemble (fallback)»**: la riga della confidence ha cambiato forma
@@ -6427,3 +6517,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b75` | la card «Primo gol» con una quota fissa dei gol nei primi 30 e 45 minuti (0.268 e 0.446) al posto di quella presa dai minuti dei gol delle due squadre, chiesta dall'utente dopo la misura del 10 ottobre (la card non distingueva le partite, AUC 0.51, e la quota delle squadre era rumore). Regola registrata e unita su main prima di scaricare i gol del test; su 11.633 partite di 36 leghe dei batch del `b61`, del `b62` e del `b73` la somma delle due logloss scende di 7.30‰ (`z = −4.93`), 29 leghe su 36, e la card diventa calibrata. Manopola `PRIMO_GOL_QUOTA` (`'squadre'` torna a prima). Col `b74` 2 scritture diverse su 191 (i due numeri della card), una riga del CSV (il certificato); `strumenti/primo-gol.py` |
 | `b76` | le card di Numeri corrette, chieste dall'utente dopo la misura dell'11 ottobre («non può essere così scarsa la matematica»): restringimenti James-Stein, Gamma-Poisson e Dirichlet e ricalibrazioni logistiche per rosso, corner, minuti dei gol, cecchino, palla inattiva, efficienza, recuperi e Choke Index, modulo, ultime 3 e 5, stile, giudizio della fortuna, capocannoniere e KNN. Regola registrata e unita su main prima di aprire i dati del test; su 3.976 partite mai aperte per Numeri passano tutte e 17, da `z` −2.7 (corner) a −17.1 (recuperi). I numeri diventano onesti, non più informativi: rosso e corner valgono quanto la frequenza della lega. Manopola `NUMERI_CORREZIONI` (`'no'` torna a prima). Col `b75` 41-42 scritture diverse su 191, 10-19 righe del CSV (KNN, corner, tabellone, certificato); `strumenti/numeri-correzioni.py`, `strumenti/numeri-schermo.py` |
 | `b77` | il maestro mercato: senza quote, l'1X2 e la matrice dei gol escono da una ridge che dalle 65 variabili del motore stima quello che il mercato direbbe, imparata sulle quote di chiusura di 14 leghe (16.071 partite). Chiesto dall'utente («sei tu che devi cercare in lungo e largo una soluzione»), dopo una ricerca che ha scartato COM-Poisson, pi-rating, Dixon-Coles di lega sui gol e il ritmo dei gol per punteggio e minuto. Regola registrata e unita su main prima del test; sui risultati di 33 leghe mai usate (13.592 partite) 1X2 −4.37‰ (`z = −5.30`, 25 su 33) e risultato esatto −13.41‰ (`z = −8.88`, 31 su 33). Rimisurate `PICK_RESA` (pick 52.7 → 53.3%, ≥65% 73.3 → 76.0%), `SORPRESA_TAB`, `EDGE_BANDS` (gol GIOCABILE +7.4 → +13.2), `QUOTE_RESA` e `QUOTE_OU_RESA`; con le quote non cambia niente. Manopola `MAESTRO` (`'no'` torna a prima); `strumenti/maestro.py` (`--allena`, `--prova`, `--rimisura`, `--schermo`). Col `b76` 48 scritture diverse su 201 (10 sono gli id nuovi), 38-42 righe del CSV; sulla PitchAPI vera Juventus – Lazio dell'8 febbraio 2026 senza errori, 0 px |
+| `b78` | la grafica con le regole di taste-skill (`redesign-existing-projects` e `design-taste-frontend`), chiesta dall'utente perché «non sembri slop»: Geist e Geist Mono al posto di Inter, zinc neutro scuro e chiaro (automatico o scelto, per le tre pagine) con un solo accento smeraldo al posto del blu-viola, forme fisse (12, 8, 6, 2 px), etichette in tondo, niente passi numerati, emoji, lineette lunghe, aloni, rimbalzi, onda al tocco né numeri che contano; animazioni solo di transform e opacity, spente col movimento ridotto. Nella home lo scarico di tutte le statistiche di una partita (12 endpoint della PitchAPI in un CSV per Excel e un JSON). Numeri invariati: col `b77` 8 scritture diverse su 201, tutte di testo, e il certificato; schermate in scuro e in chiaro, lega finta e Juventus – Lazio vera, 0 px |

@@ -195,7 +195,7 @@ function serve() {
     if (h.length < letti) letti = 0;
     const nuovo = h.slice(letti); letti = h.length;
     for (const r of nuovo.split('<br>').map(x => x.replace(/<[^>]*>/g, '').trim()).filter(Boolean))
-      scrivi(r, /===|❌|Stagione fallita|NON|Copia conforme|le salto|popup/.test(r));
+      scrivi(r, /===|❌|ERRORE|Stagione fallita|NON|Copia conforme|le salto|popup/.test(r));
   };
   let ultimoStato = '';
   const timerLog = setInterval(leggiLog, 15000);
