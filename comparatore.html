@@ -2,10 +2,12 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0e0e10">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0e0e10">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f1f1f3">
+<meta name="color-scheme" content="dark light">
 <title>Comparatore V9.7</title>
-<script>try{var t=localStorage.getItem("scanner_tema");if(t==="scuro"||t==="chiaro")document.documentElement.setAttribute("data-tema",t)}catch(e){}</script>
+<script>try{var t=localStorage.getItem("scanner_tema");if(t==="scuro"||t==="chiaro"){document.documentElement.setAttribute("data-tema",t);document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){m.setAttribute("content",t==="scuro"?"#0e0e10":"#f1f1f3")})}}catch(e){}</script>
 <style>
 /* Geist e Geist Mono, (c) 2023 Vercel con basement.studio, SIL Open Font License 1.1 (fonts/OFL-Geist.txt).
    Sottoinsieme latino, pesi 400-600 e 400-500. */
@@ -27,7 +29,8 @@
   --ombra:rgb(4 4 6 / .62); --velo:rgb(4 4 6 / .62);
   --font:"Geist",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-  --ease:cubic-bezier(.16,1,.3,1);
+  --ease-out:cubic-bezier(0.23,1,0.32,1); --ease-in-out:cubic-bezier(0.77,0,0.175,1); --ease-drawer:cubic-bezier(0.32,0.72,0,1);
+  --ease:var(--ease-out);
   --color-divider:color-mix(in srgb,var(--color-text) 13%,transparent);
   --c-ok:var(--color-accent);
   --c-ok-t:var(--color-accent); --c-warn-t:var(--c-warn); --c-err-t:var(--c-err);
@@ -76,7 +79,12 @@
   --ombra:rgb(24 24 32 / .14); --velo:rgb(10 10 12 / .42);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html{background:var(--color-bg);-webkit-text-size-adjust:100%;scrollbar-color:var(--n-700) transparent;accent-color:var(--color-accent)}
+html{background:var(--color-bg);-webkit-text-size-adjust:100%;scrollbar-color:var(--n-700) transparent;accent-color:var(--color-accent);
+  -webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+button,a,summary,select,[role="button"]{touch-action:manipulation}
+button,summary,.btn,.seg,.step{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#console{overscroll-behavior:contain}
+.tbl-scroll{overscroll-behavior-x:contain}
 body{
   font-family:var(--font);
   background:var(--color-bg);color:var(--color-text);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased;
@@ -136,11 +144,10 @@ code{font-family:var(--mono);font-size:.92em;background:var(--n-900);padding:1px
 .row.c2:has(>.btn){grid-template-columns:repeat(2,minmax(0,1fr))}
 label{display:block;font-size:12.5px;font-weight:500;color:color-mix(in srgb,var(--color-text) 72%,transparent);margin-bottom:6px}
 input,select{
-  width:100%;min-height:46px;padding:0 12px;font:400 15px/1.3 var(--font);color:var(--color-text);
-  caret-color:var(--color-accent);background:var(--color-bg);border:1px solid var(--color-divider);border-radius:var(--r-md);transition:border-color .2s var(--ease);
+  width:100%;min-height:46px;padding:0 12px;font:400 16px/1.3 var(--font);color:var(--color-text);
+  caret-color:var(--color-accent);background:var(--color-bg);border:1px solid var(--color-divider);border-radius:var(--r-md);transition:border-color 160ms var(--ease-out);
 }
 .card input,.card select{background:color-mix(in srgb,var(--color-bg) 55%,var(--color-surface))}
-input:hover,select:hover{border-color:color-mix(in srgb,var(--color-text) 45%,transparent)}
 input:focus-visible,select:focus-visible{border-color:var(--color-accent);outline:2px solid var(--color-accent);outline-offset:0}
 input::placeholder{color:var(--n-500)}
 input[type=date]{font-variant-numeric:tabular-nums}
@@ -155,14 +162,19 @@ select{appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:36px
   position:relative;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;
   padding:8px 16px;border:1px solid var(--color-divider);border-radius:var(--r-md);background:transparent;
   font:500 14px/1.2 var(--font);color:var(--color-text);cursor:pointer;
-  transition:background .2s var(--ease),border-color .2s var(--ease),transform .2s var(--ease);-webkit-tap-highlight-color:transparent;
+  transition:background-color 160ms var(--ease-out),border-color 160ms var(--ease-out),transform 160ms var(--ease-out);
 }
 .btn .ic{font-size:16px}
-.btn:hover:not(:disabled){background:color-mix(in srgb,var(--color-text) 7%,transparent)}
-.btn:active:not(:disabled){transform:scale(.98)}
+.btn:active:not(:disabled){transform:scale(.97)}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 .btn-primary,.btn-go{background:var(--color-accent);color:var(--on-accent);border-color:transparent;font-weight:600}
-.btn-primary:hover:not(:disabled),.btn-go:hover:not(:disabled){background:color-mix(in oklab,var(--color-accent) 86%,var(--color-text))}
+@media (hover: hover) and (pointer: fine){
+  input:hover,select:hover{border-color:color-mix(in srgb,var(--color-text) 45%,transparent)}
+  .btn:hover:not(:disabled){background:color-mix(in srgb,var(--color-text) 7%,transparent)}
+  .btn-primary:hover:not(:disabled),.btn-go:hover:not(:disabled){background:color-mix(in oklab,var(--color-accent) 86%,var(--color-text))}
+  #dropzone:hover{border-color:var(--color-accent);background:color-mix(in srgb,var(--color-accent) 6%,transparent)}
+  .seg button:hover{color:var(--color-text)}
+}
 .btn-go{min-height:50px;font-size:15px}
 .btn-full{width:100%}
 .btn-sm{min-height:38px;padding:6px 12px;font-size:13px}
@@ -172,9 +184,9 @@ select{appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:36px
 /* ---------- passo 1: il motore ---------- */
 #dropzone{
   border:1.5px dashed var(--n-700);border-radius:var(--r-lg);padding:26px 18px;text-align:center;cursor:pointer;
-  transition:border-color .2s,background .2s;margin-bottom:16px;
+  transition:border-color 160ms var(--ease-out),background-color 160ms var(--ease-out);margin-bottom:16px;
 }
-#dropzone:hover,#dropzone.dragover{border-color:var(--color-accent);background:color-mix(in srgb,var(--color-accent) 6%,transparent)}
+#dropzone.dragover{border-color:var(--color-accent);background:color-mix(in srgb,var(--color-accent) 6%,transparent)}
 #dropzone h2{font-size:16px;font-weight:500;margin-bottom:6px}
 #dropzone p{font-size:13px;color:var(--n-500);line-height:1.5}
 #dropzone .btn{margin-top:14px}
@@ -192,8 +204,8 @@ select{appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:36px
 .seg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);padding:3px;border-radius:var(--r-md);
   box-shadow:inset 0 0 0 1px var(--color-divider);margin-bottom:12px}
 .seg button{min-height:40px;padding:0 8px;border:0;border-radius:var(--r-sm);background:none;font:500 13px/1.2 var(--font);
-  color:var(--n-500);cursor:pointer;white-space:nowrap;transition:color .15s,background .2s,box-shadow .2s;-webkit-tap-highlight-color:transparent}
-.seg button:hover{color:var(--color-text)}
+  color:var(--n-500);cursor:pointer;white-space:nowrap;transition:color 160ms var(--ease-out),background-color 160ms var(--ease-out),transform 160ms var(--ease-out)}
+.seg button:active{transform:scale(.97)}
 .seg button.on{color:var(--color-text);background:var(--n-800);box-shadow:none}
 .seg-hint{font-size:13px;color:var(--n-500);margin-bottom:14px;line-height:1.5}
 
@@ -268,7 +280,7 @@ select{appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:36px
 [style*="font-size:10px"],[style*="font-size:11px"],[style*="font-size:11.5px"]{font-size:12px!important}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;
   transition-property:color,background-color,border-color,opacity,box-shadow,outline-color !important}}
-@media (prefers-reduced-motion: reduce){.btn:active:not(:disabled){transform:none}}
+@media (prefers-reduced-motion: reduce){.btn:active:not(:disabled),.seg button:active{transform:none;opacity:.8}}
 </style>
 </head>
 <body>
@@ -277,7 +289,7 @@ select{appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:36px
 
   <div class="topbar">
     <div class="brand"><svg class="ic" aria-hidden="true"><use href="#i-chart-bar"/></svg><h1>Comparatore V9.7</h1></div>
-    <div class="tb-tag"><span class="badge" id="build-ver">build 0905-b79</span><span class="badge" id="engine-badge">motore non caricato</span></div>
+    <div class="tb-tag"><span class="badge" id="build-ver">build 0905-b80</span><span class="badge" id="engine-badge">motore non caricato</span></div>
   </div>
 
   <!-- indicatore di flusso -->
@@ -320,7 +332,7 @@ select{appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:36px
     <div class="card">
       <div class="card-h"><div class="card-t">Campionato e credenziali</div></div>
       <div class="row c2">
-        <div><label>API Key</label><input id="cmp-api-key" type="password" placeholder="pk_live_..."></div>
+        <div><label>API Key</label><input id="cmp-api-key" type="password" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="pk_live_..."></div>
         <div><label>Stagione</label><select id="cmp-season"><option value="">Scegli</option></select></div>
       </div>
       <div class="row c2">
@@ -346,7 +358,7 @@ select{appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:36px
         </div>
       </div>
       <div class="row c2">
-        <div><label>Storico per squadra (partite indietro)</label><input type="number" id="cmp-batch-limit" value="30" min="5" max="100"></div>
+        <div><label>Storico per squadra (partite indietro)</label><input type="number" inputmode="numeric" id="cmp-batch-limit" value="30" min="5" max="100"></div>
         <div style="display:flex;align-items:flex-end">
           <button class="btn btn-go btn-full" id="cmp-batch-btn" onclick="cmpAvviaBatchStagioni()">Avvia batch stagioni</button>
         </div>
@@ -359,7 +371,7 @@ select{appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:36px
       <div class="card-h"><div class="card-t">Sweep totale, tutti i campionati</div></div>
       <div class="note">Genera un Excel per ogni lega e ogni stagione disponibile, in sequenza e senza sorveglianza. Salva un checkpoint dopo ogni stagione: puoi fermarti (o spegnere) e riprendere da dove eri, perdendo solo la stagione in corso.</div>
       <div class="row c2">
-        <div><label>Storico per squadra (partite indietro)</label><input type="number" id="cmp-sweep-limit" value="30" min="5" max="100"></div>
+        <div><label>Storico per squadra (partite indietro)</label><input type="number" inputmode="numeric" id="cmp-sweep-limit" value="30" min="5" max="100"></div>
         <div style="display:flex;align-items:flex-end;padding-bottom:8px">
           <label style="font-weight:400;display:flex;align-items:center;gap:7px;margin:0">
             <input type="checkbox" id="cmp-sweep-cups" style="width:auto"> includi coppe e nazionali (Champions, Europa, Mondiale)
@@ -416,7 +428,7 @@ select{appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:36px
       </div>
 
       <div class="row c2">
-        <div><label>Storico per squadra (partite)</label><input type="number" id="cmp-history-limit" value="30" min="5" max="100"></div>
+        <div><label>Storico per squadra (partite)</label><input type="number" inputmode="numeric" id="cmp-history-limit" value="30" min="5" max="100"></div>
         <div style="display:flex;align-items:flex-end">
           <button class="btn btn-go btn-full" id="cmp-btn-run" onclick="cmpRun()">Avvia analisi</button>
         </div>
@@ -965,7 +977,7 @@ async function loadEngineFromText(text, fileName) {
     <p><code>${fileName}</code>: clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
 
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b79';
+  const _bComp = '0905-b80';
   window.__CMP_BUILD = _bComp;
   const _el = document.getElementById('engine-build');
   if (_el) {
