@@ -55,7 +55,7 @@ vedi *Le quote automatiche*); se non ci sono, le scrive l'utente. Per misurarle 
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b75`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b76`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -454,23 +454,20 @@ qui ha bisogno di dati nuovi, non di rifare questi.
 
 ### 5. UI e pulizie
 
-- [ ] **Le card di Numeri che non reggono.** Misurate l'11 ottobre 2026 sul 2025/26 dei cinque campionati (1.743
-  partite). Non reggono contro il reale:
-  - il KNN (1X2, Goal, Over) e l'Ordered Logit;
-  - corner e rosso;
-  - i minuti di «Quando segnano»;
-  - cecchino, efficienza e quota da palla inattiva;
-  - recuperi e Choke Index fra le due squadre;
-  - i giudizi over/underperformance;
-  - il trend dell'Elo;
-  - i punti contro il modulo avversario;
-  - le ultime 3 e 5 della progressione;
-  - lo stile del funnel, quasi sempre «Equilibrato».
-
-  L'utente ha scelto di correggerli coi metodi della statistica. Regola registrata l'11 ottobre 2026: restringimenti
-  (James-Stein, Gamma-Poisson, Dirichlet) e ricalibrazioni, uno per card, da provare su 2024/25 delle cinque leghe e
-  2025/26 di sette leghe con `--scritture`. Ordered Logit e trend non hanno un candidato. Vedi *Le card di Numeri: la
-  regola*.
+- [x] ~~**Le card di Numeri che non reggono.**~~ — **corrette, nello Scanner dal `b76`.** Misurate l'11 ottobre 2026
+  sul 2025/26 dei cinque campionati; l'utente ha scelto di correggerle coi metodi della statistica. Regola registrata
+  prima (restringimenti James-Stein, Gamma-Poisson, Dirichlet e ricalibrazioni, uno per card), test su 3.976 partite
+  mai aperte per Numeri: passano tutte e 17, da `z` −2.7 (corner) a −17.1 (recuperi). Vedi *Le card di Numeri: la
+  regola*, «Esito».
+- [ ] **Ordered Logit e trend dell'Elo, da decidere con l'utente.** Non hanno un candidato: l'Ordered Logit è
+  calibrato ma più debole del motore (peso 0 nell'1X2), il trend non prevede niente (correlazione +0.006 coi punti
+  meno attesi). Toglierli dallo schermo o dire a schermo quanto valgono.
+- [ ] **Le rese della famiglia dei numeri nel tabellone, coi corner del `b76`.** Il `λ` dei corner ora è ristretto
+  verso una costante, e la `k` è fissa: lo scarto dei corner dal base rate cambia, e con lui quante volte salgono in
+  cima. `EDGE_BANDS` per i numeri è del `b49`: va rimisurata sul tabellone del `b76` (un batch delle cinque leghe).
+- [ ] **Corner di casa contro corner di trasferta.** Nell'esplorazione di Numeri la differenza di corner fra le due
+  squadre si prevede (correlazione 0.38 con la differenza di Elo, 0.34 con le medie delle due squadre), il
+  totale no. È un mercato che il tabellone non ha: da esplorare, con una regola, se l'utente lo vuole.
 - [ ] **Doppie chance e gol con confidence**: la tabella è confusa, e sui gol poggia su
   probabilità che discriminano poco.
 - [x] ~~**La card «Primo gol»**~~ — **passato, nello Scanner dal `b75`.** La card usa una quota fissa
@@ -496,7 +493,7 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b75`)
+## Stato attuale (`b76`)
 
 **1X2.** Col motore `b48` il pick azzecca il 52.7% (±1.4) contro il 43.0% del «gioca sempre in
 casa» sulle cinque leghe: 52.7% contro 40.2% in Serie A, 52.7% contro 43.1% in Premier, 53.2%
@@ -601,11 +598,16 @@ rumore. La regola era registrata prima: su 11.633 partite di 36 leghe −7.30‰
 meglio in 29 leghe su 36. Ora la card è calibrata, ma distingue poco le partite (AUC 0.53): vale poco più
 della frequenza della lega. Vedi *La card del primo gol*.
 
-**Le card di Numeri** (misura dell'11 ottobre 2026). Su 1.743 partite del 2025/26 dei cinque campionati, ogni
-numero delle 14 card contro il reale. Reggono 1X2, confidence, Markov, handicap, risultati esatti, gialli, falli,
-Elo e le medie lunghe delle statistiche (correlazione 0.3–0.5). Goal, Over, multigol totali, tiri in porta e primo
-gol sono calibrati ma valgono quanto la frequenza della lega. Non reggono il KNN, l'Ordered Logit, corner e rosso,
-i minuti dei gol delle squadre, l'efficienza, i giudizi e il trend. Vedi *Le card di Numeri*.
+**Le card di Numeri** (misura dell'11 ottobre 2026, correzioni dal `b76`). Su 1.743 partite del 2025/26 dei cinque
+campionati, ogni numero delle 14 card contro il reale. Reggono 1X2, confidence, Markov, handicap, risultati esatti,
+gialli, falli, Elo e le medie lunghe delle statistiche (correlazione 0.3–0.5). Goal, Over, multigol totali, tiri in
+porta e primo gol sono calibrati ma valgono quanto la frequenza della lega. Non reggevano il KNN, l'Ordered Logit,
+corner e rosso, i minuti dei gol delle squadre, cecchino, efficienza e palla inattiva, recuperi e Choke Index fra le
+due squadre, i giudizi, il modulo, le ultime 3 e 5, lo stile e il trend. Dal `b76` 17 numeri sono ristretti o
+ricalibrati (James-Stein, Gamma-Poisson, Dirichlet, logistica), con una regola registrata prima: sul 2024/25 dei
+cinque campionati e il 2025/26 di sette leghe (3.976 partite) passano tutti, da `z` −2.7 (corner) a −17.1 (recuperi).
+Passare vuol dire che il numero diventa onesto, non che distingue le partite: rosso e corner ora valgono quanto la
+frequenza della lega. Ordered Logit e trend restano com'erano. Vedi *Le card di Numeri: la regola*.
 
 **Il catalogo** (dal `b73`). `leghe.json` e le due copie dentro le pagine sono il catalogo di
 `/leagues` del 10 ottobre 2026: 77 leghe invece di 42, e il 2026/27 di Bundesliga, Champions ed Europa
@@ -782,6 +784,7 @@ non passa mai +7.1. Trascina con sé il `12`.
 | **Le tre leghe nuove col `b48`** | **3495** | Championship 1659, Eredivisie 923, Liga Portugal 913, 2023/24–2025/26: batch automatico del `b51` (probabilità del `b48`), 3495 su 3495 in copia conforme, Elo rifatto dall'archivio identico su ogni file; `/advanced` assente sul 2023/24 di Championship e Liga Portugal. La sezione `TABELLONE` non è mai stata guardata |
 | **Le nove leghe del livello dei gol** | **6472** | Bundesliga austriaca 582, Superligaen 574, Liga MX 667 (2023/24–2025/26), Eliteserien 715, Allsvenskan 715, MLS 1581 (2023–2025), J. League 756 (2024–2025), Liga Profesional 508, Série A brasiliana 374 (2025): batch automatico del `b62`, tutte in copia conforme, Elo identico su ogni file. Aperte solo per il test del livello dei gol (`b63`); le partite dal 2025 anche per la card del primo gol (`b75`) |
 | **Le cinque leghe, giro registrato** | **1743** | Il 2025/26 dei cinque campionati col batch del `b75` e `--scritture` (`batch/numeri`): ogni numero a schermo e i valori estratti da ogni partita dello storico, 1.743 su 1.743 in copia conforme, Elo identico su ogni file. Guardate per tutte le card di Numeri. Vedi *Le card di Numeri* |
+| **Il test delle card di Numeri** | **3976** | Il 2024/25 dei cinque campionati e il 2025/26 di Championship, Eredivisie, Liga Portugal, 2. Bundesliga, First Division A, Premiership scozzese e Super League svizzera, col batch del `b75` e `--scritture` (`batch/numeri-prova1`, `batch/numeri-prova2`), 3.976 su 3.976 in copia conforme, Elo identico in 12 file su 12. Aperte solo per il test delle correzioni di Numeri (`b76`); già viste prima per 1X2, quote e tabellone. Vedi *Le card di Numeri: la regola* |
 | **Le leghe mai viste del `b74`** | **7645** | 33 file di 25 leghe: A-League, Indian Super League, Saudi Pro League 2023/24–2025/26 e K League 1 2024–2026; il 2026 giocato di dieci leghe a calendario solare; il 2025/26 di undici leghe europee, con una sola stagione alle spalle. Batch automatico del `b73`, tutte in copia conforme, Elo identico su ogni file. Super League 1 greca 2025/26 e Saudi Pro League 2023/24 senza stagione alle spalle: fuori da ogni misura. Guardate per 1X2, soglie, sorpresa, gol, numeri e tabellone senza quote (solo descrittivo); le rese del pick sono in `PICK_RESA.fuori`; anche per la card del primo gol (`b75`). Vedi *Le leghe mai viste* |
 | **League One, League Two, Süper Lig e il 2026/27** | **4879** | League One 1653, League Two 1656, Süper Lig 1018 (2023/24–2025/26; il 2023/24 con una sola stagione alle spalle) e le partite giocate del 2026/27 di dieci leghe (552): batch automatico del `b61`, tutte in copia conforme, Elo identico su ogni file; `/advanced` assente su League One e League Two. Aperte solo per il test dei mercati della matrice con le quote (`b62`); le partite dal 2025 di League One, League Two e Süper Lig anche per la card del primo gol (`b75`) |
 | **Serie A 2023/24 → 2025/26** | **1134** | **il riferimento**: export `b40`, 1134 su 1134 in copia conforme, una stagione per file, storico 30, `lgN` ≥ 760; `/advanced` assente sul 2023/24 (`riserva-k-motore`) |
@@ -1730,7 +1733,7 @@ niente. Controlla:
   testo; all'apertura il Comparatore ripristina la copia salvata in localStorage, che puo'
   essere vecchia) e che le build coincidano;
 - **ogni** manopola del motore contro il suo default letto dal sorgente
-  (`cmpEngineDefaults`, 30 manopole dal `b48`, 31 dal `b63` con `GOALS_LEVEL`, 32 dal `b75` con `PRIMO_GOL_QUOTA`), piu' `CMP_K_LIST[0]` contro `SHRINK_K`;
+  (`cmpEngineDefaults`, 30 manopole dal `b48`, 31 dal `b63` con `GOALS_LEVEL`, 32 dal `b75` con `PRIMO_GOL_QUOTA`, 33 dal `b76` con `NUMERI_CORREZIONI`), piu' `CMP_K_LIST[0]` contro `SHRINK_K`;
 - lo storico per squadra contro quello dello Scanner (`window.__ENGINE_LIMIT`);
 - che la partita sia della stagione per cui e' caricato il database.
 
@@ -1784,7 +1787,7 @@ col movimento ridotto (`reducedMotion: 'reduce'`: i numeri che contano mostrereb
 intermedi), legge «In breve» da `#in-breve` (il riquadro, la sorpresa e le proposte sono tre blocchi)
 e misura le voci del dock e del foglio Altro, Squadre in tutte e tre le sotto-schede.
 
-Esito al `b75` (storico 30; uguale al `b74`), a 390px con tutte le 28 card aperte, scheda per scheda e in tutte e tre le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, 0 px):
+Esito al `b76` (storico 30; uguale al `b75`), a 390px con tutte le 28 card aperte, scheda per scheda e in tutte e tre le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, 0 px):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
@@ -1876,7 +1879,10 @@ lega, card delle soglie) o nel prompt, e la lega finta ha l'id della Serie A. Il
 243 chiamate), con la nota di lega, «In breve» e il prompt che dicono la resa della lega (nota e prompt col ±2se e le
 stagioni), nessun errore, 0 px in ogni scheda. Al `b75` il controllo col `b74` vede 2 scritture diverse,
 i due numeri della card del primo gol (`surv-30`, `surv-45`), e il certificato; il numero del mega-prompt
-e il numero chiave di Numeri cambiano con loro, ma non passano da `safeHtml`.
+e il numero chiave di Numeri cambiano con loro, ma non passano da `safeHtml`. Al `b76` il controllo col `b75` vede
+41-42 scritture diverse su 191 (44 id in tutto, tutti delle card di Numeri, più la riga dei corner di «Ruolo e generale»,
+le linee dei corner e il tabellone, dove cambia lo scarto dei corner) e 10-19 righe del CSV: KNN 1, X e 2, corner attesi,
+le quattro linee dei corner, le righe del tabellone che si spostano, il certificato.
 
 **Il controllo del `b70`.** Da qui «In breve» controlla anche il rischio sorpresa: con le quote dell'1X2
 `#sorpresa-box` deve essere identico a quello rifatto nella pagina con `rischioSorpresa(…,
@@ -3787,6 +3793,7 @@ scrittura nuova, il messaggio iniziale). Il banco la verifica a parte, premendo 
 | `SORPRESA_QUOTE_TAB` | 5 fasce dello sfavorito con le quote × tutte / accordo / disaccordo fra modello ed Elo: partite, vince lo sfavorito, pareggio, vince il favorito | misurata `b70`, accordo e disaccordo dal `b71` | 11.902 partite di 12 leghe con le quote di chiusura, probabilità con `QUOTE_COMB`; fuori lega la stessa entro 0.3 punti. Il disaccordo modello/Elo pesa poco (30% o più: 30.7 contro 31.5%). Con le soglie di sempre il rischio con le quote non arriva ad ALTO. `strumenti/sorpresa-quote.py`, sezione 5. Vedi *L'avviso di sorpresa*, «Con le quote» |
 | `GOALS_LEVEL` | 1.051 | stimata e registrata `b62`, nel motore `b63` | gol/lambda di ruolo su 16.254 partite di quindici leghe (2023/24–2025/26), stabile per stagione (1.044–1.061) e per fonte degli xG; fuori lega Over 2.5 −2.74‰ (`z = −4.80`) e Goal −2.69‰ (`z = −6.27`), 13 leghe su 15. Test registrato su nove leghe mai aperte, 6.472 partite: −3.80‰ (`z = −2.99`), 6 su 9. Vedi *Il livello dei gol: la regola* |
 | `PRIMO_GOL_QUOTA` / `PRIMO_GOL_FISSA` | `'fissa'` / 0.268, 0.446 | misurata, test registrato `b75` | la quota media dei gol nei primi 30 e 45 minuti su 4.496 partite di dodici leghe dal 2025/26 (`QUOTA_FISSA` di `strumenti/primo-gol.py`); test su 11.633 partite di 36 leghe mai aperte per questa domanda: −7.30‰ (`z = −4.93`), 29 leghe su 36. `'squadre'` torna alla quota dei minuti dei gol delle due squadre. Vedi *La card del primo gol: la regola* |
+| `NUMERI_CORREZIONI` / `NUMERI_REG` | `'si'` / 21 parametri, uguali a `REGOLA` di `strumenti/numeri-correzioni.py` | stimati sull'esplorazione, test registrato `b76` | stimati sulle 1.743 partite del 2025/26 dei cinque campionati (`batch/numeri`), fuori lega dove serve; test su 3.976 partite mai aperte per Numeri (`batch/numeri-prova1`, `-prova2`): passano tutti e 17, da `z` −2.7 a −17.1, e il KNN 1X2 su 25.168 partite di 42 leghe (−21.9‰, `z` −14.9). `'no'` torna al `b75`. Vedi *Le card di Numeri: la regola* |
 | `SOT_PER_GOAL` | 3.25 | misurata | LaLiga 3.19, Premier 3.04, Serie A 3.33. Tocca solo il livello |
 | `GOALS_SOT_CAP` | 0.20 | paracadute misurato | morde nello 0.18% |
 | `OL_BETA` / `T1` / `T2` | 2.056 / −0.475 / +0.671 | stimata `b20` | massima verosimiglianza su 1743 partite, leave-one-league-out, sulla variabile di **ruolo** (media +0.196). Peso 0 |
@@ -5090,6 +5097,96 @@ rifà l'esplorazione.
 Le card che non passano restano come sono, e questa sezione dice perché. Ordered Logit e trend li decide
 l'utente.
 
+**Esito: passano tutti.** I due batch sono finiti:
+- 12 file, 3.976 partite, tutte in copia conforme;
+- l'Elo rifatto identico in 12 file su 12;
+- 33.124 chiamate, nessuna fallita.
+
+Il reale avanzato c'è per tutte e due le squadre in 3.864 partite.
+
+| card | test, contro lo schermo di oggi | `z` | leghe meglio |
+|---|---|---|---|
+| Quando segnano (fascia del gol) | −29.9‰ | −12.0 | 12 su 12 |
+| Rosso | −106.0‰ | −7.8 | 12 su 12 |
+| Corner Over 8.5 + 9.5 + 10.5 | −17.6‰ | −2.7 | 9 su 12 |
+| Cecchino | errore quadratico −0.02 | −8.5 | 12 su 12 |
+| Quota da palla inattiva | −37.3 punti² | −12.3 | 12 su 12 |
+| Efficienza | −0.04 | −7.8 | 12 su 12 |
+| Recuperi entro 5", differenza | −8.0 | −17.1 | 12 su 12 |
+| Choke Index, differenza | −0.10 | −16.0 | 12 su 12 |
+| Punti contro il modulo | −0.30 | −16.4 | 12 su 12 |
+| Progressione, ultime 5, contro la media lunga | −0.34% | −6.2 | 10 su 12 |
+| Progressione, ultime 3, contro la media lunga | −0.18% | −2.9 | 7 su 12 |
+| Capocannoniere | −14.1‰ | −6.3 | 10 su 12 |
+| KNN Goal | −29.6‰ | −7.5 | 12 su 12 |
+| KNN Over 2.5 | −23.9‰ | −6.2 | 12 su 12 |
+| KNN 1X2 (25.168 partite di 42 leghe) | −21.9‰ | −14.9 | 37 su 42 |
+
+- *Lo stile*: gruppi 32 / 34 / 34%, baricentro reale casa meno trasferta +7.4 / +2.1 / −2.8 m (`z` +16.7 e +16.0).
+- *Il controllo della fortuna*: sulle 484 squadre oltre 2 deviazioni, −0.074 ±0.108 punti oltre il verdetto nel verso
+  della fortuna. Non si ripete.
+
+**Cosa vuol dire.** Il confronto è con lo schermo di oggi, che spesso era molto sbagliato. Passare vuol dire che il
+numero diventa onesto, non che distingue le partite.
+- *Quanto segue il reale non cambia* per cecchino, efficienza e punti contro il modulo: dopo la correzione sono
+  quasi costanti, perché la statistica dice che quelle differenze fra squadre sono rumore.
+- *Rosso e corner totali*, solo descrittivo e sui dati del test, valgono quanto la frequenza della lega:
+  - rosso previsto 16.9%, uscito 16.4%, AUC 0.51, +3.4‰ contro la frequenza;
+  - corner AUC 0.54, −0.5‰ contro la frequenza.
+
+  Prima erano peggio, e di molto.
+- *I numeri che ora distinguono*:
+  - Quando segnano, la quota da palla inattiva e le ultime 5 della progressione, ma poco;
+  - i recuperi e il Choke Index fra le due squadre, grazie a quello che concede l'avversario;
+  - lo stile;
+  - il capocannoniere, previsto 19.2% e uscito 20.0%, AUC 0.60.
+- *Il KNN ricalibrato* resta più debole del motore: porta poca informazione sua.
+
+**Nel motore (`b76`).** `window.NUMERI_CORREZIONI = 'si'` (`'no'` torna al `b75`); i parametri della regola stanno in
+`NUMERI_REG`, uguali a `REGOLA` di `strumenti/numeri-correzioni.py`. Card per card:
+- *Quando segnano*: una colonna «Un gol», `1 − exp(−λ·quota)` con la quota fissa della fascia; i conteggi restano,
+  con una nota che dice che non prevedono. Anche nel prompt.
+- *Rosso*: Gamma-Poisson sui rossi delle ultime 30 di tutte, quindi uguale nelle due colonne, come il candidato provato.
+- *Corner*: il totale, le linee Over e la riga del tabellone col `λ` ristretto, dallo storico generale delle due
+  squadre (le due colonne quindi coincidono), e `k` 57.2 al posto di quella della coppia. Cambiano anche gli scarti
+  dei corner nel tabellone: le rese della famiglia dei numeri vanno rimisurate (vedi *Da fare*).
+- *Cecchino*: l'xGOT a schermo, nel prompt e nella frase è `NPxG + m + w·(xGOT − NPxG − m)`. La frase si accende
+  ancora sopra 0.15 di scarto fra le squadre, che ora vuol dire più di 0.56 di scarto grezzo.
+- *Palla inattiva*: il rapporto delle somme ristretto, quando ci sono almeno 5 partite; con meno, il numero di
+  prima.
+- *Efficienza*: `1 + 0.035·(eff − 1)`, nelle quattro righe e nel prompt.
+- *Recuperi e Choke Index*: i valori della partita, con quello che concede l'avversario (`opp_cp_regains`,
+  `opp_rec_time`); senza quei dati, quelli di prima.
+- *Modulo*: i punti a partita di tutto il campione (generale o ruolo), con accanto quante partite contro quel
+  modulo.
+- *Progressione*: le colonne «Ult 3» e «Ult 5» ristrette verso la media generale; «Ult 10» e «Ult 15» non sono
+  state provate e restano.
+- *Stile*: «La casa gioca piu' alta», «Equilibrio», «La trasferta gioca piu' alta», con la soglia di 1.5 m.
+- *Punti attesi*: «Fortuna» o «Sfortuna» con «non si ripete» oltre 2 deviazioni, altrimenti «In linea con gli
+  xG». Anche nel prompt.
+- *Capocannoniere*: accanto a ognuno dei tre, «segna N%».
+- *KNN*: 1X2, doppie chance, Goal e Over ricalibrati, a schermo e nelle righe KNN del CSV. Resta fuori dall'ensemble.
+
+**Verificato: lo schermo dice i numeri del candidato.** `strumenti/numeri-schermo.py` rifà dalla storia estratta dal
+motore i numeri della regola e li confronta con quelli scritti a schermo. Sul batch finto del `b76` (`--finto
+--scritture`, 89 partite) rosso, corner attesi, palla inattiva, recuperi, Choke Index, cecchino, efficienza, ultime 3
+e 5, capocannoniere, «Un gol» e modulo stanno tutti entro l'arrotondamento dello schermo. Sullo stesso batch col motore
+`b75` (controllo di potenza) 3.924 numeri escono. Le righe KNN del CSV `b75` ricalibrate coi coefficienti della regola
+danno quelle del `b76` entro 0.11 punti, e il Goal e l'Over del KNN a schermo entro 0.06. Sulla PitchAPI vera,
+Juventus – Lazio dell'8 febbraio 2026 (241 chiamate, `schermate.js --vera`): nessun errore, 0 px in ogni scheda.
+
+**Trovato dopo, verificando.**
+- *Il rosso.* La prima versione del `b76` prendeva i rossi del campione di ogni colonna, quindi nella colonna di ruolo
+  solo le partite di ruolo; il candidato provato usa le ultime 30 di tutte. Ora tutte e due le colonne usano le ultime
+  30, come il test.
+- *La finestra di 500 giorni.* Il motore prende lo storico nei 500 giorni prima della partita, lo strumento del test
+  no: sui dati del test il 3.4% delle storie (267 squadre-partita su 7.952) è diverso, quasi tutte squadre tornate da
+  una lega minore. Rifatto il test con la finestra del motore, solo per controllo, l'esito non cambia: corner −17.3‰
+  (`z` −2.64), rosso −106.1‰, palla inattiva −37.0, capocannoniere −14.6‰ (11 leghe su 12), gli altri uguali.
+- *Il modulo.* Il test ha provato i punti a partita dei punti attesi (le partite con gli xG), lo Scanner mostra quelli
+  di tutte le partite: sul 3.3% delle squadre-partita sono diversi. Con quelli di tutte: −0.30 (`z` −16.0), 12 leghe
+  su 12, come nel test.
+
 ## I gol
 
 `sum_sot` (somma dei tiri in porta previsti delle due squadre) entra come **seconda stima del
@@ -5695,6 +5792,10 @@ Le confidence dell'1X2 (`Confidence Globale` e la colonna Confidence delle righe
 dal `b53` sono la probabilità arrotondata; nei file fino al `b52` sono `CONF_1X2_TABLE` applicata
 alla probabilità. Chi confronta file di build diverse le ricalcola dalla probabilità.
 
+Dal `b76` le righe `KNN 1`, `KNN X` e `KNN 2` sono le probabilità del KNN ricalibrate, e le righe dei corner
+(attesi, linee Over, dispersione) vengono dal `λ` ristretto con la `k` fissa a 57.2 (vedi *Le card di Numeri: la
+regola*). Chi confronta file di build diverse sui corner o sul KNN tiene separati quelli fino al `b75`.
+
 Nei file fino al `b67` il Previsto di `Altezza Difensiva` (e delle altre metriche additive) è
 `0,00` quando la squadra non ha dati, cioè sulle righe `riserva-*`: va letto come N/D. Dal `b68`
 è N/D (vedi *Le statistiche previste*).
@@ -5781,6 +5882,10 @@ python3 -m http.server 8204 &
 # 5. le schermate dello Scanner a 390px, ogni scheda, scorrimento ed errori (~40 secondi)
 node strumenti/schermate.js --out <cartella>            # lega finta; esce con 1 se qualcosa scorre
 node strumenti/schermate.js --vera "Juventus|Atalanta|2026-09-20"   # PitchAPI vera, ~250 chiamate
+
+# 6. se si toccano le card di Numeri: lo schermo dice i numeri della regola? (~2 minuti, lega finta)
+node strumenti/batch-auto.js --finto --scritture --leghe "ITA:Serie A" --stagioni 2025/2026 --out <cartella>
+python3 strumenti/numeri-schermo.py <cartella>                       # esce con 1 se un numero esce
 ```
 
 **I controlli con nome**, da rifare quando si tocca la parte che riguardano. Ognuno ha
@@ -5940,3 +6045,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b74` | le rese del pick lega per lega fuori dai cinque campionati, chieste dall'utente dopo tre batch di leghe mai viste (33 file, 7.645 partite in copia conforme, solo descrittivi: pick 48.7%, sopra il 55% 62.1% contro il 66.0% della card, sorpresa e livello dei gol che reggono, le etichette dei numeri che promettono troppo). `PICK_RESA.fuori` da 7 a 38 leghe: le 19 dei batch nuovi e le 12 dei batch del `b61` e del `b62` con almeno 50 partite col pick sopra il 55%. Lì la nota di lega, «In breve» e il prompt dicono quanto esce il pick invece di «lega mai misurata» (nota e prompt anche col ±2se e le stagioni); la card delle soglie dice l'intervallo. Probabilità invariate: col `b73` 0 scritture diverse su 191, una riga del CSV (il certificato) |
 | `b73` | il catalogo delle leghe rifatto da `/leagues` della PitchAPI, dopo la domanda dell'utente sulla Bundesliga: `leghe.json` era la copia di settembre e non aveva il 2026/27 di Bundesliga, Champions ed Europa League (e di India e Thailandia), quindi lo Scanner non poteva analizzarlo. Ora 77 leghe invece di 42, nessuna tolta; le stesse nelle due copie di riserva dentro Scanner e Comparatore. Le 35 leghe nuove non sono misurate; Cina, Finlandia, Irlanda e Romania hanno le quote automatiche (1.736 partite su 1.736 agganciate, nessuna sbagliata). `strumenti/catalogo.js` per rifarlo. Nessun numero cambia: col `b72` 0 scritture diverse su 191, una riga del CSV (il certificato); sulla PitchAPI vera Augsburg – Bayern del 10/10/2026 (Bundesliga 2026/27) e FCSB – Oţelul (Liga I) analizzate con le quote automatiche, 0 px |
 | `b75` | la card «Primo gol» con una quota fissa dei gol nei primi 30 e 45 minuti (0.268 e 0.446) al posto di quella presa dai minuti dei gol delle due squadre, chiesta dall'utente dopo la misura del 10 ottobre (la card non distingueva le partite, AUC 0.51, e la quota delle squadre era rumore). Regola registrata e unita su main prima di scaricare i gol del test; su 11.633 partite di 36 leghe dei batch del `b61`, del `b62` e del `b73` la somma delle due logloss scende di 7.30‰ (`z = −4.93`), 29 leghe su 36, e la card diventa calibrata. Manopola `PRIMO_GOL_QUOTA` (`'squadre'` torna a prima). Col `b74` 2 scritture diverse su 191 (i due numeri della card), una riga del CSV (il certificato); `strumenti/primo-gol.py` |
+| `b76` | le card di Numeri corrette, chieste dall'utente dopo la misura dell'11 ottobre («non può essere così scarsa la matematica»): restringimenti James-Stein, Gamma-Poisson e Dirichlet e ricalibrazioni logistiche per rosso, corner, minuti dei gol, cecchino, palla inattiva, efficienza, recuperi e Choke Index, modulo, ultime 3 e 5, stile, giudizio della fortuna, capocannoniere e KNN. Regola registrata e unita su main prima di aprire i dati del test; su 3.976 partite mai aperte per Numeri passano tutte e 17, da `z` −2.7 (corner) a −17.1 (recuperi). I numeri diventano onesti, non più informativi: rosso e corner valgono quanto la frequenza della lega. Manopola `NUMERI_CORREZIONI` (`'no'` torna a prima). Col `b75` 41-42 scritture diverse su 191, 10-19 righe del CSV (KNN, corner, tabellone, certificato); `strumenti/numeri-correzioni.py`, `strumenti/numeri-schermo.py` |

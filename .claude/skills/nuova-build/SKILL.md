@@ -81,6 +81,10 @@ Ci mette 3–5 minuti: lancialo in background. Deve uscire con 0. Il dettaglio �
 - Se la modifica aggiunge un controllo al banco, fai il controllo di potenza: una copia con un
   guasto messo apposta (`ROOT=<copia>`) deve far fallire il banco.
 - Se cambia la grafica, guarda le schermate con la skill `schermate`.
+- Se tocchi le card di Numeri, o le formule che le correggono (`NUMERI_REG`), rifai il confronto fra lo schermo e
+  le formule della regola: un batch finto con `--scritture`, poi `python3 strumenti/numeri-schermo.py <cartella>`, che
+  deve uscire con 0 (AGENTS.md, *Le card di Numeri: la regola*, «Verificato»). Il banco dice solo che Scanner e
+  Comparatore stampano lo stesso numero, non che il numero è quello provato.
 
 ## 4. AGENTS.md
 
