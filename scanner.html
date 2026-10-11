@@ -673,7 +673,7 @@ body.vista-partita .dock{display:flex}
     <button type="button" class="btn btn-ghost ab-back" id="btn-nuova" onclick="tornaIndietro()" aria-label="Indietro"><svg class="ic" aria-hidden="true"><use href="#i-arrow-left"/></svg><span>Cambia partita</span></button>
     <span class="ab-tit" id="ab-tit"><b></b><small></small></span>
     <span class="ab-spazio"></span>
-    <span class="tag" id="build-ver">build 0905-b75</span>
+    <span class="tag" id="build-ver">build 0905-b76</span>
   </div>
 </header>
 
@@ -1064,6 +1064,7 @@ body.vista-partita .dock{display:flex}
               <th>Fascia</th>
               <th colspan="2" style="color:var(--blue); border-left:1px solid var(--line); text-align:center">Casa</th>
               <th colspan="2" style="color:var(--red); border-left:1px solid var(--line); text-align:center">Trasferta</th>
+              <th style="border-left:1px solid var(--line); text-align:center">Partita</th>
             </tr>
             <tr>
               <th>Minuti</th>
@@ -1071,9 +1072,11 @@ body.vista-partita .dock{display:flex}
               <th>Subiti</th>
               <th style="border-left:1px solid var(--line)">Fatti</th>
               <th>Subiti</th>
+              <th style="border-left:1px solid var(--line)">Un gol</th>
             </tr>
             <tbody id="timing-body"></tbody>
           </table>
+          <div class="note" style="margin-top:8px">«Un gol» &egrave; la probabilit&agrave; che nella partita si segni almeno una volta in quella fascia: dai gol attesi, con la stessa quota per fascia per tutte le partite. I conteggi delle due squadre sono lo storico: misurato su 10.904 gol di 12 leghe, non dicono in che minuto si segner&agrave;.</div>
         </div>
       </details>
       <details class="card">
@@ -1722,11 +1725,11 @@ if (typeof document !== 'undefined') {
   document.addEventListener('DOMContentLoaded', wrapTables);
 }
 
-function getTopScorers(scorersArray) {
+function getTopScorers(scorersArray, segna) {
   if(!scorersArray || !scorersArray.length) return "<span style='color:var(--dim)'>Nessun marcatore in archivio</span>";
   const counts = {}; scorersArray.forEach(s => { counts[s] = (counts[s]||0)+1; });
   const sorted = Object.keys(counts).sort((a,b) => counts[b] - counts[a]);
-  return sorted.slice(0, 3).map(s => `${s} (${counts[s]} gol)`).join(', ');
+  return sorted.slice(0, 3).map(s => `${s} (${counts[s]} gol)${segna ? segna(s, counts[s]) : ''}`).join(', ');
 }
 function _mean(arr) { if(!arr || !Array.isArray(arr)) return 0; const valid = arr.filter(v => v != null && !isNaN(v)); if (!valid.length) return 0; return valid.reduce((s,v) => s+v, 0) / valid.length; }
 
@@ -3682,7 +3685,7 @@ function _tabTesto(V) {
        + senza.map(v => v.nome + ' ' + (v.edge == null ? 'base ignota' : (v.edge >= 0 ? '+' : '') + v.edge.toFixed(1))).join(', ') : '');
 }
 
-window.__SCANNER_BUILD = '0905-b75';
+window.__SCANNER_BUILD = '0905-b76';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -3965,6 +3968,18 @@ window.GOALS_LEVEL  = (typeof window.GOALS_LEVEL  === 'number') ? window.GOALS_L
 // (AGENTS.md, La card del primo gol: la regola); 'squadre' torna a prima
 window.PRIMO_GOL_QUOTA = (typeof window.PRIMO_GOL_QUOTA === 'string') ? window.PRIMO_GOL_QUOTA : 'fissa';
 const PRIMO_GOL_FISSA = [0.268, 0.446];
+// le card di Numeri ristrette e ricalibrate, coi parametri della regola registrata
+// (AGENTS.md, Le card di Numeri: la regola); 'no' torna a prima
+window.NUMERI_CORREZIONI = (typeof window.NUMERI_CORREZIONI === 'string') ? window.NUMERI_CORREZIONI : 'si';
+const NUMERI_REG = {
+  FORMA_TEMPI: [0.1209, 0.1275, 0.1848, 0.1625, 0.157, 0.2473],
+  ROSSO_TASSO: 0.0931, ROSSO_ALFA: 60,
+  CORNER_C0: 9.5947, CORNER_BETA: 0.6431, CORNER_K: 57.2,
+  CECCHINO_M0: 0.1371, CECCHINO_W: 0.270, INATTIVA_M0: 24.77, INATTIVA_W: 0.541, EFFICIENZA_W: 0.035,
+  CP_S: 0.279, REC_S: 0.808, PROG_R5: 0.166, PROG_R3: 0.141, STILE_SOGLIA: 1.5, CAPO_C: 0.723,
+  KNN_GG: [0.2003, 0.1868], KNN_OV: [0.2100, 0.3381],
+  KNN_1X2_W: [[0.5555, -0.3767], [-0.1038, -0.1605], [-0.4518, 0.5373]], KNN_1X2_B: [-0.1965, -0.1348, 0.3314]
+};
 
 // media pesata fra due stime del lambda, NON un moltiplicatore: un fattore limitato
 // lascia il rango dominato dal Dixon-Coles e non sposta niente (AGENTS.md, I gol)
@@ -4146,7 +4161,10 @@ async function avviaScanner() {
         const out = ref + c * (pairBase - ref) + (raw - pairBase);
         return (isFinite(out) && out > 0) ? out : raw;
       };
-      const cH = getF(dH,'cor'), cA = getF(dA,'cor'); const lCor = lamOf('cor');
+      const cH = getF(dH,'cor'), cA = getF(dA,'cor'); const _numCorr = window.NUMERI_CORREZIONI !== 'no';
+      const _corCoppia = [_mean(dH.overall.vals.cor), _mean(dH.overall.vals.cor_ag), _mean(dA.overall.vals.cor), _mean(dA.overall.vals.cor_ag)];
+      const _corOk = _numCorr && _corCoppia.every(v => v > 0);
+      const lCor = _corOk ? Math.min(30, Math.max(1, NUMERI_REG.CORNER_C0 + NUMERI_REG.CORNER_BETA * (_corCoppia.reduce((a, b) => a + b, 0) / 2 - NUMERI_REG.CORNER_C0))) : lamOf('cor');
       const _mpg = meanPairEloGap(ELO && ELO.table);
       const sH = getF(dH,'sot'), sA = getF(dA,'sot');
       const _sotRaw = lamOf('sot');
@@ -4160,7 +4178,7 @@ async function avviaScanner() {
       const rH = getF(dH,'red_cards'), rA = getF(dA,'red_cards');
 
       const tot = (team, a, b) => getA(team,a).map((v,i) => ((v==null?null:v) == null || getA(team,b)[i] == null) ? null : v + getA(team,b)[i]);
-      const kCor = negBinK(tot(dH,'cor','cor_ag').concat(tot(dA,'cor','cor_ag')));
+      const kCor = _corOk ? NUMERI_REG.CORNER_K : negBinK(tot(dH,'cor','cor_ag').concat(tot(dA,'cor','cor_ag')));
       const kSot = negBinK(tot(dH,'sot','sot_ag').concat(tot(dA,'sot','sot_ag')));
       const kYel = negBinK(tot(dH,'yel','yel_ag').concat(tot(dA,'yel','yel_ag')));
       const over = (line, lam, k) => 1 - negBinCDF(Math.floor(line), lam, k);
@@ -4168,7 +4186,9 @@ async function avviaScanner() {
       const linesSot = MARKET_LINES.sot.map(l => ({ l, p: over(l, lSot, kSot) }));
       const linesYel = MARKET_LINES.yel.map(l => ({ l, p: over(l, lYel, kYel) }));
       const pOv9c = over(9.5, lCor, kCor); const pOv8s = over(8.5, lSot, kSot); const pOv3y = over(3.5, lYel, kYel);
-      const pRed = 1 - poisson(0, rH + rA);
+      const _rossi = (team) => { const v = (team.overall.vals.red_cards || []).filter(x => x != null && !isNaN(x));
+        return (v.reduce((a, b) => a + b, 0) + NUMERI_REG.ROSSO_ALFA * NUMERI_REG.ROSSO_TASSO) / (v.length + NUMERI_REG.ROSSO_ALFA); };
+      const pRed = 1 - poisson(0, _numCorr ? _rossi(dH) + _rossi(dA) : rH + rA);
       const baseCor = baseOf('cor'), baseSot = baseOf('sot'), baseYel = baseOf('yel');
       const lgRefCor = (lgGoals > 0) ? window.MARKET_PER_GOAL.cor * lgGoals : null;
       const lgRefSot = (lgGoals > 0) ? window.MARKET_PER_GOAL.sot * lgGoals : null;
@@ -4210,8 +4230,16 @@ async function avviaScanner() {
     };
     const xgSpH_final = _xgSpFallback(dH);
     const xgSpA_final = _xgSpFallback(dA);
-    const setPctH = (xgSpH_final != null && npxgH_ro > 0.05) ? (xgSpH_final / npxgH_ro) * 100 : null;
-    const setPctA = (xgSpA_final != null && npxgA_ro > 0.05) ? (xgSpA_final / npxgA_ro) * 100 : null;
+    const _numCorr = window.NUMERI_CORREZIONI !== 'no';
+    // rapporto delle somme sulle stesse partite, ristretto verso la media (AGENTS.md, Le card di Numeri: la regola)
+    const _setRistretta = (team) => {
+      const sp = team.overall.vals.xg_sp || [], x = team.overall.vals.npxg || []; let a = 0, b = 0, n = 0;
+      sp.forEach((v, i) => { if (v != null && !isNaN(v) && x[i] != null && !isNaN(x[i])) { a += v; b += x[i]; n++; } });
+      return (n >= 5 && b > 0) ? NUMERI_REG.INATTIVA_M0 + NUMERI_REG.INATTIVA_W * (100 * a / b - NUMERI_REG.INATTIVA_M0) : undefined;
+    };
+    const _setH = _numCorr ? _setRistretta(dH) : undefined, _setA = _numCorr ? _setRistretta(dA) : undefined;
+    const setPctH = _setH !== undefined ? _setH : (xgSpH_final != null && npxgH_ro > 0.05) ? (xgSpH_final / npxgH_ro) * 100 : null;
+    const setPctA = _setA !== undefined ? _setA : (xgSpA_final != null && npxgA_ro > 0.05) ? (xgSpA_final / npxgA_ro) * 100 : null;
     const bcH = _mean(dH.overall.vals.bc) || 0; const bcA = _mean(dA.overall.vals.bc) || 0;
     const bcmH = _mean(dH.overall.vals.bcm) || 0; const bcmA = _mean(dA.overall.vals.bcm) || 0;
 
@@ -4234,6 +4262,9 @@ async function avviaScanner() {
 
     const pytH = expectedPoints(dH.overall.vals.npxg, dH.overall.vals.npxga, dH.overall.vals.gf, dH.overall.vals.ga);
     const pytA = expectedPoints(dA.overall.vals.npxg, dA.overall.vals.npxga, dA.overall.vals.gf, dA.overall.vals.ga);
+    // la fortuna delle ultime 30 non si ripete (AGENTS.md, Le card di Numeri: la regola)
+    if (_numCorr) for (const p of [pytH, pytA]) if (p.n)
+      p.msg = p.z >= 2 ? 'Fortuna: sopra gli attesi, non si ripete' : (p.z <= -2 ? 'Sfortuna: sotto gli attesi, non si ripete' : 'In linea con gli xG');
 
     const avgX_H = _mean(dH.overall.vals.avg_x) || 0; const avgX_A = _mean(dA.overall.vals.avg_x) || 0;
     const f3H = _mean(dH.overall.vals.f3_entries); const f3A = _mean(dA.overall.vals.f3_entries);
@@ -4241,8 +4272,16 @@ async function avviaScanner() {
     const penRateH = f3H > 0 ? (tbH / f3H) * 100 : 0; const penRateA = f3A > 0 ? (tbA / f3A) * 100 : 0;
 
     const defX_H = _mean(dH.overall.vals.avg_def_x) || 0; const defX_A = _mean(dA.overall.vals.avg_def_x) || 0;
-    const cp_H = _mean(dH.overall.vals.cp_regains) || 0; const cp_A = _mean(dA.overall.vals.cp_regains) || 0;
-    const recH = _mean(dH.overall.vals.rec_time) || 0; const recA = _mean(dA.overall.vals.rec_time) || 0;
+    // quello che fa la squadra piu' quello che l'avversario concede, ristretto verso la media della coppia
+    const _conAvv = (k, s) => {
+      const v = [dH.overall.vals[k], dA.overall.vals[k], dH.overall.vals['opp_' + k], dA.overall.vals['opp_' + k]];
+      if (!_numCorr || !v.every(a => _nValid(a) > 0)) return null;
+      const [mH, mA, cH, cA] = v.map(_mean), mu = (mH + mA + cH + cA) / 4;
+      return [mu + s * (mH + cA - 2 * mu), mu + s * (mA + cH - 2 * mu)];
+    };
+    const _cpAdj = _conAvv('cp_regains', NUMERI_REG.CP_S), _recAdj = _conAvv('rec_time', NUMERI_REG.REC_S);
+    const cp_H = _cpAdj ? _cpAdj[0] : (_mean(dH.overall.vals.cp_regains) || 0); const cp_A = _cpAdj ? _cpAdj[1] : (_mean(dA.overall.vals.cp_regains) || 0);
+    const recH = (_cpAdj && _recAdj) ? _recAdj[0] : (_mean(dH.overall.vals.rec_time) || 0); const recA = (_cpAdj && _recAdj) ? _recAdj[1] : (_mean(dA.overall.vals.rec_time) || 0);
     const lenH = (avgX_H > 0 && defX_H > 0) ? (avgX_H - defX_H) : 0; const lenA = (avgX_A > 0 && defX_A > 0) ? (avgX_A - defX_A) : 0;
 
     const _nBothValid = (a1, a2) => a1.filter((v,i) => v != null && a2[i] != null).length;
@@ -4284,7 +4323,18 @@ async function avviaScanner() {
     let knn_lamA = (knn_lamA_raw != null) ? knn_lamA_raw + pxA : lamA_role;
     if(!isFinite(knn_lamH) || knn_lamH < 0.15) knn_lamH = lamH_role;
     if(!isFinite(knn_lamA) || knn_lamA < 0.15) knn_lamA = lamA_role;
-    const probsKnn = probsFromMatrix(calcDCMatrix(knn_lamH, knn_lamA, RHO));
+    const _knnGrezzo = probsFromMatrix(calcDCMatrix(knn_lamH, knn_lamA, RHO));
+    // il KNN ricalibrato: 1X2 multinomiale sui log(p1/pX), log(p2/pX), Goal e Over logistici
+    // (AGENTS.md, Le card di Numeri: la regola). Restano fuori dall'ensemble come prima.
+    const _ricalKnn = (P) => {
+      if (window.NUMERI_CORREZIONI === 'no' || !(P.p1 > 0 && P.pX > 0 && P.p2 > 0)) return P;
+      const cl = (v) => Math.min(1 - 1e-3, Math.max(1e-3, v)), x = [Math.log(cl(P.p1) / cl(P.pX)), Math.log(cl(P.p2) / cl(P.pX))];
+      const z = NUMERI_REG.KNN_1X2_W.map((w, i) => w[0] * x[0] + w[1] * x[1] + NUMERI_REG.KNN_1X2_B[i]), zm = Math.max(...z);
+      const e = z.map(v => Math.exp(v - zm)), se = e[0] + e[1] + e[2];
+      const lg = (p, [a, b]) => 1 / (1 + Math.exp(-(a + b * Math.log(cl(p) / (1 - cl(p))))));
+      return Object.assign({}, P, { p1: e[0] / se, pX: e[1] / se, p2: e[2] / se, pGG: lg(P.pGG, NUMERI_REG.KNN_GG), pOv: lg(P.pOv, NUMERI_REG.KNN_OV) });
+    };
+    const probsKnn = _ricalKnn(_knnGrezzo);
 
     // Ristimati sul campione 2023-2026 (1743 partite, cinque leghe) invertendo le
     // probabilita' esportate dal backtest e rifacendo la massima verosimiglianza.
@@ -4538,12 +4588,14 @@ async function avviaScanner() {
       else _cb.style.background = "var(--orange)"; }
     safeHtml('hidden-value-msg', hiddenValueMsg);
 
-    let strSniperH = covOf(dH,'xgot') > 0 ? f2(xgotH) : (covOf(dH,'xg_shot') > 0 ? `${f2(xgShotH)} (xG/Tiro)` : "N/D");
-    let strSniperA = covOf(dA,'xgot') > 0 ? f2(xgotA) : (covOf(dA,'xg_shot') > 0 ? `${f2(xgShotA)} (xG/Tiro)` : "N/D");
     // Le due meta' di questo confronto devono venire dallo STESSO ambito: xgot e' una media
     // sulle 30 partite, quindi accanto ci va l'NPxG sulle stesse 30 e non npxg_ro, che e'
     // una previsione di ruolo per QUESTA partita (AGENTS.md, L'ambito di ogni box).
     const npxgH_gen = _mean(dH.overall.vals.npxg) || 0, npxgA_gen = _mean(dA.overall.vals.npxg) || 0;
+    const _cecchino = (xgot, npxg) => (_numCorr && xgot > 0) ? npxg + NUMERI_REG.CECCHINO_M0 + NUMERI_REG.CECCHINO_W * (xgot - npxg - NUMERI_REG.CECCHINO_M0) : xgot;
+    const xgotH_m = _cecchino(xgotH, npxgH_gen), xgotA_m = _cecchino(xgotA, npxgA_gen);
+    let strSniperH = covOf(dH,'xgot') > 0 ? f2(xgotH_m) : (covOf(dH,'xg_shot') > 0 ? `${f2(xgShotH)} (xG/Tiro)` : "N/D");
+    let strSniperA = covOf(dA,'xgot') > 0 ? f2(xgotA_m) : (covOf(dA,'xg_shot') > 0 ? `${f2(xgShotA)} (xG/Tiro)` : "N/D");
     safeTxt('l-xgot-h', f2(npxgH_gen) + " vs " + strSniperH); safeTxt('l-xgot-a', f2(npxgA_gen) + " vs " + strSniperA);
     safeTxt('l-set-h', setPctH != null ? f1(setPctH) + "%" : 'N/D'); safeTxt('l-set-a', setPctA != null ? f1(setPctA) + "%" : 'N/D');
     safeTxt('l-bc-h', nd(dH,'bc', f1(bcH) + " / " + f1(bcmH))); safeTxt('l-bc-a', nd(dA,'bc', f1(bcA) + " / " + f1(bcmA)));
@@ -4551,8 +4603,8 @@ async function avviaScanner() {
     const _spConcH = _mean(dH.overall.vals.xg_sp_ag), _spConcA = _mean(dA.overall.vals.xg_sp_ag);
     let lethNarrative = "";
     {
-      const snipH = (xgotH > 0) ? xgotH - npxgH_gen : null;
-      const snipA = (xgotA > 0) ? xgotA - npxgA_gen : null;
+      const snipH = (xgotH > 0) ? xgotH_m - npxgH_gen : null;
+      const snipA = (xgotA > 0) ? xgotA_m - npxgA_gen : null;
       if (snipH != null && snipA != null && Math.abs(snipH - snipA) > 0.15) {
         const megH = snipH > snipA;
         lethNarrative += `🔪 <strong>Cecchini:</strong> ${Cap(artIl(megH ? hName : aName))} tira meglio di quanto crei `
@@ -4610,7 +4662,9 @@ async function avviaScanner() {
     safeHtml('defensive-dialogue', defNarrative);
 
     safeTxt('tr-x-h', nd(dH,'avg_x', f1(avgX_H) + "m")); safeTxt('tr-x-a', nd(dA,'avg_x', f1(avgX_A) + "m"));
-    let styleStr = "Equilibrato"; if(avgX_H > 52 && avgX_A < 42) styleStr = "Dominio vs Muro"; else if(avgX_H > 50 && avgX_A > 50) styleStr = "Box-to-Box"; safeTxt('tr-style', styleStr);
+    let styleStr = "Equilibrato"; if(avgX_H > 52 && avgX_A < 42) styleStr = "Dominio vs Muro"; else if(avgX_H > 50 && avgX_A > 50) styleStr = "Box-to-Box";
+    if (_numCorr && avgX_H > 0 && avgX_A > 0) styleStr = avgX_H - avgX_A >= NUMERI_REG.STILE_SOGLIA ? "La casa gioca piu' alta" : (avgX_A - avgX_H >= NUMERI_REG.STILE_SOGLIA ? "La trasferta gioca piu' alta" : "Equilibrio");
+    safeTxt('tr-style', styleStr);
     safeTxt('tr-f3-h', nd(dH,'f3_entries', String(Math.round(f3H)))); safeTxt('tr-box-h', nd(dH,'tch_box', String(Math.round(tbH)))); safeTxt('tr-pen-h', (covOf(dH,'f3_entries') > 0 && covOf(dH,'tch_box') > 0) ? f1(penRateH) + "%" : "N/D");
     safeTxt('tr-f3-a', nd(dA,'f3_entries', String(Math.round(f3A)))); safeTxt('tr-box-a', nd(dA,'tch_box', String(Math.round(tbA)))); safeTxt('tr-pen-a', (covOf(dA,'f3_entries') > 0 && covOf(dA,'tch_box') > 0) ? f1(penRateA) + "%" : "N/D");
     let tactNarrative = "";
@@ -4624,7 +4678,12 @@ async function avviaScanner() {
     const pytCell = (o) => o.n ? `${o.msg} (${o.diff>0?'+':''}${o.diff.toFixed(1)} pt su ${o.n}, z=${f2(o.z)})` : 'Dati insufficienti';
     safeTxt('pyt-act-h', pytH.n ? f2(pytH.ppgAct) : '--'); safeTxt('pyt-exp-h', pytH.n ? f2(pytH.ppgExp) : '--'); safeTxt('pyt-diag-h', pytCell(pytH));
     safeTxt('pyt-act-a', pytA.n ? f2(pytA.ppgAct) : '--'); safeTxt('pyt-exp-a', pytA.n ? f2(pytA.ppgExp) : '--'); safeTxt('pyt-diag-a', pytCell(pytA));
-    safeHtml('ts-h', getTopScorers(dH.overall.all_scorers)); safeHtml('ts-a', getTopScorers(dA.overall.all_scorers));
+    // la probabilita' che segni: 1 - exp(-c lambda (gol + 1) / (gol della squadra + 8)), c per chi non gioca sempre
+    const _segna = (team, lam) => (nome, k) => {
+      const G = (team.overall.vals.gf || []).reduce((a, b) => a + (b || 0), 0);
+      return (_numCorr && G > 0 && lam > 0) ? ` · segna ${Math.round(100 * (1 - Math.exp(-NUMERI_REG.CAPO_C * lam * (k + 1) / (G + 8))))}%` : '';
+    };
+    safeHtml('ts-h', getTopScorers(dH.overall.all_scorers, _segna(dH, lamH_role))); safeHtml('ts-a', getTopScorers(dA.overall.all_scorers, _segna(dA, lamA_role)));
 
     // La spunta segue l'ambito che il motore usa DAVVERO: ENS_SCOPE_W decide l'1X2 (oggi 1,
     // cioe' generale), mentre i mercati gol escono da dcMat = dcRole. Se una delle due
@@ -4710,7 +4769,7 @@ async function avviaScanner() {
     safeTxt('z-xg-h-ov', f2(zXgH_over)); safeTxt('z-xg-h-ro', f2(zXgH_role)); safeTxt('z-xg-a-ov', f2(zXgA_over)); safeTxt('z-xg-a-ro', f2(zXgA_role));
     safeTxt('z-b-h-ov', badgeZ(zXgH_over)); safeTxt('z-b-h-ro', badgeZ(zXgH_role)); safeTxt('z-b-a-ov', badgeZ(zXgA_over)); safeTxt('z-b-a-ro', badgeZ(zXgA_role));
 
-    const effRatio = (g, x) => (x > 0 ? g / x : 1);
+    const effRatio = (g, x) => { const e = (x > 0 ? g / x : 1); return _numCorr ? 1 + NUMERI_REG.EFFICIENZA_W * (e - 1) : e; };
     const effH_ov = effRatio(dH.overall.features.gf?.avg_tot||0, dH.overall.features.xg?.avg_tot||0); const effA_ov = effRatio(dA.overall.features.gf?.avg_tot||0, dA.overall.features.xg?.avg_tot||0);
     const effH_ro = dH.role.n ? effRatio(dH.role.features.gf?.avg_tot||0, dH.role.features.xg?.avg_tot||0) : effH_ov; const effA_ro = dA.role.n ? effRatio(dA.role.features.gf?.avg_tot||0, dA.role.features.xg?.avg_tot||0) : effA_ov;
     safeTxt('lbl-eff-h1', hName + ' (Gen)'); safeTxt('lbl-eff-h2', hName + ' (Casa)'); safeTxt('lbl-eff-a1', aName + ' (Gen)'); safeTxt('lbl-eff-a2', aName + ' (Trasf)');
@@ -4719,7 +4778,8 @@ async function avviaScanner() {
     safeTxt('e-gf-ao', f2(dA.overall.features.gf?.avg_tot)); safeTxt('e-xg-ao', f2(dA.overall.features.xg?.avg_tot)); safeTxt('e-ef-ao', f2(effA_ov));
     safeTxt('e-gf-ar', f2(dA.role.features.gf?.avg_tot)); safeTxt('e-xg-ar', f2(dA.role.features.xg?.avg_tot)); safeTxt('e-ef-ar', f2(effA_ro));
 
-    const renderProgRow = (label, feat) => `<tr><td style="font-weight:bold; color:var(--dim)">${label}</td><td>${f2(feat?.avg_3)}</td><td>${f2(feat?.avg_5)}</td><td>${f2(feat?.avg_10)}</td><td>${f2(feat?.avg_15)}</td><td class="td-highlight">${f2(feat?.avg_tot)}</td></tr>`;
+    const _ristr = (u, r, tot) => (_numCorr && u != null && tot != null && isFinite(u) && isFinite(tot)) ? tot + r * (u - tot) : u;
+    const renderProgRow = (label, feat) => `<tr><td style="font-weight:bold; color:var(--dim)">${label}</td><td>${f2(_ristr(feat?.avg_3, NUMERI_REG.PROG_R3, feat?.avg_tot))}</td><td>${f2(_ristr(feat?.avg_5, NUMERI_REG.PROG_R5, feat?.avg_tot))}</td><td>${f2(feat?.avg_10)}</td><td>${f2(feat?.avg_15)}</td><td class="td-highlight">${f2(feat?.avg_tot)}</td></tr>`;
     const tHead = `<tr><th>Metrica</th><th>Ult 3</th><th>Ult 5</th><th>Ult 10</th><th>Ult 15</th><th style="color:var(--blue)">Generale</th></tr>`;
     const PROG_ROWS = [['Conduzioni prog.', 'prog_carries'], ['Cambi di gioco', 'switches'],
                        ['Contrasti', 'tackles'], ['Conduzioni in area', 'carries_box'],
@@ -4732,14 +4792,19 @@ async function avviaScanner() {
     let timingHtml = ''; const maxT = Math.max(...Object.values(bHs), ...Object.values(bHc), ...Object.values(bAs), ...Object.values(bAc), 1);
     Object.keys(bHs).forEach(k => {
       let wHs = Math.max((bHs[k]/maxT)*100, 3); let wHc = Math.max((bHc[k]/maxT)*100, 3); let wAs = Math.max((bAs[k]/maxT)*100, 3); let wAc = Math.max((bAc[k]/maxT)*100, 3);
-      timingHtml += `<tr><td style="font-weight:bold;color:var(--dim)">${k}</td><td style="border-left:1px solid var(--line)"><div class="bucket-bar bg-hf" style="width:${wHs}%">${bHs[k]}</div></td><td><div class="bucket-bar bg-hc" style="width:${wHc}%">${bHc[k]}</div></td><td style="border-left:1px solid var(--line)"><div class="bucket-bar bg-af" style="width:${wAs}%">${bAs[k]}</div></td><td><div class="bucket-bar bg-ac" style="width:${wAc}%">${bAc[k]}</div></td></tr>`;
+      const _pB = 1 - Math.exp(-lamTot * NUMERI_REG.FORMA_TEMPI[_bk.indexOf(k)]);
+      timingHtml += `<tr><td style="font-weight:bold;color:var(--dim)">${k}</td><td style="border-left:1px solid var(--line)"><div class="bucket-bar bg-hf" style="width:${wHs}%">${bHs[k]}</div></td><td><div class="bucket-bar bg-hc" style="width:${wHc}%">${bHc[k]}</div></td><td style="border-left:1px solid var(--line)"><div class="bucket-bar bg-af" style="width:${wAs}%">${bAs[k]}</div></td><td><div class="bucket-bar bg-ac" style="width:${wAc}%">${bAc[k]}</div></td><td style="border-left:1px solid var(--line);font-weight:700">${_numCorr ? Math.round(100 * _pB) + '%' : '--'}</td></tr>`;
     });
     safeHtml('timing-body', timingHtml); safeTxt('surv-30', pct(probGoal30)); safeTxt('surv-45', pct(probGoalHT));
 
-    safeHtml('row-form-ho', `<td>${hName} (Gen)</td><td>${formH_disp}</td><td>${formA_disp.split(' ')[0]}</td><td>Gen</td><td>${statsVsFormH_over ? statsVsFormH_over.count : 0}</td><td style="font-weight:bold">${statsVsFormH_over ? f2(statsVsFormH_over.pts) : 'N/D'}</td>`);
-    safeHtml('row-form-hr', `<td>${hName} (Casa)</td><td>${formH_disp}</td><td>${formA_disp.split(' ')[0]}</td><td style="color:var(--blue)">Solo Casa</td><td>${statsVsFormH_role ? statsVsFormH_role.count : 0}</td><td style="font-weight:bold;color:var(--blue)">${statsVsFormH_role ? f2(statsVsFormH_role.pts) : 'N/D'}</td>`);
-    safeHtml('row-form-ao', `<td>${aName} (Gen)</td><td>${formA_disp}</td><td>${formH_disp.split(' ')[0]}</td><td>Gen</td><td>${statsVsFormA_over ? statsVsFormA_over.count : 0}</td><td style="font-weight:bold">${statsVsFormA_over ? f2(statsVsFormA_over.pts) : 'N/D'}</td>`);
-    safeHtml('row-form-ar', `<td>${aName} (Trasf)</td><td>${formA_disp}</td><td>${formH_disp.split(' ')[0]}</td><td style="color:var(--red)">Solo Trasf</td><td>${statsVsFormA_role ? statsVsFormA_role.count : 0}</td><td style="font-weight:bold;color:var(--red)">${statsVsFormA_role ? f2(statsVsFormA_role.pts) : 'N/D'}</td>`);
+    // contro un modulo i punti non cambiano: si mostrano quelli su tutte (AGENTS.md, Le card di Numeri: la regola)
+    const _ppg = (t) => { const g = t.vals.gf || [], a = t.vals.ga || []; let s2 = 0, n = 0;
+      g.forEach((v, i) => { if (v != null && a[i] != null) { s2 += v > a[i] ? 3 : (v === a[i] ? 1 : 0); n++; } }); return n ? s2 / n : null; };
+    const _ptsF = (st, t) => _numCorr ? (t && t.n && _ppg(t) != null ? f2(_ppg(t)) : 'N/D') : (st ? f2(st.pts) : 'N/D');
+    safeHtml('row-form-ho', `<td>${hName} (Gen)</td><td>${formH_disp}</td><td>${formA_disp.split(' ')[0]}</td><td>Gen</td><td>${statsVsFormH_over ? statsVsFormH_over.count : 0}</td><td style="font-weight:bold">${_ptsF(statsVsFormH_over, dH.overall)}</td>`);
+    safeHtml('row-form-hr', `<td>${hName} (Casa)</td><td>${formH_disp}</td><td>${formA_disp.split(' ')[0]}</td><td style="color:var(--blue)">Solo Casa</td><td>${statsVsFormH_role ? statsVsFormH_role.count : 0}</td><td style="font-weight:bold;color:var(--blue)">${_ptsF(statsVsFormH_role, dH.role)}</td>`);
+    safeHtml('row-form-ao', `<td>${aName} (Gen)</td><td>${formA_disp}</td><td>${formH_disp.split(' ')[0]}</td><td>Gen</td><td>${statsVsFormA_over ? statsVsFormA_over.count : 0}</td><td style="font-weight:bold">${_ptsF(statsVsFormA_over, dA.overall)}</td>`);
+    safeHtml('row-form-ar', `<td>${aName} (Trasf)</td><td>${formA_disp}</td><td>${formH_disp.split(' ')[0]}</td><td style="color:var(--red)">Solo Trasf</td><td>${statsVsFormA_role ? statsVsFormA_role.count : 0}</td><td style="font-weight:bold;color:var(--red)">${_ptsF(statsVsFormA_role, dA.role)}</td>`);
 
     safeTxt('knn-title-h', `🏠 ${hName} in casa vs simili a ${aName}`); safeHtml('knn-res-h', `Rendimento Storico: <strong>${f2(knn_H.pts_per_game)} Pts/Match</strong>`);
     const _knnRow = (m, i, tgt) => {
@@ -5025,7 +5090,7 @@ previsto. Uno scarto previsto netto va preso sul serio; uno piccolo resta piccol
   duelli vinti, blocchi, VAEP, PV, assist, secondi assist, SCA da tiro/fallo/dribbling.
 
 6. QUALITA' E CINISMO [GENERALE]
-- NPxG contro xGOT: ${hName} ${f2(npxgH_gen)} vs ${xgotH > 0 ? f2(xgotH) : (xgShotH > 0 ? f2(xgShotH) + " (xG/tiro)" : "N/D")} | ${aName} ${f2(npxgA_gen)} vs ${xgotA > 0 ? f2(xgotA) : (xgShotA > 0 ? f2(xgShotA) + " (xG/tiro)" : "N/D")}
+- NPxG contro xGOT: ${hName} ${f2(npxgH_gen)} vs ${xgotH > 0 ? f2(xgotH_m) : (xgShotH > 0 ? f2(xgShotH) + " (xG/tiro)" : "N/D")} | ${aName} ${f2(npxgA_gen)} vs ${xgotA > 0 ? f2(xgotA_m) : (xgShotA > 0 ? f2(xgShotA) + " (xG/tiro)" : "N/D")}${_numCorr ? ' (xGOT ristretto verso la media: lo scarto dall\'NPxG si ripete poco)' : ''}
 - Big Chances create/sprecate: ${hName} ${f1(bcH)}/${f1(bcmH)} | ${aName} ${f1(bcA)}/${f1(bcmA)}
 - Quota degli xG che viene da palla inattiva: ${hName} ${setPctH != null ? f1(setPctH) + '%' : 'N/D'} | ${aName} ${setPctA != null ? f1(setPctA) + '%' : 'N/D'}
 - Gol per xG: ${hName} ${f2(effH_ov)} | ${aName} ${f2(effA_ov)}
@@ -5041,7 +5106,8 @@ Misurato: la fortuna recente (gol o punti sopra o sotto gli xG) non anticipa il 
 - Modulo abituale: ${hName} ${formH_disp} | ${aName} ${formA_disp}
 
 8. TEMPI DEI GOL E MERCATI SUI NUMERI
-- Gol fatti/subiti [GENERALE] ${hName}: 1-15' ${bHs['1-15']}/${bHc['1-15']}, 76-90' ${bHs['76-90+']}/${bHc['76-90+']} | ${aName}: 1-15' ${bAs['1-15']}/${bAc['1-15']}, 76-90' ${bAs['76-90+']}/${bAc['76-90+']}
+- Gol fatti/subiti [GENERALE] ${hName}: 1-15' ${bHs['1-15']}/${bHc['1-15']}, 76-90' ${bHs['76-90+']}/${bHc['76-90+']} | ${aName}: 1-15' ${bAs['1-15']}/${bAc['1-15']}, 76-90' ${bAs['76-90+']}/${bAc['76-90+']}${_numCorr ? `
+- Almeno un gol nella partita nei primi 15': ${pct(1 - Math.exp(-lamTot * NUMERI_REG.FORMA_TEMPI[0]))}, negli ultimi 15': ${pct(1 - Math.exp(-lamTot * NUMERI_REG.FORMA_TEMPI[5]))} (quota per fascia uguale per tutte: misurato, i minuti delle due squadre non dicono in che minuto si segna)` : ''}
 - Probabilita' di un gol entro il 30': ${pct(probGoal30)} [RUOLO]
 - Attesi, RUOLO | GENERALE: corner ${f1(advRole.lCor)} | ${f1(advOver.lCor)}, tiri in porta ${f1(advRole.lSot)} | ${f1(advOver.lSot)}, gialli ${f1(advRole.lYel)} | ${f1(advOver.lYel)}
 
