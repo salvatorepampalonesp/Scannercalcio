@@ -251,6 +251,10 @@ Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export rec
   imparate dal mercato (ridge dalle 65 variabili del motore all'1X2 e ai lambda del mercato), poi usate senza quote. Sui
   risultati di 33 leghe mai usate per questo (13.592 partite): 1X2 −4.37‰ (`z = −5.30`, 25 su 33), risultato esatto
   −13.41‰ (`z = −8.88`, 31 su 33), Over 2.5 −3.50‰, differenza reti −8.14‰. Vedi *Il maestro mercato: la regola*.
+- [ ] **Il rating di pressione nel maestro: il test.** Regola registrata l'11 ottobre 2026: la curva `/momentum` della
+  PitchAPI, corretta per l'avversario come l'Elo (passo 0.15), come 66ª variabile del maestro. Nell'esplorazione sulle 14
+  leghe del maestro, fuori lega, 1X2 −1.21‰ (`z = −4.77`, 13 su 14) e risultato esatto −1.22‰ (`z = −3.97`). Test sui
+  risultati delle 33 leghe del test del maestro, appena i loro tiri sono scaricati. Vedi *Il rating di pressione: la regola*.
 - [ ] **I tocchi in area nell'1X2: il test sulle partite nuove.** Regola registrata il 2 ottobre 2026:
   Elo, modello e tocchi nell'area avversaria previsti, con pesi già fissati, contro il motore, sulle partite
   giocate dal 3 ottobre 2026 nelle 24 leghe dei batch. Nell'esplorazione (le 24 leghe, già tutte guardate)
@@ -3323,6 +3327,86 @@ Si mette nello Scanner (`b77`), con quello che la regola diceva di rimisurare.
 regola, l'1X2 e i lambda che lo Scanner ha stampato. Sul batch finto del `b77` (89 partite) stanno entro 0.094 punti e
 0.0025, cioè l'arrotondamento del CSV. Controllo di potenza: con un coefficiente spostato di 0.05 escono 2.15 punti, e lo
 strumento esce con 1.
+
+### Il rating di pressione: la regola
+
+Scritta l'11 ottobre 2026, prima di aprire i dati del test: dei tiri e della pressione delle leghe del test non si è letta
+nessuna riga (lo scarico è ancora in corso). Cercata per migliorare il maestro senza quote, dopo il `b77`.
+
+**I dati nuovi.** `strumenti/tiri.py --scarica` prende dalla PitchAPI, per ogni partita dell'archivio di lega dei batch:
+- i tiri uno per uno (`/shots`: minuto, xG, xGOT, situazione, porta, area, giocatore);
+- la curva di pressione (`/momentum`: un valore al minuto, positivo quando spinge la casa);
+- i gol degli eventi (`/events`).
+
+Una chiamata per endpoint e per partita, in `batch/tiri` e `batch/eventi`, fuori da git; rilanciare riprende. La pressione
+c'è dal 2023/24 in tutte le 14 leghe del maestro; nel 2022/23 dal 25 al 70% delle partite, prima quasi mai.
+
+**L'esplorazione**, sulle 14 leghe del maestro (16.071 partite con le quote), fuori lega: il maestro con le variabili nuove
+contro il maestro, sul risultato.
+
+| variabili, dalle ultime 30 partite delle due squadre | 1X2 | `z` | risultato esatto |
+|---|---|---|---|
+| NPxG contati dai tiri | +0.01‰ | +0.67 | +0.10‰ |
+| xG per stato del punteggio (pari, avanti, dietro, per 90') | −0.02‰ | −0.49 | −0.01‰ |
+| qualità dei tiri (xG per tiro, occasioni da 0.3 o più, numero di tiri) | −0.20‰ | −1.38 | −0.22‰ |
+| palle inattive | −0.02‰ | −0.57 | −0.04‰ |
+| portiere e finalizzazione (gol meno xGOT, gol meno xG) | +0.00‰ | +0.25 | +0.01‰ |
+| pressione media | −0.86‰ | −4.24 | −0.71‰ |
+| pressione a punteggio pari | −0.74‰ | −3.74 | −0.57‰ |
+| rating sugli xG, corretto per l'avversario (passo 0.05) | −0.31‰ | −2.50 | −0.42‰ |
+| **rating di pressione, corretto per l'avversario (passo 0.15)** | **−1.46‰** | **−5.16** | **−1.67‰** |
+
+- Stato del punteggio, qualità dei tiri e palle inattive il maestro li sa già: le 65 variabili spiegano dal 55 al 95% della
+  loro varianza. Portiere e finalizzazione non si ripetono, come già misurato.
+- La pressione no: è il dominio del campo minuto per minuto, che né gli xG né l'Elo misurano. Corretta per l'avversario
+  passando per tutte le partite della lega, come l'Elo, vale quasi il doppio della media delle due squadre.
+- Contro il mercato non aggiunge niente (fuori lega +0.08‰, peso dato il mercato +0.04): le quote la sanno già. Serve dove le
+  quote non ci sono, cioè al maestro.
+
+**Il candidato, con tutto fissato** (`strumenti/pressione.py`, numeri in `strumenti/pressione_regola.json`):
+- *Il rating.* Per ogni lega, in ordine di orario sull'archivio del database: la pressione della partita (la media della
+  curva) ~ `R_casa − R_trasf + H`. Dopo ogni partita con la pressione, con `e` = pressione meno prevista: `R_casa += 0.15·e`,
+  `R_trasf −= 0.15·e`, `H += 0.03·e`. `H` parte da 3.5, i rating da 0; le partite senza pressione non muovono niente.
+- *La variabile* è `R_casa − R_trasf` prima della partita. Manca se una delle due squadre ha meno di 6 partite con la
+  pressione nell'archivio.
+- *Il maestro con la pressione*: 66 variabili (le 65 del `b77` più questa), ridge `α` 10, stimato su tutte le 16.071
+  partite, con la variabile alla mediana dove manca (il 4%). Per deviazione standard del rating (10.2 punti di pressione)
+  sposta `T1` di +0.101, `T2` di −0.086, i log dei due lambda di +0.053 e −0.053.
+- *Dove la variabile manca* resta il maestro del `b77`.
+
+Con la definizione della regola, fuori lega:
+- 1X2 −1.21‰ (`z = −4.77`, 13 leghe su 14), risultato esatto −1.22‰ (`z = −3.97`, 12 su 14), Over 2.5 + Goal 0.00‰;
+- il passo 0.05 / 0.10 / 0.15 / 0.20 / 0.30 dà −0.73 / −1.12 / −1.21 / −1.16 / −0.94‰: ottimo interno;
+- nelle due metà −1.25‰ (2023/24–2024/25, `z = −3.96`) e −1.12‰ (dal 2025/26, `z = −2.65`); allenato fino al 2024/25 e
+  misurato dopo −1.17‰ (`z = −2.68`);
+- prese 51.27 → 51.58% (`z = +2.94`). Il rating correla 0.79 con la differenza di Elo.
+
+**I dati del test**: le 33 leghe del test del maestro (`batch/livello`, `batch/lontane`, `batch/anno2026`,
+`batch/europa2526`, 13.592 partite). Dei loro risultati si è guardato il maestro; tiri e pressione mai. Dove una lega non ha
+la pressione il rating manca, e lì resta il maestro.
+
+**Il metro e quando passa**, appaiato partita per partita contro il maestro del `b77`; due test, ognuno decide per sé.
+- *1X2*: logloss. Passa con `z ≤ −2`, meglio in più di metà delle leghe con almeno 100 partite col rating, e le prese del
+  pick che non calano oltre −2 errori standard.
+- *Gol*: logloss del risultato esatto. Passa con `z ≤ −2` e meglio in più di metà delle stesse leghe, se Over 2.5 + Goal
+  insieme non peggiorano.
+
+Con l'effetto dell'esplorazione ci si aspetta `z` intorno a −4 se la pressione c'è quasi ovunque, intorno a −3 se c'è su
+metà delle partite.
+
+**Se passano.** Nello Scanner:
+- la pressione media di ogni partita di lega del database: una chiamata a `/matches/{id}/momentum` per partita la prima
+  volta (circa 1.100 per una lega da 20 squadre con tre stagioni), tenuta nel browser come un numero per partita; dopo,
+  solo le partite nuove;
+- il rating e il maestro con la pressione, con una manopola (`'no'` torna al `b77`);
+- il Comparatore fa lo stesso (una chiamata in più per partita d'archivio nel batch) e il CSV esporta il rating;
+- si rimisura quello che dipende dal maestro: `PICK_RESA`, `SORPRESA_TAB`, `EDGE_BANDS` per 1X2 e gol.
+
+Se non passano, resta il `b77`, e questa sezione dice perché.
+
+**Descrittivi**, che non decidono: la copertura e le differenze per lega; Over 1.5, 2.5, 3.5, Goal e differenza reti; il
+confronto sulle sole partite col rating. `python3 strumenti/pressione.py` rifà l'esplorazione, `--allena` i numeri del
+candidato, `--prova batch/livello batch/lontane batch/anno2026 batch/europa2526` il test (dopo `strumenti/tiri.py --scarica`).
 
 ### Battere il bookmaker: la regola della ricerca
 
