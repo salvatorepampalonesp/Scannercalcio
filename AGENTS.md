@@ -1550,9 +1550,18 @@ Comparatore):
 - **«JSON completo»** salva le risposte così come arrivano, e riusa lo scarico del CSV se c'è già;
 - quello che manca lo dice la riga di stato e una sezione del CSV («NON DISPONIBILI»), col codice dell'API.
 
-Passa dal worker (`PITCH_BASE`) come lo Scanner, senza chiave nella pagina, e riprova sui 429. Sta fuori dal motore
-e dal Comparatore, che non la vedono. Provata in Chromium a 390px sulla PitchAPI vera (Serie A 2025/26, Juventus –
-Lazio): 13 chiamate, 12 risposte su 12, un CSV di 507 righe, nessun errore, 0 px di scorrimento.
+Passa dal worker (`PITCH_BASE`) come lo Scanner, con la API key scritta nel campo in cima alla sezione (la stessa
+dello Scanner), e riprova sui 429. Senza chiave non parte nessuna chiamata, e lo dice; con una chiave sbagliata dice
+che la PitchAPI non la accetta (401 o 403). La chiave si ricorda nel browser (`pitchapi_key`, la stessa del
+Comparatore) solo dopo che la PitchAPI ha risposto, e torna nel campo al ricaricamento. Sta fuori dal motore e dal
+Comparatore, che non la vedono. Provata in Chromium a 390px sulla PitchAPI vera (Serie A 2025/26, Juventus – Lazio): 13
+chiamate, 12 risposte su 12, un CSV di 507 righe, nessun errore, 0 px di scorrimento. Il campo della chiave mancava
+nella prima versione: nell'ambiente cloud la chiave la aggiunge il proxy, e la prova passava lo stesso. L'ha trovato
+l'utente al telefono. La prova di adesso usa una PitchAPI finta che risponde 401 senza la chiave giusta:
+- senza chiave, nessuna chiamata;
+- con la chiave sbagliata, il 401 detto, e la chiave non ricordata;
+- con quella giusta, 14 chiamate su 14 con la chiave, il CSV salvato e la chiave di nuovo nel campo dopo il
+  ricaricamento.
 
 ## Il catalogo delle leghe
 
@@ -4488,6 +4497,9 @@ di questo elenco è stata a lungo falsa proprio perché nessuno sapeva dove cont
   controllo.
 - **Il profilo di stile di un avversario va calcolato escludendo la partita in esame**:
   `poss` e `field_tilt` delle due squadre sono complementari.
+- **Qui la chiave della PitchAPI la aggiunge il proxy dell'ambiente.** Una pagina che si dimentica la API key
+  funziona nelle prove dell'ambiente cloud e non sul telefono (la home del `b78`). Una pagina nuova che chiama la
+  PitchAPI si prova con una PitchAPI finta che risponde 401 senza la chiave giusta.
 - **Calibrato non vuol dire informativo contro il mercato.** Il motore è calibrato (pick al 51.7%,
   esce il 51.0%), eppure dato il mercato il suo peso è negativo in 12 leghe su 12: dove si discosta
   dalle quote sbaglia più delle quote. Una differenza fra motore e mercato non è un valore da
