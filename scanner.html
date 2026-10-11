@@ -2,10 +2,12 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#161826">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0e0e10">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f1f1f3">
+<meta name="color-scheme" content="dark light">
 <title>Scanner V9.7 - Confidence x Mercato</title>
-<script>try{var t=localStorage.getItem("scanner_tema");if(t==="scuro"||t==="chiaro")document.documentElement.setAttribute("data-tema",t)}catch(e){}</script>
+<script>try{var t=localStorage.getItem("scanner_tema");if(t==="scuro"||t==="chiaro"){document.documentElement.setAttribute("data-tema",t);document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){m.setAttribute("content",t==="scuro"?"#0e0e10":"#f1f1f3")})}}catch(e){}</script>
 <style>
 /* Geist e Geist Mono, (c) 2023 Vercel con basement.studio, SIL Open Font License 1.1 (fonts/OFL-Geist.txt).
    Sottoinsieme latino, pesi 400-600 e 400-500. */
@@ -18,10 +20,13 @@
    (smeraldo, che e' anche il colore delle proposte buone); casa, trasferta,
    attenzione ed errore sono colori di dato, non accenti.
    Forme: contenitori 12px, controlli 8px, etichette 6px, barre 2px.
-   Movimento (b79, regole di impeccable): una curva sola, cubic-bezier(.16,1,.3,1);
-   le schede compaiono con una dissolvenza breve, il solo momento d'autore e' il
-   verdetto che si compone a fine analisi; col movimento ridotto restano le
-   dissolvenze, senza spostamenti.
+   Movimento (b80, regole di Emil Kowalski, skill animate): le curve --ease-out,
+   --ease-in-out e --ease-drawer; pressione 160ms, cambio di scheda istantaneo
+   (si muove solo l'indicatore), foglio come un drawer che si chiude anche
+   trascinandolo; il solo momento d'autore e' il verdetto che si compone a fine
+   analisi. Col movimento ridotto restano le dissolvenze, senza spostamenti.
+   Telefono (skill mobile-native): niente lampo al tocco, hover solo col mouse,
+   campi da 16px, niente pull-to-refresh, testo dei controlli non selezionabile.
    Testo mai sotto i 12px; i colori di dato hanno una variante per il testo
    (--c-ok-t, --c-warn-t, --c-err-t) che nel tema chiaro regge 4.5:1.
    Gli alias del b59 restano: le classi che il motore scrive nel suo HTML
@@ -41,7 +46,8 @@
   --ombra:rgb(4 4 6 / .62); --velo:rgb(4 4 6 / .62);
   --font:"Geist",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-  --ease:cubic-bezier(.16,1,.3,1);
+  --ease-out:cubic-bezier(0.23,1,0.32,1); --ease-in-out:cubic-bezier(0.77,0,0.175,1); --ease-drawer:cubic-bezier(0.32,0.72,0,1);
+  --ease:var(--ease-out);
   --color-divider:color-mix(in srgb,var(--color-text) 13%,transparent);
   --c-ok:var(--color-accent);
   --c-ok-t:var(--color-accent); --c-warn-t:var(--c-warn); --c-err-t:var(--c-err);
@@ -93,11 +99,16 @@
   --ombra:rgb(24 24 32 / .14); --velo:rgb(10 10 12 / .42);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html{-webkit-text-size-adjust:100%;background:var(--color-bg);scroll-padding-top:72px;scrollbar-color:var(--n-700) transparent;accent-color:var(--color-accent)}
+html{-webkit-text-size-adjust:100%;background:var(--color-bg);scroll-padding-top:72px;scrollbar-color:var(--n-700) transparent;accent-color:var(--color-accent);
+  -webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+button,a,summary,select,[role="button"]{touch-action:manipulation}
+button,summary,.btn,.dock,.seg-x,.gi-chip,.ib-p,.ib-f,.g-row,.foglio-riga,.vtag,.tag{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#console-loader,.log-box,#ai-prompt,.cv-corpo{overscroll-behavior:contain}
+.tbl-scroll,.gi-chips{overscroll-behavior-x:contain}
 body{
   font-family:var(--font);
   font-size:14px;line-height:1.5;font-weight:400;background:var(--color-bg);color:var(--color-text);
-  -webkit-font-smoothing:antialiased;min-height:100dvh;
+  -webkit-font-smoothing:antialiased;min-height:100dvh;overscroll-behavior:none;
 }
 ::selection{background:color-mix(in srgb,var(--color-accent) 30%,transparent)}
 a{color:var(--color-accent);text-decoration:none}
@@ -113,7 +124,7 @@ code{font-family:var(--mono);font-size:.92em;background:var(--n-900);padding:1px
 .tv-mini span:nth-child(n+2),.chiave,.cv-n,.table-ui td:not(:first-child),#build-ver{font-family:var(--mono);font-size:.95em;font-variant-numeric:tabular-nums}
 .sprite{position:absolute;width:0;height:0;overflow:hidden}
 .ic{width:1em;height:1em;display:inline-block;flex:none;fill:currentColor;vertical-align:-.125em}
-.wrap,.container{max-width:760px;margin:0 auto;padding-inline:20px}
+.wrap,.container{max-width:760px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
 [hidden]{display:none !important}
 .fuori-scheda{display:none !important}
 .riga-sep{height:1px;background:var(--riga);border:0}
@@ -123,17 +134,20 @@ code{font-family:var(--mono);font-size:.92em;background:var(--n-900);padding:1px
   position:relative;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;
   padding:8px 14px;border:1px solid var(--color-divider);border-radius:var(--r-md);background:transparent;
   font:500 14px/1.2 var(--font);color:var(--color-text);cursor:pointer;
-  transition:background .2s var(--ease),border-color .2s var(--ease),color .2s var(--ease),transform .2s var(--ease);-webkit-tap-highlight-color:transparent;
+  transition:background-color 160ms var(--ease-out),border-color 160ms var(--ease-out),color 160ms var(--ease-out),transform 160ms var(--ease-out);
 }
 .btn .ic{font-size:17px}
-.btn:hover{background:color-mix(in srgb,var(--color-text) 7%,transparent)}
-.btn:active{transform:scale(.98)}
+.btn:active{transform:scale(.97)}
 .btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
 .btn-primary,.btn-dark,.btn-green{background:var(--color-accent);color:var(--on-accent);border-color:transparent;font-weight:600}
-.btn-primary:hover,.btn-dark:hover,.btn-green:hover{background:color-mix(in oklab,var(--color-accent) 86%,var(--color-text))}
 .btn-primary:active,.btn-dark:active,.btn-green:active{background:color-mix(in oklab,var(--color-accent) 78%,var(--color-text))}
 .btn-ghost{border-color:transparent;color:var(--n-300)}
-.btn-ghost:hover{background:color-mix(in srgb,var(--color-text) 7%,transparent)}
+@media (hover: hover) and (pointer: fine){
+  .btn:hover,.btn-ghost:hover{background:color-mix(in srgb,var(--color-text) 7%,transparent)}
+  .btn-primary:hover,.btn-dark:hover,.btn-green:hover{background:color-mix(in oklab,var(--color-accent) 86%,var(--color-text))}
+  input:hover,select:hover,textarea:hover{border-color:color-mix(in srgb,var(--color-text) 45%,transparent)}
+  .g-row:hover:not(:disabled){background:color-mix(in srgb,var(--color-text) 4%,transparent)}
+}
 .btn-icon{width:44px;height:44px;padding:0}
 .btn-icon .ic{font-size:20px}
 .btn-sm{min-height:40px;padding:6px 12px;font-size:13px}
@@ -148,11 +162,10 @@ code{font-family:var(--mono);font-size:.92em;background:var(--n-900);padding:1px
 .tag-home{background:color-mix(in oklab,var(--c-home) 14%,transparent);color:var(--c-home-t)}
 label{display:block;font-size:12.5px;font-weight:500;color:color-mix(in srgb,var(--color-text) 72%,transparent);margin-bottom:6px}
 input,select,textarea{
-  width:100%;min-height:48px;padding:0 12px;font:400 15px/1.3 var(--font);color:var(--color-text);
+  width:100%;min-height:48px;padding:0 12px;font:400 16px/1.3 var(--font);color:var(--color-text);
   caret-color:var(--color-accent);background:var(--color-surface);border:1px solid var(--color-divider);border-radius:var(--r-md);
-  transition:border-color .2s var(--ease);
+  transition:border-color 160ms var(--ease-out);
 }
-input:hover,select:hover,textarea:hover{border-color:color-mix(in srgb,var(--color-text) 45%,transparent)}
 input:focus-visible,select:focus-visible,textarea:focus-visible{border-color:var(--color-accent);outline:2px solid var(--color-accent);outline-offset:0}
 input::placeholder{color:var(--n-500)}
 select{appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:38px;
@@ -213,7 +226,7 @@ body.vista-partita main.wrap{padding-bottom:112px}
 /* fisarmoniche: «details» col titolo a sinistra e il chevron che ruota */
 details>summary{list-style:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
 details>summary::-webkit-details-marker{display:none}
-.chev{font-size:14px;color:var(--n-500);transition:transform .3s var(--ease);flex:none}
+.chev{font-size:14px;color:var(--n-500);transition:transform 200ms var(--ease-out);flex:none}
 details[open]:not(.chiude)>summary .chev{transform:rotate(180deg)}
 details.info{margin:4px 0 0}
 details.info>summary{display:flex;align-items:center;gap:10px;min-height:44px;font-size:13px;color:var(--n-400)}
@@ -223,7 +236,7 @@ details.info>summary::before{content:"";width:16px;height:16px;flex:none;backgro
 details.info>summary::after,details.tv-altri>summary::after,details.so-info>summary::after,details.g-tutte>summary::after{content:"";width:13px;height:13px;margin-left:auto;flex:none;background:var(--n-500);
   -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z'/%3E%3C/svg%3E") center/contain no-repeat;
   mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z'/%3E%3C/svg%3E") center/contain no-repeat;
-  transition:transform .3s var(--ease)}
+  transition:transform 200ms var(--ease-out)}
 details.info[open]:not(.chiude)>summary::after,details.tv-altri[open]:not(.chiude)>summary::after,details.so-info[open]:not(.chiude)>summary::after,details.g-tutte[open]:not(.chiude)>summary::after{transform:rotate(180deg)}
 details.info>div{padding:0 0 10px 26px;font-size:12.5px;color:var(--n-400);line-height:1.6;text-wrap:pretty}
 details.info>div b{color:var(--color-text);font-weight:500}
@@ -283,10 +296,10 @@ details.info>div b{color:var(--color-text);font-weight:500}
 .cv-passo{font-size:12.5px;color:var(--n-500)}
 .cv-label{font-size:19px;font-weight:600;letter-spacing:-.015em;text-align:center;min-height:28px}
 .cv-passi{align-self:stretch;display:flex;flex-direction:column;padding:4px 4px 0}
-.cv-riga{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:12px;align-items:center;min-height:44px;opacity:.45;transition:opacity .3s}
+.cv-riga{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:12px;align-items:center;min-height:44px;opacity:.45;transition:opacity 200ms var(--ease-out)}
 .cv-riga.corre,.cv-riga.fatto{opacity:1}
 .cv-st{position:relative;width:22px;height:22px}
-.cv-st>*{position:absolute;inset:0;opacity:0;transition:opacity .2s}
+.cv-st>*{position:absolute;inset:0;opacity:0;transition:opacity 200ms var(--ease-out)}
 .cv-st .w{inset:4px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--n-700)}
 .cv-riga:not(.corre):not(.fatto) .cv-st .w,.cv-riga.corre .cv-st .r,.cv-riga.fatto .cv-st .d{opacity:1}
 .cv-st .r svg{display:block;animation:gira .9s linear infinite}
@@ -295,7 +308,7 @@ details.info>div b{color:var(--color-text);font-weight:500}
 .cv-st .d .ic{display:block}
 .cv-n{font-size:13px;color:var(--n-400);font-variant-numeric:tabular-nums;white-space:nowrap}
 .cv-pronta{align-self:stretch;display:flex;align-items:center;gap:10px;min-height:48px;padding:0 14px;border-radius:var(--r-md);
-  background:var(--color-accent);color:var(--on-accent);font-weight:600;border:0;font:inherit;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .3s var(--ease)}
+  background:var(--color-accent);color:var(--on-accent);font-weight:600;border:0;font:inherit;cursor:pointer;opacity:0;pointer-events:none;transition:opacity 200ms var(--ease-out)}
 .cv-pronta.si{opacity:1;pointer-events:auto}
 .cv-pronta span{flex:1;text-align:left}
 @keyframes gira{to{transform:rotate(360deg)}}
@@ -345,12 +358,13 @@ body:not([data-scheda="partita"]) .match-hero{display:none}
 .ib-prop::before{content:"";display:block;height:1px;background:var(--riga);margin-bottom:16px}
 .ib-testa{display:flex;align-items:baseline;justify-content:space-between;padding-bottom:4px}
 .ib-testa a{font-size:13px;color:var(--a-300)}
-.ib-p{display:flex;align-items:center;gap:10px;min-height:48px;color:var(--color-text);border-radius:var(--r-md);-webkit-tap-highlight-color:transparent}
+.ib-p{display:flex;align-items:center;gap:10px;min-height:48px;margin-inline:-8px;padding-inline:8px;color:var(--color-text);border-radius:var(--r-md);transition:background-color 160ms var(--ease-out)}
 .ib-p b{flex:1;min-width:0;font-weight:500;display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ib-pv{font-size:15px;font-variant-numeric:tabular-nums}
 .ib-p>.ic,.ib-f>.ic:last-child{color:var(--n-500)}
 .ib-niente{font-size:12.5px;color:var(--n-500);padding:8px 0}
-.ib-f{display:flex;align-items:center;gap:12px;min-height:56px;color:var(--color-text);border-radius:var(--r-md);-webkit-tap-highlight-color:transparent}
+.ib-f{display:flex;align-items:center;gap:12px;min-height:56px;margin-inline:-8px;padding-inline:8px;color:var(--color-text);border-radius:var(--r-md);transition:background-color 160ms var(--ease-out)}
+.ib-p:active,.ib-f:active,.foglio-riga:active,.g-row:active:not(:disabled),details.card>summary:active,details.tv-altri>summary:active{background:color-mix(in srgb,var(--color-text) 7%,transparent)}
 .ib-f>.ic:first-child{font-size:20px;color:var(--n-400)}
 .ib-f span{flex:1;min-width:0;display:flex;flex-direction:column}
 .ib-f b{font-weight:500}
@@ -460,7 +474,8 @@ details.tv-altri>summary{display:flex;align-items:center;gap:10px;min-height:48p
 #squadre-seg{grid-auto-columns:auto}
 #squadre-seg button{padding:0 8px}
 #ambiti-body td:last-child:not([colspan]){white-space:nowrap}
-.seg-x button{position:relative;z-index:1;height:38px;padding:0 12px;border:0;background:none;font:inherit;font-size:13px;font-weight:500;color:var(--n-500);cursor:pointer;border-radius:var(--r-sm);transition:color .2s var(--ease);white-space:nowrap;-webkit-tap-highlight-color:transparent}
+.seg-x button{position:relative;z-index:1;height:38px;padding:0 12px;border:0;background:none;font:inherit;font-size:13px;font-weight:500;color:var(--n-500);cursor:pointer;border-radius:var(--r-sm);transition:color 160ms var(--ease-out),transform 160ms var(--ease-out);white-space:nowrap}
+.seg-x button:active{transform:scale(.97)}
 .seg-x button.on{color:var(--color-text)}
 .seg-ind{position:absolute;left:0;top:3px;height:38px;border-radius:var(--r-sm);background:var(--n-800);pointer-events:none;opacity:0}
 #dashboard-area:not([data-sq]) [data-sq-p]:not([data-sq-p="formazioni"]),
@@ -514,7 +529,8 @@ details.tv-altri>summary{display:flex;align-items:center;gap:10px;min-height:48p
 .gi-chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 -20px 12px;padding:0 20px}
 .gi-chips::-webkit-scrollbar{display:none}
 .gi-chip{flex:none;height:40px;padding:0 12px;border:0;border-radius:var(--r-md);font:inherit;font-size:13px;background:transparent;
-  box-shadow:inset 0 0 0 1px var(--color-divider);color:var(--n-400);cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent}
+  box-shadow:inset 0 0 0 1px var(--color-divider);color:var(--n-400);cursor:pointer;white-space:nowrap;transition:transform 160ms var(--ease-out)}
+.gi-chip:active{transform:scale(.97)}
 .gi-chip.on{background:var(--color-accent);box-shadow:none;color:var(--on-accent);font-weight:500}
 .gi-head{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 10px;margin:4px 0 10px}
 .gi-head b{font-size:15px;font-weight:500}
@@ -565,11 +581,11 @@ details.tv-altri>summary{display:flex;align-items:center;gap:10px;min-height:48p
 [data-scheda="numeri"]>.grid-2,[data-scheda="dati"]>.grid-2{display:block}
 details.card{background:none;border-radius:0;padding:0;margin:0;box-shadow:none}
 details.card+details.card,details.card+.grid-2>details.card:first-child,.grid-2+details.card,.grid-2>details.card+details.card,.grid-2+.grid-2>details.card:first-child{background:var(--riga) no-repeat top/100% 1px}
-details.card>summary{display:flex;align-items:center;gap:12px;min-height:56px;border-radius:var(--r-md)}
+details.card>summary{display:flex;align-items:center;gap:12px;min-height:56px;margin-inline:-8px;padding-inline:8px;border-radius:var(--r-md);transition:background-color 160ms var(--ease-out)}
 details.card>summary .section-title{flex:1;min-width:0;margin:0;font-size:14px;gap:12px}
 details.card>summary .section-title .t{font-weight:500}
 details.card>summary .section-title .t small,details.card>summary .scope{display:none}
-.chiave{font-size:13px;color:var(--n-400);font-variant-numeric:tabular-nums;white-space:nowrap;transition:opacity .25s var(--ease);font-weight:400}
+.chiave{font-size:13px;color:var(--n-400);font-variant-numeric:tabular-nums;white-space:nowrap;transition:opacity 200ms var(--ease-out);font-weight:400}
 details.card[open]:not(.chiude)>summary .chiave{opacity:0}
 details.card>summary+*{padding:0 0 16px}
 details.card .tbl-scroll{margin:0}
@@ -621,7 +637,7 @@ details.card .tbl-scroll{margin:0}
 .g-stat>div>span{font-size:12px;color:var(--n-500)}
 .g-stat .al b{color:var(--c-err-t)} .g-stat .ok b{color:var(--c-ok-t)}
 .g-prog{height:4px;border-radius:2px;background:var(--n-800);overflow:hidden}
-.g-prog i{display:block;height:100%;background:var(--color-accent);transition:width .3s}
+.g-prog i{display:block;height:100%;background:var(--color-accent);transform-origin:left center}
 .g-stato{font-size:12.5px;color:var(--n-400);line-height:1.5}
 .g-stato b{color:var(--color-text);font-weight:500}
 .g-azioni{display:flex;gap:8px;flex-wrap:wrap}
@@ -634,7 +650,6 @@ details.g-tutte>summary{display:flex;align-items:center;gap:8px;min-height:44px;
 .g-giorno{font-size:12.5px;font-weight:500;color:var(--n-400);padding:12px 8px 4px}
 .g-row{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:4px 10px;align-items:center;width:100%;min-width:0;padding:10px 8px;text-align:left;
   border:0;border-radius:var(--r-md);background:transparent;color:var(--color-text);font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
-.g-row:hover:not(:disabled){background:color-mix(in srgb,var(--color-text) 4%,transparent)}
 .g-row:disabled{cursor:default}
 .g-row.on{background:var(--n-800)}
 .g-ora{font-size:12px;color:var(--n-500);font-variant-numeric:tabular-nums;line-height:1.3}
@@ -664,20 +679,24 @@ body:not([data-scheda="partita"]) #giornata-bar{display:none !important}
 body.vista-partita .dock{display:flex}
 .dock-ind{position:absolute;left:0;top:5px;width:66px;height:50px;border-radius:var(--r-md);background:var(--n-800);pointer-events:none;opacity:0}
 .dock button{position:relative;z-index:1;width:66px;height:50px;border:0;background:none;font:inherit;font-size:12px;color:var(--n-400);cursor:pointer;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-radius:var(--r-md);transition:color .2s var(--ease);-webkit-tap-highlight-color:transparent}
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-radius:var(--r-md);transition:color 160ms var(--ease-out),transform 160ms var(--ease-out)}
+.dock button:active{transform:scale(.97)}
 .dock button .ic{font-size:19px}
 .dock button.on{color:var(--color-text)}
 .dock button.on .ic{color:var(--color-accent)}
 .foglio{position:fixed;inset:0;z-index:80}
-.foglio-velo{position:absolute;inset:0;background:var(--velo)}
+.foglio-velo{position:absolute;inset:0;background:var(--velo);opacity:0;transition:opacity 300ms var(--ease-drawer)}
 .foglio-pan{position:absolute;left:0;right:0;bottom:0;max-width:520px;margin:0 auto;padding:10px 16px calc(20px + env(safe-area-inset-bottom,0px));
-  border-radius:var(--r-lg) var(--r-lg) 0 0;background:var(--color-surface);box-shadow:var(--shadow-lg)}
+  border-radius:var(--r-lg) var(--r-lg) 0 0;background:var(--color-surface);box-shadow:var(--shadow-lg);
+  transform:translateY(100%);transition:transform 300ms var(--ease-drawer);touch-action:none}
+.foglio.aperto .foglio-velo{opacity:1;transition-duration:400ms}
+.foglio.aperto .foglio-pan{transform:none;transition-duration:400ms}
 .foglio-man{width:36px;height:4px;border-radius:2px;background:var(--n-700);margin:0 auto 12px}
 .foglio-tit{font-size:18px;font-weight:600;letter-spacing:-.015em;margin:0 4px 6px}
 .foglio-tema{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:60px;padding:0 4px;background:var(--riga) no-repeat top/100% 1px}
 .foglio-tema>span{display:flex;flex-direction:column}.foglio-tema b{font-weight:500}.foglio-tema small{font-size:12.5px;color:var(--n-500)}
 .foglio-tema .seg-x{margin:0}
-.foglio-riga{display:flex;align-items:center;gap:14px;width:100%;min-height:56px;padding:0 4px;border:0;background:none;color:var(--color-text);font:inherit;text-align:left;cursor:pointer;border-radius:var(--r-md);-webkit-tap-highlight-color:transparent}
+.foglio-riga{display:flex;align-items:center;gap:14px;width:100%;min-height:56px;padding:0 4px;border:0;background:none;color:var(--color-text);font:inherit;text-align:left;cursor:pointer;border-radius:var(--r-md);transition:background-color 160ms var(--ease-out)}
 .foglio-riga>.ic:first-child{font-size:22px;color:var(--n-400)}
 .foglio-riga span{flex:1;min-width:0;display:flex;flex-direction:column}
 .foglio-riga b{font-weight:500}
@@ -701,8 +720,7 @@ body.vista-partita .dock{display:flex}
 .c-blue,.c-red,.c-green,.c-amber,.c-teal,.c-violet,.c-pink,.c-slate,.c-indigo,.c-sky{--c:var(--color-accent)}
 
 @media(max-width:600px){
-  .wrap,.container{padding-inline:20px}
-  .appbar .wrap{padding-inline:16px}
+  .appbar .wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
   #ui-title{font-size:26px}
   .grid-2,.grid-3,.grid-4{grid-template-columns:minmax(0,1fr)}
   #exact-scores{grid-template-columns:repeat(3,minmax(0,1fr)) !important}
@@ -721,7 +739,7 @@ body.vista-partita .dock{display:flex}
   *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;scroll-behavior:auto !important;
     transition-property:color,background-color,border-color,opacity,box-shadow,outline-color !important}
   .cv-st .r svg{animation:none}
-  .btn:active{transform:none}
+  .btn:active,.seg-x button:active,.gi-chip:active,.dock button:active{transform:none;opacity:.8}
 }
 </style>
 </head>
@@ -734,7 +752,7 @@ body.vista-partita .dock{display:flex}
     <button type="button" class="btn btn-ghost ab-back" id="btn-nuova" onclick="tornaIndietro()" aria-label="Indietro"><svg class="ic" aria-hidden="true"><use href="#i-arrow-left"/></svg><span>Cambia partita</span></button>
     <span class="ab-tit" id="ab-tit"><b></b><small></small></span>
     <span class="ab-spazio"></span>
-    <span class="tag" id="build-ver">build 0905-b79</span>
+    <span class="tag" id="build-ver">build 0905-b80</span>
   </div>
 </header>
 
@@ -749,7 +767,7 @@ body.vista-partita .dock{display:flex}
     </div>
     <div class="campi" id="db-passo">
       <div class="passo"><span><b>Database della lega</b><small>Lega e stagione: si scaricano tre stagioni di partite, in memoria per tutta la sessione.</small></span></div>
-      <div><label for="api-key">API key (PitchAPI)</label><input id="api-key" type="password" value="" autocomplete="off"></div>
+      <div><label for="api-key">API key (PitchAPI)</label><input id="api-key" type="password" value="" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false"></div>
       <div class="campi-3">
         <div><label for="sel-country">Paese</label><select id="sel-country" onchange="updateLeagues()"><option value="">Caricamento</option></select></div>
         <div><label for="sel-league">Lega</label><select id="sel-league" onchange="updateSeasons()"><option value="">Scegli</option></select></div>
@@ -1749,7 +1767,7 @@ function renderGiornata() {
     + `<span class="g-label">${cur ? `${k + 1} di ${ok.length} analizzate &middot; ${e(_quandoG(cur))}` : 'analisi in corso'}</span></div>`;
   if (G.corre) {
     const inCorso = L.find(x => x.stato === 'corre'), fatto = n - attesa - (inCorso ? 1 : 0);
-    h += `<div class="g-prog" data-in><i style="width:${(100 * fatto / n).toFixed(0)}%"></i></div>`
+    h += `<div class="g-prog" data-in><i style="transform:scaleX(${(fatto / n).toFixed(3)})"></i></div>`
       + `<div class="g-stato" id="giornata-stato">${inCorso ? `Analizzo ${fatto + 1} di ${n}: <b>${nome(inCorso)}</b>. ` : 'Carico la partita&hellip; '}`
       + `<span id="giornata-mem">${_memGiornata()}</span>${G.stop === 'ferma' ? ' Mi fermo dopo questa.' : ''}</div>`
       + (G.stop ? '' : `<div class="g-azioni"><button class="btn btn-sm" onclick="giornataFerma()">${ic('pause')}Ferma dopo questa</button></div>`);
@@ -3769,7 +3787,7 @@ function _tabTesto(V) {
        + senza.map(v => v.nome + ' ' + (v.edge == null ? 'base ignota' : (v.edge >= 0 ? '+' : '') + v.edge.toFixed(1))).join(', ') : '');
 }
 
-window.__SCANNER_BUILD = '0905-b79';
+window.__SCANNER_BUILD = '0905-b80';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -5420,9 +5438,8 @@ async function copiaPrompt() {
   const $ = s => document.querySelector(s), $$ = (s, r) => [...(r || document).querySelectorAll(s)];
   const RID = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
   const ridotto = () => !!(RID && RID.matches) || typeof Element.prototype.animate !== 'function';
-  // una curva sola, senza rimbalzi: le animazioni dicono un cambio di stato, non decorano.
-  // Col movimento ridotto restano le dissolvenze, brevi e senza attese; gli spostamenti no.
-  const OUT = 'cubic-bezier(.16,1,.3,1)', SPAZIO = ['transform', 'clipPath', 'strokeDasharray'];
+  // le curve di Emil Kowalski: ease-out per entrare e uscire, ease-in-out per spostarsi. Col movimento ridotto restano le dissolvenze
+  const OUT = 'cubic-bezier(0.23, 1, 0.32, 1)', INOUT = 'cubic-bezier(0.77, 0, 0.175, 1)', SPAZIO = ['transform', 'clipPath', 'strokeDasharray'];
   const anim = (el, kf, o) => {
     if (!(el instanceof Element) || typeof el.animate !== 'function') return null;
     if (RID && RID.matches) {
@@ -5454,37 +5471,31 @@ async function copiaPrompt() {
     + '#card-formazioni > details, .group-head, [data-scheda="numeri"] > details, [data-scheda="numeri"] > .grid-2 > details, #sez-prompt > *, [data-scheda="dati"] > details, #cache-info')
     .forEach(el => el.setAttribute('data-in', ''));
 
-  // una scheda, una sotto-scheda o un blocco nuovo compaiono tutti insieme, con una dissolvenza breve:
-  // e' un cambio di stato, non una coreografia
+  const scaletta = (els, passo) => els.filter(el => el instanceof Element && el.getClientRects().length).forEach((el, i) =>
+    anim(el, [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 300, delay: Math.min(i, 5) * passo, easing: OUT, fill: 'backwards' }));
   const appare = root => {
     if (!(root instanceof Element)) return;
     const fuori = el => { const p = el.parentElement && el.parentElement.closest('[data-in]'); return !p || !root.contains(p); };
-    const ins = root.hasAttribute('data-in') ? [root] : $$('[data-in]', root).filter(fuori);
-    ins.filter(el => el.getClientRects().length)
-      .forEach(el => anim(el, [{ opacity: 0, transform: 'translateY(4px)' }, { opacity: 1, transform: 'none' }], { duration: 220, easing: OUT }));
+    scaletta(root.hasAttribute('data-in') ? [root] : $$('[data-in]', root).filter(fuori), 50);
   };
-  // l'unico momento d'autore: a fine analisi il verdetto si compone. Il pick sale dalla sua linea,
-  // la barra dell'1X2 si stende da sinistra a destra, la probabilita' arriva quando la barra e' piena
   const rivela = () => {
-    if (!(dash instanceof Element)) return;
-    appare(dash);
     const ib = $('#in-breve'); if (!(ib instanceof Element)) return;
-    anim(ib.querySelector('.ib-big'), [{ clipPath: 'inset(100% 0 0 0)', transform: 'translateY(14px)' }, { clipPath: 'inset(0 0 0 0)', transform: 'none' }], { duration: 560, easing: OUT, fill: 'backwards' });
-    anim(ib.querySelector('.ib-barra'), [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], { duration: 720, delay: 80, easing: OUT, fill: 'backwards' });
-    anim(ib.querySelector('.ib-pp'), [{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 420, easing: OUT, fill: 'backwards' });
+    scaletta([$('.match-hero'), ...$$('#in-breve-box > *', ib), $('#sorpresa-box'), $('#in-breve-prop')], 50);
+    anim(ib.querySelector('.ib-big'), [{ clipPath: 'inset(100% 0 0 0)', transform: 'translateY(12px)' }, { clipPath: 'inset(0 0 0 0)', transform: 'none' }], { duration: 300, delay: 50, easing: OUT, fill: 'backwards' });
+    anim(ib.querySelector('.ib-barra'), [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], { duration: 400, delay: 150, easing: OUT, fill: 'backwards' });
+    anim(ib.querySelector('.ib-pp'), [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 300, delay: 200, easing: OUT, fill: 'backwards' });
   };
-  // il manubrio del tabellone si stende dalla base di lega alla probabilita', una volta per analisi
   let manubriFatti = null;
   const manubri = () => {
-    $$('#verdetti-body .tv-db').filter(d => d.getClientRects().length).slice(0, 8).forEach((d, i) => {
+    $$('#verdetti-body .tv-db').filter(d => d.getClientRects().length).slice(0, 6).forEach((d, i) => {
       const s = d.querySelector('.s'), l = d.querySelector('.l'), m = d.querySelector('.m'); if (!s || !l || !m) return;
       s.style.transformOrigin = parseFloat(m.style.left) < parseFloat(l.style.left) ? 'right center' : 'left center';
-      anim(s, [{ transform: 'scaleX(0)' }, { transform: 'none' }], { duration: 480, delay: 60 + 40 * i, easing: OUT, fill: 'backwards' });
-      anim(m, [{ opacity: 0 }, { opacity: 1 }], { duration: 200, delay: 360 + 40 * i, easing: OUT, fill: 'backwards' });
+      anim(s, [{ transform: 'scaleX(0)' }, { transform: 'none' }], { duration: 300, delay: 40 * i, easing: OUT, fill: 'backwards' });
+      anim(m, [{ opacity: 0, transform: 'scale(.9)' }, { opacity: 1, transform: 'none' }], { duration: 150, delay: 200 + 40 * i, easing: OUT, fill: 'backwards' });
     });
   };
   const barre = root => $$('.gi-trk i', root).filter(b => b.getClientRects().length).slice(0, 24)
-    .forEach((b, i) => anim(b, [{ transform: 'scaleX(0)' }, { transform: 'none' }], { duration: 420, delay: Math.min(i, 8) * 25, easing: OUT, fill: 'backwards' }));
+    .forEach((b, i) => anim(b, [{ transform: 'scaleX(0)' }, { transform: 'none' }], { duration: 300, delay: Math.min(i, 8) * 30, easing: OUT, fill: 'backwards' }));
 
   const segPrec = new Map();
   const posaSeg = (c, anima) => {
@@ -5492,7 +5503,7 @@ async function copiaPrompt() {
     const i = c.querySelector('.seg-ind'), b = c.querySelector('button.on'); if (!i || !b || !b.offsetWidth) return;
     const key = c.dataset.seg || c.id, x = b.offsetLeft, w = b.offsetWidth, p = segPrec.get(key);
     i.style.transform = `translateX(${x}px)`; i.style.width = w + 'px'; i.style.opacity = '1';
-    if (anima && p && p.x !== x) anim(i, [{ transform: `translateX(${p.x}px)` }, { transform: `translateX(${x}px)` }], { duration: 280, easing: OUT });
+    if (anima && p && p.x !== x) anim(i, [{ transform: `translateX(${p.x}px)` }, { transform: `translateX(${x}px)` }], { duration: 200, easing: INOUT });
     segPrec.set(key, { x, w });
   };
   let indX = null;
@@ -5501,7 +5512,7 @@ async function copiaPrompt() {
     const x = on.offsetLeft, w = on.offsetWidth;
     ind.style.transform = `translateX(${x}px)`; ind.style.width = w + 'px'; ind.style.opacity = '1';
     if (anima && indX != null && indX !== x) {
-      anim(ind, [{ transform: `translateX(${indX}px)` }, { transform: `translateX(${x}px)` }], { duration: 280, easing: OUT });
+      anim(ind, [{ transform: `translateX(${indX}px)` }, { transform: `translateX(${x}px)` }], { duration: 200, easing: INOUT });
     }
     indX = x;
   };
@@ -5525,24 +5536,45 @@ async function copiaPrompt() {
   const tit = $('#ui-title');
   if (tit instanceof Element) new MutationObserver(abTitolo).observe(tit, { childList: true, characterData: true, subtree: true });
 
+  let fogliot = null;
   const apriFoglio = () => {
-    if (!(foglio instanceof Element) || !foglio.hidden) return;
-    foglio.hidden = false;
-    const p = foglio.querySelector('.foglio-pan'), v = foglio.querySelector('.foglio-velo');
-    anim(v, [{ opacity: 0 }, { opacity: 1 }], { duration: 240, easing: OUT });
-    anim(p, [{ transform: 'translateY(105%)' }, { transform: 'none' }], { duration: 360, easing: OUT });
+    if (!(foglio instanceof Element) || (!foglio.hidden && foglio.classList.contains('aperto'))) return;
+    clearTimeout(fogliot);
+    if (foglio.hidden) { foglio.classList.remove('aperto'); foglio.hidden = false; void foglio.offsetHeight; }
+    foglio.classList.add('aperto');
     posaSeg($('#tema-seg'), false);
-    const r = p.querySelector('.foglio-riga'); if (r) try { r.focus({ preventScroll: true }); } catch (e) {}
+    const r = foglio.querySelector('.foglio-riga'); if (r) try { r.focus({ preventScroll: true }); } catch (e) {}
   };
   const chiudiFoglio = (poi, subito) => {
-    if (!(foglio instanceof Element) || foglio.hidden) { if (poi) poi(); return; }
-    const p = foglio.querySelector('.foglio-pan'), v = foglio.querySelector('.foglio-velo');
-    const fine = () => { foglio.hidden = true; [p, v].forEach(x => x.getAnimations && x.getAnimations().forEach(a => a.cancel())); if (poi) poi(); };
-    if (subito) return fine();
-    const b = anim(v, [{ opacity: 1 }, { opacity: 0 }], { duration: 180, easing: OUT, fill: 'forwards' });
-    const a = anim(p, [{ transform: 'none' }, { transform: 'translateY(105%)' }], { duration: 220, easing: OUT, fill: 'forwards' }) || b;
-    if (a) a.onfinish = fine; else fine();
+    if (poi) poi();
+    if (!(foglio instanceof Element) || foglio.hidden) return;
+    foglio.classList.remove('aperto'); clearTimeout(fogliot);
+    if (subito) { foglio.hidden = true; return; }
+    fogliot = setTimeout(() => { foglio.hidden = true; }, ridotto() ? 160 : 300);
   };
+  const pan = foglio instanceof Element ? foglio.querySelector('.foglio-pan') : null;
+  let tira = null;
+  if (pan instanceof Element) {
+    pan.addEventListener('pointerdown', e => { if (tira || (e.pointerType === 'mouse' && e.button !== 0)) return; tira = { id: e.pointerId, y0: e.clientY, t0: 0, dy: 0, via: false }; });
+    pan.addEventListener('pointermove', e => {
+      if (!tira || e.pointerId !== tira.id) return;
+      if (!tira.via) {
+        if (Math.abs(e.clientY - tira.y0) < 8) return;
+        tira.via = true; tira.y0 = e.clientY; tira.t0 = Date.now();
+        try { pan.setPointerCapture(e.pointerId); } catch (x) {}
+        pan.style.transition = 'none';
+      }
+      const d = e.clientY - tira.y0; tira.dy = d;
+      pan.style.transform = `translateY(${d > 0 ? d : d / (1 - d / 40)}px)`;
+    });
+    const lascia = e => {
+      if (!tira || e.pointerId !== tira.id) return;
+      const t = tira; tira = null; if (!t.via) return;
+      pan.style.transition = ''; pan.style.transform = '';
+      if (t.dy > pan.offsetHeight * 0.3 || t.dy / Math.max(1, Date.now() - t.t0) > 0.11) chiudiFoglio();
+    };
+    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(n => pan.addEventListener(n, lascia));
+  }
   nav.addEventListener('click', ev => {
     const b = ev.target.closest('[data-k]'); if (!b) return;
     ev.preventDefault();
@@ -5559,7 +5591,6 @@ async function copiaPrompt() {
     dash.dataset.sq = k;
     $$('button[data-sq]', sq).forEach(b => { b.classList.toggle('on', b.dataset.sq === k); b.setAttribute('aria-selected', String(b.dataset.sq === k)); });
     posaSeg(sq, anima);
-    if (anima) $$(`[data-sq-p="${k}"]`, dash).forEach(appare);
   };
   if (sq instanceof Element) sq.addEventListener('click', ev => { const b = ev.target.closest('[data-sq]'); if (b) sotto(b.dataset.sq, true); });
 
@@ -5572,7 +5603,7 @@ async function copiaPrompt() {
     const lega = sl && sl.selectedIndex >= 0 ? (sl.options[sl.selectedIndex] || {}).text || '' : '';
     $('#db-riga-txt').textContent = [[lega, ss ? ss.value : ''].filter(Boolean).join(' '), globalLeagueMatchesCache.length + ' partite in memoria'].filter(Boolean).join(' · ');
     const era = db.hidden; db.hidden = false; dbp.hidden = true;
-    if (era) appare(mb);
+    if (era) scaletta([...mb.children], 40);
   };
   if (mb instanceof Element) new MutationObserver(dbRiga).observe(mb, { attributes: true, attributeFilter: ['style'] });
   const temaSeg = $('#tema-seg');
@@ -5586,11 +5617,12 @@ async function copiaPrompt() {
     const t = b.dataset.tema;
     try { if (t === 'auto') localStorage.removeItem('scanner_tema'); else localStorage.setItem('scanner_tema', t); } catch (e) {}
     if (t === 'auto') document.documentElement.removeAttribute('data-tema'); else document.documentElement.setAttribute('data-tema', t);
+    $$('meta[name="theme-color"]').forEach(m => m.setAttribute('content', t === 'scuro' ? '#0e0e10' : t === 'chiaro' ? '#f1f1f3' : /light/.test(m.media) ? '#f1f1f3' : '#0e0e10'));
     temaPosa(true);
   });
   temaPosa(false);
   const dbc = $('#db-cambia');
-  if (dbc instanceof Element) dbc.addEventListener('click', () => { db.hidden = true; dbp.hidden = false; appare(dbp); });
+  if (dbc instanceof Element) dbc.addEventListener('click', () => { db.hidden = true; dbp.hidden = false; scaletta([...dbp.children], 40); });
   $$('[data-passo]').forEach(b => b.addEventListener('click', () => {
     const i = $('#history-limit'); if (!(i instanceof HTMLInputElement)) return;
     const v = Math.max(+i.min || 5, Math.min(+i.max || 100, (parseInt(i.value, 10) || 30) + 5 * +b.dataset.passo));
@@ -5599,7 +5631,7 @@ async function copiaPrompt() {
 
   document.addEventListener('toggle', ev => {
     const d = ev.target; if (!(d instanceof HTMLDetailsElement) || !d.open) return;
-    [...d.children].filter(c => c.tagName !== 'SUMMARY').forEach(c => anim(c, [{ opacity: 0, transform: 'translateY(4px)' }, { opacity: 1, transform: 'none' }], { duration: 220, easing: OUT }));
+    [...d.children].filter(c => c.tagName !== 'SUMMARY').forEach(c => anim(c, [{ opacity: 0, transform: 'translateY(-4px)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: OUT }));
   }, true);
 
   const txt = id => { const el = document.getElementById(id); return el ? el.textContent.replace(/\s+/g, ' ').trim() : ''; };
@@ -5627,15 +5659,15 @@ async function copiaPrompt() {
     const c = $('#cv-prog'), pct = $('#cv-pct'); if (!c) return;
     const L = 628.3, prima = C.prog || 0; C.prog = p;
     c.setAttribute('stroke-dasharray', `${(L * p).toFixed(1)} ${L}`);
-    anim(c, [{ strokeDasharray: `${(L * prima).toFixed(1)} ${L}` }, { strokeDasharray: `${(L * p).toFixed(1)} ${L}` }], { duration: 500, easing: 'cubic-bezier(.4,0,.2,1)' });
+    anim(c, [{ strokeDasharray: `${(L * prima).toFixed(1)} ${L}` }, { strokeDasharray: `${(L * p).toFixed(1)} ${L}` }], { duration: 300, easing: 'linear' });
     if (pct) pct.textContent = Math.round(100 * p) + '%';
   };
   const cvPasso = (i, n) => {
     if (!C) return;
     C.passi.forEach((p, j) => { const r = $(`#cv-passi .cv-riga[data-i="${j}"]`); if (!r) return;
       const st = j < i ? 'fatto' : j === i ? 'corre' : '';
-      if (st !== r.__st) { if (st === 'fatto') anim(r.querySelector('.d'), [{ opacity: 0 }, { opacity: 1 }], { duration: 240, easing: OUT });
-        if (st === 'corre') anim(r, [{ transform: 'translateX(-6px)' }, { transform: 'none' }], { duration: 240, easing: OUT });
+      if (st !== r.__st) { if (st === 'fatto') anim(r.querySelector('.d'), [{ opacity: 0, transform: 'scale(.9)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: OUT });
+        if (st === 'corre') anim(r, [{ transform: 'translateX(-6px)' }, { transform: 'none' }], { duration: 200, easing: OUT });
         r.__st = st; r.className = 'cv-riga' + (st ? ' ' + st : ''); }
       if (p.nn != null) r.querySelector('.cv-n').textContent = p.nn; });
     C.i = i;
@@ -5669,7 +5701,7 @@ async function copiaPrompt() {
     if (!(cv instanceof Element) || cv.hidden) return;
     if (C) C.chiuso = true;
     if (subito) { cv.hidden = true; return; }
-    const a = anim(cv, [{ opacity: 1 }, { opacity: 0 }], { duration: 200, easing: OUT, fill: 'forwards' });
+    const a = anim(cv, [{ opacity: 1 }, { opacity: 0 }], { duration: 150, easing: OUT, fill: 'forwards' });
     if (a) a.onfinish = () => { cv.hidden = true; a.cancel(); }; else cv.hidden = true;
   };
   const cvx = $('#cv-chiudi'); if (cvx instanceof Element) cvx.addEventListener('click', () => cvChiudi(true));
@@ -5680,7 +5712,6 @@ async function copiaPrompt() {
       posaDock(prima != null && k !== prima);
       abTitolo();
       if (k === 'squadre') requestAnimationFrame(() => posaSeg(sq, false));
-      if (prima != null && k !== prima && dash instanceof Element) appare(dash);
       if (k === 'tabellone' && ultimoEsito && manubriFatti !== ultimoEsito) { manubriFatti = ultimoEsito; requestAnimationFrame(manubri); }
     },
     sotto: k => sotto(k, false),
@@ -5692,11 +5723,11 @@ async function copiaPrompt() {
         else if (C && !C.chiuso) C.entra = true;
       }
     },
-    blocco: el => { appare(el); barre(el); $$('.seg-x', el).forEach(s => posaSeg(s, true)); },
+    blocco: el => { if (el instanceof Element) scaletta([...el.children], 40); barre(el); $$('.seg-x', el).forEach(s => posaSeg(s, true)); },
     giornata: (bar, verso) => {
       $$('.seg-x', bar).forEach(s => posaSeg(s, true));
       if (verso) { const sl = bar.querySelector('.g-slide');
-        anim(sl, [{ transform: `translateX(${verso * 20}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 280, easing: OUT }); }
+        anim(sl, [{ transform: `translateX(${verso * 16}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 200, easing: OUT }); }
       else if (!bar.__visto && bar.getClientRects().length) { bar.__visto = true; appare(bar); }
     },
     caricaInizia: () => {
@@ -5714,7 +5745,7 @@ async function copiaPrompt() {
       const c = $('#cv-prog'); if (c) c.setAttribute('stroke-dasharray', '0 628.3');
       $('#cv-pct').textContent = '0%';
       cv.hidden = false; cv.style.opacity = '';
-      anim(cv, [{ opacity: 0 }, { opacity: 1 }], { duration: 240, easing: OUT });
+      anim(cv, [{ opacity: 0 }, { opacity: 1 }], { duration: 200, easing: OUT });
       cvPasso(0, 0);
     },
     caricaFine: async () => {
@@ -5728,7 +5759,7 @@ async function copiaPrompt() {
       C.passi[5].nn = window.__QUOTE_P ? 'con le quote' : (window.__QUOTE_FONTE ? 'trovate' : 'nessuna');
       cvPasso(6, 0); cvProg(1);
       $('#cv-pronta').classList.add('si');
-      anim($('#cv-pronta'), [{ opacity: 0, transform: 'translateY(4px)' }, { opacity: 1, transform: 'none' }], { duration: 240, easing: OUT });
+      anim($('#cv-pronta'), [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: OUT });
       setTimeout(() => { if (C && !C.chiuso) { cvChiudi(false); requestAnimationFrame(rivela); } }, ridotto() ? 0 : 700);
     }
   };
