@@ -470,7 +470,7 @@ async function comparatorePage(browser, base, engineText) {
   // se l'iniezione si ferma engineReady non arriva mai: meglio fallire subito, col log del Comparatore
   await page.waitForFunction(() => typeof engineReady !== 'undefined' && engineReady === true, null, { timeout: 60000 })
     .catch(async () => {
-      const righe = await page.evaluate(() => document.body.innerText.split('\n').filter(x => /Warning|mancanti|❌/.test(x)).slice(0, 6));
+      const righe = await page.evaluate(() => document.body.innerText.split('\n').filter(x => /Warning|mancanti|❌|ERRORE/.test(x)).slice(0, 6));
       throw new Error('il Comparatore non ha caricato il motore: ' + [...righe, ...page.__log.slice(0, 4)].join(' | '));
     });
   // ogni giro del motore dentro il Comparatore: chiave = data|casa|trasferta, e il k del giro

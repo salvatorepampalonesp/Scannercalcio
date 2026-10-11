@@ -15,6 +15,7 @@
 // --stagione: di default quella che contiene la data.
 // --out: di default <cartella temporanea>/schermate. --nome: prefisso dei file (finta o vera).
 // --larghezza: di default 390. --ridotto: movimento ridotto (i numeri finali, senza animazioni).
+// --tema scuro|chiaro: lo schema di colori del sistema (di default scuro). La scelta fatta nella pagina vince.
 // Esce con 1 se ci sono errori nella pagina, l'anello non si chiude o una scheda scorre di lato.
 'use strict';
 const { spawnSync } = require('child_process');
@@ -38,6 +39,7 @@ const VERA = VERA_ARG ? arg('vera', '') : '';
 const OUT = path.resolve(arg('out', path.join(os.tmpdir(), 'schermate')));
 const NOME = arg('nome', VERA ? 'vera' : 'finta');
 const W = +arg('larghezza', 390);
+const TEMA = arg('tema', 'scuro') === 'chiaro' ? 'light' : 'dark';
 const RIDOTTO = process.argv.includes('--ridotto');
 const KEY = process.env.PITCHAPI_KEY || '';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -76,7 +78,7 @@ if (VERA) {
   await new Promise(r => srv.listen(0, '127.0.0.1', r));
   const base = 'http://127.0.0.1:' + srv.address().port;
   const browser = await chromium.launch(process.env.CHROMIUM ? { executablePath: process.env.CHROMIUM } : {});
-  const ctx = await browser.newContext({ viewport: { width: W, height: 844 }, deviceScaleFactor: 2, timezoneId: 'Europe/Rome', reducedMotion: RIDOTTO ? 'reduce' : 'no-preference' });
+  const ctx = await browser.newContext({ viewport: { width: W, height: 844 }, deviceScaleFactor: 2, timezoneId: 'Europe/Rome', colorScheme: TEMA, reducedMotion: RIDOTTO ? 'reduce' : 'no-preference' });
   const page = await ctx.newPage();
   const errori = [];
   let chiamate = 0;

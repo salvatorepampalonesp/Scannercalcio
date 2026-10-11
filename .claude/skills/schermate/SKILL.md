@@ -45,7 +45,8 @@ se l'anello non si chiude.
 
 Altre opzioni:
 
-- `--ridotto`: movimento ridotto, così i numeri che contano sono già al valore finale;
+- `--ridotto`: movimento ridotto (dal `b78` i numeri non contano più da zero: serve solo a togliere le entrate);
+- `--tema chiaro`: lo schema di colori chiaro del sistema (di default scuro); dal `b78` le pagine hanno tutti e due i temi, e una modifica alla grafica si guarda in tutti e due;
 - `--larghezza 1280`: la vista del computer;
 - `--nome`: il prefisso dei file.
 
