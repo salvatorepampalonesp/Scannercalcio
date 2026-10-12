@@ -206,17 +206,6 @@ function quoteFinte(p) {
   return null;
 }
 
-// la curva di pressione come /momentum: un valore al minuto, positivo quando spinge la casa; il 5% delle partite senza curva,
-// il 3% con un 404, come la PitchAPI nelle stagioni dove la curva c'e' solo a tratti
-function momentumOf(m) {
-  const r = rng(m.id + 'mo'), u = r();
-  if (u < 0.03) return null;
-  if (u < 0.08) return { data: { match_id: m.id, points: [] } };
-  const base = 40 * Math.log(m._lam[0] / m._lam[1]) + 5, points = [{ minute: 0, value: 0 }];
-  for (let k = 1; k <= 90; k++) points.push({ minute: k, value: Math.round(base + 60 * (r() - 0.5)) });
-  return { data: { match_id: m.id, points } };
-}
-
 let API_CALLS = 0;
 function api(url) {
   API_CALLS++;
@@ -231,8 +220,6 @@ function api(url) {
   }
   mm = p.match(/^\/date\/(\d{4}-\d{2}-\d{2})$/);
   if (mm) return { data: { date: mm[1], matches: Object.values(MATCHES).filter(m => m.time_utc.slice(0, 10) === mm[1]).map(pub) } };
-  mm = p.match(/^\/matches\/([^/]+)\/momentum$/);
-  if (mm) return MATCHES[mm[1]] ? momentumOf(MATCHES[mm[1]]) : null;
   mm = p.match(/^\/matches\/([^/]+)\/(stats|lineups|advanced|events|players)$/);
   if (mm && MATCHES[mm[1]]) {
     const m = MATCHES[mm[1]];
@@ -299,7 +286,7 @@ const SNAP = `(() => ({ rec: window.__REC_CUR || [], verd: JSON.parse(JSON.strin
   verdTxt: window.__VERDETTI_TXT || null, master: JSON.parse(JSON.stringify(window.__MASTER || null)),
   confMk: JSON.parse(JSON.stringify(window.__CONF_MK || null)), lineup: JSON.parse(JSON.stringify(window.__LINEUP_DEBUG || null)),
   fatigue: JSON.parse(JSON.stringify(window.__FATIGUE_DEBUG || null)),
-  trend: JSON.parse(JSON.stringify(window.__ELO_TREND || null)), pres: JSON.parse(JSON.stringify(window.__PRESSIONE_DEBUG || null)) }))()`;
+  trend: JSON.parse(JSON.stringify(window.__ELO_TREND || null)) }))()`;
 
 // «In breve» (b66): il pick e' quello delle probabilita' mostrate (con le quote se ci sono), le proposte
 // le prime tre con un verdetto del tabellone a schermo, il rischio sorpresa quello del motore. Dal b69 il
@@ -580,25 +567,6 @@ async function runComparatore(browser, base, mode, date) {
         if (v[0] !== eh[i] || v[1] !== ea[i] || v[2] !== hf[i]) d.push(`${ids[i]}: ${v.join('/')} contro ${eh[i]}/${ea[i]}/${hf[i]}`);
       }
       return { n, d }; };
-    // il rating di pressione rifatto dalla colonna PRESSIONE MEDIA, con la regola scritta qui da capo (strumenti/pressione.py)
-    const presCol = {}; L.filter(c => /^ARCHIVIO #\d+$/.test(c[0])).forEach(c => { if (c[11] !== undefined && c[11].trim() !== '') presCol[c[1]] = Number(c[11]); });
-    const pr = riga('Pressione: rating casa meno trasferta');
-    const giroP = pc => { let n = 0; const d = [];
-      const ord = arch.filter(m => m.status === 'finished' && m.score_home != null).sort((a, b) => a.time_utc < b.time_utc ? -1 : a.time_utc > b.time_utc ? 1 : a.id < b.id ? -1 : 1);
-      for (let i = 1; i < ids.length; i += 4) {
-        if (!ids[i] || pr[i] === undefined) continue;
-        const day = t[i].slice(0, 10), R = {}, N = {}; let H = 3.5;
-        for (const m of ord) {
-          if (m.time_utc.slice(0, 10) >= day) break;
-          const x = pc[m.id]; if (x === undefined) continue;
-          const h = m.home_team.id, a = m.away_team.id, e = x - ((R[h] || 0) - (R[a] || 0) + H);
-          R[h] = (R[h] || 0) + 0.15 * e; R[a] = (R[a] || 0) - 0.15 * e; H += 0.03 * e; N[h] = (N[h] || 0) + 1; N[a] = (N[a] || 0) + 1;
-        }
-        const v = (N[hid[i]] || 0) >= 6 && (N[aid[i]] || 0) >= 6 ? ((R[hid[i]] || 0) - (R[aid[i]] || 0)).toFixed(6) : 'N/D';
-        n++; if (v !== pr[i]) d.push(`${ids[i]}: ${v} contro ${pr[i]}`);
-      }
-      return { n, d }; };
-    const GP = giroP(presCol), k0 = Object.keys(presCol)[0], PP = giroP(Object.fromEntries(Object.entries(presCol).filter(([k]) => k !== k0)));
     let G, P;
     try {
       G = giro(arch);
@@ -606,8 +574,7 @@ async function runComparatore(browser, base, mode, date) {
       const i0 = arch.findIndex(m => m.status === 'finished');
       P = giro(arch.filter((m, i) => i !== i0));
     } finally { window.__ENGINE_CACHE = salva; }
-    return { righe: arch.length, database: cmpAllMatches.length, partite: G.n, diversi: G.d.length, esempi: G.d.slice(0, 3), potenza: P.d.length,
-             pres: { curve: Object.keys(presCol).length, partite: GP.n, diversi: GP.d.length, esempi: GP.d.slice(0, 3), potenza: PP.d.length } };
+    return { righe: arch.length, database: cmpAllMatches.length, partite: G.n, diversi: G.d.length, esempi: G.d.slice(0, 3), potenza: P.d.length };
   }) : null;
   const res = await page.evaluate(() => ({ runs: window.__RUNS, csvs: window.__CSVS, dl: window.__DL || [],
     saved: (cmpSavedMatches || []).map(m => ({ id: m.ids && m.ids.matchId, conf: m.conf, R: { m1: m.R.m1, confidence: m.R.confidence } })),
@@ -725,18 +692,6 @@ function csvChecks(S, csv, col) {
       eqs('stanchezza ' + nome + ': giorni alla coppa europea', nd(F.coppaDopo), c('giorni alla coppa europea'));
       eqs('stanchezza ' + nome + ': in Europa', sn(F.inEuropa), c('in Europa'));
     }
-  }
-  // il rating di pressione (b82): quello che lo Scanner ha calcolato, e se il maestro l'ha usato
-  const PRX = S.pres;
-  if (!PRX) out.push({ what: 'pressione', scanner: '(__PRESSIONE_DEBUG assente)', csv: '-', ok: false });
-  else {
-    const pv = cell('Pressione: rating casa meno trasferta', 0);
-    if (PRX.v == null) eqs('pressione: rating', 'N/D', pv); else cmp('pressione: rating', PRX.v, pv, 0.0000006);
-    eqs('pressione: attiva', PRX.on ? 'si' : 'no (' + PRX.motivo + ')', cell('Pressione: attiva nella lega', 0));
-    eqs('pressione: curva casa', String(PRX.nH), cell('Pressione: partite con la curva casa', 0));
-    eqs('pressione: curva trasferta', String(PRX.nA), cell('Pressione: partite con la curva trasferta', 0));
-    eqs('pressione: partite di lega con la curva', String(PRX.conCurva), cell('Pressione: partite di lega con la curva', 0));
-    eqs('pressione: maestro con la pressione', PRX.v != null ? 'si' : 'no', cell('Pressione: maestro con la pressione', 0));
   }
   // il tabellone: la sezione deve esistere e riportare le stesse proposte nello stesso ordine
   const tab = csv.sec['--- TABELLONE (come lo stampa lo Scanner) ---'];
@@ -862,8 +817,7 @@ if (require.main === module) (async () => {
         && (!process.env.MOBILE || R.scroll <= 0)
         && (mode !== 'sconfina' || /le salto/.test(logTxt))
         && (!R.archivio || (R.archivio.righe > 0 && R.archivio.righe === R.archivio.database
-                            && R.archivio.partite === cc.tot && R.archivio.diversi === 0 && R.archivio.potenza > 0
-                            && R.archivio.pres && R.archivio.pres.curve > 0 && R.archivio.pres.partite === cc.tot && R.archivio.pres.diversi === 0 && R.archivio.pres.potenza > 0));
+                            && R.archivio.partite === cc.tot && R.archivio.diversi === 0 && R.archivio.potenza > 0));
     }
     if (!mr.ok) fail++;
     report.modes[mode] = mr;
@@ -876,8 +830,7 @@ if (require.main === module) (async () => {
     console.log(`   scritture a schermo del motore diverse dallo Scanner: ${eng.join(' / ')} su ${pms[0] && pms[0].scrittureMotore}`);
     console.log(`   righe del CSV diverse dallo Scanner: ${cs.join(' / ')} su ${pms[0] && pms[0].csvControlli}`);
     if (R.archivio) { const A = R.archivio; mr.archivio = A;
-      console.log(`   archivio in fondo al CSV: ${A.righe} partite su ${A.database} del database · Elo rifatto dall'archivio su ${A.partite} partite: ${A.diversi} diverse${A.esempi.length ? ' ' + JSON.stringify(A.esempi) : ''} · senza una partita: ${A.potenza} diverse (potenza)`); 
-      if (A.pres) console.log(`   pressione rifatta dall'archivio (${A.pres.curve} curve): ${A.pres.partite} partite, ${A.pres.diversi} diverse${A.pres.esempi.length ? ' ' + JSON.stringify(A.pres.esempi) : ''} · senza una curva: ${A.pres.potenza} diverse (potenza)`); }
+      console.log(`   archivio in fondo al CSV: ${A.righe} partite su ${A.database} del database · Elo rifatto dall'archivio su ${A.partite} partite: ${A.diversi} diverse${A.esempi.length ? ' ' + JSON.stringify(A.esempi) : ''} · senza una partita: ${A.potenza} diverse (potenza)`); }
     const ex = pms.find(p => p.esempi && p.esempi.length); if (ex) console.log('   es. motore:', JSON.stringify(ex.esempi.slice(0, 3)));
     const ec = pms.find(p => p.csvEsempi && p.csvEsempi.length); if (ec) console.log('   es. CSV:', JSON.stringify(ec.csvEsempi.slice(0, 6)));
     const note = pms.find(p => p.engine || p.csv); if (note) console.log('   nota:', note.engine || note.csv);

@@ -24,8 +24,7 @@ node strumenti/schermate.js --vera "Lausanne|Lugano|2026-09-20" --lega "SUI:Supe
 
 - I nomi delle squadre vanno scritti come li mostra il menu dello Scanner. La lega di default è la
   Serie A, la stagione quella che contiene la data.
-- Costa 200–300 chiamate, e dal `b82` nelle 42 leghe con la curva di pressione altre 800–1.100 (il browser parte vuoto, e
-  scarica `/momentum` di tutto l'archivio di lega): usala per controllare quello che la lega finta non mostra (nomi lunghi,
+- Costa 200–300 chiamate: usala per controllare quello che la lega finta non mostra (nomi lunghi,
   quote automatiche, formazioni vere), non a ogni ritocco. La chiave è quella del batch (skill
   `batch`).
 - Una partita giocata ha le quote di chiusura; una fra qualche giorno quelle della settimana.

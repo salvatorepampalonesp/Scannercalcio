@@ -40,10 +40,7 @@ partite dello storico, ma solo quando si preme il bottone della card dei giocato
 per partita, in memoria per la sessione): non fa parte del giro del motore. Dal `b65` lo Scanner
 analizza anche una giornata intera: trova le partite del turno nell'archivio di lega e con
 `/date/{giorno}?status=all` (una chiamata per giorno, dai due giorni prima di oggi in avanti), poi
-fa il giro completo del motore su ognuna (vedi *La giornata*). Dal `b82`, nelle 42 leghe dove la PitchAPI ha la curva di
-pressione, il motore chiede anche `/matches/{id}/momentum` di ogni partita conclusa dell'archivio di lega, dalla stagione in
-cui la curva comincia: circa 1.100 chiamate la prima volta per una lega da 20 squadre, poi tenute nel browser e chieste solo
-le partite nuove (vedi *Il rating di pressione: la regola*, «Nel motore (`b82`)»). La documentazione dell'API
+fa il giro completo del motore su ognuna (vedi *La giornata*). La documentazione dell'API
 (51 pagine, settembre 2026) elenca anche statistiche per giocatore (`/players`,
 `/advanced/players`), tiri (`/shots`), `/h2h`, arbitro, heatmap e 42 leghe fra cui coppe e
 competizioni UEFA (il 10 ottobre 2026 `/leagues` ne elenca 77); nessuna quota dei bookmaker. Le
@@ -58,7 +55,7 @@ vedi *Le quote automatiche*); se non ci sono, le scrive l'utente. Per misurarle 
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b82`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b83`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -302,9 +299,10 @@ Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export rec
   leghe del test del maestro: 1X2 −0.54‰ (`z = −2.56`, 10 leghe su 13), risultato esatto −0.65‰ (`z = −2.66`, 10 su 13);
   sulle sole partite col rating 1X2 −0.95‰. La pressione c'è solo in 13 leghe su 33. Vedi *Il rating di pressione: la
   regola*, «Esito».
-- [x] ~~**Il rating di pressione nello Scanner: lo decide l'utente.**~~ — **nello Scanner dal `b82`**, scelto dall'utente
-  dopo una prova di poche chiamate per lega (12 ottobre 2026): la curva c'è in 42 leghe su 77, e solo lì il motore la
-  scarica. Vedi *Il rating di pressione: la regola*, «Nel motore (`b82`)».
+- [x] ~~**Il rating di pressione nello Scanner: lo decide l'utente.**~~ — **messo nel `b82`, tolto nel `b83` dall'utente.**
+  Dopo una prova di poche chiamate per lega (la curva c'è in 42 leghe su 77) è entrato nel `b82`; in uso costava circa 1.100
+  chiamate e un minuto e mezzo alla prima analisi di ogni lega, per −0.54‰ di logloss 1X2 e le prese del pick ferme. Vedi
+  *Il rating di pressione: la regola*, «Tolto nel `b83`».
 - [ ] **I tocchi in area nell'1X2: il test sulle partite nuove.** Regola registrata il 2 ottobre 2026:
   Elo, modello e tocchi nell'area avversaria previsti, con pesi già fissati, contro il motore, sulle partite
   giocate dal 3 ottobre 2026 nelle 24 leghe dei batch. Nell'esplorazione (le 24 leghe, già tutte guardate)
@@ -556,7 +554,7 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b82`)
+## Stato attuale (`b83`)
 
 **Il maestro mercato** (dal `b77`). Senza quote, l'1X2 del verdetto e la matrice dei gol (Over/Under, Goal, multigol,
 risultati esatti, handicap, tempi dei gol) non escono più dall'ensemble del motore ma dal maestro. È una ridge che dalle
@@ -567,28 +565,26 @@ usata senza quote. Regola registrata prima, test sui risultati di 33 leghe mai u
 - Over 2.5 −3.50‰, Goal −1.93‰, differenza reti −8.14‰.
 
 È la prima cosa che chiude una parte della distanza dal mercato: un quarto sull'1X2, il 40% sul risultato esatto. Le
-soglie del pick, rimisurate fuori lega sui cinque campionati (5.230 partite, stesse del `b49`) col maestro con la
-pressione del `b82` (fra parentesi il maestro del `b77`):
+soglie del pick, rimisurate fuori lega sui cinque campionati (5.230 partite, stesse del `b49`):
 
-| soglia sul pick | partite | quota del calendario | azzecca | ±2se | maestro `b77` | motore `b48`, stesse partite |
-|---|---|---|---|---|---|---|
-| ≥50% | 2602 | 50% | 63.1% | 1.9 | 62.8% su 49% | 61.6% su 52% |
-| ≥55% | 1864 | 36% | 66.6% | 2.2 | 67.4% su 35% | 66.0% su 38% |
-| ≥60% | 1301 | 25% | 72.0% | 2.5 | 72.2% su 24% | 69.3% su 26% |
-| ≥65% | 837 | 16% | 76.2% | 2.9 | 76.0% su 16% | 73.3% su 16% |
-| ≥70% | 487 | 9% | 79.1% | 3.7 | 79.1% su 9% | 77.0% su 9% |
+| soglia sul pick | partite | quota del calendario | azzecca | ±2se | motore `b48`, stesse partite |
+|---|---|---|---|---|---|
+| ≥50% | 2587 | 49% | 62.8% | 1.9 | 61.6% su 52% |
+| ≥55% | 1841 | 35% | 67.4% | 2.2 | 66.0% su 38% |
+| ≥60% | 1268 | 24% | 72.2% | 2.5 | 69.3% su 26% |
+| ≥65% | 839 | 16% | 76.0% | 2.9 | 73.3% su 16% |
+| ≥70% | 473 | 9% | 79.1% | 3.7 | 77.0% su 9% |
 
 Su tutte 53.3% (motore 52.7%). Senza quote il tabellone ora rende come promette anche sui gol: una proposta gol
-GIOCABILE +12.4 punti sopra il giocarla alla cieca (`b77` +13.2), contro +7.4 del motore. Con le quote non cambia niente: combinare il
+GIOCABILE +13.2 punti sopra il giocarla alla cieca, contro +7.4 del motore. Con le quote non cambia niente: combinare il
 mercato col maestro o col motore dà lo stesso (+0.18‰, `z = +0.96`), e `QUOTE_COMB` continua a ricevere l'1X2 del
 motore. Vedi *Il maestro mercato: la regola*, «Nel motore (`b77`)».
 
-**La pressione** (test del 12 ottobre 2026, nello Scanner dal `b82`). Il rating sulla curva `/momentum`, corretto per
-l'avversario come l'Elo, come 66ª variabile del maestro: sulle 33 leghe del test 1X2 −0.54‰ (`z = −2.56`) e risultato
-esatto −0.65‰ (`z = −2.66`), meglio in 10 leghe su 13. La curva c'è in 42 leghe su 77 (fra cui i cinque campionati, le
-seconde serie inglesi e tedesca, Eredivisie, Liga Portugal, MLS, Brasile e Argentina), e solo lì lo Scanner la scarica:
-circa 1.100 chiamate la prima volta per lega, poi nel browser. Nelle altre resta il maestro del `b77`. Vedi *Il rating di
-pressione: la regola*, «Nel motore (`b82`)».
+**La pressione** (test del 12 ottobre 2026; nello Scanner nel `b82`, tolta nel `b83`). Il rating sulla curva `/momentum`,
+corretto per l'avversario come l'Elo, come 66ª variabile del maestro: sulle 33 leghe del test 1X2 −0.54‰ (`z = −2.56`) e
+risultato esatto −0.65‰ (`z = −2.66`), meglio in 10 leghe su 13. La curva c'è in 42 leghe su 77, ma scaricarla costava
+circa 1.100 chiamate e un minuto e mezzo alla prima analisi di ogni lega, con le prese del pick ferme: l'utente l'ha tolta.
+Dal `b83` il maestro è quello del `b77` in tutte le leghe. Vedi *Il rating di pressione: la regola*, «Tolto nel `b83`».
 
 **1X2 del motore, prima del maestro.** Col motore `b48` il pick azzecca il 52.7% (±1.4) contro il 43.0% del «gioca sempre in
 casa» sulle cinque leghe: 52.7% contro 40.2% in Serie A, 52.7% contro 43.1% in Premier, 53.2%
@@ -660,9 +656,9 @@ volte lo sfavorito ha vinto nelle partite come quella (23.278 partite di 24 legh
 sorprese le contano già giuste (sfavorito al 30–35%: vince il 32.3%); l'unico segnale che aggiunge
 qualcosa è il disaccordo fra modello ed Elo sul favorito, +2.4 punti allo sfavorito a pari
 probabilità, uguale nelle dodici leghe dove è stato cercato e nelle altre dodici. **ALTO** (una partita
-su sei: disaccordo e sfavorito al 25% o più) vuol dire sfavorito 33–39%, favorito 34–40%. Dal `b77` il maestro
-mette il disaccordo nelle probabilità, e ALTO diventa più raro; dal `b82` vuol dire lo sfavorito al 35% o più (una partita
-su 24), dove vince il 34.7%. Un rating
+su sei: disaccordo e sfavorito al 25% o più) vuol dire sfavorito 33–39%, favorito 34–40%. Dal `b77` il maestro mette il
+disaccordo nelle probabilità, e ALTO resta solo col disaccordo e lo sfavorito al 35% o più (una partita su 35), dove vince
+il 36.0%. Un rating
 sugli xG (vedi *Il rating sugli xG: la regola*) non passa il test e non anticipa le sorprese. Contro
 le quote l'avviso non aggiunge niente: il mercato il disaccordo lo conosce già. Senza quote, nelle
 partite ALTO le proposte del tabellone dalla parte del favorito rendono 3.5 punti meno di quanto
@@ -1119,9 +1115,8 @@ Il segnale c'è, ma è piccolo.
   vista 108, una con tutte e due già viste 0 (a 30 le partite da scaricare per squadra
   raddoppiano). Ricaricare la pagina butta tutto.
 - Il database di lega va in `localStorage` (chiave lega+stagione, scadenza 24 ore).
-  `RAW_CACHE` no: sono decine di MB. Dal `b82` ci va anche la pressione media di ogni partita di lega
-  (`scanner_pres_<lega>`, senza scadenza): la prima analisi di una lega con la curva scarica circa 1.100 curve, le altre
-  solo quelle delle partite giocate dopo.
+  `RAW_CACHE` no: sono decine di MB. Nel `b82` ci andava anche la pressione media di ogni partita di lega
+  (`scanner_pres_<lega>`); dal `b83` lo Scanner la cancella all'apertura.
 - **Progressione Storica**: le medie brevi non prevedono mai meglio della lunga (47 metriche
   su 47). Uno scostamento recente **persiste** solo sui volumi strutturali (`prog_carries`
   t=+3.5, `switches` +2.9, `prog_carry_dist` +2.7, `tackles` +2.7, `ppda_den` +2.5,
@@ -2054,7 +2049,7 @@ testo, lo modifica con delle regex e lo esegue con `new Function`. Dipende quind
    `/(const\s+confidence\s*=\s*Math\.round\([^;]*;)/`. Non riscriverla e non citarla
    testualmente altrove nel file. Tutto ciò che l'hook legge va prodotto **prima**:
    `__PRED_STATS`, `__PRED_DEBUG`, `__RESID_DEBUG`, `__GOALS_DEBUG`, `__ELO_DEBUG`,
-   `__ELO_DEBUG_OVER`, `__ELO_TREND`, `__UNIT_DEBUG`, `__ENS_DEBUG`, `__SCOPE_DEBUG`, `__LINEUP_DEBUG`, `__FATIGUE_DEBUG`, `__MAESTRO_DEBUG`, `__PRESSIONE_DEBUG`, `m1/mX/m2`, `probsRole`,
+   `__ELO_DEBUG_OVER`, `__ELO_TREND`, `__UNIT_DEBUG`, `__ENS_DEBUG`, `__SCOPE_DEBUG`, `__LINEUP_DEBUG`, `__FATIGUE_DEBUG`, `__MAESTRO_DEBUG`, `m1/mX/m2`, `probsRole`,
    `probsOver`, `probsOL`, `mk_ro`, `mk_ov`, `dcMat`, `lamH_mix/lamA_mix`,
    `lamH_over/lamA_over`. Una variabile dichiarata dopo finisce a `null` senza errori (una
    colonna di `N/D` nel CSV). Aggancio di riserva: le tre righe `const m1 = …; const mX = …;
@@ -2129,7 +2124,7 @@ niente. Controlla:
   testo; all'apertura il Comparatore ripristina la copia salvata in localStorage, che puo'
   essere vecchia) e che le build coincidano;
 - **ogni** manopola del motore contro il suo default letto dal sorgente
-  (`cmpEngineDefaults`, 30 manopole dal `b48`, 31 dal `b63` con `GOALS_LEVEL`, 32 dal `b75` con `PRIMO_GOL_QUOTA`, 33 dal `b76` con `NUMERI_CORREZIONI`, 34 dal `b77` con `MAESTRO`, 35 dal `b82` con `PRESSIONE`), piu' `CMP_K_LIST[0]` contro `SHRINK_K`;
+  (`cmpEngineDefaults`, 30 manopole dal `b48`, 31 dal `b63` con `GOALS_LEVEL`, 32 dal `b75` con `PRIMO_GOL_QUOTA`, 33 dal `b76` con `NUMERI_CORREZIONI`, 34 dal `b77` con `MAESTRO`), piu' `CMP_K_LIST[0]` contro `SHRINK_K`;
 - lo storico per squadra contro quello dello Scanner (`window.__ENGINE_LIMIT`);
 - che la partita sia della stagione per cui e' caricato il database.
 
@@ -2154,7 +2149,7 @@ dall'id della partita e servita al posto di PitchAPI, con una neopromossa e senz
 `/advanced` sulla stagione piu' vecchia come l'API vera. Lo Scanner si guida come lo usa
 l'utente (`caricaSquadreLega` e `avviaScanner` sulle partite di una data), il Comparatore gira
 in ogni modalita', e si confrontano **ogni scrittura a schermo del motore** (`safeTxt` e
-`safeHtml`, strumentate nei due file allo stesso modo: 202 per partita dal `b82`) e **128 righe del CSV**
+`safeHtml`, strumentate nei due file allo stesso modo: 201 per partita dal `b77`) e **122 righe del CSV**
 che riportano un numero dello Scanner (1X2, confidence di tutti i mercati, i sei modelli,
 GG e Over, corner/tiri/gialli e le loro linee, handicap, multigol, Elo, tabellone voce per
 voce, certificato, dal `b43` gli indici delle formazioni, dal `b44` quelli della stanchezza, dal
@@ -2171,7 +2166,7 @@ lista ha meno di due giocatori (contati da `data-g`, dal `b60`; prima erano le r
 contiene `NaN`, `undefined` o `Infinity`. Dal `b47`, nel batch e nello sweep,
 rilegge l'archivio di lega dal **testo** del CSV esportato, ci fa girare `buildGlobalElo` del
 motore e confronta Elo e HFA con le righe del CSV, partita per partita; il controllo di potenza
-toglie una partita dall'archivio e deve vedere l'Elo cambiare. Dal `b82` la lega finta ha anche la curva di pressione (`/momentum`), e il banco rifà il rating dalla colonna `PRESSIONE MEDIA` dell'archivio con la regola scritta da capo, partita per partita; il controllo di potenza toglie una curva e deve vedere il rating cambiare. Dal `b65` lancia anche la giornata
+toglie una partita dall'archivio e deve vedere l'Elo cambiare. Dal `b65` lancia anche la giornata
 sul turno delle partite dello Scanner e controlla che ogni partita riaperta coi bottoni stampi quello
 che stampa analizzata da sola (vedi *La giornata*). Dal `b66` misura lo scorrimento scheda per
 scheda (sette schede, tutte le `details` aperte), guarda che i riquadri nuovi non escano dal loro
@@ -2183,15 +2178,15 @@ col movimento ridotto (`reducedMotion: 'reduce'`: i numeri che contano mostrereb
 intermedi), legge «In breve» da `#in-breve` (il riquadro, la sorpresa e le proposte sono tre blocchi)
 e misura le voci del dock e del foglio Altro, Squadre in tutte e tre le sotto-schede.
 
-Esito al `b82` (storico 30), a 390px con tutte le 28 card aperte, scheda per scheda e in tutte e tre le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, 0 px):
+Esito al `b83` (storico 30; uguale dal `b77`, tranne il `b82`), a 390px con tutte le 28 card aperte, scheda per scheda e in tutte e tre le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, 0 px):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
-| una partita, tutte del giorno, intervallo | 3/3 | 0 su 202 | 0 su 128 | 0 |
-| batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse); pressione rifatta dalla colonna dell'archivio (247 curve) identica su 89 su 89 (senza una curva: 78 diverse) | 0 su 202 | 0 su 128 | 0 |
+| una partita, tutte del giorno, intervallo | 3/3 | 0 su 201 | 0 su 122 | 0 |
+| batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 201 | 0 su 122 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
-| `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 137-165 | 74-82 | 0 |
-| `vecchio`: motore `b81` caricato (controllo) | 0/3, «motore caricato diverso ...» | 25-33 su 202 | 31-41 | 0 |
+| `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 140-165 | 75-82 | 0 |
+| `vecchio`: motore `b82` caricato (controllo) | 0/3, «motore caricato diverso ...» | 3 su 202 | 1 (il certificato) | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -2290,10 +2285,12 @@ su 201, tutte di testo (emoji e lineette lunghe tolte da narrazioni, titoli del 
 CSV, il certificato. Al `b79` il controllo col `b78` non vede nessuna scrittura diversa, solo il certificato: cambiano
 il foglio di stile, le animazioni, l'occhiello della lega e i segnaposto dei menu, che non passano da `safeTxt`. Al
 `b80` lo stesso col `b79`: cambiano il foglio di stile, i meta tag e le animazioni. Al `b81` lo stesso col `b80`: cambiano
-il foglio di stile e le animazioni. Al `b82` il controllo col `b81` vede 25-33 scritture diverse su 202 (una è l'id nuovo
-`mdl-pres`, che il `b81` non scrive; le altre sono il verdetto 1X2 e quello che esce dal maestro, che nella lega finta usa
-la pressione su 82 partite su 89, il rischio sorpresa e il tabellone) e 31-41 righe del CSV su 128. Le righe confrontate
-passano da 122 a 128: rating, lega attiva, partite con la curva delle due squadre e della lega, maestro con la pressione.
+il foglio di stile e le animazioni. Al `b82` il controllo col `b81` vedeva 25-33 scritture diverse su 202 (una è l'id nuovo
+`mdl-pres`; le altre il verdetto 1X2 e quello che esce dal maestro con la pressione, il rischio sorpresa e il tabellone) e
+31-41 righe del CSV su 128: il banco aveva la curva finta (`/momentum`) e sei righe in più, quelle della pressione. Al `b83`,
+che toglie la pressione, il controllo col `b82` vede 3 scritture diverse su 202: `mdl-pres`, che il `b83` non scrive, il
+rischio sorpresa e il tabellone (le tabelle del `b77` al posto di quelle del `b82`). Il verdetto è lo stesso, perché la lega
+finta del `b83` non ha più la curva e il `b82` resta senza; nel CSV cambia solo il certificato.
 
 **Il controllo del `b70`.** Da qui «In breve» controlla anche il rischio sorpresa: con le quote dell'1X2
 `#sorpresa-box` deve essere identico a quello rifatto nella pagina con `rischioSorpresa(…,
@@ -3809,7 +3806,7 @@ ottobre 2026:
 - *non c'è mai* nelle altre 35: quasi tutte le leghe nuove del `b73`, Cina, Colombia, Cile, Perù, Ecuador, Serie B
   brasiliana, USL, K League 2, Finlandia, Irlanda e le altre.
 
-**Nel motore (`b82`).** `window.PRESSIONE = 'si'` (`'no'` torna al `b81`), coi numeri di `PRESSIONE_REG`, uguali a
+**Nel motore (`b82`, tolto nel `b83`).** `window.PRESSIONE = 'si'` (`'no'` torna al `b81`), coi numeri di `PRESSIONE_REG`, uguali a
 `strumenti/pressione_regola.json` (le 65 variabili sono quelle di `MAESTRO_REG`, la 66ª il rating).
 - *Dove.* `PRESSIONE_DAL` dice, per le 42 leghe, l'anno d'inizio della prima stagione con la curva su almeno il 5% delle
   partite (dai batch dove ci sono, altrimenti dalla prova: almeno 2 partite su 6). Nelle altre leghe nessuna chiamata, e il
@@ -3840,7 +3837,7 @@ ottobre 2026:
   campionati europei, il 2024 di MLS) il rating può cambiare di poco rispetto a quello del test; per le partite di oggi
   l'archivio comincia dopo `PRESSIONE_DAL`, e non cambia niente.
 
-**Rimisurato** col maestro con la pressione, fuori lega sulle leghe dell'allenamento e coi numeri registrati sulle altre
+**Rimisurato nel `b82`** col maestro con la pressione, fuori lega sulle leghe dell'allenamento e coi numeri registrati sulle altre
 (`python3 strumenti/pressione.py --rimisura`, quattro minuti; la pressione c'è sul 78% delle 30.398 partite):
 - `PICK_RESA`, cinque campionati: ≥70 / 65 / 60 / 55 / 50 79.1 / 76.2 / 72.0 / 66.6 / 63.1% su 9 / 16 / 25 / 36 / 50% del
   calendario (col `b77` 79.1 / 76.0 / 72.2 / 67.4 / 62.8% su 9 / 16 / 24 / 35 / 49%), su tutte 53.3% come prima. Dentro
@@ -3856,7 +3853,7 @@ ottobre 2026:
 - Restano del `b77` `QUOTE_RESA` e `QUOTE_OU_RESA` (il maestro senza quote contro il mercato), e tutto quello che si
   misura con le quote.
 
-**Verificato.**
+**Verificato nel `b82`.**
 - *Il banco* ha una curva finta (`/momentum`, un valore al minuto, il 5% delle partite senza curva e il 3% con un 404). Lo
   Scanner e il Comparatore danno lo stesso rating, e il banco lo rifà dalla colonna `PRESSIONE MEDIA` dell'archivio con la
   regola scritta da capo: 89 partite su 89 identiche; senza una curva cambiano 78 (controllo di potenza).
@@ -3870,7 +3867,27 @@ ottobre 2026:
   verdetto usa il maestro con la pressione. Nessun errore, 0 px di scorrimento in ogni scheda.
 - *Il rilevatore di impeccable* sulle pagine analizzate della partita vera ha trovato una cosa che la lega finta non mostra:
   la nota «Con le quote» della card dei risultati esatti (`matrice-quote`, del `b62`) aveva il bordo spesso a sinistra. Ora è
-  una `details` come la nota del tabellone con le quote (`qnota`); dopo, 0 segnalazioni.
+  una `details` come la nota del tabellone con le quote (`qnota`); dopo, 0 segnalazioni. Questa correzione resta nel `b83`.
+
+**Tolto nel `b83`.** L'utente, letto cosa voleva dire in uso: «Togli sta cosa, un minuto e mezzo e chiamate in più per
+nulla che me ne faccio?». Il conto:
+- *il costo*, alla prima analisi di ogni lega con la curva: circa 1.100 chiamate e un minuto e mezzo in più (1.050 chiamate e
+  1 minuto e 42 secondi su Juventus – Atalanta), poi solo le partite nuove; in un batch circa 1.900 chiamate in più per tre
+  stagioni di una lega, un quarto del batch, contro le 100.000 al giorno del worker;
+- *il guadagno*: −0.54‰ di logloss 1X2 sulle 33 leghe del test (−0.95‰ dove c'è la curva), le prese del pick ferme (48.95
+  → 48.93%), le soglie e le rese del tabellone dentro l'errore, e con le quote niente, perché il mercato la pressione la sa
+  già.
+
+Dal `b83` il codice è quello del `b81`: nessuna chiamata a `/momentum`, il maestro del `b77` in tutte le leghe, `PICK_RESA`,
+`SORPRESA_TAB` ed `EDGE_BANDS` del `b77`, il CSV senza le righe `Pressione:` né la colonna `PRESSIONE MEDIA`, il banco
+senza la curva finta. Restano:
+- la nota «Con le quote» della card dei risultati esatti rifatta come `details`;
+- all'apertura, lo Scanner cancella le curve salvate nel browser dal `b82` (`scanner_pres_<lega>`);
+- gli strumenti (`strumenti/pressione.py`, `strumenti/pressione_regola.json`, `strumenti/momentum-copertura.py`) e le
+  misure di questa sezione.
+
+Per rimetterla, il codice del `b82` è al commit `dd6617d`. Avrebbe senso solo se la curva costasse meno: per esempio se la
+PitchAPI desse la pressione media nell'archivio di lega, senza una chiamata per partita.
 
 ### Battere il bookmaker: la regola della ricerca
 
@@ -4622,12 +4639,11 @@ scrittura nuova, il messaggio iniziale). Il banco la verifica a parte, premendo 
 | `SHRINK_K` | 4 | misurata `b35`–`b37`, riconfermata `b41` | 12 e 28 peggiori a 5σ; sotto 4 migliora l'1X2 (−0.0016, `z = −3.03`) ma i gol pagano +0.0056. `b41`, copia conforme e zero clamp: a 2 l'1X2 −0.00069 (`z = −3.30`), la somma +0.00155; Premier −0.00079 (`z = −3.42`) e +0.00136; LaLiga −0.00052 e +0.00025; Bundesliga −0.00052 e +0.00321 (`z = 3.40`); Ligue 1 +0.00001 e +0.00087 |
 | `SHRINK_LAM_K` | 3 | a mano, misurata `b37` e `b41` | `b37`: ottimo del Brier Over fra 5 e 8, `z = −1.82`, segno ribaltato nel 2022/23. `b41`: in Serie A monotono fino a 20, miglior `z = −1.99` a 5, 3 stagioni su 3; in Premier il 2023/24 si ribalta (+0.00131 a 5, +0.0081 a 20); in LaLiga piatta a 5 e peggio da 8 in su; in Bundesliga meglio a 5 (`z = −2.69`, 3 stagioni su 3); in Ligue 1 meglio a 5 (`z = −1.26`). Tre leghe sì, una no, una ribaltata: resta 3 |
 | `GOALS_SOT_W` | 0.50 | stimata `b12`, confermata `b14` e `b41` | AUC Over 2.5 da 0.554/0.495/0.501 a 0.572/0.514/0.521; cinque leghe +2.18σ. `b41` in copia conforme: la Serie A punisce 0 (+0.0066, `z = 2.03`), la Premier punisce 1 (+0.0062, `z = 2.30`), LaLiga e Ligue 1 hanno l'ottimo a 0.50, la Bundesliga fra 0.25 e 0.50 |
-| `SORPRESA_TAB` | 6 fasce dello sfavorito × accordo / disaccordo fra modello ed Elo: partite, vince lo sfavorito, pareggio, vince il favorito | misurata `b64`, rimisurata `b77` sulle probabilità del maestro (fuori lega): col maestro il disaccordo non aggiunge più niente (residuo −0.54 ±1.46); rimisurata `b82` col maestro con la pressione (residuo col disaccordo −1.05 ±1.45, con l'accordo −0.89 ±0.59): ALTO con lo sfavorito al 35% o più, accordo 37.1% (350 partite) e disaccordo 33.3% (604) | 23.278 partite in copia conforme di 24 leghe (batch `b48`–`b62`, 2023–2026), `strumenti/sorpresa.py`; col disaccordo lo sfavorito vince +2.39 ±1.49 punti oltre il previsto, uguale nelle due metà delle leghe. Non tocca le probabilità: è la frequenza detta dall'avviso. Vedi *L'avviso di sorpresa* |
+| `SORPRESA_TAB` | 6 fasce dello sfavorito × accordo / disaccordo fra modello ed Elo: partite, vince lo sfavorito, pareggio, vince il favorito | misurata `b64`, rimisurata `b77` sulle probabilità del maestro (fuori lega): col maestro il disaccordo non aggiunge più niente (residuo −0.54 ±1.46); il `b82` l'aveva rimisurata col maestro con la pressione, il `b83` torna a questa | 23.278 partite in copia conforme di 24 leghe (batch `b48`–`b62`, 2023–2026), `strumenti/sorpresa.py`; col disaccordo lo sfavorito vince +2.39 ±1.49 punti oltre il previsto, uguale nelle due metà delle leghe. Non tocca le probabilità: è la frequenza detta dall'avviso. Vedi *L'avviso di sorpresa* |
 | `SORPRESA_QUOTE_TAB` | 5 fasce dello sfavorito con le quote × tutte / accordo / disaccordo fra modello ed Elo: partite, vince lo sfavorito, pareggio, vince il favorito | misurata `b70`, accordo e disaccordo dal `b71` | 11.902 partite di 12 leghe con le quote di chiusura, probabilità con `QUOTE_COMB`; fuori lega la stessa entro 0.3 punti. Il disaccordo modello/Elo pesa poco (30% o più: 30.7 contro 31.5%). Con le soglie di sempre il rischio con le quote non arriva ad ALTO. `strumenti/sorpresa-quote.py`, sezione 5. Vedi *L'avviso di sorpresa*, «Con le quote» |
 | `GOALS_LEVEL` | 1.051 | stimata e registrata `b62`, nel motore `b63` | gol/lambda di ruolo su 16.254 partite di quindici leghe (2023/24–2025/26), stabile per stagione (1.044–1.061) e per fonte degli xG; fuori lega Over 2.5 −2.74‰ (`z = −4.80`) e Goal −2.69‰ (`z = −6.27`), 13 leghe su 15. Test registrato su nove leghe mai aperte, 6.472 partite: −3.80‰ (`z = −2.99`), 6 su 9. Vedi *Il livello dei gol: la regola* |
 | `PRIMO_GOL_QUOTA` / `PRIMO_GOL_FISSA` | `'fissa'` / 0.268, 0.446 | misurata, test registrato `b75` | la quota media dei gol nei primi 30 e 45 minuti su 4.496 partite di dodici leghe dal 2025/26 (`QUOTA_FISSA` di `strumenti/primo-gol.py`); test su 11.633 partite di 36 leghe mai aperte per questa domanda: −7.30‰ (`z = −4.93`), 29 leghe su 36. `'squadre'` torna alla quota dei minuti dei gol delle due squadre. Vedi *La card del primo gol: la regola* |
 | `MAESTRO` / `MAESTRO_REG` | `'si'` / 65 variabili, medie, deviazioni, mediane e i 66×4 coefficienti di `strumenti/maestro_regola.json` | stimati `b77` sul mercato, test registrato | ridge (`α` 10) dalle variabili del motore all'1X2 e ai lambda del mercato di chiusura, 16.071 partite di 14 leghe coi file principali di football-data; test sui risultati di 33 leghe mai usate (13.592 partite): 1X2 −4.37‰ (`z = −5.30`, 25 su 33), risultato esatto −13.41‰ (`z = −8.88`, 31 su 33). `'no'` torna al `b76`. Vedi *Il maestro mercato: la regola* |
-| `PRESSIONE` / `PRESSIONE_REG` / `PRESSIONE_DAL` | `'si'` / `K` 0.15, `KH` 0.03, `H` 3.5, minimo 6 partite, media −0.004788, sd 10.208836, mediana 0.065806 e i 67×4 coefficienti di `strumenti/pressione_regola.json` / 42 leghe con l'anno della prima stagione con la curva | stimati sul mercato con la pressione, test registrato (`b82`); `PRESSIONE_DAL` dalla prova di copertura | ridge (`α` 10) a 66 variabili, le 65 del maestro più il rating, sulle stesse 16.071 partite (pressione sul 95.8%); test sui risultati delle 33 leghe del maestro: 1X2 −0.54‰ (`z = −2.56`), risultato esatto −0.65‰ (`z = −2.66`), 10 leghe su 13. `PRESSIONE_DAL`: prima stagione con la curva su almeno il 5% delle partite dei batch, o su 2 di 6 nella prova (`strumenti/momentum-copertura.py`). `'no'` torna al `b81`. Vedi *Il rating di pressione: la regola* |
 | `NUMERI_CORREZIONI` / `NUMERI_REG` | `'si'` / 21 parametri, uguali a `REGOLA` di `strumenti/numeri-correzioni.py` | stimati sull'esplorazione, test registrato `b76` | stimati sulle 1.743 partite del 2025/26 dei cinque campionati (`batch/numeri`), fuori lega dove serve; test su 3.976 partite mai aperte per Numeri (`batch/numeri-prova1`, `-prova2`): passano tutti e 17, da `z` −2.7 a −17.1, e il KNN 1X2 su 25.168 partite di 42 leghe (−21.9‰, `z` −14.9). `'no'` torna al `b75`. Vedi *Le card di Numeri: la regola* |
 | `SOT_PER_GOAL` | 3.25 | misurata | LaLiga 3.19, Premier 3.04, Serie A 3.33. Tocca solo il livello |
 | `GOALS_SOT_CAP` | 0.20 | paracadute misurato | morde nello 0.18% |
@@ -4651,9 +4667,9 @@ scrittura nuova, il messaggio iniziale). Il banco la verifica a parte, premendo 
 | `QUOTE_OU_RESA` | 11.222 partite, 11 leghe · lato più probabile: motore 55.6 (dal `b77`, col maestro, 57.6), mercato 58.9, con le quote 58.9% · giocando dove il motore si discosta −7.5 / −9.9% · sempre −3.7% | misurata `b57` | la card e il blocco gol del mega-prompt la leggono da qui |
 | `QUOTE_COLONNE_OU` | chiusura `AvgC`, `PC`, `B365C`, poi `Avg`, `P`, `B365` (`>2.5` / `<2.5`) | tabella `b57` | le colonne dell'Over/Under nei file principali di football-data (Pinnacle è `PC`, non `PSC` come nell'1X2); ci sono su ogni riga delle 18 leghe provate e dei file della settimana, mai nei file `new` |
 | `QUOTE_RESA` | tutte 53.0 · soglie ≥70 / 65 / 60 / 55 / 50: 78.6 / 74.7 / 71.1 / 67.5 / 64.0% su 14 / 20 / 27 / 37 / 49% del calendario · disaccordo 1321 partite, motore 26.3%, mercato 43.1% (dal `b77` col maestro: motore 51.7%, disaccordo 1046 partite, maestro 28.3%, mercato 42.1%) | misurata `b54` | combinazione stimata su undici leghe e misurata sulla dodicesima, 11.902 partite; soglie uguali nei cinque campionati e nelle altre sette (≥55: 67.9 e 67.1%). La card delle quote e il mega-prompt la leggono da qui |
-| `PICK_RESA` | dal `b82`, col maestro con la pressione: tutte 53.3 · casa 43.0 · soglie ≥70 / 65 / 60 / 55 / 50: 79.1 / 76.2 / 72.0 / 66.6 / 63.1% su 9 / 16 / 25 / 36 / 50% del calendario; `fuori` 35 leghe (entra la K League 1, 50 partite sopra il 55%). `b77`: 79.1 / 76.0 / 72.2 / 67.4 / 62.8% su 9 / 16 / 24 / 35 / 49%, `fuori` 34 leghe. Fino al `b76`: tutte 52.7 · soglie 77.1 / 73.2 / 69.3 / 66.0 / 61.7% su 9 / 16 / 26 / 38 / 52% | misurata `b49`, rimisurata `b77` e `b82` (fuori lega) | cinque leghe col motore `b48`, 5230 partite (tabella in *Stato attuale*). Dal `b51` una sola copia: la card delle soglie e il mega-prompt la leggono da qui. Si rifà con le tabelle, a ogni motore che sposta l'1X2. Dal `b52` porta `leghe` (le cinque, per id) e `fuori` (Championship 46.3 e 64.8% su 17%, Eredivisie 53.7 e 68.7% su 47%, Liga Portugal 55.0 e 72.4% su 43%: pick su tutte e a ≥55, 3495 partite col `b48`), perché sulle tre leghe nuove le soglie ≥55 / 60 / 65 / 70 escono dai 2se (vedi *Le tre leghe nuove col `b48`: la regola*). Dal `b53` `fuori` ha anche 2. Bundesliga (45.4 e 62.8% su 16%), First Division A (50.2 e 65.5% su 35%), Premiership scozzese (53.3 e 68.9% su 41%) e Super League svizzera (47.1 e 66.1% su 26%), 3202 partite col motore `b52`. Dal `b56` porta anche `cinque`, le cinque leghe una per una nella stessa forma (tabella in *Stato attuale*): con `fuori` scrive la nota di lega in cima all'analisi. Dal `b74` `fuori` ha 38 leghe (le 31 nuove dai batch del `b61`, del `b62` e del `b73`, quelle con almeno 50 partite col pick sopra il 55%; tabella in *Le leghe mai viste*), e ogni lega porta anche le stagioni e le partite sopra il 55%, da cui la nota di lega e il prompt calcolano il ±2se |
+| `PICK_RESA` | dal `b77`, col maestro: tutte 53.3 · casa 43.0 · soglie ≥70 / 65 / 60 / 55 / 50: 79.1 / 76.0 / 72.2 / 67.4 / 62.8% su 9 / 16 / 24 / 35 / 49% del calendario; `fuori` 34 leghe. Fino al `b76`: tutte 52.7 · soglie 77.1 / 73.2 / 69.3 / 66.0 / 61.7% su 9 / 16 / 26 / 38 / 52% | misurata `b49`, rimisurata `b77` (fuori lega); il `b82` l'aveva rimisurata col maestro con la pressione, il `b83` torna a questa | cinque leghe col motore `b48`, 5230 partite (tabella in *Stato attuale*). Dal `b51` una sola copia: la card delle soglie e il mega-prompt la leggono da qui. Si rifà con le tabelle, a ogni motore che sposta l'1X2. Dal `b52` porta `leghe` (le cinque, per id) e `fuori` (Championship 46.3 e 64.8% su 17%, Eredivisie 53.7 e 68.7% su 47%, Liga Portugal 55.0 e 72.4% su 43%: pick su tutte e a ≥55, 3495 partite col `b48`), perché sulle tre leghe nuove le soglie ≥55 / 60 / 65 / 70 escono dai 2se (vedi *Le tre leghe nuove col `b48`: la regola*). Dal `b53` `fuori` ha anche 2. Bundesliga (45.4 e 62.8% su 16%), First Division A (50.2 e 65.5% su 35%), Premiership scozzese (53.3 e 68.9% su 41%) e Super League svizzera (47.1 e 66.1% su 26%), 3202 partite col motore `b52`. Dal `b56` porta anche `cinque`, le cinque leghe una per una nella stessa forma (tabella in *Stato attuale*): con `fuori` scrive la nota di lega in cima all'analisi. Dal `b74` `fuori` ha 38 leghe (le 31 nuove dai batch del `b61`, del `b62` e del `b73`, quelle con almeno 50 partite col pick sopra il 55%; tabella in *Le leghe mai viste*), e ogni lega porta anche le stagioni e le partite sopra il 55%, da cui la nota di lega e il prompt calcolano il ±2se |
 | retta dei mercati binari | −5.06 + 1.091·p | stimata, riconfermata `b38` e `b41` | 22.584 proposte, errore massimo 2.4 punti; `b41` 7938 proposte, 2.5 |
-| `EDGE_BANDS` | ≥20 / ≥10 / ≥5, guadagno per famiglia (`b50`) | stimata `b38`, riconfermata `b41` e `b49`, per famiglia dal `b50` | 28.230 proposte: +24.6 / +14.8 / +6.3 punti, monotono, segno concorde in 5 stagioni su 5. `b41` (copia conforme): +25.6 / +15.6 / +4.8 sulle 13.148 proposte con base del `b40`, +25.0 / +14.9 / +5.7 sulle 14.742 del `b41`, monotono in 3 stagioni su 3; Premier (≥20 / 10–20 / 5–10) +27.4 / +10.7 / +6.0, LaLiga +25.0 / +13.7 / +7.3, Bundesliga +28.7 / +14.0 / +5.5, Ligue 1 +26.4 / +13.4 / +5.0. `b49` (motore `b48`, cinque leghe): +25.8 / +12.2 / +6.1, monotono in 5 leghe su 5; per famiglia 1X2 +27.5 / +15.5 / +8.0, gol +1.0 / +7.2 / +3.5, numeri +7.2 / +10.2 / +8.2. Dal `b50` l'etichetta mostra questi, per famiglia, con ±2se: 1X2 ±1.6 / ±1.6 / ±1.9 (2891 / 3573 / 2680 proposte), gol ±10.4 / ±2.3 / ±1.7 (92 / 1881 / 3457), numeri ±8.0 / ±2.9 / ±2.4 (133 / 1058 / 1628). Dal `b63` i gol, rifatti col livello dei gol: +2.3 ±12.8 (61) / +6.8 ±2.6 (1445) / +4.4 ±1.7 (3279). Dal `b77`, col maestro (fuori lega): 1X2 +29.5 ±1.6 (2463) / +17.1 ±1.4 (3692) / +9.0 ±1.7 (2912), gol +24.3 ±11.6 (55) / +13.2 ±3.5 (744) / +6.8 ±1.9 (2801). Dal `b82`, col maestro con la pressione: 1X2 +29.5 ±1.6 (2505) / +16.9 ±1.4 (3685) / +9.2 ±1.7 (2913), gol +24.0 ±11.3 (56) / +12.4 ±3.5 (765) / +6.6 ±1.9 (2796); i numeri restano del `b49`. Ordinare per guadagno atteso invece che per scarto: no (vedi *Il tabellone per famiglia di mercato: la regola*) |
+| `EDGE_BANDS` | ≥20 / ≥10 / ≥5, guadagno per famiglia (`b50`) | stimata `b38`, riconfermata `b41` e `b49`, per famiglia dal `b50` | 28.230 proposte: +24.6 / +14.8 / +6.3 punti, monotono, segno concorde in 5 stagioni su 5. `b41` (copia conforme): +25.6 / +15.6 / +4.8 sulle 13.148 proposte con base del `b40`, +25.0 / +14.9 / +5.7 sulle 14.742 del `b41`, monotono in 3 stagioni su 3; Premier (≥20 / 10–20 / 5–10) +27.4 / +10.7 / +6.0, LaLiga +25.0 / +13.7 / +7.3, Bundesliga +28.7 / +14.0 / +5.5, Ligue 1 +26.4 / +13.4 / +5.0. `b49` (motore `b48`, cinque leghe): +25.8 / +12.2 / +6.1, monotono in 5 leghe su 5; per famiglia 1X2 +27.5 / +15.5 / +8.0, gol +1.0 / +7.2 / +3.5, numeri +7.2 / +10.2 / +8.2. Dal `b50` l'etichetta mostra questi, per famiglia, con ±2se: 1X2 ±1.6 / ±1.6 / ±1.9 (2891 / 3573 / 2680 proposte), gol ±10.4 / ±2.3 / ±1.7 (92 / 1881 / 3457), numeri ±8.0 / ±2.9 / ±2.4 (133 / 1058 / 1628). Dal `b63` i gol, rifatti col livello dei gol: +2.3 ±12.8 (61) / +6.8 ±2.6 (1445) / +4.4 ±1.7 (3279). Dal `b77`, col maestro (fuori lega): 1X2 +29.5 ±1.6 (2463) / +17.1 ±1.4 (3692) / +9.0 ±1.7 (2912), gol +24.3 ±11.6 (55) / +13.2 ±3.5 (744) / +6.8 ±1.9 (2801); i numeri restano del `b49`. Il `b82`, col maestro con la pressione, aveva 1X2 +29.5 / +16.9 / +9.2 e gol +24.0 / +12.4 / +6.6; il `b83` torna a quelle del `b77`. Ordinare per guadagno atteso invece che per scarto: no (vedi *Il tabellone per famiglia di mercato: la regola*) |
 | minimo di `leagueBaseRates` | 200 partite | paracadute misurato `b38` | guadagno piatto fra 50 e 500; in produzione arrivano 900+ partite |
 | emivita | 106 giorni | a mano | uguale nei due file |
 | storico per squadra (`history-limit`) | 30 | scelta dell'utente (`b40`) | il batch base dell'utente e lo storico delle tarature `b24`–`b38`; fino al `b39` lo Scanner stampava a 15. Il Comparatore lo legge dallo Scanner in tutte le modalita' |
@@ -4988,7 +5004,7 @@ misurate.
 | **Le quote del mercato nell'1X2** (`b54`) | registrata prima, 11.902 partite di dodici leghe, fuori lega: prese 51.04 → 52.99% (+1.95, `z = +7.00`), logloss −0.01772, dodici leghe su dodici. Il guadagno è del mercato: il motore, dato il mercato, pesa meno di zero |
 | **La confidence dell'1X2 uguale alla probabilità** (`b53`) | registrata prima, su quattro leghe mai aperte: Brier −0.00220, `z = −4.09`, quattro leghe su quattro; sulle tre leghe del `b52` −0.00137 (`z = −2.68`) |
 | **La quota fissa del primo gol** (`b75`) | registrata prima, 11.633 partite di 36 leghe mai aperte per questa domanda: somma delle logloss del gol prima del 30' e dell'Over 0.5 nel primo tempo −7.30‰ (`z = −4.93`), 29 leghe su 36; la card diventa calibrata |
-| **Il rating di pressione nel maestro** (`b82`, nelle 42 leghe con la curva) | registrato prima, 13.592 partite di 33 leghe, pressione su 7.648: 1X2 −0.54‰ (`z = −2.56`), risultato esatto −0.65‰ (`z = −2.66`), meglio in 10 leghe su 13 |
+| **Il rating di pressione nel maestro** (nello Scanner nel `b82`, tolto nel `b83`: costava troppe chiamate) | registrato prima, 13.592 partite di 33 leghe, pressione su 7.648: 1X2 −0.54‰ (`z = −2.56`), risultato esatto −0.65‰ (`z = −2.66`), meglio in 10 leghe su 13 |
 | **L'arbitro nei gialli, Serie A e LaLiga** (non ancora nello Scanner) | registrato prima, 850 partite del 2025/26 e del 2026/27: conteggio dei gialli −18.88‰ (`z = −3.37`), Over 3.5 −13.44‰ (`z = −2.85`), meglio in 2 leghe su 2 |
 | **Lo squilibrio sui tiri in porta** (`b42`) | registrato prima di vedere due leghe e passato su tutte e due; cinque leghe −0.0029 di logloss dell'Over 8.5, `z = −3.10`, positivo in 14 stagioni su 15 |
 
@@ -6587,9 +6603,6 @@ node strumenti/batch-auto.js --leghe "ITA:Serie A,Eredivisie,ENG:Championship" -
   L'11 ottobre 2026 i batch di Numeri (33.124 chiamate) e lo scarico dei tiri e della pressione (circa
   120.000) le hanno finite. Un giro grosso si divide su più giorni: `strumenti/tiri.py` si ferma da solo a
   `--tetto` chiamate (di default 25.000), e un batch automatico si stima prima, dal numero delle partite.
-  Dal `b82`, nelle 42 leghe con la curva di pressione, un batch chiede anche `/momentum` di ogni partita conclusa
-  dell'archivio di lega dalla stagione di `PRESSIONE_DAL`, una volta per giro (il browser del batch parte vuoto): per tre
-  stagioni di una lega da 20 squadre circa 1.900 chiamate in più, un quarto del batch.
 - Il batch vive nel computer della sessione: se la sessione resta inattiva il computer può
   essere spento, e con lui `batch/`. Ogni file finito va mandato all'utente appena salvato.
 - `--scritture` registra anche, per il primo giro di ogni partita, ogni scrittura a schermo del motore
@@ -6645,10 +6658,9 @@ handicap, tabellone) sono del maestro. L'1X2 e i lambda di ruolo del motore prim
 `Maestro: 1/X/2 del motore` e `Maestro: lambda casa/trasf. del motore (ruolo)`, con `Maestro: attivo`. Chi misura il
 motore di prima, o riallena il maestro, legge quelle: `strumenti/maestro.py` lo fa da solo.
 
-Dal `b82`, nelle 42 leghe con la curva, l'1X2 e i lambda del maestro vengono dal maestro con la pressione quando la riga
-`Pressione: maestro con la pressione` dice `si`; il rating è nella riga `Pressione: rating casa meno trasferta` (sei
-decimali), e l'archivio in fondo al file ha una colonna in più, `PRESSIONE MEDIA` (vuota se la partita non ha la curva o
-non è stata chiesta). Chi rifà il rating legge quella colonna: `python3 strumenti/pressione.py --schermo` lo fa.
+I file del `b82` hanno in più le righe `Pressione:` (lega attiva, rating, partite con la curva, maestro con la pressione) e,
+nell'archivio in fondo, la colonna `PRESSIONE MEDIA`; dove `Pressione: maestro con la pressione` dice `si`, 1X2 e lambda
+vengono dal maestro con la pressione. `python3 strumenti/pressione.py --schermo` li rifà. Dal `b83` non ci sono più.
 
 Dal `b76` le righe `KNN 1`, `KNN X` e `KNN 2` sono le probabilità del KNN ricalibrate, e le righe dei corner
 (attesi, linee Over, dispersione) vengono dal `λ` ristretto con la `k` fissa a 57.2 (vedi *Le card di Numeri: la
@@ -6914,3 +6926,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b80` | le pagine da app sul telefono e le animazioni rifatte con le skill di Emil Kowalski (`mobile-native`, `animate`, `review-animations`), chieste dall'utente. Telefono: niente lampo al tocco, hover solo col mouse, campi da 16 px (iOS non ingrandisce più), `touch-action: manipulation`, testo dei controlli non selezionabile, niente pull-to-refresh (una ricarica buttava via l'analisi), barra di stato del colore del tema, tastiere giuste, aree sicure laterali. Animazioni: le curve di Kowalski, cambio di scheda istantaneo, pressione in 160 ms, il foglio «Altro» come un drawer interrompibile che si chiude anche trascinandolo, a fine analisi una scaletta da 50 ms, progresso lineare, movimento ridotto con opacità invece di spostamenti. Numeri invariati: col `b79` 0 scritture diverse su 201, una riga del CSV (il certificato) |
 | `b81` | le animazioni potenziate dove la frequenza lo permette, chieste dall'utente («anche rallentandole oltre ad aggiungerne altre, sempre secondo le regole di Kowalski»): sette proposte di `find-animation-opportunities`, tutte. Il foglio «Altro» sale in 500 ms e, lasciato prima della soglia, torna con una molla che parte dalla velocità del dito (curva `linear()` calcolata nella pagina); l'anello esce in 250 ms e l'entrata della partita parte 150 ms dopo, con una scaletta da 70 ms e le proposte una per una (870 ms in tutto, nel `b80` 550; nella giornata la versione corta); la partita della giornata si scorre col dito, con resistenza agli estremi e molla; le fisarmoniche si aprono in altezza (200 ms, dove il browser lo sa fare); a fine giornata i numeri a scaletta e una spunta che si disegna; la home entra a scaletta. Cambio di scheda e pressione restano come nel `b80`. Numeri invariati: col `b80` 0 scritture diverse su 201, una riga del CSV (il certificato); 16 controlli delle animazioni in Chromium superati, il rilevatore a 0 |
 | `b82` | il rating di pressione nel maestro, scelto dall'utente dopo una prova di poche chiamate per lega: la curva `/momentum` della PitchAPI c'è in 42 leghe su 77 (`strumenti/momentum-copertura.py`), e solo lì lo Scanner la scarica (una chiamata per partita dell'archivio di lega la prima volta, poi nel browser), calcola il rating corretto per l'avversario e usa il maestro a 66 variabili della regola registrata (test: 1X2 −0.54‰, `z = −2.56`; risultato esatto −0.65‰, `z = −2.66`). Altrove resta il maestro del `b77`. Manopola `PRESSIONE` (`'no'` torna a prima). Rimisurate `PICK_RESA` (≥55% 66.6% su 36% del calendario), `SORPRESA_TAB` (ALTO con lo sfavorito al 35% o più) e `EDGE_BANDS` di 1X2 e gol. Il CSV esporta il rating e, nell'archivio, la pressione di ogni partita; il banco la rifà da lì con la regola scritta da capo, e `strumenti/pressione.py --schermo` rifà rating e maestro dai CSV |
+| `b83` | tolta la pressione, chiesto dall'utente dopo averla vista in uso («un minuto e mezzo e chiamate in più per nulla che me ne faccio?»): alla prima analisi di ogni lega con la curva costava circa 1.100 chiamate e un minuto e mezzo, per −0.54‰ di logloss 1X2 e le prese del pick ferme. Il codice torna quello del `b81`: nessuna chiamata a `/momentum`, il maestro del `b77` in tutte le leghe, `PICK_RESA`, `SORPRESA_TAB` ed `EDGE_BANDS` del `b77`, il CSV e il banco senza la pressione. Restano la nota «Con le quote» dei risultati esatti come `details` (trovata dal rilevatore nel `b82`) e gli strumenti della misura; lo Scanner cancella all'apertura le curve salvate nel browser dal `b82`. Col `b82` 3 scritture diverse su 202 (`mdl-pres`, rischio sorpresa e tabellone), una riga del CSV (il certificato) |
