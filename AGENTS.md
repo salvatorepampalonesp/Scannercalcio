@@ -55,7 +55,7 @@ vedi *Le quote automatiche*); se non ci sono, le scrive l'utente. Per misurarle 
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b80`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b81`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -118,7 +118,7 @@ vedi *Le quote automatiche*); se non ci sono, le scrive l'utente. Per misurarle 
   segue taste** (`redesign-existing-projects` e `design-taste-frontend`, dal `b78`) **e impeccable** (dal
   `b79`); **le animazioni e il telefono seguono Emil Kowalski** (`animate`, `review-animations`,
   `mobile-native`, dal `b80`). Chi la tocca rilegge le loro regole, e in *La grafica dello Scanner*, «Cosa
-  cambia nel `b78`», «nel `b79`» e «nel `b80`», quali valgono qui. `graphify` scrive in `graphify-out/`, fuori
+  cambia nel `b78`», «nel `b79`», «nel `b80`» e «nel `b81`», quali valgono qui. `graphify` scrive in `graphify-out/`, fuori
   da git.
 - **impeccable** (`pbakaus/impeccable`, 4.5.2, Apache 2.0). L'ha installato l'utente l'11 ottobre 2026 con
   `npx impeccable install`, e si aggiorna con `npx impeccable update`, non con `skills-lock.json`. Ha messo:
@@ -549,7 +549,7 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b80`)
+## Stato attuale (`b81`)
 
 **Il maestro mercato** (dal `b77`). Senza quote, l'1X2 del verdetto e la matrice dei gol (Over/Under, Goal, multigol,
 risultati esatti, handicap, tempi dei gol) non escono più dall'ensemble del motore ma dal maestro. È una ridge che dalle
@@ -799,7 +799,9 @@ transizioni brevi più un solo momento d'autore, il verdetto che si compone a fi
 dello Scanner*, «Cosa cambia nel `b78`» e «Cosa cambia nel `b79`», e *La home e lo scarico di una partita*. Dal
 `b80` le animazioni seguono le skill di Emil Kowalski (cambio di scheda istantaneo, il foglio «Altro» come un
 drawer che si chiude anche trascinandolo) e le pagine si comportano da app sul telefono (skill `mobile-native`):
-vedi «Cosa cambia nel `b80`».
+vedi «Cosa cambia nel `b80`». Dal `b81` le animazioni rare sono più lunghe (il foglio, la fine dell'analisi,
+l'entrata della partita, la fine della giornata, l'apertura della home), i trascinamenti finiscono con una molla, la
+partita della giornata si scorre col dito e le fisarmoniche si aprono in altezza: vedi «Cosa cambia nel `b81`».
 
 **La selezione vale più dell'accuratezza.** Prima di aggiungere una feature, chiedersi se
 il segnale non sia già nell'output, solo mal etichettato.
@@ -1563,7 +1565,7 @@ Kowalski». Le skill sono `mobile-native` per il telefono e `animate` per le ani
   - **la pressione** è 160 ms in ease-out, `scale(.97)` su bottoni, dock, segmenti e pastiglie; le righe che si
     toccano (proposte, formazioni, foglio, partite della giornata, intestazioni delle card) si schiariscono
     invece di rimpicciolirsi, come le liste di iOS;
-  - **il foglio «Altro»** è un drawer: transizioni CSS, quindi interrompibile, che sale in 400 ms e scende in 300
+  - **il foglio «Altro»** è un drawer: transizioni CSS, quindi interrompibile, che sale in 400 ms (500 dal `b81`) e scende in 300
     con `--ease-drawer`. Si chiude anche trascinandolo giù: oltre il 30% della sua altezza o con un colpo
     (velocità sopra 0.11 px/ms), altrimenti torna su; verso l'alto oppone resistenza. Il tocco su Prompt o Dati
     cambia la scheda subito, mentre il foglio scende;
@@ -1587,6 +1589,75 @@ Kowalski». Le skill sono `mobile-native` per il telefono e `animate` per le ani
 
   Il tocco vero (lampo, hover, zoom dei campi, rimbalzo, aree sicure, trascinamento col dito) va provato sul
   telefono: l'emulazione non lo riproduce.
+
+**Cosa cambia nel `b81`.** Chiesto dall'utente: «E se volessimo potenziare le animazioni? Anche rallentandole oltre
+ad aggiungerne altre. Sempre secondo regole di kowalski». Prima `find-animation-opportunities`: sette proposte, e
+altrettante scartate. L'utente le ha volute tutte e sette («li voglio tutti»).
+
+La regola è la frequenza: si allunga solo quello che si vede di rado. Restano come nel `b80` le cose che si fanno
+decine di volte per sessione: il cambio di scheda e di sotto-scheda (istantaneo), la pressione, le barre del
+tabellone, l'anello mentre gira.
+
+- **Il foglio «Altro»**:
+  - sale in 500 ms invece di 400, e scende sempre in 300: l'uscita resta più veloce dell'entrata;
+  - lasciato dopo un trascinamento corto, torna su con una molla (rimbalzo 0.15, 500 ms) che parte dalla
+    velocità del dito, invece che con la curva fissa;
+  - la molla è una curva `linear()` calcolata nella pagina (`molla`): 32 punti di un oscillatore smorzato, con
+    `ζ = 1 − rimbalzo` e fermo entro la durata, e la velocità limitata a ±400 px/s. Dove il browser non conosce
+    `linear()` torna su in 300 ms con `--ease-out`.
+- **La fine dell'analisi**: l'anello esce in 250 ms invece di 150 (una dissolvenza, e il pannello si stringe a
+  `scale(.98)`). L'entrata della partita parte 150 ms dopo, coi blocchi nascosti dall'inizio (`fill: backwards`):
+  non si vedono prima del loro turno. Parte anche toccando «Analisi pronta», che nel `b80` la saltava.
+- **L'entrata della partita** (`rivela`), una volta per analisi:
+  - scaletta da 70 ms invece di 50, fino a 7 passi invece di 6;
+  - le tre proposte entrano una per una invece che in blocco;
+  - ogni blocco dura sempre 300 ms. Il pick sale a 70 ms dall'inizio, la barra dell'1X2 si stende da 190 ms per
+    400 ms;
+  - tutta l'entrata finisce 870 ms dopo l'uscita dell'anello (`b80`: 550);
+  - cambiando partita nella giornata, che si fa decine di volte, c'è la versione corta: 40 ms e 5 passi.
+- **La partita della giornata si scorre col dito**:
+  - la scheda con la partita segue il dito in orizzontale, e uno spostamento verticale lascia scorrere la pagina
+    (si decide dopo 8 px; `touch-action: pan-y`);
+  - passa alla partita dopo o prima oltre il 30% della larghezza, o con un colpo (velocità sopra 0.11 px/ms). La
+    vecchia esce dal punto del dito verso il lato (200 ms), la nuova entra come con le frecce;
+  - dove non c'è un'altra partita oppone resistenza;
+  - lasciata prima della soglia, torna al centro con la molla (rimbalzo 0.1, 400 ms).
+- **Le fisarmoniche** (le card di Numeri e le altre `details.card`): si aprono e si chiudono in altezza, 200 ms in
+  `--ease-out` (`interpolate-size` e `::details-content`), solo col movimento pieno. Nei browser che non li hanno
+  (oggi Safari e Firefox) si aprono di colpo come prima, e il contenuto scende lo stesso dall'intestazione.
+- **La fine della giornata**, una volta per giornata:
+  - quando tutte le partite sono analizzate (non con «Ferma dopo questa»), i tre numeri entrano a scaletta da 80 ms;
+  - accanto a «N/N analizzate» si disegna un segno di spunta, da sinistra a destra in 400 ms dopo 240 ms
+    (`clip-path`);
+  - niente animazione se la pagina non è in vista: il giro dura minuti, e un'animazione che nessuno guarda non serve.
+- **La home**: all'apertura marchio, sottotitolo, le due voci, lo scarico e il piede entrano a scaletta da 60 ms,
+  300 ms ciascuno, `translateY(8px)`. È un'animazione CSS, quindi gira anche mentre la pagina carica, e c'è solo col
+  movimento pieno.
+- *Col movimento ridotto*: niente molla (lasciati prima della soglia, il foglio e la partita tornano a posto subito,
+  come nel `b80`), niente altezza nelle fisarmoniche, l'entrata della partita in dissolvenza senza attese né
+  spostamenti, la home ferma.
+- *Cosa non cambia*: motore, numeri, id. Il banco col motore `b80` vede 0 scritture diverse su 201: cambia solo il
+  certificato.
+- *Verificato*:
+  - banco verde a 390px;
+  - in Chromium col movimento pieno, sulla lega finta, 16 controlli tutti superati:
+    - le sei entrate della home;
+    - l'uscita dell'anello in 250 ms e il pannello a `.98`;
+    - i ritardi dell'entrata della partita (150…570 ms) e del pick e della barra;
+    - il foglio: aperto in 0.5 s; lasciato a 40 px torna su con la molla e resta aperto; con un colpo di 150 px si
+      chiude in 0.3 s;
+    - l'altezza della fisarmonica che passa per i valori intermedi, aprendo e chiudendo;
+    - la spunta e i numeri a fine giornata;
+    - la partita trascinata a destra alla prima della giornata: resiste (29 px su 120) e torna con la molla;
+    - con un colpo a sinistra: passa alla dopo, esce a sinistra ed entra da destra;
+    - trascinata in verticale: non si sposta;
+    - nessun errore nella pagina;
+  - schermate scuro e chiaro senza errori, 0 px di scorrimento laterale in ogni scheda;
+  - il rilevatore di impeccable: 0 segnalazioni sulle otto schede analizzate nei due temi, e sulla home e sul
+    Comparatore a 390 e 1280 px.
+
+  Il tocco vero va provato sul telefono: come si sente la molla, il trascinamento della partita col dito,
+  l'altezza delle fisarmoniche (su iPhone, senza `interpolate-size`, si aprono di colpo).
 
 **Cosa non cambia, e non deve cambiare.**
 
@@ -2093,7 +2164,7 @@ col movimento ridotto (`reducedMotion: 'reduce'`: i numeri che contano mostrereb
 intermedi), legge «In breve» da `#in-breve` (il riquadro, la sorpresa e le proposte sono tre blocchi)
 e misura le voci del dock e del foglio Altro, Squadre in tutte e tre le sotto-schede.
 
-Esito al `b80` (storico 30; uguale dal `b77`), a 390px con tutte le 28 card aperte, scheda per scheda e in tutte e tre le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, 0 px):
+Esito al `b81` (storico 30; uguale dal `b77`), a 390px con tutte le 28 card aperte, scheda per scheda e in tutte e tre le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, 0 px):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
@@ -2101,7 +2172,7 @@ Esito al `b80` (storico 30; uguale dal `b77`), a 390px con tutte le 28 card aper
 | batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 201 | 0 su 122 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
 | `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 140-165 | 75-82 | 0 |
-| `vecchio`: motore `b79` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 su 201 | 1 (il certificato) | 0 |
+| `vecchio`: motore `b80` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 su 201 | 1 (il certificato) | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -2199,7 +2270,8 @@ confrontavano con la colonna «Dixon-Coles di ruolo» della card dei modelli, ch
 su 201, tutte di testo (emoji e lineette lunghe tolte da narrazioni, titoli del KNN e rischio sorpresa), e una riga del
 CSV, il certificato. Al `b79` il controllo col `b78` non vede nessuna scrittura diversa, solo il certificato: cambiano
 il foglio di stile, le animazioni, l'occhiello della lega e i segnaposto dei menu, che non passano da `safeTxt`. Al
-`b80` lo stesso col `b79`: cambiano il foglio di stile, i meta tag e le animazioni.
+`b80` lo stesso col `b79`: cambiano il foglio di stile, i meta tag e le animazioni. Al `b81` lo stesso col `b80`: cambiano
+il foglio di stile e le animazioni.
 
 **Il controllo del `b70`.** Da qui «In breve» controlla anche il rischio sorpresa: con le quote dell'1X2
 `#sorpresa-box` deve essere identico a quello rifatto nella pagina con `rischioSorpresa(…,
@@ -6704,3 +6776,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b78` | la grafica con le regole di taste-skill (`redesign-existing-projects` e `design-taste-frontend`), chiesta dall'utente perché «non sembri slop»: Geist e Geist Mono al posto di Inter, zinc neutro scuro e chiaro (automatico o scelto, per le tre pagine) con un solo accento smeraldo al posto del blu-viola, forme fisse (12, 8, 6, 2 px), etichette in tondo, niente passi numerati, emoji, lineette lunghe, aloni, rimbalzi, onda al tocco né numeri che contano; animazioni solo di transform e opacity, spente col movimento ridotto. Nella home lo scarico di tutte le statistiche di una partita (12 endpoint della PitchAPI in un CSV per Excel e un JSON). Numeri invariati: col `b77` 8 scritture diverse su 201, tutte di testo, e il certificato; schermate in scuro e in chiaro, lega finta e Juventus – Lazio vera, 0 px |
 | `b79` | le regole di impeccable sopra quelle di taste, chieste dall'utente («correggi il sito, vedi se sistema anche le animazioni»): audit col rilevatore anche sulla pagina dopo un'analisi (`schermate.js --istantanee`), poi i contrasti da 4.5:1 nel tema chiaro (varianti per il testo dei colori di dato), testo mai sotto i 12 px, la lega accanto alla data invece che sopra il titolo, i menu del setup senza `--` e non tagliati, l'icona della home accanto al titolo. Le animazioni: via le cascate a ogni cambio di scheda (dissolvenze da 220 ms), un solo momento d'autore (il verdetto che si compone a fine analisi), il manubrio del tabellone che si stende dalla base, e il movimento ridotto che tiene le dissolvenze invece di spegnere tutto. Numeri invariati: col `b78` 0 scritture diverse su 201, una riga del CSV (il certificato); il rilevatore sulla pagina analizzata da 48 segnalazioni a 0 |
 | `b80` | le pagine da app sul telefono e le animazioni rifatte con le skill di Emil Kowalski (`mobile-native`, `animate`, `review-animations`), chieste dall'utente. Telefono: niente lampo al tocco, hover solo col mouse, campi da 16 px (iOS non ingrandisce più), `touch-action: manipulation`, testo dei controlli non selezionabile, niente pull-to-refresh (una ricarica buttava via l'analisi), barra di stato del colore del tema, tastiere giuste, aree sicure laterali. Animazioni: le curve di Kowalski, cambio di scheda istantaneo, pressione in 160 ms, il foglio «Altro» come un drawer interrompibile che si chiude anche trascinandolo, a fine analisi una scaletta da 50 ms, progresso lineare, movimento ridotto con opacità invece di spostamenti. Numeri invariati: col `b79` 0 scritture diverse su 201, una riga del CSV (il certificato) |
+| `b81` | le animazioni potenziate dove la frequenza lo permette, chieste dall'utente («anche rallentandole oltre ad aggiungerne altre, sempre secondo le regole di Kowalski»): sette proposte di `find-animation-opportunities`, tutte. Il foglio «Altro» sale in 500 ms e, lasciato prima della soglia, torna con una molla che parte dalla velocità del dito (curva `linear()` calcolata nella pagina); l'anello esce in 250 ms e l'entrata della partita parte 150 ms dopo, con una scaletta da 70 ms e le proposte una per una (870 ms in tutto, nel `b80` 550; nella giornata la versione corta); la partita della giornata si scorre col dito, con resistenza agli estremi e molla; le fisarmoniche si aprono in altezza (200 ms, dove il browser lo sa fare); a fine giornata i numeri a scaletta e una spunta che si disegna; la home entra a scaletta. Cambio di scheda e pressione restano come nel `b80`. Numeri invariati: col `b80` 0 scritture diverse su 201, una riga del CSV (il certificato); 16 controlli delle animazioni in Chromium superati, il rilevatore a 0 |
