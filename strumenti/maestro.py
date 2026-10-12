@@ -319,6 +319,7 @@ def schermo(cartelle):
         for f in sorted(glob.glob(os.path.join(c, '*.csv'))):
             for m in leggi(f):
                 if 'Maestro: 1 del motore#0' not in m['x']: continue
+                if m['x'].get('Pressione: rating casa meno trasferta#0') is not None: continue   # dal b82: strumenti/pressione.py --schermo
                 m['v'] = variabili(m['x'], 1.0)
                 if m['v'] is not None: M.append(m)
     if not M: print('nessuna partita col maestro nei CSV'); sys.exit(1)

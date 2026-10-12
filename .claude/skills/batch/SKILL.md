@@ -25,8 +25,9 @@ AGENTS.md, *Il batch automatico* e *Leggere un CSV del Comparatore*.
   dell'ambiente sui segreti e passa all'utente i passi giusti.
 - **Il conto delle chiamate.** Passano dal worker dello Scanner: nel piano gratuito di Cloudflare
   100.000 al giorno, azzerate a mezzanotte UTC, e servono anche all'utente al telefono. Prima di
-  lanciare stima le chiamate (circa 6 per partita, più la prima volta lo storico delle squadre);
-  se un giro supera le 50.000, dividilo su più giorni e dillo all'utente.
+  lanciare stima le chiamate (circa 6 per partita, più la prima volta lo storico delle squadre; dal `b82`, nelle 42 leghe
+  con la curva di pressione, anche una per partita dell'archivio di lega: circa 1.900 per tre stagioni di una lega da 20
+  squadre); se un giro supera le 50.000, dividilo su più giorni e dillo all'utente.
 
 ## 2. Il lancio
 
