@@ -294,10 +294,15 @@ Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export rec
   imparate dal mercato (ridge dalle 65 variabili del motore all'1X2 e ai lambda del mercato), poi usate senza quote. Sui
   risultati di 33 leghe mai usate per questo (13.592 partite): 1X2 −4.37‰ (`z = −5.30`, 25 su 33), risultato esatto
   −13.41‰ (`z = −8.88`, 31 su 33), Over 2.5 −3.50‰, differenza reti −8.14‰. Vedi *Il maestro mercato: la regola*.
-- [ ] **Il rating di pressione nel maestro: il test.** Regola registrata l'11 ottobre 2026: la curva `/momentum` della
-  PitchAPI, corretta per l'avversario come l'Elo (passo 0.15), come 66ª variabile del maestro. Nell'esplorazione sulle 14
-  leghe del maestro, fuori lega, 1X2 −1.21‰ (`z = −4.77`, 13 su 14) e risultato esatto −1.22‰ (`z = −3.97`). Test sui
-  risultati delle 33 leghe del test del maestro, appena i loro tiri sono scaricati. Vedi *Il rating di pressione: la regola*.
+- [x] ~~**Il rating di pressione nel maestro: il test.**~~ — **passato, tutti e due i test** (12 ottobre 2026). La curva
+  `/momentum` della PitchAPI, corretta per l'avversario come l'Elo, come 66ª variabile del maestro. Sui risultati delle 33
+  leghe del test del maestro: 1X2 −0.54‰ (`z = −2.56`, 10 leghe su 13), risultato esatto −0.65‰ (`z = −2.66`, 10 su 13);
+  sulle sole partite col rating 1X2 −0.95‰. La pressione c'è solo in 13 leghe su 33. Vedi *Il rating di pressione: la
+  regola*, «Esito».
+- [ ] **Il rating di pressione nello Scanner: lo decide l'utente.** Costa una chiamata a `/momentum` per ogni partita del
+  database di lega la prima volta (circa 1.100 per una lega da 20 squadre), e lo stesso nel Comparatore a ogni batch; vale
+  −0.95‰ di logloss 1X2 dove la curva c'è, niente dove manca (20 leghe su 33 del test, quasi tutte quelle nuove del `b73`).
+  Prima di entrare: una prova di poche chiamate per lega per sapere se `/momentum` c'è.
 - [ ] **I tocchi in area nell'1X2: il test sulle partite nuove.** Regola registrata il 2 ottobre 2026:
   Elo, modello e tocchi nell'area avversaria previsti, con pesi già fissati, contro il motore, sulle partite
   giocate dal 3 ottobre 2026 nelle 24 leghe dei batch. Nell'esplorazione (le 24 leghe, già tutte guardate)
@@ -574,6 +579,11 @@ Su tutte 53.3% (motore 52.7%). Senza quote il tabellone ora rende come promette 
 GIOCABILE +13.2 punti sopra il giocarla alla cieca, contro +7.4 del motore. Con le quote non cambia niente: combinare il
 mercato col maestro o col motore dà lo stesso (+0.18‰, `z = +0.96`), e `QUOTE_COMB` continua a ricevere l'1X2 del
 motore. Vedi *Il maestro mercato: la regola*, «Nel motore (`b77`)».
+
+**La pressione** (test del 12 ottobre 2026, non ancora nello Scanner). Il rating sulla curva `/momentum`, corretto per
+l'avversario come l'Elo, come 66ª variabile del maestro: sulle 33 leghe del test 1X2 −0.54‰ (`z = −2.56`) e risultato
+esatto −0.65‰ (`z = −2.66`), meglio in 10 leghe su 13. Ma la curva c'è solo in 13 leghe su 33, e farlo entrare costa circa
+1.100 chiamate per lega: lo decide l'utente. Vedi *Il rating di pressione: la regola*, «Esito».
 
 **1X2 del motore, prima del maestro.** Col motore `b48` il pick azzecca il 52.7% (±1.4) contro il 43.0% del «gioca sempre in
 casa» sulle cinque leghe: 52.7% contro 40.2% in Serie A, 52.7% contro 43.1% in Premier, 53.2%
@@ -3746,6 +3756,40 @@ Se non passano, resta il `b77`, e questa sezione dice perché.
 confronto sulle sole partite col rating. `python3 strumenti/pressione.py` rifà l'esplorazione, `--allena` i numeri del
 candidato, `--prova batch/livello batch/lontane batch/anno2026 batch/europa2526` il test (dopo `strumenti/tiri.py --scarica`).
 
+**Esito: passano tutti e due.** Lo scarico è finito il 12 ottobre 2026 (55.224 partite d'archivio, nessuna fallita;
+l'ultimo giro 12.651 chiamate). Il test è sulle 13.592 partite delle 33 leghe. Il rating c'è sul 56.3% di loro: la
+PitchAPI dà i tiri di tutte, ma la curva di pressione solo in 13 leghe (vedi sotto).
+
+| test | con la pressione contro il maestro | `z` | leghe meglio (su 13 con almeno 100 partite col rating) | esito |
+|---|---|---|---|---|
+| 1X2 | −0.54‰ | −2.56 | 10 | **passa** (prese 48.95 → 48.93%, `z = −0.25`) |
+| risultato esatto | −0.65‰ | −2.66 | 10 | **passa** (guardia Over 2.5 + Goal −0.08‰, `z = −1.88`) |
+
+- *Sulle sole partite col rating* (7.648): 1X2 −0.95‰ (`z = −2.56`). Nell'esplorazione era −1.21‰: l'effetto c'è,
+  un po' più piccolo, come ci si aspettava con la copertura a metà (`z` atteso intorno a −3).
+- *Gli altri mercati*, descrittivi: Over 1.5 −0.04‰, Over 2.5 −0.07‰, Over 3.5 −0.07‰, Goal −0.01‰, differenza reti
+  −0.55‰ (`z = −2.32`, 9 leghe su 13). Come nell'esplorazione, la pressione sposta chi vince, non quanti gol.
+- *Per lega*, 1X2 / esatto in per mille: Eliteserien −2.25 / −2.41, J. League −2.05 / −1.52, Superligaen −2.03 /
+  −1.24, Saudi Pro League −1.86 / −2.41, MLS −0.72 / −0.85, Liga MX −0.71 / −1.14, Série A brasiliana −0.55 / −1.91,
+  Argentina −0.44 / −0.32, Allsvenskan −0.21 / −1.31. Peggio sull'1X2: A-League +0.49, Indian Super League +0.38,
+  Bundesliga austriaca +0.18. La K League 1 ha il rating sul 22% (−0.23 / +0.07).
+- *Dove manca la pressione.* In 20 leghe su 33 `/momentum` torna vuoto su ogni partita, mentre `/shots` c'è:
+  - le leghe nuove del catalogo del `b73`: HNL, 1. Liga ceca, 1. Division danese, 3. Liga, Ligat ha'Al, Eerste
+    Divisie, Liga I, Super Liga serba, Challenge League, 1. liga slovacca, Veikkausliiga, Premier Division irlandese;
+  - il 2026 delle Americhe e dell'Asia: Serie B brasiliana, Cile, Colombia, Ecuador, Perù, USL Championship, Super
+    League cinese, K League 2.
+
+  Nel 2023 di MLS, Liga MX, Eliteserien e Allsvenskan, e nel 2023/24 di A-League e Bundesliga austriaca, c'è su un
+  terzo-metà delle partite. Lì il maestro resta quello del `b77`.
+
+**Non è ancora nello Scanner.** Entrare costa:
+- una chiamata a `/matches/{id}/momentum` per ogni partita del database la prima volta (circa 1.100 per una lega da 20
+  squadre con tre stagioni), poi solo le nuove;
+- lo stesso nel Comparatore, a ogni file di batch.
+
+In una lega dove `/momentum` è vuoto le chiamate non servono a niente: andrebbe guardato prima, con poche partite. La
+decisione è dell'utente.
+
 ### Battere il bookmaker: la regola della ricerca
 
 Scritta prima di guardare le quote di prima della partita e le quote massime accanto ai risultati,
@@ -4861,6 +4905,7 @@ misurate.
 | **Le quote del mercato nell'1X2** (`b54`) | registrata prima, 11.902 partite di dodici leghe, fuori lega: prese 51.04 → 52.99% (+1.95, `z = +7.00`), logloss −0.01772, dodici leghe su dodici. Il guadagno è del mercato: il motore, dato il mercato, pesa meno di zero |
 | **La confidence dell'1X2 uguale alla probabilità** (`b53`) | registrata prima, su quattro leghe mai aperte: Brier −0.00220, `z = −4.09`, quattro leghe su quattro; sulle tre leghe del `b52` −0.00137 (`z = −2.68`) |
 | **La quota fissa del primo gol** (`b75`) | registrata prima, 11.633 partite di 36 leghe mai aperte per questa domanda: somma delle logloss del gol prima del 30' e dell'Over 0.5 nel primo tempo −7.30‰ (`z = −4.93`), 29 leghe su 36; la card diventa calibrata |
+| **Il rating di pressione nel maestro** (non ancora nello Scanner) | registrato prima, 13.592 partite di 33 leghe, pressione su 7.648: 1X2 −0.54‰ (`z = −2.56`), risultato esatto −0.65‰ (`z = −2.66`), meglio in 10 leghe su 13 |
 | **L'arbitro nei gialli, Serie A e LaLiga** (non ancora nello Scanner) | registrato prima, 850 partite del 2025/26 e del 2026/27: conteggio dei gialli −18.88‰ (`z = −3.37`), Over 3.5 −13.44‰ (`z = −2.85`), meglio in 2 leghe su 2 |
 | **Lo squilibrio sui tiri in porta** (`b42`) | registrato prima di vedere due leghe e passato su tutte e due; cinque leghe −0.0029 di logloss dell'Over 8.5, `z = −3.10`, positivo in 14 stagioni su 15 |
 
