@@ -3,6 +3,8 @@
 #   python3 strumenti/pressione.py                     # esplorazione fuori lega sulle leghe del maestro
 #   python3 strumenti/pressione.py --allena            # stima il maestro con la pressione e scrive pressione_regola.json
 #   python3 strumenti/pressione.py --prova <cartelle>  # il test registrato (vedi AGENTS.md, Il rating di pressione: la regola)
+#   python3 strumenti/pressione.py --rimisura          # PICK_RESA, SORPRESA_TAB, EDGE_BANDS col maestro con la pressione (b82)
+#   python3 strumenti/pressione.py --schermo <cartelle> # lo Scanner calcola rating e maestro come la regola? (CSV dal b82)
 #
 # Servono i file di batch/tiri (strumenti/tiri.py --scarica): di ogni partita dell'archivio di lega la media della curva di
 # pressione (positiva = casa). Il rating: pressione media ~ R_casa - R_trasf + H; dopo ogni partita R_casa += K*e,
@@ -45,12 +47,12 @@ def ids_file(f):
         if l.startswith('ID PARTITA;'): return [x for x in l.rstrip('\n').split(';')[1:] if x]
     return []
 
-def rating(A, k=K, kh=KH, h0=H0, minimo=MIN_PARTITE):
+def rating(A, k=K, kh=KH, h0=H0, minimo=MIN_PARTITE, pres=None):
     # A in ordine di orario; per ogni partita il valore prima di lei (una squadra non gioca due volte nello stesso giorno)
     R = collections.defaultdict(float); N = collections.Counter(); H = h0; prima = {}
     for ora, mid, h, a in A:
         prima[mid] = (R[h] - R[a]) if N[h] >= minimo and N[a] >= minimo else None
-        x = pressione(mid)
+        x = (pres or pressione)(mid)
         if x is None: continue
         e = x - (R[h] - R[a] + H); R[h] += k * e; R[a] -= k * e; H += kh * e; N[h] += 1; N[a] += 1
     return prima
@@ -137,8 +139,66 @@ def prova(dirs):
     print(f'\n  solo le partite col rating: 1X2 {1000 * d[cop].mean():+.2f} (z {ma.zeta(d[cop]):+.2f}), {cop.sum()} partite')
     return passa1, passa2
 
+def predizioni(dirs):
+    # come maestro.predizioni, col maestro con la pressione dove c'e' il rating: sulle leghe dell'allenamento coi numeri
+    # stimati senza quella lega (le due ridge, a 65 e a 66 variabili), sulle altre con quelli registrati
+    reg0 = json.load(open(ma.FILE_REGOLA)); reg1 = json.load(open(FILE_REGOLA))
+    M = ma.carica(dirs); V = valori(dirs)
+    for m in M: m['v']['pres'] = V.get(m['id'])
+    Q, MM, nomi, X, med, Y = ma._dati(); lgq = np.array([q['lega'] for q in Q]); Vt = valori(ma.ALLENA)
+    for m in MM: m['v']['pres'] = Vt.get(m['id'])
+    nomi2 = nomi + ['pres']; X2, med2 = ma.matrice(MM, nomi2)
+    fold0 = {l: ma._stima(X[lgq != l], med, Y[lgq != l], nomi) for l in sorted(set(lgq))}
+    fold1 = {l: ma._stima(X2[lgq != l], med2, Y[lgq != l], nomi2) for l in sorted(set(lgq))}
+    out = {}; cop = []
+    for l in sorted(set(m['lega'] for m in M)):
+        G = [m for m in M if m['lega'] == l]; c = np.array([m['v']['pres'] is not None for m in G]); cop.extend(c)
+        T = np.where(c[:, None], ma.applica(G, fold1.get(l, reg1)), ma.applica(G, fold0.get(l, reg0)))
+        for m, t in zip(G, T):
+            P = ma.soft(t[:1], t[1:2])[0]; out[m['id']] = dict(p=P, lam=(math.exp(t[2]), math.exp(t[3])), fuori=l in fold0)
+    print(f'maestro con la pressione su {100 * np.mean(cop):.1f}% di {len(cop)} partite')
+    return out
+
+def rimisura():
+    ma.predizioni = predizioni; ma.rimisura()
+
+def _archivio_csv(f):
+    A, P = [], {}
+    for l in open(f, encoding='utf-8'):
+        if not l.startswith('ARCHIVIO #'): continue
+        p = l.rstrip('\r\n').split(';')
+        if len(p) > 11 and p[11].strip(): P[p[1]] = float(p[11])
+        if p[4] != 'finished' or p[9] == '': continue
+        A.append((p[3], p[1], p[5], p[7]))
+    A.sort(); return A, P
+
+def schermo(cartelle):
+    # dai CSV di un batch del b82 (anche finto): il rating rifatto dalla colonna PRESSIONE MEDIA dell'archivio contro quello
+    # stampato, e l'1X2 e i lambda del maestro (a 66 variabili dove c'e' il rating) contro quelli stampati. Esce con 1 se no.
+    reg0 = json.load(open(ma.FILE_REGOLA)); reg1 = json.load(open(FILE_REGOLA)); M = []; dr = 0; nr = 0
+    for c in cartelle:
+        for f in sorted(glob.glob(os.path.join(c, '*.csv'))):
+            A, P = _archivio_csv(f); pr = rating(A, pres=P.get)
+            for m in ma.leggi(f):
+                if 'Maestro: 1 del motore#0' not in m['x'] or 'Pressione: partite con la curva casa#0' not in m['x']: continue
+                v = pr.get(m['id']); s = m['x'].get('Pressione: rating casa meno trasferta#0'); nr += 1
+                if (v is None) != (s is None) or (v is not None and abs(v - s) > 1.5e-6): dr += 1
+                m['v'] = ma.variabili(m['x'], 1.0)
+                if m['v'] is not None: m['v']['pres'] = s; M.append(m)
+    if not M: print('nessuna partita col maestro e la pressione nei CSV'); sys.exit(1)
+    cop = np.array([m['v']['pres'] is not None for m in M])
+    T = np.where(cop[:, None], ma.applica(M, reg1), ma.applica(M, reg0)); P = ma.soft(T[:, 0], T[:, 1])
+    C = np.array([[m['x']['1#0'], m['x']['X#0'], m['x']['2#0']] for m in M]) / 100
+    L = np.array([[m['x']['Ambito: lambda casa (ruolo)#0'], m['x']['Ambito: lambda trasf. (ruolo)#0']] for m in M])
+    e1, e2 = 100 * np.abs(P - C).max(), np.abs(np.exp(T[:, 2:]) - L).max()
+    print(f'{nr} partite: rating rifatto dall archivio, {dr} diverse; {len(M)} col maestro, {cop.sum()} con la pressione: 1X2 entro {e1:.3f} punti, lambda entro {e2:.4f}')
+    ok = dr == 0 and e1 <= 0.3 and e2 <= 0.01
+    print('tutto entro l arrotondamento del CSV' if ok else 'DIVERSI'); sys.exit(0 if ok else 1)
+
 if __name__ == '__main__':
     os.chdir(RADICE)
     if '--allena' in sys.argv: allena()
+    elif '--rimisura' in sys.argv: rimisura()
+    elif '--schermo' in sys.argv: schermo([a for a in sys.argv[1:] if not a.startswith('--')])
     elif '--prova' in sys.argv: prova([a for a in sys.argv[1:] if not a.startswith('--')])
     else: esplora()

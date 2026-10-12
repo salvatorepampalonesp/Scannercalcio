@@ -289,7 +289,7 @@ select{appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:36px
 
   <div class="topbar">
     <div class="brand"><svg class="ic" aria-hidden="true"><use href="#i-chart-bar"/></svg><h1>Comparatore V9.7</h1></div>
-    <div class="tb-tag"><span class="badge" id="build-ver">build 0905-b81</span><span class="badge" id="engine-badge">motore non caricato</span></div>
+    <div class="tb-tag"><span class="badge" id="build-ver">build 0905-b82</span><span class="badge" id="engine-badge">motore non caricato</span></div>
   </div>
 
   <!-- indicatore di flusso -->
@@ -830,6 +830,7 @@ async function loadEngineFromText(text, fileName) {
         eloTrend: (typeof window.__ELO_TREND !== 'undefined') ? window.__ELO_TREND : null,
         /* il maestro (b77): 1X2 e lambda di ruolo del motore PRIMA del maestro, per riallenarlo dai CSV */
         maestroDebug: (typeof window.__MAESTRO_DEBUG !== 'undefined') ? window.__MAESTRO_DEBUG : null,
+        presDebug: (typeof window.__PRESSIONE_DEBUG !== 'undefined') ? window.__PRESSIONE_DEBUG : null,
         m1: (typeof m1!=='undefined')?m1:null, mX: (typeof mX!=='undefined')?mX:null, m2: (typeof m2!=='undefined')?m2:null,
         confidence:  (typeof confidence  !== 'undefined') ? confidence  : null,
         sampleFactor:(typeof sampleFactor!== 'undefined') ? sampleFactor: null,
@@ -977,7 +978,7 @@ async function loadEngineFromText(text, fileName) {
     <p><code>${fileName}</code>: clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
 
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b81';
+  const _bComp = '0905-b82';
   window.__CMP_BUILD = _bComp;
   const _el = document.getElementById('engine-build');
   if (_el) {
@@ -2797,7 +2798,15 @@ function cmpExportCSV() {
     ['Maestro: X del motore', m=>[m.R.maestroDebug ? fmt(m.R.maestroDebug.p[1]) : 'N/D','','','']],
     ['Maestro: 2 del motore', m=>[m.R.maestroDebug ? fmt(m.R.maestroDebug.p[2]) : 'N/D','','','']],
     ['Maestro: lambda casa del motore (ruolo)', m=>[m.R.maestroDebug ? (+m.R.maestroDebug.lam[0]).toFixed(3) : 'N/D','','','']],
-    ['Maestro: lambda trasf. del motore (ruolo)', m=>[m.R.maestroDebug ? (+m.R.maestroDebug.lam[1]).toFixed(3) : 'N/D','','','']]
+    ['Maestro: lambda trasf. del motore (ruolo)', m=>[m.R.maestroDebug ? (+m.R.maestroDebug.lam[1]).toFixed(3) : 'N/D','','','']],
+    ['Pressione: attiva nella lega', m=>[m.R.presDebug ? (m.R.presDebug.on ? 'si' : 'no (' + m.R.presDebug.motivo + ')') : 'N/D','','','']],
+    ['Pressione: rating casa meno trasferta', m=>[m.R.presDebug && m.R.presDebug.v != null ? (+m.R.presDebug.v).toFixed(6) : 'N/D','','','']],
+    ['Pressione: partite con la curva casa', m=>[m.R.presDebug ? String(m.R.presDebug.nH) : 'N/D','','','']],
+    ['Pressione: partite con la curva trasferta', m=>[m.R.presDebug ? String(m.R.presDebug.nA) : 'N/D','','','']],
+    ['Pressione: partite di lega con la curva', m=>[m.R.presDebug ? String(m.R.presDebug.conCurva) : 'N/D','','','']],
+    ['Pressione: partite di lega dalla stagione con la curva', m=>[m.R.presDebug ? String(m.R.presDebug.partite) : 'N/D','','','']],
+    ['Pressione: chiamate senza risposta', m=>[m.R.presDebug ? String(m.R.presDebug.fallite) : 'N/D','','','']],
+    ['Pressione: maestro con la pressione', m=>[m.R.maestroDebug ? (m.R.maestroDebug.pres != null ? 'si' : 'no') : 'N/D','','','']]
   ];
   mdl.forEach(([lbl, fn]) => { const r=[lbl]; M.forEach(m=>r.push(...fn(m))); rows.push(r.join(';')); });
 
@@ -3350,10 +3359,11 @@ function cmpExportCSV() {
       }
       rows.push(`=== ARCHIVIO DI LEGA (per rifare l Elo fuori dal motore): ${_cella(cmpLeagueName(A.lega))} ${A.lega}, database ${A.stagione}, ${A.partite.length} partite ===`);
       rows.push([`ARCHIVIO ${A.lega} ${A.stagione}`, 'ID PARTITA', 'STAGIONE', 'DATA ISO (UTC)', 'STATO', 'ID CASA', 'CASA',
-                 'ID TRASFERTA', 'TRASFERTA', 'GOL CASA', 'GOL TRASFERTA'].map(_cella).join(';'));
+                 'ID TRASFERTA', 'TRASFERTA', 'GOL CASA', 'GOL TRASFERTA', 'PRESSIONE MEDIA'].map(_cella).join(';'));
+      const PC = (window.__PRES_CACHE || {})[A.lega] || {};
       A.partite.forEach(p => {
         nArch++;
-        rows.push([`ARCHIVIO #${nArch}`, p.id, p.s, p.t, p.st, p.h, p.hn, p.a, p.an, p.gh, p.ga].map(_cella).join(';'));
+        rows.push([`ARCHIVIO #${nArch}`, p.id, p.s, p.t, p.st, p.h, p.hn, p.a, p.an, p.gh, p.ga, typeof PC[p.id] === 'number' ? String(PC[p.id]) : ''].map(_cella).join(';'));
       });
     });
     cmpLog(`   Archivio di lega in fondo al file: ${nArch} partite (${chiavi.length} database).`);
