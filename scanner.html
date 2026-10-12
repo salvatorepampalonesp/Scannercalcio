@@ -25,6 +25,9 @@
    (si muove solo l'indicatore), foglio come un drawer che si chiude anche
    trascinandolo; il solo momento d'autore e' il verdetto che si compone a fine
    analisi. Col movimento ridotto restano le dissolvenze, senza spostamenti.
+   b81: piu' lente solo dove Kowalski lo ammette (foglio 500ms, uscita
+   dell'anello, scaletta dell'entrata), molla nei trascinamenti, la partita
+   della giornata si scorre col dito, altezza delle fisarmoniche, fine giornata.
    Telefono (skill mobile-native): niente lampo al tocco, hover solo col mouse,
    campi da 16px, niente pull-to-refresh, testo dei controlli non selezionabile.
    Testo mai sotto i 12px; i colori di dato hanno una variante per il testo
@@ -102,7 +105,7 @@
 html{-webkit-text-size-adjust:100%;background:var(--color-bg);scroll-padding-top:72px;scrollbar-color:var(--n-700) transparent;accent-color:var(--color-accent);
   -webkit-tap-highlight-color:transparent;overscroll-behavior:none}
 button,a,summary,select,[role="button"]{touch-action:manipulation}
-button,summary,.btn,.dock,.seg-x,.gi-chip,.ib-p,.ib-f,.g-row,.foglio-riga,.vtag,.tag{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+button,summary,.btn,.dock,.seg-x,.gi-chip,.ib-p,.ib-f,.g-row,.g-slide,.foglio-riga,.vtag,.tag{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 #console-loader,.log-box,#ai-prompt,.cv-corpo{overscroll-behavior:contain}
 .tbl-scroll,.gi-chips{overscroll-behavior-x:contain}
 body{
@@ -589,6 +592,11 @@ details.card>summary .section-title .t small,details.card>summary .scope{display
 details.card[open]:not(.chiude)>summary .chiave{opacity:0}
 details.card>summary+*{padding:0 0 16px}
 details.card .tbl-scroll{margin:0}
+@media (prefers-reduced-motion: no-preference){
+  details.card{interpolate-size:allow-keywords}
+  details.card::details-content{height:0;overflow:visible clip;transition:height 200ms var(--ease-out),content-visibility 200ms var(--ease-out) allow-discrete}
+  details.card[open]::details-content{height:auto}
+}
 .conf-meter{display:flex;align-items:center;gap:14px}
 .conf-meter .v{font-size:30px;font-weight:500;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--color-text)}
 .conf-track{flex:1;height:6px;border-radius:2px;overflow:hidden}
@@ -622,7 +630,7 @@ details.card .tbl-scroll{margin:0}
 .g-top{display:flex;align-items:center;gap:4px}
 .g-top .btn{flex:none}
 .g-slitta{flex:1;min-width:0;overflow:hidden}
-.g-slide{display:flex;flex-direction:column;align-items:center;gap:8px;padding:0 4px;min-width:0}
+.g-slide{display:flex;flex-direction:column;align-items:center;gap:8px;padding:0 4px;min-width:0;touch-action:pan-y}
 .g-slide b{font-size:18px;font-weight:600;letter-spacing:-.015em;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .g-slide .g-mb{display:flex;width:150px;height:6px;gap:2px}
 .g-mb i{display:block;border-radius:2px;background:var(--c-home)}
@@ -636,6 +644,7 @@ details.card .tbl-scroll{margin:0}
 .g-stat b small{font-size:14px;color:var(--n-500);font-weight:400}
 .g-stat>div>span{font-size:12px;color:var(--n-500)}
 .g-stat .al b{color:var(--c-err-t)} .g-stat .ok b{color:var(--c-ok-t)}
+.g-stat .g-fatto{font-size:18px;margin-left:6px;vertical-align:-2px;color:var(--c-ok-t)}
 .g-prog{height:4px;border-radius:2px;background:var(--n-800);overflow:hidden}
 .g-prog i{display:block;height:100%;background:var(--color-accent);transform-origin:left center}
 .g-stato{font-size:12.5px;color:var(--n-400);line-height:1.5}
@@ -689,8 +698,8 @@ body.vista-partita .dock{display:flex}
 .foglio-pan{position:absolute;left:0;right:0;bottom:0;max-width:520px;margin:0 auto;padding:10px 16px calc(20px + env(safe-area-inset-bottom,0px));
   border-radius:var(--r-lg) var(--r-lg) 0 0;background:var(--color-surface);box-shadow:var(--shadow-lg);
   transform:translateY(100%);transition:transform 300ms var(--ease-drawer);touch-action:none}
-.foglio.aperto .foglio-velo{opacity:1;transition-duration:400ms}
-.foglio.aperto .foglio-pan{transform:none;transition-duration:400ms}
+.foglio.aperto .foglio-velo{opacity:1;transition-duration:500ms}
+.foglio.aperto .foglio-pan{transform:none;transition-duration:500ms}
 .foglio-man{width:36px;height:4px;border-radius:2px;background:var(--n-700);margin:0 auto 12px}
 .foglio-tit{font-size:18px;font-weight:600;letter-spacing:-.015em;margin:0 4px 6px}
 .foglio-tema{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:60px;padding:0 4px;background:var(--riga) no-repeat top/100% 1px}
@@ -752,7 +761,7 @@ body.vista-partita .dock{display:flex}
     <button type="button" class="btn btn-ghost ab-back" id="btn-nuova" onclick="tornaIndietro()" aria-label="Indietro"><svg class="ic" aria-hidden="true"><use href="#i-arrow-left"/></svg><span>Cambia partita</span></button>
     <span class="ab-tit" id="ab-tit"><b></b><small></small></span>
     <span class="ab-spazio"></span>
-    <span class="tag" id="build-ver">build 0905-b80</span>
+    <span class="tag" id="build-ver">build 0905-b81</span>
   </div>
 </header>
 
@@ -1544,6 +1553,7 @@ function _giornataCorri() {
     }
     if (!G.stop && G.vista !== primo) await _giroGiornata(primo);
     renderGiornata(); window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (!G.stop && window.__GRAFICA) window.__GRAFICA.giornataFine();
   })();
   return G.promessa.finally(() => { G.promessa = null; });
 }
@@ -1772,7 +1782,7 @@ function renderGiornata() {
       + `<span id="giornata-mem">${_memGiornata()}</span>${G.stop === 'ferma' ? ' Mi fermo dopo questa.' : ''}</div>`
       + (G.stop ? '' : `<div class="g-azioni"><button class="btn btn-sm" onclick="giornataFerma()">${ic('pause')}Ferma dopo questa</button></div>`);
   } else {
-    h += `<div class="g-stat" data-in><div><b><span data-count>${fatte.length}</span><small>/${n}</small></b><span>analizzate</span></div>`
+    h += `<div class="g-stat" data-in><div><b><span data-count>${fatte.length}</span><small>/${n}</small>${fatte.length === n ? '<svg class="ic g-fatto" aria-hidden="true"><use href="#i-check-circle-fill"/></svg>' : ''}</b><span>analizzate</span></div>`
       + `<div class="al"><b data-count>${alte}</b><span>sorpresa alta</span></div><div class="ok"><b data-count>${conBuone}</b><span>con proposte forti</span></div></div>`
       + (attesa ? `<div class="g-azioni"><button class="btn btn-primary btn-sm" onclick="giornataRiprendi()">${ic('play')}Analizza le ${attesa} rimaste</button></div>` : '');
   }
@@ -3787,7 +3797,7 @@ function _tabTesto(V) {
        + senza.map(v => v.nome + ' ' + (v.edge == null ? 'base ignota' : (v.edge >= 0 ? '+' : '') + v.edge.toFixed(1))).join(', ') : '');
 }
 
-window.__SCANNER_BUILD = '0905-b80';
+window.__SCANNER_BUILD = '0905-b81';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -5449,6 +5459,14 @@ async function copiaPrompt() {
     }
     try { return el.animate(kf, o); } catch (e) { return null; }
   };
+  const LIN = typeof CSS !== 'undefined' && !!CSS.supports && CSS.supports('transition-timing-function', 'linear(0, 1)');
+  const molla = (d, v, rimbalzo, ms) => {
+    if (!LIN || Math.abs(d) < 1) return { easing: OUT, duration: 300 };
+    const z = 1 - rimbalzo, T = ms / 1000, w0 = 6.9 / (z * T), wd = w0 * Math.sqrt(1 - z * z);
+    const v0 = Math.max(-400, Math.min(400, v * 1000)), B = (v0 + z * w0 * d) / wd, pt = [];
+    for (let i = 0; i <= 32; i++) { const t = T * i / 32, x = Math.exp(-z * w0 * t) * (d * Math.cos(wd * t) + B * Math.sin(wd * t)); pt.push(i === 32 ? 1 : +(1 - x / d).toFixed(4)); }
+    return { easing: `linear(${pt.join(', ')})`, duration: ms };
+  };
 
   const val = id => { const v = parseFloat((document.getElementById(id) || {}).textContent || ''); return isFinite(v) ? v : null; };
   const barra = () => {
@@ -5471,19 +5489,19 @@ async function copiaPrompt() {
     + '#card-formazioni > details, .group-head, [data-scheda="numeri"] > details, [data-scheda="numeri"] > .grid-2 > details, #sez-prompt > *, [data-scheda="dati"] > details, #cache-info')
     .forEach(el => el.setAttribute('data-in', ''));
 
-  const scaletta = (els, passo) => els.filter(el => el instanceof Element && el.getClientRects().length).forEach((el, i) =>
-    anim(el, [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 300, delay: Math.min(i, 5) * passo, easing: OUT, fill: 'backwards' }));
+  const scaletta = (els, passo, max = 5, base = 0) => els.filter(el => el instanceof Element && el.getClientRects().length).forEach((el, i) =>
+    anim(el, [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 300, delay: base + Math.min(i, max) * passo, easing: OUT, fill: 'backwards' }));
   const appare = root => {
     if (!(root instanceof Element)) return;
     const fuori = el => { const p = el.parentElement && el.parentElement.closest('[data-in]'); return !p || !root.contains(p); };
     scaletta(root.hasAttribute('data-in') ? [root] : $$('[data-in]', root).filter(fuori), 50);
   };
-  const rivela = () => {
+  const rivela = (base = 0, P = 70, max = 6) => {
     const ib = $('#in-breve'); if (!(ib instanceof Element)) return;
-    scaletta([$('.match-hero'), ...$$('#in-breve-box > *', ib), $('#sorpresa-box'), $('#in-breve-prop')], 50);
-    anim(ib.querySelector('.ib-big'), [{ clipPath: 'inset(100% 0 0 0)', transform: 'translateY(12px)' }, { clipPath: 'inset(0 0 0 0)', transform: 'none' }], { duration: 300, delay: 50, easing: OUT, fill: 'backwards' });
-    anim(ib.querySelector('.ib-barra'), [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], { duration: 400, delay: 150, easing: OUT, fill: 'backwards' });
-    anim(ib.querySelector('.ib-pp'), [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 300, delay: 200, easing: OUT, fill: 'backwards' });
+    scaletta([$('.match-hero'), ...$$('#in-breve-box > *', ib), $('#sorpresa-box'), ...$$('#in-breve-prop > *', ib)], P, max, base);
+    anim(ib.querySelector('.ib-big'), [{ clipPath: 'inset(100% 0 0 0)', transform: 'translateY(12px)' }, { clipPath: 'inset(0 0 0 0)', transform: 'none' }], { duration: 300, delay: base + P, easing: OUT, fill: 'backwards' });
+    anim(ib.querySelector('.ib-barra'), [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], { duration: 400, delay: base + 2 * P + 50, easing: OUT, fill: 'backwards' });
+    anim(ib.querySelector('.ib-pp'), [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 300, delay: base + P + 150, easing: OUT, fill: 'backwards' });
   };
   let manubriFatti = null;
   const manubri = () => {
@@ -5555,23 +5573,28 @@ async function copiaPrompt() {
   const pan = foglio instanceof Element ? foglio.querySelector('.foglio-pan') : null;
   let tira = null;
   if (pan instanceof Element) {
-    pan.addEventListener('pointerdown', e => { if (tira || (e.pointerType === 'mouse' && e.button !== 0)) return; tira = { id: e.pointerId, y0: e.clientY, t0: 0, dy: 0, via: false }; });
+    pan.addEventListener('pointerdown', e => { if (tira || (e.pointerType === 'mouse' && e.button !== 0)) return; tira = { id: e.pointerId, y0: e.clientY, t0: 0, dy: 0, vy: 0, v: 0, tv: 0, via: false }; });
     pan.addEventListener('pointermove', e => {
       if (!tira || e.pointerId !== tira.id) return;
       if (!tira.via) {
         if (Math.abs(e.clientY - tira.y0) < 8) return;
         tira.via = true; tira.y0 = e.clientY; tira.t0 = Date.now();
         try { pan.setPointerCapture(e.pointerId); } catch (x) {}
+        pan.getAnimations().forEach(x => x.cancel());
         pan.style.transition = 'none';
       }
-      const d = e.clientY - tira.y0; tira.dy = d;
-      pan.style.transform = `translateY(${d > 0 ? d : d / (1 - d / 40)}px)`;
+      const d = e.clientY - tira.y0, y = d > 0 ? d : d / (1 - d / 40), now = Date.now();
+      if (tira.tv) tira.v = (y - tira.vy) / Math.max(1, now - tira.tv);
+      tira.dy = d; tira.vy = y; tira.tv = now;
+      pan.style.transform = `translateY(${y}px)`;
     });
     const lascia = e => {
       if (!tira || e.pointerId !== tira.id) return;
       const t = tira; tira = null; if (!t.via) return;
-      pan.style.transition = ''; pan.style.transform = '';
-      if (t.dy > pan.offsetHeight * 0.3 || t.dy / Math.max(1, Date.now() - t.t0) > 0.11) chiudiFoglio();
+      if (t.dy > pan.offsetHeight * 0.3 || t.dy / Math.max(1, Date.now() - t.t0) > 0.11) { pan.style.transition = ''; pan.style.transform = ''; chiudiFoglio(); return; }
+      pan.style.transform = '';
+      const m = molla(t.vy, t.v, 0.15, 500), r = anim(pan, [{ transform: `translateY(${t.vy}px)` }, { transform: 'none' }], m);
+      if (r) r.onfinish = r.oncancel = () => { if (!tira) pan.style.transition = ''; }; else pan.style.transition = '';
     };
     ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(n => pan.addEventListener(n, lascia));
   }
@@ -5701,11 +5724,51 @@ async function copiaPrompt() {
     if (!(cv instanceof Element) || cv.hidden) return;
     if (C) C.chiuso = true;
     if (subito) { cv.hidden = true; return; }
-    const a = anim(cv, [{ opacity: 1 }, { opacity: 0 }], { duration: 150, easing: OUT, fill: 'forwards' });
-    if (a) a.onfinish = () => { cv.hidden = true; a.cancel(); }; else cv.hidden = true;
+    const a = anim(cv, [{ opacity: 1 }, { opacity: 0 }], { duration: 250, easing: OUT, fill: 'forwards' });
+    const b = anim(cv.querySelector('.cv-corpo'), [{ transform: 'none' }, { transform: 'scale(.98)' }], { duration: 250, easing: OUT, fill: 'forwards' });
+    if (a) a.onfinish = () => { cv.hidden = true; a.cancel(); if (b) b.cancel(); }; else cv.hidden = true;
+    if (dash instanceof Element && document.body.classList.contains('vista-partita')) requestAnimationFrame(() => rivela(ridotto() ? 0 : 150));
   };
   const cvx = $('#cv-chiudi'); if (cvx instanceof Element) cvx.addEventListener('click', () => cvChiudi(true));
   const cvp = $('#cv-pronta'); if (cvp instanceof Element) cvp.addEventListener('click', () => cvChiudi(false));
+
+  let gUscita = null, gTira = null;
+  const gBar = $('#giornata-bar');
+  if (gBar instanceof Element) {
+    gBar.addEventListener('pointerdown', e => {
+      const sl = e.target instanceof Element ? e.target.closest('.g-slide') : null;
+      if (!sl || gTira || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      const b = gBar.querySelectorAll('.g-top > button'), B = { prev: !!b[0] && !b[0].disabled, next: !!b[1] && !b[1].disabled };
+      if (B.prev || B.next) gTira = { id: e.pointerId, sl, B, x0: e.clientX, y0: e.clientY, via: false, dx: 0, x: 0, v: 0, tv: 0 };
+    });
+    gBar.addEventListener('pointermove', e => {
+      const t = gTira; if (!t || e.pointerId !== t.id) return;
+      if (!t.via) {
+        const ax = Math.abs(e.clientX - t.x0), ay = Math.abs(e.clientY - t.y0);
+        if (ax < 8 && ay < 8) return;
+        if (ay > ax) { gTira = null; return; }
+        t.via = true; t.x0 = e.clientX;
+        try { t.sl.setPointerCapture(e.pointerId); } catch (x) {}
+        t.sl.getAnimations().forEach(x => x.cancel());
+      }
+      const d = e.clientX - t.x0, x = (d < 0 ? t.B.next : t.B.prev) ? d : d / (1 + Math.abs(d) / 40), now = Date.now();
+      if (t.tv) t.v = (x - t.x) / Math.max(1, now - t.tv);
+      t.dx = d; t.x = x; t.tv = now;
+      t.sl.style.transform = `translateX(${x}px)`;
+    });
+    const gLascia = e => {
+      const t = gTira; if (!t || e.pointerId !== t.id) return;
+      gTira = null; if (!t.via) return;
+      const dir = t.dx < 0 ? 1 : -1, libero = dir > 0 ? t.B.next : t.B.prev;
+      if (libero && (Math.abs(t.dx) > (t.sl.offsetWidth || 300) * 0.3 || -dir * t.v > 0.11)) {
+        gUscita = { x: t.x, dir }; try { giornataPasso(dir); } finally { gUscita = null; }
+        return;
+      }
+      t.sl.style.transform = '';
+      anim(t.sl, [{ transform: `translateX(${t.x}px)` }, { transform: 'none' }], molla(t.x, t.v, 0.1, 400));
+    };
+    ['pointerup', 'pointercancel'].forEach(n => gBar.addEventListener(n, gLascia));
+  }
 
   window.__GRAFICA = {
     scheda: (k, prima) => {
@@ -5719,16 +5782,24 @@ async function copiaPrompt() {
       chiavi();
       if (window.__ESITO && window.__ESITO !== ultimoEsito) {
         ultimoEsito = window.__ESITO;
-        if (dash instanceof Element && document.body.classList.contains('vista-partita') && (!C || C.chiuso)) requestAnimationFrame(rivela);
+        if (dash instanceof Element && document.body.classList.contains('vista-partita') && (!C || C.chiuso)) requestAnimationFrame(() => rivela(0, 40, 4));
         else if (C && !C.chiuso) C.entra = true;
       }
     },
     blocco: el => { if (el instanceof Element) scaletta([...el.children], 40); barre(el); $$('.seg-x', el).forEach(s => posaSeg(s, true)); },
     giornata: (bar, verso) => {
       $$('.seg-x', bar).forEach(s => posaSeg(s, true));
-      if (verso) { const sl = bar.querySelector('.g-slide');
-        anim(sl, [{ transform: `translateX(${verso * 16}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 200, easing: OUT }); }
+      const sl = bar.querySelector('.g-slide');
+      if (gUscita && !verso && sl) {
+        anim(sl, [{ transform: `translateX(${gUscita.x}px)`, opacity: 1 }, { transform: `translateX(${-gUscita.dir * (sl.offsetWidth || 300)}px)`, opacity: 0 }], { duration: 200, easing: OUT, fill: 'forwards' });
+      } else if (verso) anim(sl, [{ transform: `translateX(${verso * 16}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 200, easing: OUT });
       else if (!bar.__visto && bar.getClientRects().length) { bar.__visto = true; appare(bar); }
+    },
+    giornataFine: () => {
+      const bar = $('#giornata-bar');
+      if (!(bar instanceof Element) || document.visibilityState === 'hidden' || !bar.getClientRects().length) return;
+      scaletta($$('.g-stat > div', bar), 80, 2);
+      anim(bar.querySelector('.g-fatto'), [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], { duration: 400, delay: 240, easing: OUT, fill: 'backwards' });
     },
     caricaInizia: () => {
       if (!(cv instanceof Element)) return;
@@ -5760,7 +5831,7 @@ async function copiaPrompt() {
       cvPasso(6, 0); cvProg(1);
       $('#cv-pronta').classList.add('si');
       anim($('#cv-pronta'), [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: OUT });
-      setTimeout(() => { if (C && !C.chiuso) { cvChiudi(false); requestAnimationFrame(rivela); } }, ridotto() ? 0 : 700);
+      setTimeout(() => { if (C && !C.chiuso) cvChiudi(false); }, ridotto() ? 0 : 700);
     }
   };
   schedaVai('partita', false);

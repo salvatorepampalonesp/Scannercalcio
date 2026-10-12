@@ -161,6 +161,12 @@ details.cosa>div{font-size:12.5px;line-height:1.6;color:var(--n-500);padding-bot
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;
   transition-property:color,background-color,border-color,opacity,box-shadow,outline-color !important}}
 @media (prefers-reduced-motion: reduce){.btn:active:not(:disabled){transform:none;opacity:.8}}
+@media (prefers-reduced-motion: no-preference){
+  .apertura>*,.voce,.scarica,.piede{animation:entra 300ms var(--ease-out) backwards}
+  .apertura>p{animation-delay:60ms} .voce:nth-child(1){animation-delay:120ms} .voce:nth-child(2){animation-delay:180ms}
+  .scarica{animation-delay:240ms} .piede{animation-delay:300ms}
+  @keyframes entra{from{opacity:0;transform:translateY(8px)}}
+}
 
 </style>
 </head>
