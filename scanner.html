@@ -7,7 +7,7 @@
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f1f1f3">
 <meta name="color-scheme" content="dark light">
 <title>Scanner V9.7 - Confidence x Mercato</title>
-<script>try{var t=localStorage.getItem("scanner_tema");if(t==="scuro"||t==="chiaro"){document.documentElement.setAttribute("data-tema",t);document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){m.setAttribute("content",t==="scuro"?"#0e0e10":"#f1f1f3")})}}catch(e){}</script>
+<script>try{var t=localStorage.getItem("scanner_tema");if(t==="scuro"||t==="chiaro"){document.documentElement.setAttribute("data-tema",t);document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){m.setAttribute("content",t==="scuro"?"#0e0e10":"#f1f1f3")})}for(var i=localStorage.length-1;i>=0;i--){var k=localStorage.key(i);if(k&&k.indexOf("scanner_pres_")===0)localStorage.removeItem(k)}}catch(e){}</script>
 <style>
 /* Geist e Geist Mono, (c) 2023 Vercel con basement.studio, SIL Open Font License 1.1 (fonts/OFL-Geist.txt).
    Sottoinsieme latino, pesi 400-600 e 400-500. */
@@ -761,7 +761,7 @@ body.vista-partita .dock{display:flex}
     <button type="button" class="btn btn-ghost ab-back" id="btn-nuova" onclick="tornaIndietro()" aria-label="Indietro"><svg class="ic" aria-hidden="true"><use href="#i-arrow-left"/></svg><span>Cambia partita</span></button>
     <span class="ab-tit" id="ab-tit"><b></b><small></small></span>
     <span class="ab-spazio"></span>
-    <span class="tag" id="build-ver">build 0905-b82</span>
+    <span class="tag" id="build-ver">build 0905-b83</span>
   </div>
 </header>
 
@@ -894,8 +894,8 @@ body.vista-partita .dock{display:flex}
         rende giocare quel mercato <b>sempre, alla cieca</b>, contato sull'archivio di questa lega: un
         <code>12</code> al 73% non &egrave; una trovata, &egrave; il base rate. Quello che conta &egrave; di quanto lo batte.
         Misurato su <b>5.230 partite</b> di Serie A, Premier, LaLiga, Bundesliga e Ligue 1, con le probabilit&agrave; del
-        maestro mercato (b82, con la pressione dove c'&egrave;, fuori lega): nell'<b>1X2</b> uno scarto <b>+5&hellip;+10</b> rende +9 punti sopra il giocarlo
-        sempre, <b>+10&hellip;+20</b> +17, <b>+20 e oltre</b> +30. Nei <b>mercati gol</b> (Over, Under, Goal, NoGoal) +7, +12
+        maestro mercato (b77, fuori lega): nell'<b>1X2</b> uno scarto <b>+5&hellip;+10</b> rende +9 punti sopra il giocarlo
+        sempre, <b>+10&hellip;+20</b> +17, <b>+20 e oltre</b> +30. Nei <b>mercati gol</b> (Over, Under, Goal, NoGoal) +7, +13
         e +24, ma gli scarti grandi sono rari. In quelli <b>sui numeri</b> lo stesso scarto rende meno, fra +7 e +10: ogni riga dice quanto rende
         il suo tipo di mercato. Sotto +5 non c'&egrave; verdetto: il guadagno misurato sta dentro il rumore.
       </div></details>
@@ -973,14 +973,14 @@ body.vista-partita .dock{display:flex}
             <div class="conf-track"><div id="conf-bar"></div></div>
           </div>
           <div class="note" style="margin-top:8px">
-            &Egrave; la <b>probabilit&agrave; del pick</b> come la d&agrave; il motore (dal b53; dal b77 quella del maestro mercato, dal b82 con la pressione nelle leghe dove c'&egrave;). Fino al b52 passava per una tabella
+            &Egrave; la <b>probabilit&agrave; del pick</b> come la d&agrave; il motore (dal b53; dal b77 quella del maestro mercato). Fino al b52 passava per una tabella
             misurata sul motore b38, che alzava probabilit&agrave; timide; col motore b48 sono quasi calibrate da sole, e
             la tabella le alzava troppo: fuori dai cinque campionati, fra il 45 e il 55% mostrava 52-55 e i pick
             uscivano il 45-46%. La probabilit&agrave; nuda l'ha battuta in <b>quattro leghe mai viste su quattro</b>
             (3.202 partite). Resta un difetto: fuori dai cinque campionati, fra il 45 e il 55%, esce ancora 3-6 punti meno.
           </div>
           <div class="note" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line)">
-            <b>Resa del pick per soglia, col maestro mercato (b82, con la pressione dove c'&egrave;, stimato senza la lega che si misura; 5.230 partite di Serie A, Premier, LaLiga, Bundesliga e Ligue 1, 2023/24-2025/26):</b>
+            <b>Resa del pick per soglia, col maestro mercato (b77, stimato senza la lega che si misura; 5.230 partite di Serie A, Premier, LaLiga, Bundesliga e Ligue 1, 2023/24-2025/26):</b>
             <span id="pick-soglie"></span> Le soglie cambiano di qualche punto da lega a lega: a &ge;65% dal 72.7% della Premier
             e 73.4% della Ligue 1 all'81.3% della LaLiga. Sulle cinque leghe l'intervallo a &ge;65% &egrave; &plusmn;2.9 punti.
             <span id="pick-fuori"></span>
@@ -1028,7 +1028,6 @@ body.vista-partita .dock{display:flex}
               <td id="conf-p2" style="font-weight:bold">--</td>
             </tr>
           </table>
-          <div class="note" id="mdl-pres" style="margin-top:8px">--</div>
           <div class="note" style="margin-top:8px">Confidence per esito = probabilita' di indovinare quell'esito. Sull'1X2, dal b53, e' la probabilita' del motore: la tabella misurata nel b38 alzava le probabilita' timide di allora, e col motore b48, gia' quasi calibrato, le alzava troppo (la probabilita' nuda l'ha battuta in quattro leghe mai viste su quattro, 3.202 partite). Sui mercati binari resta la retta -5.06 + 1.091 x p, rimisurata e giusta entro 2 punti. Non misura l'accordo fra i modelli: sui backtest quello correlava zero con l'azzeccare.</div>
         </div>
 
@@ -2344,92 +2343,6 @@ async function fetchMatchRaw(id) {
 
 window.__fetchMatchRaw = (typeof fetchMatchRaw !== 'undefined') ? fetchMatchRaw : null;
 
-// la curva di pressione delle partite di lega: una chiamata per partita la prima volta, poi in memoria e nel browser
-// (AGENTS.md, Il rating di pressione). Una risposta vuota si tiene solo per le partite di piu' di tre giorni fa.
-const PRES_CACHE = {};
-let _presRitmo = 0, _presProssima = 0;
-function _presCache(lId) {
-  if (!PRES_CACHE[lId]) {
-    let o = {};
-    try { const x = JSON.parse(localStorage.getItem('scanner_pres_' + lId) || '{}'); if (x && typeof x === 'object' && !Array.isArray(x)) o = x; } catch (e) {}
-    PRES_CACHE[lId] = o;
-  }
-  window.__PRES_CACHE = PRES_CACHE;
-  return PRES_CACHE[lId];
-}
-function _presSalva(lId) { try { localStorage.setItem('scanner_pres_' + lId, JSON.stringify(PRES_CACHE[lId] || {})); } catch (e) {} }
-async function _presUna(id) {
-  const key = document.getElementById('api-key').value.trim();
-  for (let prova = 0; prova < 6; prova++) {
-    if (_presRitmo > 0) { const ora = Date.now(), t = Math.max(ora, _presProssima); _presProssima = t + 1000 / _presRitmo; if (t > ora) await sleep(t - ora); }
-    try {
-      const res = await fetch(PITCH_BASE + '/matches/' + id + '/momentum', { headers: { 'X-API-KEY': key } });
-      if (res.status === 404) return { ok: true, v: null };
-      if (res.status === 429) { _presRitmo = 8; const ra = parseFloat(res.headers.get('Retry-After')); await sleep(1000 * (ra > 0 ? Math.min(ra, 10) : 1)); continue; }
-      if (!res.ok) { await sleep(600 * (prova + 1)); continue; }
-      const j = await res.json(), pts = j && j.data && Array.isArray(j.data.points) ? j.data.points : [];
-      let s = 0, n = 0;
-      for (const q of pts) { const x = q ? q.value : null; if (typeof x === 'number' && isFinite(x)) { s += x; n++; } }
-      return { ok: true, v: n ? s / n : null };
-    } catch (e) { await sleep(600 * (prova + 1)); }
-  }
-  return { ok: false, v: null };
-}
-async function scaricaPressione(lId, partite) {
-  const C = _presCache(lId), manca = partite.filter(m => !(m.id in C));
-  const st = { chieste: manca.length, scaricate: 0, fallite: 0 };
-  if (!manca.length) return st;
-  const vecchia = Date.now() - 3 * 864e5; let i = 0, fatte = 0;
-  logConsole(`Pressione della lega: scaricate 0/${manca.length}`);
-  const lavora = async () => {
-    while (i < manca.length) {
-      const m = manca[i++], r = await _presUna(m.id); fatte++;
-      if (!r.ok) st.fallite++;
-      else { st.scaricate++; if (r.v != null || new Date(m.time_utc).getTime() < vecchia) C[m.id] = r.v; }
-      if (fatte % 25 === 0 || fatte === manca.length) logConsole(`Pressione della lega: scaricate ${fatte}/${manca.length}`);
-      if (fatte % 200 === 0) _presSalva(lId);
-    }
-  };
-  await Promise.all([0, 1, 2, 3].map(lavora));
-  _presSalva(lId);
-  return st;
-}
-// partite in ordine di orario e id, pres[id] la pressione media; il valore e' quello prima della partita (strumenti/pressione.py)
-function ratingPressione(partite, pres, hId, aId) {
-  const P = PRESSIONE_REG, R = {}, N = {}; let H = P.H0;
-  for (const m of partite) {
-    const x = pres[m.id]; if (typeof x !== 'number') continue;
-    const h = m.home_team.id, a = m.away_team.id, rh = R[h] || 0, ra = R[a] || 0;
-    const e = x - (rh - ra + H); R[h] = rh + P.K * e; R[a] = ra - P.K * e; H += P.KH * e; N[h] = (N[h] || 0) + 1; N[a] = (N[a] || 0) + 1;
-  }
-  const nH = N[hId] || 0, nA = N[aId] || 0;
-  return { v: nH >= P.minimo && nA >= P.minimo ? (R[hId] || 0) - (R[aId] || 0) : null, nH, nA, H };
-}
-function partitePressione(lId, targetMs) {
-  const tDay = _dayUTC(targetMs), visti = new Set(), L = [];
-  for (const m of globalLeagueMatchesCache) {
-    if (m.league_id !== lId || m.status !== 'finished' || !m.time_utc || m.score_home == null || !m.home_team || !m.away_team) continue;
-    if (!_isPast(m.time_utc, targetMs, tDay) || visti.has(m.id)) continue;
-    visti.add(m.id); L.push(m);
-  }
-  return L.sort((a, b) => a.time_utc < b.time_utc ? -1 : a.time_utc > b.time_utc ? 1 : a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
-}
-async function pressioneLega(lId, hId, aId, targetMs) {
-  const out = { on: false, motivo: '', dal: null, partite: 0, conCurva: 0, chieste: 0, scaricate: 0, fallite: 0, v: null, nH: 0, nA: 0, H: null };
-  if (window.PRESSIONE === 'no') { out.motivo = 'spenta'; return out; }
-  const dal = lId ? PRESSIONE_DAL[lId] : null;
-  if (!dal) { out.motivo = 'lega senza la curva'; return out; }
-  out.on = true; out.dal = dal;
-  const L = partitePressione(lId, targetMs), conDal = L.filter(m => parseInt(String(m._season || '').slice(0, 4), 10) >= dal);
-  Object.assign(out, await scaricaPressione(lId, conDal));
-  const C = _presCache(lId), pres = {};
-  conDal.forEach(m => { if (typeof C[m.id] === 'number') pres[m.id] = C[m.id]; });
-  const r = ratingPressione(L, pres, hId, aId);
-  Object.assign(out, { partite: conDal.length, conCurva: Object.keys(pres).length, v: r.v, nH: r.nH, nA: r.nA, H: r.H });
-  logConsole(`Pressione della lega: la curva c'e' su ${out.conCurva} partite di ${out.partite}`);
-  return out;
-}
-
 const LINEUP_WINDOW = 10, LINEUP_SQUAD_WINDOW = 5, LINEUP_REGULAR = 0.5, LINEUP_MIN_HIST = 5;
 const _pid = p => p ? (p.player_id || p.id || (p.player && p.player.id) || null) : null;
 
@@ -3114,42 +3027,42 @@ window.CONF_1X2_TABLE = window.CONF_1X2_TABLE ||
   [[0,0],[37.6,36.1],[42.5,45.6],[47.3,52.4],[52.4,54.9],[57.3,56.4],[62.4,67.5],[67.0,70.4],[73.8,79.0]];
 // 'nuda' (b53): la confidence dell'1X2 e' la probabilita'. La tabella resta come manopola ('tabella').
 window.CONF_1X2_MODE = window.CONF_1X2_MODE || 'nuda';
-// Resa del pick sopra ogni soglia, cinque leghe, col maestro con la pressione dal b82 (fuori lega): [soglia, esce %, quota del
+// Resa del pick sopra ogni soglia, cinque leghe, col maestro dal b77 (fuori lega): [soglia, esce %, quota del
 // calendario %, 1 partita su N]. La card delle soglie e il mega-prompt la leggono da qui.
 // Solo le leghe di `leghe`. `cinque` e `fuori`, lega per lega: [nome, partite, pick su tutte, esce % a >=55,
 // quota % a >=55, stagioni, partite a >=55]. In `fuori` solo le leghe con almeno 50 partite sopra il 55% (b74).
 const PICK_RESA = { tutte: 53.3, casa: 43.0, partite: 5230,
-  soglie: [[70, 79.1, 9, 10.7], [65, 76.2, 16, 6.2], [60, 72.0, 25, 4.0], [55, 66.6, 36, 2.8], [50, 63.1, 50, 2.0]],
+  soglie: [[70, 79.1, 9, 11.1], [65, 76.0, 16, 6.2], [60, 72.2, 24, 4.1], [55, 67.4, 35, 2.8], [50, 62.8, 49, 2.0]],
   leghe: ['l_0ALvwF', 'l_4WFCIZ', 'l_0ErfuF', 'l_1Isor4', 'l_3FJFUl'],
-  cinque: { l_0ALvwF: ['Serie A', 1134, 53.4, 64.6, 35, '2023/24-2025/26', 396],
-            l_4WFCIZ: ['Premier League', 1135, 53.6, 66.1, 40, '2023/24-2025/26', 454],
-            l_0ErfuF: ['LaLiga', 1134, 54.4, 70.4, 32, '2023/24-2025/26', 362],
-            l_1Isor4: ['Bundesliga', 912, 52.5, 67.2, 37, '2023/24-2025/26', 341],
-            l_3FJFUl: ['Ligue 1', 915, 52.6, 65.0, 34, '2023/24-2025/26', 311] },
-  fuori: { l_4DWyTT: ['Championship', 1659, 47.2, 62.8, 20, '2023/24-2025/26', 331],
-           l_1W6idJ: ['League Two', 1656, 47.2, 59.6, 14, '2023/24-2025/26', 235],
-           l_0ahLw8: ['League One', 1653, 49.8, 63.9, 15, '2023/24-2025/26', 252],
-           l_0eg6C9: ['MLS', 1581, 47.6, 62.1, 18, '2023-2025', 277],
-           l_0S1uaf: ['Super Lig', 1018, 55.6, 76.2, 30, '2023/24-2025/26', 303],
-           l_2L6d1F: ['First Division A', 931, 51.8, 66.7, 33, '2023/24-2025/26', 309],
-           l_4H43wr: ['Eredivisie', 923, 55.1, 68.8, 46, '2023/24-2025/26', 423],
-           l_4QexZg: ['Liga Portugal', 913, 55.6, 74.5, 40, '2023/24-2025/26', 365],
-           l_3hvsne: ['2. Bundesliga', 908, 47.4, 63.6, 17, '2023/24-2025/26', 154],
-           l_2ApGa4: ['J. League', 756, 45.5, 55.6, 13, '2024-2025', 99],
-           l_0uqFK8: ['Eliteserien', 715, 54.5, 67.5, 35, '2023-2025', 252],
-           l_1XsMdH: ['Allsvenskan', 715, 49.7, 69.6, 27, '2023-2025', 194],
-           l_1LMdEO: ['Premiership scozzese', 683, 53.6, 70.9, 38, '2023/24-2025/26', 261],
-           l_4d6Bwl: ['Super League svizzera', 680, 47.9, 68.4, 22, '2023/24-2025/26', 152],
-           l_3v84VE: ['Liga MX', 667, 50.8, 63.4, 24, '2023/24-2025/26', 161],
-           l_0Lpz1f: ['Saudi Pro League', 604, 57.9, 72.5, 42, '2024/25-2025/26', 251],
-           l_3zsMpo: ['Bundesliga austriaca', 582, 49.5, 63.5, 27, '2023/24-2025/26', 159],
-           l_49Zmno: ['Superligaen', 574, 50.3, 59.0, 27, '2023/24-2025/26', 156],
-           l_45VZuL: ['Liga Profesional argentina', 508, 40.4, 54.0, 10, '2025', 50],
-           l_4MPd7x: ['A-League', 507, 42.0, 47.7, 21, '2023/24-2025/26', 109],
-           l_1qpFVw: ['Indian Super League', 384, 49.7, 66.7, 20, '2023/24-2025/26', 78],
+  cinque: { l_0ALvwF: ['Serie A', 1134, 53.2, 65.2, 35, '2023/24-2025/26', 396],
+            l_4WFCIZ: ['Premier League', 1135, 53.6, 66.6, 40, '2023/24-2025/26', 452],
+            l_0ErfuF: ['LaLiga', 1134, 54.5, 70.8, 32, '2023/24-2025/26', 363],
+            l_1Isor4: ['Bundesliga', 912, 52.6, 67.8, 38, '2023/24-2025/26', 342],
+            l_3FJFUl: ['Ligue 1', 915, 52.3, 67.0, 31, '2023/24-2025/26', 288] },
+  fuori: { l_4DWyTT: ['Championship', 1659, 47.0, 63.8, 20, '2023/24-2025/26', 337],
+           l_1W6idJ: ['League Two', 1656, 46.7, 60.1, 14, '2023/24-2025/26', 233],
+           l_0ahLw8: ['League One', 1653, 50.2, 63.9, 15, '2023/24-2025/26', 252],
+           l_0eg6C9: ['MLS', 1581, 47.8, 61.6, 17, '2023-2025', 276],
+           l_0S1uaf: ['Super Lig', 1018, 55.5, 76.6, 29, '2023/24-2025/26', 299],
+           l_2L6d1F: ['First Division A', 931, 51.0, 66.6, 32, '2023/24-2025/26', 302],
+           l_4H43wr: ['Eredivisie', 923, 54.9, 69.3, 45, '2023/24-2025/26', 417],
+           l_4QexZg: ['Liga Portugal', 913, 55.1, 74.2, 40, '2023/24-2025/26', 364],
+           l_3hvsne: ['2. Bundesliga', 908, 46.8, 65.1, 16, '2023/24-2025/26', 149],
+           l_2ApGa4: ['J. League', 756, 45.2, 51.1, 12, '2024-2025', 92],
+           l_0uqFK8: ['Eliteserien', 715, 54.4, 68.1, 35, '2023-2025', 248],
+           l_1XsMdH: ['Allsvenskan', 715, 49.5, 70.5, 26, '2023-2025', 183],
+           l_1LMdEO: ['Premiership scozzese', 683, 53.3, 72.4, 38, '2023/24-2025/26', 257],
+           l_4d6Bwl: ['Super League svizzera', 680, 47.5, 66.7, 22, '2023/24-2025/26', 150],
+           l_3v84VE: ['Liga MX', 667, 50.8, 63.1, 25, '2023/24-2025/26', 168],
+           l_0Lpz1f: ['Saudi Pro League', 604, 57.5, 73.2, 43, '2024/25-2025/26', 257],
+           l_3zsMpo: ['Bundesliga austriaca', 582, 49.1, 64.3, 26, '2023/24-2025/26', 154],
+           l_49Zmno: ['Superligaen', 574, 50.2, 57.1, 27, '2023/24-2025/26', 156],
+           l_45VZuL: ['Liga Profesional argentina', 508, 40.7, 54.9, 10, '2025', 51],
+           l_4MPd7x: ['A-League', 507, 43.6, 46.7, 21, '2023/24-2025/26', 105],
+           l_1qpFVw: ['Indian Super League', 384, 50.5, 68.9, 19, '2023/24-2025/26', 74],
            l_49KZaB: ['Eerste Divisie', 377, 48.0, 57.7, 29, '2025/26', 111],
            l_47077Y: ['3. Liga', 375, 51.2, 59.7, 18, '2025/26', 67],
-           l_1D8Xrl: ['Serie A brasiliana', 374, 52.1, 72.3, 22, '2025', 83],
+           l_1D8Xrl: ['Serie A brasiliana', 374, 52.4, 70.2, 22, '2025', 84],
            l_1xXulJ: ['Primera A colombiana', 324, 48.5, 64.1, 24, '2026', 78],
            l_0kSJLz: ['Liga I romena', 314, 51.0, 59.7, 23, '2025/26', 72],
            l_2xBPKk: ['Super Liga serba', 294, 51.4, 67.9, 27, '2025/26', 78],
@@ -3159,7 +3072,6 @@ const PICK_RESA = { tutte: 53.3, casa: 43.0, partite: 5230,
            l_16Sq13: ["Ligat ha'Al", 237, 51.9, 68.0, 32, '2025/26', 75],
            l_20pNSc: ['Super League cinese', 211, 48.3, 55.6, 30, '2026', 63],
            l_2tFk9k: ['HNL croata', 179, 53.6, 74.5, 28, '2025/26', 51],
-           l_2EKrnc: ['K League 1', 629, 43.1, 52.0, 8, '2024-2026', 50],
            l_1eJSA7: ['Premier Division irlandese', 162, 46.3, 56.0, 31, '2026', 50] } };
 const _seResa = M => 200 * Math.sqrt(M[3] / 100 * (1 - M[3] / 100) / M[6]);
 (function () {
@@ -3178,12 +3090,12 @@ const _seResa = M => 200 * Math.sqrt(M[3] / 100 * (1 - M[3] / 100) / M[6]);
 // Avviso di sorpresa (b64): per fascia di probabilita' dello sfavorito, e per accordo fra modello ed Elo sul
 // favorito, [partite, vince lo sfavorito %, pareggio %, vince il favorito %]. strumenti/sorpresa.py.
 const SORPRESA_TAB = { partite: 23278, leghe: 24, fasce: [
-  { da: 0, tutte: [2838, 8.9, 16.0, 75.1], accordo: [2838, 8.9, 16.0, 75.1], disaccordo: null },
-  { da: 15, tutte: [3268, 17.4, 24.2, 58.5], accordo: [3260, 17.3, 24.2, 58.5], disaccordo: [8, 25.0, 12.5, 62.5] },
-  { da: 20, tutte: [4811, 21.6, 26.0, 52.3], accordo: [4730, 21.6, 26.1, 52.3], disaccordo: [81, 24.7, 24.7, 50.6] },
-  { da: 25, tutte: [5588, 26.8, 27.3, 46.0], accordo: [4884, 26.8, 27.2, 46.0], disaccordo: [704, 27.0, 27.6, 45.5] },
-  { da: 30, tutte: [5819, 31.7, 28.0, 40.2], accordo: [3166, 31.4, 28.9, 39.6], disaccordo: [2653, 32.0, 27.0, 41.0] },
-  { da: 35, tutte: [954, 34.7, 30.3, 35.0], accordo: [350, 37.1, 26.6, 36.3], disaccordo: [604, 33.3, 32.5, 34.3] } ] };
+  { da: 0, tutte: [2772, 9.0, 16.0, 75.0], accordo: [2772, 9.0, 16.0, 75.0], disaccordo: null },
+  { da: 15, tutte: [3264, 16.9, 23.9, 59.2], accordo: [3257, 16.9, 23.9, 59.2], disaccordo: [7, 28.6, 14.3, 57.1] },
+  { da: 20, tutte: [4813, 22.0, 26.1, 51.9], accordo: [4744, 21.9, 26.1, 52.0], disaccordo: [69, 29.0, 23.2, 47.8] },
+  { da: 25, tutte: [5681, 27.1, 27.3, 45.7], accordo: [5055, 27.1, 27.1, 45.8], disaccordo: [626, 26.8, 28.6, 44.6] },
+  { da: 30, tutte: [5770, 31.9, 28.2, 39.9], accordo: [3074, 31.7, 28.8, 39.6], disaccordo: [2696, 32.2, 27.5, 40.3] },
+  { da: 35, tutte: [978, 34.4, 29.2, 36.4], accordo: [326, 31.0, 29.8, 39.3], disaccordo: [652, 36.0, 29.0, 35.0] } ] };
 const SORPRESA_QUOTE_TAB = { partite: 11902, leghe: 12, fasce: [
   { da: 0, tutte: [2880, 9.9, 17.5, 72.5], accordo: [2866, 9.9, 17.6, 72.6], disaccordo: [14, 21.4, 14.3, 64.3] },
   { da: 15, tutte: [1933, 18.0, 26.2, 55.8], accordo: [1859, 17.9, 26.0, 56.1], disaccordo: [74, 20.3, 31.1, 48.6] },
@@ -3229,7 +3141,7 @@ function testoSorpresa(S, hName, aName, Sm) {
     + `il favorito il ${S.c[3].toFixed(1)}%. Con le quote il disaccordo fra modello ed Elo pesa poco (il mercato lo sa gia'), e lo sfavorito non vince una volta su tre in nessuna fascia: il rischio non arriva ad ALTO.`;
 }
 const SORPRESA_QUOTE_INFO = `Con le quote dell'1X2 il rischio si conta sulle probabilit&agrave; con le quote: <b>11.902 partite di 12 leghe</b> con le quote di chiusura (2023-2026), per fascia di probabilit&agrave; dello sfavorito con le quote e per accordo fra modello ed Elo sul favorito, come senza quote. Le probabilit&agrave; con le quote sono gi&agrave; giuste: lo sfavorito al 30% o pi&ugrave; vince il 31.2%. Il disaccordo fra modello ed Elo, che senza quote d&agrave; allo sfavorito 2.4 punti in pi&ugrave;, con le quote pesa poco, perch&eacute; il mercato lo sa gi&agrave;: con lo sfavorito al 30% o pi&ugrave; vince il 30.7% col disaccordo e il 31.5% con l'accordo, fra il 25 e il 30% il 26.3% e il 26.2%. Per questo con le quote lo sfavorito non vince una volta su tre in nessun gruppo, e il rischio non arriva ad <b>ALTO</b>: il pi&ugrave; alto &egrave; medio, con lo sfavorito al 25% o pi&ugrave;. Cancella le quote per rivedere il rischio del motore.`;
-const SORPRESA_INFO = `Contato su <b>23.278 partite di 24 leghe</b> (2023-2026) con le probabilit&agrave; del maestro mercato (b82, con la pressione dove c'&egrave;, stimato senza la lega che si conta): per ogni fascia di probabilit&agrave; dello sfavorito, quante volte hanno vinto lo sfavorito, il pareggio e il favorito. Le probabilit&agrave; le sorprese le contano gi&agrave; giuste: lo sfavorito al 30&ndash;35% vince il 31.7%. Col motore di prima il <b>disaccordo fra modello ed Elo</b> sul favorito dava allo sfavorito 2.4 punti in pi&ugrave;; il maestro l'ha gi&agrave; messo nelle probabilit&agrave;, e il residuo col disaccordo non c'&egrave; pi&ugrave; (&minus;1.1 &plusmn;1.5). <b>ALTO</b> vuol dire che nelle partite cos&igrave; lo sfavorito ha vinto almeno una volta su tre: col maestro succede solo quando lo sfavorito ha il 35% o pi&ugrave; (circa una partita su 24), con modello ed Elo d'accordo o no. Forma, riposo, formazioni, fortuna sotto gli xG e un rating sugli xG non anticipano le sorprese: sono stati misurati e non aggiungono niente.`;
+const SORPRESA_INFO = `Contato su <b>23.278 partite di 24 leghe</b> (2023-2026) con le probabilit&agrave; del maestro mercato (b77, stimato senza la lega che si conta): per ogni fascia di probabilit&agrave; dello sfavorito, quante volte hanno vinto lo sfavorito, il pareggio e il favorito. Le probabilit&agrave; le sorprese le contano gi&agrave; giuste: lo sfavorito al 30&ndash;35% vince il 31.9%. Col motore di prima il <b>disaccordo fra modello ed Elo</b> sul favorito dava allo sfavorito 2.4 punti in pi&ugrave;; il maestro l'ha gi&agrave; messo nelle probabilit&agrave;, e il residuo col disaccordo non c'&egrave; pi&ugrave; (&minus;0.5 &plusmn;1.5). <b>ALTO</b> vuol dire che nelle partite cos&igrave; lo sfavorito ha vinto almeno una volta su tre: col maestro succede solo quando lo sfavorito ha il 35% o pi&ugrave; e modello ed Elo non sono d'accordo (circa una partita su 35). Forma, riposo, formazioni, fortuna sotto gli xG e un rating sugli xG non anticipano le sorprese: sono stati misurati e non aggiungono niente.`;
 
 // Le quote (b54): logistica multinomiale su [log(p1/pX), log(p2/pX)] del motore e del mercato,
 // 11.902 partite di 12 leghe. Soglie: [soglia, esce %, quota del calendario %, 1 partita su N].
@@ -3770,13 +3682,13 @@ function renderLeagueNote() {
 }
 
 // Per fascia di scarto e famiglia di mercato: [guadagno sopra il giocarlo sempre, 2se, proposte],
-// cinque leghe; 1X2 e gol dal b82 con le probabilita' del maestro con la pressione (fuori lega), i numeri del motore (b49). Lo stesso scarto rende molto meno nei gol che nell'1X2, ma ordinare
+// cinque leghe; 1X2 e gol dal b77 con le probabilita' del maestro (fuori lega), i numeri del motore (b49). Lo stesso scarto rende molto meno nei gol che nell'1X2, ma ordinare
 // per guadagno atteso non sceglie proposte migliori: l'ordine resta per scarto.
 // Vedi AGENTS.md, Il tabellone per famiglia di mercato.
 window.EDGE_BANDS = window.EDGE_BANDS ||
-  [[20, 'FORTE',     { '1x2': [29.5, 1.6, 2505], gol: [24.0, 11.3, 56], numeri: [7.2, 8.0, 133] }],
-   [10, 'GIOCABILE', { '1x2': [16.9, 1.4, 3685], gol: [12.4, 3.5, 765], numeri: [10.2, 2.9, 1058] }],
-   [5,  'MARGINALE', { '1x2': [9.2, 1.7, 2913],  gol: [6.6, 1.9, 2796], numeri: [8.2, 2.4, 1628] }]];
+  [[20, 'FORTE',     { '1x2': [29.5, 1.6, 2463], gol: [24.3, 11.6, 55], numeri: [7.2, 8.0, 133] }],
+   [10, 'GIOCABILE', { '1x2': [17.1, 1.4, 3692], gol: [13.2, 3.5, 744], numeri: [10.2, 2.9, 1058] }],
+   [5,  'MARGINALE', { '1x2': [9.0, 1.7, 2912],  gol: [6.8, 1.9, 2801], numeri: [8.2, 2.4, 1628] }]];
 const EDGE_FAMIGLIA = { pOv: 'gol', pUn: 'gol', pGG: 'gol', pNG: 'gol',
   'cor9.5': 'numeri', 'sot8.5': 'numeri', 'yel3.5': 'numeri' };
 const EDGE_FAMIGLIA_TXT = { '1x2': "dell'1X2", gol: 'dei mercati gol', numeri: 'dei mercati sui numeri' };
@@ -3884,7 +3796,7 @@ function _tabTesto(V) {
        + senza.map(v => v.nome + ' ' + (v.edge == null ? 'base ignota' : (v.edge >= 0 ? '+' : '') + v.edge.toFixed(1))).join(', ') : '');
 }
 
-window.__SCANNER_BUILD = '0905-b82';
+window.__SCANNER_BUILD = '0905-b83';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -4240,86 +4152,6 @@ const MAESTRO_REG = {
       [-0.007694, -0.007694, -0.006121, -0.008169],
       [-0.002394, -0.00686, -0.001897, -0.004249],
       [-0.00492, -0.00448, -0.004109, -0.00457]] };
-// il rating di pressione (la curva /momentum, corretta per l'avversario come l'Elo) come 66a variabile del maestro, coi numeri
-// della regola registrata (AGENTS.md, Il rating di pressione: la regola; strumenti/pressione_regola.json); 'no' torna al b81
-window.PRESSIONE = (typeof window.PRESSIONE === 'string') ? window.PRESSIONE : 'si';
-// le 65 variabili del maestro sono quelle di MAESTRO_REG (stesse medie, deviazioni e mediane), la 66a e' il rating
-const PRESSIONE_REG = { K: 0.15, KH: 0.03, H0: 3.5, minimo: 6, media: -0.004788, sd: 10.208836, mediana: 0.065806,
-  B: [[0.479891, 0.106262, 0.394597, 0.177492],
-      [-0.001521, 0.017367, 0.009328, 0.020912],
-      [0.011057, -0.005208, 0.018075, 0.00967],
-      [0.001062, -0.000834, 0.000499, -0.000324],
-      [0.005062, -0.015994, 0.003215, -0.009471],
-      [-0.00987, 0.018692, -0.008471, 0.010876],
-      [0.012745, -0.012229, 0.007148, -0.007449],
-      [0.006155, -0.000592, 0.00321, -0.000556],
-      [-0.01398, 0.002966, -0.007584, -0.001733],
-      [-0.003609, 0.001406, -0.00236, 0.000754],
-      [0.017079, -0.018828, 0.007732, -0.012423],
-      [0.021873, -0.014349, 0.01023, -0.00639],
-      [-0.02893, 0.0223, -0.010839, 0.020357],
-      [0.000558, -0.00133, -0.001025, -0.002509],
-      [-0.000348, -0.000223, -0.001077, -0.00321],
-      [0.025166, -0.018581, 0.013457, -0.01186],
-      [0.028568, -0.024102, 0.014545, -0.014804],
-      [0.01608, -0.015259, 0.003448, -0.014403],
-      [-0.002948, 0.003636, -0.001595, 0.001937],
-      [-0.013795, 0.011936, -0.005331, 0.0078],
-      [0.000819, -0.006755, 0.007971, 0.004005],
-      [0.003259, 0.007877, 0.010189, 0.014254],
-      [-0.003057, 0.025006, 0.024846, -0.000485],
-      [0.018253, 0.00743, -0.010153, 0.027791],
-      [0.014826, -0.012281, -0.024398, 0.019664],
-      [-0.104191, -0.077849, -0.04179, -0.005551],
-      [-0.013817, -0.001685, -0.008397, 0.006487],
-      [0.198767, 0.049114, 0.029497, 0.009844],
-      [0.040002, 0.211598, -0.025963, 0.065092],
-      [-0.030735, 0.105453, -0.014969, 0.202364],
-      [0.123287, -0.035707, 0.24396, 0.003814],
-      [-0.110759, 0.124814, -0.111577, 0.110786],
-      [0.013855, -0.012378, -0.024931, 0.020056],
-      [0.116396, -0.091735, 0.03942, -0.045024],
-      [0.000919, -0.024732, -0.032635, -0.030989],
-      [-0.000385, -0.062055, 0.017266, -0.117502],
-      [-0.026406, -0.022973, -0.020718, -0.022123],
-      [0.018598, -0.000138, 0.037955, 0.030454],
-      [0.008939, 0.017575, 0.001898, 0.006926],
-      [0.002714, 0.001783, 0.00167, 0.001731],
-      [-0.002786, 0.007584, 0.000409, 0.005751],
-      [0.088577, 0.107302, 0.02605, 0.051899],
-      [-0.001957, -0.007952, -0.001571, -0.005235],
-      [-0.008857, -0.004475, -0.006116, -0.00434],
-      [-0.030395, -0.027899, -0.011947, -0.015463],
-      [0.008697, -0.02005, 0.001438, -0.016808],
-      [-0.022706, 0.004839, -0.01577, 0.001101],
-      [-0.004619, 0.003891, -0.003137, 0.001862],
-      [-0.006695, 0.013594, -0.000256, 0.011278],
-      [0.014841, -0.019333, 0.007511, -0.01235],
-      [0.012339, 0.009153, 0.014001, 0.013503],
-      [-0.006775, -0.016186, -0.004911, -0.011041],
-      [-0.000223, -0.00348, -0.000765, -0.003066],
-      [0.002338, 0.006378, 0.0053, 0.007746],
-      [0.020857, 0.023929, 0.023549, 0.027331],
-      [0.004163, 0.003275, 0.006222, 0.006493],
-      [-0.001536, -0.010656, -0.013354, -0.020526],
-      [-0.007586, -0.010253, -0.005264, -0.007146],
-      [0.001768, 0.004515, 0.000112, 0.001735],
-      [-0.001706, -0.01261, -0.003607, -0.008161],
-      [0.003451, 0.001306, 0.004881, 0.004024],
-      [-0.022857, 0.001696, -0.013653, 0.000497],
-      [-0.008826, -0.005655, -0.00994, -0.009165],
-      [-0.006852, -0.008413, -0.005679, -0.008607],
-      [-0.002019, -0.007181, -0.0017, -0.004445],
-      [-0.004587, -0.004764, -0.003934, -0.004743],
-      [0.101026, -0.086298, 0.053039, -0.052653]] };
-// da quale stagione (anno d'inizio) la PitchAPI ha la curva, lega per lega: prova di poche partite per stagione
-// (strumenti/momentum-copertura.py, 12 ottobre 2026); nelle altre leghe nessuna chiamata, e resta il maestro
-const PRESSIONE_DAL = { l_45VZuL: 2023, l_4MPd7x: 2022, l_3zsMpo: 2022, l_1pQOHK: 2025, l_2L6d1F: 2022, l_1D8Xrl: 2023, l_49Zmno: 2022,
-  l_46aZMC: 2025, l_4DWyTT: 2022, l_0ahLw8: 2022, l_1W6idJ: 2022, l_4WFCIZ: 2022, l_0ErfuF: 2022, l_3kyHLd: 2025,
-  l_3FJFUl: 2022, l_0275VP: 2025, l_3hvsne: 2022, l_1Isor4: 2022, l_3xwVF2: 2024, l_1qpFVw: 2023, l_1XLtP0: 2022,
-  l_0bfbkO: 2022, l_2WZ2tt: 2022, l_38d9HA: 2022, l_0ALvwF: 2022, l_0jy5yE: 2025, l_2ApGa4: 2023, l_2EKrnc: 2026,
-  l_0Lpz1f: 2023, l_3v84VE: 2023, l_4H43wr: 2022, l_0uqFK8: 2023, l_214sqK: 2025, l_4QexZg: 2022, l_1Kknkl: 2025,
-  l_2Mh0jT: 2025, l_1LMdEO: 2022, l_4d6Bwl: 2022, l_1XsMdH: 2023, l_3hW1NO: 2025, l_0S1uaf: 2022, l_0eg6C9: 2023 };
 // riga del CSV -> chiave di cmpExtractPrev del Comparatore
 const MAESTRO_STAT = [['NPxG', 'npxg'], ['xG', 'xg'], ['xGOT', 'xgot'], ['SoT', 'sot'], ['Corner', 'cor'], ['Possesso %', 'poss'],
   ['Tocchi Area', 'tch_box'], ['Big Chances', 'bc'], ['Gol', 'gf'], ['xG Palle Inattive', 'xg_sp'], ['Falli', 'fouls'], ['Gialli', 'yel'],
@@ -4394,7 +4226,6 @@ async function avviaScanner() {
     window.__PLAYER_DATA = null;
     const targetMs = new Date(matchTime).getTime();
     const ELO = buildGlobalElo(targetMs);
-    const _PR = await pressioneLega(lId, hId, aId, targetMs); window.__PRESSIONE_DEBUG = _PR;
     const eloSeriesH = ELO.seriesTrend[hId] || []; const eloSeriesA = ELO.seriesTrend[aId] || [];
     const eloH_ov = Math.round(ELO.table[hId] ?? ELO._ingresso ?? 1500); const eloA_ov = Math.round(ELO.table[aId] ?? ELO._ingresso ?? 1500);
     const calcTrend = (series) => { if(series.length < 10) return 0; return _mean(series.slice(0,5)) - _mean(series.slice(5,15)); };
@@ -4827,15 +4658,13 @@ async function avviaScanner() {
           const h = _prevStat(dH, 'H', k), a = _prevStat(dA, 'A', k), c = ok(h) && ok(a);
           v['d_' + nome] = c ? h - a : 0; v['s_' + nome] = c ? h + a : null;
         }
-        const conP = window.PRESSIONE !== 'no' && _PR && typeof _PR.v === 'number' && isFinite(_PR.v);
-        const R_ = MAESTRO_REG, B_ = conP ? PRESSIONE_REG.B : R_.B, T = B_[0].slice();
+        const R_ = MAESTRO_REG, T = R_.B[0].slice();
         R_.nomi.forEach((n, i) => {
           const z = ((ok(v[n]) ? v[n] : R_.mediana[i]) - R_.media[i]) / R_.sd[i];
-          for (let j = 0; j < 4; j++) T[j] += B_[i + 1][j] * z;
+          for (let j = 0; j < 4; j++) T[j] += R_.B[i + 1][j] * z;
         });
-        if (conP) { v.pres = _PR.v; const z = (_PR.v - PRESSIONE_REG.media) / PRESSIONE_REG.sd; for (let j = 0; j < 4; j++) T[j] += B_[R_.nomi.length + 1][j] * z; }
         const zm = Math.max(T[0], 0, T[1]), e1 = Math.exp(T[0] - zm), eX = Math.exp(-zm), e2 = Math.exp(T[1] - zm), se = e1 + eX + e2;
-        const out = { p1: e1 / se, pX: eX / se, p2: e2 / se, lamH: Math.exp(T[2]), lamA: Math.exp(T[3]), v, pres: conP ? _PR.v : null };
+        const out = { p1: e1 / se, pX: eX / se, p2: e2 / se, lamH: Math.exp(T[2]), lamA: Math.exp(T[3]), v };
         return [out.p1, out.pX, out.p2, out.lamH, out.lamA].every(x => isFinite(x) && x > 0) ? out : null;
       } catch (e) { return null; }
     })();
@@ -4847,7 +4676,7 @@ async function avviaScanner() {
       probGoal30 = 1 - Math.exp(-lamTot * (_qFissa ? PRIMO_GOL_FISSA[0] : shareTo(2))); probGoalHT = 1 - Math.exp(-lamTot * (_qFissa ? PRIMO_GOL_FISSA[1] : shareTo(3)));
     }
     const probsGol = probsFromMatrix(dcMat);
-    window.__MAESTRO_DEBUG = { on: !!_MA, p: [m1e, mXe, m2e], lam: [lamH_role, lamA_role], lamMa: _MA ? [_MA.lamH, _MA.lamA] : null, pres: _MA ? _MA.pres : null };
+    window.__MAESTRO_DEBUG = { on: !!_MA, p: [m1e, mXe, m2e], lam: [lamH_role, lamA_role], lamMa: _MA ? [_MA.lamH, _MA.lamA] : null };
 
     // rette di calibrazione empiriche su 6824 partite: la confidence e' la probabilita'
     // reale di indovinare, non l'accordo fra i modelli (AGENTS.md)
@@ -4932,11 +4761,6 @@ async function avviaScanner() {
     safeTxt('mdl-mko-1', pct(mk_ov.p1)); safeTxt('mdl-mko-x', pct(mk_ov.pX)); safeTxt('mdl-mko-2', pct(mk_ov.p2));
     safeTxt('mdl-ens-1', pct(m1)); safeTxt('mdl-ens-x', pct(mX)); safeTxt('mdl-ens-2', pct(m2));
     safeTxt('mdl-mot-1', pct(m1e)); safeTxt('mdl-mot-x', pct(mXe)); safeTxt('mdl-mot-2', pct(m2e));
-    safeTxt('mdl-pres', !_MA ? "Pressione: non usata, il maestro e' spento." : _MA.pres != null
-      ? `Pressione: il verdetto usa il rating di pressione della lega, casa meno trasferta ${_MA.pres >= 0 ? '+' : ''}${_MA.pres.toFixed(1)} (la curva c'e' su ${_PR.nH} e ${_PR.nA} partite delle due squadre, ${_PR.conCurva} della lega).${_PR.fallite ? ` ${_PR.fallite} partite senza risposta della PitchAPI: si riprovano alla prossima analisi.` : ''}`
-      : _PR.motivo === 'spenta' ? 'Pressione: spenta.'
-      : !_PR.on ? "Pressione: in questa lega la PitchAPI non ha la curva di pressione, e il verdetto e' quello del maestro senza."
-      : `Pressione: non usata, la curva c'e' su ${_PR.nH} e ${_PR.nA} partite delle due squadre e ne servono ${PRESSIONE_REG.minimo}. Il verdetto e' quello del maestro senza.`);
 
     const _confMarket = (probs, isBin) => {
       const valid = probs.filter(p => isFinite(p) && p >= 0);
@@ -5473,8 +5297,7 @@ non mescolarli in una stessa frase senza dirlo.
 1. IL VERDETTO 1X2
 - Probabilita' (${_MA ? "maestro mercato: le probabilita' del motore imparate dal mercato e usate senza quote, misurato meglio del motore in 25 leghe su 33 mai viste" : _ensLabel}):
     1 ${pct(m1)} | X ${pct(mX)} | 2 ${pct(m2)}      quote eque: 1 @${oddM1} | X @${oddMX} | 2 @${oddM2}${_MA ? `
-    ensemble del motore, prima del maestro: 1 ${pct(m1e)} | X ${pct(mXe)} | 2 ${pct(m2e)}${_MA.pres != null ? `
-    con la pressione della lega: rating casa meno trasferta ${_MA.pres >= 0 ? '+' : ''}${_MA.pres.toFixed(1)} (la curva di pressione minuto per minuto, corretta per l'avversario come l'Elo; col rating il maestro e' misurato meglio in 10 leghe su 13)` : ''}` : ''}
+    ensemble del motore, prima del maestro: 1 ${pct(m1e)} | X ${pct(mXe)} | 2 ${pct(m2e)}` : ''}
 - Le stesse tre sui due campioni separati (Dixon-Coles del motore):
     RUOLO     (${dH.role.n} casa / ${dA.role.n} trasferta):  1 ${pct(probsRole.p1)} | X ${pct(probsRole.pX)} | 2 ${pct(probsRole.p2)}
     GENERALE  (${dH.overall.n} / ${dA.overall.n} partite):   1 ${pct(probsOver.p1)} | X ${pct(probsOver.pX)} | 2 ${pct(probsOver.p2)}
@@ -5873,7 +5696,7 @@ async function copiaPrompt() {
     const p = C.passi[Math.min(i, C.passi.length - 1)];
     $('#cv-label').textContent = i < C.passi.length ? p.lab : 'Analisi pronta';
     $('#cv-passo').textContent = `Passo ${Math.min(i + 1, C.passi.length)} di ${C.passi.length}`;
-    const pesi = C.pesi;
+    const pesi = [0.38, 0.38, 0.06, 0.04, 0.08, 0.06];
     cvProg(Math.min(1, pesi.slice(0, i).reduce((a, b) => a + b, 0) + (i < pesi.length ? pesi[i] * (n || 0) : 0)));
   };
   const cvLeggi = () => {
@@ -5883,17 +5706,9 @@ async function copiaPrompt() {
     const lega = righe.find(r => /^Lega: media gol/.test(r));
     if (lega) {
       const n = (lega.match(/su (\d+) match/) || [])[1];
-      C.passi[0].nn = C.lim + '/' + C.lim; C.passi[1].nn = C.lim + '/' + C.lim; C.passi[C.ix.par].nn = n ? n + ' partite' : '';
-      const L = window.__LINEUP_DEBUG; C.passi[C.ix.form].nn = !L || !L.H || !L.H.disponibile ? 'non disponibili' : L.H.confermata && L.A && L.A.confermata ? 'confermate' : 'probabili';
-      const P = window.__PRESSIONE_DEBUG; if (C.ix.pres >= 0) C.passi[C.ix.pres].nn = P && P.on ? P.conCurva + ' partite' : '';
-      return cvPasso(C.ix.ver, 0);
-    }
-    const pr = C.ix.pres >= 0 ? [...righe].reverse().find(r => /^Pressione della lega: /.test(r)) : null;
-    if (pr) {
-      C.passi[0].nn = C.lim + '/' + C.lim; C.passi[1].nn = C.lim + '/' + C.lim;
-      const fin = pr.match(/su (\d+) partite di/), sc = pr.match(/scaricate (\d+)\/(\d+)/);
-      if (fin) { C.passi[C.ix.pres].nn = fin[1] + ' partite'; return cvPasso(C.ix.pres + 1, 0); }
-      if (sc) { C.passi[C.ix.pres].nn = sc[1] + '/' + sc[2]; return cvPasso(C.ix.pres, (+sc[1]) / Math.max(1, +sc[2])); }
+      C.passi[0].nn = C.lim + '/' + C.lim; C.passi[1].nn = C.lim + '/' + C.lim; C.passi[2].nn = n ? n + ' partite' : '';
+      const L = window.__LINEUP_DEBUG; C.passi[3].nn = !L || !L.H || !L.H.disponibile ? 'non disponibili' : L.H.confermata && L.A && L.A.confermata ? 'confermate' : 'probabili';
+      return cvPasso(4, 0);
     }
     const fx = [...righe].reverse().find(r => /Fetch Dati \(Adv & Eventi\): \d+\/\d+/.test(r));
     const m = fx && fx.match(/(\d+)\/(\d+)/), i = Math.max(0, fil - 1);
@@ -5990,14 +5805,10 @@ async function copiaPrompt() {
       const sh = $('#sel-home'), sa = $('#sel-away'), nome = s => s && s.selectedIndex >= 0 ? (s.options[s.selectedIndex] || {}).text || '' : '';
       if (!sh || !sa || !sh.value || !sa.value || sh.value === sa.value) return;
       const lim = parseInt(($('#history-limit') || {}).value, 10) || 30;
-      const conP = window.PRESSIONE !== 'no' && !!PRESSIONE_DAL[($('#sel-league') || {}).value];
       C = { lim, i: 0, prog: 0, chiuso: false, entra: false, passi: [
         { lab: 'Storico di ' + nome(sh), n: '0/' + lim }, { lab: 'Storico di ' + nome(sa), n: '0/' + lim },
-        ...(conP ? [{ lab: 'Pressione della lega', n: '' }] : []),
         { lab: 'Parametri della lega', n: '' }, { lab: 'Formazioni', n: '' },
-        { lab: 'Verdetto e tabellone', n: 'maestro mercato' }, { lab: 'Quote del mercato', n: '' }],
-        ix: conP ? { pres: 2, par: 3, form: 4, ver: 5, quote: 6 } : { pres: -1, par: 2, form: 3, ver: 4, quote: 5 },
-        pesi: conP ? [0.30, 0.30, 0.20, 0.04, 0.04, 0.08, 0.04] : [0.38, 0.38, 0.06, 0.04, 0.08, 0.06] };
+        { lab: 'Verdetto e tabellone', n: 'Dixon-Coles e Markov' }, { lab: 'Quote del mercato', n: '' }] };
       $('#cv-tit').textContent = nome(sh) + ' - ' + nome(sa);
       $('#cv-passi').innerHTML = cvRighe();
       $('#cv-pronta').classList.remove('si');
@@ -6011,12 +5822,12 @@ async function copiaPrompt() {
       if (!C || C.chiuso || !(cv instanceof Element) || cv.hidden) { if (C && C.entra && dash instanceof Element) rivela(); return; }
       const ok = dash instanceof Element && dash.style.display === 'block' && !!window.__ESITO;
       if (!ok) { cvChiudi(true); C = null; return; }
-      cvPasso(C.ix.quote, 0);
+      cvPasso(5, 0);
       const q = window.__QUOTE_AUTO;
       if (q && typeof q.then === 'function') await Promise.race([q.catch(() => null), new Promise(r => setTimeout(r, 2500))]);
       if (!C || C.chiuso) return;
-      C.passi[C.ix.quote].nn = window.__QUOTE_P ? 'con le quote' : (window.__QUOTE_FONTE ? 'trovate' : 'nessuna');
-      cvPasso(C.passi.length, 0); cvProg(1);
+      C.passi[5].nn = window.__QUOTE_P ? 'con le quote' : (window.__QUOTE_FONTE ? 'trovate' : 'nessuna');
+      cvPasso(6, 0); cvProg(1);
       $('#cv-pronta').classList.add('si');
       anim($('#cv-pronta'), [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: OUT });
       setTimeout(() => { if (C && !C.chiuso) cvChiudi(false); }, ridotto() ? 0 : 700);
