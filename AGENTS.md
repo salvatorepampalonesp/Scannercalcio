@@ -293,7 +293,8 @@ Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export rec
   imparate dal mercato (ridge dalle 65 variabili del motore all'1X2 e ai lambda del mercato), poi usate senza quote. Sui
   risultati di 33 leghe mai usate per questo (13.592 partite): 1X2 −4.37‰ (`z = −5.30`, 25 su 33), risultato esatto
   −13.41‰ (`z = −8.88`, 31 su 33), Over 2.5 −3.50‰, differenza reti −8.14‰. Vedi *Il maestro mercato: la regola*.
-- [ ] **Il maestro coi bersagli di Shin: il test.** Il maestro impara l'1X2 del mercato col margine tolto in proporzione,
+- [x] ~~**Il maestro coi bersagli di Shin: il test.**~~ — **non passato** (16 ottobre 2026): sulle 33 leghe del test −0.14‰
+  (`z = −0.81`), 16 leghe su 33. Il racconto sotto resta per la storia. Il maestro impara l'1X2 del mercato col margine tolto in proporzione,
   che sottovaluta i favoriti, e ne eredita la timidezza. Coi bersagli tolti alla Shin, fuori lega sulle 14 leghe del
   maestro, l'1X2 fa −0.51‰ (`z = −3.03`, 10 leghe su 14) e la pendenza 1 contro 2 scende da 1.12 a 1.06. È gratis: si
   rifà l'allenamento, nessuna chiamata. Regola registrata il 16 ottobre 2026, test sulle 33 leghe del test del maestro.
@@ -530,7 +531,9 @@ qui ha bisogno di dati nuovi, non di rifare questi.
 - [ ] **Le rese della famiglia dei numeri nel tabellone, coi corner del `b76`.** Il `λ` dei corner ora è ristretto
   verso una costante, e la `k` è fissa: lo scarto dei corner dal base rate cambia, e con lui quante volte salgono in
   cima. `EDGE_BANDS` per i numeri è del `b49`: va rimisurata sul tabellone del `b76` (un batch delle cinque leghe).
-- [ ] **Chi fa più corner: il test.** Il totale dei corner non si prevede, chi ne fa di più sì. Regola registrata il 16
+- [x] ~~**Chi fa più corner: il test.**~~ — **passato** (16 ottobre 2026): sui batch del `b74` −48.7‰ (`z = −14.79`), 23
+  leghe su 24. Da mettere nello Scanner (`b84`): card dei corner, tabellone con le rese misurate, CSV, prompt. Il racconto
+  sotto resta per la storia. Il totale dei corner non si prevede, chi ne fa di più sì. Regola registrata il 16
   ottobre 2026: il totale diviso fra le due squadre con una beta-binomiale (corner previsti ed Elo), da cui corner 1X2 e
   handicap dei corner. Nell'esplorazione, fuori lega sulle 24 leghe, −45.2‰ contro una frequenza fissa (`z = −23.8`, 24
   leghe su 24), calibrato. Test sui batch del `b74`. Vedi *Chi fa più corner: la regola*.
@@ -901,7 +904,7 @@ non passa mai +7.1. Trascina con sé il `12`.
 | **Le nove leghe del livello dei gol** | **6472** | Bundesliga austriaca 582, Superligaen 574, Liga MX 667 (2023/24–2025/26), Eliteserien 715, Allsvenskan 715, MLS 1581 (2023–2025), J. League 756 (2024–2025), Liga Profesional 508, Série A brasiliana 374 (2025): batch automatico del `b62`, tutte in copia conforme, Elo identico su ogni file. Aperte solo per il test del livello dei gol (`b63`); le partite dal 2025 anche per la card del primo gol (`b75`) |
 | **Le cinque leghe, giro registrato** | **1743** | Il 2025/26 dei cinque campionati col batch del `b75` e `--scritture` (`batch/numeri`): ogni numero a schermo e i valori estratti da ogni partita dello storico, 1.743 su 1.743 in copia conforme, Elo identico su ogni file. Guardate per tutte le card di Numeri. Vedi *Le card di Numeri* |
 | **Il test delle card di Numeri** | **3976** | Il 2024/25 dei cinque campionati e il 2025/26 di Championship, Eredivisie, Liga Portugal, 2. Bundesliga, First Division A, Premiership scozzese e Super League svizzera, col batch del `b75` e `--scritture` (`batch/numeri-prova1`, `batch/numeri-prova2`), 3.976 su 3.976 in copia conforme, Elo identico in 12 file su 12. Aperte solo per il test delle correzioni di Numeri (`b76`); già viste prima per 1X2, quote e tabellone. Vedi *Le card di Numeri: la regola* |
-| **Le leghe mai viste del `b74`** | **7645** | 33 file di 25 leghe: A-League, Indian Super League, Saudi Pro League 2023/24–2025/26 e K League 1 2024–2026; il 2026 giocato di dieci leghe a calendario solare; il 2025/26 di undici leghe europee, con una sola stagione alle spalle. Batch automatico del `b73`, tutte in copia conforme, Elo identico su ogni file. Super League 1 greca 2025/26 e Saudi Pro League 2023/24 senza stagione alle spalle: fuori da ogni misura. Guardate per 1X2, soglie, sorpresa, gol, numeri e tabellone senza quote (solo descrittivo); le rese del pick sono in `PICK_RESA.fuori`; anche per la card del primo gol (`b75`). Vedi *Le leghe mai viste* |
+| **Le leghe mai viste del `b74`** | **7645** | 33 file di 25 leghe: A-League, Indian Super League, Saudi Pro League 2023/24–2025/26 e K League 1 2024–2026; il 2026 giocato di dieci leghe a calendario solare; il 2025/26 di undici leghe europee, con una sola stagione alle spalle. Batch automatico del `b73`, tutte in copia conforme, Elo identico su ogni file. Super League 1 greca 2025/26 e Saudi Pro League 2023/24 senza stagione alle spalle: fuori da ogni misura. Guardate per 1X2, soglie, sorpresa, gol, numeri e tabellone senza quote (solo descrittivo); le rese del pick sono in `PICK_RESA.fuori`; anche per la card del primo gol (`b75`); per chi fa più corner, test registrato del 16 ottobre 2026. Vedi *Le leghe mai viste* |
 | **League One, League Two, Süper Lig e il 2026/27** | **4879** | League One 1653, League Two 1656, Süper Lig 1018 (2023/24–2025/26; il 2023/24 con una sola stagione alle spalle) e le partite giocate del 2026/27 di dieci leghe (552): batch automatico del `b61`, tutte in copia conforme, Elo identico su ogni file; `/advanced` assente su League One e League Two. Aperte solo per il test dei mercati della matrice con le quote (`b62`); le partite dal 2025 di League One, League Two e Süper Lig anche per la card del primo gol (`b75`) |
 | **Serie A 2023/24 → 2025/26** | **1134** | **il riferimento**: export `b40`, 1134 su 1134 in copia conforme, una stagione per file, storico 30, `lgN` ≥ 760; `/advanced` assente sul 2023/24 (`riserva-k-motore`) |
 | **Premier 2023/24 → 2025/26** | **1135** | **il riferimento**: export `b41`, 1135 su 1135 in copia conforme, una stagione per file, storico 30, `lgN` ≥ 760, `/advanced` su tutte e tre le stagioni |
@@ -2722,6 +2725,24 @@ Se non passa, niente cambia, e questa sezione dice perché.
 frequenza della lega col senno di poi, ogni lega. `python3 strumenti/corner-differenza.py --prova batch/lontane
 batch/anno2026 batch/europa2526` rifà il test; senza argomenti rifà l'esplorazione.
 
+**Esito: passa.** 7.120 partite di 24 leghe, tutte con almeno 100 partite.
+
+| | contro la frequenza fissa | `z` | leghe meglio |
+|---|---|---|---|
+| **corner 1X2** (il test) | **−48.7‰** | **−14.79** | 23 su 24 |
+| guardia: handicap della casa −1.5 e +1.5, insieme | −80.8‰ | −14.85 | |
+
+- *Più che nell'esplorazione* (−45.2‰). L'unica lega peggio è la 1. liga slovacca (+4.6‰, 191 partite); le migliori Saudi
+  Pro League (−94.9‰), Challenge League (−83.2‰), Ligat ha'Al (−79.9‰).
+- *Contro la frequenza della lega presa col senno di poi* sulle stesse partite: −40.9‰ (`z = −11.9`).
+- *La taratura*, trovato dopo: qui la casa fa meno corner che nelle 24 leghe, e il modello la sopravvaluta di poco.
+  Casa, pari, trasferta previsti 53.1 / 9.3 / 37.5%, reali 51.9 / 9.3 / 38.8%. Casa sopra la trasferta, previsto contro
+  uscito, per fascia: 32.2 / 29.2, 45.5 / 42.9, 55.1 / 53.0, 64.8 / 64.0, 77.0 / 77.7.
+- *L'handicap della casa*, previsto contro uscito: −2.5 34.5 / 33.0, −1.5 43.6 / 42.3, −0.5 53.1 / 51.9, +0.5 62.5 /
+  61.2, +1.5 71.1 / 69.6, +2.5 78.6 / 77.8.
+
+Entra nello Scanner come dice la regola, col `b84`.
+
 ### Lo squilibrio sui tiri in porta: registrato, passato, nel motore (`b42`)
 
 Come i cartellini (vedi *Lo squilibrio e i cartellini*), ma col segno opposto: le partite
@@ -3803,6 +3824,25 @@ passa, resta il `b77`, e questa sezione dice perché.
 **Descrittivi**, che non decidono: ogni lega, la taratura del pick per fascia, lo sfavorito previsto contro quello che
 vince. `python3 strumenti/maestro-shin.py --prova batch/livello batch/lontane batch/anno2026 batch/europa2526` rifà il
 test; senza argomenti rifà l'esplorazione.
+
+**Esito: non passa.** 13.592 partite di 33 leghe, tutte con almeno 100 partite:
+- 1X2 −0.14‰ (`z = −0.81`), meglio in 16 leghe su 33;
+- prese 48.95 → 48.97%;
+- il risultato esatto è identico (i lambda sono gli stessi).
+
+Resta il maestro del `b77`.
+
+*Perché, trovato dopo.* Sulle leghe del test il maestro del `b77` non era timido con gli sfavoriti: li dava al 25.53%, e
+vincono il 25.52%. Quello di Shin li dà al 25.10%, cioè un po' troppo sicuro. Per fascia del pick, previsto contro uscito:
+
+| pick | `b77` | Shin |
+|---|---|---|
+| sotto il 45% | 40.2 / 40.6 | 40.3 / 40.3 |
+| 45–55% | 49.7 / 50.2 | 49.6 / 49.4 |
+| 55–65% | 59.2 / 58.4 | 59.2 / 57.7 |
+| sopra il 65% | 71.0 / 76.0 | 71.4 / 73.4 |
+
+Shin raddrizza la fascia alta e sposta le altre: la timidezza vista sulle 14 leghe del mercato non si ripete lontano da lì.
 
 ### Il rating di pressione: la regola
 
@@ -5105,6 +5145,7 @@ misurate.
 | La quota del tempo dai minuti dei gol delle due squadre (card «Primo gol») | **peggio di una quota fissa**, sostituita nel `b75` | esplorazione, 4.496 partite di dodici leghe dal 2025/26: gol prima del 30' +3.2‰, Over 0.5 nel primo tempo +2.6‰ (`z` +2.2 e +2.6), peggio in 9 leghe su 12. Test registrato su 11.633 partite di 36 leghe: la quota fissa −7.30‰ (`z = −4.93`), 29 leghe su 36. Vedi *La card del primo gol* |
 | Il disaccordo fra modello ed Elo come segnale di sorpresa | **è il candidato Elo visto da un'altra parte** (`b42`) | fuori lega −0.0037 (`z = −2.47`), prese +0.57 punti, Ligue 1 di nuovo contraria (+0.0020). Nelle 717 partite (14%) in cui modello ed Elo indicano favoriti diversi il pick prende il 37.7% (41.4% col disaccordo in regressione), contro il 55.2% delle altre. A parità di partite giocate la selezione non migliora (top 20%: 72.8 contro 73.2%) |
 | Le sorprese per periodo dell'anno: mese, fase della stagione, dopo le soste, turni infrasettimanali, feste (solo descrittivo, 16 ottobre 2026) | **solo dicembre, e il mercato lo sa già** | 23.278 partite delle 24 leghe, sfavorito del maestro. Fase (giornate 1–5, 6–10, fino a metà, seconda metà, ultime 6): χ² 1.9 su 4 attorno alla media. Dopo le soste per le nazionali +0.3 ±2.2 punti, turni infrasettimanali −1.3 ±1.1, 20 dicembre – 7 gennaio −2.4 ±2.6. Mese: χ² 21.0 su 11. Spicca dicembre: lo sfavorito vince il 21.2% contro il 24.4% previsto, 2.6 punti sotto il resto dell'anno (±2.0), in tutti e tre i dicembri (−5.0 / −1.5 / −3.0) e in 11 leghe su 15; pareggi normali. Contro le quote di chiusura dicembre sta −0.9 ±2.4 rispetto al resto dell'anno: lo sanno già. Scelto fra 12 mesi: da provare, se serve, su un dicembre nuovo |
+| Il maestro coi bersagli dell'1X2 tolti alla Shin invece che in proporzione (regola registrata) | **no** | esplorazione sulle 14 leghe del maestro −0.51‰ (`z = −3.03`, 10 su 14), pendenza 1 contro 2 da 1.12 a 1.06; test sulle 33 leghe del test del maestro −0.14‰ (`z = −0.81`), 16 su 33. Lì il maestro del `b77` non era timido con gli sfavoriti (25.53% previsti, 25.52% vinti). Vedi *Il maestro coi bersagli di Shin: la regola* |
 | La diagonale gonfiata di Karlis–Ntzoufras (`δ` sui pareggi da 1-1 in su) sopra la matrice del maestro (solo descrittivo) | **quasi niente: il maestro ha chiuso il buco** | 23.278 partite delle 24 leghe, fuori lega `δ` 0.08–0.10: risultato esatto −0.42‰ (`z = −1.89`), Goal −0.28‰, Over 2.5 +0.16‰ (`z = +4.54`). Pareggi della matrice 24.4 → 25.6% contro 25.5% reali. Sulla matrice del `b63` valeva −1.80‰. Vedi *Da fare* |
 | Togliere il margine dell'1X2 alla Shin o con la potenza invece che in proporzione, nella card delle quote (solo descrittivo) | **no: `QUOTE_COMB` ricalibra già** | 16.071 partite di 14 leghe, chiusura. Crudo, contro la proporzione: potenza −0.85‰, Shin −0.75‰ (la proporzione sottovaluta i favoriti: sopra il 65% prevede 73.5, esce 77.2). Ricalibrato fuori lega, come fa `QUOTE_COMB`: −0.02‰ e −0.03‰. Per i bersagli del maestro è un'altra cosa: vedi *Il maestro coi bersagli di Shin: la regola* |
 
@@ -5128,6 +5169,7 @@ misurate.
 | **La quota fissa del primo gol** (`b75`) | registrata prima, 11.633 partite di 36 leghe mai aperte per questa domanda: somma delle logloss del gol prima del 30' e dell'Over 0.5 nel primo tempo −7.30‰ (`z = −4.93`), 29 leghe su 36; la card diventa calibrata |
 | **Il rating di pressione nel maestro** (nello Scanner nel `b82`, tolto nel `b83`: costava troppe chiamate) | registrato prima, 13.592 partite di 33 leghe, pressione su 7.648: 1X2 −0.54‰ (`z = −2.56`), risultato esatto −0.65‰ (`z = −2.66`), meglio in 10 leghe su 13 |
 | **L'arbitro nei gialli, Serie A e LaLiga** (non ancora nello Scanner) | registrato prima, 850 partite del 2025/26 e del 2026/27: conteggio dei gialli −18.88‰ (`z = −3.37`), Over 3.5 −13.44‰ (`z = −2.85`), meglio in 2 leghe su 2 |
+| **Chi fa più corner** (test registrato del 16 ottobre 2026; da mettere nello Scanner, `b84`) | il totale dei corner diviso fra le due squadre con una beta-binomiale (corner previsti ed Elo): sui batch del `b74`, 7.120 partite, corner 1X2 −48.7‰ contro una frequenza fissa (`z = −14.79`), 23 leghe su 24; handicap ±1.5 −80.8‰ |
 | **Lo squilibrio sui tiri in porta** (`b42`) | registrato prima di vedere due leghe e passato su tutte e due; cinque leghe −0.0029 di logloss dell'Over 8.5, `z = −3.10`, positivo in 14 stagioni su 15 |
 
 ## La baseline di coppia
