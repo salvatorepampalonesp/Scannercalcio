@@ -293,6 +293,11 @@ Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export rec
   imparate dal mercato (ridge dalle 65 variabili del motore all'1X2 e ai lambda del mercato), poi usate senza quote. Sui
   risultati di 33 leghe mai usate per questo (13.592 partite): 1X2 −4.37‰ (`z = −5.30`, 25 su 33), risultato esatto
   −13.41‰ (`z = −8.88`, 31 su 33), Over 2.5 −3.50‰, differenza reti −8.14‰. Vedi *Il maestro mercato: la regola*.
+- [ ] **Il maestro coi bersagli di Shin: il test.** Il maestro impara l'1X2 del mercato col margine tolto in proporzione,
+  che sottovaluta i favoriti, e ne eredita la timidezza. Coi bersagli tolti alla Shin, fuori lega sulle 14 leghe del
+  maestro, l'1X2 fa −0.51‰ (`z = −3.03`, 10 leghe su 14) e la pendenza 1 contro 2 scende da 1.12 a 1.06. È gratis: si
+  rifà l'allenamento, nessuna chiamata. Regola registrata il 16 ottobre 2026, test sulle 33 leghe del test del maestro.
+  Vedi *Il maestro coi bersagli di Shin: la regola*.
 - [x] ~~**Il rating di pressione nel maestro: il test.**~~ — **passato, tutti e due i test** (12 ottobre 2026). La curva
   `/momentum` della PitchAPI, corretta per l'avversario come l'Elo, come 66ª variabile del maestro. Sui risultati delle 33
   leghe del test del maestro: 1X2 −0.54‰ (`z = −2.56`, 10 leghe su 13), risultato esatto −0.65‰ (`z = −2.66`, 10 su 13);
@@ -3750,6 +3755,54 @@ Si mette nello Scanner (`b77`), con quello che la regola diceva di rimisurare.
 regola, l'1X2 e i lambda che lo Scanner ha stampato. Sul batch finto del `b77` (89 partite) stanno entro 0.094 punti e
 0.0025, cioè l'arrotondamento del CSV. Controllo di potenza: con un coefficiente spostato di 0.05 escono 2.15 punti, e lo
 strumento esce con 1.
+
+### Il maestro coi bersagli di Shin: la regola
+
+Scritta il 16 ottobre 2026, prima di aprire i dati del test: per questa domanda, delle leghe del test non si è letta
+nessuna riga. È una delle sei proposte a zero chiamate discusse con l'utente («parti con corner e Shin»).
+
+**Perché.** Il maestro (`b77`) impara dal mercato l'1X2 di chiusura col margine tolto in proporzione (`1/q` normalizzato).
+Così il favorito risulta meno probabile di quanto è, e il maestro ne eredita la timidezza. Sulle 14 leghe del maestro:
+- sopra il 65% il mercato in proporzione prevede 73.5% ed esce il 77.2%;
+- il maestro, fuori lega, ha pendenza 1 contro 2 di 1.12 sui risultati: sopra il 65% prevede 73.0% ed esce il 76.3%;
+- sulle 24 leghe dà agli sfavoriti in media 0.8 punti di troppo.
+
+Il metodo di Shin toglie il margine supponendo che il bookmaker si difenda da una quota `z` di scommettitori informati, e
+carica più margine sugli sfavoriti. Per ogni partita `z` si trova per bisezione, finché le tre probabilità sommano a 1.
+
+**L'esplorazione**, sulle 14 leghe del maestro (16.071 partite), fuori lega, sui risultati, contro il maestro del `b77`:
+- *A, solo i bersagli dell'1X2* (`T1`, `T2` da Shin, i lambda come prima): 1X2 −0.51‰ (`z = −3.03`), meglio in 10 leghe
+  su 14, prese +0.02 punti. La pendenza scende da 1.12 a 1.06, e sopra il 65% prevede 73.6% ed esce il 75.0%;
+- *B, anche i lambda* della matrice allineata col `log(p1/p2)` di Shin: stesso 1X2, ma risultato esatto +0.47‰ (`z =
+  +2.14`) e Goal +0.48‰ (`z = +3.92`). Scartata;
+- *il metodo della potenza* sui bersagli dell'1X2: −0.53‰, ma `z = −2.16` e solo 7 leghe su 14;
+- *nella card delle quote* niente: `QUOTE_COMB` ricalibra già (vedi *Cosa è già stato provato*).
+
+**Il candidato, con tutto fissato**: il maestro della variante A, `strumenti/maestro_regola_shin.json` (`python3
+strumenti/maestro-shin.py --allena`, stimato su tutte le 16.071 partite). Le variabili, le medie, le deviazioni, le mediane
+e le colonne dei due lambda sono identiche a `maestro_regola.json`. Cambiano solo le due colonne di `T1` e `T2`. Senza
+quote, 1X2 = softmax(`T1`, 0, `T2`) come nel `b77`.
+
+**I dati del test**: le 33 leghe del test del maestro (`batch/livello`, `batch/lontane`, `batch/anno2026`,
+`batch/europa2526`; 13.592 partite). Lì si sono misurati il maestro (`b77`) e la pressione (`b82`), mai il margine.
+
+**Il metro e quando passa.** La logloss 1X2 sui risultati, maestro di Shin contro quello del `b77`, appaiata partita per
+partita. Passa se:
+- scende con `z ≤ −2`;
+- è meglio in più di metà delle leghe con almeno 100 partite;
+- le prese del pick non calano oltre −2 errori standard.
+
+I gol non cambiano: i lambda sono gli stessi. Con l'effetto dell'esplorazione ci si aspetta `z` intorno a −2.8: il test è
+al limite della potenza.
+
+**Se passa.** Nello Scanner `MAESTRO_REG` prende le colonne di `T1` e `T2` di Shin, con una manopola che torna al `b77`. Si
+rimisura quello che dipende dall'1X2 del maestro: `PICK_RESA`, `SORPRESA_TAB`, le rese dell'1X2 di `EDGE_BANDS`, e i numeri
+del maestro senza quote in `QUOTE_RESA`. Con le quote non cambia niente: `QUOTE_COMB` riceve l'1X2 del motore. Se non
+passa, resta il `b77`, e questa sezione dice perché.
+
+**Descrittivi**, che non decidono: ogni lega, la taratura del pick per fascia, lo sfavorito previsto contro quello che
+vince. `python3 strumenti/maestro-shin.py --prova batch/livello batch/lontane batch/anno2026 batch/europa2526` rifà il
+test; senza argomenti rifà l'esplorazione.
 
 ### Il rating di pressione: la regola
 

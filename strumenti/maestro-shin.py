@@ -17,7 +17,7 @@ def _mod(nome, f):
     s = importlib.util.spec_from_file_location(nome, os.path.join(QUI, f)); m = importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
 ma = _mod('ma', 'maestro.py'); qg = ma.qg
 FILE_SHIN = os.path.join(QUI, 'maestro_regola_shin.json')
-VARIANTE = None   # fissata dall'esplorazione: 'A' solo i bersagli dell'1X2, 'B' anche i lambda della matrice allineata
+VARIANTE = 'A'    # fissata dall'esplorazione: 'A' solo i bersagli dell'1X2 (i lambda restano quelli del b77); 'B', che rifaceva anche i lambda, peggiorava esatto e Goal
 
 def shin(IP):
     # IP: le probabilita' implicite 1/q (n x 3). Le probabilita' di Shin, che sommano a 1.
