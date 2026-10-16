@@ -159,6 +159,9 @@ if (VERA) {
   await page.evaluate(() => { schedaVai('numeri'); window.scrollTo(0, 0); }); await foto(String(n++).padStart(2, '0') + '-numeri');
   await page.evaluate(() => { document.querySelectorAll('[data-scheda="numeri"] details.card').forEach((d, i) => { if (i < 3) d.open = true; }); window.scrollTo(0, 0); });
   await foto(String(n++).padStart(2, '0') + '-numeri-aperte');
+  await page.evaluate(async () => { const t = document.getElementById('cor-diff'), d = t && t.closest('details'); if (!d) return;
+    d.open = true; await new Promise(r => setTimeout(r, 400)); window.scrollTo(0, t.getBoundingClientRect().top + window.scrollY - 420); });
+  await foto(String(n++).padStart(2, '0') + '-numeri-corner');
   for (const k of ['prompt', 'dati']) { await page.evaluate(k => { schedaVai(k); window.scrollTo(0, 0); }, k); await foto(String(n++).padStart(2, '0') + '-' + k); }
   await page.evaluate(() => { schedaVai('partita'); const a = document.querySelector('#nav-sezioni [data-k="altro"]'); if (a) a.click(); });
   await foto(String(n++).padStart(2, '0') + '-altro');

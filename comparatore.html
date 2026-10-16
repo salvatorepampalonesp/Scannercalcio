@@ -289,7 +289,7 @@ select{appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:36px
 
   <div class="topbar">
     <div class="brand"><svg class="ic" aria-hidden="true"><use href="#i-chart-bar"/></svg><h1>Comparatore V9.7</h1></div>
-    <div class="tb-tag"><span class="badge" id="build-ver">build 0905-b83</span><span class="badge" id="engine-badge">motore non caricato</span></div>
+    <div class="tb-tag"><span class="badge" id="build-ver">build 0905-b84</span><span class="badge" id="engine-badge">motore non caricato</span></div>
   </div>
 
   <!-- indicatore di flusso -->
@@ -977,7 +977,7 @@ async function loadEngineFromText(text, fileName) {
     <p><code>${fileName}</code>: clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
 
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b83';
+  const _bComp = '0905-b84';
   window.__CMP_BUILD = _bComp;
   const _el = document.getElementById('engine-build');
   if (_el) {
@@ -1918,6 +1918,10 @@ const cmpTabHit = (key, o, gt, gg, T) => {
     case 'cor9.5': return (T && T.cor != null) ? T.cor > 9.5 : null;
     case 'sot8.5': return (T && T.sot != null) ? T.sot > 8.5 : null;
     case 'yel3.5': return (T && T.yel != null) ? T.yel > 3.5 : null;
+    case 'cdH': return (T && T.cd != null) ? T.cd > 0 : null;
+    case 'cdA': return (T && T.cd != null) ? T.cd < 0 : null;
+    case 'chH': return (T && T.cd != null) ? T.cd >= 2 : null;
+    case 'chA': return (T && T.cd != null) ? T.cd <= -2 : null;
   }
   return null;
 };
@@ -2279,6 +2283,7 @@ function cmpRender(match, R, actH, actA) {
   // IL TABELLONE, nell'ordine e coi verdetti con cui lo stampa lo Scanner
   {
     const T = { cor: (actH.cor!=null&&actA.cor!=null)?actH.cor+actA.cor:null,
+                cd: (actH.cor!=null&&actA.cor!=null)?actH.cor-actA.cor:null,
                 sot: (actH.sot!=null&&actA.sot!=null)?actH.sot+actA.sot:null,
                 yel: (actH.yel!=null&&actA.yel!=null)?actH.yel+actA.yel:null };
     const V = R._verdetti || [];
@@ -2428,6 +2433,7 @@ function cmpBuildResult(match, R, actH, actA) {
     predStats: R.predStats || null,
     goalsMarket: gm,
     realTotals: { cor: (actH.cor!=null&&actA.cor!=null)?actH.cor+actA.cor:null,
+                  cd: (actH.cor!=null&&actA.cor!=null)?actH.cor-actA.cor:null,
                   sot: (actH.sot!=null&&actA.sot!=null)?actH.sot+actA.sot:null,
                   yel: (actH.yel!=null&&actA.yel!=null)?actH.yel+actA.yel:null },
 
@@ -2733,6 +2739,11 @@ function cmpExportCSV() {
     ['Tiri porta Over 8.5', m => { const a = m.R.advRole||m.R.advOver; return [a?fmt(a.pOv8s):'N/D', '-', m.realTotals.sot!=null?(m.realTotals.sot>8?'Over':'Under'):'N/D', (a&&m.realTotals.sot!=null)?verd(a.pOv8s, m.realTotals.sot>8):'']; }],
     ['Gialli tot (atteso)', m => { const a = m.R.advRole||m.R.advOver; return [a?_num(a.lYel):'N/D', '-', m.realTotals.yel!=null?m.realTotals.yel:'N/D', '']; }],
     ['Gialli Over 3.5', m => { const a = m.R.advRole||m.R.advOver; return [a?fmt(a.pOv3y):'N/D', '-', m.realTotals.yel!=null?(m.realTotals.yel>3?'Over':'Under'):'N/D', (a&&m.realTotals.yel!=null)?verd(a.pOv3y, m.realTotals.yel>3):'']; }],
+    ...[['Corner: piu\' la casa', C => C.pH, d => d > 0], ['Corner: stesso numero', C => C.pX, d => d === 0], ['Corner: piu\' la trasferta', C => C.pA, d => d < 0],
+        ['Corner: casa -1.5', C => C.hc['-1.5'], d => d >= 2], ['Corner: casa +1.5', C => C.hc['1.5'], d => d >= -1]]
+      .map(([lbl, pf, hit]) => [lbl, m => { const a = m.R.advRole||m.R.advOver, C = a && a.cd, d = m.realTotals.cd;
+        return [C?fmt(pf(C)):'N/D', '-', d!=null?(d>0?'+':'')+d:'N/D', (C&&d!=null)?verd(pf(C), hit(d)):'']; }]),
+    ['Corner: quota della casa (s)', m => { const a = m.R.advRole||m.R.advOver, C = a && a.cd; return [C?_num(C.s):'N/D', '-', '', '']; }],
     ['Dispersione corner (k)', m => { const a = m.R.advRole||m.R.advOver; return [a?(isFinite(a.kCor)?_num(a.kCor):'Poisson'):'N/D', '-', '', '']; }],
     ['Dispersione tiri porta (k)', m => { const a = m.R.advRole||m.R.advOver; return [a?(isFinite(a.kSot)?_num(a.kSot):'Poisson'):'N/D', '-', '', '']; }],
     ['Dispersione gialli (k)', m => { const a = m.R.advRole||m.R.advOver; return [a?(isFinite(a.kYel)?_num(a.kYel):'Poisson'):'N/D', '-', '', '']; }],

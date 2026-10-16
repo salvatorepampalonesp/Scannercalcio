@@ -761,7 +761,7 @@ body.vista-partita .dock{display:flex}
     <button type="button" class="btn btn-ghost ab-back" id="btn-nuova" onclick="tornaIndietro()" aria-label="Indietro"><svg class="ic" aria-hidden="true"><use href="#i-arrow-left"/></svg><span>Cambia partita</span></button>
     <span class="ab-tit" id="ab-tit"><b></b><small></small></span>
     <span class="ab-spazio"></span>
-    <span class="tag" id="build-ver">build 0905-b83</span>
+    <span class="tag" id="build-ver">build 0905-b84</span>
   </div>
 </header>
 
@@ -1220,6 +1220,10 @@ body.vista-partita .dock{display:flex}
           <div class="sub-title">Over per linea (solo ruolo)</div>
           <div class="tbl-scroll"><table class="table-ui" id="mkt-lines"></table></div>
           <div class="note" style="margin-top:8px" id="mkt-legend"></div>
+          <div class="sub-title">Chi fa più corner</div>
+          <div class="tbl-scroll"><table class="table-ui table-compact" id="cor-diff"></table></div>
+          <div class="tbl-scroll" style="margin-top:8px"><table class="table-ui table-compact" id="cor-hc"></table></div>
+          <div class="note" style="margin-top:8px">Il totale dei corner diviso fra le due squadre, dai corner previsti e dall'Elo. Il totale quasi non si prevede, chi ne fa di più sì: su 7.120 partite di 24 leghe mai usate per stimarlo, il modello sbaglia il 48.7‰ in meno della frequenza della lega, ed è calibrato.</div>
         </div>
       </details>
 
@@ -3682,16 +3686,17 @@ function renderLeagueNote() {
 }
 
 // Per fascia di scarto e famiglia di mercato: [guadagno sopra il giocarlo sempre, 2se, proposte],
-// cinque leghe; 1X2 e gol dal b77 con le probabilita' del maestro (fuori lega), i numeri del motore (b49). Lo stesso scarto rende molto meno nei gol che nell'1X2, ma ordinare
+// cinque leghe; 1X2 e gol dal b77 con le probabilita' del maestro (fuori lega), i numeri del motore (b49), chi fa piu' corner
+// dal b84 (24 leghe fuori lega e b74). Lo stesso scarto rende molto meno nei gol che nell'1X2, ma ordinare
 // per guadagno atteso non sceglie proposte migliori: l'ordine resta per scarto.
 // Vedi AGENTS.md, Il tabellone per famiglia di mercato.
 window.EDGE_BANDS = window.EDGE_BANDS ||
-  [[20, 'FORTE',     { '1x2': [29.5, 1.6, 2463], gol: [24.3, 11.6, 55], numeri: [7.2, 8.0, 133] }],
-   [10, 'GIOCABILE', { '1x2': [17.1, 1.4, 3692], gol: [13.2, 3.5, 744], numeri: [10.2, 2.9, 1058] }],
-   [5,  'MARGINALE', { '1x2': [9.0, 1.7, 2912],  gol: [6.8, 1.9, 2801], numeri: [8.2, 2.4, 1628] }]];
+  [[20, 'FORTE',     { '1x2': [29.5, 1.6, 2463], gol: [24.3, 11.6, 55], numeri: [7.2, 8.0, 133], corner: [26.6, 0.9, 9448] }],
+   [10, 'GIOCABILE', { '1x2': [17.1, 1.4, 3692], gol: [13.2, 3.5, 744], numeri: [10.2, 2.9, 1058], corner: [13.7, 0.7, 17482] }],
+   [5,  'MARGINALE', { '1x2': [9.0, 1.7, 2912],  gol: [6.8, 1.9, 2801], numeri: [8.2, 2.4, 1628], corner: [6.6, 0.8, 14810] }]];
 const EDGE_FAMIGLIA = { pOv: 'gol', pUn: 'gol', pGG: 'gol', pNG: 'gol',
-  'cor9.5': 'numeri', 'sot8.5': 'numeri', 'yel3.5': 'numeri' };
-const EDGE_FAMIGLIA_TXT = { '1x2': "dell'1X2", gol: 'dei mercati gol', numeri: 'dei mercati sui numeri' };
+  'cor9.5': 'numeri', 'sot8.5': 'numeri', 'yel3.5': 'numeri', cdH: 'corner', cdA: 'corner', chH: 'corner', chA: 'corner' };
+const EDGE_FAMIGLIA_TXT = { '1x2': "dell'1X2", gol: 'dei mercati gol', numeri: 'dei mercati sui numeri', corner: 'su chi fa piu\' corner' };
 // Con le quote (b58): le stesse fasce, rese misurate sulle probabilita' con le quote, dodici leghe
 // per l'1X2 e undici per i gol. I numeri non hanno quote: restano quelli di EDGE_BANDS.
 const EDGE_BANDS_QUOTE = [[20, 'FORTE', { '1x2': [28.6, 1.0, 6700], gol: [20.0, 4.7, 371] }],
@@ -3738,6 +3743,14 @@ function _vociVerdetti(mk, base, adv, daQuote) {
     // isFinite(kk) i gialli restavano senza base sul 73% delle partite.
     for (const [nome, pr, ref, kk, line, desc, key] of NUM)
       R.push([nome, pr, (ref > 0) ? over(line, ref, kk) : null, desc, key]);
+  }
+  // chi fa piu' corner (b84): la base di lega e' la frequenza fissa della regola, misurata su 24 leghe
+  if (adv && adv.cd) {
+    const C = adv.cd, CB = CORNER_DIFF_REG;
+    R.push(['Piu\' corner casa', C.pH, CB.costante[0], 'La casa fa piu\' corner', 'cdH'],
+           ['Piu\' corner trasf.', C.pA, CB.costante[2], 'La trasferta fa piu\' corner', 'cdA'],
+           ['Corner casa -1.5', C.hc['-1.5'], CB.handicap['-1.5'], 'Casa con almeno 2 corner in piu\'', 'chH'],
+           ['Corner trasf. -1.5', 1 - C.hc['1.5'], 1 - CB.handicap['1.5'], 'Trasferta con almeno 2 corner in piu\'', 'chA']);
   }
 
   const voci = [];
@@ -3796,7 +3809,7 @@ function _tabTesto(V) {
        + senza.map(v => v.nome + ' ' + (v.edge == null ? 'base ignota' : (v.edge >= 0 ? '+' : '') + v.edge.toFixed(1))).join(', ') : '');
 }
 
-window.__SCANNER_BUILD = '0905-b83';
+window.__SCANNER_BUILD = '0905-b84';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -4169,6 +4182,27 @@ const NUMERI_REG = {
   KNN_GG: [0.2003, 0.1868], KNN_OV: [0.2100, 0.3381],
   KNN_1X2_W: [[0.5555, -0.3767], [-0.1038, -0.1605], [-0.4518, 0.5373]], KNN_1X2_B: [-0.1965, -0.1348, 0.3314]
 };
+
+// chi fa piu' corner: il totale diviso fra le due squadre (beta-binomiale), i numeri della regola registrata
+// (AGENTS.md, Chi fa piu' corner: la regola); 'no' torna a prima
+window.CORNER_DIFF = (typeof window.CORNER_DIFF === 'string') ? window.CORNER_DIFF : 'si';
+const CORNER_DIFF_REG = { c: 5.3693, b: 0.4597, kT: 63.97, a: 0.112, b1: 0.5231, b2: 0.1781, phi: 13.843, minimo: 0.5,
+  costante: [0.541, 0.0936, 0.3655], handicap: { '-1.5': 0.4445, '1.5': 0.7216 } };
+function cornerDiff(cph, cpa, elod) {
+  const R = CORNER_DIFF_REG, lg = _logGamma, lb = (x, y) => lg(x) + lg(y) - lg(x + y);
+  const ph = Math.max(cph, R.minimo), pa = Math.max(cpa, R.minimo), k = R.kT;
+  const mu = Math.max(R.c + R.b * (ph + pa), 2);
+  const s = 1 / (1 + Math.exp(-(R.a + R.b1 * Math.log(ph / pa) + R.b2 * elod / 100)));
+  const al = s * R.phi, be = (1 - s) * R.phi, lb0 = lb(al, be), PT = [];
+  let st = 0;
+  for (let t = 0; t <= 40; t++) { const v = Math.exp(lg(t + k) - lg(k) - lg(t + 1) + k * Math.log(k / (k + mu)) + t * Math.log(mu / (k + mu))); PT.push(v); st += v; }
+  const D = new Array(81).fill(0);
+  for (let t = 0; t <= 40; t++)
+    for (let h = 0; h <= t; h++) D[2 * h - t + 40] += PT[t] / st * Math.exp(lg(t + 1) - lg(h + 1) - lg(t - h + 1) + lb(h + al, t - h + be) - lb0);
+  const P = f => D.reduce((a, p, i) => a + (f(i - 40) ? p : 0), 0), hc = {};
+  for (const h of [-2.5, -1.5, -0.5, 0.5, 1.5, 2.5]) hc[h.toFixed(1)] = P(v => v + h > 0);
+  return { ph, pa, elod, mu, s, pH: P(v => v > 0), pX: P(v => v === 0), pA: P(v => v < 0), hc };
+}
 
 // media pesata fra due stime del lambda, NON un moltiplicatore: un fattore limitato
 // lascia il rango dominato dal Dixon-Coles e non sposta niente (AGENTS.md, I gol)
@@ -4638,6 +4672,14 @@ async function avviaScanner() {
       const r = _mediaC(t.role && t.role.vals ? t.role.vals[key] : null);
       return r != null ? r : _mediaC(t.overall && t.overall.vals ? t.overall.vals[key] : null);
     };
+    const _CD = (() => {
+      if (window.CORNER_DIFF === 'no') return null;
+      const h = _prevStat(dH, 'H', 'cor'), a = _prevStat(dA, 'A', 'cor'), e = eloH_ov - eloA_ov;
+      if (!(h != null && isFinite(h) && a != null && isFinite(a) && isFinite(e))) return null;
+      try { const C = cornerDiff(h, a, e); return [C.pH, C.pX, C.pA].every(x => isFinite(x)) ? C : null; } catch (err) { return null; }
+    })();
+    advRole.cd = _CD; advOver.cd = _CD;
+    window.__CORNER_DEBUG = _CD;
     const _MA = (() => {
       if (window.MAESTRO === 'no') return null;
       try {
@@ -5005,6 +5047,13 @@ async function avviaScanner() {
       });
     });
     safeHtml('mkt-lines', _mktHtml);
+    { const C = advRole.cd;
+      safeHtml('cor-diff', C ? `<tr><th></th><th style="color:var(--blue)">Casa</th><th>Pari</th><th style="color:var(--red)">Trasferta</th></tr>`
+        + `<tr><td>Piu' corner</td><td style="font-weight:bold">${pct(C.pH)}</td><td>${pct(C.pX)}</td><td style="font-weight:bold">${pct(C.pA)}</td></tr>`
+        : `<tr><td>N/D: mancano i corner previsti o l'Elo</td></tr>`);
+      safeHtml('cor-hc', C ? `<tr><th>Handicap casa</th><th style="color:var(--blue)">Casa</th><th style="color:var(--red)">Trasferta</th></tr>`
+        + ['-2.5', '-1.5', '-0.5', '0.5', '1.5', '2.5'].map(l => `<tr><td>${l[0] === '-' ? l : '+' + l}</td><td>${pct(C.hc[l])}</td><td>${pct(1 - C.hc[l])}</td></tr>`).join('')
+        : ''); }
     const _disp = (k) => (!isFinite(k)) ? 'Poisson' : ('k ' + Math.round(k));
     safeTxt('mkt-legend', `Conteggi con binomiale negativa: corner ${_disp(advRole.kCor)}, tiri in porta ${_disp(advRole.kSot)}, gialli ${_disp(advRole.kYel)}. ` +
       `«Poisson» vuol dire che le partite viste non sono piu' disperse del caso puro. ` +
@@ -5355,7 +5404,8 @@ Misurato: la fortuna recente (gol o punti sopra o sotto gli xG) non anticipa il 
 - Gol fatti/subiti [GENERALE] ${hName}: 1-15' ${bHs['1-15']}/${bHc['1-15']}, 76-90' ${bHs['76-90+']}/${bHc['76-90+']} | ${aName}: 1-15' ${bAs['1-15']}/${bAc['1-15']}, 76-90' ${bAs['76-90+']}/${bAc['76-90+']}${_numCorr ? `
 - Almeno un gol nella partita nei primi 15': ${pct(1 - Math.exp(-lamTot * NUMERI_REG.FORMA_TEMPI[0]))}, negli ultimi 15': ${pct(1 - Math.exp(-lamTot * NUMERI_REG.FORMA_TEMPI[5]))} (quota per fascia uguale per tutte: misurato, i minuti delle due squadre non dicono in che minuto si segna)` : ''}
 - Probabilita' di un gol entro il 30': ${pct(probGoal30)} [${_MA ? 'MAESTRO' : 'RUOLO'}]
-- Attesi, RUOLO | GENERALE: corner ${f1(advRole.lCor)} | ${f1(advOver.lCor)}, tiri in porta ${f1(advRole.lSot)} | ${f1(advOver.lSot)}, gialli ${f1(advRole.lYel)} | ${f1(advOver.lYel)}
+- Attesi, RUOLO | GENERALE: corner ${f1(advRole.lCor)} | ${f1(advOver.lCor)}, tiri in porta ${f1(advRole.lSot)} | ${f1(advOver.lSot)}, gialli ${f1(advRole.lYel)} | ${f1(advOver.lYel)}${advRole.cd ? `
+- Chi fa piu' corner (il totale diviso fra le due squadre, dai corner previsti e dall'Elo): ${hName} ${pct(advRole.cd.pH)}, stesso numero ${pct(advRole.cd.pX)}, ${aName} ${pct(advRole.cd.pA)}; ${hName} con almeno 2 corner in piu' ${pct(advRole.cd.hc['-1.5'])}, ${aName} con almeno 2 in piu' ${pct(1 - advRole.cd.hc['1.5'])}. Il totale dei corner quasi non si prevede, chi ne fa di piu' si': test registrato su 7.120 partite di 24 leghe, calibrato` : ''}
 
 9. STANCHEZZA (solo contesto: misurato su ${PICK_RESA.partite} partite, il vantaggio di riposo non migliora la previsione)
 ${_stancTxt}

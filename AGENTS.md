@@ -55,7 +55,7 @@ vedi *Le quote automatiche*); se non ci sono, le scrive l'utente. Per misurarle 
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b83`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b84`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -532,7 +532,8 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   verso una costante, e la `k` è fissa: lo scarto dei corner dal base rate cambia, e con lui quante volte salgono in
   cima. `EDGE_BANDS` per i numeri è del `b49`: va rimisurata sul tabellone del `b76` (un batch delle cinque leghe).
 - [x] ~~**Chi fa più corner: il test.**~~ — **passato** (16 ottobre 2026): sui batch del `b74` −48.7‰ (`z = −14.79`), 23
-  leghe su 24. Da mettere nello Scanner (`b84`): card dei corner, tabellone con le rese misurate, CSV, prompt. Il racconto
+  leghe su 24. **Nello Scanner dal `b84`**: card dei corner, tabellone (rese FORTE / GIOCABILE / MARGINALE +26.6 / +13.7 /
+  +6.6), CSV, prompt. Il racconto
   sotto resta per la storia. Il totale dei corner non si prevede, chi ne fa di più sì. Regola registrata il 16
   ottobre 2026: il totale diviso fra le due squadre con una beta-binomiale (corner previsti ed Elo), da cui corner 1X2 e
   handicap dei corner. Nell'esplorazione, fuori lega sulle 24 leghe, −45.2‰ contro una frequenza fissa (`z = −23.8`, 24
@@ -562,7 +563,7 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b83`)
+## Stato attuale (`b84`)
 
 **Il maestro mercato** (dal `b77`). Senza quote, l'1X2 del verdetto e la matrice dei gol (Over/Under, Goal, multigol,
 risultati esatti, handicap, tempi dei gol) non escono più dall'ensemble del motore ma dal maestro. È una ridge che dalle
@@ -593,6 +594,14 @@ corretto per l'avversario come l'Elo, come 66ª variabile del maestro: sulle 33 
 risultato esatto −0.65‰ (`z = −2.66`), meglio in 10 leghe su 13. La curva c'è in 42 leghe su 77, ma scaricarla costava
 circa 1.100 chiamate e un minuto e mezzo alla prima analisi di ogni lega, con le prese del pick ferme: l'utente l'ha tolta.
 Dal `b83` il maestro è quello del `b77` in tutte le leghe. Vedi *Il rating di pressione: la regola*, «Tolto nel `b83`».
+
+**Chi fa più corner** (dal `b84`). Il totale dei corner di una partita quasi non si prevede (dal `b76` vale quanto la
+frequenza della lega), chi ne fa di più sì. Il totale è diviso fra le due squadre con una beta-binomiale, dai corner
+previsti e dall'Elo. Regola registrata prima, test sui batch del `b74` (7.120 partite di 24 leghe): corner 1X2 −48.7‰
+contro la frequenza della lega (`z = −14.79`, 23 leghe su 24), calibrato. Nella card dei corner il corner 1X2 e l'handicap
+della casa; nel tabellone più corner la casa, più corner la trasferta e le due −1.5, che rendono quanto promettono (FORTE
++26.6, GIOCABILE +13.7, MARGINALE +6.6 punti sopra il giocarle alla cieca, su 41.740 proposte). Vedi *Chi fa più corner:
+la regola*, «Nel motore (`b84`)».
 
 **1X2 del motore, prima del maestro.** Col motore `b48` il pick azzecca il 52.7% (±1.4) contro il 43.0% del «gioca sempre in
 casa» sulle cinque leghe: 52.7% contro 40.2% in Serie A, 52.7% contro 43.1% in Premier, 53.2%
@@ -1033,7 +1042,7 @@ gialli il base rate è il riferimento ancorato ai gol di lega (`MARKET_PER_GOAL 
 infinita** (Poisson): fino al `b40` una guardia `isFinite(kk)` lasciava il mercato senza base
 e fuori dall'ordinamento sul 73% delle partite per i gialli, 44% per i tiri, 23% per i
 corner. Fasce (`EDGE_BANDS`): ≥20 FORTE, ≥10 GIOCABILE, ≥5 MARGINALE. Dal `b50` ogni fascia
-porta il guadagno misurato **per famiglia di mercato** (1X2, gol, numeri: `EDGE_FAMIGLIA` dice
+porta il guadagno misurato **per famiglia di mercato** (1X2, gol, numeri e dal `b84` chi fa più corner: `EDGE_FAMIGLIA` dice
 di quale famiglia è ogni chiave), con ±2se e numero di proposte, e ogni riga mostra quello della
 sua famiglia.
 
@@ -2073,7 +2082,7 @@ testo, lo modifica con delle regex e lo esegue con `new Function`. Dipende quind
    giro, dal **primo** giro del ciclo: `window.__CONF_MK` (le confidence di tutti i mercati,
    gia' arrotondate come nei badge) e `window.__VERDETTI` (il tabellone, ogni voce con la sua
    `key`: `p1`, `pX`, `p2`, `p1X`, `pX2`, `p12`, `pOv`, `pUn`, `pGG`, `pNG`, `cor9.5`,
-   `sot8.5`, `yel3.5`). Una voce nuova nel tabellone vuole una `key` nuova e il suo caso in
+   `sot8.5`, `yel3.5`, e dal `b84` `cdH`, `cdA`, `chH`, `chA`). Una voce nuova nel tabellone vuole una `key` nuova e il suo caso in
    `cmpTabHit`, altrimenti nel CSV il reale di quella voce e' `N/D`.
 8. **Lo storico dello Scanner** si legge dall'attributo `id="history-limit" ... value="30"`
    dell'HTML dello Scanner. Cambiarne la forma lascia il Comparatore senza metro (il log
@@ -2157,10 +2166,10 @@ dall'id della partita e servita al posto di PitchAPI, con una neopromossa e senz
 `/advanced` sulla stagione piu' vecchia come l'API vera. Lo Scanner si guida come lo usa
 l'utente (`caricaSquadreLega` e `avviaScanner` sulle partite di una data), il Comparatore gira
 in ogni modalita', e si confrontano **ogni scrittura a schermo del motore** (`safeTxt` e
-`safeHtml`, strumentate nei due file allo stesso modo: 201 per partita dal `b77`) e **122 righe del CSV**
+`safeHtml`, strumentate nei due file allo stesso modo: 203 per partita dal `b84`) e **131 righe del CSV**
 che riportano un numero dello Scanner (1X2, confidence di tutti i mercati, i sei modelli,
 GG e Over, corner/tiri/gialli e le loro linee, handicap, multigol, Elo, tabellone voce per
-voce, certificato, dal `b43` gli indici delle formazioni, dal `b44` quelli della stanchezza, dal
+voce, certificato, dal `b84` chi fa più corner, dal `b43` gli indici delle formazioni, dal `b44` quelli della stanchezza, dal
 `b47` la pendenza dell'Elo, dal `b48` il livello d'ingresso delle neopromosse). Tre modalita' sono controlli di
 potenza, e passano solo se il certificato dice NO col motivo giusto. Dal `b43` la lega finta ha
 anche le formazioni (rosa di 18, ogni titolare abituale riposa col 15%, la squadra 3 cambia
@@ -2186,15 +2195,15 @@ col movimento ridotto (`reducedMotion: 'reduce'`: i numeri che contano mostrereb
 intermedi), legge «In breve» da `#in-breve` (il riquadro, la sorpresa e le proposte sono tre blocchi)
 e misura le voci del dock e del foglio Altro, Squadre in tutte e tre le sotto-schede.
 
-Esito al `b83` (storico 30; uguale dal `b77`, tranne il `b82`), a 390px con tutte le 28 card aperte, scheda per scheda e in tutte e tre le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, 0 px):
+Esito al `b84` (storico 30), a 390px con tutte le 28 card aperte, scheda per scheda e in tutte e tre le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, 0 px):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
-| una partita, tutte del giorno, intervallo | 3/3 | 0 su 201 | 0 su 122 | 0 |
-| batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 201 | 0 su 122 | 0 |
+| una partita, tutte del giorno, intervallo | 3/3 | 0 su 203 | 0 su 131 | 0 |
+| batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 203 | 0 su 131 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
-| `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 140-165 | 75-82 | 0 |
-| `vecchio`: motore `b82` caricato (controllo) | 0/3, «motore caricato diverso ...» | 3 su 202 | 1 (il certificato) | 0 |
+| `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 142-167 | 84-90 | 0 |
+| `vecchio`: motore `b83` caricato (controllo) | 0/3, «motore caricato diverso ...» | 3 su 203 | 15-21 | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -2298,7 +2307,10 @@ il foglio di stile e le animazioni. Al `b82` il controllo col `b81` vedeva 25-33
 31-41 righe del CSV su 128: il banco aveva la curva finta (`/momentum`) e sei righe in più, quelle della pressione. Al `b83`,
 che toglie la pressione, il controllo col `b82` vede 3 scritture diverse su 202: `mdl-pres`, che il `b83` non scrive, il
 rischio sorpresa e il tabellone (le tabelle del `b77` al posto di quelle del `b82`). Il verdetto è lo stesso, perché la lega
-finta del `b83` non ha più la curva e il `b82` resta senza; nel CSV cambia solo il certificato.
+finta del `b83` non ha più la curva e il `b82` resta senza; nel CSV cambia solo il certificato. Al `b84` il controllo col `b83` vede
+3 scritture diverse su 203: le due tabelline nuove di chi fa più corner (`cor-diff`, `cor-hc`), che il `b83` non scrive, e il
+tabellone, che ha quattro proposte in più. Nel CSV 15-21 righe su 131: le cinque righe dei corner (N/D col `b83`), le righe del
+tabellone che si spostano e il certificato. Il banco confronta anche le due tabelline con le righe del CSV.
 
 **Il controllo del `b70`.** Da qui «In breve» controlla anche il rischio sorpresa: con le quote dell'1X2
 `#sorpresa-box` deve essere identico a quello rifatto nella pagina con `rischioSorpresa(…,
@@ -2742,6 +2754,47 @@ batch/anno2026 batch/europa2526` rifà il test; senza argomenti rifà l'esploraz
   61.2, +1.5 71.1 / 69.6, +2.5 78.6 / 77.8.
 
 Entra nello Scanner come dice la regola, col `b84`.
+
+**Le rese nel tabellone**, misurate prima di mostrarle (`python3 strumenti/corner-differenza.py --rese`). Le probabilità
+sono fuori lega sulle 24 leghe (23.278 partite) e coi numeri della regola sul `b74` (7.120). La base di lega è la frequenza
+fissa della regola; la resa è il reale meno la frequenza del mercato nella stagione del file, come per `EDGE_BANDS`.
+
+| fascia | le quattro proposte, 24 leghe + `b74` | 24 leghe, sei proposte | `b74`, sei proposte |
+|---|---|---|---|
+| FORTE (≥ +20) | +26.6 ±0.9 (9.448) | +26.3 ±0.9 | +26.3 ±1.7 |
+| GIOCABILE (≥ +10) | +13.7 ±0.7 (17.482) | +13.3 ±0.6 | +15.1 ±1.1 |
+| MARGINALE (≥ +5) | +6.6 ±0.8 (14.810) | +7.0 ±0.7 | +6.5 ±1.3 |
+
+- *Rendono quanto promettono*, come l'1X2 (+29.5 / +17.1 / +9.0) e al contrario del totale dei corner (FORTE +7.2).
+- *Le quattro proposte*: più corner la casa (base 54.1%), più corner la trasferta (36.6%), casa −1.5 (44.5%), trasferta
+  −1.5 (27.8%, cioè la casa a +1.5 che non copre). Ognuna ha uno scarto di almeno +5 nel 32–36% delle partite e di almeno
+  +20 nel 7–8%, e per fascia rende uguale. Le due +1.5 (casa +1.5, trasferta +1.5) rendono uguale, ma ripetono le altre
+  dalla parte opposta: fuori dal tabellone, dentro la card.
+- *La prima proposta del tabellone*, solo descrittivo e sui tabelloni dei motori di allora: un corner va in cima nel 21%
+  delle partite, e la resa della prima proposta passa da +12.40 a +12.56 sulle 24 leghe (+0.16 ±0.41) e da +10.34 a
+  +10.81 sul `b74` (+0.47 ±0.74). Come per l'ordine per famiglia (`b50`): sale in cima un mercato che rende quanto quello
+  che toglie.
+
+**Nel motore (`b84`).** `window.CORNER_DIFF = 'si'` (`'no'` torna al `b83`), coi numeri di `CORNER_DIFF_REG`, uguali a
+`REGOLA` dello strumento; `cornerDiff` fa la distribuzione della differenza come `differenza` dello strumento (sul banco,
+le stesse probabilità al sesto decimale).
+- *Gli ingressi*: i corner previsti delle due squadre come li legge `cmpExtractPrev` (le righe `Corner` del CSV, la stessa
+  `_prevStat` del maestro) e la differenza di Elo senza vantaggio campo (`ELO Diff (H-A)`). Se manca uno dei tre, niente.
+  Nessuna chiamata in più.
+- *A schermo*: nella card «Corner, tiri e cartellini» due tabelline (`cor-diff`: più corner la casa, stesso numero, più
+  corner la trasferta; `cor-hc`: l'handicap della casa da −2.5 a +2.5, con la trasferta alla linea opposta) e una nota.
+- *Nel tabellone* le quattro proposte (chiavi `cdH`, `cdA`, `chH`, `chA`), famiglia `corner` di `EDGE_BANDS` con le rese
+  qui sopra. Con le quote restano del motore, come i numeri. Nel mega-prompt una riga nella sezione 8, e il tabellone del
+  prompt le porta da solo.
+- *Il CSV* ha le righe `Corner: piu' la casa`, `stesso numero`, `piu' la trasferta`, `casa -1.5`, `casa +1.5` (col reale,
+  la differenza dei corner) e `Corner: quota della casa (s)`; `cmpTabHit` sa cosa è uscito per le quattro chiavi.
+- *Verificato*:
+  - `python3 strumenti/corner-differenza.py --schermo <cartelle>` rifà dai corner previsti e dall'Elo del CSV quello che lo
+    Scanner ha stampato: sul batch finto (89 partite) entro 0.098 punti, cioè l'arrotondamento del CSV; col controllo di
+    potenza (`b1` spostato di 0.05) 0.885, e lo strumento esce con 1;
+  - il banco, col motore `b83` come controllo (vedi *Il Comparatore stampa come lo Scanner*);
+  - le schermate a 390px in scuro e in chiaro (`strumenti/schermate.js` ha ora la card dei corner aperta,
+    `numeri-corner`): nessun errore, 0 px di scorrimento in ogni scheda.
 
 ### Lo squilibrio sui tiri in porta: registrato, passato, nel motore (`b42`)
 
@@ -4804,6 +4857,7 @@ scrittura nuova, il messaggio iniziale). Il banco la verifica a parte, premendo 
 | `PRIMO_GOL_QUOTA` / `PRIMO_GOL_FISSA` | `'fissa'` / 0.268, 0.446 | misurata, test registrato `b75` | la quota media dei gol nei primi 30 e 45 minuti su 4.496 partite di dodici leghe dal 2025/26 (`QUOTA_FISSA` di `strumenti/primo-gol.py`); test su 11.633 partite di 36 leghe mai aperte per questa domanda: −7.30‰ (`z = −4.93`), 29 leghe su 36. `'squadre'` torna alla quota dei minuti dei gol delle due squadre. Vedi *La card del primo gol: la regola* |
 | `MAESTRO` / `MAESTRO_REG` | `'si'` / 65 variabili, medie, deviazioni, mediane e i 66×4 coefficienti di `strumenti/maestro_regola.json` | stimati `b77` sul mercato, test registrato | ridge (`α` 10) dalle variabili del motore all'1X2 e ai lambda del mercato di chiusura, 16.071 partite di 14 leghe coi file principali di football-data; test sui risultati di 33 leghe mai usate (13.592 partite): 1X2 −4.37‰ (`z = −5.30`, 25 su 33), risultato esatto −13.41‰ (`z = −8.88`, 31 su 33). `'no'` torna al `b76`. Vedi *Il maestro mercato: la regola* |
 | `NUMERI_CORREZIONI` / `NUMERI_REG` | `'si'` / 21 parametri, uguali a `REGOLA` di `strumenti/numeri-correzioni.py` | stimati sull'esplorazione, test registrato `b76` | stimati sulle 1.743 partite del 2025/26 dei cinque campionati (`batch/numeri`), fuori lega dove serve; test su 3.976 partite mai aperte per Numeri (`batch/numeri-prova1`, `-prova2`): passano tutti e 17, da `z` −2.7 a −17.1, e il KNN 1X2 su 25.168 partite di 42 leghe (−21.9‰, `z` −14.9). `'no'` torna al `b75`. Vedi *Le card di Numeri: la regola* |
+| `CORNER_DIFF` / `CORNER_DIFF_REG` | `'si'` / `c` 5.3693, `b` 0.4597, `kT` 63.97, `a` 0.112, `b1` 0.5231, `b2` 0.1781, `φ` 13.843, corner previsti sotto 0.5 a 0.5; basi fisse casa / pari / trasferta 54.1 / 9.36 / 36.55%, casa −1.5 44.45%, +1.5 72.16% | stimati sull'esplorazione, test registrato `b84` | massima verosimiglianza su 23.278 partite di 24 leghe; test sui batch del `b74` (7.120 partite di 24 leghe): corner 1X2 −48.7‰ contro la frequenza fissa (`z = −14.79`, 23 su 24), handicap ±1.5 −80.8‰. Uguali a `REGOLA` di `strumenti/corner-differenza.py`; `'no'` torna al `b83`. Vedi *Chi fa più corner: la regola* |
 | `SOT_PER_GOAL` | 3.25 | misurata | LaLiga 3.19, Premier 3.04, Serie A 3.33. Tocca solo il livello |
 | `GOALS_SOT_CAP` | 0.20 | paracadute misurato | morde nello 0.18% |
 | `OL_BETA` / `T1` / `T2` | 2.056 / −0.475 / +0.671 | stimata `b20` | massima verosimiglianza su 1743 partite, leave-one-league-out, sulla variabile di **ruolo** (media +0.196). Peso 0 |
@@ -4828,7 +4882,7 @@ scrittura nuova, il messaggio iniziale). Il banco la verifica a parte, premendo 
 | `QUOTE_RESA` | tutte 53.0 · soglie ≥70 / 65 / 60 / 55 / 50: 78.6 / 74.7 / 71.1 / 67.5 / 64.0% su 14 / 20 / 27 / 37 / 49% del calendario · disaccordo 1321 partite, motore 26.3%, mercato 43.1% (dal `b77` col maestro: motore 51.7%, disaccordo 1046 partite, maestro 28.3%, mercato 42.1%) | misurata `b54` | combinazione stimata su undici leghe e misurata sulla dodicesima, 11.902 partite; soglie uguali nei cinque campionati e nelle altre sette (≥55: 67.9 e 67.1%). La card delle quote e il mega-prompt la leggono da qui |
 | `PICK_RESA` | dal `b77`, col maestro: tutte 53.3 · casa 43.0 · soglie ≥70 / 65 / 60 / 55 / 50: 79.1 / 76.0 / 72.2 / 67.4 / 62.8% su 9 / 16 / 24 / 35 / 49% del calendario; `fuori` 34 leghe. Fino al `b76`: tutte 52.7 · soglie 77.1 / 73.2 / 69.3 / 66.0 / 61.7% su 9 / 16 / 26 / 38 / 52% | misurata `b49`, rimisurata `b77` (fuori lega); il `b82` l'aveva rimisurata col maestro con la pressione, il `b83` torna a questa | cinque leghe col motore `b48`, 5230 partite (tabella in *Stato attuale*). Dal `b51` una sola copia: la card delle soglie e il mega-prompt la leggono da qui. Si rifà con le tabelle, a ogni motore che sposta l'1X2. Dal `b52` porta `leghe` (le cinque, per id) e `fuori` (Championship 46.3 e 64.8% su 17%, Eredivisie 53.7 e 68.7% su 47%, Liga Portugal 55.0 e 72.4% su 43%: pick su tutte e a ≥55, 3495 partite col `b48`), perché sulle tre leghe nuove le soglie ≥55 / 60 / 65 / 70 escono dai 2se (vedi *Le tre leghe nuove col `b48`: la regola*). Dal `b53` `fuori` ha anche 2. Bundesliga (45.4 e 62.8% su 16%), First Division A (50.2 e 65.5% su 35%), Premiership scozzese (53.3 e 68.9% su 41%) e Super League svizzera (47.1 e 66.1% su 26%), 3202 partite col motore `b52`. Dal `b56` porta anche `cinque`, le cinque leghe una per una nella stessa forma (tabella in *Stato attuale*): con `fuori` scrive la nota di lega in cima all'analisi. Dal `b74` `fuori` ha 38 leghe (le 31 nuove dai batch del `b61`, del `b62` e del `b73`, quelle con almeno 50 partite col pick sopra il 55%; tabella in *Le leghe mai viste*), e ogni lega porta anche le stagioni e le partite sopra il 55%, da cui la nota di lega e il prompt calcolano il ±2se |
 | retta dei mercati binari | −5.06 + 1.091·p | stimata, riconfermata `b38` e `b41` | 22.584 proposte, errore massimo 2.4 punti; `b41` 7938 proposte, 2.5 |
-| `EDGE_BANDS` | ≥20 / ≥10 / ≥5, guadagno per famiglia (`b50`) | stimata `b38`, riconfermata `b41` e `b49`, per famiglia dal `b50` | 28.230 proposte: +24.6 / +14.8 / +6.3 punti, monotono, segno concorde in 5 stagioni su 5. `b41` (copia conforme): +25.6 / +15.6 / +4.8 sulle 13.148 proposte con base del `b40`, +25.0 / +14.9 / +5.7 sulle 14.742 del `b41`, monotono in 3 stagioni su 3; Premier (≥20 / 10–20 / 5–10) +27.4 / +10.7 / +6.0, LaLiga +25.0 / +13.7 / +7.3, Bundesliga +28.7 / +14.0 / +5.5, Ligue 1 +26.4 / +13.4 / +5.0. `b49` (motore `b48`, cinque leghe): +25.8 / +12.2 / +6.1, monotono in 5 leghe su 5; per famiglia 1X2 +27.5 / +15.5 / +8.0, gol +1.0 / +7.2 / +3.5, numeri +7.2 / +10.2 / +8.2. Dal `b50` l'etichetta mostra questi, per famiglia, con ±2se: 1X2 ±1.6 / ±1.6 / ±1.9 (2891 / 3573 / 2680 proposte), gol ±10.4 / ±2.3 / ±1.7 (92 / 1881 / 3457), numeri ±8.0 / ±2.9 / ±2.4 (133 / 1058 / 1628). Dal `b63` i gol, rifatti col livello dei gol: +2.3 ±12.8 (61) / +6.8 ±2.6 (1445) / +4.4 ±1.7 (3279). Dal `b77`, col maestro (fuori lega): 1X2 +29.5 ±1.6 (2463) / +17.1 ±1.4 (3692) / +9.0 ±1.7 (2912), gol +24.3 ±11.6 (55) / +13.2 ±3.5 (744) / +6.8 ±1.9 (2801); i numeri restano del `b49`. Il `b82`, col maestro con la pressione, aveva 1X2 +29.5 / +16.9 / +9.2 e gol +24.0 / +12.4 / +6.6; il `b83` torna a quelle del `b77`. Ordinare per guadagno atteso invece che per scarto: no (vedi *Il tabellone per famiglia di mercato: la regola*) |
+| `EDGE_BANDS` | ≥20 / ≥10 / ≥5, guadagno per famiglia (`b50`) | stimata `b38`, riconfermata `b41` e `b49`, per famiglia dal `b50` | 28.230 proposte: +24.6 / +14.8 / +6.3 punti, monotono, segno concorde in 5 stagioni su 5. `b41` (copia conforme): +25.6 / +15.6 / +4.8 sulle 13.148 proposte con base del `b40`, +25.0 / +14.9 / +5.7 sulle 14.742 del `b41`, monotono in 3 stagioni su 3; Premier (≥20 / 10–20 / 5–10) +27.4 / +10.7 / +6.0, LaLiga +25.0 / +13.7 / +7.3, Bundesliga +28.7 / +14.0 / +5.5, Ligue 1 +26.4 / +13.4 / +5.0. `b49` (motore `b48`, cinque leghe): +25.8 / +12.2 / +6.1, monotono in 5 leghe su 5; per famiglia 1X2 +27.5 / +15.5 / +8.0, gol +1.0 / +7.2 / +3.5, numeri +7.2 / +10.2 / +8.2. Dal `b50` l'etichetta mostra questi, per famiglia, con ±2se: 1X2 ±1.6 / ±1.6 / ±1.9 (2891 / 3573 / 2680 proposte), gol ±10.4 / ±2.3 / ±1.7 (92 / 1881 / 3457), numeri ±8.0 / ±2.9 / ±2.4 (133 / 1058 / 1628). Dal `b63` i gol, rifatti col livello dei gol: +2.3 ±12.8 (61) / +6.8 ±2.6 (1445) / +4.4 ±1.7 (3279). Dal `b77`, col maestro (fuori lega): 1X2 +29.5 ±1.6 (2463) / +17.1 ±1.4 (3692) / +9.0 ±1.7 (2912), gol +24.3 ±11.6 (55) / +13.2 ±3.5 (744) / +6.8 ±1.9 (2801); i numeri restano del `b49`. Il `b82`, col maestro con la pressione, aveva 1X2 +29.5 / +16.9 / +9.2 e gol +24.0 / +12.4 / +6.6; il `b83` torna a quelle del `b77`. Dal `b84` la famiglia `corner` (chi fa più corner, quattro proposte), sulle 24 leghe fuori lega e sul `b74` coi numeri della regola: +26.6 ±0.9 (9448) / +13.7 ±0.7 (17482) / +6.6 ±0.8 (14810). Ordinare per guadagno atteso invece che per scarto: no (vedi *Il tabellone per famiglia di mercato: la regola*) |
 | minimo di `leagueBaseRates` | 200 partite | paracadute misurato `b38` | guadagno piatto fra 50 e 500; in produzione arrivano 900+ partite |
 | emivita | 106 giorni | a mano | uguale nei due file |
 | storico per squadra (`history-limit`) | 30 | scelta dell'utente (`b40`) | il batch base dell'utente e lo storico delle tarature `b24`–`b38`; fino al `b39` lo Scanner stampava a 15. Il Comparatore lo legge dallo Scanner in tutte le modalita' |
@@ -5169,7 +5223,7 @@ misurate.
 | **La quota fissa del primo gol** (`b75`) | registrata prima, 11.633 partite di 36 leghe mai aperte per questa domanda: somma delle logloss del gol prima del 30' e dell'Over 0.5 nel primo tempo −7.30‰ (`z = −4.93`), 29 leghe su 36; la card diventa calibrata |
 | **Il rating di pressione nel maestro** (nello Scanner nel `b82`, tolto nel `b83`: costava troppe chiamate) | registrato prima, 13.592 partite di 33 leghe, pressione su 7.648: 1X2 −0.54‰ (`z = −2.56`), risultato esatto −0.65‰ (`z = −2.66`), meglio in 10 leghe su 13 |
 | **L'arbitro nei gialli, Serie A e LaLiga** (non ancora nello Scanner) | registrato prima, 850 partite del 2025/26 e del 2026/27: conteggio dei gialli −18.88‰ (`z = −3.37`), Over 3.5 −13.44‰ (`z = −2.85`), meglio in 2 leghe su 2 |
-| **Chi fa più corner** (test registrato del 16 ottobre 2026; da mettere nello Scanner, `b84`) | il totale dei corner diviso fra le due squadre con una beta-binomiale (corner previsti ed Elo): sui batch del `b74`, 7.120 partite, corner 1X2 −48.7‰ contro una frequenza fissa (`z = −14.79`), 23 leghe su 24; handicap ±1.5 −80.8‰ |
+| **Chi fa più corner** (test registrato del 16 ottobre 2026; nello Scanner dal `b84`) | il totale dei corner diviso fra le due squadre con una beta-binomiale (corner previsti ed Elo): sui batch del `b74`, 7.120 partite, corner 1X2 −48.7‰ contro una frequenza fissa (`z = −14.79`), 23 leghe su 24; handicap ±1.5 −80.8‰ |
 | **Lo squilibrio sui tiri in porta** (`b42`) | registrato prima di vedere due leghe e passato su tutte e due; cinque leghe −0.0029 di logloss dell'Over 8.5, `z = −3.10`, positivo in 14 stagioni su 15 |
 
 ## La baseline di coppia
@@ -6826,6 +6880,11 @@ I file del `b82` hanno in più le righe `Pressione:` (lega attiva, rating, parti
 nell'archivio in fondo, la colonna `PRESSIONE MEDIA`; dove `Pressione: maestro con la pressione` dice `si`, 1X2 e lambda
 vengono dal maestro con la pressione. `python3 strumenti/pressione.py --schermo` li rifà. Dal `b83` non ci sono più.
 
+Dal `b84` la sezione dei mercati statistici ha le righe di chi fa più corner (`Corner: piu' la casa`, `stesso numero`,
+`piu' la trasferta`, `casa -1.5`, `casa +1.5`, e la quota della casa `s`): nella colonna Reale la differenza dei corner,
+casa meno trasferta. `python3 strumenti/corner-differenza.py --schermo` le rifà dalle righe `Corner` (Previsto) ed `ELO
+Diff (H-A)`.
+
 Dal `b76` le righe `KNN 1`, `KNN X` e `KNN 2` sono le probabilità del KNN ricalibrate, e le righe dei corner
 (attesi, linee Over, dispersione) vengono dal `λ` ristretto con la `k` fissa a 57.2 (vedi *Le card di Numeri: la
 regola*). Chi confronta file di build diverse sui corner o sul KNN tiene separati quelli fino al `b75`.
@@ -6920,6 +6979,7 @@ node strumenti/schermate.js --vera "Juventus|Atalanta|2026-09-20"   # PitchAPI v
 # 7. se si tocca il motore prima del maestro: lo Scanner calcola il maestro come lo strumento? (~1 minuto, lega finta)
 node strumenti/batch-auto.js --finto --leghe "ITA:Serie A" --stagioni 2025/2026 --out <cartella>
 python3 strumenti/maestro.py --schermo <cartella>                     # esce con 1 se 1X2 o lambda escono dall'arrotondamento
+python3 strumenti/corner-differenza.py --schermo <cartella>          # chi fa piu' corner (b84); esce con 1 se esce, o se non esce il controllo di potenza
 
 # 6. se si toccano le card di Numeri: lo schermo dice i numeri della regola? (~2 minuti, lega finta)
 node strumenti/batch-auto.js --finto --scritture --leghe "ITA:Serie A" --stagioni 2025/2026 --out <cartella>
@@ -7091,3 +7151,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b81` | le animazioni potenziate dove la frequenza lo permette, chieste dall'utente («anche rallentandole oltre ad aggiungerne altre, sempre secondo le regole di Kowalski»): sette proposte di `find-animation-opportunities`, tutte. Il foglio «Altro» sale in 500 ms e, lasciato prima della soglia, torna con una molla che parte dalla velocità del dito (curva `linear()` calcolata nella pagina); l'anello esce in 250 ms e l'entrata della partita parte 150 ms dopo, con una scaletta da 70 ms e le proposte una per una (870 ms in tutto, nel `b80` 550; nella giornata la versione corta); la partita della giornata si scorre col dito, con resistenza agli estremi e molla; le fisarmoniche si aprono in altezza (200 ms, dove il browser lo sa fare); a fine giornata i numeri a scaletta e una spunta che si disegna; la home entra a scaletta. Cambio di scheda e pressione restano come nel `b80`. Numeri invariati: col `b80` 0 scritture diverse su 201, una riga del CSV (il certificato); 16 controlli delle animazioni in Chromium superati, il rilevatore a 0 |
 | `b82` | il rating di pressione nel maestro, scelto dall'utente dopo una prova di poche chiamate per lega: la curva `/momentum` della PitchAPI c'è in 42 leghe su 77 (`strumenti/momentum-copertura.py`), e solo lì lo Scanner la scarica (una chiamata per partita dell'archivio di lega la prima volta, poi nel browser), calcola il rating corretto per l'avversario e usa il maestro a 66 variabili della regola registrata (test: 1X2 −0.54‰, `z = −2.56`; risultato esatto −0.65‰, `z = −2.66`). Altrove resta il maestro del `b77`. Manopola `PRESSIONE` (`'no'` torna a prima). Rimisurate `PICK_RESA` (≥55% 66.6% su 36% del calendario), `SORPRESA_TAB` (ALTO con lo sfavorito al 35% o più) e `EDGE_BANDS` di 1X2 e gol. Il CSV esporta il rating e, nell'archivio, la pressione di ogni partita; il banco la rifà da lì con la regola scritta da capo, e `strumenti/pressione.py --schermo` rifà rating e maestro dai CSV |
 | `b83` | tolta la pressione, chiesto dall'utente dopo averla vista in uso («un minuto e mezzo e chiamate in più per nulla che me ne faccio?»): alla prima analisi di ogni lega con la curva costava circa 1.100 chiamate e un minuto e mezzo, per −0.54‰ di logloss 1X2 e le prese del pick ferme. Il codice torna quello del `b81`: nessuna chiamata a `/momentum`, il maestro del `b77` in tutte le leghe, `PICK_RESA`, `SORPRESA_TAB` ed `EDGE_BANDS` del `b77`, il CSV e il banco senza la pressione. Restano la nota «Con le quote» dei risultati esatti come `details` (trovata dal rilevatore nel `b82`) e gli strumenti della misura; lo Scanner cancella all'apertura le curve salvate nel browser dal `b82`. Col `b82` 3 scritture diverse su 202 (`mdl-pres`, rischio sorpresa e tabellone), una riga del CSV (il certificato) |
+| `b84` | chi fa più corner, il test registrato del 16 ottobre 2026 passato sui batch del `b74` (corner 1X2 −48.7‰ contro la frequenza della lega, `z = −14.79`, 23 leghe su 24) e messo nello Scanner come diceva la regola: il totale dei corner diviso fra le due squadre con una beta-binomiale, dai corner previsti e dall'Elo, nessuna chiamata in più. Nella card dei corner il corner 1X2 e l'handicap della casa; nel tabellone più corner la casa, più corner la trasferta, casa −1.5 e trasferta −1.5, con le rese misurate prima su 24 leghe e sul `b74` (FORTE +26.6, GIOCABILE +13.7, MARGINALE +6.6); una riga nel mega-prompt; le righe nel CSV e le chiavi in `cmpTabHit`. Manopola `CORNER_DIFF` (`'no'` torna a prima); `strumenti/corner-differenza.py --rese` e `--schermo` |
