@@ -260,18 +260,17 @@ Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export rec
   sugli xG di tutte le partite di lega, combinato con l'1X2 del motore: sulle dodici leghe già studiate
   −5.53‰ di logloss 1 contro 2 fuori lega (`z = −3.95`), sulle dieci leghe del test −2.00‰ (`z = −1.19`),
   meglio in 5 su 10, prese ferme. Vedi *Il rating sugli xG: la regola*, «Esito».
-- [ ] **I pareggi con gol mancano nella matrice dei gol.** Col fattore del `b63` la matrice di ruolo dà
-  il 23.5% di pareggi contro il 25.6% reale (12 leghe, 11.927 partite): 0-0 è giusto (6.3 contro 6.1),
-  mancano 1-1 (10.9 contro 12.0), 2-2 (5.0 contro 6.1) e 3-3. I residui dei gol delle due squadre non sono
-  correlati (+0.002), quindi non è dipendenza: sono i pareggi. Candidato (Karlis–Ntzoufras, diagonale
-  gonfiata): `P'(x,y) ∝ P(x,y)·(1 + δ·1[x = y ≥ 1])`, rinormalizzata. Fuori lega sulle dodici leghe `δ`
-  0.159–0.196 (media 0.174), risultato esatto −1.80‰ (`z = −3.10`, 10 su 12), differenza reti −1.29‰
-  (`z = −2.69`, 9 su 12), Goal −0.45‰ (`z = −1.77`, da 53.5 a 54.8% contro 55.1% reale), Over 2.5 +0.11‰
-  (`z = +1.13`), pareggi 23.5 → 25.7%. Tocca risultati esatti, handicap, multigol e Goal del motore (non
-  l'1X2, che esce dal ramo completo). Da registrare e provare su leghe mai aperte per i mercati gol.
-  Sulle 24 leghe (23.278 partite) lo stesso: pareggi 24.2 contro 25.5%, 1-1 11.3 → 11.7, 2-2 5.0 → 5.7, e
-  il Goal dove la matrice dice meno del 40% (in media 36.8) esce il 46.9% (vedi *Il Dixon-Coles contro i
-  risultati reali*).
+- [x] ~~**I pareggi con gol mancano nella matrice dei gol.**~~ — **col maestro il buco è quasi chiuso: non si registra**
+  (16 ottobre 2026). La diagonale gonfiata di Karlis–Ntzoufras, `P'(x,y) ∝ P(x,y)·(1 + δ·1[x = y ≥ 1])`, sulla matrice
+  di ruolo del `b63` valeva −1.80‰ sul risultato esatto (`z = −3.10`, 10 leghe su 12) e portava i pareggi da 23.5 a
+  25.7%. Sulla matrice del maestro (`b77`), sulle 24 leghe e fuori lega:
+  - i pareggi sono già al 24.4% contro il 25.5% reale, con l'1-1 all'11.5% contro l'11.7%;
+  - il `δ` scelto fuori lega è 0.08–0.10;
+  - il risultato esatto migliora di −0.42‰ (`z = −1.89`, 14 leghe su 24), il Goal di −0.28‰;
+  - l'Over 2.5 peggiora (+0.16‰, `z = +4.54`).
+
+  Sulla matrice allineata alle quote è quasi la correzione κ, che non ha passato il test (vedi *L'handicap della matrice
+  allineata: la regola*).
 - [ ] **`LEAGUE_HALFLIFE_DAYS`** (oggi 0 = media piatta). È l'ultima ipotesi rimasta sul
   *livello* dei mercati gol: il lambda è inversamente proporzionale alla base di lega, e la
   base è una media piatta su tre stagioni (Premier: 3.041 contro 2.754 veri, −5% sul
@@ -294,6 +293,11 @@ Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export rec
   imparate dal mercato (ridge dalle 65 variabili del motore all'1X2 e ai lambda del mercato), poi usate senza quote. Sui
   risultati di 33 leghe mai usate per questo (13.592 partite): 1X2 −4.37‰ (`z = −5.30`, 25 su 33), risultato esatto
   −13.41‰ (`z = −8.88`, 31 su 33), Over 2.5 −3.50‰, differenza reti −8.14‰. Vedi *Il maestro mercato: la regola*.
+- [ ] **Il maestro coi bersagli di Shin: il test.** Il maestro impara l'1X2 del mercato col margine tolto in proporzione,
+  che sottovaluta i favoriti, e ne eredita la timidezza. Coi bersagli tolti alla Shin, fuori lega sulle 14 leghe del
+  maestro, l'1X2 fa −0.51‰ (`z = −3.03`, 10 leghe su 14) e la pendenza 1 contro 2 scende da 1.12 a 1.06. È gratis: si
+  rifà l'allenamento, nessuna chiamata. Regola registrata il 16 ottobre 2026, test sulle 33 leghe del test del maestro.
+  Vedi *Il maestro coi bersagli di Shin: la regola*.
 - [x] ~~**Il rating di pressione nel maestro: il test.**~~ — **passato, tutti e due i test** (12 ottobre 2026). La curva
   `/momentum` della PitchAPI, corretta per l'avversario come l'Elo, come 66ª variabile del maestro. Sui risultati delle 33
   leghe del test del maestro: 1X2 −0.54‰ (`z = −2.56`, 10 leghe su 13), risultato esatto −0.65‰ (`z = −2.66`, 10 su 13);
@@ -526,9 +530,10 @@ qui ha bisogno di dati nuovi, non di rifare questi.
 - [ ] **Le rese della famiglia dei numeri nel tabellone, coi corner del `b76`.** Il `λ` dei corner ora è ristretto
   verso una costante, e la `k` è fissa: lo scarto dei corner dal base rate cambia, e con lui quante volte salgono in
   cima. `EDGE_BANDS` per i numeri è del `b49`: va rimisurata sul tabellone del `b76` (un batch delle cinque leghe).
-- [ ] **Corner di casa contro corner di trasferta.** Nell'esplorazione di Numeri la differenza di corner fra le due
-  squadre si prevede (correlazione 0.38 con la differenza di Elo, 0.34 con le medie delle due squadre), il
-  totale no. È un mercato che il tabellone non ha: da esplorare, con una regola, se l'utente lo vuole.
+- [ ] **Chi fa più corner: il test.** Il totale dei corner non si prevede, chi ne fa di più sì. Regola registrata il 16
+  ottobre 2026: il totale diviso fra le due squadre con una beta-binomiale (corner previsti ed Elo), da cui corner 1X2 e
+  handicap dei corner. Nell'esplorazione, fuori lega sulle 24 leghe, −45.2‰ contro una frequenza fissa (`z = −23.8`, 24
+  leghe su 24), calibrato. Test sui batch del `b74`. Vedi *Chi fa più corner: la regola*.
 - [ ] **Doppie chance e gol con confidence**: la tabella è confusa, e sui gol poggia su
   probabilità che discriminano poco.
 - [x] ~~**La card «Primo gol»**~~ — **passato, nello Scanner dal `b75`.** La card usa una quota fissa
@@ -2651,6 +2656,72 @@ millesimi sull'insieme e niente nel tabellone. Se si torna al campione di lega p
 (vedi *Da fare*, punto 4), le frequenze vere arrivano gratis, e questa misura si rifà su dati nuovi
 con una regola scritta prima.
 
+### Chi fa più corner: la regola
+
+Scritta il 16 ottobre 2026, prima di aprire i dati del test: dei corner delle due squadre nelle leghe del test, per questa
+domanda, non si è letta nessuna riga. È una delle sei proposte a zero chiamate discusse con l'utente («parti con corner e
+Shin»).
+
+**Perché.** Il totale dei corner di una partita quasi non si prevede: dal `b76` vale quanto la frequenza della lega (AUC
+0.54). Chi ne fa di più, invece, sì. Sulle 24 leghe dei batch (23.278 partite in copia conforme), dentro la lega:
+- la differenza dei corner previsti (casa meno trasferta, righe `Corner` del CSV, colonna Previsto) correla 0.26 con la
+  differenza vera;
+- la differenza di Elo correla 0.32; il totale previsto, col totale vero, solo 0.08;
+- i residui dei corner delle due squadre correlano −0.21: quando una squadra spinge, l'altra fa meno corner. Con due
+  binomiali negative indipendenti la differenza verrebbe troppo stretta.
+
+**Il modello.** Il totale si divide fra le due squadre:
+- il totale è `T ~ BN(μ, kT)`, con `μ = c + b·(previsti casa + previsti trasferta)`;
+- i corner di casa, dato `T`, sono una beta-binomiale `(T, s, φ)`, con
+  `s = σ(a + b1·log(previsti casa / previsti trasferta) + b2·ΔElo/100)`;
+- `ΔElo` è la riga `ELO Diff (H-A)` del CSV, senza vantaggio campo;
+- previsti sotto 0.5 contano 0.5. Sotto 0.5 ci sono solo gli 0 delle squadre senza dati: 15 squadre-partita su 30.923.
+
+Dalla distribuzione della differenza escono il corner 1X2 (casa più corner, stesso numero, trasferta più corner) e ogni
+linea dell'handicap dei corner.
+
+**L'esplorazione**, fuori lega (stimato su 23 leghe, misurato sulla 24ª).
+- *Corner 1X2*, contro una frequenza fissa: −45.2‰ (`z = −23.8`), meglio in 24 leghe su 24; 2023/24–2024/25 −46.7‰, dal
+  2025 −42.8‰.
+- *Il confronto più duro*: contro la frequenza della lega presa col senno di poi sulle stesse partite fa −43.9‰.
+- *Una logistica multinomiale* sulle stesse variabili fa lo stesso (−45.2‰): la beta-binomiale non perde niente, e dà
+  anche l'handicap.
+- *Chi porta il segnale*: da sola la differenza di Elo vale più dei corner previsti (AUC casa contro trasferta, senza i
+  pari, 0.663 contro 0.634); insieme 0.672.
+- *Calibrato per fascia*: la casa sopra la trasferta prevista al 31.1 / 45.6 / 55.4 / 65.0 / 78.0% esce il 30.7 / 46.8 /
+  56.0 / 64.8 / 77.7%. Casa, pari, trasferta previsti 54.1 / 9.1 / 36.8%, reali 54.1 / 9.4 / 36.5%.
+- *L'handicap della casa* a −2.5 / −1.5 / −0.5 / +0.5 / +1.5 / +2.5: previsto 35.7 / 44.7 / 54.1 / 63.2 / 71.6 / 78.9%,
+  esce 35.4 / 44.5 / 54.1 / 63.5 / 72.2 / 79.2%. A −1.5 e +1.5, contro la loro frequenza, −41.9‰ e −36.2‰.
+
+**Il candidato, con tutto fissato** (`REGOLA` in `strumenti/corner-differenza.py`, stimata su tutte le 24 leghe):
+- `c` 5.3693, `b` 0.4597, `kT` 63.97, `a` 0.112, `b1` 0.5231, `b2` 0.1781, `φ` 13.843;
+- le frequenze fisse, delle 24 leghe: casa più corner 54.10%, stesso numero 9.36%, trasferta più corner 36.55%; la casa
+  a −1.5 44.45%, a +1.5 72.16%.
+
+**I dati del test**: i batch del `b74` (`batch/lontane`, `batch/anno2026`, `batch/europa2526`), tolti i due file senza una
+stagione alle spalle: circa 7.100 partite di 24 leghe. Lì si sono guardati i totali dei corner (descrittivo, `b74`), mai i
+corner delle due squadre né chi ne fa di più.
+
+**Il metro e quando passa.** La logloss del corner 1X2 contro la frequenza fissa, appaiata partita per partita. Passa se:
+- scende con `z ≤ −2`;
+- è meglio in più di metà delle leghe con almeno 100 partite;
+- l'handicap della casa a −1.5 e +1.5, insieme, fa meglio delle sue frequenze fisse con `z ≤ −2`.
+
+Con l'effetto dell'esplorazione ci si aspetta `z` intorno a −13.
+
+**Se passa.** Nello Scanner, a zero chiamate (corner previsti ed Elo ci sono già):
+- nella card dei corner, il corner 1X2 e le linee dell'handicap;
+- nel tabellone «più corner la casa», «più corner la trasferta» e l'handicap ±1.5. La base di lega sono le frequenze
+  fisse, e le rese per fascia si misurano sulle 24 leghe e sul `b74` prima di mostrarle. Nel CSV le loro righe (chiavi
+  nuove e i loro casi in `cmpTabHit`);
+- il mega-prompt li dice, coi numeri dei corner.
+
+Se non passa, niente cambia, e questa sezione dice perché.
+
+**Descrittivi**, che non decidono: la calibrazione per fascia, le linee dell'handicap una per una, il confronto con la
+frequenza della lega col senno di poi, ogni lega. `python3 strumenti/corner-differenza.py --prova batch/lontane
+batch/anno2026 batch/europa2526` rifà il test; senza argomenti rifà l'esplorazione.
+
 ### Lo squilibrio sui tiri in porta: registrato, passato, nel motore (`b42`)
 
 Come i cartellini (vedi *Lo squilibrio e i cartellini*), ma col segno opposto: le partite
@@ -3684,6 +3755,54 @@ Si mette nello Scanner (`b77`), con quello che la regola diceva di rimisurare.
 regola, l'1X2 e i lambda che lo Scanner ha stampato. Sul batch finto del `b77` (89 partite) stanno entro 0.094 punti e
 0.0025, cioè l'arrotondamento del CSV. Controllo di potenza: con un coefficiente spostato di 0.05 escono 2.15 punti, e lo
 strumento esce con 1.
+
+### Il maestro coi bersagli di Shin: la regola
+
+Scritta il 16 ottobre 2026, prima di aprire i dati del test: per questa domanda, delle leghe del test non si è letta
+nessuna riga. È una delle sei proposte a zero chiamate discusse con l'utente («parti con corner e Shin»).
+
+**Perché.** Il maestro (`b77`) impara dal mercato l'1X2 di chiusura col margine tolto in proporzione (`1/q` normalizzato).
+Così il favorito risulta meno probabile di quanto è, e il maestro ne eredita la timidezza. Sulle 14 leghe del maestro:
+- sopra il 65% il mercato in proporzione prevede 73.5% ed esce il 77.2%;
+- il maestro, fuori lega, ha pendenza 1 contro 2 di 1.12 sui risultati: sopra il 65% prevede 73.0% ed esce il 76.3%;
+- sulle 24 leghe dà agli sfavoriti in media 0.8 punti di troppo.
+
+Il metodo di Shin toglie il margine supponendo che il bookmaker si difenda da una quota `z` di scommettitori informati, e
+carica più margine sugli sfavoriti. Per ogni partita `z` si trova per bisezione, finché le tre probabilità sommano a 1.
+
+**L'esplorazione**, sulle 14 leghe del maestro (16.071 partite), fuori lega, sui risultati, contro il maestro del `b77`:
+- *A, solo i bersagli dell'1X2* (`T1`, `T2` da Shin, i lambda come prima): 1X2 −0.51‰ (`z = −3.03`), meglio in 10 leghe
+  su 14, prese +0.02 punti. La pendenza scende da 1.12 a 1.06, e sopra il 65% prevede 73.6% ed esce il 75.0%;
+- *B, anche i lambda* della matrice allineata col `log(p1/p2)` di Shin: stesso 1X2, ma risultato esatto +0.47‰ (`z =
+  +2.14`) e Goal +0.48‰ (`z = +3.92`). Scartata;
+- *il metodo della potenza* sui bersagli dell'1X2: −0.53‰, ma `z = −2.16` e solo 7 leghe su 14;
+- *nella card delle quote* niente: `QUOTE_COMB` ricalibra già (vedi *Cosa è già stato provato*).
+
+**Il candidato, con tutto fissato**: il maestro della variante A, `strumenti/maestro_regola_shin.json` (`python3
+strumenti/maestro-shin.py --allena`, stimato su tutte le 16.071 partite). Le variabili, le medie, le deviazioni, le mediane
+e le colonne dei due lambda sono identiche a `maestro_regola.json`. Cambiano solo le due colonne di `T1` e `T2`. Senza
+quote, 1X2 = softmax(`T1`, 0, `T2`) come nel `b77`.
+
+**I dati del test**: le 33 leghe del test del maestro (`batch/livello`, `batch/lontane`, `batch/anno2026`,
+`batch/europa2526`; 13.592 partite). Lì si sono misurati il maestro (`b77`) e la pressione (`b82`), mai il margine.
+
+**Il metro e quando passa.** La logloss 1X2 sui risultati, maestro di Shin contro quello del `b77`, appaiata partita per
+partita. Passa se:
+- scende con `z ≤ −2`;
+- è meglio in più di metà delle leghe con almeno 100 partite;
+- le prese del pick non calano oltre −2 errori standard.
+
+I gol non cambiano: i lambda sono gli stessi. Con l'effetto dell'esplorazione ci si aspetta `z` intorno a −2.8: il test è
+al limite della potenza.
+
+**Se passa.** Nello Scanner `MAESTRO_REG` prende le colonne di `T1` e `T2` di Shin, con una manopola che torna al `b77`. Si
+rimisura quello che dipende dall'1X2 del maestro: `PICK_RESA`, `SORPRESA_TAB`, le rese dell'1X2 di `EDGE_BANDS`, e i numeri
+del maestro senza quote in `QUOTE_RESA`. Con le quote non cambia niente: `QUOTE_COMB` riceve l'1X2 del motore. Se non
+passa, resta il `b77`, e questa sezione dice perché.
+
+**Descrittivi**, che non decidono: ogni lega, la taratura del pick per fascia, lo sfavorito previsto contro quello che
+vince. `python3 strumenti/maestro-shin.py --prova batch/livello batch/lontane batch/anno2026 batch/europa2526` rifà il
+test; senza argomenti rifà l'esplorazione.
 
 ### Il rating di pressione: la regola
 
@@ -4985,6 +5104,9 @@ misurate.
 | Restringere il totale dei lambda di ruolo, che è troppo largo (pendenza dei gol veri sul lambda totale 0.71) (solo descrittivo) | **vale un millesimo** | Over 2.5 + Goal −0.97‰ (`z = −2.43`), 18 leghe su 24, `c` 0.7 verso la media della lega-stagione presa col senno di poi; per vederlo su partite nuove ne servirebbero circa 30.000. Vedi *Il Dixon-Coles contro i risultati reali* |
 | La quota del tempo dai minuti dei gol delle due squadre (card «Primo gol») | **peggio di una quota fissa**, sostituita nel `b75` | esplorazione, 4.496 partite di dodici leghe dal 2025/26: gol prima del 30' +3.2‰, Over 0.5 nel primo tempo +2.6‰ (`z` +2.2 e +2.6), peggio in 9 leghe su 12. Test registrato su 11.633 partite di 36 leghe: la quota fissa −7.30‰ (`z = −4.93`), 29 leghe su 36. Vedi *La card del primo gol* |
 | Il disaccordo fra modello ed Elo come segnale di sorpresa | **è il candidato Elo visto da un'altra parte** (`b42`) | fuori lega −0.0037 (`z = −2.47`), prese +0.57 punti, Ligue 1 di nuovo contraria (+0.0020). Nelle 717 partite (14%) in cui modello ed Elo indicano favoriti diversi il pick prende il 37.7% (41.4% col disaccordo in regressione), contro il 55.2% delle altre. A parità di partite giocate la selezione non migliora (top 20%: 72.8 contro 73.2%) |
+| Le sorprese per periodo dell'anno: mese, fase della stagione, dopo le soste, turni infrasettimanali, feste (solo descrittivo, 16 ottobre 2026) | **solo dicembre, e il mercato lo sa già** | 23.278 partite delle 24 leghe, sfavorito del maestro. Fase (giornate 1–5, 6–10, fino a metà, seconda metà, ultime 6): χ² 1.9 su 4 attorno alla media. Dopo le soste per le nazionali +0.3 ±2.2 punti, turni infrasettimanali −1.3 ±1.1, 20 dicembre – 7 gennaio −2.4 ±2.6. Mese: χ² 21.0 su 11. Spicca dicembre: lo sfavorito vince il 21.2% contro il 24.4% previsto, 2.6 punti sotto il resto dell'anno (±2.0), in tutti e tre i dicembri (−5.0 / −1.5 / −3.0) e in 11 leghe su 15; pareggi normali. Contro le quote di chiusura dicembre sta −0.9 ±2.4 rispetto al resto dell'anno: lo sanno già. Scelto fra 12 mesi: da provare, se serve, su un dicembre nuovo |
+| La diagonale gonfiata di Karlis–Ntzoufras (`δ` sui pareggi da 1-1 in su) sopra la matrice del maestro (solo descrittivo) | **quasi niente: il maestro ha chiuso il buco** | 23.278 partite delle 24 leghe, fuori lega `δ` 0.08–0.10: risultato esatto −0.42‰ (`z = −1.89`), Goal −0.28‰, Over 2.5 +0.16‰ (`z = +4.54`). Pareggi della matrice 24.4 → 25.6% contro 25.5% reali. Sulla matrice del `b63` valeva −1.80‰. Vedi *Da fare* |
+| Togliere il margine dell'1X2 alla Shin o con la potenza invece che in proporzione, nella card delle quote (solo descrittivo) | **no: `QUOTE_COMB` ricalibra già** | 16.071 partite di 14 leghe, chiusura. Crudo, contro la proporzione: potenza −0.85‰, Shin −0.75‰ (la proporzione sottovaluta i favoriti: sopra il 65% prevede 73.5, esce 77.2). Ricalibrato fuori lega, come fa `QUOTE_COMB`: −0.02‰ e −0.03‰. Per i bersagli del maestro è un'altra cosa: vedi *Il maestro coi bersagli di Shin: la regola* |
 
 **Le cose che hanno retto**, in ordine di quanto valgono:
 
