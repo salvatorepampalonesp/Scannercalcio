@@ -90,6 +90,9 @@ Ci mette 3–5 minuti: lancialo in background. Deve uscire con 0. Il dettaglio �
   <cartella>`, che deve uscire con 0 (AGENTS.md, *Il maestro mercato: la regola*, «Verificato»). Il maestro legge 65
   variabili del motore: se ne cambia una, i suoi coefficienti non valgono più, e va riallenato (`--allena`) e
   riprovato.
+- Se tocchi i corner previsti, l'Elo o `CORNER_DIFF_REG`, sullo stesso batch finto `python3
+  strumenti/corner-differenza.py --schermo <cartella>` deve uscire con 0 (AGENTS.md, *Chi fa più corner: la regola*,
+  «Nel motore»).
 
 ## 4. AGENTS.md
 

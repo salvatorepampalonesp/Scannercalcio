@@ -646,6 +646,13 @@ function csvChecks(S, csv, col) {
   for (const c of ah) if (c.length === 4) cmp('AH ' + c[0], c[1], cell('AH ' + (Number(c[0]) > 0 ? '+' : '') + Number(c[0]), 0));
   const mg = [...(R['mg-tot'] || '').matchAll(/>([0-9]-[0-9]) Gol<\/span><span[^>]*>([^<]*)</g)];
   for (const [, k, v] of mg) cmp('MG ' + k, v, cell('MG ' + k, 0));
+  // chi fa piu' corner (b84): le due tabelline della card contro le righe del CSV
+  const td = id => (R[id] || '').split('</tr>').map(r => (r.match(/<td[^>]*>([^<]*)<\/td>/g) || []).map(x => x.replace(/<[^>]*>/g, ''))).filter(c => c.length);
+  const cdr = td('cor-diff').find(c => c.length === 4);
+  if (!cdr) out.push({ what: 'chi fa piu\' corner', scanner: '(cor-diff vuota)', csv: '-', ok: false });
+  else { cmp('corner: piu\' la casa', cdr[1], cell('Corner: piu\' la casa', 0)); cmp('corner: stesso numero', cdr[2], cell('Corner: stesso numero', 0));
+         cmp('corner: piu\' la trasferta', cdr[3], cell('Corner: piu\' la trasferta', 0)); }
+  for (const c of td('cor-hc')) if (c[0] === '-1.5' || c[0] === '+1.5') cmp('corner: casa ' + c[0], c[1], cell('Corner: casa ' + c[0], 0));
   cmp('Elo casa', R['elo-h-ov'], cell('ELO Casa', 0)); cmp('Elo trasferta', R['elo-a-ov'], cell('ELO Trasferta', 0));
   // la pendenza dell'Elo (b47): il trend che sposta i lambda del modello
   if (!S.trend) out.push({ what: 'pendenza Elo', scanner: '(__ELO_TREND assente)', csv: '-', ok: false });
