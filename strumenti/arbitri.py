@@ -197,7 +197,48 @@ def main():
 
 REGOLA = {'Serie A': 0.96, 'LaLiga': 0.72}   # AGENTS.md, Gli arbitri e i gialli: la regola (fissati sul 2023/24-2024/25)
 
-def prova(dirs, cart):
+def rapporto_tabella(L, arb, giorno, K=10, NMAX=80):
+    # il rapporto dell'arbitro dalla tabella dello Scanner (arbitri.json), come profili(): solo le partite prima del giorno
+    P = L['partite']; d = [dt.date.fromisoformat(p[0]).toordinal() for p in P]; D = dt.date.fromisoformat(giorno).toordinal()
+    def media(t):
+        v = [P[j][2] for j in range(len(P)) if t - 365 <= d[j] < t]
+        return sum(v) / len(v) if len(v) >= 50 else None
+    e = media(D)
+    if e is None: return None
+    h = [(P[j][2], media(d[j])) for j in range(len(P)) if P[j][1] == arb and d[j] < D]
+    h = [x for x in h if x[1] is not None][-NMAX:]
+    return dict(r=(sum(y for y, _ in h) + K * e) / (sum(x for _, x in h) + K * e), n=len(h), e=e)
+
+def da_tabella(Q, file='arbitri.json', cache='batch/arbitri'):
+    # per ogni partita del test, il rapporto che lo Scanner calcola scrivendo il nome dell'arbitro della PitchAPI
+    sys.path.insert(0, QUI); _t = importlib.util.spec_from_file_location('at', os.path.join(QUI, 'arbitri-tabella.py'))
+    at = importlib.util.module_from_spec(_t); _t.loader.exec_module(at)
+    T = json.load(open(file, encoding='utf-8'))['leghe']; nomi = {v['nome']: v for v in T.values()}
+    out = {}
+    for q in Q:
+        L = nomi.get(q['lega']); f = os.path.join(cache, q['id'] + '.json')
+        if not L or not os.path.exists(f): continue
+        a = json.load(open(f))['arb']
+        if not a: continue
+        idx = scegli_arbitro(L['arbitri'], a, at.norm)
+        if idx is None: continue
+        r = rapporto_tabella(L, idx, q['data'])
+        if r: out[q['id']] = r
+    return out
+
+def scegli_arbitro(nomi, scritto, norm):
+    # come lo Scanner: il nome uguale, altrimenti l'unico nome che contiene tutte le parole scritte, in ordine
+    s = norm(scritto).split()
+    if not s: return None
+    N = [norm(n).split() for n in nomi]
+    for i, n in enumerate(N):
+        if n == s: return i
+    def dentro(a, b):
+        b = iter(b); return all(t in b for t in a)
+    c = [i for i, n in enumerate(N) if dentro(s, n)]
+    return c[0] if len(c) == 1 else None
+
+def prova(dirs, cart, tabella=None):
     STAGIONI = {'2526', '2627'}
     F = leggi_footiqo(cart); R = profili(F, K=10)
     M, Q = qm.carica(dirs, 'batch/quote')
@@ -208,6 +249,11 @@ def prova(dirs, cart):
         for fn in sorted(os.listdir(d)):
             if fn.endswith('.csv'): csvv.update(leggi_csv(os.path.join(d, fn)))
     righe = [dict(q=q, f=F[x['fid']], c=csvv[q['id']]) for q, x in zip(Q, A) if x and x['fid'] in F and q['id'] in csvv and csvv[q['id']]['y'] is not None]
+    if tabella:
+        RT = da_tabella(Q, tabella)
+        print(f'rapporto dalla tabella {tabella} (PitchAPI) al posto di Footiqo: {sum(r["q"]["id"] in RT for r in righe)}/{len(righe)} partite;'
+              f' correlazione del log rapporto con Footiqo {np.corrcoef([math.log(RT[r["q"]["id"]]["r"]) for r in righe if r["q"]["id"] in RT and r["f"]["fid"] in R], [math.log(R[r["f"]["fid"]]["r"]) for r in righe if r["q"]["id"] in RT and r["f"]["fid"] in R])[0, 1]:.3f}')
+        R = {r['f']['fid']: RT[r['q']['id']] for r in righe if r['q']['id'] in RT}
     print(f'test (2025/26 e 2026/27 giocato): {len(Q)} partite coi file di football-data, agganciate a Footiqo con i gialli del CSV {len(righe)}')
     z = lambda d: d.mean() / d.std(ddof=1) * math.sqrt(len(d))
     for l in sorted(LEGHE.values()):
@@ -235,13 +281,17 @@ def prova(dirs, cart):
           f' · {"PASSA" if zc <= -2 and meglio and ov else "NON PASSA"}')
     print('\n=== DESCRITTIVI: b in lega sul test (regressione, in campione) e veri/attesi per quinto dell arbitro ===')
     for l in sorted(LEGHE.values()):
-        k = lg == l; X = lam[k] * f[k]; e = y[k] - lam[k]; bb = (X * e).sum() / (X * X).sum()
+        k = lg == l
+        if k.sum() < 10: continue
+        X = lam[k] * f[k]; e = y[k] - lam[k]; bb = (X * e).sum() / (X * X).sum()
         se = math.sqrt(((e - bb * X) ** 2).sum() / (k.sum() - 1) / (X * X).sum())
         q = np.quantile(f[k], [.2, .8]); lo, hi = f[k] <= q[0], f[k] >= q[1]
         print(f'  {l:15s} b {bb:+.3f} ±{se:.3f} (z {bb / se:+.2f}) · quinto meno severo {y[k][lo].mean() / lam[k][lo].mean():.3f}, piu severo {y[k][hi].mean() / lam[k][hi].mean():.3f}')
 
 if __name__ == '__main__' and '--prova' in sys.argv:
-    prova([x for x in sys.argv[1:] if x != '--prova'] or ['batch48', 'batch/2627'], 'batch/footiqo')
+    a = [x for x in sys.argv[1:] if x != '--prova']; tab = None
+    if '--tabella' in a: i = a.index('--tabella'); tab = a[i + 1]; del a[i:i + 2]
+    prova(a or ['batch48', 'batch/2627'], 'batch/footiqo', tab)
 elif __name__ == '__main__':
     if '--solo-scarica' in sys.argv: scarica('batch/footiqo', {'cartellini': 'HYCFT'})
     else: main()

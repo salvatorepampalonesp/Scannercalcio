@@ -93,6 +93,10 @@ Ci mette 3–5 minuti: lancialo in background. Deve uscire con 0. Il dettaglio �
 - Se tocchi i corner previsti, l'Elo o `CORNER_DIFF_REG`, sullo stesso batch finto `python3
   strumenti/corner-differenza.py --schermo <cartella>` deve uscire con 0 (AGENTS.md, *Chi fa più corner: la regola*,
   «Nel motore»).
+- Se tocchi i gialli attesi, `ARBITRO_REG` o `arbitri.json`: il banco ha il caso dell'arbitro (rapporto rifatto da
+  `arbitri.json` a forza bruta), e `python3 strumenti/arbitri.py --prova --tabella arbitri.json` deve dire PASSA sulle
+  partite del test (AGENTS.md, *Gli arbitri e i gialli: la regola*, «Nello Scanner»). La tabella si rifà con `python3
+  strumenti/arbitri-tabella.py`: non cambia `scanner.html`, quindi niente build nuova.
 
 ## 4. AGENTS.md
 

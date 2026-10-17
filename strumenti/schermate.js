@@ -16,6 +16,7 @@
 // --out: di default <cartella temporanea>/schermate. --nome: prefisso dei file (finta o vera).
 // --larghezza: di default 390. --ridotto: movimento ridotto (i numeri finali, senza animazioni).
 // --tema scuro|chiaro: lo schema di colori del sistema (di default scuro). La scelta fatta nella pagina vince.
+// --arbitro "Nome": lo scrive nel campo del setup prima dell'analisi (b85, solo Serie A e LaLiga; la lega finta ha l'id della Serie A).
 // --istantanee: salva anche la pagina di ogni scheda dopo l'analisi, senza script e con le details aperte
 //   (<nome>-pagina-<scheda>.html), da dare al rilevatore di impeccable: detect <url> --viewport 390x844.
 // Esce con 1 se ci sono errori nella pagina, l'anello non si chiude o una scheda scorre di lato.
@@ -135,6 +136,8 @@ if (VERA) {
     return p.casa + ' - ' + p.trasf + ' del ' + p.giorno;
   }, partita);
   if (!scelta) esci(`Squadre non trovate nel menu di ${lega.name} ${stagione}: scrivi i nomi come li mostra lo Scanner.`);
+  const ARB = arg('arbitro', '');
+  if (ARB) await page.evaluate(n => { document.getElementById('arbitro').value = n; }, ARB);
   console.log(`partita: ${scelta} (${lega.country_code} ${lega.name} ${stagione}), chiamate per il database ${chiamate}`);
   await foto('01-setup-pronto');
 
@@ -162,6 +165,8 @@ if (VERA) {
   await page.evaluate(async () => { const t = document.getElementById('cor-diff'), d = t && t.closest('details'); if (!d) return;
     d.open = true; await new Promise(r => setTimeout(r, 400)); window.scrollTo(0, t.getBoundingClientRect().top + window.scrollY - 420); });
   await foto(String(n++).padStart(2, '0') + '-numeri-corner');
+  await page.evaluate(() => { const t = document.getElementById('arbitro-nota'); if (t) window.scrollTo(0, t.getBoundingClientRect().top + window.scrollY - 520); });
+  await foto(String(n++).padStart(2, '0') + '-numeri-arbitro');
   for (const k of ['prompt', 'dati']) { await page.evaluate(k => { schedaVai(k); window.scrollTo(0, 0); }, k); await foto(String(n++).padStart(2, '0') + '-' + k); }
   await page.evaluate(() => { schedaVai('partita'); const a = document.querySelector('#nav-sezioni [data-k="altro"]'); if (a) a.click(); });
   await foto(String(n++).padStart(2, '0') + '-altro');
