@@ -270,8 +270,8 @@ def rimisura():
         print(f'  residuo dello sfavorito, {fn}: {100 * r_[f_].mean():+.2f} (2se {200 * r_[f_].std() / math.sqrt(f_.sum()):.2f}, {f_.sum()} partite)')
     print('const SORPRESA_TAB = { partite: %d, leghe: %d, fasce: [\n%s ] };' % (len(S), len({m['lab'] for m in S}), ',\n'.join(righe)))
     # 3. il tabellone senza quote (EDGE_BANDS 1X2 e gol) e 4. la retta dei binari, sulle cinque leghe
-    FAM = {k: 'gol' for k in ('pOv', 'pUn', 'pGG', 'pNG')} | {k: 'numeri' for k in ('cor9.5', 'sot8.5', 'yel3.5')}
-    ORD = ['p1', 'pX', 'p2', 'p1X', 'pX2', 'p12', 'pOv', 'pUn', 'pGG', 'pNG', 'cor9.5', 'sot8.5', 'yel3.5']
+    FAM = {k: 'gol' for k in ('pOv', 'pUn', 'pGG', 'pNG')} | {k: 'numeri' for k in ('cor9.5', 'sot8.5', 'yel3.5')} | {k: 'corner' for k in ('cdH', 'cdA', 'chH', 'chA')}
+    ORD = ['p1', 'pX', 'p2', 'p1X', 'pX2', 'p12', 'pOv', 'pUn', 'pGG', 'pNG', 'cor9.5', 'sot8.5', 'yel3.5', 'cdH', 'cdA', 'chH', 'chA']
     cieca = collections.defaultdict(list)
     for m in C5:
         for v in m['tab']:

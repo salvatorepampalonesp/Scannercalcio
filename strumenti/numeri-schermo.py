@@ -92,7 +92,9 @@ for g in GIRI:
                 except ValueError: pass
         # capocannoniere
         m = re.match(r'\s*(.+?) \((\d+) gol\) · segna (\d+)%', testo(W.get('ts-' + l, '')))
-        lam = (g['csv'].get('lam') or [None, None])[0 if l == 'h' else 1]; G = sum(x['gf'] for x in st)
+        # il capocannoniere usa il lambda di ruolo del motore, non quello del maestro (dal b77 nel CSV e' nelle righe Maestro:)
+        lm = g['csv'].get('lamM') or [None, None]; lam = (lm if None not in lm else (g['csv'].get('lam') or [None, None]))[0 if l == 'h' else 1]
+        G = sum(x['gf'] for x in st)
         if m and lam and G:
             add('capo', float(m.group(3)), 100 * (1 - math.exp(-R['CAPO_C'] * lam * (int(m.group(2)) + 1) / (G + 8))))
         # modulo: i punti a partita su tutte

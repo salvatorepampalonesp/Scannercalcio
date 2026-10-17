@@ -38,7 +38,9 @@ def leggi_csv(f):
         hg, ag = [int(x) for x in v('SCORE').split('-')]
         out.append({'id': ids[c], 'lega': v('LEGA'), 'data': v('DATA ISO (UTC)')[:10], 'H': v('SQUADRA CASA'), 'A': v('SQUADRA TRASFERTA'),
                     'hg': hg, 'ag': ag, 'out': 0 if hg > ag else (1 if hg == ag else 2), 'p': [num(v(k)) / 100 for k in ('1', 'X', '2')],
-                    'lam': [num(v('Ambito: lambda casa (ruolo)')), num(v('Ambito: lambda trasf. (ruolo)'))], 'rho': num(v('Unita: rho stimato')),
+                    'lam': [num(v('Ambito: lambda casa (ruolo)')), num(v('Ambito: lambda trasf. (ruolo)'))],
+                    # dal b77 i lambda di ruolo del CSV sono del maestro; quelli del motore stanno nelle righe Maestro:
+                    'lamM': [num(v('Maestro: lambda casa del motore (ruolo)')), num(v('Maestro: lambda trasf. del motore (ruolo)'))], 'rho': num(v('Unita: rho stimato')),
                     'gol': {k: num(v(k)) for k in ('Over 1.5', 'Over 2.5', 'Over 3.5', 'GG (da matrice)')},
                     'file': os.path.basename(f), 'tab': tabellone(g, c),
                     'lgModel': num(v('Elo: log-odds modello [completo \u2192 1X2]')), 'lgElo': num(v('Elo: log-odds Elo [completo \u2192 1X2]')),
@@ -46,7 +48,9 @@ def leggi_csv(f):
     return out
 
 TAB_CHIAVI = {'1 (Casa)': 'p1', 'X (Pari)': 'pX', '2 (Trasf.)': 'p2', '1X': 'p1X', 'X2': 'pX2', '12': 'p12', 'Over 2.5': 'pOv', 'Under 2.5': 'pUn',
-              'Goal (GG)': 'pGG', 'NoGoal': 'pNG', 'Corner Over 9.5': 'cor9.5', 'Tiri porta Over 8.5': 'sot8.5', 'Gialli Over 3.5': 'yel3.5'}
+              'Goal (GG)': 'pGG', 'NoGoal': 'pNG', 'Corner Over 9.5': 'cor9.5', 'Tiri porta Over 8.5': 'sot8.5', 'Gialli Over 3.5': 'yel3.5',
+              # chi fa piu' corner, dal b84
+              "Piu' corner casa": 'cdH', "Piu' corner trasf.": 'cdA', 'Corner casa -1.5': 'chH', 'Corner trasf. -1.5': 'chA'}
 
 def tabellone(g, c):
     out, i = [], 1
