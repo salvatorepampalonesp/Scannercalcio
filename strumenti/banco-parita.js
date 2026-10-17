@@ -406,6 +406,24 @@ async function runScanner(browser, base, matches, limit) {
     set('2,10', '3.40', '3.60', '1,85', '2.05'); leggi('1X2 e Over/Under', true, 2);
     return casi;
   }, INBREVE);
+  // l'arbitro sui gialli (b85): un nome scritto nel campo, poi un cognome, uno ambiguo e uno sconosciuto; il rapporto
+  // atteso si rifa' fuori dalla pagina, da arbitri.json, a forza bruta
+  const arbitro = await page.evaluate(async () => {
+    if (typeof arbitroPartita !== 'function') return null;
+    const el = document.getElementById('arbitro'), T = await caricaArbitri(), lId = document.getElementById('sel-league').value;
+    const giorno = document.getElementById('target-date').value, g0 = Object.assign({}, window.__GIALLI), nota0 = document.getElementById('arbitro-nota').textContent;
+    const L = T && T.leghe[lId]; if (!L) return { errore: 'tabella assente' };
+    const D = Date.parse(giorno + 'T00:00:00Z'), conta = L.arbitri.map((n, i) => L.partite.filter(p => p[1] === i && Date.parse(p[0] + 'T00:00:00Z') < D).length);
+    const primo = L.arbitri[conta.indexOf(Math.max(...conta))], cognome = L.arbitri.find((n, i) => conta[i] > 5 && L.arbitri.filter(m => m.split(' ').pop() === n.split(' ').pop()).length === 1 && n !== primo);
+    const casi = [];
+    for (const scritto of [primo, cognome.split(' ').pop(), 'Marco', 'Pippo Baudo', '']) {
+      el.value = scritto; await avviaScanner();
+      const pr = document.getElementById('ai-prompt').value, nota = document.getElementById('arbitro-nota').textContent;
+      casi.push({ scritto, A: window.__ARBITRO_DEBUG, g: Object.assign({}, window.__GIALLI), nota, campo: !document.getElementById('campo-arbitro').hidden,
+                  nelPrompt: scritto ? pr.includes(nota) : !/Arbitro/.test(pr.split('8. TEMPI')[1] || ''), rotto: /NaN|undefined|Infinity/.test(nota + pr) });
+    }
+    return { giorno, lId, g0, nota0, primo, casi };
+  });
   const log = page.__log.slice();
   // dal b59 le card di approfondimento sono <details> chiuse, dal b66 le sezioni stanno in schede: si
   // aprono tutte e si misura scheda per scheda. Una tabella di confronto non deve scorrere nemmeno dentro
@@ -415,7 +433,7 @@ async function runScanner(browser, base, matches, limit) {
     const vuoti = ['quota-1', 'quota-x', 'quota-2', 'quota-ov', 'quota-un'].every(id => document.getElementById(id).value === '');
     return { nome: 'cambia partita', svuotate: vuoti && window.__QUOTE_CTX === null && document.getElementById('quote-box').innerHTML === '--' }; }));
   await page.context().close();
-  return { runs: out, log, scroll, compatte, giocatori, quote, chiuse, schede };
+  return { runs: out, log, scroll, compatte, giocatori, quote, arbitro, chiuse, schede };
 }
 
 // la giornata (b65): trova le partite del turno, le analizza tutte, e ognuna deve stampare
@@ -764,7 +782,29 @@ if (require.main === module) (async () => {
     console.log(`   formazioni ${m.id}: casa ${f(L && L.H)} | trasf. ${f(L && L.A)}`);
     const T = scanner.runs[m.id].fatigue, g = F => F ? `riposo ${F.riposo} (lega ${F.riposoLega}), ${F.partite14} in 14 gg, coppa ${F.coppaPrima == null ? '-' : F.coppaPrima + ' fa'} / ${F.coppaDopo == null ? '-' : 'fra ' + F.coppaDopo}` : '-';
     console.log(`   stanchezza ${m.id}: casa ${g(T && T.H)} | trasf. ${g(T && T.A)}`); }
-  let fail = (sLog.length || (process.env.MOBILE && (scanner.scroll > 0 || scanner.compatte.length)) || !G || gRotti.length || pRotti.length || ibRotti.length || !Q || qRotte.length || qaRotte.length) ? 1 : 0;
+  const AR = scanner.arbitro, arRotti = [];
+  if (!AR || AR.errore) arRotti.push(AR ? AR.errore : 'campo assente');
+  else {
+    const TAB = JSON.parse(fs.readFileSync(path.join(ROOT, 'arbitri.json'), 'utf8')).leghe[AR.lId], B = { l_0ALvwF: 0.96, l_0ErfuF: 0.72 }[AR.lId];
+    const giornoN = g => Date.parse(g + 'T00:00:00Z') / 864e5;
+    const media = t => { const v = TAB.partite.filter(p => giornoN(p[0]) >= t - 365 && giornoN(p[0]) < t).map(p => p[2]); return v.length >= 50 ? v.reduce((a, x) => a + x, 0) / v.length : null; };
+    const atteso = nome => { const i = TAB.arbitri.indexOf(nome), D = giornoN(AR.giorno), e = media(D);
+      const h = TAB.partite.filter(p => p[1] === i && giornoN(p[0]) < D).map(p => [p[2], media(giornoN(p[0]))]).filter(x => x[1] != null).slice(-80);
+      return (h.reduce((a, x) => a + x[0], 0) + 10 * e) / (h.reduce((a, x) => a + x[1], 0) + 10 * e); };
+    if (AR.nota0 === '' || /Arbitro:/.test(AR.nota0)) arRotti.push('nota senza arbitro: ' + AR.nota0);
+    AR.casi.forEach((c, k) => {
+      const A = c.A, f = A && A.fattore ? A.fattore : 1, rel = (x, y) => Math.abs(x / y - 1);
+      if (c.rotto || !c.campo || !c.nelPrompt) arRotti.push(c.scritto + ': NaN, campo nascosto o prompt senza la nota');
+      if (rel(c.g.role, AR.g0.role * f) > 1e-9 || rel(c.g.over, AR.g0.over * f) > 1e-9) arRotti.push(c.scritto + ': gialli non moltiplicati per il fattore');
+      if (k < 2) { const R = atteso(A && A.nome);
+        if (!A || !A.nome || Math.abs(A.r - R) > 1e-9 || Math.abs(A.fattore - Math.pow(R, B)) > 1e-9 || !(A.n > 0) || !c.nota.includes(A.nome)) arRotti.push(c.scritto + ': rapporto ' + (A && A.r) + ' contro ' + R); }
+      else if (k < 4) { if (!A || A.errore !== (k === 2 ? 'ambiguo' : 'nome') || A.fattore) arRotti.push(c.scritto + ': errore atteso ' + (k === 2 ? 'ambiguo' : 'nome')); }
+      else if (A !== null || c.nota !== AR.nota0) arRotti.push('campo vuoto: non torna a prima');
+    });
+  }
+  console.log('   arbitro: ' + (AR && !AR.errore ? AR.casi.map(c => `"${c.scritto}" ${c.A ? (c.A.fattore ? `${c.A.nome} R ${c.A.r.toFixed(3)} su ${c.A.n} partite, gialli x${c.A.fattore.toFixed(3)}` : c.A.errore) : 'nessuno'}`).join(' · ') : '')
+    + (arRotti.length ? ' · ROTTO: ' + arRotti.join('; ') : ' · rapporto uguale a quello rifatto da arbitri.json, gialli moltiplicati per R^b, nota e prompt senza NaN, campo vuoto torna a prima'));
+  let fail = (sLog.length || (process.env.MOBILE && (scanner.scroll > 0 || scanner.compatte.length)) || !G || gRotti.length || pRotti.length || ibRotti.length || !Q || qRotte.length || qaRotte.length || arRotti.length) ? 1 : 0;
   const GI = await runGiornata(browser, base, cur, scanner.runs);
   const giOk = GI && GI.lista.length === cur.length && GI.lista.every((x, k) => x.id === cur[k].id && x.stato === 'fatta')
     && !GI.diversi.length && Object.keys(GI.giri).length === day.length && GI.righe === cur.length && !GI.rotto && !GI.promptRotto && !GI.log.length

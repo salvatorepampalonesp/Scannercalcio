@@ -277,6 +277,9 @@ details.info>div b{color:var(--color-text);font-weight:500}
 .azioni{display:flex;flex-direction:column;gap:2px}
 .azioni .btn+.btn{margin-top:6px}
 .setup .nota-giornata{font-size:12.5px;line-height:1.55;color:var(--n-500);text-wrap:pretty}
+.campo-arbitro .facolt{font-weight:400;color:var(--n-500)}
+.campo-arbitro .nota-campo{margin-top:6px;font-size:12.5px;line-height:1.5;color:var(--n-500);text-wrap:pretty}
+#arbitro-nota:empty{display:none}
 #console-loader{font-family:var(--mono);font-size:12px;line-height:1.7;color:var(--n-400);
   background:var(--n-900);border-radius:var(--r-md);padding:12px 14px;max-height:220px;overflow:auto}
 #console-loader:empty{display:none}
@@ -761,7 +764,7 @@ body.vista-partita .dock{display:flex}
     <button type="button" class="btn btn-ghost ab-back" id="btn-nuova" onclick="tornaIndietro()" aria-label="Indietro"><svg class="ic" aria-hidden="true"><use href="#i-arrow-left"/></svg><span>Cambia partita</span></button>
     <span class="ab-tit" id="ab-tit"><b></b><small></small></span>
     <span class="ab-spazio"></span>
-    <span class="tag" id="build-ver">build 0905-b84</span>
+    <span class="tag" id="build-ver">build 0905-b85</span>
   </div>
 </header>
 
@@ -793,6 +796,12 @@ body.vista-partita .dock{display:flex}
       <div class="campi-2">
         <div><label for="target-date">Data della partita</label><input type="date" id="target-date"></div>
         <div><label for="history-limit">Storico per squadra</label><div class="stepper"><button type="button" class="btn btn-ghost" data-passo="-1" aria-label="Meno partite"><svg class="ic" aria-hidden="true"><use href="#i-minus"/></svg></button><input type="number" id="history-limit" value="30" min="5" max="100" inputmode="numeric"><button type="button" class="btn btn-ghost" data-passo="1" aria-label="Pi&ugrave; partite"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg></button></div></div>
+      </div>
+      <div id="campo-arbitro" class="campo-arbitro" hidden>
+        <label for="arbitro">Arbitro <span class="facolt">facoltativo</span></label>
+        <input type="text" id="arbitro" list="arbitri-lista" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="done" placeholder="Il designato, se è già uscito">
+        <datalist id="arbitri-lista"></datalist>
+        <p class="nota-campo">Solo Serie A e LaLiga: il suo rapporto sulle partite precedenti corregge i gialli attesi.</p>
       </div>
       <div class="azioni">
         <button class="btn btn-primary btn-full btn-grande" id="btn-avvia" onclick="analizzaUna()">Analizza la partita</button>
@@ -1220,6 +1229,7 @@ body.vista-partita .dock{display:flex}
           <div class="sub-title">Over per linea (solo ruolo)</div>
           <div class="tbl-scroll"><table class="table-ui" id="mkt-lines"></table></div>
           <div class="note" style="margin-top:8px" id="mkt-legend"></div>
+          <div class="note" style="margin-top:8px" id="arbitro-nota"></div>
           <div class="sub-title">Chi fa più corner</div>
           <div class="tbl-scroll"><table class="table-ui table-compact" id="cor-diff"></table></div>
           <div class="tbl-scroll" style="margin-top:8px"><table class="table-ui table-compact" id="cor-hc"></table></div>
@@ -1572,6 +1582,7 @@ async function _giroGiornata(i) {
     x.stato = 'errore'; x.motivo = 'una delle due squadre non ha partite di lega nel database'; return false;
   }
   document.getElementById('target-date').value = x.giorno;
+  const _arb = document.querySelector('#arbitro'); if (_arb instanceof HTMLInputElement) _arb.value = x.arbitro || '';
   svuotaQuote(); _quoteRimetti(i);
   G.vista = i; window.__ESITO = null;
   const al = window.alert; let msg = null;
@@ -1616,8 +1627,9 @@ async function analizzaUna() {
   const E = window.__ESITO, i = G && E ? G.lista.findIndex(x => String(x.hId) === E.hId && String(x.aId) === E.aId && x.giorno === E.giorno) : -1;
   if (i >= 0) {
     const x = G.lista[i], S = E.sorpresa;
+    const _arb = document.querySelector('#arbitro');
     Object.assign(x, { stato: 'fatta', motivo: null, p: E.p, sorpresa: { liv: S.liv, pU: S.pU, fav: S.fav, dis: S.dis },
-                       top: _topVoce(window.__VERDETTI), buone: _buone(window.__VERDETTI) });
+                       top: _topVoce(window.__VERDETTI), buone: _buone(window.__VERDETTI), arbitro: _arb instanceof HTMLInputElement ? _arb.value.trim() : '' });
     G.vista = i; _giornataQuote();
   }
   renderGiornata();
@@ -2259,6 +2271,7 @@ function mostraRoster(lId) {
   selH.innerHTML = '<option value="">Scegli la squadra di casa</option>'; selA.innerHTML = '<option value="">Scegli la squadra in trasferta</option>';
   teams.forEach(t => { selH.add(new Option(t.name, t.id)); selA.add(new Option(t.name, t.id)); });
   document.getElementById('matchup-builder').style.display = 'flex';
+  arbitroCampo();
   return teams.length;
 }
 
@@ -3809,7 +3822,7 @@ function _tabTesto(V) {
        + senza.map(v => v.nome + ' ' + (v.edge == null ? 'base ignota' : (v.edge >= 0 ? '+' : '') + v.edge.toFixed(1))).join(', ') : '');
 }
 
-window.__SCANNER_BUILD = '0905-b84';
+window.__SCANNER_BUILD = '0905-b85';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -4204,6 +4217,80 @@ function cornerDiff(cph, cpa, elod) {
   return { ph, pa, elod, mu, s, pH: P(v => v > 0), pX: P(v => v === 0), pA: P(v => v < 0), hc };
 }
 
+// l'arbitro sui gialli, solo Serie A e LaLiga: gialli attesi per R^b, i b della regola registrata (AGENTS.md, Gli
+// arbitri e i gialli: la regola); R dalla tabella arbitri.json, con le sole partite prima del giorno. 'no' torna a prima
+window.ARBITRO = (typeof window.ARBITRO === 'string') ? window.ARBITRO : 'si';
+const ARBITRO_REG = { b: { l_0ALvwF: 0.96, l_0ErfuF: 0.72 }, K: 10, ultime: 80, minLega: 50, giorniLega: 365 };
+let ARBITRI_TAB = null;
+async function caricaArbitri() {
+  if (ARBITRI_TAB) return ARBITRI_TAB;
+  try { const r = await fetch('arbitri.json', { cache: 'no-cache' }); if (r.ok) ARBITRI_TAB = await r.json(); } catch (e) {}
+  return ARBITRI_TAB;
+}
+const _normArb = s => String(s || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^\x00-\x7f]/g, '').toLowerCase().split(/\s+/).filter(Boolean);
+function scegliArbitro(nomi, scritto) {
+  const s = _normArb(scritto);
+  if (!s.length) return { idx: null, piu: [] };
+  const N = nomi.map(_normArb), uguale = N.findIndex(n => n.join(' ') === s.join(' '));
+  if (uguale >= 0) return { idx: uguale, piu: [] };
+  const dentro = (a, b) => { let j = 0; for (const t of b) if (j < a.length && t === a[j]) j++; return j === a.length; };
+  const c = N.map((n, k) => dentro(s, n) ? k : -1).filter(k => k >= 0);
+  return c.length === 1 ? { idx: c[0], piu: [] } : { idx: null, piu: c.map(k => nomi[k]) };
+}
+function rapportoArbitro(L, idx, giorno) {
+  const R = ARBITRO_REG, P = L.partite, giornoN = g => Math.round(Date.parse(g + 'T00:00:00Z') / 864e5);
+  const d = P.map(p => giornoN(p[0])), D = giornoN(giorno), cum = [0];
+  P.forEach(p => cum.push(cum[cum.length - 1] + p[2]));
+  const primo = t => { let lo = 0, hi = d.length; while (lo < hi) { const m = (lo + hi) >> 1; if (d[m] < t) lo = m + 1; else hi = m; } return lo; };
+  const media = t => { const a = primo(t - R.giorniLega), b = primo(t); return (b - a >= R.minLega) ? (cum[b] - cum[a]) / (b - a) : null; };
+  const e = media(D);
+  if (e == null) return null;
+  const h = [];
+  for (let j = 0; j < P.length && d[j] < D; j++) if (P[j][1] === idx) { const ej = media(d[j]); if (ej != null) h.push([P[j][2], ej]); }
+  const u = h.slice(-R.ultime), gialli = u.reduce((a, x) => a + x[0], 0), attesi = u.reduce((a, x) => a + x[1], 0);
+  return { r: (gialli + R.K * e) / (attesi + R.K * e), n: u.length, e, gialli, attesi };
+}
+async function arbitroPartita(lId, giorno) {
+  const el = document.querySelector('#arbitro'), scritto = (el instanceof HTMLInputElement) ? el.value.trim() : '';
+  if (!scritto || window.ARBITRO === 'no') return null;
+  const out = { scritto, b: ARBITRO_REG.b[lId] };
+  if (out.b == null) return Object.assign(out, { errore: 'lega' });
+  const T = await caricaArbitri(), L = T && T.leghe && T.leghe[lId];
+  if (!L) return Object.assign(out, { errore: 'tabella' });
+  const S = scegliArbitro(L.arbitri, scritto);
+  Object.assign(out, { lega: L.nome, nArbitri: L.arbitri.length, aggiornato: T.aggiornato });
+  if (S.idx == null) return Object.assign(out, { errore: S.piu.length ? 'ambiguo' : 'nome', piu: S.piu });
+  const R = rapportoArbitro(L, S.idx, giorno);
+  if (!R) return Object.assign(out, { errore: 'lega-corta', nome: L.arbitri[S.idx] });
+  return Object.assign(out, { nome: L.arbitri[S.idx] }, R, { fattore: Math.pow(R.r, out.b) });
+}
+function testoArbitro(A, lId) {
+  if (ARBITRO_REG.b[lId] == null && !A) return '';
+  if (!A) return 'Arbitro non indicato. In Serie A e LaLiga, scritto nel setup, il suo rapporto sulle partite precedenti corregge i gialli attesi (test registrato su 850 partite: errore sul conteggio dei gialli piu\' basso del 18.9 per mille).';
+  const q = '"' + A.scritto + '"';
+  if (A.errore === 'lega') return 'L\'arbitro corregge i gialli solo in Serie A e LaLiga: ' + q + ' non usato.';
+  if (A.errore === 'tabella') return 'La tabella degli arbitri non e\' arrivata: gialli senza correzione.';
+  if (A.errore === 'nome') return q + ': nessun arbitro di ' + A.lega + ' con questo nome (' + A.nArbitri + ' nella tabella, aggiornata al ' + A.aggiornato + '). Gialli senza correzione.';
+  if (A.errore === 'ambiguo') return q + ' va bene per piu\' arbitri di ' + A.lega + ' (' + A.piu.join(', ') + '): scegli il nome dall\'elenco. Gialli senza correzione.';
+  if (A.errore) return 'Troppe poche partite di ' + A.lega + ' prima di questa data: gialli senza correzione.';
+  if (!A.n) return 'Arbitro: ' + A.nome + ', nessuna partita di ' + A.lega + ' prima di questa data nella tabella: gialli senza correzione.';
+  return 'Arbitro: ' + A.nome + '. Nelle sue ultime ' + A.n + ' partite di ' + A.lega + ' ha dato ' + A.gialli + ' gialli contro ' + A.attesi.toFixed(1)
+    + ' attesi dalla media della lega: rapporto ' + A.r.toFixed(2) + ' (ristretto verso 1 come se avesse altre ' + ARBITRO_REG.K + ' partite nella media). I gialli attesi sono gia\' moltiplicati per '
+    + A.fattore.toFixed(3) + '. Tabella degli arbitri aggiornata al ' + A.aggiornato + '.';
+}
+async function arbitroCampo() {
+  const box = document.querySelector('#campo-arbitro'), sl = document.querySelector('#sel-league'), dl = document.querySelector('#arbitri-lista');
+  if (!(box instanceof Element) || !(sl instanceof HTMLSelectElement)) return;
+  const lId = sl.value, si = ARBITRO_REG.b[lId] != null && window.ARBITRO !== 'no';
+  box.hidden = !si;
+  if (!si || !(dl instanceof Element)) return;
+  const T = await caricaArbitri(), L = T && T.leghe && T.leghe[lId];
+  if (L && dl.dataset.lega !== lId) {
+    dl.innerHTML = ''; dl.dataset.lega = lId;
+    [...L.arbitri].sort((a, b) => a.localeCompare(b, 'it')).forEach(n => { const o = document.createElement('option'); o.value = n; dl.appendChild(o); });
+  }
+}
+
 // media pesata fra due stime del lambda, NON un moltiplicatore: un fattore limitato
 // lascia il rango dominato dal Dixon-Coles e non sposta niente (AGENTS.md, I gol)
 function goalsSotCorrection(att, dif, lamTot) {
@@ -4255,6 +4342,7 @@ async function avviaScanner() {
     const _lgM = globalLeagueMatchesCache.filter(m => !lId || m.league_id === lId);
     const _SH = indiciStanchezza(hId, dateInput, _lgM, _coppe), _SA = indiciStanchezza(aId, dateInput, _lgM, _coppe);
     window.__FATIGUE_DEBUG = { stagione: _coppe.season, competizioni: _coppe.ok, partiteCoppe: _coppe.n, H: _SH, A: _SA };
+    const _ARB = await arbitroPartita(lId, dateInput); window.__ARBITRO_DEBUG = _ARB;
     window.__PLAYER_CTX = { H: { id: hId, nome: hName, partite: dH.matchList, xi: _luT && _luT.home ? _luT.home.xi : null },
                             A: { id: aId, nome: aName, partite: dA.matchList, xi: _luT && _luT.away ? _luT.away.xi : null } };
     window.__PLAYER_DATA = null;
@@ -4396,7 +4484,8 @@ async function avviaScanner() {
       const yH = getF(dH,'yel'), yA = getF(dA,'yel');
       const _yelRaw = lamOf('yel');
       const _CM = cardsMismatchAdj(_yelRaw, _eloDiff, _mpg);
-      const lYel = _CM.lam;
+      const _arbF = (_ARB && _ARB.fattore > 0) ? _ARB.fattore : 1;
+      const lYel = _CM.lam * _arbF;
       const lFls = lamOf('fouls');
       const rH = getF(dH,'red_cards'), rA = getF(dA,'red_cards');
 
@@ -4419,11 +4508,12 @@ async function avviaScanner() {
       return { lCor, cH, cA, lSot, sH, sA, lYel, yH, yA, lFls, scope,
                baseCor, baseSot, baseYel, lgRefCor, lgRefSot, lgRefYel, lgGoals,
                yelRaw: _yelRaw, yelAdj: _CM.adj, yelMismatch: _CM.mismatch,
-               yelMeanPair: _CM.meanPair, yelCapped: _CM.capped,
+               yelMeanPair: _CM.meanPair, yelCapped: _CM.capped, yelArb: _arbF,
                sotRaw: _sotRaw, sotAdj: _SM.adj, sotCapped: _SM.capped,
                linesCor, linesSot, linesYel, pOv9c, pOv8s, pOv3y, pRed, kCor, kSot, kYel };
     };
     const advRole = calcAdv(true); const advOver = calcAdv(false);
+    window.__GIALLI = { role: advRole.lYel, over: advOver.lYel, p35: advRole.pOv3y, k: advRole.kYel, fattore: advRole.yelArb };
 
     const _oppOf = (team) => (team === dH ? dA : dH);
     const safeDecay = (team, feat) => {
@@ -5058,6 +5148,7 @@ async function avviaScanner() {
     safeTxt('mkt-legend', `Conteggi con binomiale negativa: corner ${_disp(advRole.kCor)}, tiri in porta ${_disp(advRole.kSot)}, gialli ${_disp(advRole.kYel)}. ` +
       `«Poisson» vuol dire che le partite viste non sono piu' disperse del caso puro. ` +
       `Ambito ${advRole.scope === 'role' ? 'casa/trasferta' : 'generale (poche partite nel ruolo)'}.`);
+    safeHtml('arbitro-nota', _escHtml(testoArbitro(_ARB, lId)));
 
     const badgeZ = (z) => { const az = Math.abs(z); if (az < 0.5) return '→ Eq.'; return z > 0 ? `Dom. Att` : `Dom. Dif`; };
     safeTxt('z-xg-h-ov', f2(zXgH_over)); safeTxt('z-xg-h-ro', f2(zXgH_role)); safeTxt('z-xg-a-ov', f2(zXgA_over)); safeTxt('z-xg-a-ro', f2(zXgA_role));
@@ -5404,7 +5495,8 @@ Misurato: la fortuna recente (gol o punti sopra o sotto gli xG) non anticipa il 
 - Gol fatti/subiti [GENERALE] ${hName}: 1-15' ${bHs['1-15']}/${bHc['1-15']}, 76-90' ${bHs['76-90+']}/${bHc['76-90+']} | ${aName}: 1-15' ${bAs['1-15']}/${bAc['1-15']}, 76-90' ${bAs['76-90+']}/${bAc['76-90+']}${_numCorr ? `
 - Almeno un gol nella partita nei primi 15': ${pct(1 - Math.exp(-lamTot * NUMERI_REG.FORMA_TEMPI[0]))}, negli ultimi 15': ${pct(1 - Math.exp(-lamTot * NUMERI_REG.FORMA_TEMPI[5]))} (quota per fascia uguale per tutte: misurato, i minuti delle due squadre non dicono in che minuto si segna)` : ''}
 - Probabilita' di un gol entro il 30': ${pct(probGoal30)} [${_MA ? 'MAESTRO' : 'RUOLO'}]
-- Attesi, RUOLO | GENERALE: corner ${f1(advRole.lCor)} | ${f1(advOver.lCor)}, tiri in porta ${f1(advRole.lSot)} | ${f1(advOver.lSot)}, gialli ${f1(advRole.lYel)} | ${f1(advOver.lYel)}${advRole.cd ? `
+- Attesi, RUOLO | GENERALE: corner ${f1(advRole.lCor)} | ${f1(advOver.lCor)}, tiri in porta ${f1(advRole.lSot)} | ${f1(advOver.lSot)}, gialli ${f1(advRole.lYel)} | ${f1(advOver.lYel)}${_ARB ? `
+- ${testoArbitro(_ARB, lId)}${_ARB.fattore ? ' L\'arbitro sposta i gialli in Serie A e LaLiga: test registrato su 850 partite.' : ''}` : ''}${advRole.cd ? `
 - Chi fa piu' corner (il totale diviso fra le due squadre, dai corner previsti e dall'Elo): ${hName} ${pct(advRole.cd.pH)}, stesso numero ${pct(advRole.cd.pX)}, ${aName} ${pct(advRole.cd.pA)}; ${hName} con almeno 2 corner in piu' ${pct(advRole.cd.hc['-1.5'])}, ${aName} con almeno 2 in piu' ${pct(1 - advRole.cd.hc['1.5'])}. Il totale dei corner quasi non si prevede, chi ne fa di piu' si': test registrato su 7.120 partite di 24 leghe, calibrato` : ''}
 
 9. STANCHEZZA (solo contesto: misurato su ${PICK_RESA.partite} partite, il vantaggio di riposo non migliora la previsione)
@@ -5695,6 +5787,8 @@ async function copiaPrompt() {
   temaPosa(false);
   const dbc = $('#db-cambia');
   if (dbc instanceof Element) dbc.addEventListener('click', () => { db.hidden = true; dbp.hidden = false; scaletta([...dbp.children], 40); });
+  const arb = $('#arbitro');
+  if (arb instanceof HTMLInputElement) ['#sel-home', '#sel-away', '#target-date'].forEach(q => { const el = $(q); if (el instanceof Element) el.addEventListener('change', () => { arb.value = ''; }); });
   $$('[data-passo]').forEach(b => b.addEventListener('click', () => {
     const i = $('#history-limit'); if (!(i instanceof HTMLInputElement)) return;
     const v = Math.max(+i.min || 5, Math.min(+i.max || 100, (parseInt(i.value, 10) || 30) + 5 * +b.dataset.passo));

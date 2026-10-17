@@ -28,6 +28,7 @@ manager, nessun test runner: si aprono i file nel browser. Tutto il codice sta i
 | `scanner.html` | **il motore**: analizza una partita (Dixon-Coles + Markov inclinati dall'Elo), mercati, statistiche previste, tabellone |
 | `comparatore.html` | **il backtest**: carica `scanner.html` come testo, lo inietta in memoria, lo fa girare su centinaia di partite ed esporta un CSV previsto-vs-reale |
 | `leghe.json` | catalogo leghe/stagioni: la risposta di `/leagues` della PitchAPI, da rifare quando l'API apre una stagione (vedi *Il catalogo delle leghe*) |
+| `arbitri.json` | gli arbitri di Serie A e LaLiga dal 2021/22, partita per partita (giorno, arbitro, gialli), dalla PitchAPI: lo Scanner ne rifà il rapporto dell'arbitro sui gialli (dal `b85`, vedi *Gli arbitri e i gialli: la regola*, «Nello Scanner») |
 
 Dati da PitchAPI via proxy Cloudflare (`PITCH_BASE` in `scanner.html`). Endpoint per
 partita: `/stats`, `/lineups`, `/advanced`, `/events`, tutti attraverso `fetchMatchRaw`,
@@ -55,7 +56,7 @@ vedi *Le quote automatiche*); se non ci sono, le scrive l'utente. Per misurarle 
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b84`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b85`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -427,17 +428,14 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   Scaricati il 5 ottobre 2026 (`strumenti/arbitri.py --scarica`). **Test registrato passato** per Serie A e
   LaLiga: vedi la voce qui sotto e *Gli arbitri e i gialli: la regola*. La posizione in classifica resta da
   misurare.
-- [ ] **L'arbitro nei gialli dello Scanner, Serie A e LaLiga.** Il test registrato è passato: sul 2025/26 e
-  il 2026/27 i gialli attesi del motore per `R^b` (rapporto dell'arbitro sulle sue partite precedenti, `b`
-  0.96 in Serie A e 0.72 in LaLiga) fanno −18.9‰ sul conteggio (`z = −3.37`, 850 partite) e −13.4‰
-  sull'Over 3.5. Per entrare servono:
-  - un campo per l'arbitro (le designazioni escono uno o due giorni prima);
-  - la tabella dei rapporti costruita dalla PitchAPI (nomi da `/matches/{id}`, circa 1.100 chiamate per
-    tre stagioni di una lega; gialli dai batch) e confrontata con quella di Footiqo, perché i dati di
-    Footiqo non si ridistribuiscono;
-  - le rese della famiglia dei numeri rimisurate.
-
-  Nelle altre tre leghe l'effetto sul test è positivo ma sotto la soglia: serve un test a parte.
+- [x] ~~**L'arbitro nei gialli dello Scanner, Serie A e LaLiga.**~~ — **nello Scanner dal `b85`.** Un campo nel setup
+  per il nome dell'arbitro, e i gialli attesi per `R^b` (`b` 0.96 in Serie A e 0.72 in LaLiga). `R` viene da `arbitri.json`,
+  costruita dalla PitchAPI. Il test registrato rifatto con quella tabella passa ancora: −18.5‰ sul conteggio (`z = −2.97`,
+  863 partite, meglio in tutte e due le leghe). Le rese dei gialli nel tabellone restano dentro le etichette. Vedi *Gli
+  arbitri e i gialli: la regola*, «Nello Scanner (`b85`)».
+- [ ] **L'arbitro nelle altre tre leghe.** In Bundesliga, Premier e Ligue 1 sul test del `b85` l'effetto è positivo ma sotto
+  la soglia (`b` +0.71 / +0.65 / +0.41, `z` +1.4–1.6, in campione): serve un test a parte, su partite nuove, con una regola
+  scritta prima.
 - [ ] **L'endpoint `/shots`** (`/v1/matches/{id}/shots`, ogni tiro con xG, porta, area,
   situazione, coordinate): la forma della distribuzione dei tiri è il candidato più serio
   per l'*ordinamento* dei mercati gol. Una chiamata in più per partita (+25% sul batch).
@@ -563,7 +561,7 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b84`)
+## Stato attuale (`b85`)
 
 **Il maestro mercato** (dal `b77`). Senza quote, l'1X2 del verdetto e la matrice dei gol (Over/Under, Goal, multigol,
 risultati esatti, handicap, tempi dei gol) non escono più dall'ensemble del motore ma dal maestro. È una ridge che dalle
@@ -602,6 +600,14 @@ contro la frequenza della lega (`z = −14.79`, 23 leghe su 24), calibrato. Nell
 della casa; nel tabellone più corner la casa, più corner la trasferta e le due −1.5, che rendono quanto promettono (FORTE
 +26.6, GIOCABILE +13.7, MARGINALE +6.6 punti sopra il giocarle alla cieca, su 41.740 proposte). Vedi *Chi fa più corner:
 la regola*, «Nel motore (`b84`)».
+
+**L'arbitro sui gialli** (dal `b85`, Serie A e LaLiga). Nel setup c'è un campo per il nome dell'arbitro designato. La
+PitchAPI non lo dà prima del fischio: il 16 ottobre 2026, 6 partite su 6 del giorno dopo senza. Lo Scanner prende da
+`arbitri.json` le sue ultime 80 partite nella lega prima di quel giorno, e ne fa il rapporto fra i gialli veri e quelli
+attesi dalla media della lega. Poi moltiplica i gialli attesi per `R^b`, coi `b` del test registrato: 0.96 in Serie A, 0.72
+in LaLiga. La tabella viene dalla PitchAPI (3.940 partite dal 2021/22), non da Footiqo, che non si ridistribuisce. Il test
+rifatto con lei, sulle partite del test registrato: conteggio dei gialli −18.5‰ (`z = −2.97`), meglio in tutte e due le
+leghe. Senza arbitro non cambia niente. Vedi *Gli arbitri e i gialli: la regola*, «Nello Scanner (`b85`)».
 
 **1X2 del motore, prima del maestro.** Col motore `b48` il pick azzecca il 52.7% (±1.4) contro il 43.0% del «gioca sempre in
 casa» sulle cinque leghe: 52.7% contro 40.2% in Serie A, 52.7% contro 43.1% in Premier, 53.2%
@@ -895,7 +901,7 @@ Championship 0.535 / 0.554 / 0.547, Eredivisie 0.546 / 0.550 / 0.527, Liga Portu
 previsione cambia solo dove sbagliava di molto, il tabellone non guadagna (vedi *Il riferimento
 di lega vero: misurato*). Il limite di questi mercati è che ordinano poco, non la base. **L'arbitro** sposta
 i gialli in Serie A e LaLiga: col suo rapporto sulle partite precedenti il conteggio dei gialli migliora
-di 18.9‰ (`z = −3.37`) sul 2025/26 e 2026/27, test registrato. Non è ancora nello Scanner. Vedi *Gli
+di 18.9‰ (`z = −3.37`) sul 2025/26 e 2026/27, test registrato. Nello Scanner dal `b85`: si scrive il nome nel setup. Vedi *Gli
 arbitri e i gialli: la regola*.
 
 **Pareggio.** Non si prevede abbastanza da giocarlo: in copia conforme `pX` ha AUC 0.562
@@ -2141,7 +2147,7 @@ niente. Controlla:
   testo; all'apertura il Comparatore ripristina la copia salvata in localStorage, che puo'
   essere vecchia) e che le build coincidano;
 - **ogni** manopola del motore contro il suo default letto dal sorgente
-  (`cmpEngineDefaults`, 30 manopole dal `b48`, 31 dal `b63` con `GOALS_LEVEL`, 32 dal `b75` con `PRIMO_GOL_QUOTA`, 33 dal `b76` con `NUMERI_CORREZIONI`, 34 dal `b77` con `MAESTRO`), piu' `CMP_K_LIST[0]` contro `SHRINK_K`;
+  (`cmpEngineDefaults`, 30 manopole dal `b48`, 31 dal `b63` con `GOALS_LEVEL`, 32 dal `b75` con `PRIMO_GOL_QUOTA`, 33 dal `b76` con `NUMERI_CORREZIONI`, 34 dal `b77` con `MAESTRO`, 35 dal `b85` con `ARBITRO`), piu' `CMP_K_LIST[0]` contro `SHRINK_K`;
 - lo storico per squadra contro quello dello Scanner (`window.__ENGINE_LIMIT`);
 - che la partita sia della stagione per cui e' caricato il database.
 
@@ -2195,15 +2201,15 @@ col movimento ridotto (`reducedMotion: 'reduce'`: i numeri che contano mostrereb
 intermedi), legge «In breve» da `#in-breve` (il riquadro, la sorpresa e le proposte sono tre blocchi)
 e misura le voci del dock e del foglio Altro, Squadre in tutte e tre le sotto-schede.
 
-Esito al `b84` (storico 30), a 390px con tutte le 28 card aperte, scheda per scheda e in tutte e tre le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, 0 px):
+Esito al `b85` (storico 30), a 390px con tutte le 28 card aperte, scheda per scheda e in tutte e tre le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, il caso dell'arbitro col rapporto rifatto da `arbitri.json`, 0 px):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
-| una partita, tutte del giorno, intervallo | 3/3 | 0 su 203 | 0 su 131 | 0 |
-| batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 203 | 0 su 131 | 0 |
+| una partita, tutte del giorno, intervallo | 3/3 | 0 su 204 | 0 su 131 | 0 |
+| batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 204 | 0 su 131 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
 | `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 142-167 | 84-90 | 0 |
-| `vecchio`: motore `b83` caricato (controllo) | 0/3, «motore caricato diverso ...» | 3 su 203 | 15-21 | 0 |
+| `vecchio`: motore `b84` caricato (controllo) | 0/3, «motore caricato diverso ...» | 1 su 204 | 1 | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -2310,7 +2316,11 @@ rischio sorpresa e il tabellone (le tabelle del `b77` al posto di quelle del `b8
 finta del `b83` non ha più la curva e il `b82` resta senza; nel CSV cambia solo il certificato. Al `b84` il controllo col `b83` vede
 3 scritture diverse su 203: le due tabelline nuove di chi fa più corner (`cor-diff`, `cor-hc`), che il `b83` non scrive, e il
 tabellone, che ha quattro proposte in più. Nel CSV 15-21 righe su 131: le cinque righe dei corner (N/D col `b83`), le righe del
-tabellone che si spostano e il certificato. Il banco confronta anche le due tabelline con le righe del CSV.
+tabellone che si spostano e il certificato. Il banco confronta anche le due tabelline con le righe del CSV. Al `b85` il
+controllo col `b84` vede 1 scrittura diversa su 204, la nota dell'arbitro nella card dei cartellini (`arbitro-nota`), che il
+`b84` non scrive, e nel CSV solo il certificato: senza arbitro i gialli sono quelli di prima. Il caso dell'arbitro sta
+fuori dal confronto, perché il Comparatore non ha il campo: dopo il giro dello Scanner il banco scrive cinque nomi
+sull'ultima partita e rifà il rapporto da `arbitri.json` (vedi *Gli arbitri e i gialli: la regola*, «Nello Scanner»).
 
 **Il controllo del `b70`.** Da qui «In breve» controlla anche il rischio sorpresa: con le quote dell'1X2
 `#sorpresa-box` deve essere identico a quello rifatto nella pagina con `rischioSorpresa(…,
@@ -2387,7 +2397,8 @@ Over.
   le quote, quella dei risultati esatti e il rischio sorpresa) e il mega-prompt non sono nel confronto; del mega-prompt, dal `b51`, il banco controlla solo che non
   sia vuoto o rotto, e dal `b54` il blocco delle quote nei casi del banco (dieci dal `b57`).
 - **Le quote il Comparatore non le ha** (né 1X2 né Over/Under): niente campi, niente combinazione nel
-  CSV, e non chiama la strada `/quote/`. Le rese con le quote sono misurate fuori dal motore, da
+  CSV, e non chiama la strada `/quote/`. Lo stesso per l'arbitro (`b85`): niente campo, quindi i gialli del CSV sono sempre quelli
+  senza arbitro, e il Comparatore non carica `arbitri.json`. Le rese con le quote sono misurate fuori dal motore, da
   `strumenti/quote-bookmaker.py` e `strumenti/quote-gol.py` sui CSV e le quote di football-data.co.uk.
 
 **Come si rifa'.** `node strumenti/banco-parita.js` (tutte le modalita' e i controlli, circa
@@ -4858,6 +4869,7 @@ scrittura nuova, il messaggio iniziale). Il banco la verifica a parte, premendo 
 | `MAESTRO` / `MAESTRO_REG` | `'si'` / 65 variabili, medie, deviazioni, mediane e i 66×4 coefficienti di `strumenti/maestro_regola.json` | stimati `b77` sul mercato, test registrato | ridge (`α` 10) dalle variabili del motore all'1X2 e ai lambda del mercato di chiusura, 16.071 partite di 14 leghe coi file principali di football-data; test sui risultati di 33 leghe mai usate (13.592 partite): 1X2 −4.37‰ (`z = −5.30`, 25 su 33), risultato esatto −13.41‰ (`z = −8.88`, 31 su 33). `'no'` torna al `b76`. Vedi *Il maestro mercato: la regola* |
 | `NUMERI_CORREZIONI` / `NUMERI_REG` | `'si'` / 21 parametri, uguali a `REGOLA` di `strumenti/numeri-correzioni.py` | stimati sull'esplorazione, test registrato `b76` | stimati sulle 1.743 partite del 2025/26 dei cinque campionati (`batch/numeri`), fuori lega dove serve; test su 3.976 partite mai aperte per Numeri (`batch/numeri-prova1`, `-prova2`): passano tutti e 17, da `z` −2.7 a −17.1, e il KNN 1X2 su 25.168 partite di 42 leghe (−21.9‰, `z` −14.9). `'no'` torna al `b75`. Vedi *Le card di Numeri: la regola* |
 | `CORNER_DIFF` / `CORNER_DIFF_REG` | `'si'` / `c` 5.3693, `b` 0.4597, `kT` 63.97, `a` 0.112, `b1` 0.5231, `b2` 0.1781, `φ` 13.843, corner previsti sotto 0.5 a 0.5; basi fisse casa / pari / trasferta 54.1 / 9.36 / 36.55%, casa −1.5 44.45%, +1.5 72.16% | stimati sull'esplorazione, test registrato `b84` | massima verosimiglianza su 23.278 partite di 24 leghe; test sui batch del `b74` (7.120 partite di 24 leghe): corner 1X2 −48.7‰ contro la frequenza fissa (`z = −14.79`, 23 su 24), handicap ±1.5 −80.8‰. Uguali a `REGOLA` di `strumenti/corner-differenza.py`; `'no'` torna al `b83`. Vedi *Chi fa più corner: la regola* |
+| `ARBITRO` / `ARBITRO_REG` | `'si'` / `b` 0.96 in Serie A e 0.72 in LaLiga, `K` 10, ultime 80 partite dell'arbitro, media della lega nei 365 giorni prima con almeno 50 partite | `b` stimati sul 2023/24–2024/25 (Footiqo), test registrato; nel motore `b85` | il test sul 2025/26 e il 2026/27 (850 partite): conteggio dei gialli −18.9‰ (`z = −3.37`), meglio in tutte e due. Col rapporto dalla tabella della PitchAPI (`arbitri.json`, 3.940 partite dal 2021/22) sulle stesse partite −18.5‰ (`z = −2.97`). `'no'` torna al `b84`. Vedi *Gli arbitri e i gialli: la regola* |
 | `SOT_PER_GOAL` | 3.25 | misurata | LaLiga 3.19, Premier 3.04, Serie A 3.33. Tocca solo il livello |
 | `GOALS_SOT_CAP` | 0.20 | paracadute misurato | morde nello 0.18% |
 | `OL_BETA` / `T1` / `T2` | 2.056 / −0.475 / +0.671 | stimata `b20` | massima verosimiglianza su 1743 partite, leave-one-league-out, sulla variabile di **ruolo** (media +0.196). Peso 0 |
@@ -5222,7 +5234,7 @@ misurate.
 | **La confidence dell'1X2 uguale alla probabilità** (`b53`) | registrata prima, su quattro leghe mai aperte: Brier −0.00220, `z = −4.09`, quattro leghe su quattro; sulle tre leghe del `b52` −0.00137 (`z = −2.68`) |
 | **La quota fissa del primo gol** (`b75`) | registrata prima, 11.633 partite di 36 leghe mai aperte per questa domanda: somma delle logloss del gol prima del 30' e dell'Over 0.5 nel primo tempo −7.30‰ (`z = −4.93`), 29 leghe su 36; la card diventa calibrata |
 | **Il rating di pressione nel maestro** (nello Scanner nel `b82`, tolto nel `b83`: costava troppe chiamate) | registrato prima, 13.592 partite di 33 leghe, pressione su 7.648: 1X2 −0.54‰ (`z = −2.56`), risultato esatto −0.65‰ (`z = −2.66`), meglio in 10 leghe su 13 |
-| **L'arbitro nei gialli, Serie A e LaLiga** (non ancora nello Scanner) | registrato prima, 850 partite del 2025/26 e del 2026/27: conteggio dei gialli −18.88‰ (`z = −3.37`), Over 3.5 −13.44‰ (`z = −2.85`), meglio in 2 leghe su 2 |
+| **L'arbitro nei gialli, Serie A e LaLiga** (nello Scanner dal `b85`) | registrato prima, 850 partite del 2025/26 e del 2026/27: conteggio dei gialli −18.88‰ (`z = −3.37`), Over 3.5 −13.44‰ (`z = −2.85`), meglio in 2 leghe su 2 |
 | **Chi fa più corner** (test registrato del 16 ottobre 2026; nello Scanner dal `b84`) | il totale dei corner diviso fra le due squadre con una beta-binomiale (corner previsti ed Elo): sui batch del `b74`, 7.120 partite, corner 1X2 −48.7‰ contro una frequenza fissa (`z = −14.79`), 23 leghe su 24; handicap ±1.5 −80.8‰ |
 | **Lo squilibrio sui tiri in porta** (`b42`) | registrato prima di vedere due leghe e passato su tutte e due; cinque leghe −0.0029 di logloss dell'Over 8.5, `z = −3.10`, positivo in 14 stagioni su 15 |
 
@@ -6691,8 +6703,65 @@ campione e sotto la soglia: Bundesliga +0.71 (`z = +1.60`), Ligue 1 +0.41 (`z = 
 rumoroso; un `b` comune ha già fallito nell'esplorazione. Per estenderlo serve un test registrato su
 partite nuove.
 
-**Cosa resta da fare** per lo Scanner (vedi *Da fare*): il campo dell'arbitro e la tabella dei rapporti
-dalla PitchAPI. Fino ad allora il motore resta quello di oggi.
+**Nello Scanner (`b85`).** La regola chiedeva tre cose: un campo per l'arbitro, una tabella dei rapporti costruita
+dalla PitchAPI e confrontata con Footiqo, le rese dei numeri rimisurate.
+
+- *La tabella* (`arbitri.json`, 82 KB), fatta da `python3 strumenti/arbitri-tabella.py`. Per Serie A e LaLiga, ogni
+  stagione di `leghe.json` (dal 2021/22):
+  - l'archivio di lega;
+  - per ogni partita conclusa l'arbitro (`/matches/{id}`) e i gialli (`/matches/{id}/stats`, come li legge il motore:
+    periodo All, `yellow_cards` di casa più trasferta).
+
+  In tutto 3.940 partite, tutte con l'arbitro e coi gialli. Le risposte stanno in `batch/arbitri/`, fuori da git, e
+  rilanciare chiede solo le partite nuove: circa 20 chiamate a settimana. La prima volta sono servite circa 2.500
+  chiamate, con le risposte del controllo del 7 ottobre già in locale.
+- *I nomi.* La PitchAPI a volte accorcia quello dello stesso arbitro: «Jose Munuera» e «José Luis Munuera Montero»,
+  «Alberto Arena» e «Alberto Ruben Arena», «Jaime Latre» e «Santiago Jaime Latre». Dentro una lega, un nome le cui parole
+  stanno tutte, in ordine, in un nome più lungo si unisce a quello (a quello con più partite, se sono più d'uno). Restano
+  66 arbitri in Serie A (1 unione) e 37 in LaLiga (6). Il controllo del 7 ottobre univa solo i prefissi, e LaLiga
+  perdeva metà dell'effetto (−9.0‰).
+- *Il confronto con Footiqo*: il test registrato rifatto sulle stesse partite, cogli stessi `b`, col rapporto preso dalla
+  tabella (`python3 strumenti/arbitri.py --prova --tabella arbitri.json`). Il rapporto è quello che lo Scanner calcola
+  scrivendo il nome della PitchAPI.
+
+  | rapporto | partite | conteggio | `z` | Over 3.5 | `z` | Serie A | LaLiga |
+  |---|---|---|---|---|---|---|---|
+  | Footiqo (il test registrato) | 850 | −18.9‰ | −3.37 | −13.4‰ | −2.85 | −21.5‰ | −16.4‰ |
+  | PitchAPI, `arbitri.json` | 863 | −18.5‰ | −2.97 | −11.4‰ | −2.25 | −26.5‰ | −10.7‰ |
+
+  Le tre condizioni della regola tengono: `z ≤ −2`, meglio in tutte e due le leghe, Over 3.5 meglio. Il log del rapporto
+  correla 0.947 con quello di Footiqo. La tabella parte dal 2021/22, Footiqo dal 2015/16: la storia di un arbitro è più
+  corta (Marco Guida, a febbraio 2026, 53 partite invece di 80).
+- *Le rese dei gialli nel tabellone*, solo descrittivo, sulle stesse partite (870 coi gialli Over 3.5 nel tabellone):
+  - FORTE / GIOCABILE / MARGINALE col motore +22.9 ±24.4 (11 proposte) / +10.6 ±7.2 (176) / +2.1 ±7.7 (164);
+  - con l'arbitro +24.0 ±16.3 (26) / +12.2 ±7.0 (180) / +6.5 ±8.5 (132);
+  - le etichette dei numeri (`b49`): +7.2 / +10.2 / +8.2.
+
+  Con l'arbitro le rese stanno dentro l'errore delle etichette, che restano.
+- *Nello Scanner*:
+  - il campo «Arbitro» sta nel setup, sotto data e storico, e si vede solo in Serie A e LaLiga. Ha l'elenco dei nomi della
+    tabella, e si svuota cambiando squadra o data. Basta un pezzo del nome («Guida», «Jose Munuera»), se è di un solo
+    arbitro;
+  - la tabella si carica solo quando serve (`caricaArbitri`, `fetch('arbitri.json')`);
+  - `arbitroPartita` sceglie il nome (`scegliArbitro`: uguale, o l'unico che contiene tutte le parole scritte) e calcola il
+    rapporto (`rapportoArbitro`) come `profili()` di `strumenti/arbitri.py`: le ultime 80 partite dell'arbitro nella lega
+    prima del giorno, l'atteso di ognuna è la media della lega nei 365 giorni prima, `K = 10`;
+  - `calcAdv` moltiplica i gialli attesi, dopo lo squilibrio, per `R^b`: linee Over, «Ruolo e generale», tabellone, mega-prompt;
+  - la card «Corner, tiri e cartellini» dice l'arbitro, il rapporto, su quante partite, il fattore e la data della tabella.
+    Se il nome non c'è, o va bene per più arbitri, lo dice e lascia i gialli come sono. Senza nome dice come si usa;
+  - nella giornata ogni partita ha il suo arbitro: si scrive analizzando la partita a mano, e i bottoni lo rimettono;
+  - la manopola è `ARBITRO` (`'no'` torna a prima), i numeri in `ARBITRO_REG`.
+- *Il Comparatore* non ha il campo, come le quote: nessun arbitro, CSV e copia conforme come prima. Le sue scritture
+  restano uguali allo Scanner senza arbitro.
+- *Verificato*:
+  - il rapporto in JavaScript è quello di Python (`rapporto_tabella`) su 622 casi, scarto 0;
+  - il banco ha il caso dell'arbitro. Scrive il nome dell'arbitro con più partite, poi un cognome, poi uno ambiguo («Marco»),
+    poi uno sconosciuto, poi niente. Controlla che il rapporto sia quello rifatto da `arbitri.json` a forza bruta, che i gialli
+    siano moltiplicati per `R^b`, che nota e prompt siano senza NaN e che il campo vuoto torni a prima. Controllo di potenza:
+    con `b` 1.0 in Serie A fallisce;
+  - le schermate a 390px in scuro e in chiaro (`strumenti/schermate.js --arbitro "Nome"`) e sulla PitchAPI vera:
+    Juventus – Lazio dell'8 febbraio 2026 con «Guida» trova Marco Guida, rapporto 1.01 su 53 partite. Nessun errore,
+    0 px di scorrimento in ogni scheda.
 
 ## Il modello non fallisce in una lega più che in un'altra
 
@@ -7152,3 +7221,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b82` | il rating di pressione nel maestro, scelto dall'utente dopo una prova di poche chiamate per lega: la curva `/momentum` della PitchAPI c'è in 42 leghe su 77 (`strumenti/momentum-copertura.py`), e solo lì lo Scanner la scarica (una chiamata per partita dell'archivio di lega la prima volta, poi nel browser), calcola il rating corretto per l'avversario e usa il maestro a 66 variabili della regola registrata (test: 1X2 −0.54‰, `z = −2.56`; risultato esatto −0.65‰, `z = −2.66`). Altrove resta il maestro del `b77`. Manopola `PRESSIONE` (`'no'` torna a prima). Rimisurate `PICK_RESA` (≥55% 66.6% su 36% del calendario), `SORPRESA_TAB` (ALTO con lo sfavorito al 35% o più) e `EDGE_BANDS` di 1X2 e gol. Il CSV esporta il rating e, nell'archivio, la pressione di ogni partita; il banco la rifà da lì con la regola scritta da capo, e `strumenti/pressione.py --schermo` rifà rating e maestro dai CSV |
 | `b83` | tolta la pressione, chiesto dall'utente dopo averla vista in uso («un minuto e mezzo e chiamate in più per nulla che me ne faccio?»): alla prima analisi di ogni lega con la curva costava circa 1.100 chiamate e un minuto e mezzo, per −0.54‰ di logloss 1X2 e le prese del pick ferme. Il codice torna quello del `b81`: nessuna chiamata a `/momentum`, il maestro del `b77` in tutte le leghe, `PICK_RESA`, `SORPRESA_TAB` ed `EDGE_BANDS` del `b77`, il CSV e il banco senza la pressione. Restano la nota «Con le quote» dei risultati esatti come `details` (trovata dal rilevatore nel `b82`) e gli strumenti della misura; lo Scanner cancella all'apertura le curve salvate nel browser dal `b82`. Col `b82` 3 scritture diverse su 202 (`mdl-pres`, rischio sorpresa e tabellone), una riga del CSV (il certificato) |
 | `b84` | chi fa più corner, il test registrato del 16 ottobre 2026 passato sui batch del `b74` (corner 1X2 −48.7‰ contro la frequenza della lega, `z = −14.79`, 23 leghe su 24) e messo nello Scanner come diceva la regola: il totale dei corner diviso fra le due squadre con una beta-binomiale, dai corner previsti e dall'Elo, nessuna chiamata in più. Nella card dei corner il corner 1X2 e l'handicap della casa; nel tabellone più corner la casa, più corner la trasferta, casa −1.5 e trasferta −1.5, con le rese misurate prima su 24 leghe e sul `b74` (FORTE +26.6, GIOCABILE +13.7, MARGINALE +6.6); una riga nel mega-prompt; le righe nel CSV e le chiavi in `cmpTabHit`. Manopola `CORNER_DIFF` (`'no'` torna a prima); `strumenti/corner-differenza.py --rese` e `--schermo` |
+| `b85` | l'arbitro sui gialli in Serie A e LaLiga, il test registrato del 5 ottobre 2026 messo nello Scanner come diceva la regola: un campo nel setup per il nome dell'arbitro designato (la PitchAPI non lo dà prima del fischio), e i gialli attesi per `R^b`, con `R` il suo rapporto sulle ultime 80 partite nella lega prima del giorno e `b` 0.96 / 0.72. Il rapporto viene da `arbitri.json`, costruita dalla PitchAPI (3.940 partite dal 2021/22, `strumenti/arbitri-tabella.py`), non da Footiqo: il test rifatto con lei passa ancora (−18.5‰ sul conteggio dei gialli, `z = −2.97`, meglio in tutte e due). Le rese dei gialli nel tabellone restano dentro le etichette. Manopola `ARBITRO` (`'no'` torna a prima). Col `b84` 1 scrittura diversa su 204 (la nota dell'arbitro), una riga del CSV (il certificato); il banco ha il caso dell'arbitro col suo controllo di potenza |
