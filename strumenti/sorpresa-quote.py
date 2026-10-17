@@ -20,7 +20,7 @@ def _mod(nome, f):
     s = importlib.util.spec_from_file_location(nome, os.path.join(DIR, f)); m = importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
 qg = _mod('qg', 'quote-gol.py'); qb = qg.qb
 GOALS_LEVEL = 1.051
-ORD = ['p1', 'pX', 'p2', 'p1X', 'pX2', 'p12', 'pOv', 'pUn', 'pGG', 'pNG', 'cor9.5', 'sot8.5', 'yel3.5']
+ORD = ['p1', 'pX', 'p2', 'p1X', 'pX2', 'p12', 'pOv', 'pUn', 'pGG', 'pNG', 'cor9.5', 'sot8.5', 'yel3.5', 'cdH', 'cdA', 'chH', 'chA']
 sig = lambda x: 1 / (1 + np.exp(-x))
 def ms(x): x = np.array(x, float); return (x.mean(), 2 * x.std(ddof=1) / math.sqrt(len(x)), len(x)) if len(x) > 1 else (float('nan'), 0.0, len(x))
 fmt = lambda t: f'{t[0]:+5.1f} ±{t[1]:4.1f} ({t[2]})'

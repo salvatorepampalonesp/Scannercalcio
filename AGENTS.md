@@ -526,9 +526,27 @@ qui ha bisogno di dati nuovi, non di rifare questi.
 - [ ] **Ordered Logit e trend dell'Elo, da decidere con l'utente.** Non hanno un candidato: l'Ordered Logit è
   calibrato ma più debole del motore (peso 0 nell'1X2), il trend non prevede niente (correlazione +0.006 coi punti
   meno attesi). Toglierli dallo schermo o dire a schermo quanto valgono.
-- [ ] **Le rese della famiglia dei numeri nel tabellone, coi corner del `b76`.** Il `λ` dei corner ora è ristretto
-  verso una costante, e la `k` è fissa: lo scarto dei corner dal base rate cambia, e con lui quante volte salgono in
-  cima. `EDGE_BANDS` per i numeri è del `b49`: va rimisurata sul tabellone del `b76` (un batch delle cinque leghe).
+- [x] ~~**Le rese della famiglia dei numeri nel tabellone, coi corner del `b76`.**~~ — **misurate senza batch: non
+  cambiano, l'etichetta resta** (17 ottobre 2026). I batch con `--scritture` (motore `b75`) hanno lo storico che il motore
+  estrae, e da lì si rifanno `λ` e base dei corner del `b76`; tiri in porta e gialli il motore non li ha cambiati
+  (`strumenti/rese-numeri.py`). Sulla lega finta del `b85` la ricostruzione coincide col CSV: 89 partite su 89, entro 0.05
+  punti sulla probabilità e 0.10 sulla base (`--verifica`; col `β` spostato di 0.05, 1.09 punti). Sulle stesse partite:
+
+  | | FORTE | GIOCABILE | MARGINALE |
+  |---|---|---|---|
+  | cinque campionati 2024/25–2025/26, `b75` | +21.0 ±11.7 (49) | +10.8 ±3.9 (597) | +8.5 ±3.2 (950) |
+  | cinque campionati, corner del `b76` | +21.0 ±11.7 (49) | +11.1 ±3.9 (602) | +8.6 ±3.1 (1.014) |
+  | sette leghe 2025/26, `b75` | +6.0 ±13.7 (42) | +5.8 ±4.6 (409) | +2.7 ±3.4 (851) |
+  | sette leghe, corner del `b76` | +5.9 ±13.8 (42) | +4.0 ±4.3 (478) | +2.3 ±3.3 (862) |
+
+  - Nei cinque campionati la famiglia rende quanto prima, dentro l'etichetta (`b49`: +7.2 ±8.0 / +10.2 ±2.9 / +8.2 ±2.4).
+  - I corner del `b76` salgono un po' più spesso sopra +5: dal 6.2 all'8.2% delle partite nei cinque campionati, dal 16.5
+    al 20.1% nelle sette leghe. Nelle sette leghe un corner GIOCABILE rende +0.1 ±8.3 (144 proposte; col `b75` +6.4 ±11.3).
+  - Il perché, trovato dopo: dal `b76` il `λ` dei corner sta vicino a una costante (9.59), mentre la base resta `3.61 × gol
+    di lega`. Dove la lega segna poco la base è bassa e i corner sembrano giocabili senza esserlo: lo scarto è quasi tutto lo
+    sbaglio del riferimento di lega (vedi *Il riferimento di lega vero: misurato*).
+  - Fuori dai cinque campionati le etichette dei numeri promettono più di quanto rendono, come sulle 24 leghe del `b74`.
+    L'etichetta non è stata toccata, per scelta dell'utente.
 - [x] ~~**Chi fa più corner: il test.**~~ — **passato** (16 ottobre 2026): sui batch del `b74` −48.7‰ (`z = −14.79`), 23
   leghe su 24. **Nello Scanner dal `b84`**: card dei corner, tabellone (rese FORTE / GIOCABILE / MARGINALE +26.6 / +13.7 /
   +6.6), CSV, prompt. Il racconto
@@ -2089,7 +2107,10 @@ testo, lo modifica con delle regex e lo esegue con `new Function`. Dipende quind
    gia' arrotondate come nei badge) e `window.__VERDETTI` (il tabellone, ogni voce con la sua
    `key`: `p1`, `pX`, `p2`, `p1X`, `pX2`, `p12`, `pOv`, `pUn`, `pGG`, `pNG`, `cor9.5`,
    `sot8.5`, `yel3.5`, e dal `b84` `cdH`, `cdA`, `chH`, `chA`). Una voce nuova nel tabellone vuole una `key` nuova e il suo caso in
-   `cmpTabHit`, altrimenti nel CSV il reale di quella voce e' `N/D`.
+   `cmpTabHit`, altrimenti nel CSV il reale di quella voce e' `N/D`. Vuole anche il suo nome in `TAB_CHIAVI` di
+   `strumenti/quote-bookmaker.py`, e la `key` nelle liste `ORD` di `maestro.py`, `quote-tabellone.py` e
+   `sorpresa-quote.py`: altrimenti il lettore dei CSV degli strumenti si ferma (fino al 17 ottobre 2026 si fermava su ogni
+   CSV dal `b84`).
 8. **Lo storico dello Scanner** si legge dall'attributo `id="history-limit" ... value="30"`
    dell'HTML dello Scanner. Cambiarne la forma lascia il Comparatore senza metro (il log
    dice «storico dello Scanner: NON TROVATO»).
@@ -6943,7 +6964,9 @@ alla probabilità. Chi confronta file di build diverse le ricalcola dalla probab
 Dal `b77` le righe `1`, `X`, `2`, `Ambito: lambda casa/trasf. (ruolo)` e tutti i mercati gol (Over/Under, GG, multigol,
 handicap, tabellone) sono del maestro. L'1X2 e i lambda di ruolo del motore prima del maestro stanno nelle righe
 `Maestro: 1/X/2 del motore` e `Maestro: lambda casa/trasf. del motore (ruolo)`, con `Maestro: attivo`. Chi misura il
-motore di prima, o riallena il maestro, legge quelle: `strumenti/maestro.py` lo fa da solo.
+motore di prima, o riallena il maestro, legge quelle: `strumenti/maestro.py` lo fa da solo. Il capocannoniere di
+Numeri usa i lambda di ruolo del motore, non quelli del maestro: `strumenti/numeri-schermo.py` li legge da quelle righe
+(fino al 17 ottobre 2026 leggeva i lambda del maestro, e su un CSV dal `b77` dava 167 numeri diversi su 178).
 
 I file del `b82` hanno in più le righe `Pressione:` (lega attiva, rating, partite con la curva, maestro con la pressione) e,
 nell'archivio in fondo, la colonna `PRESSIONE MEDIA`; dove `Pressione: maestro con la pressione` dice `si`, 1X2 e lambda

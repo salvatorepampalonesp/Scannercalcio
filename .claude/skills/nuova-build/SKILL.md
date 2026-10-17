@@ -97,6 +97,12 @@ Ci mette 3–5 minuti: lancialo in background. Deve uscire con 0. Il dettaglio �
   `arbitri.json` a forza bruta), e `python3 strumenti/arbitri.py --prova --tabella arbitri.json` deve dire PASSA sulle
   partite del test (AGENTS.md, *Gli arbitri e i gialli: la regola*, «Nello Scanner»). La tabella si rifà con `python3
   strumenti/arbitri-tabella.py`: non cambia `scanner.html`, quindi niente build nuova.
+- Se aggiungi una voce al tabellone, oltre al suo caso in `cmpTabHit` mettila in `TAB_CHIAVI` di
+  `strumenti/quote-bookmaker.py` e nelle liste `ORD` di `maestro.py`, `quote-tabellone.py` e `sorpresa-quote.py`, poi
+  prova uno strumento sul CSV del batch finto (`python3 strumenti/maestro.py --schermo <cartella>`): senza, il lettore dei
+  CSV si ferma (AGENTS.md, contratto, punto 7).
+- Se tocchi i corner (`NUMERI_REG`, `CORNER_*`, `MARKET_PER_GOAL.cor`), sullo stesso batch finto con `--scritture`
+  `python3 strumenti/rese-numeri.py --verifica <cartella>` deve dire COINCIDE.
 
 ## 4. AGENTS.md
 

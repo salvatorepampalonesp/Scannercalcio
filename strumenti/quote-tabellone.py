@@ -13,8 +13,8 @@ _s = importlib.util.spec_from_file_location('qg', os.path.join(os.path.dirname(_
 qg = importlib.util.module_from_spec(_s); _s.loader.exec_module(qg); qb = qg.qb
 
 CINQUE = qb.CINQUE
-FAM = {k: 'gol' for k in ('pOv', 'pUn', 'pGG', 'pNG')} | {k: 'numeri' for k in ('cor9.5', 'sot8.5', 'yel3.5')}
-ORDINE = ['p1', 'pX', 'p2', 'p1X', 'pX2', 'p12', 'pOv', 'pUn', 'pGG', 'pNG', 'cor9.5', 'sot8.5', 'yel3.5']
+FAM = {k: 'gol' for k in ('pOv', 'pUn', 'pGG', 'pNG')} | {k: 'numeri' for k in ('cor9.5', 'sot8.5', 'yel3.5')} | {k: 'corner' for k in ('cdH', 'cdA', 'chH', 'chA')}
+ORDINE = ['p1', 'pX', 'p2', 'p1X', 'pX2', 'p12', 'pOv', 'pUn', 'pGG', 'pNG', 'cor9.5', 'sot8.5', 'yel3.5', 'cdH', 'cdA', 'chH', 'chA']
 FASCE = [(20, 'FORTE'), (10, 'GIOCABILE'), (5, 'MARGINALE')]
 
 def ordina(voci):
