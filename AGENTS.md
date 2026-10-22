@@ -534,6 +534,10 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   - toglierlo, perché «In breve» dice già la probabilità.
 
   Non cambia nessuna probabilità. Vedi *L'avviso di sorpresa*, «Col maestro l'avviso ripete la probabilità».
+- [ ] **Il maestro timido coi favoriti netti.** Col pick al 65% o più dice 72.4% ed esce il 76.1% (24 leghe); sul 2026/27 al
+  60% o più dice 68.7% ed esce l'85.0% (60 partite). Ricalibrato sui risultati vale −0.13‰ (`z = −0.64`): cambia il numero a
+  schermo, non il pick. Per metterlo serve una regola registrata e partite nuove. Vedi *Il motore contro il mercato*, «Il
+  2026/27, e quanto del mercato sta nelle statistiche».
 - [x] ~~**Le rese della famiglia dei numeri nel tabellone, coi corner del `b76`.**~~ — **misurate senza batch: non
   cambiano, l'etichetta resta** (17 ottobre 2026). I batch con `--scritture` (motore `b75`) hanno lo storico che il motore
   estrae, e da lì si rifanno `λ` e base dei corner del `b76`; tiri in porta e gialli il motore non li ha cambiati
@@ -939,7 +943,7 @@ non passa mai +7.1. Trascina con sé il `12`.
 
 | campione | partite | note |
 |---|---|---|
-| **Il 2026/27 dei cinque campionati col `b85`** | **335** | Premier 68, LaLiga 86, Ligue 1 61, Bundesliga 51, Serie A 69, le partite giocate fino al 21 ottobre 2026: batch automatico del `b85` (`batch/2627b85`), 335 su 335 in copia conforme, Elo identico su ogni file, 7.491 chiamate in 15 minuti. Aperte solo per il rischio sorpresa, livello e sfavorito che vince (vedi *L'avviso di sorpresa*, «Sul 2026/27»). Sono partite del test dei tocchi in area (dal 3 ottobre): lì i tocchi non sono stati guardati |
+| **Il 2026/27 dei cinque campionati col `b85`** | **335** | Premier 68, LaLiga 86, Ligue 1 61, Bundesliga 51, Serie A 69, le partite giocate fino al 21 ottobre 2026: batch automatico del `b85` (`batch/2627b85`), 335 su 335 in copia conforme, Elo identico su ogni file, 7.491 chiamate in 15 minuti. Aperte per il rischio sorpresa, livello e sfavorito che vince (vedi *L'avviso di sorpresa*, «Sul 2026/27»), e per il confronto con le quote di chiusura (vedi *Il motore contro il mercato*, «Il 2026/27»). Sono partite del test dei tocchi in area (dal 3 ottobre): lì i tocchi non sono stati guardati |
 | **Le cinque leghe col `b48`** | **5230** | **il riferimento dal `b49`** per soglie, confidence e tabellone: batch automatico `b48`, stesse stagioni e partite delle righe sotto, 5230 su 5230 in copia conforme, Elo rifatto dall'archivio identico su ogni file |
 | **Le quattro leghe del `b53`** | **3202** | 2. Bundesliga 908, First Division A 931, Premiership scozzese 683, Super League svizzera 680, 2023/24–2025/26: batch automatico del `b52`, 3202 su 3202 in copia conforme, Elo identico su ogni file; `/advanced` assente sul 2023/24 di Scozia e Svizzera. Aperte solo per il test della confidence nuda; il tabellone non è mai stato guardato |
 | **Le tre leghe nuove col `b48`** | **3495** | Championship 1659, Eredivisie 923, Liga Portugal 913, 2023/24–2025/26: batch automatico del `b51` (probabilità del `b48`), 3495 su 3495 in copia conforme, Elo rifatto dall'archivio identico su ogni file; `/advanced` assente sul 2023/24 di Championship e Liga Portugal. La sezione `TABELLONE` non è mai stata guardata |
@@ -3687,6 +3691,41 @@ Over/Under 0.5 e 4.5 dicono lo stesso: il lato è sempre quello, la logloss del 
 
 Se il motore batta il bookmaker sui gialli o sui corner non si può sapere senza le loro quote storiche (vedi *Le
 quote di corner e cartellini: la regola*).
+
+**Il 2026/27, e quanto del mercato sta nelle statistiche** (22 ottobre 2026, solo descrittivo). L'utente: «è impossibile
+sbagliare così tanto». `python3 strumenti/mercato-stagione.py batch/2627b85 --r2` rifà tutto in un minuto e mezzo.
+
+*Sulle 335 partite del 2026/27* (`batch/2627b85`, maestro del `b85`, quote di chiusura medie di football-data, tutte
+agganciate col punteggio uguale):
+
+| | partite | pick dello Scanner (probabilità media) | favorito del mercato (probabilità media) | logloss, Scanner meno mercato |
+|---|---|---|---|---|
+| giornate 1–5 | 228 | 51.8% (50.0) | 52.6% (52.2) | +11.5‰ ±18.6 |
+| dalla 6ª | 107 | 57.9% (50.0) | 62.6% (52.5) | +23.7‰ ±26.0 |
+| tutte | 335 | 53.7% (50.0) | 55.8% (52.3) | +15.4‰ ±15.2 |
+
+- *Il bookmaker sbaglia quanto lo Scanner*: il suo favorito non vince nel 44% delle stesse partite. L'esito uscito aveva
+  meno del 25% nel 16.1% delle partite per il mercato, nel 13.7% per lo Scanner.
+- *Dove i favoriti sono diversi* (39 partite) vince quello del mercato 17 volte, quello dello Scanner 11, pareggio 11.
+- *Le soglie*: col pick al 55% o più lo Scanner prende il 75.3% (97 partite), al 60% o più l'85.0% (60, previsto 68.7%);
+  il mercato al 60% o più il 78.0% (82).
+- *Per lega* lo scarto dal mercato sta dentro l'errore, tranne LaLiga (+50.6‰ ±32.0, pick 48.8 contro 57.0%). Lì il
+  maestro è più prudente del mercato sulle tre grandi: Elche – Real Madrid 64% contro 79%, Levante – Barcellona 68% contro
+  80%, Atlético – Osasuna 54% contro 73%.
+
+*Quanto del mercato il maestro ricostruisce*, fuori lega sulle 16.071 partite delle 14 leghe dell'allenamento:
+- l'1X2 del mercato per il 90% (R² del log 1 contro 2 0.904, correlazione 0.951), i lambda per l'85–87%;
+- partita per partita fra maestro e mercato ci sono in mediana 3.7 punti sull'esito più distante, e oltre 10 punti nel
+  7.3% delle partite.
+
+Il resto è informazione che le statistiche delle partite giocate non hanno: infortuni, formazioni, mercato estivo,
+notizie. Combinare tutto quello che il motore calcola non indovina di più (lo stacking, `b53`), e gli alberi fanno come
+il ridge (vedi *Il maestro mercato: la regola*).
+
+*Il maestro è timido coi favoriti netti.* Sulle 23.278 partite delle 24 leghe, col pick al 65% o più (2.422 partite)
+prevede 72.4% ed esce il 76.1%; nelle altre fasce sta entro 2 punti. Una ricalibrazione sui risultati, fuori lega, lo
+porta a 73.3 contro 74.2%, ma vale −0.13‰ di logloss (`z = −0.64`, 10 leghe su 22): il pick non cambia, cambia il numero
+mostrato. Con i bersagli di Shin la fascia alta si raddrizzava e le altre si spostavano (test non passato).
 
 ### Il maestro mercato: la regola
 
