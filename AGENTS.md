@@ -931,6 +931,7 @@ non passa mai +7.1. Trascina con sé il `12`.
 
 | campione | partite | note |
 |---|---|---|
+| **Il 2026/27 dei cinque campionati col `b85`** | **335** | Premier 68, LaLiga 86, Ligue 1 61, Bundesliga 51, Serie A 69, le partite giocate fino al 21 ottobre 2026: batch automatico del `b85` (`batch/2627b85`), 335 su 335 in copia conforme, Elo identico su ogni file, 7.491 chiamate in 15 minuti. Aperte solo per il rischio sorpresa, livello e sfavorito che vince (vedi *L'avviso di sorpresa*, «Sul 2026/27»). Sono partite del test dei tocchi in area (dal 3 ottobre): lì i tocchi non sono stati guardati |
 | **Le cinque leghe col `b48`** | **5230** | **il riferimento dal `b49`** per soglie, confidence e tabellone: batch automatico `b48`, stesse stagioni e partite delle righe sotto, 5230 su 5230 in copia conforme, Elo rifatto dall'archivio identico su ogni file |
 | **Le quattro leghe del `b53`** | **3202** | 2. Bundesliga 908, First Division A 931, Premiership scozzese 683, Super League svizzera 680, 2023/24–2025/26: batch automatico del `b52`, 3202 su 3202 in copia conforme, Elo identico su ogni file; `/advanced` assente sul 2023/24 di Scozia e Svizzera. Aperte solo per il test della confidence nuda; il tabellone non è mai stato guardato |
 | **Le tre leghe nuove col `b48`** | **3495** | Championship 1659, Eredivisie 923, Liga Portugal 913, 2023/24–2025/26: batch automatico del `b51` (probabilità del `b48`), 3495 su 3495 in copia conforme, Elo rifatto dall'archivio identico su ogni file; `/advanced` assente sul 2023/24 di Championship e Liga Portugal. La sezione `TABELLONE` non è mai stata guardata |
@@ -5597,6 +5598,14 @@ sfavorito e la cella col disaccordo o con l'accordo (se ha almeno 150 partite, a
 intera; senza `lgModel` o `lgElo` la fascia intera). Il livello lo decide la frequenza della cella:
 sfavorito al 33% o più **ALTO**, dal 25% **medio**, sotto **basso**. ALTO è quindi disaccordo con lo
 sfavorito al 25% o più (circa una partita su sei), oppure lo sfavorito al 35% o più quando manca l'Elo.
+Dal `b77` la tabella è rifatta sulle probabilità del maestro, e ALTO vuol dire **due cose insieme**:
+- lo sfavorito al 35% o più, cioè una partita quasi alla pari;
+- modello ed Elo che indicano favoriti diversi.
+
+Lì lo sfavorito vince il 36.0% (652 partite, circa una su 35). Le altre celle restano sotto il 33%: col disaccordo
+fra il 30 e il 35% il 32.2%, con l'accordo dal 35% il 31.0%. Senza `lgModel` o `lgElo` basta lo sfavorito al 35%
+(34.4%). Con le quote dell'1X2 ALTO non esce mai.
+
 Il riquadro dice lo sfavorito, la sua probabilità, se modello ed Elo sono d'accordo, e le tre frequenze
 della cella; il mega-prompt lo mette per primo fra i rischi calcolati. Non passa per il CSV: livello e
 cella si rifanno dalle righe `1`, `X`, `2` e dai due log-odds del ramo completo, come fa lo strumento.
@@ -5632,6 +5641,24 @@ batch48 batch4 --tutte batch/2627 batch/nuove batch/livello`, con `SORPRESA_TAB`
 
 È lo stesso segnale della tabella (+2.4 punti allo sfavorito) visto dal tabellone, misurato sulle stesse
 partite: non è una conferma indipendente. Vedi *Da fare*, l'etichetta delle proposte sul favorito.
+
+**Sul 2026/27** (22 ottobre 2026, solo descrittivo). Chiesto dall'utente: quando esce ALTO, e come va nelle prime
+giornate. Batch automatico del `b85` sul 2026/27 giocato dei cinque campionati (`batch/2627b85`), 335 partite in
+copia conforme; le undici partite in cui una neopromossa gioca la sua prima partita il motore le salta, come lo Scanner.
+`python3 strumenti/sorpresa-giornate.py batch/2627b85` lo rifà in un secondo.
+
+| | partite | ALTO | vince lo sfavorito: ALTO / medio / basso | previsto dalla cella |
+|---|---|---|---|---|
+| giornate 1–5 | 228 | 5 | 2 su 5 / 27.5% / 19.4% | 35.5 / 30.7 / 17.9 |
+| dalla 6ª | 107 | 5 | 2 su 5 / 27.8% / 10.4% | 35.7 / 30.3 / 18.1 |
+| tutte | 335 | 10 | 4 su 10 / 27.6% (±6.8) / 16.6% (±6.0) | 35.6 / 30.6 / 18.0 |
+
+- ALTO esce una partita su 34, come sulle 24 leghe, e nelle prime giornate non più spesso: una per giornata, sommando i
+  cinque campionati. Le dieci partite ALTO finiscono con 4 sorprese, 2 pareggi e 4 vittorie del favorito: troppo poche
+  per dire altro.
+- Medio e basso stanno dentro l'errore della loro cella.
+- Delle 19 partite con lo sfavorito al 35% o più, 9 hanno modello ed Elo d'accordo, e restano medio.
+- ALTO per lega: Ligue 1 5 su 61, Premier 3 su 68, LaLiga e Bundesliga 1, Serie A 0 su 69.
 
 **Con le quote (`b70`).** Fino al `b69` il riquadro restava quello del motore anche con le quote: lo scriveva
 il motore in `avviaScanner`, e `aggiornaQuote` rifaceva pick, tabellone e prompt ma non lui. Sulle 11.902
