@@ -526,6 +526,14 @@ qui ha bisogno di dati nuovi, non di rifare questi.
 - [ ] **Ordered Logit e trend dell'Elo, da decidere con l'utente.** Non hanno un candidato: l'Ordered Logit è
   calibrato ma più debole del motore (peso 0 nell'1X2), il trend non prevede niente (correlazione +0.006 coi punti
   meno attesi). Toglierli dallo schermo o dire a schermo quanto valgono.
+- [ ] **L'avviso di sorpresa col maestro, da decidere con l'utente.** Dal `b77` ALTO esce solo con lo sfavorito al 35% o più,
+  dove vince quanto dice la sua probabilità (35.7% previsto, 36.0% uscito), e la divisione fra accordo e disaccordo è rumore
+  (`z = +1.59`). Le strade:
+  - togliere il disaccordo e dire il livello dalla sola probabilità dello sfavorito;
+  - chiamarlo per quello che è, «partita aperta», invece di sorpresa;
+  - toglierlo, perché «In breve» dice già la probabilità.
+
+  Non cambia nessuna probabilità. Vedi *L'avviso di sorpresa*, «Col maestro l'avviso ripete la probabilità».
 - [x] ~~**Le rese della famiglia dei numeri nel tabellone, coi corner del `b76`.**~~ — **misurate senza batch: non
   cambiano, l'etichetta resta** (17 ottobre 2026). I batch con `--scritture` (motore `b75`) hanno lo storico che il motore
   estrae, e da lì si rifanno `λ` e base dei corner del `b76`; tiri in porta e gialli il motore non li ha cambiati
@@ -5606,6 +5614,27 @@ Lì lo sfavorito vince il 36.0% (652 partite, circa una su 35). Le altre celle r
 fra il 30 e il 35% il 32.2%, con l'accordo dal 35% il 31.0%. Senza `lgModel` o `lgElo` basta lo sfavorito al 35%
 (34.4%). Con le quote dell'1X2 ALTO non esce mai.
 
+**Col maestro l'avviso ripete la probabilità** (22 ottobre 2026, solo descrittivo). L'utente, letto il 2026/27: «secondo
+me sbagliamo qualcosa». Sulle 23.278 partite delle 24 leghe, col maestro fuori lega sulle leghe dell'allenamento:
+- *il disaccordo non dice più niente*: lo sfavorito vince 0.54 punti meno del previsto col disaccordo (±1.46) e 0.87 meno
+  con l'accordo (±0.59). Col motore di prima erano +2.39 e −0.29: il maestro il disaccordo l'ha già messo nelle
+  probabilità;
+- *ALTO è una partita alla pari*: nella cella lo sfavorito è previsto al 35.7% e vince il 36.0%, il favorito è previsto al
+  37.0% e vince il 35.0%. Fra le due squadre ci sono in media 1.3 punti;
+- *la cella ALTO esiste per caso*: sopra il 35% il disaccordo vince il 36.0% (652 partite), l'accordo il 31.0% (326), +5.1
+  ±6.4 (`z = +1.59`). La differenza viene dall'accordo, che sta sotto il previsto (−4.69 ±5.12), non dal disaccordo
+  (+0.33 ±3.76).
+
+ALTO dice quindi «lo sfavorito ha il 35% o più», cosa che il pick a schermo dice già. Il nome promette altro: che un
+favorito vero rischi più di quanto dice la sua probabilità. Nessuna misura l'ha trovato (forma, riposo, fortuna sotto-xG,
+rating sugli xG, mesi e fasi della stagione: vedi *Cosa è già stato provato*). Cosa farne lo decide l'utente: vedi *Da
+fare*.
+
+Trovato insieme, al contrario: col maestro i favoriti netti vincono più del previsto. Con lo sfavorito sotto il 15% (2.772
+partite) lo sfavorito è previsto all'11.0% e vince il 9.0% (±1.1); il favorito è previsto al 71.3% e vince il 75.0%. È lo
+stesso visto sulle 33 leghe del test del maestro (pick sopra il 65%: 71.0 previsto, 76.0 uscito). Il maestro coi bersagli
+di Shin, che lo raddrizzava, non ha passato il test (vedi *Il maestro coi bersagli di Shin: la regola*).
+
 Il riquadro dice lo sfavorito, la sua probabilità, se modello ed Elo sono d'accordo, e le tre frequenze
 della cella; il mega-prompt lo mette per primo fra i rischi calcolati. Non passa per il CSV: livello e
 cella si rifanno dalle righe `1`, `X`, `2` e dai due log-odds del ramo completo, come fa lo strumento.
@@ -5647,7 +5676,7 @@ giornate. Batch automatico del `b85` sul 2026/27 giocato dei cinque campionati (
 copia conforme; le undici partite in cui una neopromossa gioca la sua prima partita il motore le salta, come lo Scanner.
 `python3 strumenti/sorpresa-giornate.py batch/2627b85` lo rifà in un secondo.
 
-| | partite | ALTO | vince lo sfavorito: ALTO / medio / basso | previsto dalla cella |
+| | partite | ALTO | vince lo sfavorito: ALTO / medio / basso | probabilità media dello sfavorito |
 |---|---|---|---|---|
 | giornate 1–5 | 228 | 5 | 2 su 5 / 27.5% / 19.4% | 35.5 / 30.7 / 17.9 |
 | dalla 6ª | 107 | 5 | 2 su 5 / 27.8% / 10.4% | 35.7 / 30.3 / 18.1 |
