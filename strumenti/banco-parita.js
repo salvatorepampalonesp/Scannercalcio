@@ -321,7 +321,7 @@ const MISURA = `(() => { const d = [...document.querySelectorAll('details')]; d.
     if (k) schedaVai(k, false);
     if (q && dash) dash.dataset.sq = q;
     scroll = Math.max(scroll, document.documentElement.scrollWidth - window.innerWidth);
-    document.querySelectorAll('table.table-compact, .tv, .tv-mini, .ib-pick, .ib-p, .ib-f, .fs-riga, .g-row, .gi-row, .cfr-r, .so-top').forEach(t => {
+    document.querySelectorAll('table.table-compact, .tv, .tv-mini, .ib-pick, .ib-p, .ib-f, .fs-riga, .g-row, .gi-row, .cfr-r, .so-top, .seg-x, .ind-riga').forEach(t => {
       if (!t.getClientRects().length) return;
       const tab = t.tagName === 'TABLE', w = tab ? (t.closest('.tbl-scroll') || t.parentElement) : t, c = t.closest('[id]');
       const ecc = t.scrollWidth - w.clientWidth, key = (c ? c.id : '?') + (tab ? '' : ' .' + t.className.split(' ')[0]);
@@ -424,6 +424,26 @@ async function runScanner(browser, base, matches, limit) {
     }
     return { giorno, lId, g0, nota0, primo, casi };
   });
+  // gli indisponibili (b87): due caselle segnate col click vanno nel prompt e restano dopo una nuova analisi della
+  // stessa partita; tolte, il prompt torna quello di prima. Le probabilita' non si muovono
+  const indisp = await page.evaluate(async () => {
+    if (typeof renderIndisponibili !== 'function') return null;
+    const pr = () => document.getElementById('ai-prompt').value, p0 = pr(), m0 = JSON.stringify(window.__MASTER);
+    squadreVai('indisponibili');
+    const caselle = () => [...document.querySelectorAll('#indisp-box input[type=checkbox]')];
+    const nome = c => c.closest('.ind-riga').querySelector('.ind-n span').textContent, cb = caselle();
+    if (cb.length < 4) return { errore: 'meno di 4 caselle' };
+    const scelti = [cb[0], cb[cb.length - 1]], nomi = scelti.map(nome);
+    scelti.forEach(c => c.click());
+    const p1 = pr(), barrati = scelti.every(c => c.closest('.ind-riga').classList.contains('on'));
+    await avviaScanner(); try { await window.__QUOTE_AUTO; } catch (e) {}
+    const restano = caselle().filter(c => c.checked).map(nome), p2 = pr(), m2 = JSON.stringify(window.__MASTER);
+    caselle().filter(c => c.checked).forEach(c => c.click());
+    const p3 = pr();
+    return { n: cb.length, nomi, barrati, restano, stesse: m0 === m2, tolti: p3 === p0,
+             nelPrompt: /Indisponibili segnati/.test(p1) && nomi.every(n => p1.includes(n)), dopoPrompt: nomi.every(n => p2.includes(n)),
+             senzaBlocco: !/Indisponibili segnati/.test(p0 + p3), rotto: /NaN|undefined|Infinity|@@/.test(p1 + p2 + p3) };
+  });
   const log = page.__log.slice();
   // dal b59 le card di approfondimento sono <details> chiuse, dal b66 le sezioni stanno in schede: si
   // aprono tutte e si misura scheda per scheda. Una tabella di confronto non deve scorrere nemmeno dentro
@@ -433,7 +453,7 @@ async function runScanner(browser, base, matches, limit) {
     const vuoti = ['quota-1', 'quota-x', 'quota-2', 'quota-ov', 'quota-un'].every(id => document.getElementById(id).value === '');
     return { nome: 'cambia partita', svuotate: vuoti && window.__QUOTE_CTX === null && document.getElementById('quote-box').innerHTML === '--' }; }));
   await page.context().close();
-  return { runs: out, log, scroll, compatte, giocatori, quote, arbitro, chiuse, schede };
+  return { runs: out, log, scroll, compatte, giocatori, quote, arbitro, indisp, chiuse, schede };
 }
 
 // la giornata (b65): trova le partite del turno, le analizza tutte, e ognuna deve stampare
@@ -804,7 +824,19 @@ if (require.main === module) (async () => {
   }
   console.log('   arbitro: ' + (AR && !AR.errore ? AR.casi.map(c => `"${c.scritto}" ${c.A ? (c.A.fattore ? `${c.A.nome} R ${c.A.r.toFixed(3)} su ${c.A.n} partite, gialli x${c.A.fattore.toFixed(3)}` : c.A.errore) : 'nessuno'}`).join(' · ') : '')
     + (arRotti.length ? ' · ROTTO: ' + arRotti.join('; ') : ' · rapporto uguale a quello rifatto da arbitri.json, gialli moltiplicati per R^b, nota e prompt senza NaN, campo vuoto torna a prima'));
-  let fail = (sLog.length || (process.env.MOBILE && (scanner.scroll > 0 || scanner.compatte.length)) || !G || gRotti.length || pRotti.length || ibRotti.length || !Q || qRotte.length || qaRotte.length || arRotti.length) ? 1 : 0;
+  const ID = scanner.indisp, idRotti = [];
+  if (!ID || ID.errore) idRotti.push(ID ? ID.errore : 'sotto-scheda assente');
+  else {
+    if (!ID.barrati) idRotti.push('le righe segnate non si barrano');
+    if (!ID.nelPrompt) idRotti.push('il prompt non dice gli indisponibili');
+    if (ID.restano.length !== 2 || !ID.nomi.every(n => ID.restano.includes(n)) || !ID.dopoPrompt) idRotti.push('dopo una nuova analisi i segni non restano: ' + ID.restano.join(', '));
+    if (!ID.stesse) idRotti.push('le probabilita\' sono cambiate');
+    if (!ID.tolti || !ID.senzaBlocco) idRotti.push('tolti i segni, il prompt non torna quello di prima');
+    if (ID.rotto) idRotti.push('NaN o segnaposto nel prompt');
+  }
+  console.log('   indisponibili: ' + (ID && !ID.errore ? `${ID.n} caselle, segnati ${ID.nomi.join(' e ')}` : '')
+    + (idRotti.length ? ' · ROTTO: ' + idRotti.join('; ') : ' · barrati, nel prompt, restano dopo una nuova analisi, probabilita\' ferme, tolti il prompt torna quello di prima'));
+  let fail = (sLog.length || (process.env.MOBILE && (scanner.scroll > 0 || scanner.compatte.length)) || !G || gRotti.length || pRotti.length || ibRotti.length || !Q || qRotte.length || qaRotte.length || arRotti.length || idRotti.length) ? 1 : 0;
   const GI = await runGiornata(browser, base, cur, scanner.runs);
   const giOk = GI && GI.lista.length === cur.length && GI.lista.every((x, k) => x.id === cur[k].id && x.stato === 'fatta')
     && !GI.diversi.length && Object.keys(GI.giri).length === day.length && GI.righe === cur.length && !GI.rotto && !GI.promptRotto && !GI.log.length

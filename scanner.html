@@ -478,7 +478,8 @@ details.tv-altri>summary{display:flex;align-items:center;gap:10px;min-height:48p
 .seg-x{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);padding:3px;border-radius:var(--r-md);box-shadow:inset 0 0 0 1px var(--color-divider);margin:0 0 14px}
 .seg-x.auto{display:inline-grid;grid-auto-columns:auto;align-self:flex-start}
 #squadre-seg{grid-auto-columns:auto}
-#squadre-seg button{padding:0 8px}
+#squadre-seg button{padding:0 7px;font-size:12.5px}
+@media(max-width:380px){#squadre-seg button{padding:0 4px}}
 #ambiti-body td:last-child:not([colspan]){white-space:nowrap}
 .seg-x button{position:relative;z-index:1;height:38px;padding:0 12px;border:0;background:none;font:inherit;font-size:13px;font-weight:500;color:var(--n-500);cursor:pointer;border-radius:var(--r-sm);transition:color 160ms var(--ease-out),transform 160ms var(--ease-out);white-space:nowrap}
 .seg-x button:active{transform:scale(.97)}
@@ -487,8 +488,26 @@ details.tv-altri>summary{display:flex;align-items:center;gap:10px;min-height:48p
 #dashboard-area:not([data-sq]) [data-sq-p]:not([data-sq-p="formazioni"]),
 #dashboard-area[data-sq="formazioni"] [data-sq-p]:not([data-sq-p="formazioni"]),
 #dashboard-area[data-sq="giocatori"] [data-sq-p]:not([data-sq-p="giocatori"]),
-#dashboard-area[data-sq="ambiti"] [data-sq-p]:not([data-sq-p="ambiti"]){display:none}
-#card-formazioni,#card-giocatori,#card-ambiti{background:none;padding:0;margin:0 0 16px}
+#dashboard-area[data-sq="ambiti"] [data-sq-p]:not([data-sq-p="ambiti"]),
+#dashboard-area[data-sq="indisponibili"] [data-sq-p]:not([data-sq-p="indisponibili"]){display:none}
+#card-formazioni,#card-giocatori,#card-ambiti,#card-indisp{background:none;padding:0;margin:0 0 16px}
+.ind-testa{display:flex;align-items:flex-start;gap:12px;margin:0 0 12px}
+.ind-testa p{flex:1;min-width:0;margin:0;font-size:13px;line-height:1.5;color:var(--n-400)}
+.ind-testa .btn{flex:none;min-height:36px;padding:0 12px;font-size:13px}
+.ind-due{display:grid;gap:18px}
+@media (min-width:900px){.ind-due{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px}}
+.ind-gr{font-size:12.5px;font-weight:500;color:var(--n-400);margin:10px 0 2px}
+.ind-riga{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-areas:"cb n" "cb s";align-items:center;column-gap:12px;
+  min-height:52px;padding:6px 0;border-bottom:1px solid var(--color-divider);cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.ind-riga input{grid-area:cb;width:22px;height:22px;margin:0}
+.ind-n{grid-area:n;display:flex;align-items:center;gap:6px;min-width:0;font-weight:500}
+.ind-n span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:color 160ms var(--ease-out)}
+.ind-n i{font-style:normal;font-size:12px;color:var(--c-warn-t);flex:none}
+.ind-riga small{grid-area:s;font-size:12px;line-height:1.45;color:var(--n-500);font-variant-numeric:tabular-nums;min-width:0}
+.ind-riga.on .ind-n span{text-decoration:line-through;text-decoration-thickness:1.5px;color:var(--n-500)}
+.ind-avv{display:none;color:var(--c-warn-t)}
+.ind-riga.on .ind-avv{display:inline}
+.ind-vuoto{font-size:13px;color:var(--n-500);padding:8px 0}
 #card-formazioni>.section-title,#card-ambiti>.section-title{display:none}
 #formazioni-box{font-size:14px;color:var(--color-text)}
 .fz-testa{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:center;margin-bottom:6px}
@@ -764,7 +783,7 @@ body.vista-partita .dock{display:flex}
     <button type="button" class="btn btn-ghost ab-back" id="btn-nuova" onclick="tornaIndietro()" aria-label="Indietro"><svg class="ic" aria-hidden="true"><use href="#i-arrow-left"/></svg><span>Cambia partita</span></button>
     <span class="ab-tit" id="ab-tit"><b></b><small></small></span>
     <span class="ab-spazio"></span>
-    <span class="tag" id="build-ver">build 0905-b86</span>
+    <span class="tag" id="build-ver">build 0905-b87</span>
   </div>
 </header>
 
@@ -910,7 +929,7 @@ body.vista-partita .dock{display:flex}
       </div></details>
     </section>
 
-    <div class="seg-x" id="squadre-seg" role="tablist" aria-label="Squadre"><span class="seg-ind" aria-hidden="true"></span><button type="button" data-sq="formazioni" class="on">Formazioni</button><button type="button" data-sq="giocatori">Giocatori</button><button type="button" data-sq="ambiti">Ruolo e generale</button></div>
+    <div class="seg-x" id="squadre-seg" role="tablist" aria-label="Squadre"><span class="seg-ind" aria-hidden="true"></span><button type="button" data-sq="formazioni" class="on">Formazioni</button><button type="button" data-sq="indisponibili">Indisponibili</button><button type="button" data-sq="giocatori">Giocatori</button><button type="button" data-sq="ambiti">Ruolo e generale</button></div>
 
     <section class="card" id="card-ambiti" data-sq-p="ambiti">
       <div class="section-title"><span class="ico"><svg class="ic" aria-hidden="true"><use href="#i-scales"/></svg></span><span class="t">Ruolo e generale<small>Le due letture della stessa partita a confronto</small></span></div>
@@ -941,6 +960,18 @@ body.vista-partita .dock{display:flex}
         Il <b>riposo</b> conta campionato e coppe europee (Champions, Europa e Conference League), non le
         coppe nazionali n&eacute; le nazionali.
         <b>Niente di questo entra nelle probabilit&agrave;</b>: misurato sul backtest, non migliora la previsione.
+      </div></details>
+    </section>
+
+    <section class="card" id="card-indisp" data-sq-p="indisponibili">
+      <div id="indisp-box" class="note">--</div>
+      <details class="info"><summary>Come si legge</summary><div>
+        Segna chi non gioca: infortunati, squalificati, chi sai che va in panchina. L'elenco &egrave; la rosa delle
+        ultime 5 formazioni, in ordine di partite da titolare nelle ultime 10; <b>XI</b> = nella formazione di oggi.
+        Il segno resta su questo dispositivo per questa partita, per dieci giorni.
+        <b>Le probabilit&agrave; non cambiano</b>: misurato su 5.230 partite, sapere chi manca dall'undici abituale
+        non migliora la previsione del motore, e con le quote il mercato le assenze le sa gi&agrave;. Gli
+        indisponibili vanno nel prompt per l'IA, che ne parla come rischio.
       </div></details>
     </section>
 
@@ -2371,6 +2402,7 @@ function _luSide(res, isH) {
   if (xi.length < 10) return null;
   const cap = s.starters.find(p => p && p.is_captain), nomi = {};
   s.starters.forEach(p => { const id = _pid(p); if (id) nomi[id] = (p && (p.name || (p.player && p.player.name))) || id; });
+  (Array.isArray(s.subs) ? s.subs : []).forEach(p => { const id = _pid(p), n = p && (p.name || (p.player && p.player.name)); if (id && n && !nomi[id]) nomi[id] = n; });
   return { xi, subs: (Array.isArray(s.subs) ? s.subs : []).map(_pid).filter(Boolean),
            captain: cap ? _pid(cap) : null, coach: (s.coach && s.coach.name) || null,
            confirmed: s.confirmed !== false, type: s.lineup_type || null, nomi };
@@ -3245,12 +3277,105 @@ function _quoteLette(ids) {
     return el ? parseFloat(String(el.value).trim().replace(',', '.')) : NaN; });
   return v.every(x => isFinite(x) && x > 1) ? v : null;
 }
+function riscriviPrompt() {
+  const el = typeof document !== 'undefined' && document.getElementById('ai-prompt'), P = window.__PROMPT_PARTI;
+  if (el && window.__PROMPT_BASE && P) el.value = window.__PROMPT_BASE.replace('@@QUOTE@@', () => P.sez).replace('@@QUOTE_SINTESI@@', () => P.sint)
+    .replace('@@TABELLONE@@', () => P.tab).replace('@@SORPRESA@@', () => P.sor).replace('@@INDISP@@', () => testoIndisp());
+}
+
+// Gli indisponibili (b87): li segna l'utente e restano nel browser per la partita (dieci giorni). Vanno nel
+// mega-prompt, non nelle probabilita'. Vedi AGENTS.md, Gli indisponibili.
+const INDISP_TTL_MS = 10 * 24 * 3600 * 1000, INDISP_MEM = {};
+function _indispSegnati(k) {
+  if (INDISP_MEM[k]) return INDISP_MEM[k];
+  let v = null; try { v = JSON.parse(localStorage.getItem('scanner_indisp_' + k) || 'null'); } catch (e) {}
+  return (INDISP_MEM[k] = { H: v && Array.isArray(v.H) ? v.H : [], A: v && Array.isArray(v.A) ? v.A : [] });
+}
+function _indispSalva(k) {
+  const v = INDISP_MEM[k];
+  try {
+    if (!v.H.length && !v.A.length) localStorage.removeItem('scanner_indisp_' + k);
+    else localStorage.setItem('scanner_indisp_' + k, JSON.stringify({ H: v.H, A: v.A, t: Date.now() }));
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const kk = localStorage.key(i); if (!kk || kk.indexOf('scanner_indisp_') !== 0) continue;
+      const x = JSON.parse(localStorage.getItem(kk) || 'null');
+      if (!x || !x.t || Date.now() - x.t > INDISP_TTL_MS) localStorage.removeItem(kk);
+    }
+  } catch (e) {}
+}
+function _rosaIndisp(L) {
+  const h = L.hist; if (!h || !h.nLu) return [];
+  const xi = new Set(L.xi || []), ids = new Set([...h.squad, ...xi]), w = Math.min(LINEUP_WINDOW, h.nLu);
+  return [...ids].map(p => ({ id: p, nome: (h.nomi && h.nomi[p]) || null, share: h.share[p] || 0, tit: Math.round((h.share[p] || 0) * w), w,
+                              gol: h.goals[p] || 0, xi: xi.has(p), cap: h.captain === p }))
+    .filter(x => x.nome).sort((a, b) => b.share - a.share || b.gol - a.gol || a.nome.localeCompare(b.nome));
+}
+function _pesoIndisp(L, ids) {
+  const h = L.hist, R = _rosaIndisp(L), reg = R.filter(x => x.share >= LINEUP_REGULAR), tot = reg.reduce((a, x) => a + x.share, 0);
+  const sel = new Set(ids), segn = R.filter(x => sel.has(x.id));
+  return { segn, peso: tot > 0 ? reg.filter(x => sel.has(x.id)).reduce((a, x) => a + x.share, 0) / tot : null,
+           gol: h && h.totGoals > 0 ? segn.reduce((a, x) => a + x.gol, 0) / h.totGoals : null };
+}
+function testoIndisp() {
+  const C = window.__INDISP_CTX; if (!C) return '';
+  const S = _indispSegnati(C.key); if (!S.H.length && !S.A.length) return '';
+  const lato = (L, ids) => {
+    const P = _pesoIndisp(L, ids), pc = v => { const n = Math.round(100 * v);
+      return (n === 1 || n === 11 || String(n)[0] === '8' ? "l'" : 'il ') + n + '%'; };
+    if (!P.segn.length) return `${L.nome}: nessuno`;
+    return `${L.nome}: ` + P.segn.map(x => `${x.nome} (titolare in ${x.tit} delle ultime ${x.w}, ${x.gol} gol nelle ultime ${L.n}${x.xi && L.conf ? ", MA e' nella formazione confermata" : ''})`).join(', ')
+      + [P.peso != null ? `${pc(P.peso)} dell'undici abituale` : null, P.gol != null ? `${pc(P.gol)} dei gol della squadra` : null].filter(Boolean).map((t, i) => (i ? ' e ' : ' = ') + t).join('');
+  };
+  return `\n- Indisponibili segnati dall'utente (le probabilita' non ne tengono conto): ${lato(C.H, S.H)}. ${lato(C.A, S.A)}.`
+    + "\n  Misurato su 5.230 partite: quanto pesano i titolari abituali che mancano non migliora la previsione del motore (il verso e' giusto, l'effetto quasi zero), e con le quote il mercato le assenze le sa gia'. Parlane come rischio e nel racconto della partita, senza spostare probabilita' o verdetti.";
+}
+function renderIndisponibili() {
+  const box = typeof document !== 'undefined' && document.querySelector('#indisp-box');
+  if (!(box instanceof Element)) return;
+  const C = window.__INDISP_CTX; if (!C) { box.innerHTML = '--'; return; }
+  const S = _indispSegnati(C.key), esc = _escHtml, escA = t => _escHtml(t).replace(/"/g, '&quot;');
+  const conta = (L, ids) => { const P = _pesoIndisp(L, ids);
+    return !P.segn.length ? 'nessuno segnato' : P.segn.length + (P.segn.length === 1 ? ' segnato' : ' segnati') + (P.peso != null ? ' &middot; ' + Math.round(100 * P.peso) + '% dell\'undici' : ''); };
+  const riga = (x, lato, L, on) => '<label class="ind-riga' + (on ? ' on' : '') + '"><input type="checkbox" data-lato="' + lato + '" data-id="' + escA(x.id) + '"' + (on ? ' checked' : '') + '>'
+    + '<span class="ind-n"><span>' + esc(x.nome) + '</span>' + (x.cap ? '<i>C</i>' : '') + (x.xi ? '<b class="gi-xi">XI</b>' : '') + '</span>'
+    + '<small>' + (x.tit ? 'titolare ' + x.tit + ' su ' + x.w : 'mai titolare nelle ultime ' + x.w) + (x.gol ? ' &middot; ' + x.gol + ' gol' : '')
+    + (x.xi && L.conf ? '<span class="ind-avv"> &middot; ma &egrave; nella formazione confermata</span>' : '') + '</small></label>';
+  const blocco = (L, lato) => {
+    const R = _rosaIndisp(L), sel = new Set(S[lato]), reg = R.filter(x => x.share >= LINEUP_REGULAR), altri = R.filter(x => x.share < LINEUP_REGULAR);
+    const testa = '<div class="gi-team-h"><i></i><b>' + esc(L.nome) + '</b><span data-conta="' + lato + '">' + conta(L, S[lato]) + '</span></div>';
+    if (!R.length) return '<div class="gi-team ' + (lato === 'H' ? 't-1' : 't-2') + '">' + testa + '<div class="ind-vuoto">Nessuna formazione nello storico: la rosa non si conosce.</div></div>';
+    return '<div class="gi-team ' + (lato === 'H' ? 't-1' : 't-2') + '">' + testa
+      + (reg.length ? '<div class="ind-gr">Titolari abituali</div>' + reg.map(x => riga(x, lato, L, sel.has(x.id))).join('') : '')
+      + (altri.length ? '<div class="ind-gr">Altri della rosa</div>' + altri.map(x => riga(x, lato, L, sel.has(x.id))).join('') : '') + '</div>';
+  };
+  const tot = S.H.length + S.A.length;
+  const conf = [C.H, C.A].filter(L => L.conf).map(L => esc(L.nome));
+  box.innerHTML = '<div class="ind-testa"><p>Tocca chi non gioca. Le probabilit&agrave; non cambiano: gli indisponibili vanno nel prompt per l\'IA.'
+    + (conf.length ? ' Formazione confermata per ' + conf.join(' e ') + ': chi manca dall\'undici abituale lo dice gi&agrave; Formazioni.' : '') + '</p>'
+    + '<button type="button" class="btn" data-azzera' + (tot ? '' : ' hidden') + '>Azzera</button></div>'
+    + '<div class="ind-due">' + blocco(C.H, 'H') + blocco(C.A, 'A') + '</div>';
+  if (box.dataset.pronto) return;
+  box.dataset.pronto = '1';
+  box.addEventListener('change', ev => {
+    const cb = ev.target, X = window.__INDISP_CTX; if (!X || !(cb instanceof HTMLInputElement) || !cb.dataset.lato) return;
+    const T = _indispSegnati(X.key), lato = cb.dataset.lato, id = cb.dataset.id;
+    T[lato] = T[lato].filter(p => p !== id).concat(cb.checked ? [id] : []);
+    _indispSalva(X.key);
+    const r = cb.closest('.ind-riga'); if (r) r.classList.toggle('on', cb.checked);
+    const c = box.querySelector('[data-conta="' + lato + '"]'); if (c) c.innerHTML = conta(X[lato], T[lato]);
+    const az = box.querySelector('[data-azzera]'); if (az) az.hidden = !(T.H.length + T.A.length);
+    riscriviPrompt();
+  });
+  box.addEventListener('click', ev => {
+    const b = ev.target.closest('[data-azzera]'), X = window.__INDISP_CTX; if (!b || !X) return;
+    INDISP_MEM[X.key] = { H: [], A: [] }; _indispSalva(X.key); renderIndisponibili(); riscriviPrompt();
+  });
+}
+
 function aggiornaQuote() {
   const C = window.__QUOTE_CTX, box = typeof document !== 'undefined' && document.getElementById('quote-box');
   let tabTxt = window.__TAB_TXT_MOTORE || '', sorTxt = window.__SORPRESA_TXT_MOTORE || '';
-  const scriviPrompt = (sez, sint) => { const el = document.getElementById('ai-prompt');
-    if (el && window.__PROMPT_BASE) el.value = window.__PROMPT_BASE.replace('@@QUOTE@@', () => sez).replace('@@QUOTE_SINTESI@@', () => sint).replace('@@TABELLONE@@', () => tabTxt)
-      .replace('@@SORPRESA@@', () => sorTxt); };
+  const scriviPrompt = (sez, sint) => { window.__PROMPT_PARTI = { sez, sint, tab: tabTxt, sor: sorTxt }; riscriviPrompt(); };
   if (!box || !C) return;
   const sorpresa = P => {
     const Es = window.__ESITO, el = document.getElementById('sorpresa-box'), Sm = Es && Es.sorpresa;
@@ -3828,7 +3953,7 @@ function _tabTesto(V) {
     + (sotto.length ? '\n- Sotto la base di lega di 5 punti o piu\' (qui questi esiti sono meno probabili del solito; non sono proposte): ' + lista(sotto) : '');
 }
 
-window.__SCANNER_BUILD = '0905-b86';
+window.__SCANNER_BUILD = '0905-b87';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -4352,6 +4477,10 @@ async function avviaScanner() {
     window.__PLAYER_CTX = { H: { id: hId, nome: hName, partite: dH.matchList, xi: _luT && _luT.home ? _luT.home.xi : null },
                             A: { id: aId, nome: aName, partite: dA.matchList, xi: _luT && _luT.away ? _luT.away.xi : null } };
     window.__PLAYER_DATA = null;
+    const _luL = s => ({ xi: s ? s.xi : null, conf: !!(s && s.confirmed) });
+    window.__INDISP_CTX = { key: hId + '_' + aId + '_' + dateInput,
+                            H: { nome: hName, hist: dH.lineupHist, n: dH.overall.n, ..._luL(_luT && _luT.home) },
+                            A: { nome: aName, hist: dA.lineupHist, n: dA.overall.n, ..._luL(_luT && _luT.away) } };
     const targetMs = new Date(matchTime).getTime();
     const ELO = buildGlobalElo(targetMs);
     const eloSeriesH = ELO.seriesTrend[hId] || []; const eloSeriesA = ELO.seriesTrend[aId] || [];
@@ -4955,7 +5084,7 @@ async function avviaScanner() {
     window.__BASE_DEBUG = _LGBASE;
     renderVerdetti({ p1:m1, pX:mX, p2:m2, p1X:m1+mX, pX2:mX+m2, p12:m1+m2,
                      pOv:golOv, pUn:golUn, pGG:golGG, pNG:golNG }, _LGBASE, advRole);
-    renderFormazioni(_FH, _FA, _SH, _SA, _VP, hName, aName);
+    renderFormazioni(_FH, _FA, _SH, _SA, _VP, hName, aName); renderIndisponibili();
     safeHtml('giocatori-box', 'Premi il bottone per le statistiche dei giocatori di ' + _escHtml(hName) + ' e ' + _escHtml(aName) + '.');
     const _btnG = document.getElementById('btn-giocatori'); if (_btnG) { _btnG.style.display = ''; _btnG.textContent = 'Carica le statistiche dei giocatori'; }
     const odd1 = probsRole.p1 > 0 ? (1/probsRole.p1).toFixed(2) : "N/A"; const oddX = probsRole.pX > 0 ? (1/probsRole.pX).toFixed(2) : "N/A"; const odd2 = probsRole.p2 > 0 ? (1/probsRole.p2).toFixed(2) : "N/A";
@@ -5490,7 +5619,7 @@ meno probabile del solito.
 ${_eloTxt}
 
 4. RISCHI GIA' CALCOLATI
-${_rischiTxt}
+${_rischiTxt}@@INDISP@@
 
 5. STATISTICHE AVANZATE PREVISTE PER QUESTA PARTITA [RUOLO]
 Previsione per questa sfida, non medie storiche: la media delle partite delle due squadre x (quanto
@@ -5601,13 +5730,14 @@ REGOLE (valgono per tutte le sezioni; non sono una sezione da scrivere)
 - Le statistiche delle sezioni 5-8 spiegano il verdetto, non lo correggono: non scrivere che una
   squadra "dovrebbe" vincere piu' di quanto dice la sezione 1, e non usarle per contraddire le quote.
 - Il verdetto non sa di infortuni, squalifiche, formazioni e notizie: se nel testo ti viene da
-  parlarne, dillo come limite, non inventare chi gioca.
+  parlarne, dillo come limite, non inventare chi gioca. Gli indisponibili segnati dall'utente
+  (sezione 4, se ci sono) sono fatti: usali come rischio e nel racconto, senza ricalcolare.
 - Se un dato e' N/D, dillo invece di aggirarlo.`;
 
     window.__PROMPT_BASE = p; window.__TAB_TXT_MOTORE = _tabTxt; window.__SORPRESA_TXT_MOTORE = testoSorpresa(_sorpresa, hName, aName);
     window.__QUOTE_CTX = { p: [m1, mX, m2], pm: [m1e, mXe, m2e], hName, aName, lam: [lamH_mix, lamA_mix], rho: RHO, ma: !!_MA };
     document.getElementById('ai-prompt').value = p.replace('@@QUOTE@@', '').replace('@@QUOTE_SINTESI@@', '').replace('@@TABELLONE@@', () => _tabTxt)
-      .replace('@@SORPRESA@@', () => window.__SORPRESA_TXT_MOTORE);
+      .replace('@@SORPRESA@@', () => window.__SORPRESA_TXT_MOTORE).replace('@@INDISP@@', () => testoIndisp());
     aggiornaQuote();
     window.__QUOTE_AUTO = caricaQuoteAuto(lId, dateInput, hName, aName);
     wrapTables();

@@ -31,16 +31,17 @@ node strumenti/schermate.js --vera "Lausanne|Lugano|2026-09-20" --lega "SUI:Supe
 
 ## 3. Cosa esce
 
-Quindici file `finta-*.png` o `vera-*.png`:
+Diciotto file `finta-*.png` o `vera-*.png`:
 
 - setup, anello dell'analisi, Partita (tre altezze);
 - Tabellone;
-- Squadre: formazioni, giocatori, ruolo e generale;
+- Squadre: formazioni, indisponibili (con due titolari della casa e uno della trasferta segnati), giocatori, ruolo e generale;
 - Numeri, chiusi e aperti;
 - Prompt, Dati, foglio Altro.
 
 E il testo del mega-prompt, `finta-prompt.txt` o `vera-prompt.txt` (dal `b86`): quando si tocca il prompt, si rilegge
-quello, con e senza quote, contro le misure di AGENTS.md (*Il mega-prompt*).
+quello, con e senza quote, contro le misure di AGENTS.md (*Il mega-prompt*). Dal `b87` anche `<nome>-prompt-indisponibili.txt`, il prompt coi
+tre giocatori segnati.
 
 A schermo escono anche lo scorrimento laterale di ogni scheda, gli errori della pagina e le
 chiamate fatte. Lo strumento esce con 1 se una scheda scorre di lato, se la pagina ha un errore o
