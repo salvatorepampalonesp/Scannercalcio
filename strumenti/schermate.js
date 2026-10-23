@@ -4,6 +4,7 @@
 // lega, poi la partita) e salva una schermata per ogni passo e ogni scheda: setup, anello,
 // Partita, Tabellone, Squadre (formazioni, giocatori, ruolo e generale), Numeri, Prompt, Dati,
 // foglio Altro. Poi misura lo scorrimento laterale in ogni scheda con tutte le details aperte.
+// Salva anche il testo del mega-prompt (<nome>-prompt.txt), da rileggere quando cambia.
 //
 //   node strumenti/schermate.js                                   lega finta del banco, nessuna chiamata
 //   node strumenti/schermate.js --vera "Juventus|Atalanta|2026-09-20"     PitchAPI vera, Serie A
@@ -148,6 +149,7 @@ if (VERA) {
   await page.evaluate(async () => { try { await window.__QUOTE_AUTO; } catch (e) {} });
   await page.waitForFunction(() => document.getElementById('analisi-corso').hidden, null, { timeout: 20000 }).catch(() => errori.push("ANELLO l'analisi in corso non si e' chiusa"));
   if (!(await page.evaluate(() => !!window.__ESITO))) errori.push("ESITO il motore non e' arrivato in fondo (window.__ESITO assente)");
+  fs.writeFileSync(path.join(OUT, `${NOME}-prompt.txt`), await page.evaluate(() => (document.getElementById('ai-prompt') || {}).value || ''));
   const quote = await page.evaluate(() => { const q = document.getElementById('quote-auto'); return q ? q.textContent.trim().slice(0, 160) : ''; });
   console.log(`analisi fatta, chiamate ${chiamate}${quote ? ', quote: ' + quote : ''}`);
 

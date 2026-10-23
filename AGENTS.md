@@ -56,7 +56,7 @@ vedi *Le quote automatiche*); se non ci sono, le scrive l'utente. Per misurarle 
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b85`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b86`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -591,7 +591,13 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b85`)
+## Stato attuale (`b86`)
+
+**Il mega-prompt riletto col maestro** (`b86`). Dal `b77` descriveva ancora il motore di prima: «decide l'Elo» quando Elo
+e modello distano 10+ punti (col maestro non è vero), le righe RUOLO / GENERALE dell'1X2 come segnale, «motore» per numeri del
+maestro. Mancavano anche i gol attesi, Over e Goal senza quote e i falli. Ora dice da dove viene il verdetto (Elo, modello,
+motore, maestro su 1 contro 2), cosa non sa (infortuni, formazioni, notizie), e accanto a ogni numero quanto vale. Nessun numero
+a schermo cambia. Vedi *Il mega-prompt*, «Cosa è cambiato nel `b86`».
 
 **Il maestro mercato** (dal `b77`). Senza quote, l'1X2 del verdetto e la matrice dei gol (Over/Under, Goal, multigol,
 risultati esatti, handicap, tempi dei gol) non escono più dall'ensemble del motore ma dal maestro. È una ridge che dalle
@@ -1193,29 +1199,35 @@ Il testo da copiare in un LLM (card «MEGA-PROMPT»). Serve a due cose, scelte d
 numeri escono dalle stesse variabili dello schermo, e verdetti e rese del tabellone sono dati
 come misurati, da non ridiscutere.
 
-**I dati, in quest'ordine** (dal `b51`):
+**I dati, in quest'ordine** (dal `b51`; in testa, dal `b86`, da dove viene il verdetto e cosa non sa):
 
-1. **Il verdetto 1X2**: probabilità, quote eque, ruolo contro generale, e il **pick con la sua
+1. **Il verdetto 1X2**: probabilità, quote eque, da dove viene su 1 contro 2 (Elo da solo, modello da
+   solo GENERALE e RUOLO, motore, maestro: dal `b86`), e il **pick con la sua
    fascia**: la confidence spiegata (quante volte esce un pick con quella probabilità) e dove
    sta nella selezione, dalle soglie misurate di `PICK_RESA` (sopra il 55%: «rientra nel 38% di
    partite più sicure, dove nel complesso il pick esce il 66.0%»; sotto il 45%: non si
    seleziona). Il numero cumulato di una soglia non è la probabilità di quel pick: per quella
    c'è la confidence.
 2. **Il tabellone**: le proposte con verdetto per intero, ognuna con quanto rende il suo tipo
-   di mercato (`EDGE_BANDS` per famiglia), e quelle senza verdetto in una riga sola. Il prompt
+   di mercato (`EDGE_BANDS` per famiglia), e quelle senza verdetto in due righe (dal `b86`: dentro il
+   rumore, e sotto la base di lega di 5 punti o più). Il prompt
    dice che FORTE/GIOCABILE vuol dire «rende più del giocarlo alla cieca», non «probabile» (un
-   `2` al 45% può essere giocabile), e che una doppia chance contiene l'esito singolo.
-3. **L'Elo**: rating, vantaggio campo (col clamp detto quando morde), trend, Elo contro modello
-   su 1 contro 2 con l'avviso quando distano 10+ punti e decide l'Elo.
+   `2` al 45% può essere giocabile), che una doppia chance contiene l'esito singolo e «Corner casa
+   −1.5» è contenuto in «Più corner casa», e che i mercati sui numeri rendono molto meno dello scarto.
+3. **L'Elo**: rating e vantaggio campo (col clamp detto quando morde). Senza maestro anche Elo
+   contro modello su 1 contro 2, con l'avviso quando distano 10+ punti e decide l'Elo.
 4. **I rischi già calcolati**, in JS e non dall'LLM: il rischio sorpresa col suo livello e le
-   frequenze misurate (dal `b64`, sempre; dal `b70` con le quote dell'1X2 quello delle quote), Elo e modello in disaccordo, meno di 6 partite di ruolo,
+   frequenze misurate (dal `b64`, sempre; dal `b70` con le quote dell'1X2 quello delle quote), Elo e
+   modello in disaccordo (solo senza maestro), meno di 6 partite di ruolo,
    pick sotto il 50%, clamp dell'HFA, statistiche avanzate assenti, riposo molto diverso.
 5. **Le statistiche avanzate previste** con le loro regole di affidabilità (dal `b72` rimisurate, vedi sotto: quali reggono,
    quali valgono a metà, quali non usare).
 6. **Qualità e cinismo**, con l'avvertenza misurata che la fortuna recente non anticipa il
    risultato.
 7. **Stile**, dichiarato descrittivo (medie storiche, non previsioni).
-8. **Tempi dei gol e mercati sui numeri.**
+8. **Gol, tempi dei gol e mercati sui numeri**: gol attesi, Over 1.5 / 2.5 / 3.5 e Goal senza quote
+   (dal `b86`), primo tempo e 30', corner, tiri in porta, gialli e falli attesi, ognuno con quanto vale;
+   arbitro e chi fa più corner.
 9. **Stanchezza** (riposo, partite in 14 giorni, coppe europee), dichiarata contesto: misurato,
    non migliora la previsione (vedi *La stanchezza*).
 
@@ -1223,10 +1235,10 @@ come misurati, da non ridiscutere.
 700–1200 parole, dove ogni affermazione poggia su un numero del prompt. *IN SINTESI* (elenco breve:
 cosa giocare, quanto rende il suo tipo di mercato, «niente di giocabile» se non c'è niente, il pick
 e il rischio principale col livello del rischio sorpresa), *LA PARTITA* (più paragrafi: da dove
-viene il verdetto, ruolo contro generale ed Elo contro modello; il confronto reparto per reparto
+viene il verdetto, Elo, modello e maestro; il confronto reparto per reparto
 con le statistiche previste e le loro regole di affidabilità; qualità, cinismo e stile, e come si
 incastrano; ritmo, gol e mercati sui numeri), *PERCHÉ LE PROPOSTE* (qualche riga per proposta con
-verdetto: le statistiche che la portano e cosa la farebbe saltare), *COME PUÒ ANDARE* (due o tre
+verdetto: i numeri che la portano e cosa la farebbe saltare), *COME PUÒ ANDARE* (due o tre
 scenari dal più probabile a quello della sorpresa, legati ai numeri e alle frequenze misurate del
 rischio sorpresa, senza probabilità inventate né risultati esatti), *RISCHI*. Fino al `b64` erano
 quattro sezioni con un tetto di righe (cinque, otto, una frase per proposta, quattro): l'utente le
@@ -1234,6 +1246,76 @@ trovava troppo strette («un'analisi in 4 righe è un po' meh»). Le regole (nie
 niente «certo/sicuro/esplosione/goleada», non mescolare ruolo e generale, N/D detto, stanchezza e
 fortuna solo contesto) stanno in un blocco che il prompt dice esplicitamente di non scrivere come
 sezione.
+
+**Cosa è cambiato nel `b86`.** Chiesto dall'utente («secondo me dà un sacco di info mezze e mezze o sbagliate
+addirittura»). Riletto riga per riga contro il motore del `b85` e le misure, su Juventus – Atalanta del 20/09/2026
+(PitchAPI vera, quote e arbitro) e sulla lega finta. Il maestro (`b77`) aveva cambiato da dove viene il verdetto, e il
+prompt descriveva ancora il motore di prima.
+
+Sbagliato:
+- *«Decide l'Elo»* (sezione 3 e rischi). Con Elo e modello distanti 10+ punti il prompt diceva che il verdetto «non viene
+  dalle statistiche ma dal rating di lega». Col maestro non è vero. Su Juventus – Atalanta l'Elo da solo dava il 60.5%
+  su 1 contro 2, il modello l'82.5%, e il maestro stava all'80.6%: vicino al modello, non all'Elo. Ora la sezione 1 dice
+  i quattro numeri (Elo, modello GENERALE e RUOLO, motore, maestro) e a quale dei due sta più vicino il maestro. Col
+  disaccordo dice anche che, misurato col maestro, lo sfavorito vince quanto previsto (−0.54 ±1.46 punti): non è un
+  rischio in più, e tra i rischi non c'è più.
+- *Le tre righe RUOLO / GENERALE dell'1X2*, con «se divergono di più di 5 punti, la squadra rende diversamente in casa o
+  in trasferta». Erano il Dixon-Coles dopo l'inclinazione dell'Elo, uguale nei due rami, e il rendimento in casa della
+  singola squadra non aggiunge niente al vantaggio campo della lega (−0.07‰, `z = −0.62`, 24 leghe). Tolte. Ora c'è
+  una riga che dice che una differenza fra i due è quasi sempre rumore.
+- *Nel blocco delle quote, «motore»* per numeri che dal `b77` sono del maestro: l'Over 2.5 senza quote (calcolato dai
+  lambda del maestro), il pick senza quote che esce il 51.7% e il lato dell'Over/Under al 57.6%, il disaccordo col
+  mercato (1.046 partite, 28.3%). Ora dice «maestro» (`__QUOTE_CTX.ma`). Resta «motore» dove la misura è del motore:
+  `QUOTE_COMB`, che riceve l'1X2 del motore, e la matrice allineata contro il motore del `b57`.
+- *«La media di lega × quanto produce × quanto concede»* (sezione 5). La base di `predictStat` è `_base`, la media delle
+  partite delle due squadre (vedi *La baseline di coppia*). Ora dice così.
+- *«Occasioni create»* (sezione 5) aveva sempre lo stesso numero dei key passes (13.19 e 7.70): è la stessa metrica.
+  Tolta.
+- *«della Atalanta»*. `artDel` metteva «della» davanti ai nomi femminili anche con la vocale. Ora mette «dell'», e cambia
+  anche nelle due narrazioni a schermo che lo usano.
+
+A metà:
+- *L'intestazione* diceva «un modello misurato su 5.230 partite di cinque campionati», cioè il campione delle soglie. Ora
+  dice che il verdetto è del maestro (16.071 partite di 14 leghe per impararlo, 13.592 di 33 leghe per provarlo). Dice anche
+  cosa non sa: infortuni, squalifiche, formazioni e notizie; ricostruisce circa il 90% dell'1X2 del mercato (R² 0.904).
+  E sul 2026/27 anche il favorito del bookmaker non ha vinto il 44% delle volte.
+- *Il trend dell'Elo* (sezione 3). Non prevede niente: correlazione +0.006 coi punti meno attesi. Tolto.
+- *La frase sull'inclinazione dell'Elo* («l'Over/Under quasi non ne dipende, il Goal un po' sì»). È la meccanica del
+  motore: col maestro la matrice dei gol viene dai suoi lambda. Resta solo senza maestro.
+- *Il tabellone* diceva soltanto che l'1X2 rende un po' più dei gol. Non diceva che i mercati sui numeri rendono molto meno
+  dello scarto: FORTE +7.2 contro +29.5 dell'1X2, e fuori dai cinque campionati ancora meno (vedi *Le leghe mai viste*).
+  Non diceva che «Corner casa −1.5» è contenuto in «Più corner casa». E la riga «senza verdetto, scarto sotto +5, dentro il
+  rumore» metteva insieme il −2 e il −22. Ora le righe sono due: fra −5 e +5, e sotto la base di lega di 5 punti o più
+  (meno probabile del solito, non una proposta).
+- *La sezione 8* non aveva i gol attesi né Over e Goal senza quote. Le istruzioni li chiedevano, e l'LLM li trovava solo
+  nel tabellone. Ora ha i gol attesi del maestro, Over 1.5 / 2.5 / 3.5 e Goal, il primo tempo, e i falli attesi, che il
+  motore prevede (correlazione 0.34) e il prompt non diceva. Ognuno ha accanto quanto vale, misurato:
+  - Over e Goal hanno AUC intorno a 0.55;
+  - il primo tempo e il 30' valgono poco più della frequenza della lega;
+  - il totale dei corner vale quanto la frequenza della lega;
+  - i tiri in porta si prevedono poco, i gialli un po'.
+
+  Corner, tiri e gialli ora sono un numero solo, quello del tabellone (`advRole`), invece di RUOLO | GENERALE.
+- *I conteggi dei gol per fascia delle due squadre* (sezione 8, «1-15' 7/2») e *«Gol per xG»* (sezione 6). Dal `b76` non
+  prevedono (la quota per fascia è fissa, l'efficienza è ristretta a 1.00). Tolti quando `NUMERI_CORREZIONI` è acceso.
+- *La confidence «già calibrata»*. Sopra il 65% il maestro è un po' prudente: dice 72.4% ed esce il 76.1% (24 leghe, vedi
+  *Il motore contro il mercato*). Con un pick così il prompt ora lo dice.
+- *Il rischio sorpresa senza quote*. Col maestro ALTO vuol dire una partita aperta, con lo sfavorito al 35% o più, e il
+  disaccordo è già dentro le probabilità (vedi *L'avviso di sorpresa*). Ora `testoSorpresa` lo dice.
+- *Le istruzioni*:
+  - «un FORTE dei mercati gol o sui numeri» promette più di quanto rende: dal `b77` vale solo per i numeri (gol FORTE
+    +24.3);
+  - il verdetto si spiega con Elo, modello e maestro, non con ruolo contro generale;
+  - le proposte si spiegano coi numeri che le portano, non con una statistica qualsiasi;
+  - le regole dicono che le statistiche delle sezioni 5-8 spiegano il verdetto e non lo correggono. Una statistica che non
+    si ripete non è un argomento, e infortuni e formazioni si dicono come limite, senza inventare chi gioca.
+- *Le statistiche della sezione 5* hanno una spiegazione accanto (PPDA: più basso = pressa di più; respinte; SCA, GCA, xT,
+  xAG), e lo stesso il Choke Index e la lunghezza della squadra nella sezione 7.
+
+Formazioni e assenze restano fuori dal prompt, per scelta dell'utente (`b51`): il prompt dice solo che il verdetto non le
+conosce. Non cambia nessun numero a schermo: col motore `b85` il banco vede 0 scritture diverse su 204 e una riga del CSV,
+il certificato. `strumenti/schermate.js` salva ora anche il testo del prompt (`<nome>-prompt.txt`), da rileggere quando
+cambia. Riletti a mano, con e senza quote: niente `NaN`, `undefined` né segnaposto rimasti.
 
 **Cosa è cambiato nel `b72`.** Chiesto dall'utente («il prompt per l'IA è tutto aggiornato?»), riletto
 riga per riga contro il motore e le misure. Cinque punti non lo erano:
@@ -2235,7 +2317,7 @@ col movimento ridotto (`reducedMotion: 'reduce'`: i numeri che contano mostrereb
 intermedi), legge «In breve» da `#in-breve` (il riquadro, la sorpresa e le proposte sono tre blocchi)
 e misura le voci del dock e del foglio Altro, Squadre in tutte e tre le sotto-schede.
 
-Esito al `b85` (storico 30), a 390px con tutte le 28 card aperte, scheda per scheda e in tutte e tre le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, il caso dell'arbitro col rapporto rifatto da `arbitri.json`, 0 px):
+Esito al `b86` (storico 30), a 390px con tutte le 28 card aperte, scheda per scheda e in tutte e tre le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, il caso dell'arbitro col rapporto rifatto da `arbitri.json`, 0 px):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
@@ -2243,7 +2325,7 @@ Esito al `b85` (storico 30), a 390px con tutte le 28 card aperte, scheda per sch
 | batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 204 | 0 su 131 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
 | `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 142-167 | 84-90 | 0 |
-| `vecchio`: motore `b84` caricato (controllo) | 0/3, «motore caricato diverso ...» | 1 su 204 | 1 | 0 |
+| `vecchio`: motore `b85` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 su 204 | 1 | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -2355,6 +2437,8 @@ controllo col `b84` vede 1 scrittura diversa su 204, la nota dell'arbitro nella 
 `b84` non scrive, e nel CSV solo il certificato: senza arbitro i gialli sono quelli di prima. Il caso dell'arbitro sta
 fuori dal confronto, perché il Comparatore non ha il campo: dopo il giro dello Scanner il banco scrive cinque nomi
 sull'ultima partita e rifà il rapporto da `arbitri.json` (vedi *Gli arbitri e i gialli: la regola*, «Nello Scanner»).
+Al `b86` il controllo col `b85` non vede nessuna scrittura diversa su 204, solo il certificato: cambia il mega-prompt, che
+non passa da `safeHtml`, e `artDel` («dell'Atalanta»), che la lega finta coi suoi nomi non tocca.
 
 **Il controllo del `b70`.** Da qui «In breve» controlla anche il rischio sorpresa: con le quote dell'1X2
 `#sorpresa-box` deve essere identico a quello rifatto nella pagina con `rischioSorpresa(…,
@@ -7160,7 +7244,7 @@ python3 -m http.server 8204 &
 # da safeTxt/safeHtml deve esistere nel DOM.
 
 # 5. le schermate dello Scanner a 390px, ogni scheda, scorrimento ed errori (~40 secondi)
-node strumenti/schermate.js --out <cartella>            # lega finta; esce con 1 se qualcosa scorre
+node strumenti/schermate.js --out <cartella>            # lega finta; esce con 1 se qualcosa scorre; salva anche <nome>-prompt.txt
 node strumenti/schermate.js --vera "Juventus|Atalanta|2026-09-20"   # PitchAPI vera, ~250 chiamate
 
 # 7. se si tocca il motore prima del maestro: lo Scanner calcola il maestro come lo strumento? (~1 minuto, lega finta)
@@ -7340,3 +7424,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b83` | tolta la pressione, chiesto dall'utente dopo averla vista in uso («un minuto e mezzo e chiamate in più per nulla che me ne faccio?»): alla prima analisi di ogni lega con la curva costava circa 1.100 chiamate e un minuto e mezzo, per −0.54‰ di logloss 1X2 e le prese del pick ferme. Il codice torna quello del `b81`: nessuna chiamata a `/momentum`, il maestro del `b77` in tutte le leghe, `PICK_RESA`, `SORPRESA_TAB` ed `EDGE_BANDS` del `b77`, il CSV e il banco senza la pressione. Restano la nota «Con le quote» dei risultati esatti come `details` (trovata dal rilevatore nel `b82`) e gli strumenti della misura; lo Scanner cancella all'apertura le curve salvate nel browser dal `b82`. Col `b82` 3 scritture diverse su 202 (`mdl-pres`, rischio sorpresa e tabellone), una riga del CSV (il certificato) |
 | `b84` | chi fa più corner, il test registrato del 16 ottobre 2026 passato sui batch del `b74` (corner 1X2 −48.7‰ contro la frequenza della lega, `z = −14.79`, 23 leghe su 24) e messo nello Scanner come diceva la regola: il totale dei corner diviso fra le due squadre con una beta-binomiale, dai corner previsti e dall'Elo, nessuna chiamata in più. Nella card dei corner il corner 1X2 e l'handicap della casa; nel tabellone più corner la casa, più corner la trasferta, casa −1.5 e trasferta −1.5, con le rese misurate prima su 24 leghe e sul `b74` (FORTE +26.6, GIOCABILE +13.7, MARGINALE +6.6); una riga nel mega-prompt; le righe nel CSV e le chiavi in `cmpTabHit`. Manopola `CORNER_DIFF` (`'no'` torna a prima); `strumenti/corner-differenza.py --rese` e `--schermo` |
 | `b85` | l'arbitro sui gialli in Serie A e LaLiga, il test registrato del 5 ottobre 2026 messo nello Scanner come diceva la regola: un campo nel setup per il nome dell'arbitro designato (la PitchAPI non lo dà prima del fischio), e i gialli attesi per `R^b`, con `R` il suo rapporto sulle ultime 80 partite nella lega prima del giorno e `b` 0.96 / 0.72. Il rapporto viene da `arbitri.json`, costruita dalla PitchAPI (3.940 partite dal 2021/22, `strumenti/arbitri-tabella.py`), non da Footiqo: il test rifatto con lei passa ancora (−18.5‰ sul conteggio dei gialli, `z = −2.97`, meglio in tutte e due). Le rese dei gialli nel tabellone restano dentro le etichette. Manopola `ARBITRO` (`'no'` torna a prima). Col `b84` 1 scrittura diversa su 204 (la nota dell'arbitro), una riga del CSV (il certificato); il banco ha il caso dell'arbitro col suo controllo di potenza |
+| `b86` | il mega-prompt riletto contro il motore e le misure, chiesto dall'utente («dà un sacco di info mezze e mezze o sbagliate»): col maestro non «decide l'Elo» (su Juventus – Atalanta il maestro stava col modello, 80.6% contro Elo 60.5% e modello 82.5% su 1 contro 2), le righe RUOLO / GENERALE dell'1X2 tolte (il rendimento in casa della singola squadra non aggiunge niente), «maestro» al posto di «motore» per i numeri senza quote, la base di `predictStat` detta per quello che è (la coppia), «Occasioni create» tolte (erano i key passes), il trend dell'Elo tolto (non prevede), gol attesi, Over, Goal e falli aggiunti con quanto valgono, i mercati sui numeri che rendono meno dello scarto, le proposte sotto la base di lega separate dal rumore, cosa il verdetto non sa, regole contro le statistiche usate per correggere il verdetto; «dell'Atalanta». Nessun numero a schermo cambia: col `b85` 0 scritture diverse su 204, una riga del CSV (il certificato). `strumenti/schermate.js` salva anche il testo del prompt |
