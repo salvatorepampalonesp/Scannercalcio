@@ -321,7 +321,7 @@ const MISURA = `(() => { const d = [...document.querySelectorAll('details')]; d.
     if (k) schedaVai(k, false);
     if (q && dash) dash.dataset.sq = q;
     scroll = Math.max(scroll, document.documentElement.scrollWidth - window.innerWidth);
-    document.querySelectorAll('table.table-compact, .tv, .tv-mini, .ib-pick, .ib-p, .ib-f, .fs-riga, .g-row, .gi-row, .cfr-r, .so-top, .seg-x, .ind-riga').forEach(t => {
+    document.querySelectorAll('table.table-compact, .tv, .tv-mini, .ib-pick, .ib-p, .ib-f, .fs-riga, .g-row, .gi-row, .cfr-r, .so-top, .seg-x, .ind-riga, .ind-cerca').forEach(t => {
       if (!t.getClientRects().length) return;
       const tab = t.tagName === 'TABLE', w = tab ? (t.closest('.tbl-scroll') || t.parentElement) : t, c = t.closest('[id]');
       const ecc = t.scrollWidth - w.clientWidth, key = (c ? c.id : '?') + (tab ? '' : ' .' + t.className.split(' ')[0]);
@@ -433,14 +433,33 @@ async function runScanner(browser, base, matches, limit) {
     const caselle = () => [...document.querySelectorAll('#indisp-box input[type=checkbox]')];
     const nome = c => c.closest('.ind-riga').querySelector('.ind-n span').textContent, cb = caselle();
     if (cb.length < 4) return { errore: 'meno di 4 caselle' };
-    const scelti = [cb[0], cb[cb.length - 1]], nomi = scelti.map(nome);
+    // la ricerca per squadra (b89): poche lettere in maiuscolo, dal mezzo del nome, lasciano le righe che le contengono
+    // (il nome cercato fra queste), l'altra squadra intera; lettere che non ci sono lasciano solo l'avviso; la x pulisce;
+    // il testo resta se la sotto-scheda si ridisegna
+    const righe = l => [...document.querySelectorAll('#indisp-box [data-squadra="' + l + '"] .ind-riga')];
+    const viste = l => righe(l).filter(r => r.getClientRects().length), campo = l => document.querySelector('#indisp-box [data-cerca="' + l + '"]');
+    const scrivi = (l, t) => { const q = campo(l); q.value = t; q.dispatchEvent(new Event('input', { bubbles: true })); };
+    const RH = righe('H'), bers = RH[Math.floor(RH.length / 2)], bn = bers.querySelector('.ind-n span').textContent;
+    const pezzo = _nomeCerca(bn).replace(/ /g, '').slice(1, 4), nH = RH.length, nA = righe('A').length;
+    scrivi('H', pezzo.toUpperCase());
+    const c1 = viste('H'), cerca = { nome: bn, scritto: pezzo.toUpperCase(), viste: c1.length, di: nH,
+      ok: c1.includes(bers) && c1.every(r => r.dataset.n.includes(pezzo)) && righe('H').filter(r => !c1.includes(r)).every(r => !r.dataset.n.includes(pezzo))
+        && viste('A').length === nA && !!document.querySelector('#indisp-box [data-squadra="H"] [data-pulisci]').getClientRects().length };
+    scrivi('H', 'qzxqzx');
+    cerca.nessuno = viste('H').length === 0 && !!document.querySelector('#indisp-box [data-squadra="H"] .ind-nessuno').getClientRects().length
+      && [...document.querySelectorAll('#indisp-box [data-squadra="H"] .ind-gr')].every(g => !g.getClientRects().length);
+    scrivi('H', pezzo); renderIndisponibili();
+    cerca.resta = campo('H').value === pezzo && viste('H').length === c1.length;
+    document.querySelector('#indisp-box [data-squadra="H"] [data-pulisci]').click();
+    cerca.pulito = campo('H').value === '' && viste('H').length === nH && !document.querySelector('#indisp-box [data-squadra="H"] [data-pulisci]').getClientRects().length;
+    const cv = caselle(), scelti = [cv[0], cv[cv.length - 1]], nomi = scelti.map(nome);
     scelti.forEach(c => c.click());
     const p1 = pr(), barrati = scelti.every(c => c.closest('.ind-riga').classList.contains('on'));
     await avviaScanner(); try { await window.__QUOTE_AUTO; } catch (e) {}
     const restano = caselle().filter(c => c.checked).map(nome), p2 = pr(), m2 = JSON.stringify(window.__MASTER);
     caselle().filter(c => c.checked).forEach(c => c.click());
     const p3 = pr();
-    return { n: cb.length, nomi, barrati, restano, stesse: m0 === m2, tolti: p3 === p0,
+    return { n: cb.length, nomi, barrati, restano, stesse: m0 === m2, tolti: p3 === p0, cerca,
              nelPrompt: /Indisponibili segnati/.test(p1) && nomi.every(n => p1.includes(n)), dopoPrompt: nomi.every(n => p2.includes(n)),
              senzaBlocco: !/Indisponibili segnati/.test(p0 + p3), rotto: /NaN|undefined|Infinity|@@/.test(p1 + p2 + p3) };
   });
@@ -846,9 +865,14 @@ if (require.main === module) (async () => {
     if (!ID.stesse) idRotti.push('le probabilita\' sono cambiate');
     if (!ID.tolti || !ID.senzaBlocco) idRotti.push('tolti i segni, il prompt non torna quello di prima');
     if (ID.rotto) idRotti.push('NaN o segnaposto nel prompt');
+    const CE = ID.cerca;
+    if (!CE || !CE.ok) idRotti.push('la ricerca non lascia solo chi ha quelle lettere');
+    else if (!CE.nessuno) idRotti.push('senza nessuno trovato non lo dice');
+    else if (!CE.resta) idRotti.push('ridisegnata la sotto-scheda, la ricerca si perde');
+    else if (!CE.pulito) idRotti.push('la x non pulisce la ricerca');
   }
-  console.log('   indisponibili: ' + (ID && !ID.errore ? `${ID.n} caselle, segnati ${ID.nomi.join(' e ')}` : '')
-    + (idRotti.length ? ' · ROTTO: ' + idRotti.join('; ') : ' · barrati, nel prompt, restano dopo una nuova analisi, probabilita\' ferme, tolti il prompt torna quello di prima'));
+  console.log('   indisponibili: ' + (ID && !ID.errore ? `${ID.n} caselle, segnati ${ID.nomi.join(' e ')}` + (ID.cerca ? `, cercato "${ID.cerca.scritto}": ${ID.cerca.viste} righe su ${ID.cerca.di}, ${ID.cerca.nome} fra queste` : '') : '')
+    + (idRotti.length ? ' · ROTTO: ' + idRotti.join('; ') : ' · barrati, nel prompt, restano dopo una nuova analisi, probabilita\' ferme, tolti il prompt torna quello di prima; la ricerca lascia solo chi ha quelle lettere, dice quando non c\'e\' nessuno, resta ridisegnando, la x pulisce'));
   let fail = (sLog.length || (process.env.MOBILE && (scanner.scroll > 0 || scanner.compatte.length)) || !G || gRotti.length || pRotti.length || ibRotti.length || !Q || qRotte.length || qaRotte.length || arRotti.length || idRotti.length) ? 1 : 0;
   const GI = await runGiornata(browser, base, cur, scanner.runs);
   const giOk = GI && GI.lista.length === cur.length && GI.lista.every((x, k) => x.id === cur[k].id && x.stato === 'fatta')

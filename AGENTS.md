@@ -56,7 +56,7 @@ vedi *Le quote automatiche*); se non ci sono, le scrive l'utente. Per misurarle 
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b88`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b89`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -592,7 +592,10 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b88`)
+## Stato attuale (`b89`)
+
+**La ricerca negli indisponibili** (`b89`). Sopra la lista di ogni squadra c'è una barra: poche lettere, anche senza
+accenti e in maiuscolo, e restano solo i giocatori che le hanno nel nome. Vedi *Gli indisponibili*, «La ricerca».
 
 **Il prompt della giornata** (`b88`). Con una giornata analizzata, «Copia il prompt della giornata» copia un testo solo per
 tutte le partite. Note e istruzioni ci sono una volta sola, poi i numeri di ogni partita. Sul banco 5 partite fanno 43.823
@@ -2362,7 +2365,7 @@ col movimento ridotto (`reducedMotion: 'reduce'`: i numeri che contano mostrereb
 intermedi), legge «In breve» da `#in-breve` (il riquadro, la sorpresa e le proposte sono tre blocchi)
 e misura le voci del dock e del foglio Altro, Squadre in tutte e tre le sotto-schede.
 
-Esito al `b88` (storico 30), a 390px con tutte le 30 card aperte, scheda per scheda e in tutte e quattro le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, il prompt della giornata con note e istruzioni una volta sola e un blocco per partita, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, il caso dell'arbitro col rapporto rifatto da `arbitri.json`, gli indisponibili segnati, nel prompt e tolti, 0 px):
+Esito al `b89` (storico 30), a 390px con tutte le 30 card aperte, scheda per scheda e in tutte e quattro le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, il prompt della giornata con note e istruzioni una volta sola e un blocco per partita, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, il caso dell'arbitro col rapporto rifatto da `arbitri.json`, gli indisponibili segnati, nel prompt e tolti, la loro ricerca, 0 px):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
@@ -2485,7 +2488,8 @@ sull'ultima partita e rifà il rapporto da `arbitri.json` (vedi *Gli arbitri e i
 Al `b86` il controllo col `b85` non vede nessuna scrittura diversa su 204, solo il certificato: cambia il mega-prompt, che
 non passa da `safeHtml`, e `artDel` («dell'Atalanta»), che la lega finta coi suoi nomi non tocca. Al `b87` lo stesso col
 `b86`: la sotto-scheda degli indisponibili sta fuori dal motore e scrive con `innerHTML` diretto. Al `b88` lo stesso col `b87`:
-cambia solo come il mega-prompt è costruito, e il prompt della singola partita esce identico.
+cambia solo come il mega-prompt è costruito, e il prompt della singola partita esce identico. Al `b89` lo stesso col `b88`:
+cambia solo la sotto-scheda degli indisponibili, che sta fuori dal motore.
 
 **Il controllo del `b70`.** Da qui «In breve» controlla anche il rischio sorpresa: con le quote dell'1X2
 `#sorpresa-box` deve essere identico a quello rifatto nella pagina con `rischioSorpresa(…,
@@ -5026,6 +5030,19 @@ lista per squadra con una casella per giocatore. Un tocco lo segna, e il nome si
   formazione probabile. Rifacendo l'analisi o tornando sulla partita nella giornata i segni ci sono ancora; «Azzera» li
   toglie.
 
+**La ricerca (`b89`).** Chiesta dall'utente: «I nomi degli indisponibili sono difficili da trovare. Dovrebbe esserci una
+barra in alto per squadra così mettendo poche lettere li trovo facilmente». Sopra la lista di ogni squadra c'è un campo
+di ricerca.
+- *Come cerca.* Ogni parola scritta deve stare nel nome. Maiuscole, accenti, apostrofi e trattini non contano, e ø, æ, ß,
+  ł, ı, đ valgono o, ae, ss, l, i, d (`_nomeCerca`): «ode» trova Ødegaard, «ndi» N'Dicka, «lau mar» Lautaro Martínez.
+- *Cosa resta.* Restano le righe che corrispondono, i gruppi senza nessuna spariscono, e senza nessuno trovato lo dice una
+  riga. L'altra squadra non cambia.
+- *Come si usa.* La x accanto pulisce il campo e ci rimette il cursore, per cercare il prossimo; Invio chiude la tastiera.
+  Sul telefono il campo resta attaccato sotto la barra in alto mentre si scorre la lista della sua squadra (`position:
+  sticky`).
+- *Cosa ricorda.* Il testo resta se la sotto-scheda si ridisegna (Azzera, una nuova analisi della stessa partita) e si
+  azzera cambiando partita (`INDISP_CERCA`). I segni restano quelli di prima: la ricerca nasconde le righe, non le toglie.
+
 **Cosa non fa: le probabilità non cambiano.** Sapere chi manca dall'undici abituale non ha migliorato la previsione
 del motore: l'indice delle formazioni del `b43`, su 5.230 partite con la formazione confermata, ha il verso giusto in
 5 leghe su 5 ma vale −0.00041 di logloss (`z = −0.72`), e il secondo giro sulle tre leghe nuove +0.00019 (vedi
@@ -5048,11 +5065,18 @@ sotto-scheda e non ha segni: il CSV e le scritture a schermo non cambiano.
 - che dopo una nuova analisi della stessa partita i segni restino, e le probabilità siano le stesse;
 - che tolti i segni il prompt torni identico a prima, senza `NaN` né segnaposto.
 
+Dal `b89` prova anche la ricerca della casa:
+- tre lettere dal mezzo di un nome, in maiuscolo, lasciano solo le righe che le contengono, quel nome compreso, e la
+  trasferta intera;
+- lettere che non ci sono lasciano solo l'avviso, senza i titoli dei gruppi;
+- il testo resta se la sotto-scheda si ridisegna, e la x lo pulisce e rimette tutte le righe.
+
 Misura anche la sotto-scheda a 390px, e da qui i controlli a segmenti (`.seg-x`) e le righe della lista dentro il loro
 spazio: con la quarta voce «Ruolo e generale» usciva dal riquadro, ora le voci sono a 12.5 px.
 
 Controllo di potenza su una copia con due guasti (`ROOT=<copia>`): il prompt non riscritto al click, e il controllo a
-segmenti a 9 px di margine. Il banco fallisce su tutti e due.
+segmenti a 9 px di margine. Il banco fallisce su tutti e due. Al `b89`, su una copia dove la ricerca non nasconde
+nessuna riga, il banco fallisce («la ricerca non lascia solo chi ha quelle lettere»).
 
 ## Le statistiche dei giocatori
 
@@ -7521,3 +7545,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b86` | il mega-prompt riletto contro il motore e le misure, chiesto dall'utente («dà un sacco di info mezze e mezze o sbagliate»): col maestro non «decide l'Elo» (su Juventus – Atalanta il maestro stava col modello, 80.6% contro Elo 60.5% e modello 82.5% su 1 contro 2), le righe RUOLO / GENERALE dell'1X2 tolte (il rendimento in casa della singola squadra non aggiunge niente), «maestro» al posto di «motore» per i numeri senza quote, la base di `predictStat` detta per quello che è (la coppia), «Occasioni create» tolte (erano i key passes), il trend dell'Elo tolto (non prevede), gol attesi, Over, Goal e falli aggiunti con quanto valgono, i mercati sui numeri che rendono meno dello scarto, le proposte sotto la base di lega separate dal rumore, cosa il verdetto non sa, regole contro le statistiche usate per correggere il verdetto; «dell'Atalanta». Nessun numero a schermo cambia: col `b85` 0 scritture diverse su 204, una riga del CSV (il certificato). `strumenti/schermate.js` salva anche il testo del prompt |
 | `b87` | gli indisponibili, chiesti dall'utente: in Squadre una sotto-scheda con la rosa delle ultime 5 formazioni e una casella per giocatore, che un tocco barra; i segni restano nel browser per la partita e vanno nel mega-prompt fra i rischi (nomi, partite da titolare, gol, peso sull'undici abituale), mai nelle probabilità (l'indice delle assenze non è passato: −0.4‰, `z = −0.72`). Nessuna chiamata in più. Il banco segna due giocatori e controlla prompt, persistenza e probabilità ferme, e misura i controlli a segmenti dentro il loro spazio; controllo di potenza superato. Col `b86` 0 scritture diverse su 204, una riga del CSV (il certificato) |
 | `b88` | il prompt della giornata, chiesto dall'utente: «Copia il prompt della giornata» (nel riquadro della giornata e nella scheda Prompt) copia un testo solo per tutte le partite analizzate, con le note e le istruzioni una volta sola e poi i numeri di ogni partita (quote e indisponibili compresi); in fondo le istruzioni della giornata, con un elenco unico delle proposte FORTE e GIOCABILE e poi partita per partita. Sul banco 5 partite fanno 43.823 caratteri contro circa 80.000 dei cinque prompt. Le note comuni stanno in `_notePrompt` e `_noteQuote`, e il prompt della singola partita esce identico al `b87` (tranne «lo 0%» al posto di «il 0%» negli indisponibili). Il banco controlla il prompt della giornata; controllo di potenza superato. Col `b87` 0 scritture diverse su 204, una riga del CSV (il certificato) |
+| `b89` | la ricerca negli indisponibili, chiesta dall'utente («i nomi sono difficili da trovare»): sopra la lista di ogni squadra un campo dove bastano poche lettere, senza badare a maiuscole, accenti e apostrofi; restano solo i giocatori che le hanno nel nome, e la x pulisce. Sul telefono il campo resta in alto mentre si scorre la lista della sua squadra. Il banco prova la ricerca, e fallisce su una copia dove non nasconde niente. Col `b88` 0 scritture diverse su 204, una riga del CSV (il certificato) |
