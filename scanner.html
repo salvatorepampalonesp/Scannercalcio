@@ -508,6 +508,12 @@ details.tv-altri>summary{display:flex;align-items:center;gap:10px;min-height:48p
 .ind-avv{display:none;color:var(--c-warn-t)}
 .ind-riga.on .ind-avv{display:inline}
 .ind-vuoto{font-size:13px;color:var(--n-500);padding:8px 0}
+.ind-cerca{position:sticky;top:calc(var(--appbar) + env(safe-area-inset-top,0px));z-index:5;margin:0 0 2px;padding:6px 0;background:var(--color-bg)}
+.ind-cerca>.ic{position:absolute;left:14px;top:calc(50% - 9px);font-size:18px;color:var(--n-500);pointer-events:none}
+.ind-cerca input{min-height:44px;padding:0 46px 0 40px;-webkit-appearance:none;appearance:none}
+.ind-cerca input::-webkit-search-cancel-button,.ind-cerca input::-webkit-search-decoration{-webkit-appearance:none;appearance:none}
+.ind-cerca .btn-icon{position:absolute;right:2px;top:calc(50% - 20px);width:40px;height:40px;min-height:0;color:var(--n-400)}
+.ind-cerca .btn-icon .ic{font-size:18px}
 #card-formazioni>.section-title,#card-ambiti>.section-title{display:none}
 #formazioni-box{font-size:14px;color:var(--color-text)}
 .fz-testa{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:center;margin-bottom:6px}
@@ -784,7 +790,7 @@ body.vista-partita .dock{display:flex}
     <button type="button" class="btn btn-ghost ab-back" id="btn-nuova" onclick="tornaIndietro()" aria-label="Indietro"><svg class="ic" aria-hidden="true"><use href="#i-arrow-left"/></svg><span>Cambia partita</span></button>
     <span class="ab-tit" id="ab-tit"><b></b><small></small></span>
     <span class="ab-spazio"></span>
-    <span class="tag" id="build-ver">build 0905-b88</span>
+    <span class="tag" id="build-ver">build 0905-b89</span>
   </div>
 </header>
 
@@ -3520,6 +3526,18 @@ function _pesoIndisp(L, ids) {
   return { segn, peso: tot > 0 ? reg.filter(x => sel.has(x.id)).reduce((a, x) => a + x.share, 0) / tot : null,
            gol: h && h.totGoals > 0 ? segn.reduce((a, x) => a + x.gol, 0) / h.totGoals : null };
 }
+const INDISP_CERCA = { key: null, H: '', A: '' };
+const _nomeCerca = t => String(t || '').toLowerCase().replace(/\u00f8/g, 'o').replace(/\u00e6/g, 'ae').replace(/\u00df/g, 'ss').replace(/\u0142/g, 'l')
+  .replace(/\u0131/g, 'i').replace(/\u0111/g, 'd').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9\s]+/g, '').replace(/\s+/g, ' ').trim();
+function _filtraIndisp(box, lato) {
+  const T = box.querySelector('[data-squadra="' + lato + '"]'); if (!T) return;
+  const q = _nomeCerca(INDISP_CERCA[lato]).split(' ').filter(Boolean); let tot = 0;
+  T.querySelectorAll('.ind-grp').forEach(g => { let n = 0;
+    g.querySelectorAll('.ind-riga').forEach(r => { const ok = q.every(w => (r.dataset.n || '').includes(w)); r.hidden = !ok; n += ok ? 1 : 0; });
+    g.hidden = !n; tot += n; });
+  const v = T.querySelector('.ind-nessuno'); if (v) v.hidden = tot > 0;
+  const p = T.querySelector('[data-pulisci]'); if (p) p.hidden = !q.length;
+}
 const INDISP_NOTA = "Misurato su 5.230 partite: quanto pesano i titolari abituali che mancano non migliora la previsione del motore (il verso e' giusto, l'effetto quasi zero), e con le quote il mercato le assenze le sa gia'. Parlane come rischio e nel racconto della partita, senza spostare probabilita' o verdetti.";
 function testoIndisp(C, G) {
   C = C || window.__INDISP_CTX; if (!C) return '';
@@ -3540,7 +3558,8 @@ function renderIndisponibili() {
   const S = _indispSegnati(C.key), esc = _escHtml, escA = t => _escHtml(t).replace(/"/g, '&quot;');
   const conta = (L, ids) => { const P = _pesoIndisp(L, ids);
     return !P.segn.length ? 'nessuno segnato' : P.segn.length + (P.segn.length === 1 ? ' segnato' : ' segnati') + (P.peso != null ? ' &middot; ' + Math.round(100 * P.peso) + '% dell\'undici' : ''); };
-  const riga = (x, lato, L, on) => '<label class="ind-riga' + (on ? ' on' : '') + '"><input type="checkbox" data-lato="' + lato + '" data-id="' + escA(x.id) + '"' + (on ? ' checked' : '') + '>'
+  if (INDISP_CERCA.key !== C.key) Object.assign(INDISP_CERCA, { key: C.key, H: '', A: '' });
+  const riga = (x, lato, L, on) => '<label class="ind-riga' + (on ? ' on' : '') + '" data-n="' + _nomeCerca(x.nome) + '"><input type="checkbox" data-lato="' + lato + '" data-id="' + escA(x.id) + '"' + (on ? ' checked' : '') + '>'
     + '<span class="ind-n"><span>' + esc(x.nome) + '</span>' + (x.cap ? '<i>C</i>' : '') + (x.xi ? '<b class="gi-xi">XI</b>' : '') + '</span>'
     + '<small>' + (x.tit ? 'titolare ' + x.tit + ' su ' + x.w : 'mai titolare nelle ultime ' + x.w) + (x.gol ? ' &middot; ' + x.gol + ' gol' : '')
     + (x.xi && L.conf ? '<span class="ind-avv"> &middot; ma &egrave; nella formazione confermata</span>' : '') + '</small></label>';
@@ -3548,9 +3567,14 @@ function renderIndisponibili() {
     const R = _rosaIndisp(L), sel = new Set(S[lato]), reg = R.filter(x => x.share >= LINEUP_REGULAR), altri = R.filter(x => x.share < LINEUP_REGULAR);
     const testa = '<div class="gi-team-h"><i></i><b>' + esc(L.nome) + '</b><span data-conta="' + lato + '">' + conta(L, S[lato]) + '</span></div>';
     if (!R.length) return '<div class="gi-team ' + (lato === 'H' ? 't-1' : 't-2') + '">' + testa + '<div class="ind-vuoto">Nessuna formazione nello storico: la rosa non si conosce.</div></div>';
-    return '<div class="gi-team ' + (lato === 'H' ? 't-1' : 't-2') + '">' + testa
-      + (reg.length ? '<div class="ind-gr">Titolari abituali</div>' + reg.map(x => riga(x, lato, L, sel.has(x.id))).join('') : '')
-      + (altri.length ? '<div class="ind-gr">Altri della rosa</div>' + altri.map(x => riga(x, lato, L, sel.has(x.id))).join('') : '') + '</div>';
+    const cerca = '<div class="ind-cerca"><svg class="ic" aria-hidden="true"><use href="#i-magnifying-glass"/></svg>'
+      + '<input type="search" data-cerca="' + lato + '" value="' + escA(INDISP_CERCA[lato]) + '" placeholder="Cerca un giocatore" aria-label="Cerca un giocatore di ' + escA(L.nome) + '"'
+      + ' autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="search">'
+      + '<button type="button" class="btn btn-ghost btn-icon" data-pulisci="' + lato + '" aria-label="Cancella la ricerca" hidden><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></div>';
+    return '<div class="gi-team ' + (lato === 'H' ? 't-1' : 't-2') + '" data-squadra="' + lato + '">' + testa + cerca
+      + (reg.length ? '<div class="ind-grp"><div class="ind-gr">Titolari abituali</div>' + reg.map(x => riga(x, lato, L, sel.has(x.id))).join('') + '</div>' : '')
+      + (altri.length ? '<div class="ind-grp"><div class="ind-gr">Altri della rosa</div>' + altri.map(x => riga(x, lato, L, sel.has(x.id))).join('') + '</div>' : '')
+      + '<div class="ind-vuoto ind-nessuno" hidden>Nessun giocatore con queste lettere.</div></div>';
   };
   const tot = S.H.length + S.A.length;
   const conf = [C.H, C.A].filter(L => L.conf).map(L => esc(L.nome));
@@ -3558,8 +3582,14 @@ function renderIndisponibili() {
     + (conf.length ? ' Formazione confermata per ' + conf.join(' e ') + ': chi manca dall\'undici abituale lo dice gi&agrave; Formazioni.' : '') + '</p>'
     + '<button type="button" class="btn" data-azzera' + (tot ? '' : ' hidden') + '>Azzera</button></div>'
     + '<div class="ind-due">' + blocco(C.H, 'H') + blocco(C.A, 'A') + '</div>';
+  _filtraIndisp(box, 'H'); _filtraIndisp(box, 'A');
   if (box.dataset.pronto) return;
   box.dataset.pronto = '1';
+  box.addEventListener('input', ev => {
+    const q = ev.target; if (!(q instanceof HTMLInputElement) || !q.dataset.cerca) return;
+    INDISP_CERCA[q.dataset.cerca] = q.value; _filtraIndisp(box, q.dataset.cerca);
+  });
+  box.addEventListener('keydown', ev => { const q = ev.target; if (ev.key === 'Enter' && q instanceof HTMLInputElement && q.dataset.cerca) q.blur(); });
   box.addEventListener('change', ev => {
     const cb = ev.target, X = window.__INDISP_CTX; if (!X || !(cb instanceof HTMLInputElement) || !cb.dataset.lato) return;
     const T = _indispSegnati(X.key), lato = cb.dataset.lato, id = cb.dataset.id;
@@ -3571,6 +3601,9 @@ function renderIndisponibili() {
     riscriviPrompt();
   });
   box.addEventListener('click', ev => {
+    const pu = ev.target.closest('[data-pulisci]');
+    if (pu) { const lato = pu.dataset.pulisci, q = box.querySelector('[data-cerca="' + lato + '"]');
+      INDISP_CERCA[lato] = ''; if (q) { q.value = ''; q.focus(); } _filtraIndisp(box, lato); return; }
     const b = ev.target.closest('[data-azzera]'), X = window.__INDISP_CTX; if (!b || !X) return;
     INDISP_MEM[X.key] = { H: [], A: [] }; _indispSalva(X.key); renderIndisponibili(); riscriviPrompt();
   });
@@ -4169,7 +4202,7 @@ function _tabTesto(V) {
     + (sotto.length ? '\n- Sotto la base di lega di 5 punti o piu\' (qui questi esiti sono meno probabili del solito; non sono proposte): ' + lista(sotto) : '');
 }
 
-window.__SCANNER_BUILD = '0905-b88';
+window.__SCANNER_BUILD = '0905-b89';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 

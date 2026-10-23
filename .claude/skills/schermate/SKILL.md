@@ -35,7 +35,7 @@ Diciotto file `finta-*.png` o `vera-*.png`:
 
 - setup, anello dell'analisi, Partita (tre altezze);
 - Tabellone;
-- Squadre: formazioni, indisponibili (con due titolari della casa e uno della trasferta segnati), giocatori, ruolo e generale;
+- Squadre: formazioni, indisponibili (con due titolari della casa e uno della trasferta segnati, e dal `b89` la ricerca della casa con tre lettere), giocatori, ruolo e generale;
 - Numeri, chiusi e aperti;
 - Prompt, Dati, foglio Altro.
 

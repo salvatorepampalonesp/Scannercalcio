@@ -169,6 +169,17 @@ if (VERA) {
       fs.writeFileSync(path.join(OUT, `${NOME}-prompt-indisponibili.txt`), await page.evaluate(() => (document.getElementById('ai-prompt') || {}).value || ''));      await page.evaluate(() => window.scrollTo(0, 0));
     }
     await foto(String(n++).padStart(2, '0') + '-squadre-' + k);
+    if (k === 'indisponibili') {
+      // la ricerca della casa (b89): tre lettere dal nome di un giocatore a meta' della rosa, poi la si pulisce
+      const pezzo = await page.evaluate(() => { const r = [...document.querySelectorAll('#indisp-box .gi-team.t-1 .ind-riga')];
+        return r.length ? r[Math.floor(r.length / 2)].dataset.n.replace(/ /g, '').slice(1, 4) : ''; });
+      const q = page.locator('#indisp-box [data-cerca="H"]');
+      if (pezzo && await q.count()) {
+        await q.fill(pezzo); await page.evaluate(() => window.scrollTo(0, 0));
+        await foto(String(n++).padStart(2, '0') + '-squadre-indisponibili-cerca');
+        await page.locator('#indisp-box [data-pulisci="H"]').click();
+      }
+    }
   }
   await page.evaluate(() => { schedaVai('numeri'); window.scrollTo(0, 0); }); await foto(String(n++).padStart(2, '0') + '-numeri');
   await page.evaluate(() => { document.querySelectorAll('[data-scheda="numeri"] details.card').forEach((d, i) => { if (i < 3) d.open = true; }); window.scrollTo(0, 0); });
