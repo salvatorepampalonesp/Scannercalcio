@@ -39,6 +39,9 @@ Quindici file `finta-*.png` o `vera-*.png`:
 - Numeri, chiusi e aperti;
 - Prompt, Dati, foglio Altro.
 
+E il testo del mega-prompt, `finta-prompt.txt` o `vera-prompt.txt` (dal `b86`): quando si tocca il prompt, si rilegge
+quello, con e senza quote, contro le misure di AGENTS.md (*Il mega-prompt*).
+
 A schermo escono anche lo scorrimento laterale di ogni scheda, gli errori della pagina e le
 chiamate fatte. Lo strumento esce con 1 se una scheda scorre di lato, se la pagina ha un errore o
 se l'anello non si chiude.
