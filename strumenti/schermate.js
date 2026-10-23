@@ -4,7 +4,8 @@
 // lega, poi la partita) e salva una schermata per ogni passo e ogni scheda: setup, anello,
 // Partita, Tabellone, Squadre (formazioni, giocatori, ruolo e generale), Numeri, Prompt, Dati,
 // foglio Altro. Poi misura lo scorrimento laterale in ogni scheda con tutte le details aperte.
-// Salva anche il testo del mega-prompt (<nome>-prompt.txt), da rileggere quando cambia.
+// Salva anche il testo del mega-prompt (<nome>-prompt.txt), da rileggere quando cambia. Nella sotto-scheda
+// Indisponibili segna due titolari della casa e uno della trasferta, e salva il prompt con loro (<nome>-prompt-indisponibili.txt).
 //
 //   node strumenti/schermate.js                                   lega finta del banco, nessuna chiamata
 //   node strumenti/schermate.js --vera "Juventus|Atalanta|2026-09-20"     PitchAPI vera, Serie A
@@ -158,8 +159,16 @@ if (VERA) {
   await page.evaluate(() => window.scrollTo(0, 1500)); await foto('05-partita-quote');
   await page.evaluate(() => { schedaVai('tabellone'); window.scrollTo(0, 0); }); await foto('06-tabellone');
   let n = 7;
-  for (const k of ['formazioni', 'giocatori', 'ambiti']) {
-    await page.evaluate(k => { squadreVai(k); window.scrollTo(0, 0); }, k); await foto(String(n++).padStart(2, '0') + '-squadre-' + k);
+  for (const k of ['formazioni', 'indisponibili', 'giocatori', 'ambiti']) {
+    await page.evaluate(k => { squadreVai(k); window.scrollTo(0, 0); }, k);
+    if (k === 'indisponibili') {
+      // due titolari della casa e uno della trasferta segnati col dito, come l'utente: poi il prompt col blocco
+      for (const sel of ['.gi-team.t-1 .ind-riga', '.gi-team.t-1 .ind-riga', '.gi-team.t-2 .ind-riga']) {
+        const r = page.locator('#indisp-box ' + sel + ':not(.on)').first(); if (await r.count()) await r.click();
+      }
+      fs.writeFileSync(path.join(OUT, `${NOME}-prompt-indisponibili.txt`), await page.evaluate(() => (document.getElementById('ai-prompt') || {}).value || ''));      await page.evaluate(() => window.scrollTo(0, 0));
+    }
+    await foto(String(n++).padStart(2, '0') + '-squadre-' + k);
   }
   await page.evaluate(() => { schedaVai('numeri'); window.scrollTo(0, 0); }); await foto(String(n++).padStart(2, '0') + '-numeri');
   await page.evaluate(() => { document.querySelectorAll('[data-scheda="numeri"] details.card').forEach((d, i) => { if (i < 3) d.open = true; }); window.scrollTo(0, 0); });
@@ -177,7 +186,7 @@ if (VERA) {
     document.querySelectorAll('.foglio').forEach(f => { f.hidden = true; });
     const r = {}, misura = nome => { document.querySelectorAll('details').forEach(d => { d.open = true; }); r[nome] = document.documentElement.scrollWidth - window.innerWidth; };
     for (const k of ['partita', 'tabellone', 'numeri', 'prompt', 'dati']) { schedaVai(k, false); misura(k); }
-    for (const k of ['formazioni', 'giocatori', 'ambiti']) { squadreVai(k); misura('squadre/' + k); }
+    for (const k of ['formazioni', 'indisponibili', 'giocatori', 'ambiti']) { squadreVai(k); misura('squadre/' + k); }
     schedaVai('partita', false); return r;
   });
   if (ISTANTANEE) {
@@ -191,7 +200,7 @@ if (VERA) {
         r[nome] = '<!doctype html>\n' + c.outerHTML;
       };
       for (const k of ['partita', 'tabellone', 'numeri', 'prompt', 'dati']) { schedaVai(k, false); salva(k); }
-      for (const k of ['formazioni', 'giocatori', 'ambiti']) { squadreVai(k); salva('squadre-' + k); }
+      for (const k of ['formazioni', 'indisponibili', 'giocatori', 'ambiti']) { squadreVai(k); salva('squadre-' + k); }
       schedaVai('partita', false); return r;
     }, TEMA);
     for (const [k, html] of Object.entries(pagine)) fs.writeFileSync(path.join(OUT, `${NOME}-pagina-${k}.html`), html);

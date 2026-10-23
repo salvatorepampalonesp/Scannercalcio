@@ -56,7 +56,7 @@ vedi *Le quote automatiche*); se non ci sono, le scrive l'utente. Per misurarle 
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b86`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b87`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -76,7 +76,7 @@ vedi *Le quote automatiche*); se non ci sono, le scrive l'utente. Per misurarle 
   sono `<details>` chiuse sul telefono: il banco le apre tutte prima di misurare, perché una
   card chiusa non ha larghezza e nasconderebbe una tabella che esce di lato. Dal `b66` l'analisi
   è divisa in schede, e per lo stesso motivo il banco misura scheda per scheda (dal `b69` le voci
-  del dock, del foglio Altro e le tre sotto-schede di Squadre). Vedi *La grafica dello Scanner*.
+  del dock, del foglio Altro e le sotto-schede di Squadre, quattro dal `b87`). Vedi *La grafica dello Scanner*.
 - **Le manopole per chi fa backtest vanno nel pannello del Comparatore**, non in console:
   il Comparatore si usa anche da telefono.
 - **Il Comparatore deve stampare quello che stampa lo Scanner.** Ogni riga del CSV dice se
@@ -447,7 +447,8 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   «scenario singolo».
 - [ ] **Assenze pesate per valore**, se l'indice per presenze del `b43` mostra il segnale:
   il peso di ogni giocatore da xG+xA o VAEP (`/advanced/players`) invece che dalle presenze.
-  Una chiamata in più per ogni partita dello storico.
+  Una chiamata in più per ogni partita dello storico. È la strada se gli indisponibili segnati
+  dall'utente (`b87`, vedi *Gli indisponibili*) devono spostare le probabilità: oggi vanno solo nel prompt.
 - [ ] **Le coppe nazionali nel riposo.** Dal `b44` il riposo conta lega e coppe europee
   (vedi *La stanchezza*). Coppa Italia, FA Cup, Pokal, Copa del Rey e Coupe de France non sono
   in `leghe.json`, anche se la documentazione dell'API parla di coppe: va verificato con
@@ -591,7 +592,11 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b86`)
+## Stato attuale (`b87`)
+
+**Gli indisponibili** (`b87`). In Squadre una sotto-scheda con la rosa di ogni squadra e una casella per giocatore:
+chi l'utente segna va nel mega-prompt, fra i rischi. Le probabilità non cambiano, perché sapere chi manca non ha migliorato la
+previsione (−0.4‰, `z = −0.72`). Vedi *Gli indisponibili*.
 
 **Il mega-prompt riletto col maestro** (`b86`). Dal `b77` descriveva ancora il motore di prima: «decide l'Elo» quando Elo
 e modello distano 10+ punti (col maestro non è vero), le righe RUOLO / GENERALE dell'1X2 come segnale, «motore» per numeri del
@@ -1352,7 +1357,8 @@ partite), i dettagli delle pause dell'Elo e della scala. Prima il prompt aveva n
 («2963 partite», «pick al 52%, fascia alta al 74%»), la frase rotta «nei mercati dei mercati
 gol» del `b50`, *COSA NON FARE* elencata fra le sezioni da scrivere, e chiedeva una frase per
 ognuna delle 13 righe del tabellone, anche senza verdetto, con un «FUORI SOGLIA» che il
-tabellone non usa. Formazioni e assenze **non** ci sono, per scelta dell'utente.
+tabellone non usa. Formazioni e assenze **non** ci sono, per scelta dell'utente; dal `b87` ci sono
+gli indisponibili che l'utente segna (vedi *Gli indisponibili*).
 
 **Fuori dai cinque campionati** (dal `b52`). Se la lega non è in `PICK_RESA.leghe`, il verdetto
 dice che soglie e confidence non valgono lì; per Championship, Eredivisie e Liga Portugal dà quelle
@@ -2317,7 +2323,7 @@ col movimento ridotto (`reducedMotion: 'reduce'`: i numeri che contano mostrereb
 intermedi), legge «In breve» da `#in-breve` (il riquadro, la sorpresa e le proposte sono tre blocchi)
 e misura le voci del dock e del foglio Altro, Squadre in tutte e tre le sotto-schede.
 
-Esito al `b86` (storico 30), a 390px con tutte le 28 card aperte, scheda per scheda e in tutte e tre le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, il caso dell'arbitro col rapporto rifatto da `arbitri.json`, 0 px):
+Esito al `b87` (storico 30), a 390px con tutte le 30 card aperte, scheda per scheda e in tutte e quattro le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, il caso dell'arbitro col rapporto rifatto da `arbitri.json`, gli indisponibili segnati, nel prompt e tolti, 0 px):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
@@ -2325,7 +2331,7 @@ Esito al `b86` (storico 30), a 390px con tutte le 28 card aperte, scheda per sch
 | batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 204 | 0 su 131 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
 | `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 142-167 | 84-90 | 0 |
-| `vecchio`: motore `b85` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 su 204 | 1 | 0 |
+| `vecchio`: motore `b86` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 su 204 | 1 | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -2438,7 +2444,8 @@ controllo col `b84` vede 1 scrittura diversa su 204, la nota dell'arbitro nella 
 fuori dal confronto, perché il Comparatore non ha il campo: dopo il giro dello Scanner il banco scrive cinque nomi
 sull'ultima partita e rifà il rapporto da `arbitri.json` (vedi *Gli arbitri e i gialli: la regola*, «Nello Scanner»).
 Al `b86` il controllo col `b85` non vede nessuna scrittura diversa su 204, solo il certificato: cambia il mega-prompt, che
-non passa da `safeHtml`, e `artDel` («dell'Atalanta»), che la lega finta coi suoi nomi non tocca.
+non passa da `safeHtml`, e `artDel` («dell'Atalanta»), che la lega finta coi suoi nomi non tocca. Al `b87` lo stesso col
+`b86`: la sotto-scheda degli indisponibili sta fuori dal motore e scrive con `innerHTML` diretto.
 
 **Il controllo del `b70`.** Da qui «In breve» controlla anche il rischio sorpresa: con le quote dell'1X2
 `#sorpresa-box` deve essere identico a quello rifatto nella pagina con `rischioSorpresa(…,
@@ -4960,6 +4967,53 @@ insieme +0.00036, `z = +2.68`), col coefficiente che cambia segno da un fold all
 confronto, +0.00088 (`z = +3.26`). Contare le coppe europee non ha acceso nessun segnale: il
 calendario, nelle cinque leghe, le probabilità lo sanno già o non conta.
 
+## Gli indisponibili
+
+**Cosa fa (`b87`).** Chiesto dall'utente: «una tab in cui metto gli indisponibili selezionandoli (tipo con delle
+caselline che un click si barrano)». In Squadre c'è la sotto-scheda «Indisponibili», fra Formazioni e Giocatori: una
+lista per squadra con una casella per giocatore. Un tocco lo segna, e il nome si barra.
+
+- *Chi c'è.* La rosa delle ultime 5 formazioni dello storico (titolari e panchina, come `LINEUP_SQUAD_WINDOW`), più
+  chi è nella formazione di oggi. Sono in ordine di partite da titolare nelle ultime 10, divisi in «Titolari abituali»
+  (almeno 5 su 10, `LINEUP_REGULAR`) e «Altri della rosa».
+- *Accanto a ogni nome*: le partite da titolare, i gol nello storico, `XI` se è nella formazione di oggi, `C` se è il
+  capitano. Se è segnato ma sta nella formazione confermata, una riga ambra lo dice.
+- *La testa di ogni squadra* dice quanti ne sono segnati e quanto pesano sull'undici abituale (la stessa misura di
+  `indiciFormazione`).
+- *Da dove vengono.* Dallo storico che il motore scarica già (`storicoFormazioni`): nessuna chiamata in più. Dal `b87`
+  `_luSide` tiene anche i nomi della panchina, che prima non servivano.
+- *Dove restano.* Nel browser, per partita (`scanner_indisp_<casa>_<trasferta>_<giorno>`), dieci giorni come la
+  formazione probabile. Rifacendo l'analisi o tornando sulla partita nella giornata i segni ci sono ancora; «Azzera» li
+  toglie.
+
+**Cosa non fa: le probabilità non cambiano.** Sapere chi manca dall'undici abituale non ha migliorato la previsione
+del motore: l'indice delle formazioni del `b43`, su 5.230 partite con la formazione confermata, ha il verso giusto in
+5 leghe su 5 ma vale −0.00041 di logloss (`z = −0.72`), e il secondo giro sulle tre leghe nuove +0.00019 (vedi
+*Formazioni e assenze*). Con le quote il mercato le assenze le sa già. Per farle entrare nelle probabilità serve una
+regola registrata, per esempio le assenze pesate per valore (vedi *Da fare*). La sotto-scheda lo dice.
+
+**Nel mega-prompt.** Con almeno un segnato, la sezione 4 (rischi) ha una riga per squadra, con nomi, partite da
+titolare, gol, il peso sull'undici abituale e sui gol, e la misura qui sopra. Si chiede di parlarne come rischio e nel
+racconto, senza spostare probabilità o verdetti. Senza segnati la riga non c'è. È il segnaposto `@@INDISP@@`, riempito
+da `testoIndisp()`. Ogni casella riscrive il prompt (`riscriviPrompt`, che rimette insieme `__PROMPT_BASE` e le parti
+delle quote salvate in `__PROMPT_PARTI`). Formazioni e assenze calcolate dal motore restano fuori dal prompt, come
+scelto nel `b51`: ci va solo quello che l'utente segna.
+
+**Fuori dal motore.** `renderIndisponibili` e `testoIndisp` stanno fuori dal giro del motore, scrivono con `innerHTML`
+diretto e cercano i nodi con `querySelector` e `instanceof Element` (contratto, punto 12). Il Comparatore non ha la
+sotto-scheda e non ha segni: il CSV e le scritture a schermo non cambiano.
+
+**Il banco.** Segna due giocatori col click e controlla:
+- che si barrino e che il prompt li dica;
+- che dopo una nuova analisi della stessa partita i segni restino, e le probabilità siano le stesse;
+- che tolti i segni il prompt torni identico a prima, senza `NaN` né segnaposto.
+
+Misura anche la sotto-scheda a 390px, e da qui i controlli a segmenti (`.seg-x`) e le righe della lista dentro il loro
+spazio: con la quarta voce «Ruolo e generale» usciva dal riquadro, ora le voci sono a 12.5 px.
+
+Controllo di potenza su una copia con due guasti (`ROOT=<copia>`): il prompt non riscritto al click, e il controllo a
+segmenti a 9 px di margine. Il banco fallisce su tutti e due.
+
 ## Le statistiche dei giocatori
 
 **Cosa mostra.** La card «Giocatori — le ultime 30 partite», col bottone: per ogni giocatore
@@ -7425,3 +7479,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b84` | chi fa più corner, il test registrato del 16 ottobre 2026 passato sui batch del `b74` (corner 1X2 −48.7‰ contro la frequenza della lega, `z = −14.79`, 23 leghe su 24) e messo nello Scanner come diceva la regola: il totale dei corner diviso fra le due squadre con una beta-binomiale, dai corner previsti e dall'Elo, nessuna chiamata in più. Nella card dei corner il corner 1X2 e l'handicap della casa; nel tabellone più corner la casa, più corner la trasferta, casa −1.5 e trasferta −1.5, con le rese misurate prima su 24 leghe e sul `b74` (FORTE +26.6, GIOCABILE +13.7, MARGINALE +6.6); una riga nel mega-prompt; le righe nel CSV e le chiavi in `cmpTabHit`. Manopola `CORNER_DIFF` (`'no'` torna a prima); `strumenti/corner-differenza.py --rese` e `--schermo` |
 | `b85` | l'arbitro sui gialli in Serie A e LaLiga, il test registrato del 5 ottobre 2026 messo nello Scanner come diceva la regola: un campo nel setup per il nome dell'arbitro designato (la PitchAPI non lo dà prima del fischio), e i gialli attesi per `R^b`, con `R` il suo rapporto sulle ultime 80 partite nella lega prima del giorno e `b` 0.96 / 0.72. Il rapporto viene da `arbitri.json`, costruita dalla PitchAPI (3.940 partite dal 2021/22, `strumenti/arbitri-tabella.py`), non da Footiqo: il test rifatto con lei passa ancora (−18.5‰ sul conteggio dei gialli, `z = −2.97`, meglio in tutte e due). Le rese dei gialli nel tabellone restano dentro le etichette. Manopola `ARBITRO` (`'no'` torna a prima). Col `b84` 1 scrittura diversa su 204 (la nota dell'arbitro), una riga del CSV (il certificato); il banco ha il caso dell'arbitro col suo controllo di potenza |
 | `b86` | il mega-prompt riletto contro il motore e le misure, chiesto dall'utente («dà un sacco di info mezze e mezze o sbagliate»): col maestro non «decide l'Elo» (su Juventus – Atalanta il maestro stava col modello, 80.6% contro Elo 60.5% e modello 82.5% su 1 contro 2), le righe RUOLO / GENERALE dell'1X2 tolte (il rendimento in casa della singola squadra non aggiunge niente), «maestro» al posto di «motore» per i numeri senza quote, la base di `predictStat` detta per quello che è (la coppia), «Occasioni create» tolte (erano i key passes), il trend dell'Elo tolto (non prevede), gol attesi, Over, Goal e falli aggiunti con quanto valgono, i mercati sui numeri che rendono meno dello scarto, le proposte sotto la base di lega separate dal rumore, cosa il verdetto non sa, regole contro le statistiche usate per correggere il verdetto; «dell'Atalanta». Nessun numero a schermo cambia: col `b85` 0 scritture diverse su 204, una riga del CSV (il certificato). `strumenti/schermate.js` salva anche il testo del prompt |
+| `b87` | gli indisponibili, chiesti dall'utente: in Squadre una sotto-scheda con la rosa delle ultime 5 formazioni e una casella per giocatore, che un tocco barra; i segni restano nel browser per la partita e vanno nel mega-prompt fra i rischi (nomi, partite da titolare, gol, peso sull'undici abituale), mai nelle probabilità (l'indice delle assenze non è passato: −0.4‰, `z = −0.72`). Nessuna chiamata in più. Il banco segna due giocatori e controlla prompt, persistenza e probabilità ferme, e misura i controlli a segmenti dentro il loro spazio; controllo di potenza superato. Col `b86` 0 scritture diverse su 204, una riga del CSV (il certificato) |
