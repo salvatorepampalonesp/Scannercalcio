@@ -56,7 +56,7 @@ vedi *Le quote automatiche*); se non ci sono, le scrive l'utente. Per misurarle 
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b87`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b88`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -592,7 +592,12 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b87`)
+## Stato attuale (`b88`)
+
+**Il prompt della giornata** (`b88`). Con una giornata analizzata, «Copia il prompt della giornata» copia un testo solo per
+tutte le partite. Note e istruzioni ci sono una volta sola, poi i numeri di ogni partita. Sul banco 5 partite fanno 43.823
+caratteri, contro circa 80.000 dei cinque prompt copiati uno per uno. Il prompt della singola partita non cambia. Vedi *La
+giornata*, «Il prompt della giornata».
 
 **Gli indisponibili** (`b87`). In Squadre una sotto-scheda con la rosa di ogni squadra e una casella per giocatore:
 chi l'utente segna va nel mega-prompt, fra i rischi. Le probabilità non cambiano, perché sapere chi manca non ha migliorato la
@@ -1252,6 +1257,10 @@ niente «certo/sicuro/esplosione/goleada», non mescolare ruolo e generale, N/D 
 fortuna solo contesto) stanno in un blocco che il prompt dice esplicitamente di non scrivere come
 sezione.
 
+**Il prompt della giornata** (dal `b88`): un testo solo per tutte le partite di una giornata, con le note e le istruzioni una
+volta sola. Le note che non dipendono dalla partita stanno in `_notePrompt` e `_noteQuote`: si cambiano lì, per tutti e due i
+prompt. Vedi *La giornata*, «Il prompt della giornata».
+
 **Cosa è cambiato nel `b86`.** Chiesto dall'utente («secondo me dà un sacco di info mezze e mezze o sbagliate
 addirittura»). Riletto riga per riga contro il motore del `b85` e le misure, su Juventus – Atalanta del 20/09/2026
 (PitchAPI vera, quote e arbitro) e sulla lega finta. Il maestro (`b77`) aveva cambiato da dove viene il verdetto, e il
@@ -1905,6 +1914,36 @@ partita, che non essendo confermata non resta in memoria), 0 px di scorrimento a
 partite di una lega da 10 squadre, 553 chiamate e 26 secondi, e il cambio 70–80 ms senza chiamate. Le quote scritte a mano restano legate alla loro partita solo in memoria: un
 ricaricamento le perde, come tutto il resto.
 
+**Il prompt della giornata (`b88`).** Chiesto dall'utente: «il prompt ia lo devo copiare partita per partita quando seleziono
+l'intera giornata così lui ricopia 10 volte le istruzioni ecc... io vorrei un solo copia prompt per tutte le partite della giornata».
+Il bottone «Copia il prompt della giornata» sta nel riquadro della giornata, a giro finito, e nella scheda Prompt accanto a «Copia il
+mega-prompt» (`#btn-prompt-giornata`, visibile solo dentro una giornata). `promptGiornata()` mette insieme:
+- *in testa, una volta*: chi è l'analista, cosa non sa, e «COME LEGGERE I DATI». Sono le note del prompt di una partita che non
+  dipendono dalla partita: soglie del pick, cosa vuol dire FORTE, quanto valgono statistiche previste, gol e numeri, il rischio
+  sorpresa. Se almeno una partita ha le quote, anche le loro note;
+- *un blocco per ogni partita analizzata*, in ordine di orario («=== PARTITA k DI N ===»), con l'ambito e le nove sezioni, solo
+  coi numeri: verdetto, tabellone (con le quote se ci sono), Elo, rischi e indisponibili segnati, statistiche, gol, stanchezza;
+- *le partite non analizzate*, in una riga;
+- *in fondo, una volta*, le istruzioni della giornata e le regole. Prima «LA GIORNATA IN SINTESI»: tutte le proposte FORTE e
+  GIOCABILE in un solo elenco, per resa del loro tipo di mercato; le partite senza niente; i pick più sicuri e le sorprese. Poi
+  «PARTITA PER PARTITA», 200-350 parole ciascuna, perché tutto stia in una risposta sola.
+
+Come è fatto:
+- le note comuni stanno in `_notePrompt(MA, lId)`, `_noteQuote(ma)`, `SORPRESA_NOTE` e `INDISP_NOTA`. Il prompt di una partita le
+  mette al loro posto (`_dati(false)`), il blocco della giornata no (`_dati(true)`, in `window.__PROMPT_DATI` coi segnaposto). Chi
+  cambia una nota la cambia lì, e vale per tutti e due;
+- `aggiornaQuote` fa anche la versione corta del blocco delle quote (`sezG`) e del rischio sorpresa (`sorG`);
+- `_giornataQuote` tiene in ogni partita il suo blocco, le parti e il contesto degli indisponibili (`x.prompt`). Le quote arrivate
+  dopo, quelle scritte a mano e gli indisponibili segnati entrano quindi nel prompt della giornata.
+
+Verificato:
+- *il prompt della singola partita è identico al `b87`*, carattere per carattere: sulla lega finta 5 partite, coi casi delle quote
+  e con gli indisponibili;
+- *il banco*: 5 partite, 43.823 caratteri (i cinque prompt insieme circa 80.000). Controlla che note e istruzioni ci siano una
+  volta sola, che ogni blocco abbia l'1X2 della sua partita e le quote se la partita le ha, che non ci siano NaN né segnaposto e
+  che il bottone si veda. Controllo di potenza: senza la versione corta delle quote fallisce;
+- *a 390px* il bottone sta nel riquadro della giornata e nella scheda Prompt, senza uscire di lato.
+
 **I limiti, noti.** Un recupero infrasettimanale giocato prima del turno taglia l'elenco alla prima
 squadra che torna in campo: si sceglie la data del turno. Alla prima giornata della stagione una
 neopromossa non ha partite di lega nel database e la sua partita resta non analizzata, come a mano.
@@ -2323,7 +2362,7 @@ col movimento ridotto (`reducedMotion: 'reduce'`: i numeri che contano mostrereb
 intermedi), legge «In breve» da `#in-breve` (il riquadro, la sorpresa e le proposte sono tre blocchi)
 e misura le voci del dock e del foglio Altro, Squadre in tutte e tre le sotto-schede.
 
-Esito al `b87` (storico 30), a 390px con tutte le 30 card aperte, scheda per scheda e in tutte e quattro le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, il caso dell'arbitro col rapporto rifatto da `arbitri.json`, gli indisponibili segnati, nel prompt e tolti, 0 px):
+Esito al `b88` (storico 30), a 390px con tutte le 30 card aperte, scheda per scheda e in tutte e quattro le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, il prompt della giornata con note e istruzioni una volta sola e un blocco per partita, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, il caso dell'arbitro col rapporto rifatto da `arbitri.json`, gli indisponibili segnati, nel prompt e tolti, 0 px):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
@@ -2331,7 +2370,7 @@ Esito al `b87` (storico 30), a 390px con tutte le 30 card aperte, scheda per sch
 | batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 204 | 0 su 131 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
 | `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 142-167 | 84-90 | 0 |
-| `vecchio`: motore `b86` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 su 204 | 1 | 0 |
+| `vecchio`: motore `b87` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 su 204 | 1 | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -2445,7 +2484,8 @@ fuori dal confronto, perché il Comparatore non ha il campo: dopo il giro dello 
 sull'ultima partita e rifà il rapporto da `arbitri.json` (vedi *Gli arbitri e i gialli: la regola*, «Nello Scanner»).
 Al `b86` il controllo col `b85` non vede nessuna scrittura diversa su 204, solo il certificato: cambia il mega-prompt, che
 non passa da `safeHtml`, e `artDel` («dell'Atalanta»), che la lega finta coi suoi nomi non tocca. Al `b87` lo stesso col
-`b86`: la sotto-scheda degli indisponibili sta fuori dal motore e scrive con `innerHTML` diretto.
+`b86`: la sotto-scheda degli indisponibili sta fuori dal motore e scrive con `innerHTML` diretto. Al `b88` lo stesso col `b87`:
+cambia solo come il mega-prompt è costruito, e il prompt della singola partita esce identico.
 
 **Il controllo del `b70`.** Da qui «In breve» controlla anche il rischio sorpresa: con le quote dell'1X2
 `#sorpresa-box` deve essere identico a quello rifatto nella pagina con `rischioSorpresa(…,
@@ -7480,3 +7520,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b85` | l'arbitro sui gialli in Serie A e LaLiga, il test registrato del 5 ottobre 2026 messo nello Scanner come diceva la regola: un campo nel setup per il nome dell'arbitro designato (la PitchAPI non lo dà prima del fischio), e i gialli attesi per `R^b`, con `R` il suo rapporto sulle ultime 80 partite nella lega prima del giorno e `b` 0.96 / 0.72. Il rapporto viene da `arbitri.json`, costruita dalla PitchAPI (3.940 partite dal 2021/22, `strumenti/arbitri-tabella.py`), non da Footiqo: il test rifatto con lei passa ancora (−18.5‰ sul conteggio dei gialli, `z = −2.97`, meglio in tutte e due). Le rese dei gialli nel tabellone restano dentro le etichette. Manopola `ARBITRO` (`'no'` torna a prima). Col `b84` 1 scrittura diversa su 204 (la nota dell'arbitro), una riga del CSV (il certificato); il banco ha il caso dell'arbitro col suo controllo di potenza |
 | `b86` | il mega-prompt riletto contro il motore e le misure, chiesto dall'utente («dà un sacco di info mezze e mezze o sbagliate»): col maestro non «decide l'Elo» (su Juventus – Atalanta il maestro stava col modello, 80.6% contro Elo 60.5% e modello 82.5% su 1 contro 2), le righe RUOLO / GENERALE dell'1X2 tolte (il rendimento in casa della singola squadra non aggiunge niente), «maestro» al posto di «motore» per i numeri senza quote, la base di `predictStat` detta per quello che è (la coppia), «Occasioni create» tolte (erano i key passes), il trend dell'Elo tolto (non prevede), gol attesi, Over, Goal e falli aggiunti con quanto valgono, i mercati sui numeri che rendono meno dello scarto, le proposte sotto la base di lega separate dal rumore, cosa il verdetto non sa, regole contro le statistiche usate per correggere il verdetto; «dell'Atalanta». Nessun numero a schermo cambia: col `b85` 0 scritture diverse su 204, una riga del CSV (il certificato). `strumenti/schermate.js` salva anche il testo del prompt |
 | `b87` | gli indisponibili, chiesti dall'utente: in Squadre una sotto-scheda con la rosa delle ultime 5 formazioni e una casella per giocatore, che un tocco barra; i segni restano nel browser per la partita e vanno nel mega-prompt fra i rischi (nomi, partite da titolare, gol, peso sull'undici abituale), mai nelle probabilità (l'indice delle assenze non è passato: −0.4‰, `z = −0.72`). Nessuna chiamata in più. Il banco segna due giocatori e controlla prompt, persistenza e probabilità ferme, e misura i controlli a segmenti dentro il loro spazio; controllo di potenza superato. Col `b86` 0 scritture diverse su 204, una riga del CSV (il certificato) |
+| `b88` | il prompt della giornata, chiesto dall'utente: «Copia il prompt della giornata» (nel riquadro della giornata e nella scheda Prompt) copia un testo solo per tutte le partite analizzate, con le note e le istruzioni una volta sola e poi i numeri di ogni partita (quote e indisponibili compresi); in fondo le istruzioni della giornata, con un elenco unico delle proposte FORTE e GIOCABILE e poi partita per partita. Sul banco 5 partite fanno 43.823 caratteri contro circa 80.000 dei cinque prompt. Le note comuni stanno in `_notePrompt` e `_noteQuote`, e il prompt della singola partita esce identico al `b87` (tranne «lo 0%» al posto di «il 0%» negli indisponibili). Il banco controlla il prompt della giornata; controllo di potenza superato. Col `b87` 0 scritture diverse su 204, una riga del CSV (il certificato) |

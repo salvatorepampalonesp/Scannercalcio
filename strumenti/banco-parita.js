@@ -492,11 +492,24 @@ async function runGiornata(browser, base, turno, singole) {
     giornataPasso(1); while (GIORNATA.corre) await new Promise(r => setTimeout(r, 50)); const k = window.__SCHEDA;
     giornataPasso(-1); while (GIORNATA.corre) await new Promise(r => setTimeout(r, 50)); return k === 'tabellone' && window.__SCHEDA === 'tabellone'; });
   const inBreve = await page.evaluate(INBREVE);
+  // il prompt della giornata (b88): note e istruzioni una volta sola, poi un blocco per ogni partita analizzata coi suoi
+  // numeri (il suo 1X2, e le quote se le ha); il bottone nella scheda Prompt c'e'
+  const pg = await page.evaluate(() => {
+    if (typeof promptGiornata !== 'function') return null;
+    const t = promptGiornata(), L = GIORNATA.lista.filter(x => x.stato === 'fatta'), pc = v => (100 * v).toFixed(1) + '%', conta = s => t.split(s).length - 1;
+    const blocchi = L.map((x, k) => { const h = `=== PARTITA ${k + 1} DI ${L.length}: ${x.hName} vs ${x.aName} (`, i = t.indexOf(h), j = t.indexOf('=== PARTITA', i + h.length);
+      const b = i < 0 ? '' : t.slice(i, j < 0 ? t.indexOf('\nISTRUZIONI\n') : j);
+      return { nome: x.hName + ' - ' + x.aName, ok: i >= 0 && b.includes(`1 ${pc(x.p[0])} | X ${pc(x.p[1])} | 2 ${pc(x.p[2])}`)
+                 && (b.match(/\n1\. IL VERDETTO 1X2\n/g) || []).length === 1 && (b.match(/\n9\. STANCHEZZA/g) || []).length === 1, quote: /CON LE QUOTE DEL MERCATO/.test(b) === !!x.quote }; });
+    const una = ['SEI UN ANALISTA', 'COSA NON SA', '\nISTRUZIONI\n', '\nREGOLE (', 'Verdetti e rese sono misurati sul backtest', 'Quanto valgono (misurato su 23.278'].every(s => conta(s) === 1);
+    return { n: t.length, partite: L.length, conQuote: L.filter(x => x.quote).length, blocchi, una, rotto: /NaN|undefined|Infinity|@@/.test(t),
+             bottone: !document.querySelector('#btn-prompt-giornata').hidden };
+  });
   const { scroll, compatte } = await page.evaluate(MISURA);
   const righe = await page.evaluate(() => document.querySelectorAll('#giornata-bar .g-row').length);
   const log = page.__log.filter(l => !/CONSOLE/.test(l));
   await page.context().close();
-  return { lista, diversi, giri, passi, righe, scroll, compatte, schedaTenuta, inBreve, log, rotto: /NaN|undefined|Infinity/.test(html), prompt: pr.length, promptRotto: /NaN|undefined|Infinity|@@/.test(pr) };
+  return { lista, diversi, giri, passi, righe, scroll, compatte, schedaTenuta, inBreve, log, pg, rotto: /NaN|undefined|Infinity/.test(html), prompt: pr.length, promptRotto: /NaN|undefined|Infinity|@@/.test(pr) };
 }
 
 async function comparatorePage(browser, base, engineText) {
@@ -841,11 +854,13 @@ if (require.main === module) (async () => {
   const giOk = GI && GI.lista.length === cur.length && GI.lista.every((x, k) => x.id === cur[k].id && x.stato === 'fatta')
     && !GI.diversi.length && Object.keys(GI.giri).length === day.length && GI.righe === cur.length && !GI.rotto && !GI.promptRotto && !GI.log.length
     && GI.passi.t[1] === GI.passi.v0 && GI.passi.t[0] !== GI.passi.v0 && GI.passi.titolo === GI.passi.atteso
-    && GI.schedaTenuta && GI.inBreve && GI.inBreve.ok && !GI.inBreve.rotto && (!process.env.MOBILE || (GI.scroll <= 0 && !GI.compatte.length));
+    && GI.schedaTenuta && GI.inBreve && GI.inBreve.ok && !GI.inBreve.rotto && (!process.env.MOBILE || (GI.scroll <= 0 && !GI.compatte.length))
+    && GI.pg && GI.pg.una && !GI.pg.rotto && GI.pg.bottone && GI.pg.partite === cur.length && GI.pg.conQuote > 0 && GI.pg.blocchi.every(b => b.ok && b.quote);
   console.log('   giornata: ' + (!GI ? 'funzione assente' : `${GI.lista.length} partite trovate su ${cur.length} del turno (${GI.lista.map(x => x.stato).join(' ')}), `
     + `${Object.keys(GI.giri).length - GI.diversi.length} su ${Object.keys(GI.giri).length} rifatte coi bottoni identiche all'analisi singola (${Object.values(GI.giri)[0]} scritture ciascuna), avanti e indietro ${GI.passi.v0} -> ${GI.passi.t.join(' -> ')}`
     + ', la scheda resta cambiando partita, in breve segue la partita' + (process.env.MOBILE ? `, scorrimento laterale ${GI.scroll}px` : '')
-    + (giOk ? '' : ' · FALLITA: ' + JSON.stringify({ lista: GI.lista, diversi: GI.diversi, passi: GI.passi, righe: GI.righe, rotto: GI.rotto, schedaTenuta: GI.schedaTenuta, inBreve: GI.inBreve, compatte: GI.compatte, log: GI.log }).slice(0, 800))));
+    + (GI.pg ? `; prompt della giornata ${GI.pg.n} caratteri, ${GI.pg.partite} blocchi (${GI.pg.conQuote} con le quote) col loro 1X2, note e istruzioni una volta sola` : '; prompt della giornata assente')
+    + (giOk ? '' : ' · FALLITA: ' + JSON.stringify({ lista: GI.lista, diversi: GI.diversi, passi: GI.passi, righe: GI.righe, rotto: GI.rotto, schedaTenuta: GI.schedaTenuta, inBreve: GI.inBreve, compatte: GI.compatte, pg: GI.pg, log: GI.log }).slice(0, 1200))));
   if (!giOk) fail++;
 
   const results = {};

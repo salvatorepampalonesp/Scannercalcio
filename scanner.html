@@ -672,6 +672,7 @@ details.card .tbl-scroll{margin:0}
 .g-stato{font-size:12.5px;color:var(--n-400);line-height:1.5}
 .g-stato b{color:var(--color-text);font-weight:500}
 .g-azioni{display:flex;gap:8px;flex-wrap:wrap}
+.prompt-azioni{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 details.g-tutte>summary{display:flex;align-items:center;gap:8px;min-height:44px;font-size:14px;font-weight:500}
 .g-ord{display:flex;align-items:center;gap:10px;margin:2px 0 6px;font-size:12px;color:var(--n-500);flex-wrap:wrap}
 .g-ord .seg-x{margin:0;box-shadow:none}
@@ -783,7 +784,7 @@ body.vista-partita .dock{display:flex}
     <button type="button" class="btn btn-ghost ab-back" id="btn-nuova" onclick="tornaIndietro()" aria-label="Indietro"><svg class="ic" aria-hidden="true"><use href="#i-arrow-left"/></svg><span>Cambia partita</span></button>
     <span class="ab-tit" id="ab-tit"><b></b><small></small></span>
     <span class="ab-spazio"></span>
-    <span class="tag" id="build-ver">build 0905-b87</span>
+    <span class="tag" id="build-ver">build 0905-b88</span>
   </div>
 </header>
 
@@ -1340,7 +1341,8 @@ body.vista-partita .dock{display:flex}
     <!-- STEP 6: il mega-prompt -->
     <section class="card" id="sez-prompt">
       <div class="section-title"><span class="ico"><svg class="ic" aria-hidden="true"><use href="#i-chat-centered-text"/></svg></span><span class="t">Mega-prompt<small>Da incollare in un assistente: spiega la partita con questi numeri</small></span></div>
-      <button class="btn btn-primary" style="margin-bottom:12px" onclick="copiaPrompt()"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg>Copia il mega-prompt</button>
+      <div class="prompt-azioni"><button class="btn btn-primary" onclick="copiaPrompt()"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg>Copia il mega-prompt</button>
+      <button class="btn" id="btn-prompt-giornata" hidden onclick="copiaPromptGiornata()"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg>Copia il prompt della giornata</button></div>
       <textarea id="ai-prompt" readonly rows="18"></textarea>
     </section>
 
@@ -1689,6 +1691,8 @@ function _giornataQuote() {
   const S = window.__SORPRESA_QUOTE;
   x.quote = window.__QUOTE_P ? { p: window.__QUOTE_P.slice(), top: _topVoce(window.__VERDETTI_QUOTE), buone: _buone(window.__VERDETTI_QUOTE),
                                  sorpresa: S ? { liv: S.liv, pU: S.pU, fav: S.fav, dis: S.dis } : null } : null;
+  x.prompt = { dati: window.__PROMPT_DATI, indisp: window.__INDISP_CTX,
+               parti: window.__PROMPT_PARTI || { sezG: '', tab: window.__TAB_TXT_MOTORE, sorG: window.__SORPRESA_TXT_MOTORE_G } };
   renderGiornata();
 }
 const _sorpG = x => (x.quote && x.quote.sorpresa) || x.sorpresa;
@@ -1803,6 +1807,8 @@ function renderGiornata() {
   if (!(bar instanceof Element)) return;
   const G = GIORNATA, vis = !!G && (G.vista >= 0 || G.corre) && document.getElementById('dashboard-area').style.display !== 'none';
   bar.style.display = vis ? '' : 'none';
+  const bp = document.querySelector('#btn-prompt-giornata');
+  if (bp instanceof Element) bp.hidden = !(vis && !G.corre && G.lista.some(x => x.stato === 'fatta' && x.prompt));
   if (fondo instanceof Element) fondo.style.display = vis && !G.corre && G.vista >= 0 ? '' : 'none';
   if (!vis) return;
   const e = _escHtml, L = G.lista, n = L.length, fatte = L.filter(x => x.stato === 'fatta'), attesa = L.filter(x => x.stato === 'attesa').length;
@@ -1831,7 +1837,8 @@ function renderGiornata() {
   } else {
     h += `<div class="g-stat" data-in><div><b><span data-count>${fatte.length}</span><small>/${n}</small>${fatte.length === n ? '<svg class="ic g-fatto" aria-hidden="true"><use href="#i-check-circle-fill"/></svg>' : ''}</b><span>analizzate</span></div>`
       + `<div class="al"><b data-count>${alte}</b><span>sorpresa alta</span></div><div class="ok"><b data-count>${conBuone}</b><span>con proposte forti</span></div></div>`
-      + (attesa ? `<div class="g-azioni"><button class="btn btn-primary btn-sm" onclick="giornataRiprendi()">${ic('play')}Analizza le ${attesa} rimaste</button></div>` : '');
+      + `<div class="g-azioni">${attesa ? `<button class="btn btn-primary btn-sm" onclick="giornataRiprendi()">${ic('play')}Analizza le ${attesa} rimaste</button>` : ''}`
+      + `<button class="btn btn-sm" onclick="copiaPromptGiornata()">${ic('copy')}Copia il prompt della giornata</button></div>`;
   }
   h += `<details class="g-tutte" id="giornata-tutte"${G.aperta === false ? '' : ' open'} ontoggle="GIORNATA&&(GIORNATA.aperta=this.open)">`
     + `<summary>Tutte le partite (${n})</summary><div>`
@@ -1851,6 +1858,120 @@ function renderGiornata() {
     : `<button class="btn" ${prev == null ? 'disabled' : `onclick="giornataVai(${prev})"`}><small>&#8249; precedente</small><span>${prev == null ? 'nessuna' : nome(L[prev])}</span></button>`
     + `<button class="btn dx" ${next == null ? 'disabled' : `onclick="giornataVai(${next})"`}><small>successiva &#8250;</small><span>${next == null ? 'nessuna' : nome(L[next])}</span></button>`;
   if (window.__GRAFICA) window.__GRAFICA.giornata(bar, verso);
+}
+
+// Il prompt della giornata (b88): le note e le istruzioni una volta sola, poi i numeri di ogni partita analizzata
+function promptGiornata() {
+  const G = GIORNATA; if (!G) return '';
+  const fatte = G.lista.filter(x => x.stato === 'fatta' && x.prompt && x.prompt.dati);
+  if (!fatte.length) return '';
+  const MA = window.MAESTRO !== 'no', lId = G.lId, N = _notePrompt(MA, lId), QN = _noteQuote(MA), n = fatte.length;
+  const lega = (LEAGUES_CATALOG.find(l => l.id === lId) || {}).name || 'lega';
+  const B = fatte.map(x => { const Q = x.prompt.parti || {};
+    return { x, sez: Q.sezG || '', tab: Q.tab || '(tabellone non disponibile)', sor: Q.sorG || '', ind: testoIndisp(x.prompt.indisp, true) }; });
+  const q1 = B.some(b => /CON LE QUOTE DEL MERCATO/.test(b.sez)), qou = B.some(b => /GOL CON LE QUOTE/.test(b.sez));
+  const giorni = [...new Set(fatte.map(x => _quandoG(x).split(',')[0]))], altre = G.lista.filter(x => !fatte.includes(x));
+  const rientra = t => t.split('\n').map(r => r.replace(/^\s+/, '')).join('\n');
+  const quote = !(q1 || qou) ? '' : `
+
+CON LE QUOTE (le partite che le hanno lo dicono nella sezione 1, e per i gol nella sezione 1 e nel tabellone)`
+    + (q1 ? `\n${QN.resa}\n- Le probabilita' con le quote sono il mercato un po' piu' deciso: dato il mercato il motore pesa meno di zero.\n${QN.tabG}\n${QN.bookie}` : '')
+    + (qou ? '\n' + QN.ou(true) : '');
+  return `SEI UN ANALISTA DI CALCIO CHE SA LEGGERE I NUMERI. Giornata di ${lega}: ${n} partite (${giorni.join(' - ')}).
+${N.lavoro}
+
+${N.nonSa}
+
+COME LEGGERE I DATI. Queste note valgono per tutte le partite. Nei blocchi delle partite, piu' sotto, ci sono
+solo i numeri, nelle stesse nove sezioni del prompt di una partita.
+
+AMBITO DEI NUMERI. Ogni riga dice da quali partite viene. RUOLO = solo le gare in casa della squadra di
+casa e in trasferta di quella in trasferta. GENERALE = le ultime partite di qualunque tipo. Quante sono lo
+dice la riga "Ambito" di ogni partita. Sono due campioni diversi: non mescolarli in una stessa frase senza dirlo.
+
+1. IL VERDETTO 1X2
+- Probabilita': ${MA ? "maestro mercato, cioe' le probabilita' del motore imparate dal mercato e usate senza quote, misurato meglio del motore in 25 leghe su 33 mai viste." : "ensemble del motore (Dixon-Coles e Markov inclinati dall'Elo)."}
+- Da dove viene, su 1 contro 2. ${rientra(N.origine).replace('\n', ' ')}${MA ? ` ${N.maestroPesa} Quando Elo e modello distano 10 punti o piu', la partita lo dice. ${N.disaccordo}` : " Quando Elo e modello distano 10 punti o piu', la partita lo dice: col peso che ha, decide l'Elo."}
+${N.ruoloGen}
+- La confidence del pick ${N.conf}.${MA ? `\n- Con un pick al 65% o piu' il maestro e' un po' prudente: ${N.prudente}.` : ''}
+${N.soglie}${PICK_RESA.leghe.includes(lId) ? '' : '\n' + N.fuori}
+
+2. TABELLONE: cosa e' giocabile. ${N.tab}
+
+3. ELO
+${N.eloImpara}
+${MA ? N.eloMaestro : N.eloTilt}
+
+4. RISCHI GIA' CALCOLATI
+- Rischio sorpresa: le frequenze di ogni partita sono contate sul backtest. ${SORPRESA_NOTE.motore}${MA ? ' ' + SORPRESA_NOTE.alto : ''}${q1 ? ' ' + SORPRESA_NOTE.quote : ''}${PICK_RESA.leghe.includes(lId) ? '' : '\n- ' + N.fuoriRischio}${B.some(b => b.ind) ? "\n- Indisponibili segnati dall'utente, dove ci sono. " + INDISP_NOTA : ''}
+
+5. STATISTICHE AVANZATE PREVISTE [RUOLO]
+${N.stat1}
+${N.stat2}
+
+6. QUALITA' E CINISMO [GENERALE]
+${window.NUMERI_CORREZIONI !== 'no' ? '- NPxG contro xGOT ' + N.xgot + '.\n' : ''}${N.fortuna}
+
+7. STILE [GENERALE, medie storiche: descrivono, non prevedono]
+- Choke Index: ${N.choke}.
+
+8. GOL, TEMPI DEI GOL E MERCATI SUI NUMERI
+${rientra(N.golNota)}
+- Almeno un gol nel primo tempo ed entro il 30': ${N.tempi}${window.NUMERI_CORREZIONI !== 'no' ? "\n- Gol nei primi e negli ultimi 15': " + N.fasce.replace(/^\(|\)$/g, '') + '.' : ''}
+${rientra(N.numeri)}${ARBITRO_REG.b[lId] != null && window.ARBITRO !== 'no' ? '\n- ' + N.arbitro : ''}
+- Chi fa piu' corner: ${N.corner[0].toLowerCase() + N.corner.slice(1)}.
+
+9. STANCHEZZA: solo contesto, ${N.stanc}.${quote}
+
+${B.map((b, k) => `=== PARTITA ${k + 1} DI ${n}: ${b.x.hName} vs ${b.x.aName} (${_quandoG(b.x)}) ===\n`
+    + b.x.prompt.dati.replace('@@QUOTE@@', () => b.sez).replace('@@TABELLONE@@', () => b.tab).replace('@@SORPRESA@@', () => b.sor).replace('@@INDISP@@', () => b.ind)).join('\n\n')}
+${altre.length ? `\nNON ANALIZZATE (senza dati: dillo, non parlarne oltre): ${altre.map(x => `${x.hName} vs ${x.aName}${x.motivo ? ' (' + x.motivo + ')' : ''}`).join('; ')}\n` : ''}
+ISTRUZIONI
+Scrivi in italiano, senza preamboli. Le partite sono ${n} e la risposta deve stare in un solo messaggio: per
+ogni partita sii denso (indicativamente 200-350 parole), ma ogni affermazione deve poggiare su un numero di
+questo prompt. Titoli e sottotitoli aiutano; gli elenchi puntati vanno bene per i numeri.
+
+## LA GIORNATA IN SINTESI
+Per chi deve decidere cosa giocare, prima di tutto il resto.
+- Le proposte da giocare sono SOLO le FORTE o GIOCABILE delle sezioni 2. Mettile in un solo elenco, dalla
+  resa piu' alta del loro tipo di mercato alla piu' bassa (il numero accanto a ogni proposta, non
+  l'etichetta), con partita, mercato e probabilita'. Se l'etichetta promette piu' di quanto il suo tipo
+  renda, per esempio un FORTE dei mercati sui numeri, dillo.
+- Due proposte della stessa partita non sono giocate indipendenti (X2 contiene il 2); quelle di partite
+  diverse si'.
+- Le partite dove non c'e' niente di giocabile, in una riga. Le MARGINALI al massimo "da guardare".
+- I pick 1X2 piu' sicuri della giornata (sopra il 55%, con dove stanno nella selezione) e le partite col
+  rischio sorpresa piu' alto. Dove ci sono le quote, il pick da citare e' quello con le quote, e per
+  Over/Under e Goal le probabilita' con le quote.
+
+## PARTITA PER PARTITA
+Una sezione per partita, nell'ordine del prompt, col titolo "### Casa - Trasferta" e quattro parti brevi:
+- In sintesi: le proposte FORTE o GIOCABILE con la resa del loro tipo (o "Niente di giocabile"), il pick
+  1X2 e dove sta nella selezione, il rischio principale col livello del rischio sorpresa.
+- La partita: uno o due paragrafi. Da dove viene il verdetto (Elo, modello${MA ? ' e maestro' : ''}: sezioni 1 e 3), come si
+  affronteranno le due squadre (statistiche previste con le loro regole di affidabilita', qualita', stile),
+  ritmo e gol (sezione 8), ognuno con quanto vale. Se lo scarto e' piccolo, "si equivalgono" e' una
+  risposta giusta.
+- Perche' le proposte: per ogni proposta con verdetto, i numeri che la portano e cosa dovrebbe succedere
+  in campo perche' non esca. Non attribuire una proposta a una statistica che non la muove.
+- Rischi: dalla sezione 4, in concreto per quella partita; la stanchezza solo come contesto.
+Non dare probabilita' che non sono nel prompt.
+
+${N.regole}`;
+}
+
+async function copiaPromptGiornata() {
+  const G = GIORNATA;
+  if (G && G.corre) return alert("La giornata e' ancora in corso: il prompt si copia quando ha finito.");
+  const t = promptGiornata();
+  if (!t) return alert("Nessuna partita della giornata e' ancora analizzata.");
+  const n = G.lista.filter(x => x.stato === 'fatta' && x.prompt).length, tot = G.lista.length;
+  try { await navigator.clipboard.writeText(t); }
+  catch (e) {
+    const ta = document.createElement('textarea'); ta.value = t; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch (e2) {} ta.remove();
+  }
+  alert(`Prompt della giornata copiato: ${n} partite${n < tot ? ' su ' + tot : ''}, ${t.length.toLocaleString('it-IT')} caratteri.`);
 }
 
 const _memGiornata = () => `In memoria ${Object.keys(RAW_CACHE || {}).length} partite scaricate.`;
@@ -3178,19 +3299,102 @@ function htmlSorpresa(S, hName, aName, Sm) {
         + `il pareggio il ${S.c[2].toFixed(1)}%, il favorito (${fv}) il ${S.c[3].toFixed(1)}%.</div>`
         + '<details class="so-info"><summary>Da dove viene il rischio sorpresa</summary><div>' + SORPRESA_INFO + '</div></details></div>');
 }
-function testoSorpresa(S, hName, aName, Sm) {
-  const sf = S.fav === 1 ? aName : hName;
+// Le note del mega-prompt uguali per ogni partita: il prompt di una partita le ha al loro posto, quello della
+// giornata (b88) una volta sola in testa. Vedi AGENTS.md, Il mega-prompt.
+function _notePrompt(MA, lId) {
+  const F = PICK_RESA.fuori[lId], V = Object.values(PICK_RESA.fuori);
+  return {
+    lavoro: `Il tuo lavoro e' SPIEGARE, non ricalcolare. ${MA ? "Il verdetto viene dal maestro mercato: dalle statistiche delle partite gia' giocate stima quello che direbbero le quote, imparato sulle quote di chiusura di 16.071 partite di 14 leghe e provato sui risultati di 13.592 partite di 33 leghe mai viste" : "Il verdetto viene dal motore (Dixon-Coles e Markov inclinati dall'Elo)"}. Soglie e rese sono misurate sul backtest (${PICK_RESA.partite} partite dei cinque campionati per le soglie del pick).`,
+    nonSa: `COSA NON SA. Le probabilita' vedono solo le statistiche delle partite gia' giocate: non sanno di infortuni,
+squalifiche, formazioni, mercato o notizie.${MA ? " Dell'1X2 delle quote di chiusura il maestro ne ricostruisce circa il 90%: il resto e' informazione che le statistiche non hanno." : ''}
+E il calcio resta incerto: sulle 335 partite giocate del 2026/27 dei cinque campionati anche il favorito del
+bookmaker non ha vinto il 44% delle volte. Nessun esito e' scontato, e un pick sbagliato non vuol dire un modello sbagliato.`,
+    conf: "e' la probabilita' del pick stessa (misurata nel backtest, non l'accordo fra i modelli)",
+    prudente: "misurato su 23.278 partite di 24 leghe, col pick al 65% o piu' dice in media il 72.4% ed esce il 76.1%",
+    soglie: `- Soglie misurate su ${PICK_RESA.partite} partite di cinque campionati: `
+      + PICK_RESA.soglie.map(x => `>=${x[0]}% esce il ${x[1].toFixed(1)}% (${x[2]}% delle partite)`).join(', ') + `; su tutte le partite ${PICK_RESA.tutte}%.`,
+    fuori: F ? `- Questa lega (${F[0]}) non e' fra i cinque campionati: le soglie qui sopra non valgono. Misurata a parte su ${F[1]} partite (${F[5]}): il pick esce il ${F[2].toFixed(1)}% su tutte, e sopra il 55% il ${F[3].toFixed(1)}% (+/-${_seResa(F).toFixed(1)} su ${F[6]} partite), nel ${F[4]}% delle partite.`
+      : `- Questa lega non e' mai stata misurata: soglie e confidence sono misurate su altre leghe, prendile come indicative. Nelle ${V.length} leghe provate fuori dai cinque campionati, sopra il 55% il pick e' uscito fra il ${Math.min(...V.map(x => x[3])).toFixed(1)} e il ${Math.max(...V.map(x => x[3])).toFixed(1)}%, in una quota del calendario fra il ${Math.min(...V.map(x => x[4]))} e il ${Math.max(...V.map(x => x[4]))}%.`,
+    fuoriRischio: F ? 'Lega fuori dai cinque campionati: le rese del tabellone sono misurate su quelli, non qui.'
+      : 'Lega mai misurata: soglie, confidence e rese del tabellone sono misurate su altre leghe.',
+    origine: "  Il modello legge xG, tiri e gol delle partite delle due squadre; l'Elo i soli risultati di tutta la lega. Misurato su 23.278 partite di 24 leghe:\n"
+      + "  da soli sbagliano in versi opposti (il modello e' troppo prudente, l'Elo troppo sicuro), per questo si combinano.",
+    maestroPesa: "Il maestro non e' una media fissa dei due: li pesa, con le statistiche previste, come li peserebbe il mercato.",
+    disaccordo: "Misurato col maestro, in queste partite lo sfavorito vince quanto dicono le probabilita' (il disaccordo e' gia' dentro il verdetto): non e' un rischio in piu'.",
+    ruoloGen: "- RUOLO e GENERALE sono lo stesso modello su due campioni: misurato su 24 leghe, il rendimento in casa o in trasferta della singola squadra non aggiunge niente al vantaggio campo della lega. Una differenza fra le due e' quasi sempre il rumore del campione piu' piccolo.",
+    tab: `Verdetti e rese sono misurati sul backtest: sono la parte
+piu' affidabile di questo prompt, NON ridiscuterli e non riclassificarli.
+FORTE e GIOCABILE vogliono dire che la proposta rende piu' del giocare quel mercato sempre,
+alla cieca, non che sia probabile: un 2 al 45% in una lega dove la trasferta vince il 29% e'
+giocabile anche se esce meno di una volta su due. Ogni proposta dice quanto rende DAVVERO il
+suo tipo di mercato, ed e' quel numero che conta, non l'etichetta. A parita' di scarto 1X2, mercati
+gol e chi fa piu' corner rendono piu' o meno quanto lo scarto promette; i mercati sui numeri (corner
+totali, tiri in porta, gialli) molto meno, soprattutto i FORTE (+${window.EDGE_BANDS[0][2].numeri[0].toFixed(1)} punti contro +${window.EDGE_BANDS[0][2]['1x2'][0].toFixed(1)} dell'1X2), e fuori dai
+cinque campionati ancora meno. Una doppia chance contiene l'esito singolo (X2 contiene il 2), e
+"Corner casa -1.5" e' contenuto in "Piu' corner casa" (lo stesso per la trasferta): non sono giocate
+indipendenti. Uno scarto sotto -5 non e' una proposta contraria: dice solo che quell'esito qui e'
+meno probabile del solito.`,
+    eloImpara: "- L'Elo impara dai soli risultati di tutte le partite di lega, passando da una squadra all'altra: misura la forza che i gol hanno mostrato, non come si gioca.",
+    eloMaestro: "- Nel verdetto l'Elo e' una delle variabili del maestro (rating, differenza, vantaggio campo), non decide da solo: quanto dice da solo su 1 contro 2 e' nella sezione 1.",
+    eloTilt: "- L'Elo sposta il rapporto casa/trasferta tenendo fermo il totale dei gol attesi: l'Over/Under quasi non ne dipende, il Goal/NoGoal un po' si' (piu' la partita e' squilibrata, meno Goal).",
+    stat1: `Previsione per questa sfida, non medie storiche: la media delle partite delle due squadre x (quanto
+produce la squadra) x (quanto concede l'avversario), con le gare di RUOLO.`,
+    stat2: `Quanto valgono (misurato su 23.278 partite di 24 leghe): il livello e' giusto ovunque (previsto
+e reale coincidono in media entro il 4%). Sulla differenza fra le due squadre le previsioni sono
+prudenti: per quelle che reggono, nel reale lo scarto e' di solito da 1 a 1.5 volte quello
+previsto. Uno scarto previsto netto va preso sul serio; uno piccolo resta piccolo.
+Servono a raccontare come si giochera' la partita, non a correggere il verdetto: ${MA ? "il maestro usa gia' le\nstatistiche previste che pesano di piu' (xG, tiri, tocchi in area, possesso, field tilt, PPDA)" : "il verdetto e' gia' fatto\ndagli xG e dall'Elo"}. Una squadra che domina queste statistiche e
+che il verdetto da' sfavorita non e' una sorpresa annunciata.
+- Reggono bene: passaggi, conduzioni, progressivi, in area e nell'ultimo terzo, SCA, xT, key
+  passes, PPDA.
+- Valgono a meta': xAG, GCA, dribbling tentati, respinte.
+- Non usarle (il previsto non dice quasi niente sul reale): duelli aerei, contrasti, intercetti,
+  duelli vinti, blocchi, VAEP, PV, assist, secondi assist, SCA da tiro/fallo/dribbling.`,
+    xgot: `(xGOT ristretto verso la media: lo scarto dall\'NPxG si ripete poco)`,
+    fortuna: `Misurato: la fortuna recente (gol o punti sopra o sotto gli xG) non anticipa il risultato, e segnare piu' o
+meno dei propri xG non si ripete da una partita all'altra: non sono argomenti per un esito.`,
+    choke: `recuperi entro 5 secondi rispetto al tempo per riprendere palla, piu' alto = riaggredisce di piu'`,
+    golNota: `  Misurato: in media sono giusti, ma distinguono poco una partita dall'altra (AUC dell'Over 2.5 e del Goal intorno a 0.55):
+  qualche punto sopra o sotto la media della lega e' quasi rumore. Il tabellone dice se uno scarto conta.`,
+    tempi: `calibrati, ma valgono poco piu' della frequenza della lega.`,
+    fasce: `(stessa quota per fascia in tutte le partite: misurato, i minuti in cui segnano o subiscono le due squadre non dicono quando si segnera')`,
+    numeri: `  Quanto valgono, misurato: il totale dei corner vale quanto la frequenza della lega; i tiri in porta si prevedono poco;
+  i gialli un po' (con l'arbitro di piu'); i falli sono il numero che si prevede meglio.`,
+    arbitro: `L'arbitro sposta i gialli in Serie A e LaLiga: test registrato su 850 partite.`,
+    corner: `Il totale dei corner quasi non si prevede, chi ne fa di piu' si': test registrato su 7.120 partite di 24 leghe, calibrato`,
+    stanc: `misurato su ${PICK_RESA.partite} partite, il vantaggio di riposo non migliora la previsione`,
+    regole: `REGOLE (valgono per tutte le sezioni; non sono una sezione da scrivere)
+- Non riclassificare i verdetti, non proporre mercati che il tabellone non elenca, non
+  inventare probabilita' o rese.
+- Non pronosticare un risultato esatto e non usare "certo", "sicuro", "esplosione", "goleada".
+- Nei cinque campionati misurati il pick esce nel ${PICK_RESA.tutte}% delle partite e nel ${PICK_RESA.soglie[0][1].toFixed(1)}% di quelle sopra il ${PICK_RESA.soglie[0][0]}%: non promettere di piu'.
+- Non mescolare RUOLO e GENERALE in una stessa frase senza dire quale usi.
+- Stanchezza e fortuna recente non anticipano il risultato (misurato): contesto, mai motivo
+  per spostare un verdetto. Lo stesso per tutto quello che il prompt dice che non si ripete o
+  non si prevede: non e' un argomento per un esito.
+- Le statistiche delle sezioni 5-8 spiegano il verdetto, non lo correggono: non scrivere che una
+  squadra "dovrebbe" vincere piu' di quanto dice la sezione 1, e non usarle per contraddire le quote.
+- Il verdetto non sa di infortuni, squalifiche, formazioni e notizie: se nel testo ti viene da
+  parlarne, dillo come limite, non inventare chi gioca. Gli indisponibili segnati dall'utente
+  (sezione 4, se ci sono) sono fatti: usali come rischio e nel racconto, senza ricalcolare.
+- Se un dato e' N/D, dillo invece di aggirarlo.`
+  };
+}
+const SORPRESA_NOTE = { motore: "Misurato: il motore non prevede le sorprese meglio di cosi'.",
+  alto: "ALTO qui vuol dire una partita aperta, con lo sfavorito al 35% o piu': non un favorito in pericolo che le probabilita' non vedono. Col maestro il disaccordo fra modello ed Elo e' gia' dentro le probabilita' (misurato su 23.278 partite: lo sfavorito vince quanto previsto, col disaccordo o senza).",
+  dis: "Col maestro il disaccordo fra modello ed Elo e' gia' dentro le probabilita' (misurato: lo sfavorito vince quanto previsto).",
+  quote: "Con le quote il disaccordo fra modello ed Elo pesa poco (il mercato lo sa gia'), e lo sfavorito non vince una volta su tre in nessuna fascia: il rischio non arriva ad ALTO." };
+function testoSorpresa(S, hName, aName, Sm, G) {
+  const sf = S.fav === 1 ? aName : hName, N = SORPRESA_NOTE;
   if (!S.quote) return `Rischio sorpresa ${S.liv.toUpperCase()}: lo sfavorito (${sf}) ha il ${(100 * S.pU).toFixed(1)}%`
     + (S.dis === true ? ' e modello ed Elo indicano favoriti diversi' : '') + `; nelle ${S.c[0]} partite cosi' (${SORPRESA_TAB.leghe} leghe) ha vinto lo sfavorito il ${S.c[1].toFixed(1)}%, `
-    + `il pareggio il ${S.c[2].toFixed(1)}%, il favorito il ${S.c[3].toFixed(1)}%. Misurato: il motore non prevede le sorprese meglio di cosi'.`
-    + (window.MAESTRO === 'no' ? '' : S.liv === 'alto'
-      ? " ALTO qui vuol dire una partita aperta, con lo sfavorito al 35% o piu': non un favorito in pericolo che le probabilita' non vedono. Col maestro il disaccordo fra modello ed Elo e' gia' dentro le probabilita' (misurato su 23.278 partite: lo sfavorito vince quanto previsto, col disaccordo o senza)."
-      : S.dis === true ? " Col maestro il disaccordo fra modello ed Elo e' gia' dentro le probabilita' (misurato: lo sfavorito vince quanto previsto)." : '');
+    + `il pareggio il ${S.c[2].toFixed(1)}%, il favorito il ${S.c[3].toFixed(1)}%.` + (G ? '' : ' ' + N.motore
+    + (window.MAESTRO === 'no' ? '' : S.liv === 'alto' ? ' ' + N.alto : S.dis === true ? ' ' + N.dis : ''));
   return `Rischio sorpresa ${S.liv.toUpperCase()}, con le quote: lo sfavorito con le quote (${sf}) ha il ${(100 * S.pU).toFixed(1)}%`
     + (Sm && Sm.fav !== S.fav ? ` (senza le quote il motore lo dava favorito)` : '')
     + (S.dis === true ? ' e modello ed Elo indicano favoriti diversi' : (S.dis === false ? " e modello ed Elo sono d'accordo sul favorito" : ''))
     + `; nelle ${S.c[0]} partite cosi' con le quote di chiusura (${SORPRESA_QUOTE_TAB.leghe} leghe) ha vinto lo sfavorito il ${S.c[1].toFixed(1)}%, il pareggio il ${S.c[2].toFixed(1)}%, `
-    + `il favorito il ${S.c[3].toFixed(1)}%. Con le quote il disaccordo fra modello ed Elo pesa poco (il mercato lo sa gia'), e lo sfavorito non vince una volta su tre in nessuna fascia: il rischio non arriva ad ALTO.`;
+    + `il favorito il ${S.c[3].toFixed(1)}%.` + (G ? '' : ' ' + N.quote);
 }
 const SORPRESA_QUOTE_INFO = `Con le quote dell'1X2 il rischio si conta sulle probabilit&agrave; con le quote: <b>11.902 partite di 12 leghe</b> con le quote di chiusura (2023-2026), per fascia di probabilit&agrave; dello sfavorito con le quote e per accordo fra modello ed Elo sul favorito, come senza quote. Le probabilit&agrave; con le quote sono gi&agrave; giuste: lo sfavorito al 30% o pi&ugrave; vince il 31.2%. Il disaccordo fra modello ed Elo, che senza quote d&agrave; allo sfavorito 2.4 punti in pi&ugrave;, con le quote pesa poco, perch&eacute; il mercato lo sa gi&agrave;: con lo sfavorito al 30% o pi&ugrave; vince il 30.7% col disaccordo e il 31.5% con l'accordo, fra il 25 e il 30% il 26.3% e il 26.2%. Per questo con le quote lo sfavorito non vince una volta su tre in nessun gruppo, e il rischio non arriva ad <b>ALTO</b>: il pi&ugrave; alto &egrave; medio, con lo sfavorito al 25% o pi&ugrave;. Cancella le quote per rivedere il rischio del motore.`;
 const SORPRESA_INFO = `Contato su <b>23.278 partite di 24 leghe</b> (2023-2026) con le probabilit&agrave; del maestro mercato (b77, stimato senza la lega che si conta): per ogni fascia di probabilit&agrave; dello sfavorito, quante volte hanno vinto lo sfavorito, il pareggio e il favorito. Le probabilit&agrave; le sorprese le contano gi&agrave; giuste: lo sfavorito al 30&ndash;35% vince il 31.9%. Col motore di prima il <b>disaccordo fra modello ed Elo</b> sul favorito dava allo sfavorito 2.4 punti in pi&ugrave;; il maestro l'ha gi&agrave; messo nelle probabilit&agrave;, e il residuo col disaccordo non c'&egrave; pi&ugrave; (&minus;0.5 &plusmn;1.5). <b>ALTO</b> vuol dire che nelle partite cos&igrave; lo sfavorito ha vinto almeno una volta su tre: col maestro succede solo quando lo sfavorito ha il 35% o pi&ugrave; e modello ed Elo non sono d'accordo (circa una partita su 35). Forma, riposo, formazioni, fortuna sotto gli xG e un rating sugli xG non anticipano le sorprese: sono stati misurati e non aggiungono niente.`;
@@ -3316,18 +3520,18 @@ function _pesoIndisp(L, ids) {
   return { segn, peso: tot > 0 ? reg.filter(x => sel.has(x.id)).reduce((a, x) => a + x.share, 0) / tot : null,
            gol: h && h.totGoals > 0 ? segn.reduce((a, x) => a + x.gol, 0) / h.totGoals : null };
 }
-function testoIndisp() {
-  const C = window.__INDISP_CTX; if (!C) return '';
+const INDISP_NOTA = "Misurato su 5.230 partite: quanto pesano i titolari abituali che mancano non migliora la previsione del motore (il verso e' giusto, l'effetto quasi zero), e con le quote il mercato le assenze le sa gia'. Parlane come rischio e nel racconto della partita, senza spostare probabilita' o verdetti.";
+function testoIndisp(C, G) {
+  C = C || window.__INDISP_CTX; if (!C) return '';
   const S = _indispSegnati(C.key); if (!S.H.length && !S.A.length) return '';
   const lato = (L, ids) => {
     const P = _pesoIndisp(L, ids), pc = v => { const n = Math.round(100 * v);
-      return (n === 1 || n === 11 || String(n)[0] === '8' ? "l'" : 'il ') + n + '%'; };
+      return (n === 0 ? 'lo ' : n === 1 || n === 11 || String(n)[0] === '8' ? "l'" : 'il ') + n + '%'; };
     if (!P.segn.length) return `${L.nome}: nessuno`;
     return `${L.nome}: ` + P.segn.map(x => `${x.nome} (titolare in ${x.tit} delle ultime ${x.w}, ${x.gol} gol nelle ultime ${L.n}${x.xi && L.conf ? ", MA e' nella formazione confermata" : ''})`).join(', ')
       + [P.peso != null ? `${pc(P.peso)} dell'undici abituale` : null, P.gol != null ? `${pc(P.gol)} dei gol della squadra` : null].filter(Boolean).map((t, i) => (i ? ' e ' : ' = ') + t).join('');
   };
-  return `\n- Indisponibili segnati dall'utente (le probabilita' non ne tengono conto): ${lato(C.H, S.H)}. ${lato(C.A, S.A)}.`
-    + "\n  Misurato su 5.230 partite: quanto pesano i titolari abituali che mancano non migliora la previsione del motore (il verso e' giusto, l'effetto quasi zero), e con le quote il mercato le assenze le sa gia'. Parlane come rischio e nel racconto della partita, senza spostare probabilita' o verdetti.";
+  return `\n- Indisponibili segnati dall'utente (le probabilita' non ne tengono conto): ${lato(C.H, S.H)}. ${lato(C.A, S.A)}.` + (G ? '' : '\n  ' + INDISP_NOTA);
 }
 function renderIndisponibili() {
   const box = typeof document !== 'undefined' && document.querySelector('#indisp-box');
@@ -3372,17 +3576,31 @@ function renderIndisponibili() {
   });
 }
 
+function _noteQuote(ma) {
+  const T = TAB_QUOTE_RESA, misura = `Misurato su ${T.partite} partite di ${T.leghe} leghe: la proposta in cima rende +${T.quote} punti sopra il giocarla alla cieca, contro +${T.motore} del motore.`;
+  return {
+    resa: `- Misurato su ${QUOTE_RESA.partite} partite di ${QUOTE_RESA.leghe} leghe: il pick senza quote (${ma ? 'maestro' : 'motore'}) esce il ${QUOTE_RESA.motore.toFixed(1)}%, quello del mercato il ${QUOTE_RESA.mercato.toFixed(1)}%, quello con le quote il ${QUOTE_RESA.tutte.toFixed(1)}%; `
+      + QUOTE_RESA.soglie.map(x => `>=${x[0]}% esce il ${x[1].toFixed(1)}% (${x[2]}% delle partite)`).join(', ') + '. Le soglie valgono uguali in tutte le leghe misurate.',
+    tab: qo => (qo ? `- Il tabellone (sezione 2) e' ricalcolato con le quote: 1X2, doppie chance, Over/Under e Goal/NoGoal con le probabilita' con le quote e le rese misurate su quelle; corner, tiri e gialli restano del motore. `
+      : `- Il tabellone (sezione 2) e' ricalcolato con le quote per 1X2 e doppie chance, con le rese misurate su quelle; Over/Under, Goal/NoGoal, corner, tiri e gialli restano del motore. `) + misura,
+    tabG: "- Il tabellone (sezione 2) di una partita con le quote e' ricalcolato con le quote (la partita dice per quali mercati), con le rese misurate su quelle; corner, tiri e gialli restano del motore. " + misura,
+    bookie: "- Non e' un vantaggio sul bookmaker. Dato il mercato il motore non aggiunge niente: dove si discosta, il risultato va ancora piu' dalla parte del mercato (misurato in 12 leghe su 12). Giocare dove il motore da' a un esito piu' del mercato ha perso l'11-16% della posta, e anche il pick con le quote, giocato sempre alla quota media di chiusura, ha perso il 3% (il margine). Non presentare una differenza fra motore e mercato come un valore, e non usare le statistiche del motore per contraddire il mercato.",
+    ou: A => `- Misurato su ${QUOTE_OU_RESA.partite} partite di ${QUOTE_OU_RESA.leghe} leghe: con le quote l'Over/Under dalla parte piu' probabile esce il ${QUOTE_OU_RESA.tutte.toFixed(1)}% (senza quote ${QUOTE_OU_RESA.motore.toFixed(1)}%)`
+      + (A ? `, e Goal, Over 1.5 e Over 3.5 della matrice allineata sono piu' vicini al vero del motore in 11 leghe su 11 (l'Over 3.5 in 10)` : '')
+      + `. Anche qui il merito e' del mercato: dato il mercato il motore pesa zero, e giocare dove si discosta dal mercato sull'Over ha perso il ${QUOTE_OU_RESA.valore[0]}-${QUOTE_OU_RESA.valore[1]}% della posta (il lato con le quote, giocato sempre alla chiusura, il ${QUOTE_OU_RESA.sempre}%).`
+  };
+}
 function aggiornaQuote() {
   const C = window.__QUOTE_CTX, box = typeof document !== 'undefined' && document.getElementById('quote-box');
-  let tabTxt = window.__TAB_TXT_MOTORE || '', sorTxt = window.__SORPRESA_TXT_MOTORE || '';
-  const scriviPrompt = (sez, sint) => { window.__PROMPT_PARTI = { sez, sint, tab: tabTxt, sor: sorTxt }; riscriviPrompt(); };
+  let tabTxt = window.__TAB_TXT_MOTORE || '', sorTxt = window.__SORPRESA_TXT_MOTORE || '', sorTxtG = window.__SORPRESA_TXT_MOTORE_G || '';
+  const scriviPrompt = (sez, sint, sezG) => { window.__PROMPT_PARTI = { sez, sint, tab: tabTxt, sor: sorTxt, sezG: sezG || '', sorG: sorTxtG }; riscriviPrompt(); };
   if (!box || !C) return;
   const sorpresa = P => {
     const Es = window.__ESITO, el = document.getElementById('sorpresa-box'), Sm = Es && Es.sorpresa;
     window.__SORPRESA_QUOTE = null;
     if (!Sm || !el) return;
     const S = P ? rischioSorpresa(P[0], P[1], P[2], window.__ELO_DEBUG_OVER, SORPRESA_QUOTE_TAB) : Sm;
-    if (P) { window.__SORPRESA_QUOTE = S; sorTxt = testoSorpresa(S, C.hName, C.aName, Sm); }
+    if (P) { window.__SORPRESA_QUOTE = S; sorTxt = testoSorpresa(S, C.hName, C.aName, Sm); sorTxtG = testoSorpresa(S, C.hName, C.aName, Sm, true); }
     const h = htmlSorpresa(S, C.hName, C.aName, Sm);
     if (el.__sorpH === h && el.__sorpE === Es) return;
     el.innerHTML = h; el.__sorpH = h; el.__sorpE = Es;
@@ -3421,7 +3639,8 @@ function aggiornaQuote() {
     return;
   }
   const pc = x => (100 * x).toFixed(1) + '%';
-  let html = avvHtml, sez = '', sint = '', P = null, Oq = null, Gq = null, Aq = null;
+  let html = avvHtml, sez = '', sezG = '', sint = '', P = null, Oq = null, Gq = null, Aq = null;
+  const QN = _noteQuote(C.ma);
   if (q) {
     const R = combinaQuote(C.pm || C.p, q), M = R.mercato; P = R.comb;
     const nomi = ['1', 'X', '2'], chi = [`vince ${C.hName}`, 'pareggio', `vince ${C.aName}`];
@@ -3448,17 +3667,14 @@ function aggiornaQuote() {
       + `<thead><tr><th style="text-align:left">Doppia chance</th><th>1X</th><th>X2</th><th>12</th></tr></thead><tbody>`
       + `<tr><td style="text-align:left">Motore</td>${dc(C.p).map(x => `<td>${pc(x)}</td>`).join('')}</tr>`
       + `<tr><td style="text-align:left"><b>Con le quote</b></td>${dc(P).map(x => `<td><b>${pc(x)}</b></td>`).join('')}</tr></tbody></table></div>`;
-    sez += `\n- CON LE QUOTE DEL MERCATO (${window.__QUOTE_FONTE || "scritte dall'utente"}: 1 @${q[0].toFixed(2)} | X @${q[1].toFixed(2)} | 2 @${q[2].toFixed(2)}, margine del bookmaker ${(100 * R.margine).toFixed(1)}%)\n`
+    const testa = `\n- CON LE QUOTE DEL MERCATO (${window.__QUOTE_FONTE || "scritte dall'utente"}: 1 @${q[0].toFixed(2)} | X @${q[1].toFixed(2)} | 2 @${q[2].toFixed(2)}, margine del bookmaker ${(100 * R.margine).toFixed(1)}%)\n`
       + `    mercato (quote senza margine): 1 ${pc(M[0])} | X ${pc(M[1])} | 2 ${pc(M[2])}\n`
-      + `    con le quote:                  1 ${pc(P[0])} | X ${pc(P[1])} | 2 ${pc(P[2])}   (il mercato un po' piu' deciso; dato il mercato il motore pesa meno di zero)\n`
-      + `    doppie chance con le quote:    1X ${pc(dc(P)[0])} | X2 ${pc(dc(P)[1])} | 12 ${pc(dc(P)[2])}\n`
-      + `- Con le quote il pick da seguire e' questo: ${nomi[iC]} (${chi[iC]}) al ${pp.toFixed(1)}%, confidence ${Math.round(pp)}/100, ${dove}.\n`
-      + `- Misurato su ${QUOTE_RESA.partite} partite di ${QUOTE_RESA.leghe} leghe: il pick senza quote (${C.ma ? 'maestro' : 'motore'}) esce il ${QUOTE_RESA.motore.toFixed(1)}%, quello del mercato il ${QUOTE_RESA.mercato.toFixed(1)}%, quello con le quote il ${QUOTE_RESA.tutte.toFixed(1)}%; `
-      + QUOTE_RESA.soglie.map(x => `>=${x[0]}% esce il ${x[1].toFixed(1)}% (${x[2]}% delle partite)`).join(', ') + '. Le soglie valgono uguali in tutte le leghe misurate.\n'
-      + (contro ? `- ATTENZIONE: ${C.ma ? contro.replace(/il motore/g, 'il maestro').replace(/^Il motore/, 'Il maestro') : contro} Dillo.\n` : '')
-      + (qo ? `- Il tabellone (sezione 2) e' ricalcolato con le quote: 1X2, doppie chance, Over/Under e Goal/NoGoal con le probabilita' con le quote e le rese misurate su quelle; corner, tiri e gialli restano del motore. Misurato su ${TAB_QUOTE_RESA.partite} partite di ${TAB_QUOTE_RESA.leghe} leghe: la proposta in cima rende +${TAB_QUOTE_RESA.quote} punti sopra il giocarla alla cieca, contro +${TAB_QUOTE_RESA.motore} del motore.\n`
-            : `- Il tabellone (sezione 2) e' ricalcolato con le quote per 1X2 e doppie chance, con le rese misurate su quelle; Over/Under, Goal/NoGoal, corner, tiri e gialli restano del motore. Misurato su ${TAB_QUOTE_RESA.partite} partite di ${TAB_QUOTE_RESA.leghe} leghe: la proposta in cima rende +${TAB_QUOTE_RESA.quote} punti sopra il giocarla alla cieca, contro +${TAB_QUOTE_RESA.motore} del motore.\n`)
-      + `- Non e' un vantaggio sul bookmaker. Dato il mercato il motore non aggiunge niente: dove si discosta, il risultato va ancora piu' dalla parte del mercato (misurato in 12 leghe su 12). Giocare dove il motore da' a un esito piu' del mercato ha perso l'11-16% della posta, e anche il pick con le quote, giocato sempre alla quota media di chiusura, ha perso il 3% (il margine). Non presentare una differenza fra motore e mercato come un valore, e non usare le statistiche del motore per contraddire il mercato.`;
+      + `    con le quote:                  1 ${pc(P[0])} | X ${pc(P[1])} | 2 ${pc(P[2])}`;
+    const corpo = `\n    doppie chance con le quote:    1X ${pc(dc(P)[0])} | X2 ${pc(dc(P)[1])} | 12 ${pc(dc(P)[2])}\n`
+      + `- Con le quote il pick da seguire e' questo: ${nomi[iC]} (${chi[iC]}) al ${pp.toFixed(1)}%, confidence ${Math.round(pp)}/100, ${dove}.\n`;
+    const att = contro ? `- ATTENZIONE: ${C.ma ? contro.replace(/il motore/g, 'il maestro').replace(/^Il motore/, 'Il maestro') : contro} Dillo.\n` : '';
+    sez += testa + "   (il mercato un po' piu' deciso; dato il mercato il motore pesa meno di zero)" + corpo + QN.resa + '\n' + att + QN.tab(qo) + '\n' + QN.bookie;
+    sezG += testa + corpo + att + `- Tabellone (sezione 2) ricalcolato con le quote: ${qo ? '1X2, doppie chance, Over/Under e Goal/NoGoal' : '1X2 e doppie chance'}.`;
     sint += ' Ci sono le quote: il pick da citare e\' quello con le quote.';
   }
   const E = calcDCMatrix(C.lam[0], C.lam[1], C.rho), e15 = probsFromMatrix(E, 1.5).pOv, e25 = probsFromMatrix(E, 2.5), e35 = probsFromMatrix(E, 3.5).pOv;
@@ -3481,19 +3697,19 @@ function aggiornaQuote() {
       + `Margine del bookmaker: ${(100 * O.margine).toFixed(1)}%. `
       + (A ? 'Anche risultati esatti, handicap e multigol vengono da questa matrice (la loro card lo dice).</div>'
            : "Risultati esatti, multigol e handicap restano del motore: con le quote servono anche quelle dell'1X2.</div>");
-    sez += `\n- GOL CON LE QUOTE (${window.__QUOTE_FONTE_OU || "scritte dall'utente"}: Over 2.5 @${qo[0].toFixed(2)} | Under 2.5 @${qo[1].toFixed(2)}, margine ${(100 * O.margine).toFixed(1)}%)\n`
+    const golT = `\n- GOL CON LE QUOTE (${window.__QUOTE_FONTE_OU || "scritte dall'utente"}: Over 2.5 @${qo[0].toFixed(2)} | Under 2.5 @${qo[1].toFixed(2)}, margine ${(100 * O.margine).toFixed(1)}%)\n`
       + `    Over 2.5: ${C.ma ? 'maestro' : 'motore'} ${pc(e25.pOv)} | mercato ${pc(O.mercato)} | con le quote ${pc(O.comb)}\n`
       + (A ? `    con le quote (matrice dei gol allineata all'Over e all'1X2 con le quote): Over 1.5 ${pc(a15)} | Over 3.5 ${pc(a35)} | Goal ${pc(a25.pGG)} | NoGoal ${pc(1 - a25.pGG)}\n`
-           : `    Goal, Over 1.5 e 3.5 restano del motore: con le quote servono anche quelle dell'1X2.\n`)
-      + `- Misurato su ${QUOTE_OU_RESA.partite} partite di ${QUOTE_OU_RESA.leghe} leghe: con le quote l'Over/Under dalla parte piu' probabile esce il ${QUOTE_OU_RESA.tutte.toFixed(1)}% (senza quote ${QUOTE_OU_RESA.motore.toFixed(1)}%)`
-      + (A ? `, e Goal, Over 1.5 e Over 3.5 della matrice allineata sono piu' vicini al vero del motore in 11 leghe su 11 (l'Over 3.5 in 10)` : '')
-      + `. Anche qui il merito e' del mercato: dato il mercato il motore pesa zero, e giocare dove si discosta dal mercato sull'Over ha perso il ${QUOTE_OU_RESA.valore[0]}-${QUOTE_OU_RESA.valore[1]}% della posta (il lato con le quote, giocato sempre alla chiusura, il ${QUOTE_OU_RESA.sempre}%).\n`
-      + (A ? '' : `- Senza le quote dell'1X2 il tabellone (sezione 2) resta del solo motore: se con le quote l'Over/Under e' molto diverso, dillo accanto alla proposta.`);
+           : `    Goal, Over 1.5 e 3.5 restano del motore: con le quote servono anche quelle dell'1X2.\n`);
+    const senza = A ? '' : `- Senza le quote dell'1X2 il tabellone (sezione 2) resta del solo motore: se con le quote l'Over/Under e' molto diverso, dillo accanto alla proposta.`;
+    sez += golT + QN.ou(!!A) + '\n' + senza;
+    sezG += golT + senza;
     sint += ' Per Over/Under e Goal cita le probabilita\' con le quote.';
   } else if (q) {
     html += `<div style="margin-top:6px;font-size:11px;color:var(--dim);line-height:1.5">Goal e Over/Under restano del motore finch&eacute; mancano le quote dell'Over: `
       + `col solo 1X2 il Goal, inclinato come fa l'Elo, peggiora (misurato su 12 leghe).</div>`;
     sez += `\n- Goal e Over/Under: senza le quote dell'Over restano quelli del motore (col solo 1X2 il Goal peggiora: misurato).`;
+    sezG += `\n- Goal e Over/Under: senza le quote dell'Over restano quelli del motore.`;
   }
   box.innerHTML = html;
   const piccole = [...box.children].filter(e => e.tagName === 'DIV' && /font-size:\s*11px/.test(e.getAttribute('style') || ''));
@@ -3506,7 +3722,7 @@ function aggiornaQuote() {
   tabellone(P, Oq, Gq);
   sorpresa(P);
   _matriceCard(Aq || calcDCMatrix(C.lam[0], C.lam[1], C.rho), C.hName, !!Aq);
-  scriviPrompt(sez, sint);
+  scriviPrompt(sez, sint, sezG);
   window.__QUOTE_P = P; _giornataQuote(); renderInBreve();
 }
 
@@ -3953,7 +4169,7 @@ function _tabTesto(V) {
     + (sotto.length ? '\n- Sotto la base di lega di 5 punti o piu\' (qui questi esiti sono meno probabili del solito; non sono proposte): ' + lista(sotto) : '');
 }
 
-window.__SCANNER_BUILD = '0905-b87';
+window.__SCANNER_BUILD = '0905-b88';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -5500,58 +5716,48 @@ async function avviaScanner() {
       return out || '  (metriche avanzate non disponibili per questa partita)';
     })();
 
-    const _fuoriTxt = (() => {
-      const F = PICK_RESA.fuori[lId], V = Object.values(PICK_RESA.fuori);
-      if (F) return `- Questa lega (${F[0]}) non e' fra i cinque campionati: le soglie qui sopra non valgono. Misurata a parte su ${F[1]} partite (${F[5]}): il pick esce il ${F[2].toFixed(1)}% su tutte, e sopra il 55% il ${F[3].toFixed(1)}% (+/-${_seResa(F).toFixed(1)} su ${F[6]} partite), nel ${F[4]}% delle partite.`;
-      return `- Questa lega non e' mai stata misurata: soglie e confidence sono misurate su altre leghe, prendile come indicative. Nelle ${V.length} leghe provate fuori dai cinque campionati, sopra il 55% il pick e' uscito fra il ${Math.min(...V.map(x => x[3])).toFixed(1)} e il ${Math.max(...V.map(x => x[3])).toFixed(1)}%, in una quota del calendario fra il ${Math.min(...V.map(x => x[4]))} e il ${Math.max(...V.map(x => x[4]))}%.`;
-    })();
-    const _pickTxt = (() => {
+    const _NP = _notePrompt(!!_MA, lId);
+    const _pickTxt = G => {
       const lab = _pickProb === m1 ? `1 (vince ${hName})` : _pickProb === m2 ? `2 (vince ${aName})` : 'X (pareggio)';
       const pp = 100 * _pickProb, S = PICK_RESA.soglie.find(x => pp >= x[0]);
       const dove = S ? `sopra la soglia del ${S[0]}%: rientra nel ${S[2]}% di partite piu' sicure, dove nel complesso il pick esce il ${S[1].toFixed(1)}%`
         : pp >= 45 ? 'fra 45 e 50%: sotto la prima soglia di selezione'
         : "sotto il 45%: sull'1X2 questa partita non si seleziona";
-      return `- Il pick: ${lab} al ${pp.toFixed(1)}%. Confidence ${confidence}/100: e' la probabilita' del pick stessa (misurata nel backtest, non l'accordo fra i modelli).\n`
-        + (_MA && pp >= 65 ? `- Con un pick cosi' netto il maestro e' un po' prudente: misurato su 23.278 partite di 24 leghe, col pick al 65% o piu' dice in media il 72.4% ed esce il 76.1%.\n` : '')
-        + `- Dove sta nella selezione: ${dove}.\n`
-        + `- Soglie misurate su ${PICK_RESA.partite} partite di cinque campionati: `
-        + PICK_RESA.soglie.map(x => `>=${x[0]}% esce il ${x[1].toFixed(1)}% (${x[2]}% delle partite)`).join(', ')
-        + `; su tutte le partite ${PICK_RESA.tutte}%.`
-        + (PICK_RESA.leghe.includes(lId) ? '' : '\n' + _fuoriTxt);
-    })();
+      return `- Il pick: ${lab} al ${pp.toFixed(1)}%. Confidence ${confidence}/100${G ? '' : ': ' + _NP.conf}.\n`
+        + (_MA && pp >= 65 ? (G ? "- Pick al 65% o piu': il maestro qui e' un po' prudente.\n" : `- Con un pick cosi' netto il maestro e' un po' prudente: ${_NP.prudente}.\n`) : '')
+        + `- Dove sta nella selezione: ${dove}.`
+        + (G ? '' : '\n' + _NP.soglie + (PICK_RESA.leghe.includes(lId) ? '' : '\n' + _NP.fuori));
+    };
     const _tabTxt = _tabTesto(window.__VERDETTI || []);
-    const _eloTxt = (() => {
+    const _eloTxt = G => {
       const E = window.__ELO_DEBUG_OVER;
       const hfa = ELO._hfaClamp === 'basso' ? ` (ATTENZIONE: il valore grezzo e' ${Math.round(ELO._hfaRaw)}, tenuto al pavimento di 30: non e' una misura, e' un limite)`
         : ELO._hfaClamp === 'alto' ? ` (ATTENZIONE: il valore grezzo e' ${Math.round(ELO._hfaRaw)}, tenuto al tetto di 100: non e' una misura, e' un limite)`
         : ELO._hfaClamp === 'ripiego' ? ' (ATTENZIONE: meno di 50 partite in archivio, e\' il valore di ripiego)'
         : ` su ${ELO._nHfa} partite (${ELO._hW} vittorie casa contro ${ELO._aW})`;
-      let t = `- Rating: ${hName} ${eloH_ov} | ${aName} ${eloA_ov} (differenza ${(_eloDiff > 0 ? '+' : '')}${_eloDiff ?? 'N/D'}), vantaggio campo di lega +${Math.round(ELO._hfa)}${hfa}.\n`
-        + "- L'Elo impara dai soli risultati di tutte le partite di lega, passando da una squadra all'altra: misura la forza che i gol hanno mostrato, non come si gioca.";
-      if (_MA) return t + "\n- Nel verdetto l'Elo e' una delle variabili del maestro (rating, differenza, vantaggio campo), non decide da solo: quanto dice da solo su 1 contro 2 e' nella sezione 1.";
+      const t = `- Rating: ${hName} ${eloH_ov} | ${aName} ${eloA_ov} (differenza ${(_eloDiff > 0 ? '+' : '')}${_eloDiff ?? 'N/D'}), vantaggio campo di lega +${Math.round(ELO._hfa)}${hfa}.`
+        + (G ? '' : '\n' + _NP.eloImpara);
+      if (_MA) return t + (G ? '' : '\n' + _NP.eloMaestro);
       if (!E || !E.applied) return t + "\n- L'Elo NON sta inclinando i lambda: l'1X2 esce dal solo modello.";
-      return t + `\n- Pesa ${f2(E.w)} nel log-odds 1 contro 2 del verdetto: quanto dice da solo e' nella sezione 1.`
-        + "\n- L'Elo sposta il rapporto casa/trasferta tenendo fermo il totale dei gol attesi: l'Over/Under quasi non ne dipende, il Goal/NoGoal un po' si' (piu' la partita e' squilibrata, meno Goal).";
-    })();
-    const _origTxt = (() => {
+      return t + `\n- Pesa ${f2(E.w)} nel log-odds 1 contro 2 del verdetto: quanto dice da solo e' nella sezione 1.` + (G ? '' : '\n' + _NP.eloTilt);
+    };
+    const _origTxt = G => {
       const E = window.__ELO_DEBUG_OVER, Er = window.__ELO_DEBUG, pOf = lg => 100 / (1 + Math.exp(-lg)), f = x => x.toFixed(1) + '%';
       if (!E || !E.applied || !isFinite(E.lgElo) || !isFinite(E.lgModel)) return "- Da dove viene: l'Elo non e' disponibile, l'1X2 esce dal solo modello delle statistiche.";
       const pE = pOf(E.lgElo), pM = pOf(E.lgModel), pT = pOf(E.lgTarget), pR = Er && isFinite(Er.lgModel) ? pOf(Er.lgModel) : null;
       const pMa = 100 * m1 / (m1 + m2), div = Math.abs(pE - pM);
       let t = `- Da dove viene, su 1 contro 2 (pareggi esclusi, quanto vince ${hName} se qualcuno vince):\n`
         + `    Elo da solo ${f(pE)} | modello delle statistiche da solo ${f(pM)} GENERALE${pR != null ? ', ' + f(pR) + ' RUOLO' : ''} | motore (un quarto modello, tre quarti Elo) ${f(pT)}`
-        + (_MA ? ` | maestro ${f(pMa)}` : '') + '\n'
-        + "  Il modello legge xG, tiri e gol delle partite delle due squadre; l'Elo i soli risultati di tutta la lega. Misurato su 23.278 partite di 24 leghe:\n"
-        + "  da soli sbagliano in versi opposti (il modello e' troppo prudente, l'Elo troppo sicuro), per questo si combinano.";
+        + (_MA ? ` | maestro ${f(pMa)}` : '') + (G ? '' : '\n' + _NP.origine);
       if (_MA) {
         const vic = Math.abs(pMa - pM) < Math.abs(pMa - pE) ? 'al modello' : "all'Elo";
-        t += `\n  Il maestro non e' una media fissa dei due: li pesa, con le statistiche previste, come li peserebbe il mercato. Qui sta piu' vicino ${vic}.`
-          + (div >= 10 ? `\n  Elo e modello distano ${div.toFixed(1)} punti: spiega cosa vede ciascuno. Misurato col maestro, in queste partite lo sfavorito vince quanto dicono le probabilita' (il disaccordo e' gia' dentro il verdetto): non e' un rischio in piu'.` : '');
+        t += (G ? `\n  Il maestro sta piu' vicino ${vic}.` : `\n  ${_NP.maestroPesa} Qui sta piu' vicino ${vic}.`)
+          + (div >= 10 ? `\n  Elo e modello distano ${div.toFixed(1)} punti: spiega cosa vede ciascuno.${G ? '' : ' ' + _NP.disaccordo}` : '');
       } else if (div >= 10) {
         t += `\n  ATTENZIONE: Elo e modello distano ${div.toFixed(1)} punti e col peso ${f2(E.w)} DECIDE L'ELO: il verdetto 1X2 non viene dalle statistiche di questa partita ma dal rating di lega.`;
       }
-      return t + "\n- RUOLO e GENERALE sono lo stesso modello su due campioni: misurato su 24 leghe, il rendimento in casa o in trasferta della singola squadra non aggiunge niente al vantaggio campo della lega. Una differenza fra le due e' quasi sempre il rumore del campione piu' piccolo.";
-    })();
+      return t + (G ? '' : '\n' + _NP.ruoloGen);
+    };
     const _stancTxt = (() => {
       const F = window.__FATIGUE_DEBUG;
       if (!F || !F.H || !F.A) return '- non disponibile';
@@ -5563,7 +5769,7 @@ async function avviaScanner() {
         + `- Coppe europee: ${hName} ${eur(F.H)} | ${aName} ${eur(F.A)}`
         + (F.competizioni < 3 ? `\n- ATTENZIONE: archivio delle coppe europee incompleto (${F.competizioni} competizioni su 3): i conteggi possono essere bassi.` : '');
     })();
-    const _rischiTxt = (() => {
+    const _rischiTxt = G => {
       const R = [], E = window.__ELO_DEBUG_OVER;
       R.push('@@SORPRESA@@');
       if (!_MA && E && E.applied) { const pOf = lg => 100 / (1 + Math.exp(-lg)); const d = Math.abs(pOf(E.lgElo) - pOf(E.lgModel));
@@ -5573,102 +5779,70 @@ async function avviaScanner() {
       if (ELO._hfaClamp) R.push("Il vantaggio campo di lega e' un limite o un ripiego, non una misura.");
       const PS = window.__PRED_STATS || {};
       if (!PS.H || !Object.values(PS.H).some(v => v != null)) R.push('Statistiche avanzate non disponibili: la sezione 5 e\' vuota.');
-      if (!PICK_RESA.leghe.includes(lId)) R.push(PICK_RESA.fuori[lId] ? 'Lega fuori dai cinque campionati: le rese del tabellone sono misurate su quelli, non qui.'
-        : 'Lega mai misurata: soglie, confidence e rese del tabellone sono misurate su altre leghe.');
+      if (!G && !PICK_RESA.leghe.includes(lId)) R.push(_NP.fuoriRischio);
       const F = window.__FATIGUE_DEBUG;
       if (F && F.H && F.A && F.H.riposo != null && F.A.riposo != null && Math.abs(Math.min(F.H.riposo, 7) - Math.min(F.A.riposo, 7)) >= 3)
         R.push(`Riposo molto diverso (${F.H.riposo} contro ${F.A.riposo} giorni): solo contesto, misurato non sposta il risultato.`);
       return R.length ? R.map(x => '- ' + x).join('\n') : '- Nessun segnale di rischio calcolato.';
-    })();
+    };
 
-    let p = `SEI UN ANALISTA DI CALCIO CHE SA LEGGERE I NUMERI. Partita: ${hName} vs ${aName} (simulazione al ${dateInput}).
-Il tuo lavoro e' SPIEGARE, non ricalcolare. ${_MA ? "Il verdetto viene dal maestro mercato: dalle statistiche delle partite gia' giocate stima quello che direbbero le quote, imparato sulle quote di chiusura di 16.071 partite di 14 leghe e provato sui risultati di 13.592 partite di 33 leghe mai viste" : "Il verdetto viene dal motore (Dixon-Coles e Markov inclinati dall'Elo)"}. Soglie e rese sono misurate sul backtest (${PICK_RESA.partite} partite dei cinque campionati per le soglie del pick).
-
-COSA NON SA. Le probabilita' vedono solo le statistiche delle partite gia' giocate: non sanno di infortuni,
-squalifiche, formazioni, mercato o notizie.${_MA ? " Dell'1X2 delle quote di chiusura il maestro ne ricostruisce circa il 90%: il resto e' informazione che le statistiche non hanno." : ''}
-E il calcio resta incerto: sulle 335 partite giocate del 2026/27 dei cinque campionati anche il favorito del
-bookmaker non ha vinto il 44% delle volte. Nessun esito e' scontato, e un pick sbagliato non vuol dire un modello sbagliato.
-
-AMBITO DEI NUMERI. Ogni riga dice da quali partite viene. RUOLO = solo le gare in casa
-${artDel(hName)} e in trasferta ${artDel(aName)} (${dH.role.n} e ${dA.role.n} partite).
-GENERALE = le ultime ${dH.overall.n} e ${dA.overall.n} di qualunque tipo. Sono due campioni diversi:
-non mescolarli in una stessa frase senza dirlo.
-
-1. IL VERDETTO 1X2
-- Probabilita' (${_MA ? "maestro mercato: le probabilita' del motore imparate dal mercato e usate senza quote, misurato meglio del motore in 25 leghe su 33 mai viste" : _ensLabel}):
+    const _dati = G => `1. IL VERDETTO 1X2
+- Probabilita' (${_MA ? (G ? 'maestro mercato' : "maestro mercato: le probabilita' del motore imparate dal mercato e usate senza quote, misurato meglio del motore in 25 leghe su 33 mai viste") : _ensLabel}):
     1 ${pct(m1)} | X ${pct(mX)} | 2 ${pct(m2)}      quote eque: 1 @${oddM1} | X @${oddMX} | 2 @${oddM2}${_MA ? `
     ensemble del motore, prima del maestro: 1 ${pct(m1e)} | X ${pct(mXe)} | 2 ${pct(m2e)}` : ''}
-${_origTxt}
-${_pickTxt}@@QUOTE@@
+${_origTxt(G)}
+${_pickTxt(G)}@@QUOTE@@
 
-2. TABELLONE: cosa e' giocabile. Verdetti e rese sono misurati sul backtest: sono la parte
-piu' affidabile di questo prompt, NON ridiscuterli e non riclassificarli.
-FORTE e GIOCABILE vogliono dire che la proposta rende piu' del giocare quel mercato sempre,
-alla cieca, non che sia probabile: un 2 al 45% in una lega dove la trasferta vince il 29% e'
-giocabile anche se esce meno di una volta su due. Ogni proposta dice quanto rende DAVVERO il
-suo tipo di mercato, ed e' quel numero che conta, non l'etichetta. A parita' di scarto 1X2, mercati
-gol e chi fa piu' corner rendono piu' o meno quanto lo scarto promette; i mercati sui numeri (corner
-totali, tiri in porta, gialli) molto meno, soprattutto i FORTE (+${window.EDGE_BANDS[0][2].numeri[0].toFixed(1)} punti contro +${window.EDGE_BANDS[0][2]['1x2'][0].toFixed(1)} dell'1X2), e fuori dai
-cinque campionati ancora meno. Una doppia chance contiene l'esito singolo (X2 contiene il 2), e
-"Corner casa -1.5" e' contenuto in "Piu' corner casa" (lo stesso per la trasferta): non sono giocate
-indipendenti. Uno scarto sotto -5 non e' una proposta contraria: dice solo che quell'esito qui e'
-meno probabile del solito.
+2. TABELLONE${G ? '' : ": cosa e' giocabile. " + _NP.tab}
 @@TABELLONE@@
 
 3. ELO [partite di lega delle ultime tre stagioni]
-${_eloTxt}
+${_eloTxt(G)}
 
 4. RISCHI GIA' CALCOLATI
-${_rischiTxt}@@INDISP@@
+${_rischiTxt(G)}@@INDISP@@
 
 5. STATISTICHE AVANZATE PREVISTE PER QUESTA PARTITA [RUOLO]
-Previsione per questa sfida, non medie storiche: la media delle partite delle due squadre x (quanto
-produce la squadra) x (quanto concede l'avversario), con le gare di RUOLO.
-${_statBlocco}
-Quanto valgono (misurato su 23.278 partite di 24 leghe): il livello e' giusto ovunque (previsto
-e reale coincidono in media entro il 4%). Sulla differenza fra le due squadre le previsioni sono
-prudenti: per quelle che reggono, nel reale lo scarto e' di solito da 1 a 1.5 volte quello
-previsto. Uno scarto previsto netto va preso sul serio; uno piccolo resta piccolo.
-Servono a raccontare come si giochera' la partita, non a correggere il verdetto: ${_MA ? "il maestro usa gia' le\nstatistiche previste che pesano di piu' (xG, tiri, tocchi in area, possesso, field tilt, PPDA)" : "il verdetto e' gia' fatto\ndagli xG e dall'Elo"}. Una squadra che domina queste statistiche e
-che il verdetto da' sfavorita non e' una sorpresa annunciata.
-- Reggono bene: passaggi, conduzioni, progressivi, in area e nell'ultimo terzo, SCA, xT, key
-  passes, PPDA.
-- Valgono a meta': xAG, GCA, dribbling tentati, respinte.
-- Non usarle (il previsto non dice quasi niente sul reale): duelli aerei, contrasti, intercetti,
-  duelli vinti, blocchi, VAEP, PV, assist, secondi assist, SCA da tiro/fallo/dribbling.
+${G ? _statBlocco.replace(/\n$/, '') : _NP.stat1 + '\n' + _statBlocco + '\n' + _NP.stat2}
 
 6. QUALITA' E CINISMO [GENERALE]
-- NPxG contro xGOT: ${hName} ${f2(npxgH_gen)} vs ${xgotH > 0 ? f2(xgotH_m) : (xgShotH > 0 ? f2(xgShotH) + " (xG/tiro)" : "N/D")} | ${aName} ${f2(npxgA_gen)} vs ${xgotA > 0 ? f2(xgotA_m) : (xgShotA > 0 ? f2(xgShotA) + " (xG/tiro)" : "N/D")}${_numCorr ? ' (xGOT ristretto verso la media: lo scarto dall\'NPxG si ripete poco)' : ''}
+- NPxG contro xGOT: ${hName} ${f2(npxgH_gen)} vs ${xgotH > 0 ? f2(xgotH_m) : (xgShotH > 0 ? f2(xgShotH) + " (xG/tiro)" : "N/D")} | ${aName} ${f2(npxgA_gen)} vs ${xgotA > 0 ? f2(xgotA_m) : (xgShotA > 0 ? f2(xgShotA) + " (xG/tiro)" : "N/D")}${_numCorr && !G ? ' ' + _NP.xgot : ''}
 - Big Chances create/sprecate: ${hName} ${f1(bcH)}/${f1(bcmH)} | ${aName} ${f1(bcA)}/${f1(bcmA)}
 - Quota degli xG che viene da palla inattiva: ${hName} ${setPctH != null ? f1(setPctH) + '%' : 'N/D'} | ${aName} ${setPctA != null ? f1(setPctA) + '%' : 'N/D'}
 ${_numCorr ? '' : `- Gol per xG: ${hName} ${f2(effH_ov)} | ${aName} ${f2(effA_ov)}
 `}- Punti reali contro attesi dagli xG: ${hName} ${f2(pytH.ppgAct)} vs ${f2(pytH.ppgExp)} (${pytH.msg}) | ${aName} ${f2(pytA.ppgAct)} vs ${f2(pytA.ppgExp)} (${pytA.msg})${hiddenValueMsgClean && !/^Nessuno/.test(hiddenValueMsgClean) ? `
-- Accoppiamento notato (descrittivo, non misurato): ${hiddenValueMsgClean}` : ''}
-Misurato: la fortuna recente (gol o punti sopra o sotto gli xG) non anticipa il risultato, e segnare piu' o
-meno dei propri xG non si ripete da una partita all'altra: non sono argomenti per un esito.
+- Accoppiamento notato (descrittivo, non misurato): ${hiddenValueMsgClean}` : ''}${G ? '' : '\n' + _NP.fortuna}
 
-7. STILE [GENERALE, medie storiche: descrivono, non prevedono]
+7. STILE [GENERALE, medie storiche${G ? '' : ': descrivono, non prevedono'}]
 - Linea difensiva (altezza media): ${hName} ${defX_H > 0 ? f1(defX_H) + "m" : "N/D"} | ${aName} ${defX_A > 0 ? f1(defX_A) + "m" : "N/D"}; distanza fra baricentro offensivo e linea difensiva ${lenH > 0 ? f1(lenH) + "m" : "N/D"} | ${lenA > 0 ? f1(lenA) + "m" : "N/D"} (si ripete poco da una partita all'altra)
-- Riaggressione (Choke Index: recuperi entro 5 secondi rispetto al tempo per riprendere palla, piu' alto = riaggredisce di piu'): ${hName} ${chokeH > 0 ? f2(chokeH) : "N/D"} | ${aName} ${chokeA > 0 ? f2(chokeA) : "N/D"}; palle perse a partita ${f1(clumsyH)} | ${f1(clumsyA)}
+- Riaggressione (Choke Index${G ? '' : ': ' + _NP.choke}): ${hName} ${chokeH > 0 ? f2(chokeH) : "N/D"} | ${aName} ${chokeA > 0 ? f2(chokeA) : "N/D"}; palle perse a partita ${f1(clumsyH)} | ${f1(clumsyA)}
 - Baricentro offensivo: ${hName} ${avgX_H > 0 ? f1(avgX_H) + "m" : "N/D"} | ${aName} ${avgX_A > 0 ? f1(avgX_A) + "m" : "N/D"}; tocchi in area per ingresso nella trequarti ${f3H > 0 ? f1(penRateH) : "0"}% | ${f3A > 0 ? f1(penRateA) : "0"}%
 - Cross / dribbling / filtranti a partita: ${hName} ${f1(crossH)} / ${f1(dribH)} / ${f1(thruH)} | ${aName} ${f1(crossA)} / ${f1(dribA)} / ${f1(thruA)}
 - Modulo abituale: ${hName} ${formH_disp} | ${aName} ${formA_disp}
 
 8. GOL, TEMPI DEI GOL E MERCATI SUI NUMERI
-- Gol attesi [${_MA ? 'MAESTRO' : 'RUOLO'}, senza quote]: ${hName} ${f2(lamH_mix)} | ${aName} ${f2(lamA_mix)}, totale ${f2(lamH_mix + lamA_mix)}. Over 1.5 ${pct(probsFromMatrix(dcMat, 1.5).pOv)} | Over 2.5 ${pct(probsGol.pOv)} | Over 3.5 ${pct(probsFromMatrix(dcMat, 3.5).pOv)} | Goal ${pct(probsGol.pGG)}
-  Misurato: in media sono giusti, ma distinguono poco una partita dall'altra (AUC dell'Over 2.5 e del Goal intorno a 0.55):
-  qualche punto sopra o sotto la media della lega e' quasi rumore. Il tabellone dice se uno scarto conta.
-- Almeno un gol nel primo tempo ${pct(probGoalHT)}, entro il 30' ${pct(probGoal30)}: calibrati, ma valgono poco piu' della frequenza della lega.${_numCorr ? `
-- Almeno un gol nei primi 15' ${pct(1 - Math.exp(-lamTot * NUMERI_REG.FORMA_TEMPI[0]))}, negli ultimi 15' ${pct(1 - Math.exp(-lamTot * NUMERI_REG.FORMA_TEMPI[5]))} (stessa quota per fascia in tutte le partite: misurato, i minuti in cui segnano o subiscono le due squadre non dicono quando si segnera')` : `
+- Gol attesi [${_MA ? 'MAESTRO' : 'RUOLO'}, senza quote]: ${hName} ${f2(lamH_mix)} | ${aName} ${f2(lamA_mix)}, totale ${f2(lamH_mix + lamA_mix)}. Over 1.5 ${pct(probsFromMatrix(dcMat, 1.5).pOv)} | Over 2.5 ${pct(probsGol.pOv)} | Over 3.5 ${pct(probsFromMatrix(dcMat, 3.5).pOv)} | Goal ${pct(probsGol.pGG)}${G ? '' : '\n' + _NP.golNota}
+- Almeno un gol nel primo tempo ${pct(probGoalHT)}, entro il 30' ${pct(probGoal30)}${G ? '.' : ': ' + _NP.tempi}${_numCorr ? `
+- Almeno un gol nei primi 15' ${pct(1 - Math.exp(-lamTot * NUMERI_REG.FORMA_TEMPI[0]))}, negli ultimi 15' ${pct(1 - Math.exp(-lamTot * NUMERI_REG.FORMA_TEMPI[5]))}${G ? '' : ' ' + _NP.fasce}` : `
 - Gol fatti/subiti [GENERALE] ${hName}: 1-15' ${bHs['1-15']}/${bHc['1-15']}, 76-90' ${bHs['76-90+']}/${bHc['76-90+']} | ${aName}: 1-15' ${bAs['1-15']}/${bAc['1-15']}, 76-90' ${bAs['76-90+']}/${bAc['76-90+']}`}
-- Attesi (quelli del tabellone): corner ${f1(advRole.lCor)}, tiri in porta ${f1(advRole.lSot)}, gialli ${f1(advRole.lYel)}, falli ${f1(advRole.lFls)}.
-  Quanto valgono, misurato: il totale dei corner vale quanto la frequenza della lega; i tiri in porta si prevedono poco;
-  i gialli un po' (con l'arbitro di piu'); i falli sono il numero che si prevede meglio.${_ARB ? `
-- ${testoArbitro(_ARB, lId)}${_ARB.fattore ? ' L\'arbitro sposta i gialli in Serie A e LaLiga: test registrato su 850 partite.' : ''}` : ''}${advRole.cd ? `
-- Chi fa piu' corner (il totale diviso fra le due squadre, dai corner previsti e dall'Elo): ${hName} ${pct(advRole.cd.pH)}, stesso numero ${pct(advRole.cd.pX)}, ${aName} ${pct(advRole.cd.pA)}; ${hName} con almeno 2 corner in piu' ${pct(advRole.cd.hc['-1.5'])}, ${aName} con almeno 2 in piu' ${pct(1 - advRole.cd.hc['1.5'])}. Il totale dei corner quasi non si prevede, chi ne fa di piu' si': test registrato su 7.120 partite di 24 leghe, calibrato` : ''}
+- Attesi (quelli del tabellone): corner ${f1(advRole.lCor)}, tiri in porta ${f1(advRole.lSot)}, gialli ${f1(advRole.lYel)}, falli ${f1(advRole.lFls)}.${G ? '' : '\n' + _NP.numeri}${_ARB ? `
+- ${testoArbitro(_ARB, lId)}${_ARB.fattore && !G ? ' ' + _NP.arbitro : ''}` : ''}${advRole.cd ? `
+- Chi fa piu' corner (il totale diviso fra le due squadre, dai corner previsti e dall'Elo): ${hName} ${pct(advRole.cd.pH)}, stesso numero ${pct(advRole.cd.pX)}, ${aName} ${pct(advRole.cd.pA)}; ${hName} con almeno 2 corner in piu' ${pct(advRole.cd.hc['-1.5'])}, ${aName} con almeno 2 in piu' ${pct(1 - advRole.cd.hc['1.5'])}${G ? '.' : '. ' + _NP.corner}` : ''}
 
-9. STANCHEZZA (solo contesto: misurato su ${PICK_RESA.partite} partite, il vantaggio di riposo non migliora la previsione)
-${_stancTxt}
+9. STANCHEZZA (solo contesto${G ? '' : ': ' + _NP.stanc})
+${_stancTxt}`;
+    const _ambito = `AMBITO DEI NUMERI. Ogni riga dice da quali partite viene. RUOLO = solo le gare in casa
+${artDel(hName)} e in trasferta ${artDel(aName)} (${dH.role.n} e ${dA.role.n} partite).
+GENERALE = le ultime ${dH.overall.n} e ${dA.overall.n} di qualunque tipo. Sono due campioni diversi:
+non mescolarli in una stessa frase senza dirlo.`;
+    let p = `SEI UN ANALISTA DI CALCIO CHE SA LEGGERE I NUMERI. Partita: ${hName} vs ${aName} (simulazione al ${dateInput}).
+${_NP.lavoro}
+
+${_NP.nonSa}
+
+${_ambito}
+
+${_dati(false)}
 
 ISTRUZIONI
 Scrivi in italiano, senza preamboli, un'analisi completa in queste cinque sezioni, in
@@ -5718,23 +5892,11 @@ risultato esatto.
 Cosa rende questa previsione meno solida. Parti dalla sezione 4 e spiega ogni rischio in
 concreto per questa partita; la stanchezza (sezione 9) citala solo come contesto.
 
-REGOLE (valgono per tutte le sezioni; non sono una sezione da scrivere)
-- Non riclassificare i verdetti, non proporre mercati che il tabellone non elenca, non
-  inventare probabilita' o rese.
-- Non pronosticare un risultato esatto e non usare "certo", "sicuro", "esplosione", "goleada".
-- Nei cinque campionati misurati il pick esce nel ${PICK_RESA.tutte}% delle partite e nel ${PICK_RESA.soglie[0][1].toFixed(1)}% di quelle sopra il ${PICK_RESA.soglie[0][0]}%: non promettere di piu'.
-- Non mescolare RUOLO e GENERALE in una stessa frase senza dire quale usi.
-- Stanchezza e fortuna recente non anticipano il risultato (misurato): contesto, mai motivo
-  per spostare un verdetto. Lo stesso per tutto quello che il prompt dice che non si ripete o
-  non si prevede: non e' un argomento per un esito.
-- Le statistiche delle sezioni 5-8 spiegano il verdetto, non lo correggono: non scrivere che una
-  squadra "dovrebbe" vincere piu' di quanto dice la sezione 1, e non usarle per contraddire le quote.
-- Il verdetto non sa di infortuni, squalifiche, formazioni e notizie: se nel testo ti viene da
-  parlarne, dillo come limite, non inventare chi gioca. Gli indisponibili segnati dall'utente
-  (sezione 4, se ci sono) sono fatti: usali come rischio e nel racconto, senza ricalcolare.
-- Se un dato e' N/D, dillo invece di aggirarlo.`;
+${_NP.regole}`;
 
     window.__PROMPT_BASE = p; window.__TAB_TXT_MOTORE = _tabTxt; window.__SORPRESA_TXT_MOTORE = testoSorpresa(_sorpresa, hName, aName);
+    window.__SORPRESA_TXT_MOTORE_G = testoSorpresa(_sorpresa, hName, aName, null, true);
+    window.__PROMPT_DATI = `Ambito: RUOLO ${dH.role.n} partite in casa ${artDel(hName)} e ${dA.role.n} in trasferta ${artDel(aName)}; GENERALE le ultime ${dH.overall.n} e ${dA.overall.n}.\n\n${_dati(true)}`;
     window.__QUOTE_CTX = { p: [m1, mX, m2], pm: [m1e, mXe, m2e], hName, aName, lam: [lamH_mix, lamA_mix], rho: RHO, ma: !!_MA };
     document.getElementById('ai-prompt').value = p.replace('@@QUOTE@@', '').replace('@@QUOTE_SINTESI@@', '').replace('@@TABELLONE@@', () => _tabTxt)
       .replace('@@SORPRESA@@', () => window.__SORPRESA_TXT_MOTORE).replace('@@INDISP@@', () => testoIndisp());
