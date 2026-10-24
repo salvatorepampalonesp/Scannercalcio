@@ -854,8 +854,9 @@ niente: la matrice allineata ordina il Goal meglio della sua quota, che ne corre
 handicap asiatico, Goal) il mercato sta più vicino al vero del motore, e dato il mercato il motore non aggiunge niente.
 Giocare la favorita del mercato alla chiusura rende −3.1% della posta, il pick del motore −5.8%; dove i due non sono
 d'accordo la favorita vince il 42.7%, il pick del motore il 26.1%. Il valore del motore sta dove le quote non ci sono:
-le 43 leghe senza quote automatiche, i gialli (con l'arbitro, in Serie A e LaLiga), falli, tiri, i giocatori. Vedi *Il
-motore contro il mercato*.
+le 43 leghe senza quote automatiche, i gialli (con l'arbitro, in Serie A e LaLiga), falli, tiri, i giocatori. Il 24 ottobre,
+per fascia di disaccordo, su 2.102 partite (1.767 di nove leghe che il maestro non ha mai visto): dove lo Scanner vede più
+sorpresa delle quote, la sorpresa esce meno di quanto dicono le quote. Vedi *Il motore contro il mercato*.
 
 **Le quote passate e l'undici** (misura del 24 ottobre 2026). Dove le quote della partita non ci sono ancora, un rating
 delle squadre dalle quote di chiusura delle partite già giocate vale quasi quanto le quote della settimana: +1.24 punti di
@@ -996,6 +997,7 @@ non passa mai +7.1. Trascina con sé il `12`.
 
 | campione | partite | note |
 |---|---|---|
+| **Il disaccordo con le quote** | **1.990 · 335** | Solo descrittivo del 24 ottobre 2026 (vedi *Il motore contro il mercato*, «Quando lo Scanner e le quote non sono d'accordo»). Il 2026 di Allsvenskan, Eliteserien, J. League, MLS, Liga Profesional e Série A brasiliana e il 2026/27 di Bundesliga austriaca, Superligaen e Liga MX col `b90` (`batch/disaccordo`), 1.990 su 1.990 in copia conforme, Elo identico su ogni file, 20.668 chiamate: mai usate per il maestro né aperte per altro. Più il 2026/27 dei cinque campionati (`batch/2627b89`). Guardato solo l'1X2 dello Scanner contro la chiusura di football-data |
 | **Il confronto contro squadre simili** | **7.392** | Solo esplorazione del 24 ottobre 2026 (vedi *Il confronto contro squadre simili*). `/stats` e `/advanced` di tutte le partite di lega di 11 campionati dal 2024/25 (`batch/stile`, 17.183 chiamate), con le quote di chiusura di football-data: guardati KNN, stili e residui sul mercato di 1X2, pareggi e Over 2.5; poi la card con tutte le 30 partite e altre metriche (4.112 partite) |
 | **Le quote passate e l'undici** | **46.177 · 340 · 3.596** | Solo esplorazione del 24 ottobre 2026 (vedi *Il rating dalle quote passate*). I file di football-data di 18 leghe, 2017/18–2026/27 (`batch/fd`), misurati dal 2019/20: guardati 1X2 e prese per il rating dalle quote passate. Il 2026/27 dei cinque campionati col `b89` (`batch/2627b89`), 340 su 340 in copia conforme, Elo identico su ogni file, 7.516 chiamate: maestro contro rating. `/lineups` e `/players` dei cinque campionati dal 2024/25 (`batch/giocatori`, 7.934 chiamate): la qualità dell'undici. Per un test di queste due domande servono leghe e partite nuove |
 | **Il 2026/27 dei cinque campionati col `b85`** | **335** | Premier 68, LaLiga 86, Ligue 1 61, Bundesliga 51, Serie A 69, le partite giocate fino al 21 ottobre 2026: batch automatico del `b85` (`batch/2627b85`), 335 su 335 in copia conforme, Elo identico su ogni file, 7.491 chiamate in 15 minuti. Aperte per il rischio sorpresa, livello e sfavorito che vince (vedi *L'avviso di sorpresa*, «Sul 2026/27»), e per il confronto con le quote di chiusura (vedi *Il motore contro il mercato*, «Il 2026/27»). Sono partite del test dei tocchi in area (dal 3 ottobre): lì i tocchi non sono stati guardati |
@@ -3901,6 +3903,53 @@ prevede 72.4% ed esce il 76.1%; nelle altre fasce sta entro 2 punti. Una ricalib
 porta a 73.3 contro 74.2%, ma vale −0.13‰ di logloss (`z = −0.64`, 10 leghe su 22): il pick non cambia, cambia il numero
 mostrato. Con i bersagli di Shin la fascia alta si raddrizzava e le altre si spostavano (test non passato).
 
+**Quando lo Scanner e le quote non sono d'accordo** (24 ottobre 2026, solo descrittivo). L'utente: «se motore e quote non
+sono d'accordo le sorprese escono più spesso? Possiamo analizzare un range di disaccordo?». `python3 strumenti/disaccordo.py
+batch/disaccordo batch/2627b89` rifà tutto in pochi secondi.
+
+*I dati*:
+- il 2026 di Allsvenskan, Eliteserien, J. League, MLS, Liga Profesional e Série A brasiliana e il 2026/27 di Bundesliga
+  austriaca, Superligaen e Liga MX. Batch automatico del `b90` (`batch/disaccordo`): 1.990 partite in copia conforme, Elo
+  identico su ogni file, 20.668 chiamate. Leghe che il maestro non ha visto nell'allenamento, partite mai aperte per altro;
+- agganciate alla chiusura media di football-data (file `new`) 1.767, col punteggio uguale (4 diverse, scartate). Del
+  Giappone solo da agosto: football-data non ha la mezza stagione di febbraio–giugno 2026;
+- in più il 2026/27 dei cinque campionati (`batch/2627b89`, 335 agganciate);
+- il mercato è la chiusura col margine tolto in proporzione (margine medio 8.1% sulle leghe nuove, 6.1% sui cinque
+  campionati).
+
+*Per fascia di disaccordo*: lo Scanner meno il mercato, in punti, sulla probabilità del favorito del mercato (2.102 partite).
+
+| lo Scanner sul favorito del mercato | partite | vince il favorito: mercato / Scanner / esce | vince lo sfavorito: mercato / Scanner / esce | il favorito alla chiusura |
+|---|---|---|---|---|
+| 8 punti o più sotto | 277 | 55.1 / 44.0 / **61.0** ±5.9 | 21.3 / 29.9 / **16.6** ±4.5 | +2.2% ±10.3 |
+| 4–8 sotto | 425 | 51.8 / 46.0 / **54.1** ±4.8 | 23.3 / 27.8 / **21.2** ±4.0 | −4.1% ±8.9 |
+| 1.5–4 sotto | 371 | 49.4 / 46.7 / **50.4** ±5.2 | 24.8 / 27.1 / **22.4** ±4.3 | −7.7% ±9.9 |
+| d'accordo (±1.5) | 422 | 48.6 / 48.6 / **48.1** ±4.9 | 25.0 / 25.3 / **25.4** ±4.2 | −8.1% ±9.7 |
+| 1.5–4 sopra | 300 | 47.2 / 49.9 / **43.3** ±5.7 | 25.6 / 24.2 / **28.7** ±5.2 | −16.2% ±11.4 |
+| 4–8 sopra | 222 | 46.5 / 52.3 / **46.8** ±6.7 | 25.8 / 22.1 / **28.4** ±6.1 | −7.4% ±13.6 |
+| 8 o più sopra | 85 | 44.4 / 54.9 / **48.2** ±10.8 | 27.5 / 20.4 / **23.5** ±9.2 | +0.1% ±23.1 |
+
+- *Il risultato segue il mercato, non lo Scanner.* Dove lo Scanner vede più sorpresa delle quote (le prime due righe, un
+  terzo delle partite) la sorpresa esce meno di quanto dicono le quote. Dove ne vede meno, un po' di più. I pareggi stanno
+  entro 3 punti dal mercato in ogni fascia.
+- *Dato il mercato, il disaccordo pesa contro lo Scanner.* Su 1 contro 2 (1.559 partite senza pari), `logit = a + b·log(p1/p2)
+  del mercato + c·(Scanner meno mercato)`: `c` −0.31 ±0.20 (`z = −1.54`), sulle sole leghe nuove −0.36 ±0.22, col motore di
+  prima del maestro −0.22 ±0.16. È lo stesso verso del motore `b48` su 11.902 partite (−0.19 ±0.08, negativo in 12 leghe su 12).
+- *Coi favoriti diversi* (244 partite, l'11.6%): il pick dello Scanner vince il 30.7% ±5.9 (lo Scanner diceva 39.1, il
+  mercato 32.1), il favorito del mercato il 36.9% ±6.2 (il mercato diceva 39.4), il pareggio il 32.0% (il mercato 28.8). Il
+  pick dello Scanner vince quanto gli dà il mercato.
+- *Giocare dove lo Scanner dà più del mercato* (l'esito con lo scarto più grande, alla chiusura): +0…+3 punti −9.5% ±10.2 (908
+  giocate), +3…+5 −19.2% ±13.0, +5…+8 −17.5% ±13.4, +8…+12 +1.3% ±21.8 (199), +12 e oltre −38.4% ±37.1 (40). Sempre il
+  favorito del mercato −6.4% ±4.2.
+- *Il favorito del mercato dove lo Scanner vede 8 punti o più di sorpresa in più* rende +2.2% ±10.3, contro il −8% delle
+  partite d'accordo. È una fascia scelta guardando, dentro il rumore, e la ricerca del `b58` non ha trovato fette dove il
+  mercato si batte (vedi *Battere il bookmaker: la regola della ricerca*): per dirlo servono una regola scritta prima e
+  partite nuove.
+- *Per lega* lo Scanner sta più lontano dal vero del mercato in 12 leghe su 14: logloss 1X2 da −9.2‰ (Giappone) a +50.6‰
+  (LaLiga), sulle leghe nuove +13.8‰ ±6.2.
+- *Trovato strada facendo*: nel Brasile 2026 il clamp dell'HFA morde su 269 partite su 269 (grezzo 116–118, tenuto a 100).
+  Col grezzo, sulle 199 partite senza pari, −2.0‰ ±4.8: dentro il rumore.
+
 ### Il rating dalle quote passate
 
 Chiesto dall'utente il 24 ottobre 2026: «dobbiamo aumentare la percentuale di prese, facciamoci venire idee. Rianalizza
@@ -5438,7 +5487,7 @@ scrittura nuova, il messaggio iniziale). Il banco la verifica a parte, premendo 
 | `ELO_INGRESSO` / `ELO_RITORNO` / `ELO_PENDENZA` | `'uscite'` / 180 / `'netta'` | procedura senza parametri stimati (`b48`); 180 è una definizione | registrata prima del batch `b47`; cinque leghe −0.00375, `z = −2.64`, residuo delle neopromosse da −7.3 a −0.5 punti; tre leghe nuove −0.00076, nessuna oltre `z = +1`. 180 sta fra la pausa più lunga dentro una lega (106 giorni) e il ritorno più breve (454). Vedi *Le neopromosse* |
 | `ELO_GAP_THRESHOLD` / `TAU` / `ASY` | 45 / 360 / 0.9 | `τ` scelto dove smette di costare (`b30`) | la logloss cala in modo monotono fino a τ infinito; da 360 in su il guadagno residuo è 0.0005. Non misurato sulla pausa estiva (33 partite) |
 | K dell'Elo | 30 sotto le 15 partite, poi 20 | a mano, verificato `b30` | alzare K porta la pendenza a 1 ma peggiora la logloss oltre 40/28: si tara la conversione, non il rating |
-| clamp dell'HFA | [30, 100], con ≥50 partite | paracadute misurato, inerte (`b41`) | 0 righe su 1134 in copia conforme (`lgN` ≥ 760). Il 27.6% del `b35` erano archivi corti (< 600 partite), che lo Scanner in produzione non ha. Alternativa esposta e inutile: `ELO_HFA_MODE = 'shrink'`, `ELO_HFA_PRIOR` 65, `ELO_HFA_K` 200 (−0.00027, `z = −1.25`) |
+| clamp dell'HFA | [30, 100], con ≥50 partite | paracadute misurato, inerte (`b41`) | 0 righe su 1134 in copia conforme (`lgN` ≥ 760). Il 27.6% del `b35` erano archivi corti (< 600 partite), che lo Scanner in produzione non ha. Alternativa esposta e inutile: `ELO_HFA_MODE = 'shrink'`, `ELO_HFA_PRIOR` 65, `ELO_HFA_K` 200 (−0.00027, `z = −1.25`). Nella Série A brasiliana 2026 (`batch/disaccordo`) morde su 269 partite su 269, col grezzo a 116–118: senza il tetto −2.0‰ ±4.8 su 1 contro 2, dentro il rumore |
 | `ELO_TILT_MAX` | 0.60 | paracadute misurato | mai toccato; inclinazione massima osservata 0.215 fino al `b35`, 0.49 in copia conforme (`b41`, storico 30), 0.49 stimata anche col candidato |
 | `SHRINK_K` | 4 | misurata `b35`–`b37`, riconfermata `b41` | 12 e 28 peggiori a 5σ; sotto 4 migliora l'1X2 (−0.0016, `z = −3.03`) ma i gol pagano +0.0056. `b41`, copia conforme e zero clamp: a 2 l'1X2 −0.00069 (`z = −3.30`), la somma +0.00155; Premier −0.00079 (`z = −3.42`) e +0.00136; LaLiga −0.00052 e +0.00025; Bundesliga −0.00052 e +0.00321 (`z = 3.40`); Ligue 1 +0.00001 e +0.00087 |
 | `SHRINK_LAM_K` | 3 | a mano, misurata `b37` e `b41` | `b37`: ottimo del Brier Over fra 5 e 8, `z = −1.82`, segno ribaltato nel 2022/23. `b41`: in Serie A monotono fino a 20, miglior `z = −1.99` a 5, 3 stagioni su 3; in Premier il 2023/24 si ribalta (+0.00131 a 5, +0.0081 a 20); in LaLiga piatta a 5 e peggio da 8 in su; in Bundesliga meglio a 5 (`z = −2.69`, 3 stagioni su 3); in Ligue 1 meglio a 5 (`z = −1.26`). Tre leghe sì, una no, una ribaltata: resta 3 |
@@ -5794,6 +5843,7 @@ misurate.
 | Le sorprese per periodo dell'anno: mese, fase della stagione, dopo le soste, turni infrasettimanali, feste (solo descrittivo, 16 ottobre 2026) | **solo dicembre, e il mercato lo sa già** | 23.278 partite delle 24 leghe, sfavorito del maestro. Fase (giornate 1–5, 6–10, fino a metà, seconda metà, ultime 6): χ² 1.9 su 4 attorno alla media. Dopo le soste per le nazionali +0.3 ±2.2 punti, turni infrasettimanali −1.3 ±1.1, 20 dicembre – 7 gennaio −2.4 ±2.6. Mese: χ² 21.0 su 11. Spicca dicembre: lo sfavorito vince il 21.2% contro il 24.4% previsto, 2.6 punti sotto il resto dell'anno (±2.0), in tutti e tre i dicembri (−5.0 / −1.5 / −3.0) e in 11 leghe su 15; pareggi normali. Contro le quote di chiusura dicembre sta −0.9 ±2.4 rispetto al resto dell'anno: lo sanno già. Scelto fra 12 mesi: da provare, se serve, su un dicembre nuovo |
 | Il maestro coi bersagli dell'1X2 tolti alla Shin invece che in proporzione (regola registrata) | **no** | esplorazione sulle 14 leghe del maestro −0.51‰ (`z = −3.03`, 10 su 14), pendenza 1 contro 2 da 1.12 a 1.06; test sulle 33 leghe del test del maestro −0.14‰ (`z = −0.81`), 16 su 33. Lì il maestro del `b77` non era timido con gli sfavoriti (25.53% previsti, 25.52% vinti). Vedi *Il maestro coi bersagli di Shin: la regola* |
 | La diagonale gonfiata di Karlis–Ntzoufras (`δ` sui pareggi da 1-1 in su) sopra la matrice del maestro (solo descrittivo) | **quasi niente: il maestro ha chiuso il buco** | 23.278 partite delle 24 leghe, fuori lega `δ` 0.08–0.10: risultato esatto −0.42‰ (`z = −1.89`), Goal −0.28‰, Over 2.5 +0.16‰ (`z = +4.54`). Pareggi della matrice 24.4 → 25.6% contro 25.5% reali. Sulla matrice del `b63` valeva −1.80‰. Vedi *Da fare* |
+| Il disaccordo fra lo Scanner e le quote come segnale di sorpresa (solo descrittivo) | **no, al contrario** | 2.102 partite di 14 leghe, chiusura di football-data: dove lo Scanner crede al favorito del mercato 8 punti o più meno delle quote (277 partite) il favorito vince il 61.0%, contro il 55.1% del mercato e il 44.0% dello Scanner; dato il mercato il disaccordo pesa −0.31 ±0.20 su 1 contro 2. Coi favoriti diversi il pick dello Scanner vince il 30.7%, il favorito del mercato il 36.9%. Vedi *Il motore contro il mercato*, «Quando lo Scanner e le quote non sono d'accordo» |
 | Un rating delle squadre dalle quote di chiusura delle partite già giocate, quando le quote della partita non ci sono ancora (solo esplorazione) | **sì, da registrare** | 46.177 partite di 18 leghe dal 2019/20, fuori lega: prese 49.11 (Elo) → 50.35%, logloss −12.67‰ (`z = −16.17`), 18 leghe su 18; quote di prima della partita 50.58%, chiusura 50.85%. R² sulla chiusura 0.928 (Elo 0.802). Sul 2026/27 dei cinque campionati R² 0.900 contro 0.888 del maestro, 0.927 insieme. Con le quote della partita non aggiunge niente. Vedi *Il rating dalle quote passate* |
 | Il confronto contro squadre simili con più dati: il KNN su tutta la storia, i residui sul mercato, la risposta di ogni squadra allo stile dell'avversario, gli incastri di stile, pareggi e gol fra squadre simili (solo esplorazione) | **no** | 6.445 partite di 11 campionati dal 2024/25, storia mediana di 36 partite: i punti contro le simili misurano la forza (correlazione +0.344) ma sul residuo del mercato −0.006 (`z = −0.5`), dell'Elo +0.010; il rendimento particolare contro un tipo di avversario +0.015 (`z = +1.2`, 5 leghe su 11); la risposta allo stile da −0.003 a +0.004; 144 incastri fuori lega R² sotto zero; pareggi e Over fra stili simili dentro ±2.5 punti. Vedi *Il confronto contro squadre simili* |
 | La card «contro squadre simili» con tutte le 30 partite invece della stessa sede, e con altre metriche per dire chi è simile: il profilo dell'avversario prima della partita, solo la forza, lo stile, il rating dalle quote passate, l'Elo (solo esplorazione) | **le 30 sì per la card (nella card dal `b90`), la somiglianza no** | 4.112 partite di 11 campionati: coi punti della partita 0.294 → 0.338 con le 30 e la sede corretta (+0.044 ±0.016, 11 leghe su 11), errore a schermo ±0.39 → ±0.28; la card fa un po' peggio dei punti semplici delle stesse partite (0.294 contro 0.308), e la metrica migliore li raggiunge (0.351 contro 0.349); sopra l'Elo `z` ≤ +1.8, sul residuo del mercato fra −0.002 e +0.006. Tre delle 11 dimensioni di `KNN_DIMS` leggono la squadra stessa invece dell'avversario: correggerle non cambia niente. Vedi *Il confronto contro squadre simili* |

@@ -8,8 +8,8 @@
 # batch/quote) per data e nomi, col punteggio come prova. Lo Scanner e' l'1X2 delle righe 1, X, 2 (dal b77 il maestro);
 # il motore prima del maestro sta nelle righe Maestro:. Il mercato e' la chiusura media col margine tolto in proporzione.
 # Stampa: chi vince per fascia della differenza Scanner meno mercato sul favorito del mercato; le partite coi favoriti
-# diversi; ogni esito a cui lo Scanner da' piu' del mercato, con la resa alla quota di chiusura; il peso dello Scanner
-# dato il mercato su 1 contro 2. Solo descrittivo.
+# diversi; ogni esito a cui lo Scanner da' piu' del mercato, e il favorito e lo sfavorito del mercato per fascia, con la resa
+# alla quota di chiusura; il peso dello Scanner dato il mercato su 1 contro 2. Solo descrittivo.
 import os, re, sys, io, csv, glob, math, collections, importlib.util, urllib.request, datetime as dt
 import numpy as np
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__))); os.chdir(ROOT)
@@ -118,6 +118,14 @@ for a, b in ((0, 3), (3, 5), (5, 8), (8, 12), (12, 99)):
           f' | {100 * r.mean():+6.1f}% ±{200 * r.std() / math.sqrt(k.sum()):.1f} | {O[k][np.arange(k.sum()), best[k]].mean():.2f}')
 r = (y == Mk.argmax(1)) * O[idx, Mk.argmax(1)] - 1
 print(f'   per confronto, sempre il favorito del mercato: {100 * r.mean():+.1f}% ±{200 * r.std() / math.sqrt(n):.1f}')
+print('\n   Il favorito e lo sfavorito del mercato giocati alla chiusura, per fascia della tabella 1:')
+for a, b in ((-99, -8), (-8, -4), (-4, -1.5), (-1.5, 1.5), (1.5, 4), (4, 8), (8, 99)):
+    k = (d >= a) & (d < b)
+    if not k.any(): continue
+    rf = (y[k] == fav[k]) * O[k][np.arange(k.sum()), fav[k]] - 1; rd = (y[k] == dog[k]) * O[k][np.arange(k.sum()), dog[k]] - 1
+    nome = f'{a:+g}…{b:+g}'.replace('-99…', 'sotto ').replace('…+99', ' e oltre')
+    print(f'   {nome:>12} {k.sum():>7} | favorito {100 * rf.mean():+6.1f}% ±{200 * rf.std() / math.sqrt(k.sum()):.1f} (quota {O[k][np.arange(k.sum()), fav[k]].mean():.2f})'
+          f' | sfavorito {100 * rd.mean():+6.1f}% ±{200 * rd.std() / math.sqrt(k.sum()):.1f} (quota {O[k][np.arange(k.sum()), dog[k]].mean():.2f})')
 
 nd = y != 1
 def peso(X):
