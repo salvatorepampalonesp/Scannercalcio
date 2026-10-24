@@ -539,8 +539,20 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   regola*, «Esito».
 - [ ] **La card del KNN, da decidere con l'utente.** «Contro squadre simili» misura la forza, non un incastro: su 6.445 partite di 11
   campionati, dato il mercato o l'Elo non aggiunge niente (`z` −0.5 e +0.8), e un rendimento particolare contro un tipo di avversario
-  non si ripete (`z = +1.2`, 5 leghe su 11). A schermo ha un errore di circa ±0.4 punti. Le strade: dirlo nella card, mostrarne
-  l'errore, o toglierla. Vedi *Il confronto contro squadre simili*.
+  non si ripete (`z = +1.2`, 5 leghe su 11). A schermo ha un errore di circa ±0.4 punti.
+
+  Con tutte le 30 partite invece della stessa sede (zero chiamate) legge la forza meglio: coi punti della partita 0.294 → 0.338,
+  in 11 leghe su 11, con un errore di ±0.28. Ma resta un numero di forza: i punti a partita semplici delle stesse 30 fanno lo
+  stesso (0.349), e nessuna metrica di somiglianza li supera. Passare alle 30 cambia anche le probabilità del KNN, ricalibrate
+  sulla stessa sede nel `b76`: la ricalibrazione va rifatta, con una regola registrata.
+
+  Le strade:
+  - dirlo nella card, e mostrarne l'errore;
+  - passare alle 30 con la sede corretta;
+  - mostrare al suo posto i punti a partita delle ultime 30, con la sede corretta;
+  - toglierla.
+
+  Vedi *Il confronto contro squadre simili*, «Le 30 partite invece della stessa sede».
 - [ ] **Ordered Logit e trend dell'Elo, da decidere con l'utente.** Non hanno un candidato: l'Ordered Logit è
   calibrato ma più debole del motore (peso 0 nell'1X2), il trend non prevede niente (correlazione +0.006 coi punti
   meno attesi). Toglierli dallo schermo o dire a schermo quanto valgono.
@@ -986,7 +998,7 @@ non passa mai +7.1. Trascina con sé il `12`.
 
 | campione | partite | note |
 |---|---|---|
-| **Il confronto contro squadre simili** | **7.392** | Solo esplorazione del 24 ottobre 2026 (vedi *Il confronto contro squadre simili*). `/stats` e `/advanced` di tutte le partite di lega di 11 campionati dal 2024/25 (`batch/stile`, 17.183 chiamate), con le quote di chiusura di football-data: guardati KNN, stili e residui sul mercato di 1X2, pareggi e Over 2.5 |
+| **Il confronto contro squadre simili** | **7.392** | Solo esplorazione del 24 ottobre 2026 (vedi *Il confronto contro squadre simili*). `/stats` e `/advanced` di tutte le partite di lega di 11 campionati dal 2024/25 (`batch/stile`, 17.183 chiamate), con le quote di chiusura di football-data: guardati KNN, stili e residui sul mercato di 1X2, pareggi e Over 2.5; poi la card con tutte le 30 partite e altre metriche (4.112 partite) |
 | **Le quote passate e l'undici** | **46.177 · 340 · 3.596** | Solo esplorazione del 24 ottobre 2026 (vedi *Il rating dalle quote passate*). I file di football-data di 18 leghe, 2017/18–2026/27 (`batch/fd`), misurati dal 2019/20: guardati 1X2 e prese per il rating dalle quote passate. Il 2026/27 dei cinque campionati col `b89` (`batch/2627b89`), 340 su 340 in copia conforme, Elo identico su ogni file, 7.516 chiamate: maestro contro rating. `/lineups` e `/players` dei cinque campionati dal 2024/25 (`batch/giocatori`, 7.934 chiamate): la qualità dell'undici. Per un test di queste due domande servono leghe e partite nuove |
 | **Il 2026/27 dei cinque campionati col `b85`** | **335** | Premier 68, LaLiga 86, Ligue 1 61, Bundesliga 51, Serie A 69, le partite giocate fino al 21 ottobre 2026: batch automatico del `b85` (`batch/2627b85`), 335 su 335 in copia conforme, Elo identico su ogni file, 7.491 chiamate in 15 minuti. Aperte per il rischio sorpresa, livello e sfavorito che vince (vedi *L'avviso di sorpresa*, «Sul 2026/27»), e per il confronto con le quote di chiusura (vedi *Il motore contro il mercato*, «Il 2026/27»). Sono partite del test dei tocchi in area (dal 3 ottobre): lì i tocchi non sono stati guardati |
 | **Le cinque leghe col `b48`** | **5230** | **il riferimento dal `b49`** per soglie, confidence e tabellone: batch automatico `b48`, stesse stagioni e partite delle righe sotto, 5230 su 5230 in copia conforme, Elo rifatto dall'archivio identico su ogni file |
@@ -4058,16 +4070,53 @@ con le ultime 15 di sede contro le ultime 30:
 Nello Scanner costerebbe circa 15 partite di sede in più per squadra (60 chiamate), cioè la metà in più alla prima analisi, e la
 finestra di 500 giorni andrebbe allargata per la sola card. Non c'è: vedi *Da fare*, la card del KNN.
 
+**Le 30 partite invece della stessa sede, e altre metriche.** Chiesto dall'utente dopo la misura qui sopra: «valutiamo se
+conviene contare le 30 partite in totale invece che per ruolo», e se altre metriche danno un profilo migliore. Zero chiamate.
+`strumenti/simili-card.py` rifà la card come `getSimilarMatches`: il bersaglio, la deviazione del campione, la copertura, il
+nucleo e l'emivita. Il campione sono le 4.112 partite in cui tutte e due le squadre hanno 30 partite di lega nei 500 giorni
+prima. «Sede corretta» vuol dire che i punti di ogni partita si spostano dalla media della lega in quella sede alla media nella
+sede di oggi.
+
+| la card, casa meno trasferta | coi punti della partita | contro la card di oggi | i punti semplici delle stesse partite | simili efficaci, errore a schermo |
+|---|---|---|---|---|
+| oggi: la stessa sede, circa 15 partite | 0.294 | | 0.308 | 11.0, ±0.39 punti |
+| tutte le 30 | 0.334 | +0.040 ±0.016, 11 leghe su 11 | 0.347 | 21.8, ±0.28 |
+| tutte le 30, sede corretta | 0.338 | +0.044 ±0.016, 11 su 11 | 0.349 | 21.8, ±0.28 |
+| tutte le 30, sede corretta, l'avversario dal suo profilo prima della partita | 0.351 | +0.058 ±0.018, 11 su 11 | 0.349 | 19.9, ±0.29 |
+
+- *Le 30 in totale convengono, per la card*: legge la forza meglio e con meno rumore, in 11 leghe su 11. Non costa chiamate,
+  perché lo Scanner le 30 partite le ha già. La sede corretta aggiunge poco (0.334 → 0.338).
+- *La somiglianza non aggiunge niente ai punti semplici.* La card di oggi fa un po' peggio dei punti a partita delle stesse
+  partite (0.294 contro 0.308, −0.014 ±0.011), perché pesa di più una parte di loro. Con le 30 è lo stesso (−0.012 ±0.009).
+- *Le altre metriche*, tutte con le 30 e la sede corretta (coi punti della partita; sopra l'Elo e i punti semplici):
+  - il profilo dell'avversario prima di quella partita, al posto dei suoi numeri in quella partita: 0.351, `z` +1.79. Raggiunge
+    i punti semplici, non li supera. Costerebbe le statistiche di tutte le partite della lega (circa 700 chiamate a stagione):
+    lo Scanner scarica solo le storie delle due squadre;
+  - solo la forza (npxg e npxga) 0.348, le 12 di stile 0.349, il rating dalle quote passate dell'avversario 0.347, il suo Elo
+    (zero chiamate) 0.342. Sopra l'Elo niente: `z` da −0.3 a +1.6;
+  - sul residuo del mercato tutte fra −0.002 e +0.006.
+- *Trovato strada facendo.* In `KNN_DIMS` tocchi in area, ingressi nell'ultimo terzo e recuperi entro 5" si leggono dalla
+  squadra stessa (`own: 'tch_box'`…), non dall'avversario di allora come le altre otto dimensioni. Quella parte del confronto
+  dice «partite in cui la squadra ha fatto tanto in area», non «avversari che fanno tanto in area». Prenderli dall'avversario non
+  cambia niente (0.288 con la stessa sede, 0.335 con le 30): sono rumore in tutte e due le forme.
+- *Le probabilità del KNN*, che escono dagli xG contro le simili, con le 30 seguono meglio i gol: correlazione 0.370 → 0.406.
+  Con l'avversario descritto dal suo profilo o dal suo rating, gli xG pesati per somiglianza aggiungono qualcosa agli xG
+  semplici sopra l'Elo (`z` +3.4–3.8). Sono gli xG corretti per la forza degli avversari, cioè l'idea del rating sugli xG, che
+  sopra il motore non ha passato il test (vedi *Il rating sugli xG: la regola*). Sul residuo del mercato zero (da +0.001 a
+  +0.008).
+
 **Cosa vuol dire.**
 - Con più dati il quadro è certo, ma all'opposto di quello sperato: gli incastri fra squadre simili non ci sono, al livello che
   questi dati vedono. Il coefficiente è zero con un errore di ±0.2.
 - Il numero della card è una misura della forza, utile da leggere ma già dentro il verdetto. Con una ventina di partite di
   ruolo e 11 simili efficaci ha un errore di circa ±0.4 punti a partita: le differenze che sembrano un pattern sono quasi tutte
-  rumore.
+  rumore. Con tutte le 30 partite l'errore scende a ±0.28, ma la somiglianza resta inutile: i punti a partita semplici delle
+  stesse partite dicono lo stesso.
 - Non alza le prese, né con le quote né senza.
 
 `python3 strumenti/simili.py "ITA:Serie A=2024/2025,2025/2026,2026/2027" …` rifà tutto in un minuto sugli 11 campionati, dopo
-`--scarica` e `strumenti/rating-quote.py --scarica`.
+`--scarica` e `strumenti/rating-quote.py --scarica`. `strumenti/simili-card.py`, con gli stessi argomenti, rifà le 30 partite e le altre metriche in un
+minuto e mezzo.
 
 ### Il maestro mercato: la regola
 
@@ -5693,6 +5742,7 @@ misurate.
 | La diagonale gonfiata di Karlis–Ntzoufras (`δ` sui pareggi da 1-1 in su) sopra la matrice del maestro (solo descrittivo) | **quasi niente: il maestro ha chiuso il buco** | 23.278 partite delle 24 leghe, fuori lega `δ` 0.08–0.10: risultato esatto −0.42‰ (`z = −1.89`), Goal −0.28‰, Over 2.5 +0.16‰ (`z = +4.54`). Pareggi della matrice 24.4 → 25.6% contro 25.5% reali. Sulla matrice del `b63` valeva −1.80‰. Vedi *Da fare* |
 | Un rating delle squadre dalle quote di chiusura delle partite già giocate, quando le quote della partita non ci sono ancora (solo esplorazione) | **sì, da registrare** | 46.177 partite di 18 leghe dal 2019/20, fuori lega: prese 49.11 (Elo) → 50.35%, logloss −12.67‰ (`z = −16.17`), 18 leghe su 18; quote di prima della partita 50.58%, chiusura 50.85%. R² sulla chiusura 0.928 (Elo 0.802). Sul 2026/27 dei cinque campionati R² 0.900 contro 0.888 del maestro, 0.927 insieme. Con le quote della partita non aggiunge niente. Vedi *Il rating dalle quote passate* |
 | Il confronto contro squadre simili con più dati: il KNN su tutta la storia, i residui sul mercato, la risposta di ogni squadra allo stile dell'avversario, gli incastri di stile, pareggi e gol fra squadre simili (solo esplorazione) | **no** | 6.445 partite di 11 campionati dal 2024/25, storia mediana di 36 partite: i punti contro le simili misurano la forza (correlazione +0.344) ma sul residuo del mercato −0.006 (`z = −0.5`), dell'Elo +0.010; il rendimento particolare contro un tipo di avversario +0.015 (`z = +1.2`, 5 leghe su 11); la risposta allo stile da −0.003 a +0.004; 144 incastri fuori lega R² sotto zero; pareggi e Over fra stili simili dentro ±2.5 punti. Vedi *Il confronto contro squadre simili* |
+| La card «contro squadre simili» con tutte le 30 partite invece della stessa sede, e con altre metriche per dire chi è simile: il profilo dell'avversario prima della partita, solo la forza, lo stile, il rating dalle quote passate, l'Elo (solo esplorazione) | **le 30 sì per la card, la somiglianza no** | 4.112 partite di 11 campionati: coi punti della partita 0.294 → 0.338 con le 30 e la sede corretta (+0.044 ±0.016, 11 leghe su 11), errore a schermo ±0.39 → ±0.28; la card fa un po' peggio dei punti semplici delle stesse partite (0.294 contro 0.308), e la metrica migliore li raggiunge (0.351 contro 0.349); sopra l'Elo `z` ≤ +1.8, sul residuo del mercato fra −0.002 e +0.006. Tre delle 11 dimensioni di `KNN_DIMS` leggono la squadra stessa invece dell'avversario: correggerle non cambia niente. Vedi *Il confronto contro squadre simili* |
 | La qualità dell'undici in campo dai voti dei giocatori (`/players`), contro quella abituale (solo esplorazione) | **il mercato sì, le prese no** | 3.596 partite dei cinque campionati dal 2024/25: sul residuo della chiusura coefficiente +1.73 (`z = +29.1`, R² 0.19); sui risultati, col coefficiente del mercato, logloss −1.11‰ (`z = −1.20`), prese −0.33 (`z = −1.36`). Vedi *Il rating dalle quote passate* |
 | Togliere il margine dell'1X2 alla Shin o con la potenza invece che in proporzione, nella card delle quote (solo descrittivo) | **no: `QUOTE_COMB` ricalibra già** | 16.071 partite di 14 leghe, chiusura. Crudo, contro la proporzione: potenza −0.85‰, Shin −0.75‰ (la proporzione sottovaluta i favoriti: sopra il 65% prevede 73.5, esce 77.2). Ricalibrato fuori lega, come fa `QUOTE_COMB`: −0.02‰ e −0.03‰. Per i bersagli del maestro è un'altra cosa: vedi *Il maestro coi bersagli di Shin: la regola* |
 

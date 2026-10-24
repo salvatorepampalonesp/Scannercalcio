@@ -45,7 +45,9 @@ cosa ci sarebbe di nuovo, se c'è qualcosa.
 - **Strumenti già fatti**, da riusare: in `strumenti/` ci sono `dc-residui.py`, `markov-dc.py`,
   `livello-gol.py`, `rating-xg.py`, `sorpresa.py`, `sorpresa-quote.py` e i `quote-*.py`. Senza i CSV del motore:
   `rating-quote.py` lavora sui soli file di football-data (`--scarica`, nessuna chiamata alla PitchAPI), e
-  `undici.py` scarica formazioni e voti dei giocatori (due chiamate a partita).
+  `undici.py` scarica formazioni e voti dei giocatori (due chiamate a partita). `simili.py` scarica `/stats` e
+  `/advanced` di tutte le partite di lega e misura stili e squadre simili contro il mercato; `simili-card.py` rifà da lì la
+  card «contro squadre simili» dello Scanner.
 
 ## 3. La regola, scritta prima
 
