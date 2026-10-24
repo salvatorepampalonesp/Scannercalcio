@@ -71,8 +71,9 @@ def leggi(div):
             except (KeyError, ValueError): hg = ag = None
             c = tre(r, ['AvgC', 'PSC', 'B365C'])
             e = tre(r, ['Avg', 'BbAv', 'PS', 'B365'])
+            ou = next(([num(r.get(p + '>2.5')), num(r.get(p + '<2.5'))] for p in ('AvgC', 'PC', 'B365C') if num(r.get(p + '>2.5')) and num(r.get(p + '<2.5'))), None)
             out.append({'div': div, 'stag': i, 'd': d, 'H': r['HomeTeam'].strip(), 'A': r['AwayTeam'].strip(), 'hg': hg, 'ag': ag,
-                        'pc': probs(c) if c else None, 'pe': probs(e) if e else None})
+                        'pc': probs(c) if c else None, 'pe': probs(e) if e else None, 'ov': (1 / ou[0]) / (1 / ou[0] + 1 / ou[1]) if ou else None})
     out.sort(key=lambda m: m['d'])
     return out
 

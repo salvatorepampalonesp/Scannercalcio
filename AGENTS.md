@@ -537,6 +537,10 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   prima (restringimenti James-Stein, Gamma-Poisson, Dirichlet e ricalibrazioni, uno per card), test su 3.976 partite
   mai aperte per Numeri: passano tutte e 17, da `z` −2.7 (corner) a −17.1 (recuperi). Vedi *Le card di Numeri: la
   regola*, «Esito».
+- [ ] **La card del KNN, da decidere con l'utente.** «Contro squadre simili» misura la forza, non un incastro: su 6.445 partite di 11
+  campionati, dato il mercato o l'Elo non aggiunge niente (`z` −0.5 e +0.8), e un rendimento particolare contro un tipo di avversario
+  non si ripete (`z = +1.2`, 5 leghe su 11). A schermo ha un errore di circa ±0.4 punti. Le strade: dirlo nella card, mostrarne
+  l'errore, o toglierla. Vedi *Il confronto contro squadre simili*.
 - [ ] **Ordered Logit e trend dell'Elo, da decidere con l'utente.** Non hanno un candidato: l'Ordered Logit è
   calibrato ma più debole del motore (peso 0 nell'1X2), il trend non prevede niente (correlazione +0.006 coi punti
   meno attesi). Toglierli dallo schermo o dire a schermo quanto valgono.
@@ -982,6 +986,7 @@ non passa mai +7.1. Trascina con sé il `12`.
 
 | campione | partite | note |
 |---|---|---|
+| **Il confronto contro squadre simili** | **7.392** | Solo esplorazione del 24 ottobre 2026 (vedi *Il confronto contro squadre simili*). `/stats` e `/advanced` di tutte le partite di lega di 11 campionati dal 2024/25 (`batch/stile`, 17.183 chiamate), con le quote di chiusura di football-data: guardati KNN, stili e residui sul mercato di 1X2, pareggi e Over 2.5 |
 | **Le quote passate e l'undici** | **46.177 · 340 · 3.596** | Solo esplorazione del 24 ottobre 2026 (vedi *Il rating dalle quote passate*). I file di football-data di 18 leghe, 2017/18–2026/27 (`batch/fd`), misurati dal 2019/20: guardati 1X2 e prese per il rating dalle quote passate. Il 2026/27 dei cinque campionati col `b89` (`batch/2627b89`), 340 su 340 in copia conforme, Elo identico su ogni file, 7.516 chiamate: maestro contro rating. `/lineups` e `/players` dei cinque campionati dal 2024/25 (`batch/giocatori`, 7.934 chiamate): la qualità dell'undici. Per un test di queste due domande servono leghe e partite nuove |
 | **Il 2026/27 dei cinque campionati col `b85`** | **335** | Premier 68, LaLiga 86, Ligue 1 61, Bundesliga 51, Serie A 69, le partite giocate fino al 21 ottobre 2026: batch automatico del `b85` (`batch/2627b85`), 335 su 335 in copia conforme, Elo identico su ogni file, 7.491 chiamate in 15 minuti. Aperte per il rischio sorpresa, livello e sfavorito che vince (vedi *L'avviso di sorpresa*, «Sul 2026/27»), e per il confronto con le quote di chiusura (vedi *Il motore contro il mercato*, «Il 2026/27»). Sono partite del test dei tocchi in area (dal 3 ottobre): lì i tocchi non sono stati guardati |
 | **Le cinque leghe col `b48`** | **5230** | **il riferimento dal `b49`** per soglie, confidence e tabellone: batch automatico `b48`, stesse stagioni e partite delle righe sotto, 5230 su 5230 in copia conforme, Elo rifatto dall'archivio identico su ogni file |
@@ -3981,6 +3986,76 @@ Per metterlo nello Scanner serve una regola registrata: la combinazione col maes
 maestro, provata sui risultati di leghe mai aperte per questa domanda. Vanno bene le leghe dei file `new` di football-data:
 Austria, Danimarca, Svezia, Norvegia, Messico, MLS, Giappone. Lì servono i batch del motore (vedi *Da fare*).
 
+### Il confronto contro squadre simili
+
+Chiesto dall'utente il 24 ottobre 2026: «dobbiamo affinare il confronto contro squadre simili. Usare più dati e soprattutto
+vedere come si possa arrivare a pattern più certi». È la card «Partite simili (KNN) e moduli»: «Torino in casa contro squadre
+simili a Monza», coi punti a partita in quelle partite (`getSimilarMatches`, 11 dimensioni, nucleo gaussiano largo quanto la
+distanza mediana, emivita 106 giorni). Nello Scanner guarda solo le partite di ruolo fra le ultime 30, quindi una ventina, e
+le simili efficaci sono circa 11. Solo esplorazione: il motore non cambia.
+
+**Più dati, e il metro giusto** (`strumenti/simili.py`):
+- *I dati*: `/stats` e `/advanced` di tutte le partite di lega di 11 campionati dal 2024/25. Sono i cinque campionati,
+  Championship, Eredivisie, Liga Portugal, 2. Bundesliga, First Division A e Premiership scozzese: 17.183 chiamate, nessuna
+  fallita, in `batch/stile`.
+- *La storia*: per ogni squadra tutte le sue partite precedenti, anche dell'altra sede e delle stagioni prima. In mediana 36,
+  invece di una ventina.
+- *Lo stile* di ogni squadra prima di ogni partita è la media, con emivita di 106 giorni, di quello che ha fatto e concesso.
+  Le partite simili si cercano sul profilo dell'avversario di allora.
+- *Il residuo*: i punti veri meno quelli attesi dalla chiusura di football-data. La chiusura è ricalibrata su (`log(p1/p2)`,
+  `|log(p1/p2)|`), stimata sulle 18 leghe dal 2019/20 al 2023/24, fuori dal campione: col margine tolto in proporzione i
+  favoriti sono sottovalutati, e qualunque misura di forza sembrava battere il mercato per finta. In Serie A, prima della
+  ricalibrazione, `z = +1.97`; dopo, `+0.82`.
+
+Il campione sono 6.445 partite con la chiusura e il profilo delle due squadre: casa meno trasferta, su tutte le leghe insieme.
+
+| cosa | correlazione | `z` | leghe col segno giusto |
+|---|---|---|---|
+| i punti contro le simili (il numero della card), sui punti della partita | +0.344 | +29.5 | 11 su 11 |
+| gli stessi, insieme ai punti a partita su tutte | simili +1.32, tutte −0.18 | +7.4 e −0.9 | |
+| i punti contro le simili, sul residuo del mercato | −0.006 | −0.5 | 4 su 11 |
+| gli stessi, sul residuo dell'Elo dai risultati | +0.010 | +0.8 | |
+| gli stessi, sul residuo del rating dalle quote passate | +0.002 | +0.1 | |
+| il residuo contro le simili meno quello su tutte (la squadra rende meglio contro quel tipo di avversario che in generale) | +0.015 | +1.2 | 5 su 11 |
+| lo stesso con un nucleo largo la metà (12.6 simili efficaci) | +0.015 | +1.2 | 6 su 11 |
+| lo stesso con le sole partite nella stessa sede, come lo Scanner | +0.004 | +0.3 | 6 su 11 |
+| il residuo su tutte (forma contro il mercato) | −0.020 | −1.6 | 3 su 11 |
+
+- *Il numero della card misura la forza*, e meglio dei punti a partita: pesa di più le partite contro avversari di pari livello.
+  Ma è forza che il mercato, l'Elo e il rating dalle quote passate hanno già. Il mercato la usa: rispetto al rating dalle quote
+  passate si sposta nella sua direzione (`z = +5.4`, 11 leghe su 11).
+- *Un rendimento particolare contro un tipo di avversario non si ripete.* Né col nucleo dello Scanner, né più stretto, né
+  nella stessa sede.
+
+**La risposta di ogni squadra allo stile dell'avversario.** Un modo più efficiente di usare gli stessi dati. Per ogni partita,
+una ridge del residuo della squadra sullo stile dell'avversario (12 dimensioni: possesso, field tilt, PPDA, altezza difensiva,
+velocità diretta, durata delle azioni, palle lunghe, cross, palle recuperate alte, recuperi entro 5 secondi, duelli aerei,
+tocchi in area), dalle sue partite precedenti. La previsione per la partita di oggi è casa meno trasferta. Su 5.497 partite,
+con 38 partite di storia in mediana, la correlazione col residuo di oggi va da −0.003 a +0.004 secondo la ridge (`z` da −0.2 a
++0.3). Nessuna squadra ha uno stile di avversario che le va storto in modo che si ripeta.
+
+**Gli incastri di stile per tutte le squadre**: i 144 prodotti fra lo stile della casa e quello della trasferta, più i 24 stili da
+soli, ridge stimata fuori lega su 7.392 partite.
+- *Sui punti, contro il mercato*: R² sempre sotto zero, correlazione fra −0.012 e +0.007.
+- *Il mercato li usa?* Sul residuo della chiusura rispetto al rating dalle quote passate gli stili da soli sì (correlazione
+  +0.047, `z = +4.1`), gli incastri no (+0.009).
+
+**Squadre simili fra loro: pareggi e gol.** Fra le partite con gli stili più simili (il 20%), pareggi +0.50 punti sopra la
+chiusura (±2.36) e Over 2.5 −0.73 (±2.58). Fra le più diverse −0.37 e +1.87 (±2.47). Sulla distanza di stile `z` −0.56 e
++0.84. Lo stile medio delle due squadre, preso uno per uno sui 12, ha al massimo `z = +2.7`: il possesso, con più Over. Su 24
+prove è quello che dà il caso.
+
+**Cosa vuol dire.**
+- Con più dati il quadro è certo, ma all'opposto di quello sperato: gli incastri fra squadre simili non ci sono, al livello che
+  questi dati vedono. Il coefficiente è zero con un errore di ±0.2.
+- Il numero della card è una misura della forza, utile da leggere ma già dentro il verdetto. Con una ventina di partite di
+  ruolo e 11 simili efficaci ha un errore di circa ±0.4 punti a partita: le differenze che sembrano un pattern sono quasi tutte
+  rumore.
+- Non alza le prese, né con le quote né senza.
+
+`python3 strumenti/simili.py "ITA:Serie A=2024/2025,2025/2026,2026/2027" …` rifà tutto in un minuto sugli 11 campionati, dopo
+`--scarica` e `strumenti/rating-quote.py --scarica`.
+
 ### Il maestro mercato: la regola
 
 Scritta l'11 ottobre 2026, prima di aprire le leghe del test: di quei file, per questa domanda, non si è letta nessuna
@@ -5604,6 +5679,7 @@ misurate.
 | Il maestro coi bersagli dell'1X2 tolti alla Shin invece che in proporzione (regola registrata) | **no** | esplorazione sulle 14 leghe del maestro −0.51‰ (`z = −3.03`, 10 su 14), pendenza 1 contro 2 da 1.12 a 1.06; test sulle 33 leghe del test del maestro −0.14‰ (`z = −0.81`), 16 su 33. Lì il maestro del `b77` non era timido con gli sfavoriti (25.53% previsti, 25.52% vinti). Vedi *Il maestro coi bersagli di Shin: la regola* |
 | La diagonale gonfiata di Karlis–Ntzoufras (`δ` sui pareggi da 1-1 in su) sopra la matrice del maestro (solo descrittivo) | **quasi niente: il maestro ha chiuso il buco** | 23.278 partite delle 24 leghe, fuori lega `δ` 0.08–0.10: risultato esatto −0.42‰ (`z = −1.89`), Goal −0.28‰, Over 2.5 +0.16‰ (`z = +4.54`). Pareggi della matrice 24.4 → 25.6% contro 25.5% reali. Sulla matrice del `b63` valeva −1.80‰. Vedi *Da fare* |
 | Un rating delle squadre dalle quote di chiusura delle partite già giocate, quando le quote della partita non ci sono ancora (solo esplorazione) | **sì, da registrare** | 46.177 partite di 18 leghe dal 2019/20, fuori lega: prese 49.11 (Elo) → 50.35%, logloss −12.67‰ (`z = −16.17`), 18 leghe su 18; quote di prima della partita 50.58%, chiusura 50.85%. R² sulla chiusura 0.928 (Elo 0.802). Sul 2026/27 dei cinque campionati R² 0.900 contro 0.888 del maestro, 0.927 insieme. Con le quote della partita non aggiunge niente. Vedi *Il rating dalle quote passate* |
+| Il confronto contro squadre simili con più dati: il KNN su tutta la storia, i residui sul mercato, la risposta di ogni squadra allo stile dell'avversario, gli incastri di stile, pareggi e gol fra squadre simili (solo esplorazione) | **no** | 6.445 partite di 11 campionati dal 2024/25, storia mediana di 36 partite: i punti contro le simili misurano la forza (correlazione +0.344) ma sul residuo del mercato −0.006 (`z = −0.5`), dell'Elo +0.010; il rendimento particolare contro un tipo di avversario +0.015 (`z = +1.2`, 5 leghe su 11); la risposta allo stile da −0.003 a +0.004; 144 incastri fuori lega R² sotto zero; pareggi e Over fra stili simili dentro ±2.5 punti. Vedi *Il confronto contro squadre simili* |
 | La qualità dell'undici in campo dai voti dei giocatori (`/players`), contro quella abituale (solo esplorazione) | **il mercato sì, le prese no** | 3.596 partite dei cinque campionati dal 2024/25: sul residuo della chiusura coefficiente +1.73 (`z = +29.1`, R² 0.19); sui risultati, col coefficiente del mercato, logloss −1.11‰ (`z = −1.20`), prese −0.33 (`z = −1.36`). Vedi *Il rating dalle quote passate* |
 | Togliere il margine dell'1X2 alla Shin o con la potenza invece che in proporzione, nella card delle quote (solo descrittivo) | **no: `QUOTE_COMB` ricalibra già** | 16.071 partite di 14 leghe, chiusura. Crudo, contro la proporzione: potenza −0.85‰, Shin −0.75‰ (la proporzione sottovaluta i favoriti: sopra il 65% prevede 73.5, esce 77.2). Ricalibrato fuori lega, come fa `QUOTE_COMB`: −0.02‰ e −0.03‰. Per i bersagli del maestro è un'altra cosa: vedi *Il maestro coi bersagli di Shin: la regola* |
 
