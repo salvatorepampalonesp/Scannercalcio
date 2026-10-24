@@ -4045,6 +4045,19 @@ chiusura (±2.36) e Over 2.5 −0.73 (±2.58). Fra le più diverse −0.37 e +1.
 +0.84. Lo stile medio delle due squadre, preso uno per uno sui 12, ha al massimo `z = +2.7`: il possesso, con più Over. Su 24
 prove è quello che dà il caso.
 
+**30 partite in casa e 30 in trasferta, invece di circa 15** (proposta dell'utente: scaricarne 60 solo per questa card).
+Sulle 865 partite in cui tutte e due le squadre hanno almeno 30 partite precedenti nella stessa sede, il nucleo dello Scanner
+con le ultime 15 di sede contro le ultime 30:
+- *le simili efficaci* passano da 10.9 a 14.0, non a 30, perché l'emivita di 106 giorni pesa poco le partite di un anno e
+  mezzo fa; l'errore del numero da circa ±0.40 a ±0.35 punti;
+- *coi punti della partita* la correlazione sale da +0.288 a +0.309;
+- *sul residuo del mercato* resta zero: −0.004 e +0.004;
+- *il rendimento particolare contro quel tipo di avversario* ha il segno sbagliato in tutte e due: −0.088 e −0.076. Su 6.445
+  partite era +0.015.
+
+Nello Scanner costerebbe circa 15 partite di sede in più per squadra (60 chiamate), cioè la metà in più alla prima analisi, e la
+finestra di 500 giorni andrebbe allargata per la sola card. Non c'è: vedi *Da fare*, la card del KNN.
+
 **Cosa vuol dire.**
 - Con più dati il quadro è certo, ma all'opposto di quello sperato: gli incastri fra squadre simili non ci sono, al livello che
   questi dati vedono. Il coefficiente è zero con un errore di ±0.2.
