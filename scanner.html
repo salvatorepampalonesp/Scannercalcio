@@ -790,7 +790,7 @@ body.vista-partita .dock{display:flex}
     <button type="button" class="btn btn-ghost ab-back" id="btn-nuova" onclick="tornaIndietro()" aria-label="Indietro"><svg class="ic" aria-hidden="true"><use href="#i-arrow-left"/></svg><span>Cambia partita</span></button>
     <span class="ab-tit" id="ab-tit"><b></b><small></small></span>
     <span class="ab-spazio"></span>
-    <span class="tag" id="build-ver">build 0905-b89</span>
+    <span class="tag" id="build-ver">build 0905-b90</span>
   </div>
 </header>
 
@@ -1298,7 +1298,7 @@ body.vista-partita .dock{display:flex}
     </div>
 
     <details class="card">
-      <summary><div class="section-title"><span class="ico"><svg class="ic" aria-hidden="true"><use href="#i-magnifying-glass"/></svg></span><span class="t">Partite simili (KNN) e moduli<small>11 dimensioni tattiche, kernel pesato: riferimento, non entra nel verdetto</small></span></div><svg class="ic chev" aria-hidden="true"><use href="#i-caret-down"/></svg></summary>
+      <summary><div class="section-title"><span class="ico"><svg class="ic" aria-hidden="true"><use href="#i-magnifying-glass"/></svg></span><span class="t">Partite simili (KNN) e moduli<small>Ultime 30, Elo e 11 numeri dell'avversario: riferimento, non entra nel verdetto</small></span></div><svg class="ic chev" aria-hidden="true"><use href="#i-caret-down"/></svg></summary>
       <div>
         <div class="tbl-scroll"><table class="table-ui">
           <tr><th>Squadra</th><th>Modulo Usato</th><th>Contro Modulo Avv.</th><th>Contesto</th><th>Match vs Avv.</th><th>Punti/Match</th></tr>
@@ -2194,7 +2194,7 @@ function buildGlobalElo(targetTimeMs) {
   const K_HIGH = 20;
   const K_THRESHOLD = 15;
 
-  const table = {}, series = {}, lastMatchTime = {}, nMatchesPlayed = {};
+  const table = {}, series = {}, lastMatchTime = {}, nMatchesPlayed = {}, pre = {};
   const seriesNetta = {}, regCum = {};
   const _lega = globalLeagueMatchesCache.filter(m => !_chosenLeagueId || m.league_id === _chosenLeagueId);
   const _stag = [...new Set(_lega.map(m => m._season).filter(Boolean))].sort();
@@ -2251,6 +2251,7 @@ function buildGlobalElo(targetTimeMs) {
       }
     }
 
+    pre[m.id] = [table[h], table[a]];
     const gh = m.score_home ?? 0, ga = m.score_away ?? 0;
     const act = gh > ga ? 1 : (gh < ga ? 0 : 0.5);
     const diff = Math.abs(gh - ga);
@@ -2269,7 +2270,7 @@ function buildGlobalElo(targetTimeMs) {
     seriesNetta[h].unshift(Math.round(table[h] - regCum[h])); seriesNetta[a].unshift(Math.round(table[a] - regCum[a]));
   }
   const _ingressoOggi = _conIngresso ? livelloIngresso(_stag[_stag.length - 1]) : null;
-  return { table, series, seriesTrend: window.ELO_PENDENZA === 'netta' ? seriesNetta : series,
+  return { table, series, pre, seriesTrend: window.ELO_PENDENZA === 'netta' ? seriesNetta : series,
            _ingresso: _ingressoOggi, _hfa: HFA_ELO, _nHfa: _n_hfa, lastPlayed: lastMatchTime,
            _hfaRaw, _hfaClamp, _hfaShrunk, _hW: _h_w, _aW: _a_w,
            gapLog,
@@ -2918,7 +2919,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
     let gca=null, sca=null, xag=null, prog_passes=null, passes_box=null, carries_box=null, prog_carries=null;
     let gca_ag=null, sca_ag=null, xag_ag=null, prog_passes_ag=null, passes_box_ag=null, carries_box_ag=null, prog_carries_ag=null;
     let xg_sp_ag=null;
-    let opp_ppda=null, opp_field_tilt=null, opp_direct_speed=null, opp_seq_time=null, opp_avg_x=null, opp_avg_def_x=null, opp_cp_regains=null, opp_rec_time=null, opp_f3_entries=null;
+    let opp_ppda=null, opp_field_tilt=null, opp_direct_speed=null, opp_seq_time=null, opp_avg_x=null, opp_avg_def_x=null, opp_cp_regains=null, opp_rec_time=null, opp_f3_entries=null, opp_tch_box=null;
 
     let advHasMe = false;
     const advX = {};
@@ -2956,6 +2957,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
           opp_cp_regains = oppAdv.defending?.counterpress_regains_5s ?? oppAdv.pressing?.counterpress_regains_5s ?? null;
           opp_rec_time = oppAdv.defending?.ball_recovery_time ?? oppAdv.tempo?.ball_recovery_time ?? null;
           opp_f3_entries = oppAdv.territory?.final_third_entries ?? oppAdv.attacking?.final_third_entries ?? null;
+          opp_tch_box = oppAdv.attacking?.touches_in_opp_box ?? oppAdv.attacking?.touches_opp_box ?? oppAdv.territory?.touches_in_opp_box ?? oppAdv.territory?.touches_opp_box ?? null;
 
           gca_ag = oppAdv.creation?.gca ?? null; sca_ag = oppAdv.creation?.sca ?? null; xag_ag = oppAdv.creation?.xag ?? null;
           prog_passes_ag = oppAdv.passing?.progressive_passes ?? null; passes_box_ag = oppAdv.passing?.passes_into_box ?? null;
@@ -2974,6 +2976,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
     const xgot_ag  = extractSafeStat(d, ['expected_goals_on_target','xgot','xg_on_target'], !isH);
     const tchbox_ag = extractSafeStat(d, ['touches_in_opp_box','touches_opp_box','touchesinoppbox'], !isH);
     if (tch_box === null && d) tch_box = extractSafeStat(d, ['touches_in_opp_box', 'touches_opp_box', 'touchesinoppbox'], isH);
+    if (opp_tch_box === null && d) opp_tch_box = tchbox_ag;
     if (npxg === null && d) { let fall = extractSafeStat(d, ['npxg', 'non_penalty_xg', 'expected_goals_non_penalty'], isH); npxg = fall !== null ? fall : base_xg; }
     if (xgot === null && d) xgot = extractSafeStat(d, ['expected_goals_on_target', 'xgot', 'xg_on_target'], isH);
 
@@ -3043,7 +3046,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
     cross = zeroIf(cross, anyOk); drib = zeroIf(drib, anyOk); thru = zeroIf(thru, anyOk); aer = zeroIf(aer, anyOk);
     misc = zeroIf(misc, anyOk); disp = zeroIf(disp, anyOk);
     f3_entries = zeroIf(f3_entries, advOk); tch_box = zeroIf(tch_box, anyOk); cp_regains = zeroIf(cp_regains, advOk);
-    opp_cp_regains = zeroIf(opp_cp_regains, advOk); opp_f3_entries = zeroIf(opp_f3_entries, advOk);
+    opp_cp_regains = zeroIf(opp_cp_regains, advOk); opp_f3_entries = zeroIf(opp_f3_entries, advOk); opp_tch_box = zeroIf(opp_tch_box, anyOk);
 
     let red_cards = 0; let goal_timings_scored = []; let goal_timings_conceded = []; let scorers = []; let scorerIds = [];
     if(eventsRes) {
@@ -3070,7 +3073,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
       yel: zeroIf(extractSafeStat(d, ['yellow_cards', 'yellowcards', 'gialli'], isH), statsOk), yel_ag: zeroIf(extractSafeStat(d, ['yellow_cards', 'yellowcards', 'gialli'], !isH), statsOk),
       fouls: zeroIf(extractSafeStat(d, ['fouls', 'falli'], isH), statsOk), fouls_ag: zeroIf(extractSafeStat(d, ['fouls', 'falli'], !isH), statsOk),
       ppda, field_tilt, direct_speed, seq_time, avg_x, f3_entries, tch_box, avg_def_x, cp_regains, rec_time, npxg, xg_sp, xgot, bc, bcm, xg_shot, cross, drib, thru, aer, misc, disp,
-      opp_ppda, opp_field_tilt, opp_direct_speed, opp_seq_time, opp_avg_x, opp_avg_def_x, opp_cp_regains, opp_rec_time, opp_f3_entries,
+      opp_ppda, opp_field_tilt, opp_direct_speed, opp_seq_time, opp_avg_x, opp_avg_def_x, opp_cp_regains, opp_rec_time, opp_f3_entries, opp_tch_box,
       gca, sca, xag, prog_passes, passes_box, carries_box, prog_carries,
       gca_ag, sca_ag, xag_ag, prog_passes_ag, passes_box_ag, carries_box_ag, prog_carries_ag, xg_sp_ag,
       ...advX,
@@ -3082,7 +3085,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
   function buildStats(matchList) {
     let out = { n: matchList.length, vals: { poss_ag: [], xgot_ag: [], tch_box_ag: [], gf:[], ga:[], xg:[], xga:[], npxg:[], npxga:[], sot:[], sot_ag:[], cor:[], cor_ag:[], yel:[], yel_ag:[], fouls:[], fouls_ag:[], poss:[], moduli:[],
       ppda:[], field_tilt:[], direct_speed:[], seq_time:[], avg_x:[], f3_entries:[], tch_box:[], avg_def_x:[], cp_regains:[], rec_time:[], xg_sp:[], xgot:[], bc:[], bcm:[], xg_shot:[], cross:[], drib:[], thru:[], aer:[], misc:[], disp:[],
-      opp_ppda:[], opp_field_tilt:[], opp_direct_speed:[], opp_seq_time:[], opp_avg_x:[], opp_avg_def_x:[], opp_cp_regains:[], opp_rec_time:[], opp_f3_entries:[],
+      opp_ppda:[], opp_field_tilt:[], opp_direct_speed:[], opp_seq_time:[], opp_avg_x:[], opp_avg_def_x:[], opp_cp_regains:[], opp_rec_time:[], opp_f3_entries:[], opp_tch_box:[],
       gca:[], sca:[], xag:[], prog_passes:[], passes_box:[], carries_box:[], prog_carries:[],
       gca_ag:[], sca_ag:[], xag_ag:[], prog_passes_ag:[], passes_box_ag:[], carries_box_ag:[], prog_carries_ag:[], xg_sp_ag:[], red_cards:[], dates:[] },
       matchInfo: [], streak: [], historyForElo: [], all_timings_scored: [], all_timings_conceded: [], all_scorers: [], win_pts: 0 };
@@ -3099,14 +3102,14 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
       out.vals.yel.push(det.yel); out.vals.yel_ag.push(det.yel_ag); out.vals.fouls.push(det.fouls); out.vals.fouls_ag.push(det.fouls_ag); out.vals.poss.push(det.poss); out.vals.poss_ag.push(det.poss_ag); out.vals.xgot_ag.push(det.xgot_ag); out.vals.tch_box_ag.push(det.tchbox_ag); out.vals.moduli.push(det.modulo);
       out.vals.red_cards.push(det.red_cards); out.vals.dates.push(det.dateStrUtc);
 
-      const OPT = ['ppda','field_tilt','direct_speed','seq_time','avg_x','f3_entries','tch_box','avg_def_x','cp_regains','rec_time','xg_sp','xgot','bc','bcm','xg_shot','cross','drib','thru','aer','misc','disp','opp_ppda','opp_field_tilt','opp_direct_speed','opp_seq_time','opp_avg_x','opp_avg_def_x','opp_cp_regains','opp_rec_time','opp_f3_entries',
+      const OPT = ['ppda','field_tilt','direct_speed','seq_time','avg_x','f3_entries','tch_box','avg_def_x','cp_regains','rec_time','xg_sp','xgot','bc','bcm','xg_shot','cross','drib','thru','aer','misc','disp','opp_ppda','opp_field_tilt','opp_direct_speed','opp_seq_time','opp_avg_x','opp_avg_def_x','opp_cp_regains','opp_rec_time','opp_f3_entries','opp_tch_box',
                    'gca','sca','xag','prog_passes','passes_box','carries_box','prog_carries',
                    'gca_ag','sca_ag','xag_ag','prog_passes_ag','passes_box_ag','carries_box_ag','prog_carries_ag','xg_sp_ag']
                   .concat(ADV_KEYS).concat(ADV_KEYS.map(k => k + '_ag'));
       OPT.forEach(kk => { const v = det[kk]; out.vals[kk].push((v === undefined || v === null || isNaN(v)) ? null : v); });
 
       out.all_timings_scored = out.all_timings_scored.concat(det.goal_timings_scored); out.all_timings_conceded = out.all_timings_conceded.concat(det.goal_timings_conceded); out.all_scorers = out.all_scorers.concat(det.scorers);
-      out.matchInfo.push({ date: det.dateShort, oppName: det.avv, isHome: det.isH, gf: det.gf, ga: det.ga, oppModulo: det.oppModulo });
+      out.matchInfo.push({ id: matchList[i].id, date: det.dateShort, oppName: det.avv, isHome: det.isH, gf: det.gf, ga: det.ga, oppModulo: det.oppModulo });
     }
 
     out.features = {
@@ -3990,6 +3993,90 @@ function getSimilarMatches(teamDataRole, oppTeam, targetTimeMs) {
   return { topMatches, targetInfo: target, avg_xg: sXg / sw, avg_xga: sXga / sw, pts_per_game: sPts / sw, nEff: (sw * sw) / sw2, bandwidth: h };
 }
 
+// Solo la card «contro squadre simili»: le probabilita' del KNN restano su getSimilarMatches (AGENTS.md, Il confronto contro squadre simili).
+const KNN_CARD_DIMS = [
+  { own: 'npxga',          opp: 'npxg',       w: 1.5, def: 1.2 },
+  { own: 'npxg',           opp: 'npxga',      w: 1.5, def: 1.2 },
+  { own: 'opp_field_tilt', opp: 'field_tilt', w: 1.2, def: 50.0 },
+  { own: 'opp_avg_def_x',  opp: 'avg_def_x',  w: 1.2, def: 40.0 },
+  { own: 'poss',           opp: 'poss',       w: 1.0, def: 50.0, invert: true },
+  { own: 'opp_ppda',       opp: 'ppda',       w: 1.0, def: 12.0 },
+  { own: 'opp_tch_box',    opp: 'tch_box',    w: 1.1, def: 20.0 },
+  { own: 'opp_f3_entries', opp: 'f3_entries', w: 0.9, def: 40.0 },
+  { own: 'opp_cp_regains', opp: 'cp_regains', w: 0.7, def: 8.0 },
+  { own: 'opp_seq_time',   opp: 'seq_time',   w: 0.6, def: 10.0 },
+  { own: 'opp_avg_x',      opp: 'avg_x',      w: 0.8, def: 45.0 },
+  { own: 'elo',            opp: 'elo',        w: 1.5 }
+];
+function puntiSede(leagueId, targetTimeMs) {
+  const tDay = _dayUTC(targetTimeMs); const seen = new Set(); let h = 0, a = 0, n = 0;
+  for (const m of globalLeagueMatchesCache) {
+    if (leagueId && m.league_id !== leagueId) continue;
+    if (m.status !== 'finished' || !m.time_utc || m.score_home == null || m.score_away == null) continue;
+    if (!_isPast(m.time_utc, targetTimeMs, tDay) || seen.has(m.id)) continue; seen.add(m.id);
+    const gh = m.score_home, ga = m.score_away;
+    h += gh > ga ? 3 : (gh === ga ? 1 : 0); a += ga > gh ? 3 : (gh === ga ? 1 : 0); n++;
+  }
+  return n >= 30 ? { H: h / n, A: a / n, n } : null;
+}
+function similiCard(team, oppTeam, isHome, targetTimeMs, ELO, eloOpp, medie) {
+  const empty = { topMatches: [], pts: null, ptsTutte: null, nEff: 0, n: 0, targetInfo: {} };
+  const T = team && team.overall; if (!T || !T.matchInfo || !T.matchInfo.length || !oppTeam) return empty;
+  const N = T.matchInfo.length, pre = (ELO && ELO.pre) || {};
+  const val = (d, i) => {
+    if (d.own === 'elo') { const info = T.matchInfo[i]; const p = info && pre[info.id]; return p ? p[info.isHome ? 1 : 0] : null; }
+    const v = T.vals[d.own] ? T.vals[d.own][i] : null;
+    if (v == null || isNaN(v)) return null;
+    return d.invert ? 100 - v : v;
+  };
+  const target = {};
+  KNN_CARD_DIMS.forEach(d => {
+    target[d.opp] = d.own === 'elo' ? eloOpp
+      : _shrunkMean(oppTeam.role && oppTeam.role.vals ? oppTeam.role.vals[d.opp] : null,
+                    oppTeam.overall && oppTeam.overall.vals ? oppTeam.overall.vals[d.opp] : null, d.def);
+  });
+  const sd = {};
+  KNN_CARD_DIMS.forEach(d => { const arr = []; for (let i = 0; i < N; i++) arr.push(val(d, i)); sd[d.own] = Math.max(1e-3, _stddev(arr)); });
+  const sede = (info) => (medie && info) ? medie[isHome ? 'H' : 'A'] - medie[info.isHome ? 'H' : 'A'] : 0;
+  const punti = (i) => { const gf = T.vals.gf[i], ga = T.vals.ga[i]; return (gf == null || ga == null) ? null : (gf > ga ? 3 : (gf === ga ? 1 : 0)); };
+
+  const rows = [];
+  for (let i = 0; i < N; i++) {
+    let wSum = 0, dSum = 0; const snap = {};
+    KNN_CARD_DIMS.forEach(d => {
+      const v = val(d, i); if (v == null || target[d.opp] == null || !isFinite(target[d.opp])) return;
+      snap[d.opp] = v; const z = (v - target[d.opp]) / sd[d.own]; dSum += d.w * z * z; wSum += d.w;
+    });
+    if (wSum > 0) rows.push({ index: i, dist: Math.sqrt(dSum / wSum), dimsW: wSum, snap, info: T.matchInfo[i] });
+  }
+  if (!rows.length) return empty;
+  const wBest = Math.max(...rows.map(r => r.dimsW));
+  for (const r of rows) r.coverage = r.dimsW / wBest;
+  let R = rows.filter(r => r.coverage >= KNN_MIN_COVERAGE); if (R.length < 4) R = rows;
+
+  const sortedD = R.map(r => r.dist).sort((a, b) => a - b);
+  const h = Math.max(0.35, sortedD[Math.floor(sortedD.length / 2)]);
+  const dates = T.vals.dates || [], xiDay = Math.LN2 / 106;
+  let sw = 0, sw2 = 0, sPts = 0;
+  R.forEach(r => {
+    const xg = T.vals.npxg[r.index], xga = T.vals.npxga[r.index], p = punti(r.index);
+    if (xg == null || xga == null || isNaN(xg) || isNaN(xga) || p == null) { r.w = 0; return; }
+    let w = Math.exp(-0.5 * Math.pow(r.dist / h, 2));
+    const dt = dates[r.index] ? (targetTimeMs - new Date(dates[r.index]).getTime()) / 86400000 : 0;
+    if (dt > 0) w *= Math.exp(-xiDay * dt);
+    w *= r.coverage;
+    r.w = w; sw += w; sw2 += w * w; sPts += w * (p + sede(r.info));
+  });
+  if (sw <= 0) return empty;
+  let sT = 0, nT = 0;
+  for (let i = 0; i < N; i++) { const p = punti(i); if (p != null) { sT += p + sede(T.matchInfo[i]); nT++; } }
+
+  R.sort((a, b) => ((b.w || 0) - (a.w || 0)) || (a.dist - b.dist));
+  const topMatches = R.slice(0, 6).map(r => ({ index: r.index, dist: r.dist, info: r.info, peso: (r.w || 0) / sw,
+    simile: Math.exp(-0.5 * Math.pow(r.dist / h, 2)), snap: r.snap }));
+  return { topMatches, targetInfo: target, pts: sPts / sw, ptsTutte: nT ? sT / nT : null, nEff: (sw * sw) / sw2, n: N, conSede: !!medie };
+}
+
 function getStatsVsFormation(teamData, targetForm, isRole) {
   if(!targetForm || targetForm === 'N/D') return null; const team = isRole ? teamData.role : teamData.overall; if (!team || !team.n) return null;
   let pts=0, gf=0, ga=0, xg=0, xga=0, count=0; const cleanForm = targetForm.split(' ')[0];
@@ -4202,7 +4289,7 @@ function _tabTesto(V) {
     + (sotto.length ? '\n- Sotto la base di lega di 5 punti o piu\' (qui questi esiti sono meno probabili del solito; non sono proposte): ' + lista(sotto) : '');
 }
 
-window.__SCANNER_BUILD = '0905-b89';
+window.__SCANNER_BUILD = '0905-b90';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -5575,37 +5662,52 @@ async function avviaScanner() {
     safeHtml('row-form-ao', `<td>${aName} (Gen)</td><td>${formA_disp}</td><td>${formH_disp.split(' ')[0]}</td><td>Gen</td><td>${statsVsFormA_over ? statsVsFormA_over.count : 0}</td><td style="font-weight:bold">${_ptsF(statsVsFormA_over, dA.overall)}</td>`);
     safeHtml('row-form-ar', `<td>${aName} (Trasf)</td><td>${formA_disp}</td><td>${formH_disp.split(' ')[0]}</td><td style="color:var(--red)">Solo Trasf</td><td>${statsVsFormA_role ? statsVsFormA_role.count : 0}</td><td style="font-weight:bold;color:var(--red)">${_ptsF(statsVsFormA_role, dA.role)}</td>`);
 
-    safeTxt('knn-title-h', `${hName} in casa contro squadre simili a ${aName}`); safeHtml('knn-res-h', `Rendimento Storico: <strong>${f2(knn_H.pts_per_game)} Pts/Match</strong>`);
+    const _ptsSede = puntiSede(lId, targetMs);
+    const simH = similiCard(dH, dA, true, targetMs, ELO, eloA_ov, _ptsSede), simA = similiCard(dA, dH, false, targetMs, ELO, eloH_ov, _ptsSede);
+    const _simRes = (S) => S.pts == null ? 'Rendimento: N/D'
+      : `Contro le simili: <strong>${f2(S.pts)} punti a partita</strong> (&plusmn;${f2(1.3 / Math.sqrt(Math.max(1, S.nEff)))}: valgono come ${Math.round(S.nEff)} partite). `
+        + `Su tutte le ${S.n}: ${S.ptsTutte != null ? f2(S.ptsTutte) : 'N/D'}.`;
+    safeTxt('knn-title-h', `${hName} contro squadre simili a ${aName}`); safeHtml('knn-res-h', _simRes(simH));
     const _knnRow = (m, i, tgt) => {
       const esito = m.info.gf > m.info.ga ? 'V' : (m.info.gf < m.info.ga ? 'S' : 'P');
       const col = esito === 'V' ? 'var(--green)' : (esito === 'S' ? 'var(--red)' : 'var(--orange)');
-      const sim = Math.round(100 * Math.exp(-(m.dist * m.dist) / 2));
       const cmp = (val, ref, unit, dec) => {
+        if (val == null || !isFinite(val)) return '<b>N/D</b>';
         if (ref == null || !isFinite(ref) || ref === 0) return `<b>${dec ? f1(val) : val.toFixed(0)}${unit}</b>`;
-        const d = val - ref;
+        const d = val - ref, r = (dec ? Math.round(d * 10) / 10 : Math.round(d)) || 0;
         const c = Math.abs(d) < Math.abs(ref) * 0.08 ? 'var(--ok)' : 'var(--dim)';
-        return `<b>${dec ? f1(val) : val.toFixed(0)}${unit}</b><span style="color:${c};font-size:9px"> (${d>=0?'+':''}${dec?f1(d):d.toFixed(0)})</span>`;
+        return `<b>${dec ? f1(val) : val.toFixed(0)}${unit}</b><span style="color:${c};font-size:9px"> (${r>=0?'+':''}${dec ? r.toFixed(1) : r.toFixed(0)})</span>`;
+      };
+      const cmpElo = (val) => {
+        if (val == null || !isFinite(val)) return '<b>N/D</b>';
+        const d = Math.round(val - tgt.elo) || 0; const c = Math.abs(d) < 25 ? 'var(--ok)' : 'var(--dim)';
+        return `<b>${Math.round(val)}</b><span style="color:${c};font-size:9px"> (${d>=0?'+':''}${d})</span>`;
       };
       return `<div style="border-bottom:1px solid var(--line);padding:7px 0;font-size:11px">
         <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
-          <span><span style="color:var(--dim);font-family:monospace">${i+1}.</span> ${m.info.date} vs <strong>${m.info.oppName}</strong></span>
-          <span><span style="font-size:9.5px;color:var(--accent)">somiglianza ${sim}%</span>
+          <span><span style="color:var(--dim);font-family:monospace">${i+1}.</span> ${m.info.date} ${m.info.isHome ? 'in casa' : 'fuori'} vs <strong>${m.info.oppName}</strong></span>
+          <span><span style="font-size:9.5px;color:var(--accent)">simile ${Math.round(100 * m.simile)}% &middot; pesa ${Math.round(100 * m.peso)}%</span>
                 <span style="color:${col};font-weight:bold;margin-left:8px">${m.info.gf}-${m.info.ga}</span></span>
         </div>
         <div style="font-size:9.5px;color:var(--dim);line-height:1.5">
-          Poss ${cmp(m.oppPoss, tgt.poss, '%', false)}, NPxG ${cmp(m.oppXG, tgt.npxg, '', true)}, Alt.Dif. ${cmp(m.oppDefX, tgt.avg_def_x, 'm', true)}<br>
-          PPDA ${cmp(m.oppPPDA, tgt.ppda, '', true)} &middot; Tilt ${cmp(m.oppTilt, tgt.field_tilt, '%', true)}
+          Elo ${cmpElo(m.snap.elo)}, Poss ${cmp(m.snap.poss, tgt.poss, '%', false)}, NPxG ${cmp(m.snap.npxg, tgt.npxg, '', true)}<br>
+          Alt.Dif. ${cmp(m.snap.avg_def_x, tgt.avg_def_x, 'm', true)} &middot; PPDA ${cmp(m.snap.ppda, tgt.ppda, '', true)} &middot; Tilt ${cmp(m.snap.field_tilt, tgt.field_tilt, '%', true)}
         </div></div>`;
     };
 
-    let klistH = knn_H.topMatches.map((m, i) => _knnRow(m, i, knn_H.targetInfo || {})).join('');
+    let klistH = simH.topMatches.map((m, i) => _knnRow(m, i, simH.targetInfo || {})).join('');
     safeHtml('knn-list-h', klistH);
-    safeHtml('knn-legend', `Ordinate dalla più simile alla meno simile. La somiglianza è il peso del kernel sulle `
-      + `5 dimensioni mostrate; fra parentesi lo scarto rispetto a chi si affronta oggi, `
-      + `<span style="color:var(--ok)">in verde</span> quando è sotto l'8%.`);
+    safeHtml('knn-legend', `Le ultime 30 partite di lega di ogni squadra, in casa e fuori. Ogni partita pesa di più quanto più l'avversario di allora `
+      + `somiglia a quello di oggi: il suo Elo prima di quella partita e 11 numeri di quella partita (NPxG fatti e concessi, territorio, `
+      + `altezza difensiva, possesso, pressing, tocchi in area, ingressi nell'ultimo terzo, recuperi, ritmo, baricentro), e quanto è recente. `
+      + `${simH.conSede ? 'I punti delle partite giocate nell\'altra sede sono riportati alla sede di oggi con la media della lega. ' : ''}`
+      + `Sotto, le sei che pesano di più: «simile» è la somiglianza dell'avversario, «pesa» la parte del numero che viene da quella partita `
+      + `(una partita molto simile ma vecchia pesa poco). Fra parentesi lo scarto da chi si affronta oggi, `
+      + `<span style="color:var(--ok)">in verde</span> quando è piccolo. Misurato su 4.112 partite di 11 campionati: dice la forza degli avversari `
+      + `affrontati quanto i punti su tutte, non un incastro, e non entra nel verdetto.`);
 
-    safeTxt('knn-title-a', `${aName} in trasferta contro squadre simili a ${hName}`); safeHtml('knn-res-a', `Rendimento Storico: <strong>${f2(knn_A.pts_per_game)} Pts/Match</strong>`);
-    let klistA = knn_A.topMatches.map((m, i) => _knnRow(m, i, knn_A.targetInfo || {})).join('');
+    safeTxt('knn-title-a', `${aName} contro squadre simili a ${hName}`); safeHtml('knn-res-a', _simRes(simA));
+    let klistA = simA.topMatches.map((m, i) => _knnRow(m, i, simA.targetInfo || {})).join('');
     safeHtml('knn-list-a', klistA);
 
     safeTxt('mk-h2-ov', pct(mk_ov.dist[7]+mk_ov.dist[8]+mk_ov.dist[9]+mk_ov.dist[10])); safeTxt('mk-h2-ro', pct(mk_ro.dist[7]+mk_ro.dist[8]+mk_ro.dist[9]+mk_ro.dist[10]));

@@ -17,6 +17,7 @@
 #   profilo             il profilo dell'avversario prima di quella partita (simili.profili): serve la sua storia
 #   forza, stile        lo stesso profilo, solo npxg e npxga, o le 12 di stile
 #   rating, Elo         il rating dalle quote passate o l'Elo dell'avversario prima di quella partita
+#   corrette + Elo      la card del b90 (similiCard): le 11 corrette e l'Elo dell'avversario prima di quella partita
 import sys, os, math, collections, datetime as dt, importlib.util, warnings
 import numpy as np
 warnings.filterwarnings('ignore')
@@ -79,9 +80,12 @@ VAR = [('motore, stessa sede (oggi)', KNN, 'motore', 'sede', False), ('motore, 3
        ('forza, 30 sede corretta', FORZA, 'profilo', 'tutte', True), ('stile, 30 sede corretta', STILE, 'profilo', 'tutte', True),
        ('rating dalle quote, 30 sede corretta', [('rat', 1.0, 'o')], 'rating', 'tutte', True),
        ('Elo, stessa sede', [('elo', 1.0, 'o')], 'elo', 'sede', False), ('Elo, 30 sede corretta', [('elo', 1.0, 'o')], 'elo', 'tutte', True)]
+KNN3 = [(k, w, 'o' if m == 'own' else m) for k, w, m in KNN]
+VAR += [(f'corrette + Elo {w:g}{" (b90)" if w == 1.5 else ""}', KNN3 + [('elo', w, 'elo')], 'mix', 'tutte', True) for w in (1.5, 3.0, 6.0, 12.0)]
 
 def valore(x, k, modo, prof):
     own, opp = x[1], x[2]
+    if modo == 'elo': return x[9]
     if prof == 'profilo': return (x[5] or {}).get(k)
     if prof == 'rating': return x[8]
     if prof == 'elo': return x[9]
@@ -92,7 +96,8 @@ def valore(x, k, modo, prof):
 def bersaglio(hist_o, d, sede_o, dims):
     # come target in getSimilarMatches: _shrunkMean dei valori dell'avversario di oggi, sede e ultime 30, k = 5
     h = [x for x in hist_o if x[0] < d and (d - x[0]).days <= 500][-30:]; t = {}
-    for k, _, _ in dims:
+    for k, _, modo in dims:
+        if modo == 'elo': continue
         val = (lambda x: x[2].get('npxg')) if k == 'npxga' else (lambda x: x[1].get(k))
         ro = [val(x) for x in h if x[7] == sede_o and val(x) is not None]; ov = [val(x) for x in h if val(x) is not None]
         if ov: mo = float(np.mean(ov)); t[k] = (len(ro) * np.mean(ro) + 5 * mo) / (len(ro) + 5) if ro else mo
@@ -145,6 +150,7 @@ def raccogli(leghe):
             r = {'lega': lid, 'hg': m['score_home'], 'ag': m['score_away'], 'res': m['_r'][0] - m['_r'][1], 'ye': m['_fd']['ye']}
             for nome, dims, prof, camp, corr in VAR:
                 if prof in ('motore', 'corrette'): tH, tA = bersaglio(st[A], d, 'A', dims), bersaglio(st[H], d, 'H', dims)
+                elif prof == 'mix': tH, tA = {**bersaglio(st[A], d, 'A', dims), 'elo': m['_fd']['EA']}, {**bersaglio(st[H], d, 'H', dims), 'elo': m['_fd']['EH']}
                 elif prof == 'profilo': tH, tA = m.get('_pA') or {}, m.get('_pH') or {}
                 elif prof == 'rating': tH, tA = {'rat': m['_fd']['RA']}, {'rat': m['_fd']['RH']}
                 else: tH, tA = {'elo': m['_fd']['EA']}, {'elo': m['_fd']['EH']}

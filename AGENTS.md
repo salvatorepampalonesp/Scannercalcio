@@ -57,7 +57,7 @@ vedi *Le quote automatiche*); se non ci sono, le scrive l'utente. Per misurarle 
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b89`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b90`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -537,22 +537,13 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   prima (restringimenti James-Stein, Gamma-Poisson, Dirichlet e ricalibrazioni, uno per card), test su 3.976 partite
   mai aperte per Numeri: passano tutte e 17, da `z` −2.7 (corner) a −17.1 (recuperi). Vedi *Le card di Numeri: la
   regola*, «Esito».
-- [ ] **La card del KNN, da decidere con l'utente.** «Contro squadre simili» misura la forza, non un incastro: su 6.445 partite di 11
-  campionati, dato il mercato o l'Elo non aggiunge niente (`z` −0.5 e +0.8), e un rendimento particolare contro un tipo di avversario
-  non si ripete (`z = +1.2`, 5 leghe su 11). A schermo ha un errore di circa ±0.4 punti.
-
-  Con tutte le 30 partite invece della stessa sede (zero chiamate) legge la forza meglio: coi punti della partita 0.294 → 0.338,
-  in 11 leghe su 11, con un errore di ±0.28. Ma resta un numero di forza: i punti a partita semplici delle stesse 30 fanno lo
-  stesso (0.349), e nessuna metrica di somiglianza li supera. Passare alle 30 cambia anche le probabilità del KNN, ricalibrate
-  sulla stessa sede nel `b76`: la ricalibrazione va rifatta, con una regola registrata.
-
-  Le strade:
-  - dirlo nella card, e mostrarne l'errore;
-  - passare alle 30 con la sede corretta;
-  - mostrare al suo posto i punti a partita delle ultime 30, con la sede corretta;
-  - toglierla.
-
-  Vedi *Il confronto contro squadre simili*, «Le 30 partite invece della stessa sede».
+- [x] ~~**La card del KNN, da decidere con l'utente.**~~ — **corretta nel `b90`, solo la card.** L'utente ha scelto di tenerla
+  come suo studio, con le metriche giuste: le ultime 30 partite invece della stessa sede, i punti riportati alla sede di oggi, i
+  tre numeri presi dall'avversario e non dalla squadra stessa, e l'Elo dell'avversario prima di ogni partita. Sulle 4.112 partite
+  della misura legge la forza meglio di prima (coi punti della partita 0.294 → 0.339, 11 leghe su 11, errore ±0.39 → ±0.28), ma
+  non più dei punti semplici (0.349). Le probabilità del KNN (riga «KNN Storico», peso 0 nel verdetto) restano su
+  `getSimilarMatches`, la stessa sede coi tre numeri della squadra: cambiarle vuol dire rifare la ricalibrazione del `b76` con una
+  regola registrata. Vedi *Il confronto contro squadre simili*, «Nello Scanner (`b90`)».
 - [ ] **Ordered Logit e trend dell'Elo, da decidere con l'utente.** Non hanno un candidato: l'Ordered Logit è
   calibrato ma più debole del motore (peso 0 nell'1X2), il trend non prevede niente (correlazione +0.006 coi punti
   meno attesi). Toglierli dallo schermo o dire a schermo quanto valgono.
@@ -621,7 +612,14 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b89`)
+## Stato attuale (`b90`)
+
+**La card contro squadre simili** (`b90`). In Numeri, «Partite simili (KNN) e moduli» cerca le simili fra le ultime 30
+partite, in casa e fuori, coi punti riportati alla sede di oggi. L'avversario di allora si confronta con quello di oggi sul suo
+Elo prima di quella partita e su 11 numeri di quella partita, tutti suoi (fino al `b89` tre erano della squadra stessa). Sotto,
+le sei partite che pesano di più nel numero, con somiglianza e peso. Il numero dice la forza degli avversari affrontati, non un
+incastro, e non entra nel verdetto. Nessun'altra probabilità cambia. Vedi *Il confronto contro squadre simili*, «Nello Scanner
+(`b90`)».
 
 **La ricerca negli indisponibili** (`b89`). Sopra la lista di ogni squadra c'è una barra: poche lettere, anche senza
 accenti e in maiuscolo, e restano solo i giocatori che le hanno nel nome. Vedi *Gli indisponibili*, «La ricerca».
@@ -1090,7 +1088,9 @@ perché sui gol il completo peggiora la calibrazione ovunque. Non «sistemarlo»
   `ol = 0.7·NPxG + 0.3·NPxGA avversario` di ruolo. Calcolato e mostrato ma **peso 0**: va
   tenuto giusto lo stesso, perché è a schermo (dal `b51` non è più nel mega-prompt).
 - **KNN**: calcolato e mostrato come riferimento tattico, **non entra nell'ensemble**. Non
-  descriverlo come se ci fosse.
+  descriverlo come se ci fosse. Sono due calcoli: le probabilità (riga «KNN Storico» dei modelli, CSV) vengono da
+  `getSimilarMatches` sulla stessa sede; dal `b90` la card «contro squadre simili» da `similiCard`, sulle ultime 30. Non
+  unirli: cambiare il primo sposta le probabilità ricalibrate nel `b76`.
 - **Markov** (`markovFlow`, rate dipendenti dal punteggio): sulle 24 leghe, sui lambda completi
   dopo l'Elo, logloss 1X2 1.0098 come il Dixon-Coles. Sull'1 contro 2 è lo stesso modello (log p1/p2
   correlato 0.9998); il pareggio lo dà 1.5 punti più alto (26.7% contro 25.5% veri). Vedi *Markov,
@@ -2403,7 +2403,7 @@ col movimento ridotto (`reducedMotion: 'reduce'`: i numeri che contano mostrereb
 intermedi), legge «In breve» da `#in-breve` (il riquadro, la sorpresa e le proposte sono tre blocchi)
 e misura le voci del dock e del foglio Altro, Squadre in tutte e tre le sotto-schede.
 
-Esito al `b89` (storico 30), a 390px con tutte le 30 card aperte, scheda per scheda e in tutte e quattro le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, il prompt della giornata con note e istruzioni una volta sola e un blocco per partita, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, il caso dell'arbitro col rapporto rifatto da `arbitri.json`, gli indisponibili segnati, nel prompt e tolti, la loro ricerca, 0 px):
+Esito al `b90` (storico 30), a 390px con tutte le 30 card aperte, scheda per scheda e in tutte e quattro le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, il prompt della giornata con note e istruzioni una volta sola e un blocco per partita, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, il caso dell'arbitro col rapporto rifatto da `arbitri.json`, gli indisponibili segnati, nel prompt e tolti, la loro ricerca, 0 px):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
@@ -2411,7 +2411,7 @@ Esito al `b89` (storico 30), a 390px con tutte le 30 card aperte, scheda per sch
 | batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 204 | 0 su 131 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
 | `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 142-167 | 84-90 | 0 |
-| `vecchio`: motore `b88` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 su 204 | 1 | 0 |
+| `vecchio`: motore `b89` caricato (controllo) | 0/3, «motore caricato diverso ...» | 7 su 204 | 1 | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -2527,7 +2527,8 @@ Al `b86` il controllo col `b85` non vede nessuna scrittura diversa su 204, solo 
 non passa da `safeHtml`, e `artDel` («dell'Atalanta»), che la lega finta coi suoi nomi non tocca. Al `b87` lo stesso col
 `b86`: la sotto-scheda degli indisponibili sta fuori dal motore e scrive con `innerHTML` diretto. Al `b88` lo stesso col `b87`:
 cambia solo come il mega-prompt è costruito, e il prompt della singola partita esce identico. Al `b89` lo stesso col `b88`:
-cambia solo la sotto-scheda degli indisponibili, che sta fuori dal motore.
+cambia solo la sotto-scheda degli indisponibili, che sta fuori dal motore. Al `b90` il controllo col `b89` vede 7 scritture
+diverse su 204, tutte della card contro squadre simili (titoli, rendimento, liste e legenda), e nel CSV solo il certificato.
 
 **Il controllo del `b70`.** Da qui «In breve» controlla anche il rischio sorpresa: con le quote dell'1X2
 `#sorpresa-box` deve essere identico a quello rifatto nella pagina con `rischioSorpresa(…,
@@ -4098,7 +4099,8 @@ sede di oggi.
 - *Trovato strada facendo.* In `KNN_DIMS` tocchi in area, ingressi nell'ultimo terzo e recuperi entro 5" si leggono dalla
   squadra stessa (`own: 'tch_box'`…), non dall'avversario di allora come le altre otto dimensioni. Quella parte del confronto
   dice «partite in cui la squadra ha fatto tanto in area», non «avversari che fanno tanto in area». Prenderli dall'avversario non
-  cambia niente (0.288 con la stessa sede, 0.335 con le 30): sono rumore in tutte e due le forme.
+  cambia niente (0.288 con la stessa sede, 0.335 con le 30): sono rumore in tutte e due le forme. Nella card sono corretti dal
+  `b90`; nelle probabilità del KNN no.
 - *Le probabilità del KNN*, che escono dagli xG contro le simili, con le 30 seguono meglio i gol: correlazione 0.370 → 0.406.
   Con l'avversario descritto dal suo profilo o dal suo rating, gli xG pesati per somiglianza aggiungono qualcosa agli xG
   semplici sopra l'Elo (`z` +3.4–3.8). Sono gli xG corretti per la forza degli avversari, cioè l'idea del rating sugli xG, che
@@ -4113,6 +4115,58 @@ sede di oggi.
   rumore. Con tutte le 30 partite l'errore scende a ±0.28, ma la somiglianza resta inutile: i punti a partita semplici delle
   stesse partite dicono lo stesso.
 - Non alza le prese, né con le quote né senza.
+
+**Nello Scanner (`b90`).** L'utente: «voglio solo che prenda le metriche giuste e magari altre per prendere le simili nelle
+ultime 30. Sarà uno studio mio nel caso, però voglio che sia corretto», e che non incida da nessun'altra parte.
+
+*La scelta*, sull'emulazione (`strumenti/simili-card.py`, stesse 4.112 partite, coi punti della partita):
+
+| la card | coi punti | contro la card del `b89` | simili efficaci, errore |
+|---|---|---|---|
+| `b89`: la stessa sede, 11 numeri (tre della squadra) | 0.294 | | 11.0, ±0.39 |
+| le 30, sede corretta, 11 numeri dell'avversario | 0.335 | +0.041 ±0.016, 11 leghe su 11 | 21.5, ±0.28 |
+| **la stessa, più l'Elo dell'avversario con peso 1.5 (`b90`)** | **0.339** | **+0.045 ±0.016, 11 su 11** | 21.7, ±0.28 |
+| la stessa, Elo con peso 3 / 6 / 12 | 0.341 / 0.343 / 0.345 | | |
+| i punti semplici delle stesse 30, sede corretta | 0.349 | | |
+
+Il peso dell'Elo non ha un ottimo interno: più pesa, più la card diventa la media semplice delle 30. Si è preso 1.5, il peso
+delle due dimensioni più forti (NPxG fatti e concessi), così l'Elo è una dimensione fra le altre e non le schiaccia. L'Elo
+dell'emulazione è rifatto dai punteggi di football-data; quello dello Scanner dall'archivio della PitchAPI.
+
+*Cosa calcola* (`similiCard`, accanto a `getSimilarMatches`, zero chiamate):
+- *le partite*: le ultime 30 di lega della squadra (`overall`), in casa e fuori;
+- *le dimensioni* (`KNN_CARD_DIMS`): le 11 di `KNN_DIMS`, ma tocchi in area, ingressi nell'ultimo terzo e recuperi entro 5"
+  dell'avversario (`opp_tch_box`, `opp_f3_entries`, `opp_cp_regains`), più il suo Elo prima di quella partita, peso 1.5;
+- *il bersaglio*: per le 11 quello di sempre (la media dell'avversario di oggi, ristretta verso la sua sede), per l'Elo il suo
+  Elo di oggi, quello della card dell'Elo;
+- *il peso di ogni partita*: come `getSimilarMatches` (nucleo largo quanto la distanza mediana, emivita di 106 giorni,
+  copertura). La deviazione di ogni dimensione è sulle 30;
+- *i punti*: quelli di ogni partita più la media della lega nella sede di oggi meno quella nella sede di allora (`puntiSede`,
+  sull'archivio prima del giorno, almeno 30 partite; senza, i punti restano quelli veri e la legenda non lo dice).
+
+*Cosa serviva al motore*, tutte aggiunte che non cambiano nessun numero:
+- `opp_tch_box` in `aggregaTeam`, dalle stesse fonti di `tch_box` (`/advanced`, poi `/stats`). `tch_box_ag`, solo da `/stats`,
+  resta com'è perché lo usa `predictStat`;
+- l'id della partita in `matchInfo`;
+- `ELO.pre`: i due rating prima di ogni partita, presi nel ciclo di `buildGlobalElo` dopo la regressione dello stacco.
+
+*A schermo*: il titolo senza «in casa» e «in trasferta»; sotto, le sei partite che pesano di più, ognuna con la sede, «simile»
+(il nucleo, 100% alla stessa distanza dell'avversario di oggi) e «pesa» (la parte del numero che viene da lì: una partita molto
+simile ma vecchia pesa poco), l'Elo dell'avversario di allora e cinque suoi numeri con lo scarto da quello di oggi; in fondo i
+punti contro le simili col loro errore (±1.3/√n efficaci), quante partite valgono, e i punti su tutte le 30. La legenda dice
+cosa entra e quanto vale. Fino al `b89` «somiglianza» era `exp(−d²/2)`, senza il nucleo, e la legenda diceva «5 dimensioni»
+quando erano 11.
+
+*Cosa non cambia*: le probabilità del KNN (riga «KNN Storico», doppie chance, Goal e Over del KNN, CSV), che restano su
+`getSimilarMatches`, e il resto della card (i moduli).
+
+*Verificato*:
+- il banco col motore `b89`: 7 scritture diverse su 204, tutte della card (titoli, rendimento, liste, legenda), e nel CSV solo
+  il certificato;
+- un controllo nella pagina sulla lega finta, che rifà la card a mano (medie di sede dall'archivio, lato dell'avversario
+  dall'archivio, Elo da `ELO.pre`, nucleo): su 6 casi punti, punti su tutte, ordine e pesi coincidono. Col lato dell'Elo
+  sbagliato apposta fallisce su 6 su 6;
+- le schermate a 390px (`strumenti/schermate.js` ha ora `numeri-simili`): nessun errore, 0 px di scorrimento.
 
 `python3 strumenti/simili.py "ITA:Serie A=2024/2025,2025/2026,2026/2027" …` rifà tutto in un minuto sugli 11 campionati, dopo
 `--scarica` e `strumenti/rating-quote.py --scarica`. `strumenti/simili-card.py`, con gli stessi argomenti, rifà le 30 partite e le altre metriche in un
@@ -5742,7 +5796,7 @@ misurate.
 | La diagonale gonfiata di Karlis–Ntzoufras (`δ` sui pareggi da 1-1 in su) sopra la matrice del maestro (solo descrittivo) | **quasi niente: il maestro ha chiuso il buco** | 23.278 partite delle 24 leghe, fuori lega `δ` 0.08–0.10: risultato esatto −0.42‰ (`z = −1.89`), Goal −0.28‰, Over 2.5 +0.16‰ (`z = +4.54`). Pareggi della matrice 24.4 → 25.6% contro 25.5% reali. Sulla matrice del `b63` valeva −1.80‰. Vedi *Da fare* |
 | Un rating delle squadre dalle quote di chiusura delle partite già giocate, quando le quote della partita non ci sono ancora (solo esplorazione) | **sì, da registrare** | 46.177 partite di 18 leghe dal 2019/20, fuori lega: prese 49.11 (Elo) → 50.35%, logloss −12.67‰ (`z = −16.17`), 18 leghe su 18; quote di prima della partita 50.58%, chiusura 50.85%. R² sulla chiusura 0.928 (Elo 0.802). Sul 2026/27 dei cinque campionati R² 0.900 contro 0.888 del maestro, 0.927 insieme. Con le quote della partita non aggiunge niente. Vedi *Il rating dalle quote passate* |
 | Il confronto contro squadre simili con più dati: il KNN su tutta la storia, i residui sul mercato, la risposta di ogni squadra allo stile dell'avversario, gli incastri di stile, pareggi e gol fra squadre simili (solo esplorazione) | **no** | 6.445 partite di 11 campionati dal 2024/25, storia mediana di 36 partite: i punti contro le simili misurano la forza (correlazione +0.344) ma sul residuo del mercato −0.006 (`z = −0.5`), dell'Elo +0.010; il rendimento particolare contro un tipo di avversario +0.015 (`z = +1.2`, 5 leghe su 11); la risposta allo stile da −0.003 a +0.004; 144 incastri fuori lega R² sotto zero; pareggi e Over fra stili simili dentro ±2.5 punti. Vedi *Il confronto contro squadre simili* |
-| La card «contro squadre simili» con tutte le 30 partite invece della stessa sede, e con altre metriche per dire chi è simile: il profilo dell'avversario prima della partita, solo la forza, lo stile, il rating dalle quote passate, l'Elo (solo esplorazione) | **le 30 sì per la card, la somiglianza no** | 4.112 partite di 11 campionati: coi punti della partita 0.294 → 0.338 con le 30 e la sede corretta (+0.044 ±0.016, 11 leghe su 11), errore a schermo ±0.39 → ±0.28; la card fa un po' peggio dei punti semplici delle stesse partite (0.294 contro 0.308), e la metrica migliore li raggiunge (0.351 contro 0.349); sopra l'Elo `z` ≤ +1.8, sul residuo del mercato fra −0.002 e +0.006. Tre delle 11 dimensioni di `KNN_DIMS` leggono la squadra stessa invece dell'avversario: correggerle non cambia niente. Vedi *Il confronto contro squadre simili* |
+| La card «contro squadre simili» con tutte le 30 partite invece della stessa sede, e con altre metriche per dire chi è simile: il profilo dell'avversario prima della partita, solo la forza, lo stile, il rating dalle quote passate, l'Elo (solo esplorazione) | **le 30 sì per la card (nella card dal `b90`), la somiglianza no** | 4.112 partite di 11 campionati: coi punti della partita 0.294 → 0.338 con le 30 e la sede corretta (+0.044 ±0.016, 11 leghe su 11), errore a schermo ±0.39 → ±0.28; la card fa un po' peggio dei punti semplici delle stesse partite (0.294 contro 0.308), e la metrica migliore li raggiunge (0.351 contro 0.349); sopra l'Elo `z` ≤ +1.8, sul residuo del mercato fra −0.002 e +0.006. Tre delle 11 dimensioni di `KNN_DIMS` leggono la squadra stessa invece dell'avversario: correggerle non cambia niente. Vedi *Il confronto contro squadre simili* |
 | La qualità dell'undici in campo dai voti dei giocatori (`/players`), contro quella abituale (solo esplorazione) | **il mercato sì, le prese no** | 3.596 partite dei cinque campionati dal 2024/25: sul residuo della chiusura coefficiente +1.73 (`z = +29.1`, R² 0.19); sui risultati, col coefficiente del mercato, logloss −1.11‰ (`z = −1.20`), prese −0.33 (`z = −1.36`). Vedi *Il rating dalle quote passate* |
 | Togliere il margine dell'1X2 alla Shin o con la potenza invece che in proporzione, nella card delle quote (solo descrittivo) | **no: `QUOTE_COMB` ricalibra già** | 16.071 partite di 14 leghe, chiusura. Crudo, contro la proporzione: potenza −0.85‰, Shin −0.75‰ (la proporzione sottovaluta i favoriti: sopra il 65% prevede 73.5, esce 77.2). Ricalibrato fuori lega, come fa `QUOTE_COMB`: −0.02‰ e −0.03‰. Per i bersagli del maestro è un'altra cosa: vedi *Il maestro coi bersagli di Shin: la regola* |
 
@@ -7806,3 +7860,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b87` | gli indisponibili, chiesti dall'utente: in Squadre una sotto-scheda con la rosa delle ultime 5 formazioni e una casella per giocatore, che un tocco barra; i segni restano nel browser per la partita e vanno nel mega-prompt fra i rischi (nomi, partite da titolare, gol, peso sull'undici abituale), mai nelle probabilità (l'indice delle assenze non è passato: −0.4‰, `z = −0.72`). Nessuna chiamata in più. Il banco segna due giocatori e controlla prompt, persistenza e probabilità ferme, e misura i controlli a segmenti dentro il loro spazio; controllo di potenza superato. Col `b86` 0 scritture diverse su 204, una riga del CSV (il certificato) |
 | `b88` | il prompt della giornata, chiesto dall'utente: «Copia il prompt della giornata» (nel riquadro della giornata e nella scheda Prompt) copia un testo solo per tutte le partite analizzate, con le note e le istruzioni una volta sola e poi i numeri di ogni partita (quote e indisponibili compresi); in fondo le istruzioni della giornata, con un elenco unico delle proposte FORTE e GIOCABILE e poi partita per partita. Sul banco 5 partite fanno 43.823 caratteri contro circa 80.000 dei cinque prompt. Le note comuni stanno in `_notePrompt` e `_noteQuote`, e il prompt della singola partita esce identico al `b87` (tranne «lo 0%» al posto di «il 0%» negli indisponibili). Il banco controlla il prompt della giornata; controllo di potenza superato. Col `b87` 0 scritture diverse su 204, una riga del CSV (il certificato) |
 | `b89` | la ricerca negli indisponibili, chiesta dall'utente («i nomi sono difficili da trovare»): sopra la lista di ogni squadra un campo dove bastano poche lettere, senza badare a maiuscole, accenti e apostrofi; restano solo i giocatori che le hanno nel nome, e la x pulisce. Sul telefono il campo resta in alto mentre si scorre la lista della sua squadra. Il banco prova la ricerca, e fallisce su una copia dove non nasconde niente. Col `b88` 0 scritture diverse su 204, una riga del CSV (il certificato) |
+| `b90` | la card «contro squadre simili» corretta, chiesta dall'utente come suo studio, senza toccare altro: le ultime 30 partite invece della stessa sede, coi punti riportati alla sede di oggi; i tre numeri che `KNN_DIMS` leggeva dalla squadra stessa presi dall'avversario; l'Elo dell'avversario prima di ogni partita come dimensione in più (peso 1.5). Sulle 4.112 partite della misura legge la forza meglio del `b89` (0.294 → 0.339, 11 leghe su 11, errore ±0.39 → ±0.28). Sotto, le sei partite che pesano di più, con somiglianza e peso. Le probabilità del KNN restano su `getSimilarMatches`. Col `b89` 7 scritture diverse su 204, tutte della card, e una riga del CSV (il certificato) |
