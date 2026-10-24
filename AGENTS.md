@@ -44,7 +44,8 @@ analizza anche una giornata intera: trova le partite del turno nell'archivio di 
 fa il giro completo del motore su ognuna (vedi *La giornata*). La documentazione dell'API
 (51 pagine, settembre 2026) elenca anche statistiche per giocatore (`/players`,
 `/advanced/players`), tiri (`/shots`), `/h2h`, arbitro, heatmap e 42 leghe fra cui coppe e
-competizioni UEFA (il 10 ottobre 2026 `/leagues` ne elenca 77); nessuna quota dei bookmaker. Le
+competizioni UEFA (il 10 ottobre 2026 `/leagues` ne elenca 77); nessuna quota dei bookmaker, nessun infortunio, nessuna
+classifica (cosa c'è e cosa manca, guardato il 24 ottobre 2026: *Il rating dalle quote passate*). Le
 quote 1X2 (card «Con le quote del mercato», dal `b54`) e dell'Over/Under 2.5 (dal `b57`) arrivano
 da sole da football-data.co.uk (dal `b55`), attraverso lo stesso worker Cloudflare (strada `/quote/`,
 vedi *Le quote automatiche*); se non ci sono, le scrive l'utente. Per misurarle si usano gli stessi file (`strumenti/quote-bookmaker.py`,
@@ -445,10 +446,22 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   probabili *in questa partita che nella partita tipo della lega*. Un 3-1 a 1.8× la sua
   frequenza dice qualcosa, un 1-1 al 12% no. È la parte sopravvissuta dell'idea dello
   «scenario singolo».
-- [ ] **Assenze pesate per valore**, se l'indice per presenze del `b43` mostra il segnale:
-  il peso di ogni giocatore da xG+xA o VAEP (`/advanced/players`) invece che dalle presenze.
-  Una chiamata in più per ogni partita dello storico. È la strada se gli indisponibili segnati
-  dall'utente (`b87`, vedi *Gli indisponibili*) devono spostare le probabilità: oggi vanno solo nel prompt.
+- [ ] **Assenze pesate per valore**: misurato il 24 ottobre 2026 coi voti dei giocatori (`/players`), sui cinque
+  campionati dal 2024/25. Il mercato si sposta con la qualità dell'undici in campo (`z = +29`), ma sui risultati le
+  prese non cambiano (−0.33 punti, `z = −1.36`) e la logloss quasi (−1.1‰, `z = −1.20`). Vedi *Il rating dalle quote
+  passate*, «La qualità dell'undici». Costa due chiamate per ogni partita dello storico. Ha senso solo come variabile del
+  maestro, per le probabilità, se gli indisponibili segnati dall'utente (`b87`) devono spostarle.
+- [ ] **Il rating dalle quote passate, da decidere con l'utente.** Nelle 34 leghe di football-data, quando le quote della
+  partita non ci sono ancora (di solito fino al venerdì per il weekend), un rating delle squadre dalle quote di chiusura
+  delle partite già giocate vale quasi quanto le quote della settimana. Su 46.177 partite di 18 leghe +1.24 punti di prese
+  sull'Elo (`z = +8.6`, 18 leghe su 18), R² 0.928 sulla chiusura. Sul 2026/27 dei cinque campionati R² 0.900 contro 0.888
+  del maestro, e 0.927 insieme. Nessuna chiamata alla PitchAPI: un file di football-data in più per lega. Per un test:
+  - pesi della combinazione col maestro stimati sul mercato, su un campione di esplorazione col maestro: per esempio il
+    2025/26 dei cinque campionati, circa 14.600 chiamate;
+  - test sui risultati delle leghe dei file `new` (Austria, Danimarca, Svezia, Norvegia, Messico, MLS, Giappone), coi
+    batch del motore: circa 20.000 chiamate.
+
+  Vale solo se l'utente analizza le partite prima che escano le quote. Vedi *Il rating dalle quote passate*.
 - [ ] **Le coppe nazionali nel riposo.** Dal `b44` il riposo conta lega e coppe europee
   (vedi *La stanchezza*). Coppa Italia, FA Cup, Pokal, Copa del Rey e Coupe de France non sono
   in `leghe.json`, anche se la documentazione dell'API parla di coppe: va verificato con
@@ -830,6 +843,13 @@ d'accordo la favorita vince il 42.7%, il pick del motore il 26.1%. Il valore del
 le 43 leghe senza quote automatiche, i gialli (con l'arbitro, in Serie A e LaLiga), falli, tiri, i giocatori. Vedi *Il
 motore contro il mercato*.
 
+**Le quote passate e l'undici** (misura del 24 ottobre 2026). Dove le quote della partita non ci sono ancora, un rating
+delle squadre dalle quote di chiusura delle partite già giocate vale quasi quanto le quote della settimana: +1.24 punti di
+prese sull'Elo su 46.177 partite di 18 leghe, e sul 2026/27 dei cinque campionati ricostruisce la chiusura meglio del
+maestro (R² 0.900 contro 0.888, 0.927 insieme). Nessuna chiamata alla PitchAPI. La qualità dell'undici dai voti dei
+giocatori sposta il mercato ma non le prese. Con le quote della partita nessuno dei due aggiunge niente. Nello Scanner
+non c'è: vedi *Il rating dalle quote passate*.
+
 **Battere il bookmaker** (ricerca registrata, `b58`): con questi dati no. Il mercato non va dove dice
 il motore; giocare il motore alle quote di qualche giorno prima perde in CLV (−6.5% alla media, −1.3%
 al prezzo migliore); il prezzo migliore contro il consenso sembra valere solo col CLV calcolato in
@@ -962,6 +982,7 @@ non passa mai +7.1. Trascina con sé il `12`.
 
 | campione | partite | note |
 |---|---|---|
+| **Le quote passate e l'undici** | **46.177 · 340 · 3.596** | Solo esplorazione del 24 ottobre 2026 (vedi *Il rating dalle quote passate*). I file di football-data di 18 leghe, 2017/18–2026/27 (`batch/fd`), misurati dal 2019/20: guardati 1X2 e prese per il rating dalle quote passate. Il 2026/27 dei cinque campionati col `b89` (`batch/2627b89`), 340 su 340 in copia conforme, Elo identico su ogni file, 7.516 chiamate: maestro contro rating. `/lineups` e `/players` dei cinque campionati dal 2024/25 (`batch/giocatori`, 7.934 chiamate): la qualità dell'undici. Per un test di queste due domande servono leghe e partite nuove |
 | **Il 2026/27 dei cinque campionati col `b85`** | **335** | Premier 68, LaLiga 86, Ligue 1 61, Bundesliga 51, Serie A 69, le partite giocate fino al 21 ottobre 2026: batch automatico del `b85` (`batch/2627b85`), 335 su 335 in copia conforme, Elo identico su ogni file, 7.491 chiamate in 15 minuti. Aperte per il rischio sorpresa, livello e sfavorito che vince (vedi *L'avviso di sorpresa*, «Sul 2026/27»), e per il confronto con le quote di chiusura (vedi *Il motore contro il mercato*, «Il 2026/27»). Sono partite del test dei tocchi in area (dal 3 ottobre): lì i tocchi non sono stati guardati |
 | **Le cinque leghe col `b48`** | **5230** | **il riferimento dal `b49`** per soglie, confidence e tabellone: batch automatico `b48`, stesse stagioni e partite delle righe sotto, 5230 su 5230 in copia conforme, Elo rifatto dall'archivio identico su ogni file |
 | **Le quattro leghe del `b53`** | **3202** | 2. Bundesliga 908, First Division A 931, Premiership scozzese 683, Super League svizzera 680, 2023/24–2025/26: batch automatico del `b52`, 3202 su 3202 in copia conforme, Elo identico su ogni file; `/advanced` assente sul 2023/24 di Scozia e Svizzera. Aperte solo per il test della confidence nuda; il tabellone non è mai stato guardato |
@@ -2373,7 +2394,7 @@ Esito al `b89` (storico 30), a 390px con tutte le 30 card aperte, scheda per sch
 | batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 204 | 0 su 131 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
 | `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 142-167 | 84-90 | 0 |
-| `vecchio`: motore `b87` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 su 204 | 1 | 0 |
+| `vecchio`: motore `b88` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 su 204 | 1 | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -3861,6 +3882,104 @@ il ridge (vedi *Il maestro mercato: la regola*).
 prevede 72.4% ed esce il 76.1%; nelle altre fasce sta entro 2 punti. Una ricalibrazione sui risultati, fuori lega, lo
 porta a 73.3 contro 74.2%, ma vale −0.13‰ di logloss (`z = −0.64`, 10 leghe su 22): il pick non cambia, cambia il numero
 mostrato. Con i bersagli di Shin la fascia alta si raddrizzava e le altre si spostavano (test non passato).
+
+### Il rating dalle quote passate
+
+Chiesto dall'utente il 24 ottobre 2026: «dobbiamo aumentare la percentuale di prese, facciamoci venire idee. Rianalizza
+tutte le stats che possiamo trovare dall'API». Solo esplorazione: nessuna regola registrata, il motore non cambia.
+
+**Cosa dà la PitchAPI**, guardato il 24 ottobre 2026 su Torino – Monza del 23/10 e Cagliari – Bologna del 24/10:
+- `/matches/{id}`: arbitro, stadio, giornata (`round_name`), `has_playoff`. Prima del fischio arbitro e stadio sono vuoti.
+- `/lineups`: modulo, allenatore, titolari con ruolo (`position_id`), posizione in campo e capitano, panchina. Prima del
+  fischio c'è una formazione `predicted`, senza panchina.
+- `/players`: per ogni giocatore il voto della partita (`rating_title`), minuti, xG, xA, xGOT, tiri, passaggi, duelli, falli;
+  per il portiere parate e gol evitati (`goals_prevented`).
+- `/advanced/players`: VAEP, PV, xT, xAG, xG chain e xG buildup per giocatore, ma nessun xG.
+- `/advanced`, campi che il motore non legge: `high_turnovers`, `box_entries`, `buildup_attacks`, `direct_attacks`,
+  `passes_per_sequence`.
+- `/shots`, `/momentum`, `/h2h`; `/advanced/network` (la rete dei passaggi, con centralità e betweenness);
+  `/heatmaps` (una griglia 16×12 per squadra e per giocatore).
+- Non esistono (404): quote, infortuni, classifica, designazioni, pronostici, `/teams/{id}/players`, `/players/{id}/stats`.
+  `/teams/{id}` e `/players/{id}` danno solo nome, ruolo e nazione.
+
+Di questi, già misurati e senza guadagno: la pressione (`b82`, tolta nel `b83`), i tiri (qualità, palle inattive, portiere e
+finalizzazione, vedi *Il rating di pressione: la regola*), gli scontri diretti, le formazioni per presenze (`b43`), la
+stanchezza, il rating sugli xG. Le statistiche di squadra nuove di `/advanced` sono stile, e il maestro lo stile lo sa già
+(spiega dal 55 al 95% delle variabili di questo tipo). Restano due idee nuove: un rating dalle quote delle partite già
+giocate, e la qualità dell'undici dai voti dei giocatori.
+
+**Perché le quote passate.** Il mercato sta più vicino al vero del motore su ogni mercato, ma le quote della partita arrivano
+solo qualche giorno prima: per il weekend, di solito, il venerdì. Le quote di chiusura delle partite già giocate invece ci
+sono sempre, nei file di stagione di football-data che lo Scanner già scarica per le quote automatiche. Il rating
+(`strumenti/rating-quote.py`, nessuna chiamata alla PitchAPI) funziona così:
+- per lega e in ordine di data, `log(p1/p2)` di chiusura `= R_casa − R_trasf + H`;
+- dopo ogni giornata `R_casa += K·e`, `R_trasf −= K·e`, `H += 0.01·e`, con `e` la chiusura meno il previsto;
+- a ogni stagione nuova i rating si stringono verso la media (`REG`), e chi entra parte dalla media delle squadre uscite;
+- l'1X2 esce da una logistica su `(y, |y|)` stimata fuori lega.
+
+`K` 0.06 / 0.12 / 0.20 / 0.30 / 0.40 / 0.50 / 0.60 fa −7.7 / −10.5 / −11.8 / −12.4 / −12.6 / −12.1 / −11.1‰ contro l'Elo:
+l'ottimo è interno, scelto `K` 0.35 e `REG` 0.85.
+
+**Sulle 18 leghe** dei file principali (i cinque campionati, Championship, League One e Two, Eredivisie, Liga Portugal, First
+Division A, 2. Bundesliga, Premiership scozzese, Süper Lig, Grecia, Serie B, LaLiga2, Ligue 2), 2019/20–2026/27, con due
+stagioni di rodaggio, fuori lega: 46.177 partite.
+
+| | prese | logloss 1X2 | contro l'Elo | `z` | leghe meglio | R² sulla chiusura | 10 / 20 / 30 / 50% più sicuro |
+|---|---|---|---|---|---|---|---|
+| Elo dai risultati | 49.11% | 1.0152 | | | | 0.802 | 69.8 / 65.8 / 62.6 / 57.5 |
+| **quote passate** | **50.35%** | 1.0026 | −12.67‰, prese +1.24 | −16.17 | 18 su 18 | **0.928** | 73.4 / 68.6 / 65.2 / 59.6 |
+| quote di prima della partita | 50.58% | 0.9991 | −16.17‰, prese +1.46 | −20.65 | 18 su 18 | 0.966 | 74.0 / 69.0 / 65.6 / 60.1 |
+| chiusura | 50.85% | 0.9957 | −19.57‰, prese +1.73 | −22.56 | 18 su 18 | 1 | 74.5 / 69.8 / 66.0 / 60.5 |
+
+- *Fa quasi quanto le quote di prima della partita*, cioè quelle che lo Scanner prende dal file della settimana. Nelle prime
+  5 giornate resta indietro (48.8% contro 49.9%), per il mercato estivo; dalla 6ª le raggiunge (50.6 contro 50.5%).
+- *Contiene l'Elo*: dato il rating, l'Elo aggiunge −0.08‰ (`z = −1.15`).
+- *Le quote della partita contengono lui*: chiusura più rating contro chiusura +0.00‰, quote di prima più rating −0.01‰.
+  Con le quote della partita il rating non serve.
+- *Nei cinque campionati* R² sulla chiusura 0.940, contro 0.859 dell'Elo e 0.977 delle quote di prima.
+
+**Contro il maestro**, sul 2026/27 dei cinque campionati: batch automatico del `b89` (`batch/2627b89`), 340 partite in copia
+conforme, Elo identico su ogni file, 7.516 chiamate. Agganciate a football-data 335 (`--maestro`).
+
+| | R² sulla chiusura | prese | logloss contro il maestro |
+|---|---|---|---|
+| maestro | 0.888 | 53.73% | |
+| quote passate | 0.900 | 56.72%, +2.99 ±3.25 (40 pick diversi) | −8.33‰ (`z = −0.94`) |
+| maestro e quote passate, media dei log-odds | 0.927 (pesi 0.53 e 0.57) | 55.82%, +2.09 ±2.59 | −6.35‰ (`z = −1.77`) |
+| quote di prima della partita | 0.975 | 55.52% | −11.78‰ |
+| chiusura | 1 | 55.82% | −15.35‰ |
+
+Il maestro e il rating sanno cose diverse: insieme ricostruiscono la chiusura meglio di ciascuno. Sulle prese 335 partite
+sono poche (±3 punti).
+
+**La qualità dell'undici** (`strumenti/undici.py`): `/lineups` e `/players` di tutte le partite concluse dei cinque campionati
+dal 2024/25 (7.934 chiamate).
+- *Il voto di un giocatore* è la media dei suoi voti nelle ultime 30 partite di lega, pesata coi minuti e ristretta verso la
+  media della lega con 3 partite intere.
+- *La qualità dell'undici* è la media degli 11 titolari. `d` è quella di oggi meno quella abituale (gli undici delle ultime 5
+  partite, coi voti di oggi), casa meno trasferta.
+
+Su 3.596 partite con le quote:
+- *il mercato la usa*: sul residuo della chiusura rispetto al rating dalle quote passate il coefficiente di `d` è +1.73
+  (`z = +29.1`), e spiega il 19% del residuo; rispetto alle quote di prima della partita +0.93 (`z = +24.7`), il 14%.
+  L'indice per presenze del `b43` spiega l'11% (`z = −21.5`), e i due insieme il 24%;
+- *sui risultati non sposta le prese*: col coefficiente del mercato, sopra le quote passate logloss −1.11‰ (`z = −1.20`) e
+  prese 53.70 → 53.36%; sopra le quote di prima −0.26‰ e prese +0.06.
+
+Le assenze cambiano di poco le probabilità e quasi mai il favorito. È la stessa cosa vista nel `b43`: là sui risultati il
+segnale non si vedeva, qui sul mercato sì, e il motivo è che il mercato è un bersaglio molto meno rumoroso.
+
+**Cosa vuol dire.**
+- *Con le quote della partita* niente di quello che si può scaricare alza le prese: il mercato sa già il rating e l'undici.
+- *Senza le quote della partita*, nelle 34 leghe di football-data, il rating dalle quote passate vale quasi quanto le quote del
+  file della settimana, a zero chiamate. È il solo modo trovato per avvicinare il maestro al mercato. Sul 2026/27 va di pari
+  passo col maestro, e i due insieme lo battono.
+- *Nelle altre 43 leghe* le quote passate non ci sono.
+- La qualità dell'undici serve, se mai, alle probabilità del maestro, non alle prese.
+
+Per metterlo nello Scanner serve una regola registrata: la combinazione col maestro, coi pesi stimati sul mercato come il
+maestro, provata sui risultati di leghe mai aperte per questa domanda. Vanno bene le leghe dei file `new` di football-data:
+Austria, Danimarca, Svezia, Norvegia, Messico, MLS, Giappone. Lì servono i batch del motore (vedi *Da fare*).
 
 ### Il maestro mercato: la regola
 
@@ -5484,6 +5603,8 @@ misurate.
 | Le sorprese per periodo dell'anno: mese, fase della stagione, dopo le soste, turni infrasettimanali, feste (solo descrittivo, 16 ottobre 2026) | **solo dicembre, e il mercato lo sa già** | 23.278 partite delle 24 leghe, sfavorito del maestro. Fase (giornate 1–5, 6–10, fino a metà, seconda metà, ultime 6): χ² 1.9 su 4 attorno alla media. Dopo le soste per le nazionali +0.3 ±2.2 punti, turni infrasettimanali −1.3 ±1.1, 20 dicembre – 7 gennaio −2.4 ±2.6. Mese: χ² 21.0 su 11. Spicca dicembre: lo sfavorito vince il 21.2% contro il 24.4% previsto, 2.6 punti sotto il resto dell'anno (±2.0), in tutti e tre i dicembri (−5.0 / −1.5 / −3.0) e in 11 leghe su 15; pareggi normali. Contro le quote di chiusura dicembre sta −0.9 ±2.4 rispetto al resto dell'anno: lo sanno già. Scelto fra 12 mesi: da provare, se serve, su un dicembre nuovo |
 | Il maestro coi bersagli dell'1X2 tolti alla Shin invece che in proporzione (regola registrata) | **no** | esplorazione sulle 14 leghe del maestro −0.51‰ (`z = −3.03`, 10 su 14), pendenza 1 contro 2 da 1.12 a 1.06; test sulle 33 leghe del test del maestro −0.14‰ (`z = −0.81`), 16 su 33. Lì il maestro del `b77` non era timido con gli sfavoriti (25.53% previsti, 25.52% vinti). Vedi *Il maestro coi bersagli di Shin: la regola* |
 | La diagonale gonfiata di Karlis–Ntzoufras (`δ` sui pareggi da 1-1 in su) sopra la matrice del maestro (solo descrittivo) | **quasi niente: il maestro ha chiuso il buco** | 23.278 partite delle 24 leghe, fuori lega `δ` 0.08–0.10: risultato esatto −0.42‰ (`z = −1.89`), Goal −0.28‰, Over 2.5 +0.16‰ (`z = +4.54`). Pareggi della matrice 24.4 → 25.6% contro 25.5% reali. Sulla matrice del `b63` valeva −1.80‰. Vedi *Da fare* |
+| Un rating delle squadre dalle quote di chiusura delle partite già giocate, quando le quote della partita non ci sono ancora (solo esplorazione) | **sì, da registrare** | 46.177 partite di 18 leghe dal 2019/20, fuori lega: prese 49.11 (Elo) → 50.35%, logloss −12.67‰ (`z = −16.17`), 18 leghe su 18; quote di prima della partita 50.58%, chiusura 50.85%. R² sulla chiusura 0.928 (Elo 0.802). Sul 2026/27 dei cinque campionati R² 0.900 contro 0.888 del maestro, 0.927 insieme. Con le quote della partita non aggiunge niente. Vedi *Il rating dalle quote passate* |
+| La qualità dell'undici in campo dai voti dei giocatori (`/players`), contro quella abituale (solo esplorazione) | **il mercato sì, le prese no** | 3.596 partite dei cinque campionati dal 2024/25: sul residuo della chiusura coefficiente +1.73 (`z = +29.1`, R² 0.19); sui risultati, col coefficiente del mercato, logloss −1.11‰ (`z = −1.20`), prese −0.33 (`z = −1.36`). Vedi *Il rating dalle quote passate* |
 | Togliere il margine dell'1X2 alla Shin o con la potenza invece che in proporzione, nella card delle quote (solo descrittivo) | **no: `QUOTE_COMB` ricalibra già** | 16.071 partite di 14 leghe, chiusura. Crudo, contro la proporzione: potenza −0.85‰, Shin −0.75‰ (la proporzione sottovaluta i favoriti: sopra il 65% prevede 73.5, esce 77.2). Ricalibrato fuori lega, come fa `QUOTE_COMB`: −0.02‰ e −0.03‰. Per i bersagli del maestro è un'altra cosa: vedi *Il maestro coi bersagli di Shin: la regola* |
 
 **Le cose che hanno retto**, in ordine di quanto valgono:

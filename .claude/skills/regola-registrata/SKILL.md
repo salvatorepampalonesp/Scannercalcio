@@ -43,7 +43,9 @@ cosa ci sarebbe di nuovo, se c'è qualcosa.
   - Un candidato sul bordo della griglia non si spedisce.
   - Un effetto che c'è in una metà sola non è un effetto.
 - **Strumenti già fatti**, da riusare: in `strumenti/` ci sono `dc-residui.py`, `markov-dc.py`,
-  `livello-gol.py`, `rating-xg.py`, `sorpresa.py`, `sorpresa-quote.py` e i `quote-*.py`.
+  `livello-gol.py`, `rating-xg.py`, `sorpresa.py`, `sorpresa-quote.py` e i `quote-*.py`. Senza i CSV del motore:
+  `rating-quote.py` lavora sui soli file di football-data (`--scarica`, nessuna chiamata alla PitchAPI), e
+  `undici.py` scarica formazioni e voti dei giocatori (due chiamate a partita).
 
 ## 3. La regola, scritta prima
 
