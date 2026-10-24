@@ -189,6 +189,10 @@ if (VERA) {
   await foto(String(n++).padStart(2, '0') + '-numeri-corner');
   await page.evaluate(() => { const t = document.getElementById('arbitro-nota'); if (t) window.scrollTo(0, t.getBoundingClientRect().top + window.scrollY - 520); });
   await foto(String(n++).padStart(2, '0') + '-numeri-arbitro');
+  await page.evaluate(async () => { const t = document.getElementById('knn-legend'), d = t && t.closest('details'); if (!d) return;
+    d.open = true; await new Promise(r => setTimeout(r, 400)); window.scrollTo(0, t.getBoundingClientRect().top + window.scrollY - 80); });
+  await foto(String(n++).padStart(2, '0') + '-numeri-simili');
+  await page.evaluate(() => window.scrollBy(0, 640)); await foto(String(n++).padStart(2, '0') + '-numeri-simili-2');
   for (const k of ['prompt', 'dati']) { await page.evaluate(k => { schedaVai(k); window.scrollTo(0, 0); }, k); await foto(String(n++).padStart(2, '0') + '-' + k); }
   await page.evaluate(() => { schedaVai('partita'); const a = document.querySelector('#nav-sezioni [data-k="altro"]'); if (a) a.click(); });
   await foto(String(n++).padStart(2, '0') + '-altro');
