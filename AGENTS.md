@@ -440,6 +440,11 @@ qui ha bisogno di dati nuovi, non di rifare questi.
 - [ ] **L'endpoint `/shots`** (`/v1/matches/{id}/shots`, ogni tiro con xG, porta, area,
   situazione, coordinate): la forma della distribuzione dei tiri è il candidato più serio
   per l'*ordinamento* dei mercati gol. Una chiamata in più per partita (+25% sul batch).
+  **Misurato in parte** (12 ottobre 2026, vedi *Il rating di pressione: la regola*): xG per tiro, occasioni da 0.3 o
+  più e numero di tiri, come variabili del maestro, valgono −0.20‰ sull'1X2 e −0.22‰ sul risultato esatto. Il maestro
+  li sa già. Dato il lambda i gol sono quasi Poisson (varianza 0.96–0.97 della media, vedi *Il maestro mercato: la
+  regola*), quindi un modello tiro per tiro (Poisson-binomiale) ha poco spazio. Non è misurato l'ordinamento
+  dell'Over, e i tiri scaricati allora (`batch/tiri`) non ci sono più: rifarli costa una chiamata per partita.
 - [ ] **Ancoraggio di lega per i falli.** Oggi `MARKET_PER_GOAL.fouls = null`: il rapporto
   coi gol varia del 28% fra leghe.
 - [ ] **La card dei risultati esatti come scarto**: mostrare quali punteggi sono più
@@ -587,6 +592,15 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   ottobre 2026: il totale diviso fra le due squadre con una beta-binomiale (corner previsti ed Elo), da cui corner 1X2 e
   handicap dei corner. Nell'esplorazione, fuori lega sulle 24 leghe, −45.2‰ contro una frequenza fissa (`z = −23.8`, 24
   leghe su 24), calibrato. Test sui batch del `b74`. Vedi *Chi fa più corner: la regola*.
+- [ ] **Le etichette delle card dicono il motore di prima del maestro.** «Risultati esatti, handicap e multigol» dice
+  «Dalla matrice Dixon-Coles · RUOLO casa/trasferta», «Primo gol» «RUOLO · casa/trasferta». Dal `b77` tutte e due vengono
+  dai lambda del maestro, che usa tutte le partite. Insieme, si può mettere su ogni card di Numeri quanto vale:
+  - entra nel verdetto;
+  - calibrato ma distingue poco;
+  - solo contesto.
+
+  La tabella di *Le card di Numeri* dice già quale per ognuna. Nessun numero cambia. Trovato rileggendo la revisione di
+  un'altra IA, il 25 ottobre 2026.
 - [ ] **Doppie chance e gol con confidence**: la tabella è confusa, e sui gol poggia su
   probabilità che discriminano poco.
 - [x] ~~**La card «Primo gol»**~~ — **passato, nello Scanner dal `b75`.** La card usa una quota fissa
@@ -5848,6 +5862,7 @@ misurate.
 | Il confronto contro squadre simili con più dati: il KNN su tutta la storia, i residui sul mercato, la risposta di ogni squadra allo stile dell'avversario, gli incastri di stile, pareggi e gol fra squadre simili (solo esplorazione) | **no** | 6.445 partite di 11 campionati dal 2024/25, storia mediana di 36 partite: i punti contro le simili misurano la forza (correlazione +0.344) ma sul residuo del mercato −0.006 (`z = −0.5`), dell'Elo +0.010; il rendimento particolare contro un tipo di avversario +0.015 (`z = +1.2`, 5 leghe su 11); la risposta allo stile da −0.003 a +0.004; 144 incastri fuori lega R² sotto zero; pareggi e Over fra stili simili dentro ±2.5 punti. Vedi *Il confronto contro squadre simili* |
 | La card «contro squadre simili» con tutte le 30 partite invece della stessa sede, e con altre metriche per dire chi è simile: il profilo dell'avversario prima della partita, solo la forza, lo stile, il rating dalle quote passate, l'Elo (solo esplorazione) | **le 30 sì per la card (nella card dal `b90`), la somiglianza no** | 4.112 partite di 11 campionati: coi punti della partita 0.294 → 0.338 con le 30 e la sede corretta (+0.044 ±0.016, 11 leghe su 11), errore a schermo ±0.39 → ±0.28; la card fa un po' peggio dei punti semplici delle stesse partite (0.294 contro 0.308), e la metrica migliore li raggiunge (0.351 contro 0.349); sopra l'Elo `z` ≤ +1.8, sul residuo del mercato fra −0.002 e +0.006. Tre delle 11 dimensioni di `KNN_DIMS` leggono la squadra stessa invece dell'avversario: correggerle non cambia niente. Vedi *Il confronto contro squadre simili* |
 | La qualità dell'undici in campo dai voti dei giocatori (`/players`), contro quella abituale (solo esplorazione) | **il mercato sì, le prese no** | 3.596 partite dei cinque campionati dal 2024/25: sul residuo della chiusura coefficiente +1.73 (`z = +29.1`, R² 0.19); sui risultati, col coefficiente del mercato, logloss −1.11‰ (`z = −1.20`), prese −0.33 (`z = −1.36`). Vedi *Il rating dalle quote passate* |
+| Mostrare l'incertezza della stima, o allargare le probabilità quando i dati sono pochi (poche partite di ruolo, una squadra nuova nell'Elo) (solo descrittivo, 25 ottobre 2026) | **non serve: lì il maestro è già calibrato** | 2.330 partite in copia conforme (`batch/disaccordo`, `batch/2627b89`). In 307 partite c'è una squadra con meno di 6 partite di ruolo o con meno di 15 nell'Elo: lì il pick è previsto al 49.8% ed esce il 51.5% (±5.7), pendenza 1 contro 2 0.94 ±0.39. Con la copertura piena 48.4 e 48.8%, 1.05 ±0.17. Integrare l'incertezza sui lambda renderebbe le probabilità più piatte e i gol più dispersi: le prime sono già calibrate, i secondi già un filo sottodispersi. `strumenti/copertura.py` |
 | Togliere il margine dell'1X2 alla Shin o con la potenza invece che in proporzione, nella card delle quote (solo descrittivo) | **no: `QUOTE_COMB` ricalibra già** | 16.071 partite di 14 leghe, chiusura. Crudo, contro la proporzione: potenza −0.85‰, Shin −0.75‰ (la proporzione sottovaluta i favoriti: sopra il 65% prevede 73.5, esce 77.2). Ricalibrato fuori lega, come fa `QUOTE_COMB`: −0.02‰ e −0.03‰. Per i bersagli del maestro è un'altra cosa: vedi *Il maestro coi bersagli di Shin: la regola* |
 
 **Le cose che hanno retto**, in ordine di quanto valgono:
