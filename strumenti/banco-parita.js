@@ -526,9 +526,21 @@ async function runGiornata(browser, base, turno, singole) {
   });
   const { scroll, compatte } = await page.evaluate(MISURA);
   const righe = await page.evaluate(() => document.querySelectorAll('#giornata-bar .g-row').length);
+  // l'elenco (b91): la barra e l'1X2 di ogni riga sono quelli con le quote quando ci sono, la piu' alta in grassetto,
+  // e il punto arancione solo con le quote; lo stesso la barra della partita in vista
+  const elenco = await page.evaluate(() => {
+    const fl = r => [...r.querySelectorAll('i')].map(i => i.style.flexGrow).join(), fx = P => P.map(v => String(+v.toFixed(3))).join();
+    const per = GIORNATA.lista.map((x, i) => { if (x.stato !== 'fatta') return null;
+      const r = document.querySelector(`#giornata-bar .g-row[data-g="${i}"]`); if (!r) return { i, ok: false };
+      const P = x.quote ? x.quote.p : x.p, k = P.indexOf(Math.max(...P)), B = [...r.querySelectorAll('.g-1x2 b')];
+      return { i, quote: !!x.quote, ok: B.map(b => b.textContent).join() === P.map(v => (100 * v).toFixed(0)).join() && B[k] && B[k].classList.contains('g-max')
+               && r.querySelectorAll('.g-1x2 b.g-max').length === 1 && fl(r.querySelector('.g-bar')) === fx(P) && !!r.querySelector('.g-1x2 .qd') === !!x.quote }; }).filter(Boolean);
+    const x = GIORNATA.lista[GIORNATA.vista], mb = document.querySelector('#giornata-bar .g-mb');
+    return { per, conQuote: per.filter(r => r.quote).length, vista: !!mb && fl(mb) === fx(x.quote ? x.quote.p : x.p) };
+  });
   const log = page.__log.filter(l => !/CONSOLE/.test(l));
   await page.context().close();
-  return { lista, diversi, giri, passi, righe, scroll, compatte, schedaTenuta, inBreve, log, pg, rotto: /NaN|undefined|Infinity/.test(html), prompt: pr.length, promptRotto: /NaN|undefined|Infinity|@@/.test(pr) };
+  return { lista, diversi, giri, passi, righe, elenco, scroll, compatte, schedaTenuta, inBreve, log, pg, rotto: /NaN|undefined|Infinity/.test(html), prompt: pr.length, promptRotto: /NaN|undefined|Infinity|@@/.test(pr) };
 }
 
 async function comparatorePage(browser, base, engineText) {
@@ -879,12 +891,14 @@ if (require.main === module) (async () => {
     && !GI.diversi.length && Object.keys(GI.giri).length === day.length && GI.righe === cur.length && !GI.rotto && !GI.promptRotto && !GI.log.length
     && GI.passi.t[1] === GI.passi.v0 && GI.passi.t[0] !== GI.passi.v0 && GI.passi.titolo === GI.passi.atteso
     && GI.schedaTenuta && GI.inBreve && GI.inBreve.ok && !GI.inBreve.rotto && (!process.env.MOBILE || (GI.scroll <= 0 && !GI.compatte.length))
-    && GI.pg && GI.pg.una && !GI.pg.rotto && GI.pg.bottone && GI.pg.partite === cur.length && GI.pg.conQuote > 0 && GI.pg.blocchi.every(b => b.ok && b.quote);
+    && GI.pg && GI.pg.una && !GI.pg.rotto && GI.pg.bottone && GI.pg.partite === cur.length && GI.pg.conQuote > 0 && GI.pg.blocchi.every(b => b.ok && b.quote)
+    && GI.elenco.per.every(r => r.ok) && GI.elenco.conQuote > 0 && GI.elenco.vista;
   console.log('   giornata: ' + (!GI ? 'funzione assente' : `${GI.lista.length} partite trovate su ${cur.length} del turno (${GI.lista.map(x => x.stato).join(' ')}), `
     + `${Object.keys(GI.giri).length - GI.diversi.length} su ${Object.keys(GI.giri).length} rifatte coi bottoni identiche all'analisi singola (${Object.values(GI.giri)[0]} scritture ciascuna), avanti e indietro ${GI.passi.v0} -> ${GI.passi.t.join(' -> ')}`
+    + `, nell'elenco barra e 1X2 con le quote su ${GI.elenco.conQuote} righe su ${GI.elenco.per.length}`
     + ', la scheda resta cambiando partita, in breve segue la partita' + (process.env.MOBILE ? `, scorrimento laterale ${GI.scroll}px` : '')
     + (GI.pg ? `; prompt della giornata ${GI.pg.n} caratteri, ${GI.pg.partite} blocchi (${GI.pg.conQuote} con le quote) col loro 1X2, note e istruzioni una volta sola` : '; prompt della giornata assente')
-    + (giOk ? '' : ' · FALLITA: ' + JSON.stringify({ lista: GI.lista, diversi: GI.diversi, passi: GI.passi, righe: GI.righe, rotto: GI.rotto, schedaTenuta: GI.schedaTenuta, inBreve: GI.inBreve, compatte: GI.compatte, pg: GI.pg, log: GI.log }).slice(0, 1200))));
+    + (giOk ? '' : ' · FALLITA: ' + JSON.stringify({ lista: GI.lista, diversi: GI.diversi, passi: GI.passi, righe: GI.righe, elenco: GI.elenco, rotto: GI.rotto, schedaTenuta: GI.schedaTenuta, inBreve: GI.inBreve, compatte: GI.compatte, pg: GI.pg, log: GI.log }).slice(0, 1200))));
   if (!giOk) fail++;
 
   const results = {};
