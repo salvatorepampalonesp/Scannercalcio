@@ -559,7 +559,9 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   - chiamarlo per quello che è, «partita aperta», invece di sorpresa;
   - toglierlo, perché «In breve» dice già la probabilità.
 
-  Non cambia nessuna probabilità. Vedi *L'avviso di sorpresa*, «Col maestro l'avviso ripete la probabilità».
+  Non cambia nessuna probabilità. Vedi *L'avviso di sorpresa*, «Col maestro l'avviso ripete la probabilità». Anche contro le quote:
+  nelle medio e ALTO il favorito delle quote vince quanto dicono le quote (43.4% previsto e uscito nelle medio; vedi «Il rischio
+  sorpresa contro le quote, col maestro»).
 - [ ] **Il maestro timido coi favoriti netti.** Col pick al 65% o più dice 72.4% ed esce il 76.1% (24 leghe); sul 2026/27 al
   60% o più dice 68.7% ed esce l'85.0% (60 partite). Ricalibrato sui risultati vale −0.13‰ (`z = −0.64`): cambia il numero a
   schermo, non il pick. Per metterlo serve una regola registrata e partite nuove. Vedi *Il motore contro il mercato*, «Il
@@ -1011,7 +1013,7 @@ non passa mai +7.1. Trascina con sé il `12`.
 
 | campione | partite | note |
 |---|---|---|
-| **Il disaccordo con le quote** | **1.990 · 335** | Solo descrittivo del 24 ottobre 2026 (vedi *Il motore contro il mercato*, «Quando lo Scanner e le quote non sono d'accordo»). Il 2026 di Allsvenskan, Eliteserien, J. League, MLS, Liga Profesional e Série A brasiliana e il 2026/27 di Bundesliga austriaca, Superligaen e Liga MX col `b90` (`batch/disaccordo`), 1.990 su 1.990 in copia conforme, Elo identico su ogni file, 20.668 chiamate: mai usate per il maestro né aperte per altro. Più il 2026/27 dei cinque campionati (`batch/2627b89`). Guardato solo l'1X2 dello Scanner contro la chiusura di football-data |
+| **Il disaccordo con le quote** | **1.990 · 335** | Solo descrittivo del 24 ottobre 2026 (vedi *Il motore contro il mercato*, «Quando lo Scanner e le quote non sono d'accordo»). Il 2026 di Allsvenskan, Eliteserien, J. League, MLS, Liga Profesional e Série A brasiliana e il 2026/27 di Bundesliga austriaca, Superligaen e Liga MX col `b90` (`batch/disaccordo`), 1.990 su 1.990 in copia conforme, Elo identico su ogni file, 20.668 chiamate: mai usate per il maestro né aperte per altro. Più il 2026/27 dei cinque campionati (`batch/2627b89`). Guardato solo l'1X2 dello Scanner contro la chiusura di football-data, e il 26 ottobre per livello del rischio sorpresa (vedi *L'avviso di sorpresa*) |
 | **Il confronto contro squadre simili** | **7.392** | Solo esplorazione del 24 ottobre 2026 (vedi *Il confronto contro squadre simili*). `/stats` e `/advanced` di tutte le partite di lega di 11 campionati dal 2024/25 (`batch/stile`, 17.183 chiamate), con le quote di chiusura di football-data: guardati KNN, stili e residui sul mercato di 1X2, pareggi e Over 2.5; poi la card con tutte le 30 partite e altre metriche (4.112 partite) |
 | **Le quote passate e l'undici** | **46.177 · 340 · 3.596** | Solo esplorazione del 24 ottobre 2026 (vedi *Il rating dalle quote passate*). I file di football-data di 18 leghe, 2017/18–2026/27 (`batch/fd`), misurati dal 2019/20: guardati 1X2 e prese per il rating dalle quote passate. Il 2026/27 dei cinque campionati col `b89` (`batch/2627b89`), 340 su 340 in copia conforme, Elo identico su ogni file, 7.516 chiamate: maestro contro rating. `/lineups` e `/players` dei cinque campionati dal 2024/25 (`batch/giocatori`, 7.934 chiamate): la qualità dell'undici. Per un test di queste due domande servono leghe e partite nuove |
 | **Il 2026/27 dei cinque campionati col `b85`** | **335** | Premier 68, LaLiga 86, Ligue 1 61, Bundesliga 51, Serie A 69, le partite giocate fino al 21 ottobre 2026: batch automatico del `b85` (`batch/2627b85`), 335 su 335 in copia conforme, Elo identico su ogni file, 7.491 chiamate in 15 minuti. Aperte per il rischio sorpresa, livello e sfavorito che vince (vedi *L'avviso di sorpresa*, «Sul 2026/27»), e per il confronto con le quote di chiusura (vedi *Il motore contro il mercato*, «Il 2026/27»). Sono partite del test dei tocchi in area (dal 3 ottobre): lì i tocchi non sono stati guardati |
@@ -6308,6 +6310,32 @@ copia conforme; le undici partite in cui una neopromossa gioca la sua prima part
 - Medio e basso stanno dentro l'errore della loro cella.
 - Delle 19 partite con lo sfavorito al 35% o più, 9 hanno modello ed Elo d'accordo, e restano medio.
 - ALTO per lega: Ligue 1 5 su 61, Premier 3 su 68, LaLiga e Bundesliga 1, Serie A 0 su 69.
+
+**Il rischio sorpresa contro le quote, col maestro** (26 ottobre 2026, solo descrittivo). L'utente: «nelle partite con
+sorpresa media o alta le quote hanno effettivamente una presa minore?». Sulle 2.102 partite di *Il motore contro il mercato*,
+«Quando lo Scanner e le quote non sono d'accordo», col livello calcolato come lo Scanner (`python3 strumenti/disaccordo.py
+batch/disaccordo batch/2627b89`, sezione 5):
+
+| livello senza quote | partite | vince il favorito delle quote: quote / ricalibrate / esce | pareggio: quote / esce | vince lo sfavorito: quote / esce | il favorito alla chiusura |
+|---|---|---|---|---|---|
+| basso | 933 | 57.6 / 60.9 / **59.8** ±3.2 | 23.7 / 22.0 | 18.6 / **18.2** ±2.5 | −4.6% ±5.3 |
+| medio | 1.091 | 43.4 / 44.0 / **43.4** ±3.0 | 27.8 / 28.4 | 28.8 / **28.2** ±2.7 | −8.4% ±6.4 |
+| ALTO | 78 | 41.2 / 41.0 / **42.3** ±11.2 | 26.2 / 35.9 | 32.6 / **21.8** ±9.3 | −6.0% ±25.1 |
+
+- *In assoluto sì*: il favorito delle quote vince il 60% nelle partite basso e il 43% nelle medio e ALTO. Ma sono partite
+  equilibrate, e le quote lo sanno già: il favorito ha il 43% invece del 58%.
+- *Rispetto a quello che dicono le quote no*: nelle medio il favorito vince esattamente quanto dicono (43.4 e 43.4%), nelle ALTO
+  un punto in più. Dato il mercato ricalibrato, il livello sposta il favorito di +0.22 ±0.12 (medio, `z = +1.76`) e +0.34 ±0.26
+  (ALTO), nel verso opposto a una sorpresa.
+- *Nelle ALTO lo sfavorito delle quote vince meno* (21.8% contro 32.6%) perché escono più pareggi (35.9%): 78 partite, dentro
+  il rumore; dato il mercato `z = −2.40`, trovato guardando.
+- *Lo sfavorito dello Scanner è spesso il favorito delle quote*: nel 17.4% delle medio e nel 43.6% delle ALTO.
+- *Col livello calcolato con le quote* (`QUOTE_COMB` e `SORPRESA_QUOTE_TAB`, mai ALTO): basso 1.118, favorito 57.1 / 60.2 /
+  **60.5**%; medio 984, favorito 41.1 / 41.3 / **39.4**% ±3.1, sfavorito 30.7 / **30.4**%.
+- Leghe nuove e cinque campionati 2026/27 vanno nello stesso verso (medio: favorito 43.2 / 42.9% e 44.4 / 46.0%).
+
+Il rischio sorpresa dice quanto è aperta una partita, e le quote lo dicono già. Non segnala partite in cui il favorito delle
+quote rende meno di quanto promette.
 
 **Con le quote (`b70`).** Fino al `b69` il riquadro restava quello del motore anche con le quote: lo scriveva
 il motore in `avviaScanner`, e `aggiornaQuote` rifaceva pick, tabellone e prompt ma non lui. Sulle 11.902
