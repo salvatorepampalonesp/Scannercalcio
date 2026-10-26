@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
-<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0e0e10">
-<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f1f1f3">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#06110d">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f2f8f5">
 <meta name="color-scheme" content="dark light">
 <title>Comparatore V9.7</title>
-<script>try{var t=localStorage.getItem("scanner_tema");if(t==="scuro"||t==="chiaro"){document.documentElement.setAttribute("data-tema",t);document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){m.setAttribute("content",t==="scuro"?"#0e0e10":"#f1f1f3")})}}catch(e){}</script>
+<script>try{var t=localStorage.getItem("scanner_tema");if(t==="scuro"||t==="chiaro"){document.documentElement.setAttribute("data-tema",t);document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){m.setAttribute("content",t==="scuro"?"#06110d":"#f2f8f5")})}}catch(e){}</script>
 <style>
 /* Geist e Geist Mono, (c) 2023 Vercel con basement.studio, SIL Open Font License 1.1 (fonts/OFL-Geist.txt).
    Sottoinsieme latino, pesi 400-600 e 400-500. */
@@ -18,15 +18,16 @@
    Le classi sono quelle di prima (le scrive anche il JS del Comparatore); gli alias li usano gli stili inline. */
 :root{
   color-scheme:dark;
-  --color-bg:#0e0e10; --color-surface:#18181b; --color-text:#ececee;
-  --color-accent:oklch(0.78 0.13 160); --on-accent:#04120c;
-  --n-100:#f4f4f5; --n-200:#e4e4e7; --n-300:#d0d0d5; --n-400:#a9a9b1; --n-500:#8f8f98;
-  --n-600:#77777f; --n-700:#4d4d55; --n-800:#2c2c31; --n-900:#202024;
-  --a-300:oklch(0.85 0.10 160); --a-400:oklch(0.81 0.12 160);
-  --c-home:oklch(0.72 0.12 245); --c-home-t:oklch(0.80 0.09 245);
-  --c-away:oklch(0.70 0.14 22);  --c-away-t:oklch(0.80 0.10 22);
-  --c-warn:oklch(0.80 0.13 80); --c-err:oklch(0.68 0.17 25);
-  --ombra:rgb(4 4 6 / .62); --velo:rgb(4 4 6 / .62);
+  --color-bg:oklch(0.165 0.02 168); --color-surface:oklch(0.215 0.022 168); --color-text:oklch(0.965 0.008 168);
+  --bg-2:oklch(0.125 0.018 168); --strisce:rgb(255 255 255 / .026);
+  --color-accent:oklch(0.87 0.19 142); --on-accent:oklch(0.22 0.07 150);
+  --n-100:oklch(0.95 0.008 168); --n-200:oklch(0.89 0.01 168); --n-300:oklch(0.82 0.012 168); --n-400:oklch(0.75 0.014 168); --n-500:oklch(0.68 0.016 168);
+  --n-600:oklch(0.56 0.018 168); --n-700:oklch(0.41 0.02 168); --n-800:oklch(0.305 0.022 168); --n-900:oklch(0.25 0.022 168);
+  --a-300:oklch(0.90 0.14 142); --a-400:oklch(0.88 0.17 142);
+  --c-home:oklch(0.76 0.12 242); --c-home-t:oklch(0.82 0.09 242);
+  --c-away:oklch(0.72 0.15 25);  --c-away-t:oklch(0.81 0.10 25);
+  --c-warn:oklch(0.84 0.15 82); --c-err:oklch(0.70 0.18 25);
+  --ombra:rgb(1 8 5 / .62); --velo:rgb(1 8 5 / .62);
   --font:"Geist",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   --ease-out:cubic-bezier(0.23,1,0.32,1); --ease-in-out:cubic-bezier(0.77,0,0.175,1); --ease-drawer:cubic-bezier(0.32,0.72,0,1);
@@ -50,35 +51,38 @@
 }
 @media (prefers-color-scheme: light){:root:not([data-tema="scuro"]){
   color-scheme:light;
-  --color-bg:#f1f1f3; --color-surface:#fbfbfc; --color-text:#18181b;
-  --color-accent:oklch(0.52 0.12 160); --on-accent:#f3fbf7;
-  --n-100:#18181b; --n-200:#27272a; --n-300:#3b3b41; --n-400:#4f4f58; --n-500:#60606a;
-  --n-600:#83838c; --n-700:#b1b1b9; --n-800:#e2e2e6; --n-900:#ececef;
-  --a-300:oklch(0.45 0.11 160); --a-400:oklch(0.50 0.12 160);
+  --color-bg:oklch(0.975 0.008 160); --color-surface:oklch(0.997 0.002 160); --color-text:oklch(0.21 0.02 168);
+  --bg-2:oklch(0.94 0.013 160); --strisce:rgb(20 80 50 / .04);
+  --color-accent:oklch(0.50 0.15 148); --on-accent:#f4fbf6;
+  --n-100:oklch(0.21 0.02 168); --n-200:oklch(0.28 0.02 168); --n-300:oklch(0.35 0.02 168); --n-400:oklch(0.42 0.02 168); --n-500:oklch(0.48 0.02 168);
+  --n-600:oklch(0.62 0.018 168); --n-700:oklch(0.76 0.015 168); --n-800:oklch(0.905 0.012 165); --n-900:oklch(0.945 0.01 165);
+  --a-300:oklch(0.44 0.13 148); --a-400:oklch(0.48 0.14 148);
   --c-home:oklch(0.52 0.15 250); --c-home-t:oklch(0.46 0.14 250);
   --c-away:oklch(0.56 0.18 25);  --c-away-t:oklch(0.50 0.17 25);
   --c-warn:oklch(0.55 0.13 65); --c-err:oklch(0.53 0.19 27);
-  --c-ok-t:oklch(0.44 0.10 160); --c-warn-t:oklch(0.47 0.12 65); --c-err-t:oklch(0.47 0.18 27);
+  --c-ok-t:oklch(0.45 0.13 148); --c-warn-t:oklch(0.47 0.12 65); --c-err-t:oklch(0.47 0.18 27);
   --ok:var(--c-ok-t); --green:var(--c-ok-t); --accent:var(--c-ok-t); --accent2:var(--c-ok-t); --orange:var(--c-warn-t); --warn:var(--c-warn-t);
   --red:var(--c-away-t); --err:var(--c-err-t); --blue:var(--c-home-t);
-  --ombra:rgb(24 24 32 / .14); --velo:rgb(10 10 12 / .42);
+  --ombra:rgb(10 50 30 / .12); --velo:rgb(4 16 10 / .42);
 }}
 :root[data-tema="chiaro"]{
   color-scheme:light;
-  --color-bg:#f1f1f3; --color-surface:#fbfbfc; --color-text:#18181b;
-  --color-accent:oklch(0.52 0.12 160); --on-accent:#f3fbf7;
-  --n-100:#18181b; --n-200:#27272a; --n-300:#3b3b41; --n-400:#4f4f58; --n-500:#60606a;
-  --n-600:#83838c; --n-700:#b1b1b9; --n-800:#e2e2e6; --n-900:#ececef;
-  --a-300:oklch(0.45 0.11 160); --a-400:oklch(0.50 0.12 160);
+  --color-bg:oklch(0.975 0.008 160); --color-surface:oklch(0.997 0.002 160); --color-text:oklch(0.21 0.02 168);
+  --bg-2:oklch(0.94 0.013 160); --strisce:rgb(20 80 50 / .04);
+  --color-accent:oklch(0.50 0.15 148); --on-accent:#f4fbf6;
+  --n-100:oklch(0.21 0.02 168); --n-200:oklch(0.28 0.02 168); --n-300:oklch(0.35 0.02 168); --n-400:oklch(0.42 0.02 168); --n-500:oklch(0.48 0.02 168);
+  --n-600:oklch(0.62 0.018 168); --n-700:oklch(0.76 0.015 168); --n-800:oklch(0.905 0.012 165); --n-900:oklch(0.945 0.01 165);
+  --a-300:oklch(0.44 0.13 148); --a-400:oklch(0.48 0.14 148);
   --c-home:oklch(0.52 0.15 250); --c-home-t:oklch(0.46 0.14 250);
   --c-away:oklch(0.56 0.18 25);  --c-away-t:oklch(0.50 0.17 25);
   --c-warn:oklch(0.55 0.13 65); --c-err:oklch(0.53 0.19 27);
-  --c-ok-t:oklch(0.44 0.10 160); --c-warn-t:oklch(0.47 0.12 65); --c-err-t:oklch(0.47 0.18 27);
+  --c-ok-t:oklch(0.45 0.13 148); --c-warn-t:oklch(0.47 0.12 65); --c-err-t:oklch(0.47 0.18 27);
   --ok:var(--c-ok-t); --green:var(--c-ok-t); --accent:var(--c-ok-t); --accent2:var(--c-ok-t); --orange:var(--c-warn-t); --warn:var(--c-warn-t);
   --red:var(--c-away-t); --err:var(--c-err-t); --blue:var(--c-home-t);
-  --ombra:rgb(24 24 32 / .14); --velo:rgb(10 10 12 / .42);
+  --ombra:rgb(10 50 30 / .12); --velo:rgb(4 16 10 / .42);
 }
 *{box-sizing:border-box;margin:0;padding:0}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:repeating-linear-gradient(90deg,transparent 0 48px,var(--strisce) 48px 96px),linear-gradient(180deg,var(--color-bg),var(--bg-2))}
 html{background:var(--color-bg);-webkit-text-size-adjust:100%;scrollbar-color:var(--n-700) transparent;accent-color:var(--color-accent);
   -webkit-tap-highlight-color:transparent;overscroll-behavior:none}
 button,a,summary,select,[role="button"]{touch-action:manipulation}
@@ -87,7 +91,7 @@ button,summary,.btn,.seg,.step{-webkit-user-select:none;user-select:none;-webkit
 .tbl-scroll{overscroll-behavior-x:contain}
 body{
   font-family:var(--font);
-  background:var(--color-bg);color:var(--color-text);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased;
+  background:transparent;color:var(--color-text);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased;
   padding:0 16px max(64px,env(safe-area-inset-bottom));
 }
 ::selection{background:color-mix(in srgb,var(--color-accent) 30%,transparent)}
@@ -289,7 +293,7 @@ select{appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:36px
 
   <div class="topbar">
     <div class="brand"><svg class="ic" aria-hidden="true"><use href="#i-chart-bar"/></svg><h1>Comparatore V9.7</h1></div>
-    <div class="tb-tag"><span class="badge" id="build-ver">build 0905-b91</span><span class="badge" id="engine-badge">motore non caricato</span></div>
+    <div class="tb-tag"><span class="badge" id="build-ver">build 0905-b92</span><span class="badge" id="engine-badge">motore non caricato</span></div>
   </div>
 
   <!-- indicatore di flusso -->
@@ -977,7 +981,7 @@ async function loadEngineFromText(text, fileName) {
     <p><code>${fileName}</code>: clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
 
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b91';
+  const _bComp = '0905-b92';
   window.__CMP_BUILD = _bComp;
   const _el = document.getElementById('engine-build');
   if (_el) {
