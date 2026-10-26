@@ -9,7 +9,9 @@
 # il motore prima del maestro sta nelle righe Maestro:. Il mercato e' la chiusura media col margine tolto in proporzione.
 # Stampa: chi vince per fascia della differenza Scanner meno mercato sul favorito del mercato; le partite coi favoriti
 # diversi; ogni esito a cui lo Scanner da' piu' del mercato, e il favorito e lo sfavorito del mercato per fascia, con la resa
-# alla quota di chiusura; il peso dello Scanner dato il mercato su 1 contro 2. Solo descrittivo.
+# alla quota di chiusura; il peso dello Scanner dato il mercato su 1 contro 2; per livello del rischio sorpresa (senza e con le
+# quote, come lo calcola lo Scanner), quanto vincono il favorito e lo sfavorito del mercato contro quanto dicono le quote. Solo
+# descrittivo.
 import os, re, sys, io, csv, glob, math, collections, importlib.util, urllib.request, datetime as dt
 import numpy as np
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__))); os.chdir(ROOT)
@@ -143,3 +145,38 @@ for lg in sorted({q['lega'] for q in Q}):
     k = np.array([q['lega'] == lg for q in Q]); kd = dv & k
     print(f'   {lg}: {k.sum()} partite, favoriti diversi {kd.sum()}, pick dello Scanner {pc((y[kd] == pk[kd]).mean()) if kd.any() else "--"}% contro favorito del mercato {pc((y[kd] == Mk[kd].argmax(1)).mean()) if kd.any() else "--"}%'
           f' · logloss Scanner meno mercato {1000 * (ll(P)[k] - ll(Mk)[k]).mean():+.1f}‰')
+
+s = importlib.util.spec_from_file_location('sq', 'strumenti/sorpresa-quote.py'); sq = importlib.util.module_from_spec(s); s.loader.exec_module(sq)
+from sklearn.linear_model import LogisticRegression
+Fm = np.column_stack([np.log(Mk[:, 0] / Mk[:, 1]), np.log(Mk[:, 2] / Mk[:, 1])])
+Mr = LogisticRegression(C=1e6, max_iter=5000).fit(Fm, y).predict_proba(Fm)
+W, B, Tq = sq.quote_comb(); FAS = [0, 15, 20, 25, 30]
+Z = np.column_stack([np.log(E[:, 0] / E[:, 1]), np.log(E[:, 2] / E[:, 1]), Fm]) @ W.T + B; PC = np.exp(Z - Z.max(1, keepdims=True)); PC /= PC.sum(1, keepdims=True)
+def livq(i):
+    pu = min(PC[i, 0], PC[i, 2]); j = max(a for a, t in enumerate(FAS) if 100 * pu >= t)
+    c = Tq['disaccordo' if (Q[i]['lgModel'] > 0) != (Q[i]['lgElo'] > 0) else 'accordo'][j]
+    if c[0] < 150: c = Tq['tutte'][j]
+    return 'alto' if c[1] >= 33 else ('medio' if c[1] >= 25 else 'basso')
+liv = np.array([sq.livello(q) for q in Q]); livQ = np.array([livq(i) if okE[i] else 'nd' for i in range(n)])
+print('\n5. Per livello del rischio sorpresa: quanto vincono il favorito e lo sfavorito del mercato, contro le quote (in proporzione e ricalibrate')
+print('   in campione) e alla quota di chiusura. Senza quote: rischioSorpresa sull\'1X2 dello Scanner (SORPRESA_TAB letta da scanner.html);')
+print('   con le quote: QUOTE_COMB col motore prima del maestro e SORPRESA_QUOTE_TAB, come lo Scanner quando ha le quote.')
+for nome, L_ in (('senza quote', liv), ('con le quote', livQ)):
+    for l in ('basso', 'medio', 'alto'):
+        k = L_ == l; m = k.sum(); ii = np.arange(m)
+        if not m: continue
+        vf = (y[k] == fav[k]).astype(float); vd = (y[k] == dog[k]).astype(float); vx = (y[k] == 1).astype(float)
+        rf = vf * O[k][ii, fav[k]] - 1
+        print(f'   {nome:12s} {l:5s} {m:5d} | favorito: quote {pc(Mk[k][ii, fav[k]].mean())}, ricalibrate {pc(Mr[k][ii, fav[k]].mean())}, esce {pc(vf.mean())} ±{se2(vf):.1f}'
+              f' | pari {pc(Mk[k, 1].mean())} / {pc(vx.mean())} | sfavorito: quote {pc(Mk[k][ii, dog[k]].mean())}, ricalibrate {pc(Mr[k][ii, dog[k]].mean())}, esce {pc(vd.mean())} ±{se2(vd):.1f}'
+              f' | resa del favorito {100 * rf.mean():+.1f}% ±{200 * rf.std() / math.sqrt(m):.1f}')
+for nome, lato in (('lo sfavorito', dog), ('il favorito', fav)):
+    pm = Mr[idx, lato]; t = (y == lato).astype(float); A = np.c_[np.ones(n), np.log(pm / (1 - pm)), liv == 'medio', liv == 'alto'].astype(float); b = np.zeros(4)
+    for _ in range(60):
+        p = 1 / (1 + np.exp(-A @ b)); H = A.T @ (A * (p * (1 - p))[:, None]) + 1e-9 * np.eye(4); b += np.linalg.solve(H, A.T @ (t - p))
+    e = np.sqrt(np.diag(np.linalg.inv(H)))
+    print(f'   dato il mercato ricalibrato, vince {nome} del mercato: medio {b[2]:+.3f} ±{e[2]:.3f} (z {b[2] / e[2]:+.2f}), alto {b[3]:+.3f} ±{e[3]:.3f} (z {b[3] / e[3]:+.2f})')
+sfS = np.where(P[:, 0] < P[:, 2], 0, 2)
+for l in ('basso', 'medio', 'alto'):
+    k = liv == l
+    print(f'   senza quote {l}: lo sfavorito dello Scanner e\' il favorito del mercato nel {pc((sfS[k] == fav[k]).mean())}%')
