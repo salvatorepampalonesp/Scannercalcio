@@ -57,7 +57,7 @@ vedi *Le quote automatiche*); se non ci sono, le scrive l'utente. Per misurarle 
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b91`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b92`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -120,8 +120,11 @@ vedi *Le quote automatiche*); se non ci sono, le scrive l'utente. Per misurarle 
   segue taste** (`redesign-existing-projects` e `design-taste-frontend`, dal `b78`) **e impeccable** (dal
   `b79`); **le animazioni e il telefono seguono Emil Kowalski** (`animate`, `review-animations`,
   `mobile-native`, dal `b80`). Chi la tocca rilegge le loro regole, e in *La grafica dello Scanner*, «Cosa
-  cambia nel `b78`», «nel `b79`», «nel `b80`» e «nel `b81`», quali valgono qui. `graphify` scrive in `graphify-out/`, fuori
-  da git.
+  cambia nel `b78`», «nel `b79`», «nel `b80`» e «nel `b81`», quali valgono qui. **Dal `b92` la voce da stadio**, scelta
+  dall'utente guardando Toto-Amici: Barlow Condensed per titoli e numeri, il fondo verde notte a strisce del prato, i numeri
+  che contano, le righe che entrano a scaletta, la scheda che scivola. Dove taste, impeccable o Kowalski dicono altro (Geist e
+  zinc con un solo accento, niente numeri che contano, cambio di scheda istantaneo) vale il `b92`: vedi «Cosa cambia nel
+  `b92`». `graphify` scrive in `graphify-out/`, fuori da git.
 - **impeccable** (`pbakaus/impeccable`, 4.5.2, Apache 2.0). L'ha installato l'utente l'11 ottobre 2026 con
   `npx impeccable install`, e si aggiorna con `npx impeccable update`, non con `skills-lock.json`. Ha messo:
   - la skill `impeccable`, coi suoi comandi (audit, critique, polish, typeset, layout, harden…);
@@ -628,7 +631,17 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b91`)
+## Stato attuale (`b92`)
+
+**La voce da stadio** (`b92`). L'utente ha visto Toto-Amici (il sito del suo gioco coi colleghi) e ha chiesto idee belle, non
+una copia. Lo Scanner prende:
+- titoli e numeri grandi in Barlow Condensed maiuscolo, con le squadre nei loro colori e i titoli a due toni;
+- il fondo verde notte a strisce del prato tagliato, col cerchio di centrocampo dietro il titolo;
+- in alto il risultato come in TV («PAN 69 | 19 | 12 FAL»), quando il titolo esce dallo schermo e in ogni altra scheda;
+- il tabellone come una classifica di barre: la tacca è la base di lega, il tratto verde lo scarto;
+- i numeri che contano, le righe che entrano a scaletta e la scheda che scivola nel verso in cui si va.
+
+Nessun numero cambia. Vedi *La grafica dello Scanner*, «Cosa cambia nel `b92`».
 
 **L'elenco della giornata con le quote** (`b91`). In «Tutte le partite», quando una partita ha le quote dell'1X2, la barra e
 «1 · X · 2» di ogni riga sono quelli con le quote, col grassetto sul più alto e il punto arancione; prima restavano quelli del
@@ -942,7 +955,8 @@ dello Scanner*, «Cosa cambia nel `b78`» e «Cosa cambia nel `b79`», e *La hom
 drawer che si chiude anche trascinandolo) e le pagine si comportano da app sul telefono (skill `mobile-native`):
 vedi «Cosa cambia nel `b80`». Dal `b81` le animazioni rare sono più lunghe (il foglio, la fine dell'analisi,
 l'entrata della partita, la fine della giornata, l'apertura della home), i trascinamenti finiscono con una molla, la
-partita della giornata si scorre col dito e le fisarmoniche si aprono in altezza: vedi «Cosa cambia nel `b81`».
+partita della giornata si scorre col dito e le fisarmoniche si aprono in altezza: vedi «Cosa cambia nel `b81`». Dal
+`b92` la voce da stadio di Toto-Amici: vedi «Cosa cambia nel `b92`».
 
 **La selezione vale più dell'accuratezza.** Prima di aggiungere una feature, chiedersi se
 il segnale non sia già nell'output, solo mal etichettato.
@@ -1888,6 +1902,92 @@ tabellone, l'anello mentre gira.
   Il tocco vero va provato sul telefono: come si sente la molla, il trascinamento della partita col dito,
   l'altezza delle fisarmoniche (su iPhone, senza `interpolate-size`, si aprono di colpo).
 
+**Cosa cambia nel `b92`.** L'utente: «Tu come design fai riferimento solo a quello base. Guarda che bella idea questa
+[Toto-Amici] non voglio una copia, voglio idee belle». Toto-Amici è il sito del gioco che fa coi colleghi. Ha la voce di una
+grafica TV sportiva:
+- maiuscolo stretto per titoli e numeri, con una parola dei titoli colorata;
+- colori che vogliono dire qualcosa;
+- righe che entrano una dopo l'altra, numeri che contano, la scheda che scivola.
+
+Gli ho mandato una prova di tre schermate a 390px (la partita, «com'è andata», la griglia della giornata); «Mi piace, ha un
+sacco di animazioni, bei colori». Il `b92` fa le idee della prova che toccano la veste. Le altre tre restano da fare:
+- «com'è andata»;
+- la griglia «dove sta il valore»;
+- il bollettino della giornata.
+
+Da Toto-Amici non prende:
+- le forme inclinate, che sono la loro firma;
+- la striscia che scorre in fondo, che nelle loro schermate copre le righe;
+- il rosa acceso e il punto «live» che lampeggia: lo Scanner non è in diretta.
+
+- *Carattere*: Barlow Condensed 600 e 700 (OFL, `fonts/OFL-Barlow.txt`), ridotto ai segni dell'italiano: 18 KB per peso,
+  47 KB in base64. È il carattere di:
+  - titoli: «Scegli *la partita*», «Il *tabellone*», «Le *statistiche*», «La *giornata*», «Il pick *del motore*»;
+  - i numeri grandi e le squadre;
+  - le voci del dock, le etichette e le pastiglie dei verdetti;
+  - i bottoni grandi del setup.
+
+  Il testo da leggere resta in Geist.
+- *Colori*: il fondo verde notte (`oklch(0.165 0.02 168)`, `#06110d`), le superfici e i grigi con un velo di verde, l'accento
+  verde prato (`oklch(0.87 0.19 142)`) per il valore. Nel chiaro bianco gesso (`#f2f8f5`) con l'accento verde scuro per il
+  testo e il verde prato per le barre (`--val`). Casa blu e trasferta rossa restano colori di dato. Quattro colori per le
+  famiglie di mercato (1X2, gol, numeri, chi fa più corner), solo sulle etichette. Le stesse variabili nella home e nel
+  Comparatore, senza il carattere nuovo.
+- *Fondo*: le strisce del prato tagliato (bande verticali di 48 px al 2.6%) e il cerchio di centrocampo dietro il titolo
+  della partita. Il rilevatore di impeccable le segnala come avviso (non come difetto): sono volute.
+- *Forme*: angoli da 3, 6 e 8 px invece di 6, 8 e 12.
+- *La partita*:
+  - il titolo è un elemento nuovo (`#titolo-partita`, `aria-hidden`), fatto dalla grafica col testo che il motore scrive
+    in `#ui-title`. Ha le due squadre nei loro colori, una per riga, con «contro» in mezzo, e la misura che entra nella
+    larghezza secondo la parola più lunga (28-56 px). `#ui-title` resta, nascosto alla vista ma letto dai lettori di schermo;
+  - il pick: «vince» sopra il nome della squadra, la probabilità a 70 px;
+  - i tre riquadri 1 · X · 2 con la riga del loro colore in alto;
+  - il rischio sorpresa con la riga del suo livello.
+- *Le proposte*, in «In breve» e nel tabellone, sono barre:
+  - la tacca è la base di lega;
+  - il tratto grigio va da 0 alla base, quello colorato dalla base alla probabilità: è lo scarto, verde pieno se FORTE,
+    più tenue se GIOCABILE, ambra se MARGINALE;
+  - sopra, l'etichetta della famiglia e il verdetto con lo scarto: FORTE pieno, GIOCABILE col bordo.
+
+  `_htmlVerdetti` scrive l'HTML nuovo, quindi col motore `b91` il banco vede diverso il tabellone (`verdetti-body`).
+- *Il risultato in alto* (`#ab-bug`): la sigla della casa, le tre probabilità (la più alta evidenziata; con le quote quelle
+  con le quote e il punto arancione), la sigla della trasferta.
+  - Si vede in ogni scheda tranne Partita, e in Partita quando il titolo esce dallo schermo (un `IntersectionObserver`).
+  - Le sigle sono le prime tre lettere del nome. Si saltano FC, AC, SS e le altre sigle di club, «Calcio», «Hellas» e i
+    numeri. «Real Madrid» fa RMA, «Manchester City» e «Manchester United» MCI e MUN. Se due sigle coincidono, la prima
+    lettera e le prime due della parola dopo.
+  - Sotto i 380 px restano solo i numeri, con una riga dei colori delle squadre ai lati.
+- *La giornata*: i tre numeri in riquadri con la riga colorata, le partite in maiuscolo stretto, la partita in vista con la
+  riga verde a sinistra.
+- *Le animazioni*, quelle di Toto-Amici rifatte senza librerie (loro usano Motion), per scelta dell'utente:
+  - *i numeri contano* fino al valore (900 ms, poi 500 nella versione corta della giornata): la probabilità del pick, i
+    tre riquadri, le proposte, il tabellone, i numeri della giornata e dei giocatori. Conta solo il primo nodo di testo
+    del numero, e alla fine rimette il testo identico. Col movimento ridotto non conta: il banco gira così, e vede i
+    numeri veri. Erano stati tolti nel `b78` per taste;
+  - *le righe* delle proposte e del tabellone entrano da sinistra una dopo l'altra (32 px, 450 ms, 90 ms fra una e
+    l'altra, al massimo 8). La barra si stende prima fino alla base, poi oltre la tacca;
+  - *il titolo* della partita entra dai due lati, a fine analisi;
+  - *la scheda* che si apre scivola di 24 px nel verso in cui si va (220 ms). Nel `b80` il cambio era istantaneo per
+    Kowalski. Si animano i figli di `#dashboard-area` della scheda, mai `#dashboard-area` stesso: il dock dentro di lui
+    è `position: fixed`, e una trasformazione sul padre lo staccherebbe dal fondo;
+  - *gli indicatori* del dock e dei segmenti si spostano con una molla (rimbalzo 0.2), sotto quello del dock una riga
+    verde;
+  - *il risultato in alto* compare scendendo di 6 px.
+- *Cosa non cambia*: motore, numeri e id. Due id in più, `titolo-partita` e `ab-bug`. Col motore `b91` il banco vede 1
+  scrittura diversa su 204 (il tabellone) e una riga del CSV (il certificato).
+- *Verificato*:
+  - il banco verde a 390px;
+  - le schermate scuro e chiaro sulla lega finta: nessun errore, 0 px di scorrimento in ogni scheda;
+  - la giornata con le quote: 0 px;
+  - home e Comparatore nei due temi: 0 px, nessun errore;
+  - in Chromium col movimento pieno:
+    - i numeri arrivano al valore vero (69.2% previsto e a schermo);
+    - il risultato in alto c'è dopo uno scorrimento e non in cima;
+    - aprendo il tabellone 8 righe entrano a scaletta, la scheda scivola e l'indicatore si muove;
+  - il rilevatore di impeccable: 0 difetti sulle nove schede analizzate nei due temi, un avviso sulle strisce.
+
+  Il tocco vero va provato sul telefono.
+
 **Cosa non cambia, e non deve cambiare.**
 
 - **Tutti gli id della pagina del `b58` ci sono ancora** (233, confrontati con un elenco preso prima
@@ -2431,7 +2531,7 @@ giornata: in ogni riga la barra e l'1X2 sono quelli con le quote se la partita l
 arancione solo lì), e lo stesso la barra della partita in vista. Controllo di potenza: con la barra del maestro rimessa nelle
 righe fallisce sulle 2 partite con le quote automatiche.
 
-Esito al `b91` (storico 30), a 390px con tutte le 30 card aperte, scheda per scheda e in tutte e quattro le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, il prompt della giornata con note e istruzioni una volta sola e un blocco per partita, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, il caso dell'arbitro col rapporto rifatto da `arbitri.json`, gli indisponibili segnati, nel prompt e tolti, la loro ricerca, l'elenco della giornata con le quote, 0 px):
+Esito al `b92` (storico 30), a 390px con tutte le 30 card aperte, scheda per scheda e in tutte e quattro le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, il prompt della giornata con note e istruzioni una volta sola e un blocco per partita, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, il caso dell'arbitro col rapporto rifatto da `arbitri.json`, gli indisponibili segnati, nel prompt e tolti, la loro ricerca, l'elenco della giornata con le quote, 0 px):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
@@ -2439,7 +2539,7 @@ Esito al `b91` (storico 30), a 390px con tutte le 30 card aperte, scheda per sch
 | batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 204 | 0 su 131 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
 | `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 142-167 | 84-90 | 0 |
-| `vecchio`: motore `b90` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 su 204 | 1 | 0 |
+| `vecchio`: motore `b91` caricato (controllo) | 0/3, «motore caricato diverso ...» | 1 su 204 | 1 | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -2558,7 +2658,8 @@ cambia solo come il mega-prompt è costruito, e il prompt della singola partita 
 cambia solo la sotto-scheda degli indisponibili, che sta fuori dal motore. Al `b90` il controllo col `b89` vede 7 scritture
 diverse su 204, tutte della card contro squadre simili (titoli, rendimento, liste e legenda), e nel CSV solo il certificato.
 Al `b91` il controllo col `b90` non vede nessuna scrittura diversa, solo il certificato: cambia l'elenco della giornata, che sta
-fuori dal motore.
+fuori dal motore. Al `b92` il controllo col `b91` vede 1 scrittura diversa su 204, il tabellone (`verdetti-body`, scritto da
+`_htmlVerdetti` con le barre nuove), e nel CSV solo il certificato.
 
 **Il controllo del `b70`.** Da qui «In breve» controlla anche il rischio sorpresa: con le quote dell'1X2
 `#sorpresa-box` deve essere identico a quello rifatto nella pagina con `rischioSorpresa(…,
@@ -7967,3 +8068,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b89` | la ricerca negli indisponibili, chiesta dall'utente («i nomi sono difficili da trovare»): sopra la lista di ogni squadra un campo dove bastano poche lettere, senza badare a maiuscole, accenti e apostrofi; restano solo i giocatori che le hanno nel nome, e la x pulisce. Sul telefono il campo resta in alto mentre si scorre la lista della sua squadra. Il banco prova la ricerca, e fallisce su una copia dove non nasconde niente. Col `b88` 0 scritture diverse su 204, una riga del CSV (il certificato) |
 | `b90` | la card «contro squadre simili» corretta, chiesta dall'utente come suo studio, senza toccare altro: le ultime 30 partite invece della stessa sede, coi punti riportati alla sede di oggi; i tre numeri che `KNN_DIMS` leggeva dalla squadra stessa presi dall'avversario; l'Elo dell'avversario prima di ogni partita come dimensione in più (peso 1.5). Sulle 4.112 partite della misura legge la forza meglio del `b89` (0.294 → 0.339, 11 leghe su 11, errore ±0.39 → ±0.28). Sotto, le sei partite che pesano di più, con somiglianza e peso. Le probabilità del KNN restano su `getSimilarMatches`. Col `b89` 7 scritture diverse su 204, tutte della card, e una riga del CSV (il certificato) |
 | `b91` | l'elenco della giornata con le quote, notato dall'utente («non aggiorna le quote a sx»): con le quote dell'1X2 la barra e «1 · X · 2» di ogni riga, e la barra della partita in vista, sono quelli con le quote, col grassetto sul più alto e il punto arancione; prima restavano del maestro, mentre il pick a destra era già quello con le quote. Il banco controlla l'elenco, e fallisce rimettendo la barra del maestro. Col `b90` 0 scritture diverse su 204, una riga del CSV (il certificato) |
+| `b92` | la voce da stadio, chiesta dall'utente guardando Toto-Amici («voglio idee belle»): Barlow Condensed maiuscolo per titoli e numeri, le squadre nei loro colori, titoli a due toni, il fondo verde notte a strisce del prato col cerchio di centrocampo, il risultato in alto come in TV, il tabellone come classifica di barre (tacca alla base di lega, tratto verde lo scarto), riquadri con la riga colorata; le animazioni di Toto-Amici rifatte senza librerie (numeri che contano, righe a scaletta con la barra che si stende, la scheda che scivola, indicatori a molla). Home e Comparatore negli stessi colori. Col `b91` 1 scrittura diversa su 204 (il tabellone), una riga del CSV (il certificato) |
