@@ -57,7 +57,7 @@ vedi *Le quote automatiche*); se non ci sono, le scrive l'utente. Per misurarle 
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b92`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b93`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -606,6 +606,9 @@ qui ha bisogno di dati nuovi, non di rifare questi.
 
   La tabella di *Le card di Numeri* dice già quale per ognuna. Nessun numero cambia. Trovato rileggendo la revisione di
   un'altra IA, il 25 ottobre 2026.
+- [ ] **La bolletta: rimisurare i margini con più giornate.** Le combo con l'Under hanno il 28% di margine su 11 giocate, pari e
+  dispari non sono mai stati giocati (8% stimato). Con le bollette del girone d'andata (`bolletta.py --toto`) si rifanno i margini
+  di `TOTO.margine`. Vedi *La bolletta del Toto-Amici*.
 - [ ] **Doppie chance e gol con confidence**: la tabella è confusa, e sui gol poggia su
   probabilità che discriminano poco.
 - [x] ~~**La card «Primo gol»**~~ — **passato, nello Scanner dal `b75`.** La card usa una quota fissa
@@ -631,7 +634,15 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b92`)
+## Stato attuale (`b93`)
+
+**La bolletta del Toto-Amici** (`b93`). Chiesta dall'utente per il gioco coi colleghi: le probabilità delle doppie chance, dei
+gol e delle combo, e quanto ci prendono le quote. Nella scheda Tabellone, sotto il tabellone, la card «La bolletta» ha le 24
+giocate del gioco: per ognuna la probabilità, la quota (vera dove c'è, altrimenti stimata col margine misurato sulle bollette)
+e i punti attesi, e in cima la migliore di ogni tipo. Nella giornata, «La bolletta» è la divisione in 1 combo, 2 doppie, 3
+variabili e 4 fisse coi punti attesi più alti, da copiare. Con le quote di chiusura (47.662 partite di 18 leghe) ogni giocata
+esce quanto dice, entro 1,4 punti; senza quote Over e Goal stanno 2-4 punti sotto il vero. Nessun'altra probabilità cambia.
+Vedi *La bolletta del Toto-Amici*.
 
 **La voce da stadio** (`b92`). L'utente ha visto Toto-Amici (il sito del suo gioco coi colleghi) e ha chiesto idee belle, non
 una copia. Lo Scanner prende:
@@ -1032,6 +1043,7 @@ non passa mai +7.1. Trascina con sé il `12`.
 
 | campione | partite | note |
 |---|---|---|
+| **Le bollette del gioco** | **47.662 · 1.120** | Solo descrittivo del 26 ottobre 2026 (vedi *La bolletta del Toto-Amici*). Le quote di chiusura di football-data di 18 leghe, 2017/18-2026/27 (`batch/fd`, come per il rating dalle quote passate): quanto escono le 24 giocate del gioco, e la bolletta ottima su 234 giornate di Serie A. Le 1.120 giocate delle bollette dei colleghi, giornate 1-7 del 2026/27 (il JSON del sito, fuori da git): il margine delle quote in bolletta. Il maestro su `batch/2627b89` e `batch/disaccordo` |
 | **Il disaccordo con le quote** | **1.990 · 335** | Solo descrittivo del 24 ottobre 2026 (vedi *Il motore contro il mercato*, «Quando lo Scanner e le quote non sono d'accordo»). Il 2026 di Allsvenskan, Eliteserien, J. League, MLS, Liga Profesional e Série A brasiliana e il 2026/27 di Bundesliga austriaca, Superligaen e Liga MX col `b90` (`batch/disaccordo`), 1.990 su 1.990 in copia conforme, Elo identico su ogni file, 20.668 chiamate: mai usate per il maestro né aperte per altro. Più il 2026/27 dei cinque campionati (`batch/2627b89`). Guardato solo l'1X2 dello Scanner contro la chiusura di football-data, e il 26 ottobre per livello del rischio sorpresa (vedi *L'avviso di sorpresa*) |
 | **Il confronto contro squadre simili** | **7.392** | Solo esplorazione del 24 ottobre 2026 (vedi *Il confronto contro squadre simili*). `/stats` e `/advanced` di tutte le partite di lega di 11 campionati dal 2024/25 (`batch/stile`, 17.183 chiamate), con le quote di chiusura di football-data: guardati KNN, stili e residui sul mercato di 1X2, pareggi e Over 2.5; poi la card con tutte le 30 partite e altre metriche (4.112 partite) |
 | **Le quote passate e l'undici** | **46.177 · 340 · 3.596** | Solo esplorazione del 24 ottobre 2026 (vedi *Il rating dalle quote passate*). I file di football-data di 18 leghe, 2017/18–2026/27 (`batch/fd`), misurati dal 2019/20: guardati 1X2 e prese per il rating dalle quote passate. Il 2026/27 dei cinque campionati col `b89` (`batch/2627b89`), 340 su 340 in copia conforme, Elo identico su ogni file, 7.516 chiamate: maestro contro rating. `/lineups` e `/players` dei cinque campionati dal 2024/25 (`batch/giocatori`, 7.934 chiamate): la qualità dell'undici. Per un test di queste due domande servono leghe e partite nuove |
@@ -2110,6 +2122,9 @@ Verificato:
   che il bottone si veda. Controllo di potenza: senza la versione corta delle quote fallisce;
 - *a 390px* il bottone sta nel riquadro della giornata e nella scheda Prompt, senza uscire di lato.
 
+**La bolletta (`b93`).** Sotto «Copia il prompt della giornata» c'è la bolletta del gioco coi colleghi: la divisione in 1
+combo, 2 doppie, 3 variabili e 4 fisse coi punti attesi più alti, da copiare. Vedi *La bolletta del Toto-Amici*.
+
 **I limiti, noti.** Un recupero infrasettimanale giocato prima del turno taglia l'elenco alla prima
 squadra che torna in campo: si sceglie la data del turno. Alla prima giornata della stagione una
 neopromossa non ha partite di lega nel database e la sua partita resta non analizzata, come a mano.
@@ -2123,6 +2138,112 @@ stampa le stesse 191 scritture; avanti e indietro tornano alla stessa partita; n
 riquadro né nel prompt; 0 px di scorrimento a 390px. Controllo di potenza: spostando di un giorno la
 data con cui la giornata analizza ogni partita, il banco fallisce (il sottotitolo e lo storico
 cambiano).
+
+## La bolletta del Toto-Amici
+
+**Il gioco.** Chiesto dall'utente il 26 ottobre 2026: «calcola la probabilità delle doppie (1X X2 12) … e anche quella dei
+goal, magari se riuscissi a capire quanto ci prendono le quote … poi la combo fissa con una bonus. Servono per un giochino con i
+colleghi». È Toto-Amici: a ogni giornata di Serie A una bolletta di dieci giocate, una per partita:
+- 1 combo, cioè 1X2 + Over/Under 2.5 oppure 1X2 + Goal/NoGoal: 6 punti;
+- 2 doppie chance (1X, X2, 12): 1 punto;
+- 3 variabili (Over/Under 2.5, Goal/NoGoal, pari/dispari): 2 punti;
+- 4 fisse (1, X, 2): 4 punti.
+
+Con la quota del singolo evento a 3,50 o più i punti raddoppiano, e fa fede la quota in bolletta. Il bonus chiusura (+10
+prendendole tutte) non raddoppia.
+
+**Le probabilità** (`totoGiocate`, chiamata da `aggiornaQuote` con e senza quote):
+- fisse e doppie chance sono l'1X2 a schermo: con le quote quello combinato (`QUOTE_COMB`), senza quello del maestro;
+- Over/Under, Goal/NoGoal e pari/dispari escono dalla matrice dei gol. Con le quote dell'1X2 e dell'Over è quella allineata
+  (`b57`), senza è quella del maestro; con le sole quote dell'Over, l'Over/Under è quello con le quote;
+- una combo è la probabilità del segno per quella del bonus dato il segno, nella stessa matrice. Così le due combo di un segno
+  sommano al segno a schermo.
+
+**Quanto ci prendono** (`python3 strumenti/bolletta.py`, quattro minuti; solo descrittivo). Con le quote di chiusura di
+football-data (margine tolto in proporzione, matrice allineata), su 47.662 partite di 18 leghe dal 2017/18 al 2026/27. In ogni
+cella: detta, uscita, errore medio di calibrazione in punti.
+
+| giocata | detta | uscita | errore |
+|---|---|---|---|
+| 1 / X / 2 | 42.9 / 26.2 / 30.9% | 43.1 / 26.3 / 30.6% | 1.27 / 0.46 / 1.35 |
+| 1X / X2 / 12 | 69.1 / 57.1 / 73.8% | 69.4 / 56.9 / 73.7% | 1.35 / 1.27 / 0.46 |
+| Over 2.5 | 50.0% | 50.4% | 0.77 |
+| Goal | 51.3% | 52.5% | 1.25 |
+| pari | 51.4% | 50.4% | 0.98 |
+| le 12 combo | | | da 0.30 a 0.89 |
+
+- *Le quote sono un filo timide*: la pendenza della ricalibrazione va da 1.05 a 1.20, come per il margine tolto in proporzione
+  (vedi *Il maestro coi bersagli di Shin: la regola*).
+- *Pari e dispari non si prevedono*: la pendenza è 0.
+- *La giocata più probabile di ogni tipo*, in ogni partita, detta e uscita:
+  - fissa 49.7% e 50.9%;
+  - doppia 77.0% e 77.8%;
+  - variabile 58.2% e 59.2% (Under nel 42% delle partite, Goal nel 31%);
+  - combo 32.5% e 33.4% (1+Over nel 38%, X+Under nel 19%).
+- *Senza quote*, col maestro, sulle 2.330 partite di `batch/2627b89` e `batch/disaccordo`:
+  - 1X2 e doppie chance entro 2 punti, combo entro 1-2;
+  - Over 2.5 detto 51.7%, uscito 53.9%; Goal 53.3% e 57.2%: il livello dei gol del maestro è basso (vedi *Il maestro mercato:
+    la regola*, «Esito»);
+  - pari 50.8% e 49.0%.
+
+**Le quote delle bollette** (`python3 strumenti/bolletta.py --toto <file>`, col JSON di `/api/snapshot` del sito, fuori da git:
+sono le bollette dei colleghi). Sono 1.120 giocate delle prime sette giornate del 2026/27, 16 bollette a giornata, sulle 70
+partite con la chiusura di football-data; nessun esito è diverso dal punteggio.
+- *La quota in bolletta è la media di chiusura*: le fisse 0.998 volte, le doppie 0.999 volte `1/(1/qa + 1/qb)` delle due fisse,
+  l'Over/Under 1.012 volte.
+- *Il margine sulla probabilità equa*:
+  - fisse 6.7%, doppie 6.5%;
+  - variabili 7.7%: Goal 9.4%, Over 4.8%, Under 6.9%;
+  - combo 12.6% ±2.1: 1+Over 8.4%, 2+Over 13.1%. Le combo con l'Under, 11 giocate, il 28%.
+- *La quota stimata*, dove manca, è `1/(p·(1 + margine))` coi margini di `TOTO.margine`: fisse e doppie 6.5%, Over/Under 6%,
+  Goal/NoGoal 9.5%, combo 12.5%, pari e dispari 8% (non misurati). Sulle bollette sta in media a 1.00 volte quella vera, e nove
+  volte su dieci fra 0.88 e 1.14 per le combo. La soglia di 3,50 esce giusta nel 94.6% delle combo e nel 98.4% delle fisse.
+- *Le giocate dei colleghi sono uscite più della probabilità equa*: fisse 63.2% contro 56.3%, combo 53.6% contro 35.6%. Sono sette
+  giornate, con le stesse partite in tutte le bollette: è rumore.
+
+**La bolletta ottima** (`totoBolletta`). Prima, per ogni partita, la giocata coi punti attesi più alti in ogni tipo: la
+probabilità per i punti, doppi da 3,50. Poi, fra le partite, la divisione in 1 / 2 / 3 / 4 col totale più alto
+(programmazione dinamica sulle quantità rimaste). Con meno di dieci partite analizzate riempie quelle che può, con più di dieci
+sceglie le migliori. Su 234 giornate di Serie A, con le quote di chiusura:
+- l'ottima vale 18.4 punti attesi a giornata, e ne ha fatti 19.0 (±0.9);
+- una fatta a occhio, 17.3 attesi e 18.3 fatti (±0.6). A occhio vuol dire: le fisse sui quattro favoriti più netti, la combo sul
+  quinto, poi doppie e variabili, sempre la giocata più probabile;
+- la differenza attesa è +1.1, quella fatta +0.7 ±0.9, ancora dentro il rumore;
+- l'ottima mette fisse `1` (243 volte su 100 giornate) e `2` (107), Under (155) e Goal (124), le doppie 1X (89), X2 (63) e 12
+  (47). Per i punti doppi, la X fissa (33 volte su 100 giornate) e le combo X+Under (27), 1+Over (17), 1+NoGoal (14), 2+Over
+  (13);
+- sulle giornate 1-7 del 2026/27 (`--toto`) l'ottima vale 18.4 punti attesi a giornata, le bollette dei colleghi 16.5 in media
+  (da 15.4 a 16.9).
+
+**Nello Scanner (`b93`).**
+- *La card «La bolletta»* (`#card-toto`, scheda Tabellone, sotto il tabellone). Dice da dove vengono le probabilità, poi la
+  migliore di ogni tipo: probabilità, quota (`~` se stimata), punti (6, o 12 con la quota da 3,50) e punti attesi. Se la quota
+  sta entro il 6% da 3,50 (vera) o il 12% (stimata), dice di controllarla in bolletta. Sotto, tutte le 24 giocate per tipo. La
+  scrive `_totoCard` con `innerHTML` diretto, fuori dal confronto del banco.
+- *Nella giornata*, sotto «Copia il prompt della giornata», «La bolletta» chiusa, coi punti attesi nel titolo:
+  - una riga per giocata (tipo, partita, giocata, probabilità, quota, punti attesi);
+  - quanto resta da mettere, se le partite analizzate sono meno di dieci;
+  - «Copia la bolletta», un testo da incollare in chat.
+
+  Ogni partita tiene le sue giocate (`x.toto`, da `_giornataQuote`), quindi le quote arrivate dopo o scritte a mano entrano.
+- *Non cambia nessun'altra probabilità*: né il verdetto, né il tabellone, né il CSV. Il Comparatore non ha la card:
+  `totoGiocate` gira anche lì, dentro `aggiornaQuote`, senza scrivere niente.
+
+**Verificato.**
+- *Il banco*, in ogni partita e nei dieci casi delle quote:
+  - 24 giocate: 3 fisse, 3 doppie, 6 variabili, 12 combo;
+  - fisse e doppie dall'1X2 a schermo, le due combo di un segno che sommano al segno;
+  - Over e Goal dalla matrice allineata con le quote dell'1X2 e dell'Over, da quella del maestro senza;
+  - quote vere dove ci sono e stimate coi margini altrove, punti doppi da 3,50;
+  - nella card la migliore di ogni tipo e le 24 righe.
+
+  Nella giornata il totale della bolletta è il massimo fra tutte le divisioni possibili, rifatto a forza bruta (5 partite: 10.58
+  punti attesi su 10.58), con una riga per partita e il testo da copiare.
+- *Il controllo di potenza*, su una copia con due guasti (`ROOT=<copia>`): le combo senza la divisione per il segno, e la
+  bolletta con una fissa sola. Il banco fallisce su tutti e due: le combo non sommano al segno, e la bolletta della giornata fa
+  7.35 punti attesi contro un massimo di 9.16.
+- *Le schermate* a 390px, in scuro e in chiaro: `strumenti/schermate.js` fotografa ora anche la card (`06b`, `06c`), e la
+  bolletta della giornata è stata fotografata a parte. Nessun errore, 0 px di scorrimento.
 
 ## La home e lo scarico di una partita
 
@@ -2529,9 +2650,11 @@ intermedi), legge «In breve» da `#in-breve` (il riquadro, la sorpresa e le pro
 e misura le voci del dock e del foglio Altro, Squadre in tutte e tre le sotto-schede. Dal `b91` controlla anche l'elenco della
 giornata: in ogni riga la barra e l'1X2 sono quelli con le quote se la partita le ha (col grassetto sul più alto e il punto
 arancione solo lì), e lo stesso la barra della partita in vista. Controllo di potenza: con la barra del maestro rimessa nelle
-righe fallisce sulle 2 partite con le quote automatiche.
+righe fallisce sulle 2 partite con le quote automatiche. Dal `b93` controlla la bolletta: in ogni partita e nei dieci casi delle
+quote le 24 giocate (le combo di un segno sommano al segno, quote e punti), e nella giornata il totale contro il massimo rifatto
+a forza bruta (vedi *La bolletta del Toto-Amici*).
 
-Esito al `b92` (storico 30), a 390px con tutte le 30 card aperte, scheda per scheda e in tutte e quattro le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, il prompt della giornata con note e istruzioni una volta sola e un blocco per partita, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, il caso dell'arbitro col rapporto rifatto da `arbitri.json`, gli indisponibili segnati, nel prompt e tolti, la loro ricerca, l'elenco della giornata con le quote, 0 px):
+Esito al `b93` (storico 30), a 390px con tutte le 30 card aperte, scheda per scheda e in tutte e quattro le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, il prompt della giornata con note e istruzioni una volta sola e un blocco per partita, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, il caso dell'arbitro col rapporto rifatto da `arbitri.json`, gli indisponibili segnati, nel prompt e tolti, la loro ricerca, l'elenco della giornata con le quote, la bolletta in ogni partita, nei dieci casi delle quote e nella giornata, 0 px):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
@@ -2539,7 +2662,7 @@ Esito al `b92` (storico 30), a 390px con tutte le 30 card aperte, scheda per sch
 | batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 204 | 0 su 131 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
 | `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 142-167 | 84-90 | 0 |
-| `vecchio`: motore `b91` caricato (controllo) | 0/3, «motore caricato diverso ...» | 1 su 204 | 1 | 0 |
+| `vecchio`: motore `b92` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 su 204 | 1 | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -2659,7 +2782,8 @@ cambia solo la sotto-scheda degli indisponibili, che sta fuori dal motore. Al `b
 diverse su 204, tutte della card contro squadre simili (titoli, rendimento, liste e legenda), e nel CSV solo il certificato.
 Al `b91` il controllo col `b90` non vede nessuna scrittura diversa, solo il certificato: cambia l'elenco della giornata, che sta
 fuori dal motore. Al `b92` il controllo col `b91` vede 1 scrittura diversa su 204, il tabellone (`verdetti-body`, scritto da
-`_htmlVerdetti` con le barre nuove), e nel CSV solo il certificato.
+`_htmlVerdetti` con le barre nuove), e nel CSV solo il certificato. Al `b93` il controllo col `b92` non vede nessuna scrittura
+diversa, solo il certificato: la bolletta sta fuori dal motore e scrive con `innerHTML` diretto.
 
 **Il controllo del `b70`.** Da qui «In breve» controlla anche il rischio sorpresa: con le quote dell'1X2
 `#sorpresa-box` deve essere identico a quello rifatto nella pagina con `rischioSorpresa(…,
@@ -8069,3 +8193,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b90` | la card «contro squadre simili» corretta, chiesta dall'utente come suo studio, senza toccare altro: le ultime 30 partite invece della stessa sede, coi punti riportati alla sede di oggi; i tre numeri che `KNN_DIMS` leggeva dalla squadra stessa presi dall'avversario; l'Elo dell'avversario prima di ogni partita come dimensione in più (peso 1.5). Sulle 4.112 partite della misura legge la forza meglio del `b89` (0.294 → 0.339, 11 leghe su 11, errore ±0.39 → ±0.28). Sotto, le sei partite che pesano di più, con somiglianza e peso. Le probabilità del KNN restano su `getSimilarMatches`. Col `b89` 7 scritture diverse su 204, tutte della card, e una riga del CSV (il certificato) |
 | `b91` | l'elenco della giornata con le quote, notato dall'utente («non aggiorna le quote a sx»): con le quote dell'1X2 la barra e «1 · X · 2» di ogni riga, e la barra della partita in vista, sono quelli con le quote, col grassetto sul più alto e il punto arancione; prima restavano del maestro, mentre il pick a destra era già quello con le quote. Il banco controlla l'elenco, e fallisce rimettendo la barra del maestro. Col `b90` 0 scritture diverse su 204, una riga del CSV (il certificato) |
 | `b92` | la voce da stadio, chiesta dall'utente guardando Toto-Amici («voglio idee belle»): Barlow Condensed maiuscolo per titoli e numeri, le squadre nei loro colori, titoli a due toni, il fondo verde notte a strisce del prato col cerchio di centrocampo, il risultato in alto come in TV, il tabellone come classifica di barre (tacca alla base di lega, tratto verde lo scarto), riquadri con la riga colorata; le animazioni di Toto-Amici rifatte senza librerie (numeri che contano, righe a scaletta con la barra che si stende, la scheda che scivola, indicatori a molla). Home e Comparatore negli stessi colori. Col `b91` 1 scrittura diversa su 204 (il tabellone), una riga del CSV (il certificato) |
+| `b93` | la bolletta del Toto-Amici, chiesta dall'utente per il gioco coi colleghi: nella scheda Tabellone una card con le 24 giocate (fisse, doppie chance, variabili, combo), ognuna con la probabilità dalla matrice dei gol (allineata con le quote, del maestro senza), la quota vera o stimata col margine misurato su 1.120 giocate delle bollette (fisse e doppie 6.5%, Goal 9.5%, combo 12.5%) e i punti attesi, doppi con la quota da 3,50; nella giornata la bolletta ottima (1 combo, 2 doppie, 3 variabili, 4 fisse) da copiare. Con le quote di chiusura, su 47.662 partite di 18 leghe, ogni giocata esce quanto dice entro 1,4 punti; su 234 giornate di Serie A la bolletta ottima vale 18.4 punti attesi a giornata contro 17.3 di una a occhio (fatti 19.0 e 18.3, +0.7 ±0.9). `strumenti/bolletta.py`. Col `b92` 0 scritture diverse su 204, una riga del CSV (il certificato); il banco controlla le giocate e la bolletta a forza bruta, e il controllo di potenza fallisce dove deve |

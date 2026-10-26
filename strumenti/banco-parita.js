@@ -309,6 +309,33 @@ const INBREVE = `(() => { const b = document.querySelector('#in-breve'); if (!(b
     && (Q ? window.__SORPRESA_QUOTE && window.__SORPRESA_QUOTE.liv === S.liv : !window.__SORPRESA_QUOTE) && S.dis === E.sorpresa.dis && S.dis !== null;
   return { ok: ok && sorOk, sorOk, rotto: /NaN|undefined|Infinity/.test(b.innerHTML), pick: ['1', 'X', '2'][k], proposte: Vb.length, quote: !!Q,
            sorpresa: S.liv + (Q ? ' con le quote' : '') + (S.dis ? ', disaccordo' : ', accordo') }; })()`;
+// la bolletta (b93): 24 giocate; fisse e doppie dall'1X2 a schermo, le due combo di un segno che sommano al segno,
+// Over e Goal dalla matrice (allineata con le quote dell'1X2 e dell'Over), le quote vere dove ci sono e stimate col
+// margine altrove, i punti doppi da 3,50, e nella card la migliore di ogni tipo
+const TOTO_CK = `(() => { if (typeof totoGiocate !== 'function') return { ok: true, assente: true };
+  const T = window.__TOTO, C = window.__QUOTE_CTX; if (!T || !C) return { ok: false, err: ['niente __TOTO'] };
+  const Q = window.__QUOTE_P, S = Q || C.p, q = _quoteLette(), qo = _quoteLette(['quota-ov', 'quota-un']), GQ = window.__QUOTE_GOL;
+  const v = k => T.voci.find(x => x.k === k), err = [], vic = (a, b, t) => Math.abs(a - b) < (t || 1e-9), segni = ['1', 'X', '2'];
+  const PT = { combo: 6, doppia: 1, variabile: 2, fissa: 4 }, MG = { fissa: .065, doppia: .065, combo: .125, Over: .06, Under: .06, Goal: .095, NoGoal: .095, Pari: .08, Dispari: .08 };
+  const conta = {}; T.voci.forEach(x => { conta[x.tipo] = (conta[x.tipo] || 0) + 1; });
+  if (T.voci.length !== 24 || conta.fissa !== 3 || conta.doppia !== 3 || conta.variabile !== 6 || conta.combo !== 12) err.push('giocate ' + JSON.stringify(conta));
+  segni.forEach((n, i) => { if (!vic(v(n).p, S[i])) err.push('fissa ' + n);
+    [['Over', 'Under'], ['Goal', 'NoGoal']].forEach(([a, b]) => { if (!vic(v(n + '+' + a).p + v(n + '+' + b).p, S[i])) err.push('combo ' + n + '+' + a + ' e ' + b + ' non sommano al segno'); }); });
+  [['1X', 0, 1], ['X2', 1, 2], ['12', 0, 2]].forEach(([k, a, b]) => { if (!vic(v(k).p, S[a] + S[b])) err.push('doppia ' + k); });
+  [['Over', 'Under'], ['Goal', 'NoGoal'], ['Pari', 'Dispari']].forEach(([a, b]) => { if (!vic(v(a).p + v(b).p, 1)) err.push(a + ' e ' + b); });
+  if (GQ) { if (!vic(v('Over').p, GQ.over, 1e-6) || !vic(v('Goal').p, GQ.gg, 1e-6)) err.push('Over o Goal non dalla matrice allineata'); }
+  else if (!qo) { const M = probsFromMatrix(calcDCMatrix(C.lam[0], C.lam[1], C.rho)); if (!vic(v('Over').p, M.pOv, 1e-6) || !vic(v('Goal').p, M.pGG, 1e-6)) err.push('Over o Goal non della matrice del maestro'); }
+  T.voci.forEach(x => { const vera = !!((q && (x.tipo === 'fissa' || x.tipo === 'doppia')) || (qo && (x.k === 'Over' || x.k === 'Under')));
+    const qa = !vera ? 1 / (x.p * (1 + (MG[x.k] || MG[x.tipo]))) : x.tipo === 'fissa' ? q[segni.indexOf(x.k)]
+      : x.tipo === 'doppia' ? 1 / x.k.split('').reduce((s, c) => s + 1 / q[segni.indexOf(c)], 0) : qo[x.k === 'Over' ? 0 : 1];
+    if (x.vera !== vera || !vic(x.q, qa) || x.x2 !== (qa >= 3.5) || !vic(x.pt, x.p * PT[x.tipo] * (qa >= 3.5 ? 2 : 1))) err.push('quota o punti di ' + x.k); });
+  const best = {}; T.voci.forEach(x => { if (!best[x.tipo] || x.pt > best[x.tipo].pt) best[x.tipo] = x; });
+  const box = document.querySelector('#toto-box'), righe = box ? [...box.querySelectorAll('.tv .tv-n > span')].map(s => s.textContent) : [];
+  const attese = ['combo', 'fissa', 'variabile', 'doppia'].map(t => best[t].nome);
+  if (JSON.stringify(righe) !== JSON.stringify(attese)) err.push('card: ' + righe.join(', ') + ' invece di ' + attese.join(', '));
+  if (!box || box.querySelectorAll('.tv-mini').length !== 24) err.push('card: le 24 giocate');
+  const rotto = !box || /NaN|undefined|Infinity/.test(box.innerHTML);
+  return { ok: !err.length && !rotto, err, rotto, migliori: attese.join(', '), x2: T.voci.filter(x => x.x2).length, vere: T.voci.filter(x => x.vera).length }; })()`;
 // dal b66 l'analisi e' divisa in schede, e una sezione nascosta non ha larghezza: si misura scheda per
 // scheda, con tutte le details aperte. Oltre alle tabelle compatte, i riquadri nuovi non devono uscire di lato.
 // Dal b69 le schede sono le voci del dock (Altro apre un foglio con Prompt e Dati), e Squadre ha tre sotto-schede
@@ -321,7 +348,7 @@ const MISURA = `(() => { const d = [...document.querySelectorAll('details')]; d.
     if (k) schedaVai(k, false);
     if (q && dash) dash.dataset.sq = q;
     scroll = Math.max(scroll, document.documentElement.scrollWidth - window.innerWidth);
-    document.querySelectorAll('table.table-compact, .tv, .tv-mini, .ib-pick, .ib-p, .ib-f, .fs-riga, .g-row, .gi-row, .cfr-r, .so-top, .seg-x, .ind-riga, .ind-cerca').forEach(t => {
+    document.querySelectorAll('table.table-compact, .tv, .tv-mini, .ib-pick, .ib-p, .ib-f, .fs-riga, .g-row, .g-br, .gi-row, .cfr-r, .so-top, .seg-x, .ind-riga, .ind-cerca').forEach(t => {
       if (!t.getClientRects().length) return;
       const tab = t.tagName === 'TABLE', w = tab ? (t.closest('.tbl-scroll') || t.parentElement) : t, c = t.closest('[id]');
       const ecc = t.scrollWidth - w.clientWidth, key = (c ? c.id : '?') + (tab ? '' : ' .' + t.className.split(' ')[0]);
@@ -343,7 +370,7 @@ async function runScanner(browser, base, matches, limit) {
   await page.evaluate(() => caricaSquadreLega());
   const out = {};
   for (const m of matches) {
-    const snap = await page.evaluate(async ({ h, a, d, limit, SNAP, INBREVE }) => {
+    const snap = await page.evaluate(async ({ h, a, d, limit, SNAP, INBREVE, TOTO_CK }) => {
       if (typeof nuovaPartita === 'function') nuovaPartita();
       document.getElementById('sel-home').value = h; document.getElementById('sel-away').value = a;
       document.getElementById('target-date').value = d;
@@ -357,9 +384,9 @@ async function runScanner(browser, base, matches, limit) {
                          campiOU: ['quota-ov', 'quota-un'].map(id => (document.getElementById(id) || {}).value),
                          nelPrompt: /CON LE QUOTE DEL MERCATO \(prese da football-data/.test(pq), golNelPrompt: /GOL CON LE QUOTE \(prese da football-data/.test(pq),
                          rotto: /NaN|undefined|Infinity|@@/.test(pq + st) };
-      snap.inBreve = eval(INBREVE);
+      snap.inBreve = eval(INBREVE); snap.toto = eval(TOTO_CK);
       return snap;
-    }, { h: m.home_team.id, a: m.away_team.id, d: m.time_utc.slice(0, 10), limit, SNAP, INBREVE });
+    }, { h: m.home_team.id, a: m.away_team.id, d: m.time_utc.slice(0, 10), limit, SNAP, INBREVE, TOTO_CK });
     out[m.id] = snap;
   }
   // le statistiche dei giocatori (bottone, fuori dal giro del motore): tabelle piene, niente NaN
@@ -374,7 +401,7 @@ async function runScanner(browser, base, matches, limit) {
   });
   // le quote (b54, fuori dal giro del motore): card e prompt senza NaN ne' segnaposto, l'avviso
   // quando il mercato contraddice il motore (controllo di potenza), e la card piena per i 390px
-  const quote = await page.evaluate(INBREVE => {
+  const quote = await page.evaluate(({ INBREVE, TOTO_CK }) => {
     if (typeof aggiornaQuote !== 'function') return null;
     const set = (a, b, c, o = '', u = '') => { [['quota-1', a], ['quota-x', b], ['quota-2', c], ['quota-ov', o], ['quota-un', u]]
       .forEach(([id, v]) => document.getElementById(id).value = v); aggiornaQuote(); };
@@ -388,7 +415,7 @@ async function runScanner(browser, base, matches, limit) {
       casi.push({ nome, x, g, righe: (h.match(/<tr>/g) || []).length, conQuote: /CON LE QUOTE DEL MERCATO/.test(p), sintesi: /pick da citare/.test(p),
                   golPrompt: /GOL CON LE QUOTE/.test(p), golSintesi: /Over\/Under e Goal cita/.test(p), goalPrompt: /\| NoGoal \d+\.\d%/.test(p),
                   allineata: Q ? Math.max(Math.abs(Q.o25 - Q.over), Math.abs(Q.lgMat - Q.lg12)) : null,
-                  tabQuote: (tb.innerHTML.match(/ data-q="1"/g) || []).length, ib: eval(INBREVE), tabNota: /Con le quote\./.test(document.getElementById('verdetti-quote').innerHTML),
+                  tabQuote: (tb.innerHTML.match(/ data-q="1"/g) || []).length, ib: eval(INBREVE), toto: eval(TOTO_CK), tabNota: /Con le quote\./.test(document.getElementById('verdetti-quote').innerHTML),
                   tabMotore: tb.innerHTML === motoreHtml, tabPrompt: x ? !!window.__VERDETTI_QUOTE && p.includes(_tabTesto(window.__VERDETTI_QUOTE)) && /ricalcolato con le quote/.test(p) : p.includes(window.__TAB_TXT_MOTORE),
                   verdettiMotore: (window.__VERDETTI || []).every(v => !v.quote) && window.__VERDETTI.length > 0,
                   matNota: /Con le quote\./.test(document.getElementById('matrice-quote').innerHTML), matMotore: matOra() === matMotore,
@@ -405,7 +432,7 @@ async function runScanner(browser, base, matches, limit) {
     set('1.20', '6.50', '13', '1.10', '7.50'); leggi('Over quasi certo, favorita netta', true, 2);
     set('2,10', '3.40', '3.60', '1,85', '2.05'); leggi('1X2 e Over/Under', true, 2);
     return casi;
-  }, INBREVE);
+  }, { INBREVE, TOTO_CK });
   // l'arbitro sui gialli (b85): un nome scritto nel campo, poi un cognome, uno ambiguo e uno sconosciuto; il rapporto
   // atteso si rifa' fuori dalla pagina, da arbitri.json, a forza bruta
   const arbitro = await page.evaluate(async () => {
@@ -524,6 +551,19 @@ async function runGiornata(browser, base, turno, singole) {
     return { n: t.length, partite: L.length, conQuote: L.filter(x => x.quote).length, blocchi, una, rotto: /NaN|undefined|Infinity|@@/.test(t),
              bottone: !document.querySelector('#btn-prompt-giornata').hidden };
   });
+  // la bolletta della giornata (b93): il totale e' il massimo fra tutte le divisioni possibili (1 combo, 2 doppie, 3 variabili,
+  // 4 fisse, una giocata per partita), rifatto qui a forza bruta; una riga per partita fino a dieci; il testo da copiare
+  const boll = await page.evaluate(() => {
+    if (typeof totoBolletta !== 'function') return null;
+    const d = document.querySelector('#giornata-boll'); if (!(d instanceof Element)) return { ok: false, perche: 'blocco assente' };
+    const L = GIORNATA.lista.filter(x => x.stato === 'fatta' && x.toto), Q = { combo: 1, doppia: 2, variabile: 3, fissa: 4 }, opz = Object.keys(Q).concat([null]);
+    let best = -1; const giro = (i, c, s) => { if (i === L.length) { best = Math.max(best, s); return; }
+      opz.forEach(t => { if (t && (c[t] || 0) >= Q[t]) return; const c2 = Object.assign({}, c); if (t) c2[t] = (c2[t] || 0) + 1; giro(i + 1, c2, s + (t ? L[i].toto.migliori[t].pt : 0)); }); };
+    giro(0, {}, 0);
+    const tot = +d.dataset.tot, righe = d.querySelectorAll('.g-br').length, testo = _testoBolletta();
+    return { ok: Math.abs(tot - best) < 1e-9 && L.length === GIORNATA.lista.filter(x => x.stato === 'fatta').length && righe === Math.min(L.length, 10)
+               && testo.split('\n').length === righe + (righe < 10 ? 3 : 2) && !!d.querySelector('button') && !/NaN|undefined|Infinity/.test(d.innerHTML + testo),
+             tot, best, righe, n: L.length, testa: testo.split('\n')[0] }; });
   const { scroll, compatte } = await page.evaluate(MISURA);
   const righe = await page.evaluate(() => document.querySelectorAll('#giornata-bar .g-row').length);
   // l'elenco (b91): la barra e l'1X2 di ogni riga sono quelli con le quote quando ci sono, la piu' alta in grassetto,
@@ -540,7 +580,7 @@ async function runGiornata(browser, base, turno, singole) {
   });
   const log = page.__log.filter(l => !/CONSOLE/.test(l));
   await page.context().close();
-  return { lista, diversi, giri, passi, righe, elenco, scroll, compatte, schedaTenuta, inBreve, log, pg, rotto: /NaN|undefined|Infinity/.test(html), prompt: pr.length, promptRotto: /NaN|undefined|Infinity|@@/.test(pr) };
+  return { lista, diversi, giri, passi, righe, elenco, boll, scroll, compatte, schedaTenuta, inBreve, log, pg, rotto: /NaN|undefined|Infinity/.test(html), prompt: pr.length, promptRotto: /NaN|undefined|Infinity|@@/.test(pr) };
 }
 
 async function comparatorePage(browser, base, engineText) {
@@ -818,6 +858,9 @@ if (require.main === module) (async () => {
   const IB = day.map(m => Object.assign({ id: m.id }, scanner.runs[m.id].inBreve)), ibRotti = IB.filter(x => !x.ok || x.rotto);
   console.log(`   in breve: ${IB.map(x => `${x.pick}${x.quote ? ' con le quote' : ''}, ${x.proposte} proposte, sorpresa ${x.sorpresa}`).join(' · ')}`
     + (ibRotti.length ? ' · ROTTO: ' + JSON.stringify(ibRotti) : ' · pick, proposte e sorpresa quelli a schermo, niente NaN'));
+  const TT = day.map(m => Object.assign({ id: m.id }, scanner.runs[m.id].toto)), ttRotti = TT.filter(x => !x.ok);
+  console.log(`   bolletta: ${TT.map(x => x.assente ? 'assente' : `${x.migliori} (${x.vere} quote vere, ${x.x2} con punti doppi)`).join(' · ')}`
+    + (ttRotti.length ? ' · ROTTA: ' + JSON.stringify(ttRotti) : ' · 24 giocate, combo che sommano al segno, Over e Goal dalla matrice giusta, quote e punti, la migliore di ogni tipo nella card'));
   const G = scanner.giocatori;
   const gRotti = G ? G.per.filter(x => x.rotto || x.righe < 2) : null;
   console.log('   giocatori: ' + (G ? `statistiche per ${G.dati[0]}/${G.partite[0]} e ${G.dati[1]}/${G.partite[1]} partite, ${G.per.length} mercati, righe per mercato ${Math.min(...G.per.map(x => x.righe))}-${Math.max(...G.per.map(x => x.righe))}`
@@ -836,10 +879,10 @@ if (require.main === module) (async () => {
     : x.rotto || x.segnaposto || x.righe !== (x.x ? 7 : 0) + [0, 3, 7][x.g] || x.conQuote !== x.x || x.sintesi !== x.x
       || x.golPrompt !== (x.g > 0) || x.golSintesi !== (x.g > 0) || x.goalPrompt !== (x.g === 2)
       || (x.g === 2 ? !(x.allineata < 1e-6) : x.allineata !== null)
-      || x.tabQuote !== (x.x ? (x.g === 2 ? 10 : 6) : 0) || !x.ib || !x.ib.ok || x.ib.rotto || x.ib.quote !== x.x || x.tabNota !== x.x || x.tabMotore === x.x || !x.tabPrompt || !x.verdettiMotore
+      || x.tabQuote !== (x.x ? (x.g === 2 ? 10 : 6) : 0) || !x.toto || !x.toto.ok || !x.ib || !x.ib.ok || x.ib.rotto || x.ib.quote !== x.x || x.tabNota !== x.x || x.tabMotore === x.x || !x.tabPrompt || !x.verdettiMotore
       || x.matNota !== (x.g === 2) || x.matMotore === (x.g === 2) || (x.g === 2 && !x.matAllineata)
       || (x.nome === 'il mercato contraddice il motore' && !x.avviso)) : null;
-  console.log('   quote: ' + (Q ? `${Q.length} casi` + ` (sorpresa: ${Q.map(x => x.ib && x.ib.sorpresa ? x.ib.sorpresa : '-').join(', ')})` + (qRotte.length ? ' · ROTTI: ' + JSON.stringify(qRotte)
+  console.log('   quote: ' + (Q ? `${Q.length} casi` + ` (sorpresa: ${Q.map(x => x.ib && x.ib.sorpresa ? x.ib.sorpresa : '-').join(', ')}; bolletta: ${Q.map(x => x.toto ? x.toto.vere + ' vere' : '-').join(', ')})` + (qRotte.length ? ' · ROTTI: ' + JSON.stringify(qRotte)
     : ' · card e prompt senza NaN ne\' segnaposto, avviso quando il mercato contraddice il motore, matrice allineata all\'Over e all\'1X2, tabellone con le quote (6 o 10 righe) e del motore senza, risultati esatti/handicap/multigol dalla matrice allineata con 1X2 e Over e del motore senza, campi svuotati al cambio partita') : 'campo assente'));
   // le formazioni devono avere valori veri, non tutti nulli: altrimenti il confronto non prova niente
   for (const m of day) { const L = scanner.runs[m.id].lineup, f = F => F ? `assenti ${F.abitualiAssenti} (peso ${F.pesoAssenti == null ? '-' : F.pesoAssenti.toFixed(2)}, gol ${F.golAssenti == null ? '-' : F.golAssenti.toFixed(2)}), cambi ${F.cambi}, allenatore ${F.allenatoreNuovo ? 'nuovo' : F.partiteAllenatore + '+'}` : '-';
@@ -885,20 +928,21 @@ if (require.main === module) (async () => {
   }
   console.log('   indisponibili: ' + (ID && !ID.errore ? `${ID.n} caselle, segnati ${ID.nomi.join(' e ')}` + (ID.cerca ? `, cercato "${ID.cerca.scritto}": ${ID.cerca.viste} righe su ${ID.cerca.di}, ${ID.cerca.nome} fra queste` : '') : '')
     + (idRotti.length ? ' · ROTTO: ' + idRotti.join('; ') : ' · barrati, nel prompt, restano dopo una nuova analisi, probabilita\' ferme, tolti il prompt torna quello di prima; la ricerca lascia solo chi ha quelle lettere, dice quando non c\'e\' nessuno, resta ridisegnando, la x pulisce'));
-  let fail = (sLog.length || (process.env.MOBILE && (scanner.scroll > 0 || scanner.compatte.length)) || !G || gRotti.length || pRotti.length || ibRotti.length || !Q || qRotte.length || qaRotte.length || arRotti.length || idRotti.length) ? 1 : 0;
+  let fail = (sLog.length || (process.env.MOBILE && (scanner.scroll > 0 || scanner.compatte.length)) || !G || gRotti.length || pRotti.length || ibRotti.length || !Q || qRotte.length || qaRotte.length || arRotti.length || idRotti.length || ttRotti.length) ? 1 : 0;
   const GI = await runGiornata(browser, base, cur, scanner.runs);
   const giOk = GI && GI.lista.length === cur.length && GI.lista.every((x, k) => x.id === cur[k].id && x.stato === 'fatta')
     && !GI.diversi.length && Object.keys(GI.giri).length === day.length && GI.righe === cur.length && !GI.rotto && !GI.promptRotto && !GI.log.length
     && GI.passi.t[1] === GI.passi.v0 && GI.passi.t[0] !== GI.passi.v0 && GI.passi.titolo === GI.passi.atteso
     && GI.schedaTenuta && GI.inBreve && GI.inBreve.ok && !GI.inBreve.rotto && (!process.env.MOBILE || (GI.scroll <= 0 && !GI.compatte.length))
     && GI.pg && GI.pg.una && !GI.pg.rotto && GI.pg.bottone && GI.pg.partite === cur.length && GI.pg.conQuote > 0 && GI.pg.blocchi.every(b => b.ok && b.quote)
-    && GI.elenco.per.every(r => r.ok) && GI.elenco.conQuote > 0 && GI.elenco.vista;
+    && GI.elenco.per.every(r => r.ok) && GI.elenco.conQuote > 0 && GI.elenco.vista && (!GI.boll || GI.boll.ok);
   console.log('   giornata: ' + (!GI ? 'funzione assente' : `${GI.lista.length} partite trovate su ${cur.length} del turno (${GI.lista.map(x => x.stato).join(' ')}), `
     + `${Object.keys(GI.giri).length - GI.diversi.length} su ${Object.keys(GI.giri).length} rifatte coi bottoni identiche all'analisi singola (${Object.values(GI.giri)[0]} scritture ciascuna), avanti e indietro ${GI.passi.v0} -> ${GI.passi.t.join(' -> ')}`
     + `, nell'elenco barra e 1X2 con le quote su ${GI.elenco.conQuote} righe su ${GI.elenco.per.length}`
+    + (GI.boll ? `, bolletta ${GI.boll.righe} righe su ${GI.boll.n} partite, ${GI.boll.tot.toFixed(2)} punti attesi (il massimo a forza bruta ${GI.boll.best.toFixed(2)})` : ', bolletta assente')
     + ', la scheda resta cambiando partita, in breve segue la partita' + (process.env.MOBILE ? `, scorrimento laterale ${GI.scroll}px` : '')
     + (GI.pg ? `; prompt della giornata ${GI.pg.n} caratteri, ${GI.pg.partite} blocchi (${GI.pg.conQuote} con le quote) col loro 1X2, note e istruzioni una volta sola` : '; prompt della giornata assente')
-    + (giOk ? '' : ' · FALLITA: ' + JSON.stringify({ lista: GI.lista, diversi: GI.diversi, passi: GI.passi, righe: GI.righe, elenco: GI.elenco, rotto: GI.rotto, schedaTenuta: GI.schedaTenuta, inBreve: GI.inBreve, compatte: GI.compatte, pg: GI.pg, log: GI.log }).slice(0, 1200))));
+    + (giOk ? '' : ' · FALLITA: ' + JSON.stringify({ lista: GI.lista, diversi: GI.diversi, passi: GI.passi, righe: GI.righe, elenco: GI.elenco, boll: GI.boll, rotto: GI.rotto, schedaTenuta: GI.schedaTenuta, inBreve: GI.inBreve, compatte: GI.compatte, pg: GI.pg, log: GI.log }).slice(0, 1200))));
   if (!giOk) fail++;
 
   const results = {};
