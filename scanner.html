@@ -899,30 +899,18 @@ body.in-analisi.bug-on .ab-tit{display:none}
 body.in-analisi.bug-on .ab-spazio{display:block}
 body.in-analisi.bug-on .ab-back span{display:none}
 
-/* ---------- la bolletta (b93): le giocate del gioco coi colleghi, a righe come il tabellone ---------- */
-.tt-fonte{font-size:12.5px;color:var(--n-400);line-height:1.5;margin:0 0 10px}
-.tt-fonte b{color:var(--color-text);font-family:var(--mono)}
-.vtag.v-pt{background:var(--n-800);color:var(--color-text)}
-.tt-dubbio{font-size:12.5px;font-style:normal;color:var(--c-warn-t)}
-.tt-gr{font-family:var(--disp);font-weight:700;font-size:14px;letter-spacing:.05em;text-transform:uppercase;color:var(--n-400);margin:12px 0 2px}
-.tt-gr:first-child{margin-top:2px}
-details.g-boll>summary{display:flex;align-items:baseline;gap:10px;min-height:44px;padding-top:12px;font-family:var(--disp);font-weight:700;font-size:20px;text-transform:uppercase;letter-spacing:.02em}
-details.g-boll>summary span{font-family:var(--font);font-weight:500;font-size:14px;text-transform:none;letter-spacing:0;color:var(--a-300)}
-details.g-boll>summary::after{content:"";width:13px;height:13px;margin-left:auto;flex:none;align-self:center;background:var(--n-500);
-  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z'/%3E%3C/svg%3E") center/contain no-repeat;
-  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z'/%3E%3C/svg%3E") center/contain no-repeat;
-  transition:transform 200ms var(--ease-out)}
-details.g-boll[open]>summary::after{transform:rotate(180deg)}
-details.g-boll>div{display:flex;flex-direction:column;gap:0}
-.g-br{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;padding:9px 0;background:var(--riga) no-repeat bottom/100% 1px}
-.g-bt{grid-column:1;font-size:13px;color:var(--n-400);display:flex;align-items:baseline;gap:8px;min-width:0;overflow-wrap:anywhere}
-.g-bg{grid-column:1;font-size:13px;color:var(--n-400);font-variant-numeric:tabular-nums}
-.g-bg b{font-family:var(--disp);font-weight:700;font-size:20px;text-transform:uppercase;letter-spacing:.005em;color:var(--color-text);margin-right:4px}
-.g-bp{grid-column:2;grid-row:1/3;align-self:center;display:flex;flex-direction:column;align-items:flex-end;white-space:nowrap}
-.g-bp b{font-family:var(--disp);font-weight:700;font-size:26px;line-height:1;font-variant-numeric:tabular-nums}
-.g-bp small{font-size:12px;color:var(--n-500)}
-.g-bnota{font-size:12.5px;color:var(--c-warn-t);margin:10px 0 2px}
-details.g-boll .g-azioni{margin:12px 0 4px}
+/* ---------- tutte le giocate (b94): probabilita' e quota di 1X2, doppie, gol e combo ---------- */
+.gq-fonte{font-size:12.5px;color:var(--n-400);line-height:1.5;margin:0 0 10px;text-wrap:pretty}
+.gq-fonte b{color:var(--color-text)}
+.gq-h,.gq-r{display:grid;grid-template-columns:minmax(0,1fr) 56px 56px 50px;gap:8px;align-items:baseline;font-variant-numeric:tabular-nums}
+.gq-h{margin:14px 0 2px;font-size:12px;color:var(--n-500)}
+.gq-h:first-child{margin-top:4px}
+.gq-h span:nth-child(n+2),.gq-r span:nth-child(n+2){text-align:right}
+.gq-r{padding:7px 0;font-size:13px;color:var(--n-400);background:var(--riga) no-repeat bottom/100% 1px}
+.gq-r span:first-child{color:var(--color-text);min-width:0;overflow-wrap:anywhere}
+.gq-r span:nth-child(n+2){font-family:var(--mono);font-size:12.5px}
+.gq-r.top span:first-child{font-weight:600}
+.gq-r.top span:nth-child(2){color:var(--color-text)}
 body.in-analisi.bug-on .ab-back{width:44px;padding:0;justify-content:center}
 @media(max-width:380px){
   .ab-bug .sq{display:none}
@@ -973,7 +961,7 @@ body.in-analisi.bug-on .ab-back{width:44px;padding:0;justify-content:center}
     <span class="ab-tit" id="ab-tit"><b></b><small></small></span>
     <span class="ab-bug" id="ab-bug" aria-hidden="true"></span>
     <span class="ab-spazio"></span>
-    <span class="tag" id="build-ver">build 0905-b93</span>
+    <span class="tag" id="build-ver">build 0905-b94</span>
   </div>
 </header>
 
@@ -1120,23 +1108,25 @@ body.in-analisi.bug-on .ab-back{width:44px;padding:0;justify-content:center}
       </div></details>
     </section>
 
-    <section class="card" id="card-toto">
-      <div class="blocco-tit"><h2>La <em>bolletta</em></h2><span>Il gioco coi colleghi: in ogni tipo la giocata che vale pi&ugrave; punti</span></div>
-      <div id="toto-box"></div>
+    <section class="card" id="card-giocate">
+      <div class="blocco-tit"><h2>Tutte le <em>giocate</em></h2><span>1X2, doppie chance, gol e combo: probabilit&agrave; e quota, dalla pi&ugrave; probabile</span></div>
+      <div id="giocate-box"></div>
       <details class="info"><summary>Come si calcola, e quanto ci prende</summary><div>
-        Ogni giocata ha la sua probabilit&agrave;: fisse e doppie chance sono l'1X2 a schermo (con le quote, se ci sono), Over/Under,
-        Goal/NoGoal e pari/dispari vengono dalla matrice dei gol, quella allineata alle quote quando ci sono quelle dell'1X2 e dell'Over.
-        Una combo &egrave; la probabilit&agrave; del segno per quella del bonus dato il segno: cos&igrave; le due combo di un segno sommano al segno.
-        I punti attesi sono la probabilit&agrave; per i punti, doppi se la quota del singolo evento &egrave; 3,50 o pi&ugrave;. Fa fede la quota in bolletta.
-        <br><br><b>Quanto ci prende.</b> Con le quote di chiusura, su 47.662 partite di 18 leghe dal 2017/18: fisse e doppie chance escono quanto
-        dicono entro 1,4 punti, Over 2.5 detto 50,0% uscito 50,4%, Goal 51,3% e 52,5%, pari 51,4% e 50,4%, le combo entro 0,9 punti.
-        Senza quote (maestro, 2.330 partite in copia conforme): 1X2 e doppie entro 2 punti, ma Over e Goal 2-4 punti sotto il vero
-        (Goal detto 53,3%, uscito 57,2%). La giocata migliore di ogni tipo, con le quote: fissa detta 49,7% uscita 50,9%, doppia 77,0% e 77,8%,
-        variabile 58,2% e 59,2%, combo 32,5% e 33,4%.
-        <br><br><b>Le quote.</b> Sulle 1.120 giocate delle bollette delle prime sette giornate del 2026/27 la quota in bolletta &egrave; quasi
-        la media di chiusura dei bookmaker (fisse e doppie 1,00 volte, Over/Under 1,01). Dove manca si stima col margine misurato l&igrave;:
-        6,5% sulle doppie, 9,5% su Goal/NoGoal, 12,5% sulle combo. Stimata cos&igrave;, nove volte su dieci la quota sta fra l'88% e il 114% di quella vera:
-        vicino a 3,50 va controllata.
+        Ogni giocata ha la sua probabilit&agrave;. 1X2 e doppie chance sono l'1X2 a schermo, con le quote se ci sono. Over/Under e
+        Goal/NoGoal vengono dalla matrice dei gol: quella allineata alle quote quando ci sono quelle dell'1X2 e dell'Over, altrimenti
+        quella del maestro. Una combo &egrave; la probabilit&agrave; del segno per quella del gol dato il segno, cos&igrave; le due combo
+        di un tipo sommano al segno. La quota equa &egrave; 1 diviso la probabilit&agrave;, senza il margine del bookmaker.
+        <br><br><b>Quanto ci prende.</b> Con le quote di chiusura, su 47.662 partite di 18 leghe dal 2017/18, ogni giocata esce quanto
+        dice entro 1.4 punti: Over 2.5 detto 50.0% e uscito 50.4%, Goal 51.3% e 52.5%, le combo entro 0.9 punti. Senza quote
+        (maestro, 2.330 partite in copia conforme) 1X2 e doppie chance stanno entro 2 punti, ma Over e Goal 2-4 punti sotto il vero
+        (Goal detto 53.3%, uscito 57.2%). La pi&ugrave; probabile di ogni gruppo, con le quote: 1X2 detta 49.7% e uscita 50.9%,
+        doppia chance 77.0% e 77.8%, Over/Under 57.2% e 58.0%, Goal/NoGoal 54.9% e 55.2%, combo 32.5% e 33.4%.
+        Giocando sempre la pi&ugrave; probabile alla quota di chiusura si perde quasi il margine: il 3.7% della posta sull'1X2, il 4.4%
+        sull'Over/Under, il 4.8% sulla doppia chance.
+        <br><br><b>La quota.</b> Dove il bookmaker non la d&agrave; (doppie senza le quote dell'1X2, Goal/NoGoal, combo) si stima dalla
+        probabilit&agrave; col margine medio misurato su 1.118 quote reali della Serie A 2026/27: 6.5% su 1X2 e doppie chance,
+        6% sull'Over/Under, 9.5% su Goal/NoGoal, 12.5% sulle combo. Nove volte su dieci la stimata sta fra il 94% e il 105% di quella
+        vera sulle doppie chance e su Goal/NoGoal, fra l'88% e il 114% sulle combo.
       </div></details>
     </section>
 
@@ -1711,7 +1701,7 @@ function nuovaPartita() {
 
 function svuotaQuote() {
   ['quota-1', 'quota-x', 'quota-2', 'quota-ov', 'quota-un'].forEach(id => { const q = document.getElementById(id); if (q) q.value = ''; });
-  window.__QUOTE_CTX = null; window.__QUOTE_FONTE = null; window.__QUOTE_FONTE_OU = null; window.__QUOTE_GOL = null; window.__QUOTE_P = null; window.__TOTO = null;
+  window.__QUOTE_CTX = null; window.__QUOTE_FONTE = null; window.__QUOTE_FONTE_OU = null; window.__QUOTE_GOL = null; window.__QUOTE_P = null; window.__GIOCATE = null;
   const qb = document.getElementById('quote-box'); if (qb) qb.innerHTML = '--';
   const qa = document.getElementById('quote-auto'); if (qa) qa.innerHTML = '';
 }
@@ -1901,7 +1891,6 @@ function _giornataQuote() {
   const S = window.__SORPRESA_QUOTE;
   x.quote = window.__QUOTE_P ? { p: window.__QUOTE_P.slice(), top: _topVoce(window.__VERDETTI_QUOTE), buone: _buone(window.__VERDETTI_QUOTE),
                                  sorpresa: S ? { liv: S.liv, pU: S.pU, fav: S.fav, dis: S.dis } : null } : null;
-  x.toto = window.__TOTO || null;
   x.prompt = { dati: window.__PROMPT_DATI, indisp: window.__INDISP_CTX,
                parti: window.__PROMPT_PARTI || { sezG: '', tab: window.__TAB_TXT_MOTORE, sorG: window.__SORPRESA_TXT_MOTORE_G } };
   renderGiornata();
@@ -2051,8 +2040,7 @@ function renderGiornata() {
     h += `<div class="g-stat" data-in><div><b><span data-count>${fatte.length}</span><small>/${n}</small>${fatte.length === n ? '<svg class="ic g-fatto" aria-hidden="true"><use href="#i-check-circle-fill"/></svg>' : ''}</b><span>analizzate</span></div>`
       + `<div class="al"><b data-count>${alte}</b><span>sorpresa alta</span></div><div class="ok"><b data-count>${conBuone}</b><span>con proposte forti</span></div></div>`
       + `<div class="g-azioni">${attesa ? `<button class="btn btn-primary btn-sm" onclick="giornataRiprendi()">${ic('play')}Analizza le ${attesa} rimaste</button>` : ''}`
-      + `<button class="btn btn-sm" onclick="copiaPromptGiornata()">${ic('copy')}Copia il prompt della giornata</button></div>`
-      + _htmlBollettaG();
+      + `<button class="btn btn-sm" onclick="copiaPromptGiornata()">${ic('copy')}Copia il prompt della giornata</button></div>`;
   }
   h += `<details class="g-tutte" id="giornata-tutte"${G.aperta === false ? '' : ' open'} ontoggle="GIORNATA&&(GIORNATA.aperta=this.open)">`
     + `<summary>Tutte le partite (${n})</summary><div>`
@@ -3691,122 +3679,49 @@ function _matriceCard(mat, hName, conQuote) {
     + `Su ${R.partite.toLocaleString('it-IT')} partite di leghe mai guardate prima sono pi&ugrave; vicini al vero di quelli del motore in ${R.blocchi} blocchi su ${R.blocchi}, su tutti e tre i mercati. `
     + 'Cancella le quote per rivedere quelli del motore.</div></details>';
 }
-// La bolletta del Toto-Amici (b93), il gioco dell'utente coi colleghi: 1 combo (6 punti), 2 doppie chance (1), 3 variabili (2),
-// 4 fisse (4), punti doppi con la quota del singolo evento a 3,50 o piu'. Vedi AGENTS.md, La bolletta del Toto-Amici.
-// Dove la quota non c'e' si stima dalla probabilita' col margine misurato su 1.120 giocate delle bollette
-const TOTO = {
-  punti: { combo: 6, doppia: 1, variabile: 2, fissa: 4 }, quante: { combo: 1, doppia: 2, variabile: 3, fissa: 4 }, soglia: 3.5,
-  margine: { fissa: 0.065, doppia: 0.065, combo: 0.125, Over: 0.06, Under: 0.06, Goal: 0.095, NoGoal: 0.095, Pari: 0.08, Dispari: 0.08 },
-  ordine: ['combo', 'fissa', 'variabile', 'doppia'], nomi: { combo: 'Combo', fissa: 'Fissa', variabile: 'Variabile', doppia: 'Doppia chance' },
-  fam: { combo: 'corner', fissa: '1x2', variabile: 'gol', doppia: '1x2' },
-  plurale: { combo: 'combo', fissa: 'fisse', variabile: 'variabili', doppia: 'doppie chance' }
+// Tutte le giocate (b94): probabilita' e quota di 1X2, doppie chance, Over/Under 2.5, Goal/NoGoal e delle 12 combo segno + gol.
+// Una combo e' il segno a schermo per la probabilita' del gol dato il segno, dalla matrice dei gol: le due combo di un tipo
+// sommano al segno. Dove la quota del bookmaker non c'e' si stima dalla probabilita' col margine medio misurato
+// (vedi AGENTS.md, Tutte le giocate)
+const GIOCATE = {
+  margine: { '1x2': 0.065, doppia: 0.065, ou: 0.06, gg: 0.095, combo: 0.125 },
+  gruppi: [['1x2', '1X2', '1x2'], ['doppia', 'Doppia chance', '1x2'], ['ou', 'Over/Under 2.5', 'gol'], ['gg', 'Goal/NoGoal', 'gol'], ['combo', 'Combo', 'corner']]
 };
-function totoGiocate(S, mat, q, qo, pOv) {
+function giocateProb(S, mat, q, qo, pOv) {
   const sm = f => { let s = 0; mat.forEach((r, i) => r.forEach((p, j) => { if (f(i, j)) s += p || 0; })); return s; };
   const seg = [(i, j) => i > j, (i, j) => i === j, (i, j) => i < j], bon = { Over: (i, j) => i + j > 2.5, Under: (i, j) => i + j < 2.5,
-    Goal: (i, j) => i > 0 && j > 0, NoGoal: (i, j) => i === 0 || j === 0, Pari: (i, j) => (i + j) % 2 === 0, Dispari: (i, j) => (i + j) % 2 === 1 };
+    Goal: (i, j) => i > 0 && j > 0, NoGoal: (i, j) => i === 0 || j === 0 };
   const tot = sm(() => true), segni = ['1', 'X', '2'], V = [];
-  const voce = (k, tipo, nome, p, qv, km) => {
-    const qq = qv || 1 / (Math.max(p, 1e-6) * (1 + TOTO.margine[km || tipo])), x2 = qq >= TOTO.soglia;
-    V.push({ k, tipo, nome, p, q: qq, vera: !!qv, x2, pt: p * TOTO.punti[tipo] * (x2 ? 2 : 1) });
-  };
-  segni.forEach((n, i) => voce(n, 'fissa', n, S[i], q && q[i]));
+  const voce = (k, g, nome, p, qv) => V.push({ k, g, nome, p, q: qv || 1 / (Math.max(p, 1e-6) * (1 + GIOCATE.margine[g])), vera: !!qv });
+  segni.forEach((n, i) => voce(n, '1x2', n, S[i], q && q[i]));
   [[0, 1], [1, 2], [0, 2]].forEach(([a, b]) => voce(segni[a] + segni[b], 'doppia', segni[a] + segni[b], S[a] + S[b], q && 1 / (1 / q[a] + 1 / q[b])));
   const pO = pOv != null ? pOv : sm(bon.Over) / tot;
-  voce('Over', 'variabile', 'Over 2.5', pO, qo && qo[0], 'Over'); voce('Under', 'variabile', 'Under 2.5', 1 - pO, qo && qo[1], 'Under');
-  ['Goal', 'NoGoal', 'Pari', 'Dispari'].forEach(b => voce(b, 'variabile', b, sm(bon[b]) / tot, null, b));
+  voce('Over', 'ou', 'Over 2.5', pO, qo && qo[0]); voce('Under', 'ou', 'Under 2.5', 1 - pO, qo && qo[1]);
+  voce('Goal', 'gg', 'Goal', sm(bon.Goal) / tot); voce('NoGoal', 'gg', 'NoGoal', sm(bon.NoGoal) / tot);
   segni.forEach((n, i) => { const ps = sm(seg[i]);
     ['Over', 'Under', 'Goal', 'NoGoal'].forEach(b => voce(n + '+' + b, 'combo', n + ' + ' + (b === 'Over' || b === 'Under' ? b + ' 2.5' : b),
       ps > 0 ? S[i] * sm((x, y) => seg[i](x, y) && bon[b](x, y)) / ps : 0)); });
-  const migliori = {};
-  V.forEach(v => { if (!migliori[v.tipo] || v.pt > migliori[v.tipo].pt) migliori[v.tipo] = v; });
-  return { voci: V, migliori, quote: !!q, ou: !!qo };
+  const gruppi = GIOCATE.gruppi.map(([k, nome, fam]) => ({ k, nome, fam, voci: V.filter(v => v.g === k).sort((a, b) => b.p - a.p) }));
+  return { voci: V, gruppi, quote: !!q, ou: !!qo };
 }
-const _totoQ = v => (v.vera ? '' : '~') + v.q.toFixed(2).replace('.', ',');
-const _totoDubbio = v => Math.abs(Math.log(v.q / TOTO.soglia)) < (v.vera ? 0.06 : 0.12);
-function _totoCard(T) {
+const _gqQ = x => x >= 100 ? x.toFixed(0) : x.toFixed(2);
+function _giocateCard(T) {
   if (typeof document === 'undefined') return;
-  const el = document.querySelector('#toto-box'); if (!(el instanceof Element)) return;
+  const el = document.querySelector('#giocate-box'); if (!(el instanceof Element)) return;
   if (!T) { el.innerHTML = ''; return; }
-  const pc = x => (100 * x).toFixed(1) + '%', P = TOTO.punti;
-  const fonte = T.quote ? (T.ou ? "con le quote dell'1X2 e dell'Over/Under" : "con le quote dell'1X2 (gol del maestro)")
-    : T.ou ? "con le quote dell'Over/Under (1X2 del maestro)" : 'del maestro, senza quote';
-  el.innerHTML = `<div class="tt-fonte">Probabilit&agrave; ${fonte}. Le quote con <b>~</b> sono stimate col margine delle bollette, le altre sono quelle vere.</div>`
-    + TOTO.ordine.map(t => { const v = T.migliori[t];
-      return `<div class="tv tt" data-in data-riga><div class="tv-r1"><span class="fam f-${TOTO.fam[t]}">${TOTO.nomi[t]}</span>`
-        + `<span class="vtag ${v.x2 ? 'v-forte' : 'v-pt'}">${P[t] * (v.x2 ? 2 : 1)} pt${v.x2 ? ' &middot; quota &ge;3,50' : ''}</span></div>`
-        + `<div class="tv-top"><span class="tv-n"><span>${v.nome}</span><small>quota ${_totoQ(v)}</small></span>`
-        + `<span class="tv-p"><b data-count>${pc(v.p)}</b><small>vale ${v.pt.toFixed(2)} pt</small></span></div>`
-        + (_totoDubbio(v) ? '<div class="tv-bot"><span class="tt-dubbio">Quota vicina a 3,50: controlla in bolletta se i punti raddoppiano.</span></div>' : '')
-        + '</div>'; }).join('')
-    + `<details class="tv-altri"><summary>Tutte le ${T.voci.length} giocate (a destra i punti attesi)</summary><div>`
-    + TOTO.ordine.map(t => `<div class="tt-gr">${TOTO.nomi[t]} &middot; ${P[t]} pt, ${2 * P[t]} con quota &ge;3,50</div>`
-      + T.voci.filter(v => v.tipo === t).sort((a, b) => b.pt - a.pt).map(v => `<div class="tv-mini" data-in><span>${v.nome}</span>`
-        + `<span>${pc(v.p)} &middot; ${_totoQ(v)}${v.x2 ? ' &middot; x2' : ''}</span><span>${v.pt.toFixed(2)}</span></div>`).join('')).join('')
+  const pc = x => (100 * x).toFixed(1) + '%';
+  const fonte = T.quote ? (T.ou ? "con le quote dell'1X2 e dell'Over/Under" : "con le quote dell'1X2, i gol del maestro")
+    : T.ou ? "con le quote dell'Over/Under, l'1X2 del maestro" : 'del maestro, senza quote';
+  el.innerHTML = `<p class="gq-fonte">Probabilit&agrave; ${fonte}. La quota &egrave; quella del bookmaker dove c'&egrave;, altrimenti stimata (<b>~</b>) col margine medio; la quota equa &egrave; senza margine.</p>`
+    + T.gruppi.map(G => { const v = G.voci[0];
+      return `<div class="tv gq"><div class="tv-r1"><span class="fam f-${G.fam}">${G.nome}</span></div>`
+        + `<div class="tv-top"><span class="tv-n"><span>${v.nome}</span><small>quota ${v.vera ? '' : 'stimata '}${_gqQ(v.q)}</small></span>`
+        + `<span class="tv-p"><b>${pc(v.p)}</b><small>equa ${_gqQ(1 / Math.max(v.p, 1e-6))}</small></span></div></div>`; }).join('')
+    + `<details class="tv-altri"><summary>Tutte le ${T.voci.length} giocate, dalla pi&ugrave; probabile</summary><div>`
+    + T.gruppi.map(G => `<div class="gq-h"><span class="fam f-${G.fam}">${G.nome}</span><span>prob.</span><span>quota</span><span>equa</span></div>`
+      + G.voci.map((v, i) => `<div class="gq-r${i ? '' : ' top'}"><span>${v.nome}</span><span>${pc(v.p)}</span>`
+        + `<span>${v.vera ? '' : '~'}${_gqQ(v.q)}</span><span>${_gqQ(1 / Math.max(v.p, 1e-6))}</span></div>`).join('')).join('')
     + '</div></details>';
-}
-// la bolletta della giornata: per ogni partita la giocata migliore di ogni tipo, poi fra le partite la divisione
-// 1 combo / 2 doppie / 3 variabili / 4 fisse coi punti attesi piu' alti (programmazione dinamica sulle quantita' rimaste)
-function totoBolletta(M) {
-  const tipi = TOTO.ordine, memo = new Map();
-  const f = (i, r) => {
-    if (i === M.length) return [0, []];
-    const key = i + ':' + r.join(','); if (memo.has(key)) return memo.get(key);
-    let best = f(i + 1, r);
-    tipi.forEach((t, j) => { if (!r[j] || !M[i][t]) return; const r2 = r.slice(); r2[j]--;
-      const [v, s] = f(i + 1, r2); if (v + M[i][t].pt > best[0]) best = [v + M[i][t].pt, [{ i, t, v: M[i][t] }].concat(s)]; });
-    memo.set(key, best); return best;
-  };
-  const [tot, righe] = f(0, tipi.map(t => TOTO.quante[t]));
-  return { tot, righe: righe.sort((a, b) => tipi.indexOf(a.t) - tipi.indexOf(b.t) || a.i - b.i) };
-}
-function _bollettaG() {
-  const G = GIORNATA; if (!G) return null;
-  const L = G.lista.filter(x => x.stato === 'fatta' && x.toto); if (!L.length) return null;
-  const B = totoBolletta(L.map(x => x.toto.migliori));
-  B.righe.forEach(r => { r.x = L[r.i]; });
-  const usati = {}; B.righe.forEach(r => { usati[r.t] = (usati[r.t] || 0) + 1; });
-  B.vuoti = TOTO.ordine.filter(t => (usati[t] || 0) < TOTO.quante[t]).map(t => { const k = TOTO.quante[t] - (usati[t] || 0);
-    return `${k} ${k === 1 ? TOTO.nomi[t].toLowerCase() : TOTO.plurale[t]}`; });
-  B.n = L.length;
-  return B;
-}
-function _htmlBollettaG() {
-  const B = _bollettaG(); if (!B) return '';
-  const e = _escHtml, G = GIORNATA, pc = x => (100 * x).toFixed(0) + '%';
-  return `<details class="g-boll" id="giornata-boll" data-tot="${B.tot}"${G.bollAperta ? ' open' : ''} ontoggle="GIORNATA&&(GIORNATA.bollAperta=this.open)">`
-    + `<summary>La bolletta <span>${B.tot.toFixed(1)} punti attesi</span></summary><div>`
-    + B.righe.map(r => `<div class="g-br" data-in><span class="g-bt"><span class="fam f-${TOTO.fam[r.t]}">${TOTO.nomi[r.t]}</span> ${e(r.x.hName)} - ${e(r.x.aName)}</span>`
-      + `<span class="g-bg"><b>${r.v.nome}</b> ${pc(r.v.p)} &middot; ${_totoQ(r.v)}${_totoDubbio(r.v) ? ' <i class="tt-dubbio">controlla la quota</i>' : ''}</span>`
-      + `<span class="g-bp"><b>${r.v.pt.toFixed(1)}</b><small>${TOTO.punti[r.t] * (r.v.x2 ? 2 : 1)} pt</small></span></div>`).join('')
-    + (B.vuoti.length ? `<div class="g-bnota">Analizzate ${B.n} partite: restano da mettere ${B.vuoti.join(', ')}.</div>` : '')
-    + `<div class="g-azioni"><button class="btn btn-sm" onclick="copiaBolletta()"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg>Copia la bolletta</button></div>`
-    + '<details class="info"><summary>Come si sceglie</summary><div>'
-    + 'Per ogni partita, in ogni tipo, la giocata coi punti attesi pi&ugrave; alti: la probabilit&agrave; per i punti, doppi se la quota &egrave; 3,50 o pi&ugrave;. '
-    + 'Poi, fra le partite, la divisione in 1 combo, 2 doppie chance, 3 variabili e 4 fisse che d&agrave; pi&ugrave; punti in tutto. '
-    + "Le probabilit&agrave; sono con le quote dove ci sono, altrimenti del maestro. Fa fede la quota in bolletta: quelle con <b>~</b> sono stimate, e vicino a 3,50 vanno controllate. "
-    + 'Il bonus chiusura (+10 prendendole tutte) non &egrave; contato: con dieci giocate succede quasi mai. '
-    + 'Su 234 giornate di Serie A dal 2017/18, con le quote di chiusura, la bolletta scelta cos&igrave; vale 18,4 punti attesi a giornata, una fatta a occhio '
-    + '(le fisse sui quattro favoriti pi&ugrave; netti, poi la giocata pi&ugrave; probabile) 17,3. Fatti: 19,0 e 18,3, una differenza ancora dentro il rumore (+0,7 &plusmn;0,9).'
-    + '</div></details></div></details>';
-}
-function _testoBolletta() {
-  const B = _bollettaG(); if (!B) return '';
-  const G = GIORNATA, lega = (LEAGUES_CATALOG.find(l => l.id === G.lId) || {}).name || 'Lega', giorni = [...new Set(B.righe.map(r => _quandoG(r.x).split(',')[0]))];
-  return `LA BOLLETTA - ${lega}, ${giorni.join(' - ')} (${B.tot.toFixed(1)} punti attesi)\n`
-    + B.righe.map(r => `${TOTO.nomi[r.t].toUpperCase()}: ${r.x.hName} - ${r.x.aName}, ${r.v.nome} (${(100 * r.v.p).toFixed(0)}%, quota ${_totoQ(r.v)}`
-      + `${r.v.x2 ? ', punti doppi' : ''}${_totoDubbio(r.v) ? ', controlla la quota' : ''})`).join('\n')
-    + (B.vuoti.length ? `\nMancano: ${B.vuoti.join(', ')}.` : '')
-    + "\nLe quote con ~ sono stimate: fa fede la quota in bolletta.";
-}
-async function copiaBolletta() {
-  const t = _testoBolletta(); if (!t) return alert("Nessuna partita della giornata e' ancora analizzata.");
-  try { await navigator.clipboard.writeText(t); }
-  catch (e) {
-    const ta = document.createElement('textarea'); ta.value = t; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
-    document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch (e2) {} ta.remove();
-  }
-  alert('Bolletta copiata.');
 }
 function _quoteLette(ids) {
   if (typeof document === 'undefined') return null;
@@ -3997,7 +3912,7 @@ function aggiornaQuote() {
     scriviPrompt('', '');
     const E0 = calcDCMatrix(C.lam[0], C.lam[1], C.rho);
     _matriceCard(E0, C.hName, false);
-    window.__TOTO = totoGiocate(C.p, E0, null, null, null); _totoCard(window.__TOTO);
+    window.__GIOCATE = giocateProb(C.p, E0, null, null, null); _giocateCard(window.__GIOCATE);
     window.__QUOTE_P = null; _giornataQuote(); renderInBreve();
     return;
   }
@@ -4086,7 +4001,7 @@ function aggiornaQuote() {
   sorpresa(P);
   _matriceCard(Aq || calcDCMatrix(C.lam[0], C.lam[1], C.rho), C.hName, !!Aq);
   scriviPrompt(sez, sint, sezG);
-  window.__TOTO = totoGiocate(P || C.p, Aq || E, q, qo, Oq ? Oq.comb : null); _totoCard(window.__TOTO);
+  window.__GIOCATE = giocateProb(P || C.p, Aq || E, q, qo, Oq ? Oq.comb : null); _giocateCard(window.__GIOCATE);
   window.__QUOTE_P = P; _giornataQuote(); renderInBreve();
 }
 
@@ -4620,7 +4535,7 @@ function _tabTesto(V) {
     + (sotto.length ? '\n- Sotto la base di lega di 5 punti o piu\' (qui questi esiti sono meno probabili del solito; non sono proposte): ' + lista(sotto) : '');
 }
 
-window.__SCANNER_BUILD = '0905-b93';
+window.__SCANNER_BUILD = '0905-b94';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -6430,7 +6345,7 @@ async function copiaPrompt() {
   const INIZIO = { 'in-breve': 'partita', 'card-verdetti': 'tabellone', 'squadre-seg': 'squadre', 'sez-perche': 'numeri', 'sez-mercati': 'numeri', 'sez-prompt': 'prompt', 'sez-dati': 'dati' };
   let cur = null;
   if (dash instanceof Element) [...dash.children].forEach(el => { if (INIZIO[el.id]) cur = INIZIO[el.id]; if (el.id === 'giornata-fondo') cur = null; if (cur) el.dataset.scheda = cur; });
-  $$('.match-hero, #in-breve > #sorpresa-box, #squadre-seg, #card-verdetti > .blocco-tit, #card-toto > .blocco-tit, #league-note, #card-quote > *, #card-ambiti > *, #card-giocatori > .section-title, #btn-giocatori, '
+  $$('.match-hero, #in-breve > #sorpresa-box, #squadre-seg, #card-verdetti > .blocco-tit, #card-giocate > .blocco-tit, #league-note, #card-quote > *, #card-ambiti > *, #card-giocatori > .section-title, #btn-giocatori, '
     + '#card-formazioni > details, .group-head, [data-scheda="numeri"] > details, [data-scheda="numeri"] > .grid-2 > details, #sez-prompt > *, [data-scheda="dati"] > details, #cache-info')
     .forEach(el => el.setAttribute('data-in', ''));
 

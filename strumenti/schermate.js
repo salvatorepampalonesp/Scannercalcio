@@ -158,12 +158,12 @@ if (VERA) {
   await page.evaluate(() => window.scrollTo(0, 760)); await foto('04-partita-giu');
   await page.evaluate(() => window.scrollTo(0, 1500)); await foto('05-partita-quote');
   await page.evaluate(() => { schedaVai('tabellone'); window.scrollTo(0, 0); }); await foto('06-tabellone');
-  // la bolletta (b93), sotto il tabellone: le quattro giocate migliori, poi tutte e 24
-  await page.evaluate(() => { const t = document.getElementById('card-toto'); if (t) window.scrollTo(0, t.getBoundingClientRect().top + window.scrollY - 70); });
-  await foto('06b-tabellone-bolletta');
-  await page.evaluate(async () => { const d = document.querySelector('#toto-box details.tv-altri'); if (!d) return; d.open = true;
+  // tutte le giocate (b94), sotto il tabellone: la piu' probabile di ogni gruppo, poi tutte e 22
+  await page.evaluate(() => { const t = document.getElementById('card-giocate'); if (t) window.scrollTo(0, t.getBoundingClientRect().top + window.scrollY - 70); });
+  await foto('06b-tabellone-giocate');
+  await page.evaluate(async () => { const d = document.querySelector('#giocate-box details.tv-altri'); if (!d) return; d.open = true;
     await new Promise(r => setTimeout(r, 300)); window.scrollTo(0, d.getBoundingClientRect().top + window.scrollY - 70); });
-  await foto('06c-tabellone-bolletta-tutte');
+  await foto('06c-tabellone-giocate-tutte');
   let n = 7;
   for (const k of ['formazioni', 'indisponibili', 'giocatori', 'ambiti']) {
     await page.evaluate(k => { squadreVai(k); window.scrollTo(0, 0); }, k);
