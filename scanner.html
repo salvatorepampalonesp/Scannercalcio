@@ -697,7 +697,7 @@ details.g-tutte>summary{display:flex;align-items:center;gap:8px;min-height:44px;
 .g-bar{display:flex;width:52px;height:5px;gap:1px;flex:none}
 .g-bar i{display:block;border-radius:1px;background:var(--c-home)}
 .g-bar i:nth-child(2){background:var(--n-600)} .g-bar i:nth-child(3){background:var(--c-away)}
-.g-det b{font-weight:400;color:var(--n-500)} .g-det b.g-max{color:var(--color-text);font-weight:500}
+.g-det b{font-weight:400;color:var(--n-500)} .g-det b.g-max{color:var(--color-text);font-weight:500} .g-1x2 .qd{margin-left:6px}
 .g-chip{font-size:12px;padding:1px 7px;border-radius:var(--r-sm);white-space:nowrap;background:var(--n-800);color:var(--n-100)}
 .g-chip.s-alto{background:color-mix(in oklab,var(--c-err) 14%,transparent);color:var(--c-err-t)}
 .g-chip.s-medio{background:color-mix(in oklab,var(--c-warn) 13%,transparent);color:var(--c-warn-t)}
@@ -790,7 +790,7 @@ body.vista-partita .dock{display:flex}
     <button type="button" class="btn btn-ghost ab-back" id="btn-nuova" onclick="tornaIndietro()" aria-label="Indietro"><svg class="ic" aria-hidden="true"><use href="#i-arrow-left"/></svg><span>Cambia partita</span></button>
     <span class="ab-tit" id="ab-tit"><b></b><small></small></span>
     <span class="ab-spazio"></span>
-    <span class="tag" id="build-ver">build 0905-b90</span>
+    <span class="tag" id="build-ver">build 0905-b91</span>
   </div>
 </header>
 
@@ -1728,8 +1728,9 @@ function _rigaGiornata(x, i, on, blocca) {
     const P = x.quote ? x.quote.p : x.p, k = P.indexOf(Math.max(...P)), S = _sorpG(x);
     const T = x.quote ? x.quote.top : x.top;
     pk = `<span class="g-pk" style="color:${_colPick[k]}">${nomi[k]} &middot; ${pc(P[k])}%</span>`;
-    det = `<span class="g-bar">${x.p.map(v => `<i style="flex:${v.toFixed(3)} 1 0"></i>`).join('')}</span>`
-      + `<span>${[0, 1, 2].map(j => `${nomi[j]} <b${x.p[j] === Math.max(...x.p) ? ' class="g-max"' : ''}>${pc(x.p[j])}</b>`).join(' &middot; ')}</span>`
+    det = `<span class="g-bar">${P.map(v => `<i style="flex:${v.toFixed(3)} 1 0"></i>`).join('')}</span>`
+      + `<span class="g-1x2">${[0, 1, 2].map(j => `${nomi[j]} <b${j === k ? ' class="g-max"' : ''}>${pc(P[j])}</b>`).join(' &middot; ')}`
+      + `${x.quote ? '<i class="qd" title="con le quote"></i>' : ''}</span>`
       + (S.liv !== 'basso' ? `<span class="g-chip s-${S.liv}">sorpresa ${S.liv === 'alto' ? 'ALTA' : 'media'}</span>` : '')
       + (T ? `<span class="g-chip ${T.verdetto === 'MARGINALE' ? 'v-marg' : 'v-ok'}">${e(T.nome)} ${T.verdetto}</span>`
            : '<span>niente con verdetto</span>');
@@ -1826,7 +1827,7 @@ function renderGiornata() {
   const slide = x => {
     if (!x || x.stato !== 'fatta') return '<div class="g-slide"><b>Analisi in corso</b><small>la prima partita arriva fra poco</small></div>';
     const P = x.quote ? x.quote.p : x.p, j = P.indexOf(Math.max(...P));
-    return `<div class="g-slide"><b>${nome(x)}</b><span class="g-mb">${x.p.map((v, i) => `<i data-fill data-d="${140 + 100 * i}" style="flex:${v.toFixed(3)} 1 0"></i>`).join('')}</span>`
+    return `<div class="g-slide"><b>${nome(x)}</b><span class="g-mb">${P.map((v, i) => `<i data-fill data-d="${140 + 100 * i}" style="flex:${v.toFixed(3)} 1 0"></i>`).join('')}</span>`
       + `<small>pick <b style="color:${_colPick[j]}">${['1', 'X', '2'][j]} &middot; ${(100 * P[j]).toFixed(0)}%</b>${x.quote ? ' con le quote' : ''}</small></div>`;
   };
   let h = `<div class="g-testa" data-in><b>La giornata</b><small>${n} partite, ${e(giorni[0])}${giorni.length > 1 ? ' - ' + e(giorni[giorni.length - 1]) : ''}</small></div>`
@@ -1854,8 +1855,8 @@ function renderGiornata() {
         + _rigaGiornata(L[j], j, j === G.vista && !G.corre, blocca)).join('')}</div></div></details>`
     + '<details class="info"><summary>Come funziona la giornata</summary><div>'
     + "Ogni partita &egrave; analizzata per intero, come se l'avessi scelta a mano: verdetto, tabellone, formazioni, prompt. "
-    + "Le quote automatiche arrivano per ognuna; quelle scritte a mano restano legate alla loro partita. Nell'elenco il pick e la proposta in cima "
-    + "sono quelli con le quote quando ci sono, la barra resta del motore. La giornata &egrave; il primo turno della lega dalla data scelta: "
+    + "Le quote automatiche arrivano per ognuna; quelle scritte a mano restano legate alla loro partita. Nell'elenco la barra, l'1X2, il pick e la "
+    + "proposta in cima sono quelli con le quote quando ci sono (il punto arancione), altrimenti del maestro. La giornata &egrave; il primo turno della lega dalla data scelta: "
     + "dalla prima partita, in ordine di orario, finch&eacute; una squadra non gioca di nuovo, entro sette giorni.</div></details>";
   const verso = G.__ultima != null && G.__ultima !== G.vista && k >= 0 ? (k > ok.indexOf(G.__ultima) ? 1 : -1) : 0;
   G.__ultima = G.vista;
@@ -4289,7 +4290,7 @@ function _tabTesto(V) {
     + (sotto.length ? '\n- Sotto la base di lega di 5 punti o piu\' (qui questi esiti sono meno probabili del solito; non sono proposte): ' + lista(sotto) : '');
 }
 
-window.__SCANNER_BUILD = '0905-b90';
+window.__SCANNER_BUILD = '0905-b91';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 

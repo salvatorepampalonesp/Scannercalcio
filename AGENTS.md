@@ -57,7 +57,7 @@ vedi *Le quote automatiche*); se non ci sono, le scrive l'utente. Per misurarle 
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b90`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b91`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -628,7 +628,12 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b90`)
+## Stato attuale (`b91`)
+
+**L'elenco della giornata con le quote** (`b91`). In «Tutte le partite», quando una partita ha le quote dell'1X2, la barra e
+«1 · X · 2» di ogni riga sono quelli con le quote, col grassetto sul più alto e il punto arancione; prima restavano quelli del
+maestro, e accanto al pick con le quote dicevano un'altra cosa (l'utente: «non aggiorna le quote a sx»). Lo stesso la barra della
+partita in vista. Senza quote non cambia niente. Vedi *La giornata*, «Lo schermo».
 
 **La card contro squadre simili** (`b90`). In Numeri, «Partite simili (KNN) e moduli» cerca le simili fra le ultime 30
 partite, in casa e fuori, coi punti riportati alla sede di oggi. L'avversario di allora si confronta con quello di oggi sul suo
@@ -1956,8 +1961,10 @@ griglia riempita per righe: l'ordine era giusto da sinistra a destra, ma leggend
 saltava una partita su due (Monza, Bologna, Venezia… invece di Monza, Udinese, Bologna…), e
 all'utente sembrava sbagliato. Sul telefono, una colonna sola, era giusto anche prima: rifatto sulla
 PitchAPI vera su Serie A, Premier, LaLiga2, MLS e Liga MX. L'ordine si calcola sull'orario come
-numero (`Date.parse`), non più confrontando le stringhe. Ogni riga: la barra del motore, 1 X 2 con la più alta in grassetto,
-il pick con le quote se ci sono, il rischio sorpresa se non è basso, la proposta in cima. In fondo
+numero (`Date.parse`), non più confrontando le stringhe. Ogni riga: la barra e 1 X 2 con la più alta in grassetto,
+il pick, il rischio sorpresa se non è basso, la proposta in cima. Con le quote dell'1X2 sono tutti quelli con le quote, e accanto
+all'1X2 c'è il punto arancione; senza, del maestro. Fino al `b90` la barra e l'1X2 restavano del maestro anche con le quote, e
+accanto al pick con le quote dicevano un'altra cosa (Parma – Udinese: 1 in grassetto a sinistra, «2 · 38%» a destra). In fondo
 alla pagina, sotto ogni scheda, `#giornata-fondo` ripete la partita prima e dopo col nome (fino al
 `b65` stava dopo il mega-prompt, e «Giornata» era nella barra delle sezioni). Durante il
 giro una barra dice a che partita è e quante partite ci sono in memoria, e «Ferma dopo questa»
@@ -2419,9 +2426,12 @@ prime tre con un verdetto del tabellone a schermo, il rischio sorpresa quello de
 `NaN`. Nella giornata controlla anche che la scheda scelta resti cambiando partita. Dal `b69` gira
 col movimento ridotto (`reducedMotion: 'reduce'`: i numeri che contano mostrerebbero valori
 intermedi), legge «In breve» da `#in-breve` (il riquadro, la sorpresa e le proposte sono tre blocchi)
-e misura le voci del dock e del foglio Altro, Squadre in tutte e tre le sotto-schede.
+e misura le voci del dock e del foglio Altro, Squadre in tutte e tre le sotto-schede. Dal `b91` controlla anche l'elenco della
+giornata: in ogni riga la barra e l'1X2 sono quelli con le quote se la partita le ha (col grassetto sul più alto e il punto
+arancione solo lì), e lo stesso la barra della partita in vista. Controllo di potenza: con la barra del maestro rimessa nelle
+righe fallisce sulle 2 partite con le quote automatiche.
 
-Esito al `b90` (storico 30), a 390px con tutte le 30 card aperte, scheda per scheda e in tutte e quattro le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, il prompt della giornata con note e istruzioni una volta sola e un blocco per partita, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, il caso dell'arbitro col rapporto rifatto da `arbitri.json`, gli indisponibili segnati, nel prompt e tolti, la loro ricerca, 0 px):
+Esito al `b91` (storico 30), a 390px con tutte le 30 card aperte, scheda per scheda e in tutte e quattro le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, il prompt della giornata con note e istruzioni una volta sola e un blocco per partita, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, il caso dell'arbitro col rapporto rifatto da `arbitri.json`, gli indisponibili segnati, nel prompt e tolti, la loro ricerca, l'elenco della giornata con le quote, 0 px):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
@@ -2429,7 +2439,7 @@ Esito al `b90` (storico 30), a 390px con tutte le 30 card aperte, scheda per sch
 | batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 204 | 0 su 131 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
 | `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 142-167 | 84-90 | 0 |
-| `vecchio`: motore `b89` caricato (controllo) | 0/3, «motore caricato diverso ...» | 7 su 204 | 1 | 0 |
+| `vecchio`: motore `b90` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 su 204 | 1 | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -2547,6 +2557,8 @@ non passa da `safeHtml`, e `artDel` («dell'Atalanta»), che la lega finta coi s
 cambia solo come il mega-prompt è costruito, e il prompt della singola partita esce identico. Al `b89` lo stesso col `b88`:
 cambia solo la sotto-scheda degli indisponibili, che sta fuori dal motore. Al `b90` il controllo col `b89` vede 7 scritture
 diverse su 204, tutte della card contro squadre simili (titoli, rendimento, liste e legenda), e nel CSV solo il certificato.
+Al `b91` il controllo col `b90` non vede nessuna scrittura diversa, solo il certificato: cambia l'elenco della giornata, che sta
+fuori dal motore.
 
 **Il controllo del `b70`.** Da qui «In breve» controlla anche il rischio sorpresa: con le quote dell'1X2
 `#sorpresa-box` deve essere identico a quello rifatto nella pagina con `rischioSorpresa(…,
@@ -7954,3 +7966,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b88` | il prompt della giornata, chiesto dall'utente: «Copia il prompt della giornata» (nel riquadro della giornata e nella scheda Prompt) copia un testo solo per tutte le partite analizzate, con le note e le istruzioni una volta sola e poi i numeri di ogni partita (quote e indisponibili compresi); in fondo le istruzioni della giornata, con un elenco unico delle proposte FORTE e GIOCABILE e poi partita per partita. Sul banco 5 partite fanno 43.823 caratteri contro circa 80.000 dei cinque prompt. Le note comuni stanno in `_notePrompt` e `_noteQuote`, e il prompt della singola partita esce identico al `b87` (tranne «lo 0%» al posto di «il 0%» negli indisponibili). Il banco controlla il prompt della giornata; controllo di potenza superato. Col `b87` 0 scritture diverse su 204, una riga del CSV (il certificato) |
 | `b89` | la ricerca negli indisponibili, chiesta dall'utente («i nomi sono difficili da trovare»): sopra la lista di ogni squadra un campo dove bastano poche lettere, senza badare a maiuscole, accenti e apostrofi; restano solo i giocatori che le hanno nel nome, e la x pulisce. Sul telefono il campo resta in alto mentre si scorre la lista della sua squadra. Il banco prova la ricerca, e fallisce su una copia dove non nasconde niente. Col `b88` 0 scritture diverse su 204, una riga del CSV (il certificato) |
 | `b90` | la card «contro squadre simili» corretta, chiesta dall'utente come suo studio, senza toccare altro: le ultime 30 partite invece della stessa sede, coi punti riportati alla sede di oggi; i tre numeri che `KNN_DIMS` leggeva dalla squadra stessa presi dall'avversario; l'Elo dell'avversario prima di ogni partita come dimensione in più (peso 1.5). Sulle 4.112 partite della misura legge la forza meglio del `b89` (0.294 → 0.339, 11 leghe su 11, errore ±0.39 → ±0.28). Sotto, le sei partite che pesano di più, con somiglianza e peso. Le probabilità del KNN restano su `getSimilarMatches`. Col `b89` 7 scritture diverse su 204, tutte della card, e una riga del CSV (il certificato) |
+| `b91` | l'elenco della giornata con le quote, notato dall'utente («non aggiorna le quote a sx»): con le quote dell'1X2 la barra e «1 · X · 2» di ogni riga, e la barra della partita in vista, sono quelli con le quote, col grassetto sul più alto e il punto arancione; prima restavano del maestro, mentre il pick a destra era già quello con le quote. Il banco controlla l'elenco, e fallisce rimettendo la barra del maestro. Col `b90` 0 scritture diverse su 204, una riga del CSV (il certificato) |
