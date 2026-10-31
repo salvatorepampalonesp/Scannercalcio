@@ -7845,7 +7845,10 @@ node strumenti/batch-auto.js --leghe "ITA:Serie A,Eredivisie,ENG:Championship" -
   120.000) le hanno finite. Un giro grosso si divide su più giorni: `strumenti/tiri.py` si ferma da solo a
   `--tetto` chiamate (di default 25.000), e un batch automatico si stima prima, dal numero delle partite.
 - Il batch vive nel computer della sessione: se la sessione resta inattiva il computer può
-  essere spento, e con lui `batch/`. Ogni file finito va mandato all'utente appena salvato.
+  essere spento, e con lui `batch/`. Ogni file finito va mandato all'utente appena salvato. Il 30
+  ottobre 2026 è successo davvero: il controllo era scaduto, la sessione è rimasta ferma, e dieci minuti
+  dopo il computer si è spento col batch a metà (i file già salvati sono rimasti). Come tenerlo vivo e
+  come riprendere lo dice la skill `batch`.
 - `--scritture` registra anche, per il primo giro di ogni partita, ogni scrittura a schermo del motore
   (`scritture.jsonl`), e i valori che il motore estrae da ogni partita dello storico (`dettagli.jsonl`). Lo
   `scanner.html` servito è strumentato come nel banco: il CSV resta in copia conforme. Serve a misurare quello che

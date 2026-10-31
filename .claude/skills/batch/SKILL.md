@@ -39,6 +39,18 @@ node strumenti/batch-auto.js --leghe "League One,League Two,TUR:Super Lig" \
   stagioni (4.327 partite) hanno chiesto un'ora e 25.705 chiamate.
 - Il log completo è in `batch/<nome>/batch.log`. A schermo restano le righe che contano e, ogni
   minuto, la partita a cui è arrivato.
+- **Il batch muore se la sessione resta ferma.** Il 30 ottobre 2026 il computer della sessione si è
+  spento 10 minuti dopo che il controllo era scaduto, e il batch con lui (i file salvati restano). Per
+  tenerlo vivo:
+  - lancialo staccato (`setsid nohup … & disown`), non con `run_in_background`, che lo ferma dopo due ore;
+  - seguilo con un Monitor che filtra `SALVATO|ERRORE|fallita|=== fine` (non le righe di avanzamento né
+    `RISERVA` e `_V97_probs`, che escono a ogni partita);
+  - nel Monitor cerca il processo con `pgrep -f "[b]atch-auto.js --leghe <primo id>"`. Senza le parentesi
+    `pgrep` trova il Monitor stesso, e non si accorge mai che il batch si è fermato;
+  - il Monitor scade dopo 30 minuti: riarmalo subito, ogni volta.
+- **Dopo un riavvio** rilancia lo stesso comando. Prima togli da `scritture.jsonl` le righe della stagione
+  rimasta a metà (campo `lega` e `data`), altrimenti quelle partite compaiono due volte; `dettagli.jsonl`
+  si legge per chiave, e i doppioni lì non contano.
 - Rilanciare riprende da dove era: una stagione che ha già il suo file si salta.
 - I 404 si contano a parte («senza dati»): sono le `/advanced` delle stagioni che non le hanno.
   Quelle righe escono `riserva-k-motore`, e va bene così.
