@@ -7,6 +7,10 @@
 # provato, e li confronta con quelli scritti a schermo (scritture.jsonl). Lo storico e' quello del motore: le ultime 30
 # partite di lega nei 500 giorni prima del giorno della partita. Ogni riga deve stare entro l'arrotondamento dello
 # schermo; esce con 1 se una non ci sta. Serve dopo ogni modifica del motore che tocca le card di Numeri.
+# Lo storico di una squadra si prende solo fra le partite della lega della partita (l'archivio in fondo ai suoi CSV):
+# una squadra che ha giocato in due leghe dei batch (promossa, retrocessa) mescolava le due storie, e su un batch con
+# piu' leghe lo strumento segnava come diversi decine di migliaia di numeri giusti. E l'NPxG di una partita e' quello che
+# usa il motore (buildStats): se e' nullo o zero vale l'xG, come in una partita con un rigore solo.
 import io, os, sys, math, re, datetime as dt
 import numpy as np
 
@@ -17,10 +21,18 @@ __file__ = SRC
 exec(compile(_src[:_src.index('ESITI = []')], SRC, 'exec'), globals())
 sys.argv = _argv
 R = REGOLA
+import glob, collections
+ARCH = collections.defaultdict(set)
+for d in CARTELLE:
+    for f in sorted(glob.glob(os.path.join(d, '*.csv'))):
+        lega = os.path.basename(f)[len('Backtest_V97_'):].rsplit('_', 1)[0]
+        ARCH[lega].update(x['id'] for x in archivio(f).values())
+LEGA = {x['id']: x['lega'] for x in PART.values()}
 
-def storia(tid, giorno, n=30):
-    lim = (dt.date.fromisoformat(giorno) - dt.timedelta(days=500)).isoformat()
-    return [x[2] for x in STORIA[tid] if lim <= x[0] < giorno][-n:]
+def storia(tid, giorno, lega, n=30):
+    lim = (dt.date.fromisoformat(giorno) - dt.timedelta(days=500)).isoformat(); A = ARCH[lega]
+    npx = lambda d: d if (nv(d, 'npxg') or 0) > 0 else dict(d, npxg=d.get('xg'))
+    return [npx(x[2]) for x in STORIA[tid] if lim <= x[0] < giorno and x[1] in A][-n:]
 
 RIGHE = []
 def rep(nome, schermo, formula, tol):
@@ -37,7 +49,7 @@ def add(k, s, f): V[k][0].append(s); V[k][1].append(f)
 PROG = ['prog_carries', 'switches', 'tackles', 'carries_box', 'f3_entries', 'aerials']
 
 for g in GIRI:
-    gd = GIORNO[g['id']]; W = g['W']; sH, sA = storia(g['h'], gd), storia(g['a'], gd)
+    gd = GIORNO[g['id']]; W = g['W']; L = LEGA[g['id']]; sH, sA = storia(g['h'], gd, L), storia(g['a'], gd, L)
     # rosso: Gamma-Poisson sulle ultime 30, nelle due colonne
     mu = 0
     for st in (sH, sA):
@@ -48,7 +60,7 @@ for g in GIRI:
         if v is not None: add('rosso', v, 100 * (1 - math.exp(-mu)))
     # corner attesi
     v4 = [media(sH, 'cor'), media(sH, 'cor_ag'), media(sA, 'cor'), media(sA, 'cor_ag')]
-    if None not in v4:
+    if all(v is not None and v > 0 for v in v4):
         lam = min(max(R['CORNER_C0'] + R['CORNER_BETA'] * (sum(v4) / 2 - R['CORNER_C0']), 1), 30)
         for col in ('cor-tot-over', 'cor-tot-role'):
             v = numeri(W.get(col, ''))

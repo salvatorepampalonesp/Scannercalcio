@@ -293,7 +293,7 @@ select{appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:36px
 
   <div class="topbar">
     <div class="brand"><svg class="ic" aria-hidden="true"><use href="#i-chart-bar"/></svg><h1>Comparatore V9.7</h1></div>
-    <div class="tb-tag"><span class="badge" id="build-ver">build 0905-b94</span><span class="badge" id="engine-badge">motore non caricato</span></div>
+    <div class="tb-tag"><span class="badge" id="build-ver">build 0905-b95</span><span class="badge" id="engine-badge">motore non caricato</span></div>
   </div>
 
   <!-- indicatore di flusso -->
@@ -895,7 +895,7 @@ async function loadEngineFromText(text, fileName) {
     'computeLeagueParams','multigoal','asianHandicapMat','negBinCDF','negBinK','poisson',
     'expectedPoints','loadLegheJson','fetchMatchRaw',
 
-    'predictStat','_isPast'];
+    'predictStat','_isPast','statsVuote'];
   let exposer = '\n;(function(){\n';
   exposeNames.forEach(n => {
     exposer += `  try { window[${JSON.stringify(n)}] = (typeof ${n} !== 'undefined') ? ${n} : undefined; } catch(e){}\n`;
@@ -981,7 +981,7 @@ async function loadEngineFromText(text, fileName) {
     <p><code>${fileName}</code>: clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
 
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b94';
+  const _bComp = '0905-b95';
   window.__CMP_BUILD = _bComp;
   const _el = document.getElementById('engine-build');
   if (_el) {
@@ -1683,7 +1683,8 @@ async function cmpRunMatch(match, limit, render) {
       globalThis.apiCall(`/matches/${mId}/advanced`, true)
     ]);
   }
-  const sD = sRes?.data || sRes;
+  const sD0 = sRes?.data || sRes;
+  const sD = (typeof globalThis.statsVuote === 'function' && globalThis.statsVuote(sD0)) ? null : sD0;
   const aD = aRes?.data?.teams || [];
 
   const actH = cmpExtractReal(sD, aD, match.home_team.id, true);
@@ -2270,6 +2271,7 @@ function cmpRender(match, R, actH, actA) {
     `<tr><td>${lbl}</td><td style="font-weight:bold">${_pct(ens)}</td><td>${_pct(dc)}</td><td>${_pct(ol)}</td><td>${_pct(knn)}</td><td>${_badge(conf)}</td><td>${realeTxt}</td><td>${_verdict(ens, happened)}</td></tr>`;
 
   const dc = R.probsRole || {};
+  const gV = marketsFromMatrix(R.dcMat), vGG = gV ? gV.gg : dc.pGG, vOv = gV ? gV.ou[2.5].over : dc.pOv;
   const K = R.probsKnn || null;
   const O = R.probsOL || null;
   document.getElementById('cmp-markets-body').innerHTML =
@@ -2279,10 +2281,10 @@ function cmpRender(match, R, actH, actA) {
     rowMkt('1X',            R.m1+R.mX,   (dc.p1||0)+(dc.pX||0), O?O.p1+O.pX:null, K?K.p1+K.pX:null, CF.c1X, outcome, outcome!=='2') +
     rowMkt('X2',            R.mX+R.m2,   (dc.pX||0)+(dc.p2||0), O?O.pX+O.p2:null, K?K.pX+K.p2:null, CF.cX2, outcome, outcome!=='1') +
     rowMkt('12',            R.m1+R.m2,   (dc.p1||0)+(dc.p2||0), O?O.p1+O.p2:null, K?K.p1+K.p2:null, CF.c12, outcome, outcome!=='X') +
-    rowMkt('Goal (GG)',     dc.pGG,      dc.pGG, null,              K?K.pGG:null,       CF.cGG, gg, gg==='Goal') +
-    rowMkt('NoGoal',        1-(dc.pGG||0), 1-(dc.pGG||0), null,     K?1-K.pGG:null, CF.cNG, gg, gg==='NoGoal') +
-    rowMkt('Over 2.5',      dc.pOv,      dc.pOv, null,              K?K.pOv:null,       CF.cOv, `${goalTot} gol`, ov==='Over 2.5') +
-    rowMkt('Under 2.5',     1-(dc.pOv||0), 1-(dc.pOv||0), null,     K?1-K.pOv:null, CF.cUn, `${goalTot} gol`, ov==='Under 2.5');
+    rowMkt('Goal (GG)',     vGG,         dc.pGG, null,              K?K.pGG:null,       CF.cGG, gg, gg==='Goal') +
+    rowMkt('NoGoal',        1-(vGG||0),  1-(dc.pGG||0), null,     K?1-K.pGG:null, CF.cNG, gg, gg==='NoGoal') +
+    rowMkt('Over 2.5',      vOv,         dc.pOv, null,              K?K.pOv:null,       CF.cOv, `${goalTot} gol`, ov==='Over 2.5') +
+    rowMkt('Under 2.5',     1-(vOv||0),  1-(dc.pOv||0), null,     K?1-K.pOv:null, CF.cUn, `${goalTot} gol`, ov==='Under 2.5');
 
   // IL TABELLONE, nell'ordine e coi verdetti con cui lo stampa lo Scanner
   {
@@ -2665,6 +2667,7 @@ function cmpExportCSV() {
 
   rows.push('');
   rows.push('--- MERCATI 1X2 (Ensemble V9.7) ---' + ';;;;'.repeat(M.length));
+  const pGGv = m => m.goalsMarket ? m.goalsMarket.gg : m.R.probsRole?.pGG, pOvv = m => m.goalsMarket ? m.goalsMarket.ou[2.5].over : m.R.probsRole?.pOv;
   const mkts = [
     ['1', m => [fmt(m.R.m1), m.conf.c1||'-', m.outcome, verd(m.R.m1, m.outcome==='1')]],
     ['X', m => [fmt(m.R.mX), m.conf.cX||'-', m.outcome, verd(m.R.mX, m.outcome==='X')]],
@@ -2672,10 +2675,10 @@ function cmpExportCSV() {
     ['1X', m => [fmt(m.R.m1+m.R.mX), m.conf.c1X ?? '-', m.outcome, verd(m.R.m1+m.R.mX, m.outcome!=='2')]],
     ['X2', m => [fmt(m.R.mX+m.R.m2), m.conf.cX2 ?? '-', m.outcome, verd(m.R.mX+m.R.m2, m.outcome!=='1')]],
     ['12', m => [fmt(m.R.m1+m.R.m2), m.conf.c12 ?? '-', m.outcome, verd(m.R.m1+m.R.m2, m.outcome!=='X')]],
-    ['Goal', m => [fmt(m.R.probsRole?.pGG), m.conf.cGG ?? '-', m.gg, verd(m.R.probsRole?.pGG, m.gg==='Goal')]],
-    ['NoGoal', m => [fmt(1-(m.R.probsRole?.pGG||0)), m.conf.cNG ?? '-', m.gg, verd(1-(m.R.probsRole?.pGG||0), m.gg==='NoGoal')]],
-    ['Over 2.5', m => [fmt(m.R.probsRole?.pOv), m.conf.cOv ?? '-', `${m.goalTot} gol`, verd(m.R.probsRole?.pOv, m.ov==='Over 2.5')]],
-    ['Under 2.5', m => [fmt(1-(m.R.probsRole?.pOv||0)), m.conf.cUn ?? '-', `${m.goalTot} gol`, verd(1-(m.R.probsRole?.pOv||0), m.ov==='Under 2.5')]]
+    ['Goal', m => [fmt(pGGv(m)), m.conf.cGG ?? '-', m.gg, verd(pGGv(m), m.gg==='Goal')]],
+    ['NoGoal', m => [fmt(1-(pGGv(m)||0)), m.conf.cNG ?? '-', m.gg, verd(1-(pGGv(m)||0), m.gg==='NoGoal')]],
+    ['Over 2.5', m => [fmt(pOvv(m)), m.conf.cOv ?? '-', `${m.goalTot} gol`, verd(pOvv(m), m.ov==='Over 2.5')]],
+    ['Under 2.5', m => [fmt(1-(pOvv(m)||0)), m.conf.cUn ?? '-', `${m.goalTot} gol`, verd(1-(pOvv(m)||0), m.ov==='Under 2.5')]]
   ];
   mkts.forEach(([lbl, fn]) => {
     const r = [lbl];

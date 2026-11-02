@@ -2,7 +2,9 @@
 # CONTROLLI DEI CSV DEL COMPARATORE, prima di qualunque analisi (AGENTS.md, Leggere un CSV del
 # Comparatore): copia conforme, ID PARTITA unici dentro e fra i file, stagione della partita
 # uguale a quella del database, lgN > 0, metriche avanzate dal motore o di riserva, clamp
-# dell'HFA, archivio di lega in fondo. Non guarda nessun risultato.
+# dell'HFA, archivio di lega in fondo, partite senza le statistiche di squadra (dal b95 il reale di corner e tiri e'
+# N/D quando /stats manca o arriva vuota, con tutti i conteggi a zero: dice che il dato non c'e', non quanto vale).
+# Non guarda nessun risultato.
 #
 #   python3 strumenti/controlla-csv.py batch48 batch4            cartelle o file, anche insieme
 #
@@ -55,6 +57,8 @@ def main(argomenti):
         lg0 = sum(1 for v in lg if not v.replace('.', '').isdigit() or float(v) <= 0)
         orig = collections.Counter(valori(righe, 'Origine metriche avanzate')[:n])
         clamp = sum(1 for v in valori(righe, 'HFA: il clamp ha morso?')[:n] if v.upper().startswith('SI'))
+        cr = righe.get('Corner tot (atteso)')
+        senza = sum(1 for v in (cr[3::4] if cr else [])[:n] if v.strip() == 'N/D')
         guasti = []
         if no: guasti.append(f'{no} non in copia conforme')
         if dentro: guasti.append(f'{dentro} ID ripetuti nel file')
@@ -67,6 +71,7 @@ def main(argomenti):
         if clamp: avvisi.append(f'clamp dell\'HFA su {clamp}')
         ris = sum(v for k, v in orig.items() if k.startswith('riserva'))
         if ris: avvisi.append(f'riserva su {ris}')
+        if senza: avvisi.append(f'statistiche di squadra assenti o vuote su {senza}')
         male += bool(guasti)
         tot['file'] += 1
         tot['partite'] += n
