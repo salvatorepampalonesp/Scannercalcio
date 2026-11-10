@@ -465,7 +465,9 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   prese non cambiano (−0.33 punti, `z = −1.36`) e la logloss quasi (−1.1‰, `z = −1.20`). Vedi *Il rating dalle quote
   passate*, «La qualità dell'undici». Costa due chiamate per ogni partita dello storico. Ha senso solo come variabile del
   maestro, per le probabilità, se gli indisponibili segnati dall'utente (`b87`) devono spostarle.
-- [ ] **Il rating dalle quote passate, da decidere con l'utente.** Nelle 34 leghe di football-data, quando le quote della
+- [ ] **Il rating dalle quote passate: il test registrato.** Regola scritta il 10 novembre 2026 (vedi *Il rating dalle quote
+  passate: la regola*): combinazione col maestro stimata sul mercato, test sui risultati di `batch/b94/livello`, senza chiamate
+  alla PitchAPI. Il racconto sotto resta per la storia. Nelle 34 leghe di football-data, quando le quote della
   partita non ci sono ancora (di solito fino al venerdì per il weekend), un rating delle squadre dalle quote di chiusura
   delle partite già giocate vale quasi quanto le quote della settimana. Su 46.177 partite di 18 leghe +1.24 punti di prese
   sull'Elo (`z = +8.6`, 18 leghe su 18), R² 0.928 sulla chiusura. Sul 2026/27 dei cinque campionati R² 0.900 contro 0.888
@@ -4465,8 +4467,99 @@ segnale non si vedeva, qui sul mercato sì, e il motivo è che il mercato è un 
 - La qualità dell'undici serve, se mai, alle probabilità del maestro, non alle prese.
 
 Per metterlo nello Scanner serve una regola registrata: la combinazione col maestro, coi pesi stimati sul mercato come il
-maestro, provata sui risultati di leghe mai aperte per questa domanda. Vanno bene le leghe dei file `new` di football-data:
-Austria, Danimarca, Svezia, Norvegia, Messico, MLS, Giappone. Lì servono i batch del motore (vedi *Da fare*).
+maestro, provata sui risultati di leghe mai aperte per questa domanda. Registrata il 10 novembre 2026: vedi la sezione qui
+sotto.
+
+### Il rating dalle quote passate: la regola
+
+Scritta il 10 novembre 2026, prima di aprire i dati del test. Delle quote di chiusura di Austria, Danimarca, Messico, Norvegia,
+Svezia, MLS, Giappone, Argentina e Brasile dal 2023 al 2025 non si è letta nessuna riga per questa domanda, e nemmeno dei loro
+risultati accanto al rating. L'utente l'ha chiesta dopo la proposta («Si vai»).
+
+**Perché.** Senza le quote della partita lo Scanner usa il maestro, che ricostruisce l'1X2 del mercato per il 90%. Il rating
+dalle quote di chiusura delle partite già giocate ne ricostruisce un'altra parte (vedi *Il rating dalle quote passate*). Le
+quote della partita arrivano di solito pochi giorni prima; fino ad allora il rating c'è, il mercato no.
+
+**L'esplorazione** (`python3 strumenti/quote-passate.py`, otto secondi, nessuna chiamata alla PitchAPI). Le partite in copia
+conforme del batch del `b94` che il maestro non ha visto nell'allenamento, con le quote di chiusura di football-data scaricate
+l'8 novembre (`batch/fd-nov`):
+- Super League svizzera 2023/24–2026/27, Liga I romena 2025/26, il 2026 di Cina, Finlandia e Irlanda (file `new`);
+- il 2026/27 delle leghe del maestro dopo il taglio: dal 3 ottobre, o tutto per Bundesliga, League One, League Two e Süper Lig.
+
+Delle 2.345 partite, 2.211 hanno il rating. Delle altre, 132 hanno una squadra sotto le 6 partite e 2 non hanno quote.
+
+| sul log(p1/p2) di chiusura | R² |
+|---|---|
+| il maestro | 0.848 |
+| le quote passate | 0.886 |
+| tutti e due | 0.901 |
+
+- *La combinazione sul mercato*, a minimi quadrati sul log(p1/p2) di chiusura:
+  - `a` −0.0147;
+  - `b` 0.3599 sul maestro;
+  - `c` 0.6533 sul rating.
+
+  Togliendo una lega alla volta `b` va da 0.349 a 0.376, `c` da 0.640 a 0.662.
+- *Sui risultati*, solo descrittivo, con `a`, `b`, `c` stimati senza la lega:
+  - −4.03‰ di logloss contro il maestro (`z = −2.55`), meglio in 14 leghe su 19;
+  - prese 49.12 → 49.71% (+0.59 ±0.95);
+  - sulle cinque leghe mai viste dal maestro −4.15‰ (`z = −2.27`, 5 su 5), sul 2026/27 delle sue leghe −3.73‰ (`z = −1.19`);
+  - la media 50/50 dei log-odds fa −3.69‰.
+- *La calibrazione*: il pick per fascia (sotto il 45%, 45–55, 55–65, 65% e oltre), detto contro uscito, col candidato 40.4 →
+  40.9, 49.5 → 51.0, 59.2 → 58.9, 70.2 → 73.3. Col maestro 40.4 → 41.6, 49.6 → 48.1, 59.2 → 59.5, 70.4 → 72.9.
+
+**Il candidato, con tutto fissato** (`REGOLA` in `strumenti/quote-passate.py`):
+- *Il rating* è quello di `strumenti/rating-quote.py`: `K` 0.35, `KH` 0.01, `REG` 0.85, `H` di partenza 0.35, fissati il 24
+  ottobre sulle 18 leghe dei file principali.
+  - Le quote sono quelle di chiusura (`AvgC`, poi Pinnacle, poi Bet365), col margine tolto in proporzione.
+  - Contano solo le partite giocate prima del giorno.
+  - Le stagioni sono `s−2`, `s−1` e `s` della partita, le tre del database dello Scanner.
+- *Quando c'è*: le due squadre hanno almeno 6 partite con le quote in quella finestra. Altrimenti resta il maestro.
+- *L'1X2*: `lg' = −0.0147 + 0.3599·log(p1/p2) del maestro + 0.6533·rating`. Il pareggio è quello del maestro; `1` e `2` si
+  dividono il resto secondo `σ(lg')`.
+
+**I dati del test** sono le partite in copia conforme di `batch/b94/livello` (motore `b94`, maestro del `b77`), circa 6.400:
+- Bundesliga austriaca, Superligaen e Liga MX 2023/24–2025/26;
+- Eliteserien, Allsvenskan e MLS 2023–2025;
+- J. League 2024–2025;
+- Liga Profesional argentina e Série A brasiliana 2025.
+
+Le quote di chiusura vengono dai file `new` di football-data, scaricati dopo il commit di questa regola. Su queste partite si
+sono guardati il livello dei gol (`b63`), il primo gol (`b75`), il rating sugli xG, il maestro (`b77`) e la pressione (`b82`),
+mai le quote di chiusura. Il 2026 delle stesse leghe (`batch/disaccordo`) resta fuori: lì le quote sono già state confrontate
+col maestro (vedi *Il motore contro il mercato*).
+
+**Il metro e quando passa.** La logloss 1X2 del candidato contro quella del maestro, appaiata partita per partita, sulle
+partite col rating. Passa se:
+- scende con `z ≤ −2`;
+- è meglio in più di metà delle leghe con almeno 100 partite col rating;
+- le prese del pick non calano oltre −2 errori standard.
+
+Con l'effetto dell'esplorazione, su circa 6.000 partite, ci si aspetta `z` intorno a −4; con metà dell'effetto, intorno a −2.
+
+**Se passa.** Il candidato entra nello Scanner, con una manopola (`'no'` torna a prima). Vale senza le quote dell'1X2 della
+partita, e solo nelle leghe con le quote automatiche (`QUOTE_FD`, 34). Allora:
+- lo Scanner prende dal worker i file di football-data della finestra. Per le leghe dei file `new` basta uno; per le altre ne
+  servono tre, ma quello della stagione lo prende già. Poi calcola il rating;
+- i nomi delle squadre di football-data si agganciano a quelli della PitchAPI dalle partite già giocate (data e punteggio), come
+  nel test;
+- l'1X2 del verdetto, le doppie chance, il pick, il rischio sorpresa e le giocate usano il candidato. La matrice dei gol resta
+  del maestro;
+- con le quote della partita niente cambia: `QUOTE_COMB` riceve l'1X2 del motore;
+- il Comparatore fa lo stesso, attraverso la strada `/quote/` del worker, e il CSV dice il rating e se è entrato. Altrimenti il
+  Comparatore non stamperebbe più come lo Scanner. Il banco ha già un file di quote finto;
+- si rimisurano `PICK_RESA`, `SORPRESA_TAB` e le rese dell'1X2 di `EDGE_BANDS`, che nelle leghe con le quote cambiano, e i
+  numeri del maestro senza quote in `QUOTE_RESA`.
+
+**Se non passa**, resta il maestro, e questa sezione dice perché.
+
+**Descrittivi**, che non decidono:
+- ogni lega;
+- l'R² sulla chiusura del maestro, del rating e del candidato;
+- la chiusura stessa contro il maestro;
+- `a`, `b`, `c` stimati sul test.
+
+`python3 strumenti/quote-passate.py --scarica-prova`, poi `--prova batch/b94/livello`, rifanno il test.
 
 ### Il confronto contro squadre simili
 
