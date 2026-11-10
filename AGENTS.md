@@ -465,9 +465,16 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   prese non cambiano (−0.33 punti, `z = −1.36`) e la logloss quasi (−1.1‰, `z = −1.20`). Vedi *Il rating dalle quote
   passate*, «La qualità dell'undici». Costa due chiamate per ogni partita dello storico. Ha senso solo come variabile del
   maestro, per le probabilità, se gli indisponibili segnati dall'utente (`b87`) devono spostarle.
-- [ ] **Il rating dalle quote passate: il test registrato.** Regola scritta il 10 novembre 2026 (vedi *Il rating dalle quote
-  passate: la regola*): combinazione col maestro stimata sul mercato, test sui risultati di `batch/b94/livello`, senza chiamate
-  alla PitchAPI. Il racconto sotto resta per la storia. Nelle 34 leghe di football-data, quando le quote della
+- [ ] **Il rating dalle quote passate nello Scanner, da decidere con l'utente.** Il test registrato è **passato** il 10
+  novembre 2026: sulle 6.296 partite di `batch/b94/livello` −4.26‰ di logloss 1X2 contro il maestro (`z = −4.54`), meglio in 7
+  leghe su 9, prese +0.14 ±0.59. Vedi *Il rating dalle quote passate: la regola*, «Esito». Non costa chiamate alla PitchAPI. Nello Scanner
+  vuol dire:
+  - i file di football-data della finestra, presi dal worker;
+  - l'aggancio dei nomi delle squadre;
+  - il rating in JS, e lo stesso nel Comparatore per la copia conforme;
+  - le tabelle senza quote da rimisurare.
+
+  Il racconto sotto resta per la storia. Nelle 34 leghe di football-data, quando le quote della
   partita non ci sono ancora (di solito fino al venerdì per il weekend), un rating delle squadre dalle quote di chiusura
   delle partite già giocate vale quasi quanto le quote della settimana. Su 46.177 partite di 18 leghe +1.24 punti di prese
   sull'Elo (`z = +8.6`, 18 leghe su 18), R² 0.928 sulla chiusura. Sul 2026/27 dei cinque campionati R² 0.900 contro 0.888
@@ -652,6 +659,13 @@ finora lo vedrebbe.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
 ## Stato attuale (`b95`)
+
+**Il rating dalle quote passate: il test passa** (10 novembre 2026, non ancora nello Scanner). Senza le quote della partita, un rating
+delle squadre dalle quote di chiusura delle partite già giocate, combinato col maestro coi pesi stimati sul mercato. Regola
+registrata e unita su main prima di aprire il test (PR #111). Sulle 6.296 partite di nove leghe mai guardate contro le quote
+(`batch/b94/livello`) la logloss 1X2 scende di 4.26‰ (`z = −4.54`, 7 leghe su 9); le prese non cambiano (+0.14 ±0.59). Chiude
+quasi un terzo della distanza fra il maestro e il mercato. Metterlo nello Scanner lo decide l'utente: vedi *Il rating dalle quote
+passate: la regola*, «Esito».
 
 **Il ristudio del batch del `b94`** (`b95`). Chiesto dall'utente dopo il batch completo: «controlla tutto quello che vuoi». Sulle
 31.969 partite non c'è niente di nuovo da mettere nel motore: le misure registrate reggono su leghe e partite mai viste (maestro
@@ -1077,6 +1091,7 @@ non passa mai +7.1. Trascina con sé il `12`.
 
 | campione | partite | note |
 |---|---|---|
+| **Il rating dalle quote passate** | **2.211 · 6.296** | Il test registrato del 10 novembre 2026 (vedi *Il rating dalle quote passate: la regola*). Esplorazione: le partite del batch del `b94` che il maestro non ha visto (Super League svizzera, Liga I, il 2026 di Cina, Finlandia e Irlanda, il 2026/27 delle sue leghe dopo il taglio), con la chiusura di football-data dell'8 novembre (`batch/fd-nov`). Test: `batch/b94/livello` (Austria, Danimarca, Messico, Norvegia, Svezia, MLS, Giappone, Argentina, Brasile, 2023–2025) con la chiusura dei file `new` scaricata il 10 novembre. Da qui queste partite sono guardate anche contro le quote di chiusura |
 | **Il batch completo del `b94`** | **31.969** | Rifatto dal 28 al 31 ottobre 2026, chiesto dall'utente per ristudiare i numeri (i batch vecchi non erano più sul computer della sessione): batch automatico del `b94` con `--scritture`, 115 file in `batch/b94/`, 31.969 partite su 31.969 in copia conforme, ID unici in tutte le cartelle, Elo rifatto dall'archivio identico in 115 file su 115, circa 210.000 chiamate in quattro giorni, nessuna fallita. Sono le 24 leghe dei batch di riferimento, coi cinque campionati, le sette leghe, League One, League Two e Süper Lig anche col 2026/27 giocato (fino al 25 ottobre), più le 25 del `b74` (il 2026 delle dieci leghe fino al 31 ottobre). I totali delle stagioni chiuse sono quelli dei batch di prima. Il 2026 delle nove leghe del livello dei gol è in `batch/disaccordo` (`b90`, stessi numeri). Fuori dalle misure, come prima, Super League 1 greca 2025/26 e Saudi Pro League 2023/24. Nessuna domanda nuova aperta: le leghe restano guardate per quello per cui lo erano già. Le partite del 2026/27 dal 3 ottobre sono del test dei tocchi in area, e lì i tocchi non si guardano. Il maestro è allenato su 14 di queste leghe (i cinque campionati, Championship, Eredivisie, Liga Portugal, 2. Bundesliga, Belgio, Scozia, League One, League Two, Süper Lig), dal 2023/24 al 2026/27 giocato fino a inizio ottobre: lì le sue probabilità vanno misurate fuori lega, come nel `b77`. Trovato strada facendo: in Serie A 2026/27 il clamp dell'HFA morde su 52 partite su 82 (grezzo da 25 a 32, tenuto a 30). Ristudiato per tutto dal 31 ottobre al 2 novembre 2026: vedi *Il ristudio del batch del `b94`* |
 | **Le giocate** | **47.662 · 1.118** | Solo descrittivo del 26 ottobre 2026 (vedi *Tutte le giocate*). Le quote di chiusura di football-data di 18 leghe, 2017/18-2026/27 (`batch/fd`, come per il rating dalle quote passate): quanto escono le 22 giocate. 1.118 quote reali di Serie A, giornate 1-7 del 2026/27 (un JSON dato dall'utente, fuori da git): il margine delle quote. Il maestro su `batch/2627b89` e `batch/disaccordo` |
 | **Il disaccordo con le quote** | **1.990 · 335** | Solo descrittivo del 24 ottobre 2026 (vedi *Il motore contro il mercato*, «Quando lo Scanner e le quote non sono d'accordo»). Il 2026 di Allsvenskan, Eliteserien, J. League, MLS, Liga Profesional e Série A brasiliana e il 2026/27 di Bundesliga austriaca, Superligaen e Liga MX col `b90` (`batch/disaccordo`), 1.990 su 1.990 in copia conforme, Elo identico su ogni file, 20.668 chiamate: mai usate per il maestro né aperte per altro. Più il 2026/27 dei cinque campionati (`batch/2627b89`). Guardato solo l'1X2 dello Scanner contro la chiusura di football-data, e il 26 ottobre per livello del rischio sorpresa (vedi *L'avviso di sorpresa*) |
@@ -4561,6 +4576,37 @@ partita, e solo nelle leghe con le quote automatiche (`QUOTE_FD`, 34). Allora:
 
 `python3 strumenti/quote-passate.py --scarica-prova`, poi `--prova batch/b94/livello`, rifanno il test.
 
+**Esito: passa.** Le quote dei file `new` sono state scaricate il 10 novembre 2026, dopo il merge della regola (PR #111). Delle
+6.472 partite del test, 6.296 hanno il rating; delle altre, 125 hanno una squadra sotto le 6 partite e 51 non sono agganciate a
+una riga di football-data con le quote.
+
+| lega | partite | contro il maestro | `z` | prese, maestro → candidato |
+|---|---|---|---|---|
+| Superligaen | 519 | −10.38‰ | −3.72 | 49.9 → 50.5% |
+| Liga MX | 666 | −6.69‰ | −2.01 | 50.8 → 51.4% |
+| MLS | 1.568 | −5.41‰ | −2.85 | 47.6 → 47.1% |
+| Liga Profesional | 497 | −4.56‰ | −1.39 | 40.8 → 41.0% |
+| J. League | 737 | −4.54‰ | −1.88 | 45.0 → 45.3% |
+| Allsvenskan | 695 | −4.30‰ | −1.50 | 49.4 → 50.8% |
+| Série A brasiliana | 359 | −2.33‰ | −0.50 | 52.1 → 54.0% |
+| Eliteserien | 694 | +0.37‰ | +0.14 | 54.8 → 53.6% |
+| Bundesliga austriaca | 561 | +1.25‰ | +0.42 | 48.8 → 48.7% |
+| **insieme** | **6.296** | **−4.26‰** | **−4.54** | 48.65 → 48.79% (+0.14 ±0.59) |
+
+Le tre condizioni ci sono tutte: `z ≤ −2`, meglio in 7 leghe su 9 (tutte con almeno 100 partite), prese che non calano.
+L'effetto è quello dell'esplorazione (−4.03‰).
+
+Descrittivi:
+- *l'R² sul log(p1/p2) di chiusura*: maestro 0.825, quote passate 0.877, candidato 0.891;
+- *la chiusura stessa* contro il maestro fa −13.48‰ (`z = −7.95`), con le prese a +0.59 ±0.73. Il candidato chiude quasi un
+  terzo della distanza fra il maestro e il mercato. Sulle prese nessuno dei due si muove di molto: qui anche il mercato prende
+  appena mezzo punto più del maestro;
+- *`a`, `b`, `c` stimati sul test*: +0.0049, 0.3298, 0.6852, vicini a quelli fissati.
+
+Cosa vuol dire. Senza le quote della partita, il candidato porta le probabilità più vicino a quelle del mercato e al vero, e
+indovina quanto il maestro. Serve a chi analizza le partite prima che escano le quote. Con le quote della partita non aggiunge
+niente (vedi *Il rating dalle quote passate*). Nello Scanner non c'è ancora: vedi *Da fare*.
+
 ### Il confronto contro squadre simili
 
 Chiesto dall'utente il 24 ottobre 2026: «dobbiamo affinare il confronto contro squadre simili. Usare più dati e soprattutto
@@ -6361,7 +6407,7 @@ misurate.
 | Il maestro coi bersagli dell'1X2 tolti alla Shin invece che in proporzione (regola registrata) | **no** | esplorazione sulle 14 leghe del maestro −0.51‰ (`z = −3.03`, 10 su 14), pendenza 1 contro 2 da 1.12 a 1.06; test sulle 33 leghe del test del maestro −0.14‰ (`z = −0.81`), 16 su 33. Lì il maestro del `b77` non era timido con gli sfavoriti (25.53% previsti, 25.52% vinti). Vedi *Il maestro coi bersagli di Shin: la regola* |
 | La diagonale gonfiata di Karlis–Ntzoufras (`δ` sui pareggi da 1-1 in su) sopra la matrice del maestro (solo descrittivo) | **quasi niente: il maestro ha chiuso il buco** | 23.278 partite delle 24 leghe, fuori lega `δ` 0.08–0.10: risultato esatto −0.42‰ (`z = −1.89`), Goal −0.28‰, Over 2.5 +0.16‰ (`z = +4.54`). Pareggi della matrice 24.4 → 25.6% contro 25.5% reali. Sulla matrice del `b63` valeva −1.80‰. Vedi *Da fare* |
 | Il disaccordo fra lo Scanner e le quote come segnale di sorpresa (solo descrittivo) | **no, al contrario** | 2.102 partite di 14 leghe, chiusura di football-data: dove lo Scanner crede al favorito del mercato 8 punti o più meno delle quote (277 partite) il favorito vince il 61.0%, contro il 55.1% del mercato e il 44.0% dello Scanner; dato il mercato il disaccordo pesa −0.31 ±0.20 su 1 contro 2. Coi favoriti diversi il pick dello Scanner vince il 30.7%, il favorito del mercato il 36.9%. Vedi *Il motore contro il mercato*, «Quando lo Scanner e le quote non sono d'accordo» |
-| Un rating delle squadre dalle quote di chiusura delle partite già giocate, quando le quote della partita non ci sono ancora (solo esplorazione) | **sì, da registrare** | 46.177 partite di 18 leghe dal 2019/20, fuori lega: prese 49.11 (Elo) → 50.35%, logloss −12.67‰ (`z = −16.17`), 18 leghe su 18; quote di prima della partita 50.58%, chiusura 50.85%. R² sulla chiusura 0.928 (Elo 0.802). Sul 2026/27 dei cinque campionati R² 0.900 contro 0.888 del maestro, 0.927 insieme. Con le quote della partita non aggiunge niente. Vedi *Il rating dalle quote passate* |
+| Un rating delle squadre dalle quote di chiusura delle partite già giocate, quando le quote della partita non ci sono ancora (esplorazione, poi test registrato) | **sì, test passato** (vedi *Le cose che hanno retto*) | 46.177 partite di 18 leghe dal 2019/20, fuori lega: prese 49.11 (Elo) → 50.35%, logloss −12.67‰ (`z = −16.17`), 18 leghe su 18; quote di prima della partita 50.58%, chiusura 50.85%. R² sulla chiusura 0.928 (Elo 0.802). Sul 2026/27 dei cinque campionati R² 0.900 contro 0.888 del maestro, 0.927 insieme. Con le quote della partita non aggiunge niente. Vedi *Il rating dalle quote passate* |
 | Il confronto contro squadre simili con più dati: il KNN su tutta la storia, i residui sul mercato, la risposta di ogni squadra allo stile dell'avversario, gli incastri di stile, pareggi e gol fra squadre simili (solo esplorazione) | **no** | 6.445 partite di 11 campionati dal 2024/25, storia mediana di 36 partite: i punti contro le simili misurano la forza (correlazione +0.344) ma sul residuo del mercato −0.006 (`z = −0.5`), dell'Elo +0.010; il rendimento particolare contro un tipo di avversario +0.015 (`z = +1.2`, 5 leghe su 11); la risposta allo stile da −0.003 a +0.004; 144 incastri fuori lega R² sotto zero; pareggi e Over fra stili simili dentro ±2.5 punti. Vedi *Il confronto contro squadre simili* |
 | La card «contro squadre simili» con tutte le 30 partite invece della stessa sede, e con altre metriche per dire chi è simile: il profilo dell'avversario prima della partita, solo la forza, lo stile, il rating dalle quote passate, l'Elo (solo esplorazione) | **le 30 sì per la card (nella card dal `b90`), la somiglianza no** | 4.112 partite di 11 campionati: coi punti della partita 0.294 → 0.338 con le 30 e la sede corretta (+0.044 ±0.016, 11 leghe su 11), errore a schermo ±0.39 → ±0.28; la card fa un po' peggio dei punti semplici delle stesse partite (0.294 contro 0.308), e la metrica migliore li raggiunge (0.351 contro 0.349); sopra l'Elo `z` ≤ +1.8, sul residuo del mercato fra −0.002 e +0.006. Tre delle 11 dimensioni di `KNN_DIMS` leggono la squadra stessa invece dell'avversario: correggerle non cambia niente. Vedi *Il confronto contro squadre simili* |
 | La qualità dell'undici in campo dai voti dei giocatori (`/players`), contro quella abituale (solo esplorazione) | **il mercato sì, le prese no** | 3.596 partite dei cinque campionati dal 2024/25: sul residuo della chiusura coefficiente +1.73 (`z = +29.1`, R² 0.19); sui risultati, col coefficiente del mercato, logloss −1.11‰ (`z = −1.20`), prese −0.33 (`z = −1.36`). Vedi *Il rating dalle quote passate* |
@@ -6388,6 +6434,7 @@ misurate.
 | **La quota fissa del primo gol** (`b75`) | registrata prima, 11.633 partite di 36 leghe mai aperte per questa domanda: somma delle logloss del gol prima del 30' e dell'Over 0.5 nel primo tempo −7.30‰ (`z = −4.93`), 29 leghe su 36; la card diventa calibrata |
 | **Il rating di pressione nel maestro** (nello Scanner nel `b82`, tolto nel `b83`: costava troppe chiamate) | registrato prima, 13.592 partite di 33 leghe, pressione su 7.648: 1X2 −0.54‰ (`z = −2.56`), risultato esatto −0.65‰ (`z = −2.66`), meglio in 10 leghe su 13 |
 | **L'arbitro nei gialli, Serie A e LaLiga** (nello Scanner dal `b85`) | registrato prima, 850 partite del 2025/26 e del 2026/27: conteggio dei gialli −18.88‰ (`z = −3.37`), Over 3.5 −13.44‰ (`z = −2.85`), meglio in 2 leghe su 2 |
+| **Il rating dalle quote passate insieme al maestro** (test registrato del 10 novembre 2026; non ancora nello Scanner) | senza le quote della partita, combinazione stimata sul mercato (0.36 al maestro, 0.65 al rating): sulle 6.296 partite di `batch/b94/livello` −4.26‰ di logloss 1X2 contro il maestro (`z = −4.54`), 7 leghe su 9, prese +0.14 ±0.59 |
 | **Chi fa più corner** (test registrato del 16 ottobre 2026; nello Scanner dal `b84`) | il totale dei corner diviso fra le due squadre con una beta-binomiale (corner previsti ed Elo): sui batch del `b74`, 7.120 partite, corner 1X2 −48.7‰ contro una frequenza fissa (`z = −14.79`), 23 leghe su 24; handicap ±1.5 −80.8‰ |
 | **Lo squilibrio sui tiri in porta** (`b42`) | registrato prima di vedere due leghe e passato su tutte e due; cinque leghe −0.0029 di logloss dell'Over 8.5, `z = −3.10`, positivo in 14 stagioni su 15 |
 
