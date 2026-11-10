@@ -97,6 +97,7 @@ def dati(R, feat, tipo):
 def main():
     args = sys.argv[1:]; prova = []
     if '--prova' in args: i = args.index('--prova'); prova = args[i + 1:]; args = args[:i]
+    qb.solo_motore(args + prova)
     F = feature(args); stanchezza(args, F)
     M = list({m['id']: m for d in args for f in sorted(glob.glob(os.path.join(d, '*.csv'))) for m in qb.leggi_csv(f)}.values())
     R = righe(qb.aggancia(M, qb.quote_fd('batch/quote')), F, lambda q: '12 leghe 2025/26' if '2025-2026' in q['file'] else 'esplorazione')

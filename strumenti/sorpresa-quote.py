@@ -49,6 +49,7 @@ def quote_comb():
     return np.array(W), np.array(B), T
 
 def leggi(dirs):
+    qb.solo_motore(dirs)
     M = list({m['id']: m for d in dirs for f in sorted(glob.glob(os.path.join(d, '*.csv'))) for m in qb.leggi_csv(f)}.values())
     return [m for m in M if m['tab'] and None not in m['p'] and m['lgModel'] is not None and m['lgElo'] is not None]
 

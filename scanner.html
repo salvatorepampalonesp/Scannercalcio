@@ -2686,7 +2686,7 @@ function statsVuote(d) {
   const all = d && Array.isArray(d.periods) && d.periods.find(p => p && p.period === 'All');
   if (!all || !Array.isArray(all.groups)) return false;
   const it = all.groups.flatMap(g => (g && g.items) || []).filter(x => x && !/card/i.test(x.key || ''));
-  return it.length >= 10 && it.every(x => [x.home, x.away].every(v => !(parseFloat(String(v).split(' ')[0]) > 0)));
+  return it.length >= 10 && it.every(x => [x.home, x.away].every(v => !(parseFloat(String(v).replace(',', '.').split(' ')[0]) > 0)));
 }
 
 function extractSafeStat(data, keys, isHome) {

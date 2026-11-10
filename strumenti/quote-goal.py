@@ -113,6 +113,7 @@ def main():
     if '--footiqo' in a: i = a.index('--footiqo'); cart = a[i + 1]; del a[i:i + 2]
     if '--scarica' in a: a.remove('--scarica'); scarica(cart)
     dirs = a or ['batch48', 'batch/2627']
+    qm.qb.solo_motore(dirs)
     W, b, OU = qm.costanti()
     M, Q = qm.carica(dirs, 'batch/quote')
     Q = [q for q in Q if q['lega'] in LEGHE.values()]

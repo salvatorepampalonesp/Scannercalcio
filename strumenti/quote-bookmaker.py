@@ -23,6 +23,25 @@ def num(s):
     try: return float(str(s).strip().replace('%', '').replace(',', '.'))
     except (TypeError, ValueError): return None
 
+def col_maestro(percorsi):
+    # i CSV col maestro acceso (dal b77): li' i lambda di ruolo, 1, X, 2 e i mercati gol sono del maestro, non del motore
+    out = []
+    for p in percorsi:
+        for f in ([p] if os.path.isfile(p) else sorted(glob.glob(os.path.join(p, '*.csv')))):
+            for r in csv.reader(io.open(f, encoding='utf-8-sig'), delimiter=';'):
+                if r and r[0] == 'Maestro: attivo':
+                    if 'si' in r[1:]: out.append(f)
+                    break
+                if r and r[0].startswith('=== ARCHIVIO'): break
+    return out
+
+def solo_motore(percorsi, nome=None):
+    nome = nome or os.path.basename(sys.argv[0]); F = col_maestro(percorsi)
+    if F:
+        sys.exit(f"{nome} misura il motore di prima del maestro: vale sui CSV fino al b76, o col maestro spento. {len(F)} file hanno il maestro acceso "
+                 f"(per esempio {os.path.basename(F[0])}): li' i lambda di ruolo, 1, X, 2 e i mercati gol sono del maestro. "
+                 "Vedi AGENTS.md, «Leggere un CSV del Comparatore».")
+
 def leggi_csv(f):
     righe = collections.defaultdict(list)
     for r in csv.reader(io.open(f, encoding='utf-8-sig'), delimiter=';'):
@@ -116,6 +135,7 @@ def aggancia(M, righe):
 def main():
     args = sys.argv[1:]; cq = 'batch/quote'
     if '--quote' in args: i = args.index('--quote'); cq = args[i + 1]; del args[i:i + 2]
+    solo_motore(args)
     M = [m for d in args for f in sorted(glob.glob(os.path.join(d, '*.csv'))) for m in leggi_csv(f)]
     M = list({m['id']: m for m in M}.values())
     scarica(cq); Q = aggancia(M, quote_fd(cq))

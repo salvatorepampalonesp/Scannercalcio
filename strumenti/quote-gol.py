@@ -78,6 +78,7 @@ def auc(p, y):
 def carica(args):
     cq = 'batch/quote'
     if '--quote' in args: i = args.index('--quote'); cq = args[i + 1]; del args[i:i + 2]
+    qb.solo_motore(args)
     M = [m for d in args for f in sorted(qb.glob.glob(os.path.join(d, '*.csv'))) for m in qb.leggi_csv(f)]
     M = list({m['id']: m for m in M}.values())
     qb.scarica(cq); return M, qb.aggancia(M, qb.quote_fd(cq))

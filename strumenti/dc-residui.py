@@ -219,6 +219,7 @@ def prova(dirs, dal):
 
 if __name__ == '__main__':
     a = sys.argv[1:]
+    qb.solo_motore([x for x in a if not x.startswith('--')] or ['batch48', 'batch4', 'batch/2627', 'batch/nuove', 'batch/livello'])
     if '--prova' in a:
         dal = REGOLA['dal']
         if '--dal' in a: i = a.index('--dal'); dal = a[i + 1]; del a[i:i + 2]

@@ -54,6 +54,7 @@ def main():
     if '--fattore' in a: i = a.index('--fattore'); F = float(a[i + 1]); del a[i:i + 2]
     allena = []
     if '--allena' in a: i = a.index('--allena'); allena = a[i + 1:]; a = a[:i]
+    qb.solo_motore(a + allena)
     if allena:
         A = carica(allena); g = sum(m['hg'] + m['ag'] for m in A); l = sum(m['lam'][0] + m['lam'][1] for m in A)
         print(f'--allena: {len(A)} partite, gol/lambda {g / l:.4f}')
