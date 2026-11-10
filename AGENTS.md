@@ -57,7 +57,7 @@ vedi *Le quote automatiche*); se non ci sono, le scrive l'utente. Per misurarle 
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b94`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b95`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -320,6 +320,12 @@ Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export rec
   volta sola, quando le partite nuove senza pari sono almeno 4.000 (verso marzo 2027): batch automatico
   della stagione in corso, poi `python3 strumenti/dc-residui.py --prova <cartelle>`. Vedi *Il Dixon-Coles
   contro i risultati reali*, «La regola dei tocchi in area».
+  **La regola va riscritta prima di guardare** (trovato il 10 novembre 2026): è del 2 ottobre, prima del maestro (`b77`),
+  e dice che se l'1X2 del motore cambia si riscrive. Dal `b77` l'1X2 a schermo è del maestro, che ha già i tocchi in area
+  previsti fra le sue 65 variabili. La regola confronta B col motore (`σ(lgTarget)`), non con quello che lo Scanner mostra,
+  e sui CSV dal `b77` `dc-residui.py` prenderebbe le prese dalle righe `1`, `X`, `2`, che sono del maestro. Lo strumento ora
+  si ferma sui CSV col maestro (vedi *Leggere un CSV del Comparatore*). Da decidere prima del test: B contro il maestro, o i
+  tocchi pesati di più dentro il maestro, con pesi fissati sulle 24 leghe e scritti qui.
 - [ ] **La motivazione di fine stagione, senza quote.** Solo esplorazione, sulle 24 leghe già guardate, dal
   solo archivio di lega (nessuna chiamata). Nelle ultime 6 giornate, una squadra è «motivata» se può ancora
   cambiare zona (primo posto, primo quarto della classifica, metà, ultimi tre), con 3 punti per ogni partita
@@ -568,7 +574,9 @@ qui ha bisogno di dati nuovi, non di rifare questi.
 - [ ] **Il maestro timido coi favoriti netti.** Col pick al 65% o più dice 72.4% ed esce il 76.1% (24 leghe); sul 2026/27 al
   60% o più dice 68.7% ed esce l'85.0% (60 partite). Ricalibrato sui risultati vale −0.13‰ (`z = −0.64`): cambia il numero a
   schermo, non il pick. Per metterlo serve una regola registrata e partite nuove. Vedi *Il motore contro il mercato*, «Il
-  2026/27, e quanto del mercato sta nelle statistiche».
+  2026/27, e quanto del mercato sta nelle statistiche». Sul batch del `b94` lo stesso: sulle 34 leghe mai viste dal maestro,
+  col pick al 65% o più, 70.9% detto e 75.7% uscito (±2.8); sul 2026/27 dopo il taglio 72.2 e 80.4% (56 partite). Vedi *Il
+  ristudio del batch del `b94`*.
 - [x] ~~**Le rese della famiglia dei numeri nel tabellone, coi corner del `b76`.**~~ — **misurate senza batch: non
   cambiano, l'etichetta resta** (17 ottobre 2026). I batch con `--scritture` (motore `b75`) hanno lo storico che il motore
   estrae, e da lì si rifanno `λ` e base dei corner del `b76`; tiri in porta e gialli il motore non li ha cambiati
@@ -622,6 +630,13 @@ qui ha bisogno di dati nuovi, non di rifare questi.
 - [ ] `cmpDcPredict` (il predittore di riserva del Comparatore) tratta `vaep_def`/`pv_def`
   con la forma moltiplicativa: sulle righe `riserva-*` quei due numeri non valgono.
 - [ ] Facoltativo: una difesa contro la cache del browser (`no-store` o query string).
+- [ ] **Due casi limite del motore, trovati rifacendo lo schermo** (2 novembre 2026, vedi *Il ristudio del batch del `b94`*). Nessuno
+  dei due è misurato contro il reale:
+  - in `buildStats` un NPxG nullo o zero vale l'xG (`safe_npxg`), anche quando lo zero è vero: in una partita con un solo rigore
+    l'NPxG della squadra diventa l'xG del rigore (0.79);
+  - le correzioni dei corner del `b76` (`_corOk`) saltano quando una delle quattro medie dei corner della coppia è 0, anche vera: la
+    squadra con una sola partita nello storico e 0 corner fatti o subiti, alla seconda giornata. Allora il motore usa la formula
+    di prima e dice corner attesi da 3.2 a 13.0: 11 partite su 31.969.
 
 ### Mai verificato
 
@@ -634,13 +649,31 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b94`)
+## Stato attuale (`b95`)
+
+**Il ristudio del batch del `b94`** (`b95`). Chiesto dall'utente dopo il batch completo: «controlla tutto quello che vuoi». Sulle
+31.969 partite non c'è niente di nuovo da mettere nel motore: le misure registrate reggono su leghe e partite mai viste (maestro
+sull'1X2 −4.4‰ e sul risultato esatto −13.0‰ contro il motore, rischio sorpresa, chi fa più corner, le giocate). Sono emersi tre
+difetti, corretti nel `b95`:
+- *il Comparatore* scriveva nella sezione MERCATI del CSV, e nella sua tabella a schermo, Goal, NoGoal, Over 2.5 e Under 2.5 del
+  motore e non del maestro (dal `b77`), in media 3–4 punti lontano;
+- *la PitchAPI* risponde dal 9 ottobre 2026, per tutte le partite della K League 2 (e per 5 partite di Ecuador, Serie B brasiliana
+  e Cile), con le statistiche di squadra tutte a zero tranne i gialli. Il motore le leggeva come vere. Rifatta la K League 2
+  col `b95`, fino al 15 ottobre niente cambia; dal 16 (20 partite) i tiri in porta attesi salgono da 7.99 a 8.52 e l'Over 2.5
+  del maestro da 44.1 a 45.1%. Dal `b95` una risposta così è come una risposta mancante (`statsVuote`), nel motore e nel
+  reale del CSV;
+- *`numeri-schermo.py`* mescolava lo storico delle leghe e, su tutto il batch, segnava 46.641 numeri giusti come diversi: ora 0.
+
+In `PICK_RESA.fuori` entrano K League 1, Liga de Primera cilena e USL Championship (37 leghe), e il 2026 di Colombia, Ecuador,
+Perù, Cina e Irlanda è rifatto con le partite fino al 31 ottobre. Vedi *Il ristudio del batch del `b94`*.
+
 
 **Tutte le giocate** (`b94`). Chiesto dall'utente: le probabilità di doppie chance, gol e combo segno + gol, e le loro quote.
 Nella scheda Tabellone, sotto il tabellone, la card «Tutte le giocate» ha 22 giocate (1X2, doppie chance, Over/Under 2.5,
 Goal/NoGoal, le 12 combo), ognuna con la probabilità, la quota del bookmaker (o stimata col margine medio dove non c'è) e la
 quota equa, dalla più probabile. Con le quote di chiusura (47.662 partite di 18 leghe) ogni giocata esce quanto dice, entro 1.4
-punti; senza quote Over e Goal stanno 2-4 punti sotto il vero. Il `b93` ne faceva la bolletta di un gioco coi colleghi (punti,
+punti; senza quote Over e Goal stanno 1.6 e 1.9 punti sotto il vero (14.611 partite di 34 leghe mai viste dal maestro, batch del
+`b94`; sulle prime 2.330 erano 2-4). Il `b93` ne faceva la bolletta di un gioco coi colleghi (punti,
 giornata): l'utente l'ha tolta. Nessun'altra probabilità cambia. Vedi *Tutte le giocate*.
 
 **La voce da stadio** (`b92`). L'utente ha visto Toto-Amici (il sito del suo gioco coi colleghi) e ha chiesto idee belle, non
@@ -1042,7 +1075,7 @@ non passa mai +7.1. Trascina con sé il `12`.
 
 | campione | partite | note |
 |---|---|---|
-| **Il batch completo del `b94`** | **31.969** | Rifatto dal 28 al 31 ottobre 2026, chiesto dall'utente per ristudiare i numeri (i batch vecchi non erano più sul computer della sessione): batch automatico del `b94` con `--scritture`, 115 file in `batch/b94/`, 31.969 partite su 31.969 in copia conforme, ID unici in tutte le cartelle, Elo rifatto dall'archivio identico in 115 file su 115, circa 210.000 chiamate in quattro giorni, nessuna fallita. Sono le 24 leghe dei batch di riferimento, coi cinque campionati, le sette leghe, League One, League Two e Süper Lig anche col 2026/27 giocato (fino al 25 ottobre), più le 25 del `b74` (il 2026 delle dieci leghe fino al 31 ottobre). I totali delle stagioni chiuse sono quelli dei batch di prima. Il 2026 delle nove leghe del livello dei gol è in `batch/disaccordo` (`b90`, stessi numeri). Fuori dalle misure, come prima, Super League 1 greca 2025/26 e Saudi Pro League 2023/24. Nessuna domanda nuova aperta: le leghe restano guardate per quello per cui lo erano già. Le partite del 2026/27 dal 3 ottobre sono del test dei tocchi in area, e lì i tocchi non si guardano. Il maestro è allenato su 14 di queste leghe (i cinque campionati, Championship, Eredivisie, Liga Portugal, 2. Bundesliga, Belgio, Scozia, League One, League Two, Süper Lig), dal 2023/24 al 2026/27 giocato fino a inizio ottobre: lì le sue probabilità vanno misurate fuori lega, come nel `b77`. Trovato strada facendo: in Serie A 2026/27 il clamp dell'HFA morde su 52 partite su 82 (grezzo da 25 a 32, tenuto a 30) |
+| **Il batch completo del `b94`** | **31.969** | Rifatto dal 28 al 31 ottobre 2026, chiesto dall'utente per ristudiare i numeri (i batch vecchi non erano più sul computer della sessione): batch automatico del `b94` con `--scritture`, 115 file in `batch/b94/`, 31.969 partite su 31.969 in copia conforme, ID unici in tutte le cartelle, Elo rifatto dall'archivio identico in 115 file su 115, circa 210.000 chiamate in quattro giorni, nessuna fallita. Sono le 24 leghe dei batch di riferimento, coi cinque campionati, le sette leghe, League One, League Two e Süper Lig anche col 2026/27 giocato (fino al 25 ottobre), più le 25 del `b74` (il 2026 delle dieci leghe fino al 31 ottobre). I totali delle stagioni chiuse sono quelli dei batch di prima. Il 2026 delle nove leghe del livello dei gol è in `batch/disaccordo` (`b90`, stessi numeri). Fuori dalle misure, come prima, Super League 1 greca 2025/26 e Saudi Pro League 2023/24. Nessuna domanda nuova aperta: le leghe restano guardate per quello per cui lo erano già. Le partite del 2026/27 dal 3 ottobre sono del test dei tocchi in area, e lì i tocchi non si guardano. Il maestro è allenato su 14 di queste leghe (i cinque campionati, Championship, Eredivisie, Liga Portugal, 2. Bundesliga, Belgio, Scozia, League One, League Two, Süper Lig), dal 2023/24 al 2026/27 giocato fino a inizio ottobre: lì le sue probabilità vanno misurate fuori lega, come nel `b77`. Trovato strada facendo: in Serie A 2026/27 il clamp dell'HFA morde su 52 partite su 82 (grezzo da 25 a 32, tenuto a 30). Ristudiato per tutto dal 31 ottobre al 2 novembre 2026: vedi *Il ristudio del batch del `b94`* |
 | **Le giocate** | **47.662 · 1.118** | Solo descrittivo del 26 ottobre 2026 (vedi *Tutte le giocate*). Le quote di chiusura di football-data di 18 leghe, 2017/18-2026/27 (`batch/fd`, come per il rating dalle quote passate): quanto escono le 22 giocate. 1.118 quote reali di Serie A, giornate 1-7 del 2026/27 (un JSON dato dall'utente, fuori da git): il margine delle quote. Il maestro su `batch/2627b89` e `batch/disaccordo` |
 | **Il disaccordo con le quote** | **1.990 · 335** | Solo descrittivo del 24 ottobre 2026 (vedi *Il motore contro il mercato*, «Quando lo Scanner e le quote non sono d'accordo»). Il 2026 di Allsvenskan, Eliteserien, J. League, MLS, Liga Profesional e Série A brasiliana e il 2026/27 di Bundesliga austriaca, Superligaen e Liga MX col `b90` (`batch/disaccordo`), 1.990 su 1.990 in copia conforme, Elo identico su ogni file, 20.668 chiamate: mai usate per il maestro né aperte per altro. Più il 2026/27 dei cinque campionati (`batch/2627b89`). Guardato solo l'1X2 dello Scanner contro la chiusura di football-data, e il 26 ottobre per livello del rischio sorpresa (vedi *L'avviso di sorpresa*) |
 | **Il confronto contro squadre simili** | **7.392** | Solo esplorazione del 24 ottobre 2026 (vedi *Il confronto contro squadre simili*). `/stats` e `/advanced` di tutte le partite di lega di 11 campionati dal 2024/25 (`batch/stile`, 17.183 chiamate), con le quote di chiusura di football-data: guardati KNN, stili e residui sul mercato di 1X2, pareggi e Over 2.5; poi la card con tutte le 30 partite e altre metriche (4.112 partite) |
@@ -2193,6 +2226,9 @@ cella: detta, uscita, errore medio di calibrazione in punti.
     la regola*, «Esito»);
   - la più probabile di ogni gruppo: 1X2 48.6 e 49.2%, doppia 76.4 e 75.4%, Over/Under 56.8 e 57.9%, Goal/NoGoal 55.3 e 56.5%,
     combo 31.5 e 32.1% (±1.8–2.1).
+- *Senza quote, sul batch del `b94`*: 14.611 partite delle 34 leghe che il maestro non ha visto. Ogni giocata esce quanto dice
+  entro 1.1 punti, tranne Over 2.5 (51.6% detto, 53.2% uscito) e Goal (53.3 e 55.2%), coi loro contrari. La più probabile di ogni gruppo, detta e
+  uscita: 1X2 48.3 e 48.9%, doppia 76.2 e 76.9%, Over/Under 56.2 e 56.6%, Goal/NoGoal 55.3 e 55.5%, combo 31.2 e 31.4% (±0.7–0.8).
 
 **I margini delle quote** (`python3 strumenti/giocate.py --quote <file>`, con un JSON di quote reali dato dall'utente, fuori da
 git). Sono 1.118 quote di 70 partite delle prime sette giornate di Serie A 2026/27, con la chiusura di football-data.
@@ -2313,6 +2349,128 @@ scrive `PAESE:Nome`.
 sono uguali (una chiamata); senza `--prova` riscrive il file e le due copie. Se l'API non elenca più
 una lega o una stagione che il file ha, si ferma senza riscrivere: i batch e i CSV si appoggiano a
 quelle. Poi, siccome `scanner.html` cambia, build nuova e banco (skill `nuova-build`).
+
+## Il ristudio del batch del `b94`
+
+Chiesto dall'utente dopo il batch completo del `b94` (*Campioni su cui si è misurato*): «controlla tutto quello che vuoi
+nell'ordine che desideri». Solo misura, dal 31 ottobre al 2 novembre 2026, sulle 31.969 partite in copia conforme di
+`batch/b94`. Nessuna domanda nuova aperta. Le partite stanno in tre gruppi, secondo cosa ha visto il maestro:
+- *mai viste*: le 34 leghe fuori dal suo allenamento, 14.611 partite;
+- *il 2026/27 dopo il taglio*: dal 3 ottobre 2026, o tutto per Bundesliga, League One, League Two e Süper Lig, che non erano
+  in `batch/2627`: 707 partite di 14 leghe;
+- *l'allenamento*: le 14 leghe del maestro fino a lì, 16.126 partite, in campione.
+
+Fanno 31.444: le altre 525 sono dei due file fuori dalle misure (Saudi Pro League 2023/24, 297, e Super League 1 greca 2025/26,
+228).
+
+Gli script stanno nel computer della sessione, non nel repository: rifanno tutto dai CSV in qualche secondo ciascuno.
+
+**Lo schermo è quello delle regole.** Sul batch vero:
+- `maestro.py --schermo` e `corner-differenza.py --schermo` coincidono entro l'arrotondamento del CSV;
+- `numeri-schermo.py`, dopo le due correzioni dello strumento (vedi sotto), dà 0 numeri fuori su circa 1,4 milioni.
+
+**L'1X2.**
+
+| | mai viste | il 2026/27 | l'allenamento |
+|---|---|---|---|
+| logloss, maestro meno motore | −4.44‰ (`z = −5.61`, 26 leghe su 34) | −12.47‰ (`z = −3.38`) | −4.57‰ (`z = −6.69`) |
+| prese, maestro e motore | 48.90 e 48.63% (+0.27, `z = +1.36`) | | |
+| pick al 65% o più: detto, uscito | 70.9 e 75.7% (±2.8) | 72.2 e 80.4% (56 partite) | 72.9 e 76.3% |
+
+- *Le soglie* sulle leghe mai viste (≥50 / 55 / 60 / 65 / 70): 59.8 / 64.0 / 68.6 / 75.7 / 79.5% su 37 / 23 / 13 / 7 / 3% del
+  calendario. Nei cinque campionati, in campione, 62.9 / 67.6 / 72.8 / 76.0 / 79.7% su 49 / 35 / 24 / 16 / 9%; `PICK_RESA`
+  dice 62.8 / 67.4 / 72.2 / 76.0 / 79.1.
+- *Le rese per lega di `PICK_RESA`*, rifatte sulle stesse stagioni, coincidono con quelle scritte nello Scanner. Le leghe mai viste
+  dal maestro tornano entro un punto (la più lontana è la Super League svizzera, 66.7% scritto e 67.8 rifatto); la J. League ha
+  81 partite sopra il 55% invece di 92 (53.1% contro 51.1). Sulle stagioni
+  nuove 2 leghe su circa 20 escono dai 2se: First Division A +19.6 su 29 partite, Eredivisie −14.0 su 47. È quanto dà il caso.
+- *Il maestro timido coi favoriti netti* si ripete ovunque (vedi *Da fare*).
+
+**I gol** sulle leghe mai viste, maestro meno motore:
+
+| | Over 1.5 | Over 2.5 | Over 3.5 | Goal | risultato esatto |
+|---|---|---|---|---|---|
+| logloss | −2.55‰ (`z = −3.36`) | −3.24‰ (`z = −3.63`) | −3.86‰ (`z = −4.24`) | −1.77‰ (`z = −2.54`) | −12.96‰ (`z = −8.90`) |
+| detto (maestro / motore) e uscito | 75.8 / 77.0 e 75.9% | 51.6 / 53.3 e 53.2% | 29.9 / 31.5 e 31.2% | 53.3 / 54.4 e 55.2% | |
+
+- AUC dentro la lega: Over 2.5 0.556 (motore 0.537), Goal 0.534 (0.522).
+- Sul 2026/27 si segna di più: 2.97 gol a partita contro 2.85 di lambda del maestro; Over 2.5 53.8% detto, 55.9% uscito.
+- Gol su lambda del maestro, per lega, da 0.86 (Liga Profesional) a 1.15 (Primera A colombiana).
+
+**Il rischio sorpresa**, sulle 7.394 partite delle leghe del `b74`, che `SORPRESA_TAB` non ha visto:
+- ALTO esce nel 3.2% delle partite: lo sfavorito, detto al 35.7%, vince il 38.6% (±6.3);
+- medio (53.0% delle partite): 30.2 detto, 30.1 uscito; basso (43.8%): 18.7 e 18.3;
+- col disaccordo fra modello ed Elo lo sfavorito vince +0.61 punti oltre il previsto (±2.54), con l'accordo −0.30 (±1.07).
+
+**Chi fa più corner**, sulle 707 partite del 2026/27, mai viste per questa domanda:
+- contro la frequenza della lega −41.1‰ (`z = −4.03`), meglio in 14 leghe su 14; l'handicap ±1.5 −81.5‰ (`z = −5.10`);
+- qui la casa fa meno corner del previsto: più corner la casa 53.9% detto, 49.9% uscito. Lo stesso nel test del `b74` (53.1 e
+  51.9).
+
+**Il tabellone**: quanto rende sopra il giocarlo alla cieca, sulle leghe mai viste, contro l'etichetta.
+
+| famiglia | FORTE / GIOCABILE / MARGINALE | l'etichetta |
+|---|---|---|
+| 1X2 | +26.2 / +13.9 / +7.4 (±1.5 / 0.9 / 0.9) | +29.5 / +17.1 / +9.0 |
+| gol | +14.6 ±15.6 (38) / +7.3 ±2.2 / +4.4 ±1.1 | +24.3 / +13.2 / +6.8 |
+| numeri | +2.7 / +4.3 / +2.4 (±1.3–2.0) | +7.2 / +10.2 / +8.2 |
+| chi fa più corner | +25.7 / +15.0 / +6.3 | +26.6 / +13.7 / +6.6 |
+
+- Nei cinque campionati, in campione, le etichette tornano: 1X2 +29.8 / +17.0 / +8.8, gol +25.0 / +12.9 / +6.9.
+- La proposta in cima rende +16.3 nei cinque campionati, +12.5 nelle altre leghe dell'allenamento, +10.6 nelle mai viste, +9.8
+  ±3.6 nel 2026/27.
+- Fuori dai cinque campionati le etichette promettono più di quanto rendono: 3 punti l'1X2, la metà i gol GIOCABILE, molto i
+  numeri (vedi *Le leghe mai viste*). L'etichetta resta, per scelta dell'utente.
+
+**I mercati sui numeri**, sulle leghe mai viste, contro la loro base di lega: corner Over 9.5 −21.9‰ (`z = −11.3`), tiri in
+porta Over 8.5 −15.3‰ (`z = −11.2`), gialli Over 3.5 −54.9‰ (`z = −17.6`). AUC dentro la lega 0.537, 0.558 e 0.566. La previsione
+batte la base perché la base sbaglia da lega a lega (vedi *Il riferimento di lega vero: misurato*).
+
+**Le giocate senza quote**: vedi *Tutte le giocate*, «Senza quote, sul batch del `b94`».
+
+**Trovato, e corretto nel `b95`.**
+- *Le righe Goal, NoGoal, Over 2.5 e Under 2.5 della sezione MERCATI del CSV*, e la tabella dei mercati a schermo del
+  Comparatore, portavano dal `b77` la matrice di ruolo del motore e non quella del maestro: 0.03 punti dalla matrice del motore,
+  in media 4.0 (Over) e 3.1 (Goal) da quella del maestro. Il banco le confrontava con la colonna del motore. Lo Scanner non
+  c'entrava (vedi *Leggere un CSV del Comparatore*).
+- *Le statistiche vuote della PitchAPI*: dal 9 ottobre 2026 tutte le 28 partite della K League 2, e 5 partite di Serie A
+  ecuadoriana, Serie B brasiliana e Liga de Primera cilena, hanno `/stats` con ogni voce a «0» tranne i gialli (verificato con
+  una chiamata). Il motore le leggeva come zeri veri, e il reale del CSV diceva 0 corner. Quanto pesava, rifacendo la K League
+  2 2026 col `b95` (`batch/b95-prova`: 251 partite in copia conforme, Elo identico, 2.120 chiamate), sulle 239 partite in
+  comune col batch del `b94`:
+  - fino al 15 ottobre 219 partite su 219 identiche: le partite vuote non erano ancora nello storico di nessuna squadra;
+  - dal 16 ottobre (20 partite) tiri in porta attesi 7.99 → 8.52 (+6.6%), corner 8.79 → 9.11, Over 2.5 del maestro 44.1 →
+    45.1%, 1X2 spostato in media di 0.7 punti (al massimo 2.2);
+  - dal 23 al 31 ottobre (12 partite, fino a 3 partite vuote su 29 nello storico) tiri in porta 7.73 → 8.47 (+9.6%), Over
+    43.1 → 44.6%;
+  - nel CSV del `b95` il reale di corner e gialli è N/D sulle 28 partite vuote e su nessun'altra;
+  - anche le 12 partite giocate dopo il batch del `b94` sono vuote: la PitchAPI lo fa ancora.
+
+  Vedi *Politica sui valori mancanti*.
+- *`PICK_RESA.fuori`*: con le partite fino al 31 ottobre hanno almeno 50 partite col pick sopra il 55% anche K League 1 (52:
+  51.9%), Liga de Primera cilena (50: 62.0%) e USL Championship (57: 66.7%), uscite nel `b77`. Restano fuori Serie B brasiliana
+  (40), Veikkausliiga (47), Challenge League (43), 1. liga slovacca (45), K League 2 (35), 1. Division danese (27).
+- *`numeri-schermo.py`* prendeva lo storico di una squadra da tutte le leghe dei batch: una squadra promossa o retrocessa
+  mescolava due storie, e su tutto il batch lo strumento dava 46.641 numeri diversi su circa 1,4 milioni. Con lo storico della
+  lega della partita ne restano 152 (73 nei cinque campionati), tutti da due casi limite del motore che lo strumento non
+  seguiva: l'NPxG zero che vale l'xG (130 numeri, palla inattiva e cecchino) e la correzione dei corner che salta (22 numeri,
+  11 partite). Vedi *Da fare*, «Due casi limite del motore». Con lo strumento allineato, 0.
+- *`controlla-csv.py`* dice su quante partite il reale dei corner è N/D.
+
+**Visto, e lasciato com'è: il clamp dell'HFA fuori dai cinque campionati.** Nei cinque campionati 2023/24–2025/26 non morde
+mai (0 partite su 5.230), come nel `b41`. Fuori sì: 4.276 partite su 31.444 (13.6%), in 21 file di 17 leghe.
+- *Tenuto a 100* (2.997 partite, grezzo da 101 a 138): MLS 2023 e 2024, Liga Profesional 2025, Série A brasiliana 2025, Serie B
+  brasiliana 2026, Primera A colombiana 2026, Liga 1 peruviana 2026 (276 su 276), e in parte HNL, Liga MX e Super League
+  svizzera.
+- *Tenuto a 30* (1.279 partite): K League 2 2026 (239 su 239, grezzo da −15 a 1), Bundesliga austriaca, Ligat ha'Al, A-League
+  2025/26, 1. Division danese, e in parte Serie A 2026/27 (52 su 82, grezzo da 25 a 32), Super Liga serba e Saudi Pro League.
+- *Col grezzo al posto del clamp*, sull'1 contro 2 del motore (righe `A/B REGOLA DELL HFA` del CSV, 3.113 partite senza pari):
+  +1.06‰ ±1.21 di logloss (`z = +1.75`), meglio col grezzo in 4 leghe su 17. Tenuto a 100 +0.53‰ ±1.39, tenuto a 30 +2.29‰
+  ±2.40; lo shrinkage +0.15‰ (`z = +0.44`).
+- *Col maestro*, la casa vince il 45.7% dove il grezzo sta sopra 100 (detto 44.1, ±1.8) e il 40.7% dove sta sotto 30 (detto
+  41.8, ±2.7).
+
+Fuori dai cinque campionati il clamp non è inerte, ma dove morde il grezzo non fa meglio: resta com'è.
 
 ## Le leghe mai viste
 
@@ -2436,7 +2594,7 @@ irlandese (44), Veikkausliiga (44), Challenge League (46).
 
 La nota di lega in cima all'analisi dice la resa sopra il 55% col suo ±2se e le stagioni (`_seResa`),
 e lo stesso fa il mega-prompt. «In breve» resta com'era. La card delle soglie non elenca più le leghe
-una per una: sono 38, e dice l'intervallo. Le rese sono del motore `b48`: l'1X2 non è cambiato da
+una per una: sono 38 (34 dal `b77`, 37 dal `b95`), e dice l'intervallo. Le rese sono del motore `b48`: l'1X2 non è cambiato da
 allora. Una lega con una stagione sola (2025/26, 2026) va rimisurata quando ne avrà due.
 
 ## Politica sui valori mancanti
@@ -2452,6 +2610,12 @@ allora. Una lega con una stagione sola (2025/26, 2026) va rimisurata quando ne a
   disallinea gli indici dalle date.
 - La tabella «Copertura Dati API» distingue una metrica assente (0%) da una con zeri
   legittimi. `N/D` solo a copertura zero.
+- **Una risposta di `/stats` vuota è una risposta mancante** (dal `b95`, `statsVuote`): se ogni voce del periodo `All`, tolti
+  i cartellini, vale 0 per tutte e due le squadre (almeno 10 voci), il motore fa come se `/stats` non fosse arrivata, e il
+  Comparatore scrive N/D nel reale. In una partita vera passaggi e possesso non sono mai zero. La PitchAPI lo fa per tutte le
+  partite della K League 2 dal 9 ottobre 2026: tiri, corner, passaggi e possesso a «0», i gialli giusti. Fino al `b94` lo zero
+  entrava nelle medie. Si perdono anche i gialli di quelle partite: il prezzo della regola semplice. I valori si leggono come
+  in `extractSafeStat`, con la virgola come decimale: uno «0,45» non è zero.
 
 ## Convenzioni del motore
 
@@ -2498,11 +2662,12 @@ testo, lo modifica con delle regex e lo esegue con `new Function`. Dipende quind
 1. **La cache condivisa** resta dichiarata esattamente `let globalLeagueMatchesCache = [];`.
    Cambiando `let`, nome o posizione, il batch smette di popolare le partite.
 2. **I nomi delle funzioni-motore** sono chiamati per nome (`exposeNames` in
-   `loadEngineFromText`), ventidue: `apiCall`, `avviaScanner`, `aggregaTeam`,
+   `loadEngineFromText`), ventitré: `apiCall`, `avviaScanner`, `aggregaTeam`,
    `extractSafeStat`, `buildGlobalElo`, `calcDCMatrix`, `markovFlow`, `probsFromMatrix`,
    `estimateRho`, `calculateRho`, `getSimilarMatches`, `computeLeagueParams`, `multigoal`,
    `asianHandicapMat`, `negBinCDF`, `negBinK`, `poisson`, `expectedPoints`, `loadLegheJson`,
-   `fetchMatchRaw`, `predictStat`, `_isPast`. Il contenuto è libero, i nomi no. Dal `b68`
+   `fetchMatchRaw`, `predictStat`, `_isPast`, e dal `b95` `statsVuote` (il Comparatore la usa per il reale; con un motore
+   che non l'ha il reale resta com'era). Il contenuto è libero, i nomi no. Dal `b68`
    l'esposizione azzera un nome che il motore caricato non ha: prima restava su `window` la
    funzione del motore caricato prima, e un motore vecchio sembrava completo.
 3. **L'hook** si aggancia alla riga della confidence,
@@ -2644,17 +2809,23 @@ giornata: in ogni riga la barra e l'1X2 sono quelli con le quote se la partita l
 arancione solo lì), e lo stesso la barra della partita in vista. Controllo di potenza: con la barra del maestro rimessa nelle
 righe fallisce sulle 2 partite con le quote automatiche. Dal `b94` controlla tutte le giocate: in ogni partita e nei dieci casi
 delle quote le 22 giocate (le combo di un tipo sommano al segno, quote vere o stimate, l'ordine) e la card (vedi *Tutte le
-giocate*).
+giocate*). Dal `b95` la lega finta ha le statistiche vuote come la K League 2: la giornata prima di quella analizzata risponde con
+tutti i conteggi a zero tranne i gialli. Il banco controlla che nello storico del motore quelle partite non abbiano corner né tiri
+in porta e le altre sì, e che nel CSV del batch e dello sweep il reale dei corner sia N/D su quelle e solo su quelle. Dal `b95` le
+righe Goal, NoGoal, Over 2.5 e Under 2.5 della sezione MERCATI si confrontano con la riga «Verdetto (maestro)» della card dei
+modelli: fino al `b94` portavano il motore, e il banco le confrontava con la colonna del Dixon-Coles di ruolo, cioè confermava il
+difetto. Controllo di potenza: su una copia con `statsVuote` spenta il banco fallisce nel motore (1 partita vuota nello storico, 0
+senza corner) e nel CSV del batch e dello sweep.
 
-Esito al `b94` (storico 30), a 390px con tutte le 30 card aperte, scheda per scheda e in tutte e quattro le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, il prompt della giornata con note e istruzioni una volta sola e un blocco per partita, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, il caso dell'arbitro col rapporto rifatto da `arbitri.json`, gli indisponibili segnati, nel prompt e tolti, la loro ricerca, l'elenco della giornata con le quote, tutte le giocate in ogni partita e nei dieci casi delle quote, 0 px):
+Esito al `b95` (storico 30), a 390px con tutte le 30 card aperte, scheda per scheda e in tutte e quattro le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, il prompt della giornata con note e istruzioni una volta sola e un blocco per partita, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, il caso dell'arbitro col rapporto rifatto da `arbitri.json`, gli indisponibili segnati, nel prompt e tolti, la loro ricerca, l'elenco della giornata con le quote, tutte le giocate in ogni partita e nei dieci casi delle quote, le statistiche vuote nel motore e nel CSV, 0 px):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
 | una partita, tutte del giorno, intervallo | 3/3 | 0 su 204 | 0 su 131 | 0 |
-| batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse) | 0 su 204 | 0 su 131 | 0 |
+| batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse); reale dei corner N/D sulle 5 partite vuote e su nessun'altra | 0 su 204 | 0 su 131 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
-| `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 142-167 | 84-90 | 0 |
-| `vecchio`: motore `b93` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 su 204 | 1 | 0 |
+| `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 145-168 | 81-91 | 0 |
+| `vecchio`: motore `b94` caricato (controllo) | 0/3, «motore caricato diverso ...» | 11-72 su 204 (le partite vuote nello storico: corner, tiri e quello che ne discende); senza partite vuote 0 su 204 | 9-69; senza partite vuote 1 | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -2776,7 +2947,10 @@ Al `b91` il controllo col `b90` non vede nessuna scrittura diversa, solo il cert
 fuori dal motore. Al `b92` il controllo col `b91` vede 1 scrittura diversa su 204, il tabellone (`verdetti-body`, scritto da
 `_htmlVerdetti` con le barre nuove), e nel CSV solo il certificato. Al `b93` il controllo col `b92` non vede nessuna scrittura
 diversa, solo il certificato: la bolletta sta fuori dal motore e scrive con `innerHTML` diretto. Al `b94` lo stesso col `b93`:
-la card delle giocate sta fuori dal motore e scrive con `innerHTML` diretto.
+la card delle giocate sta fuori dal motore e scrive con `innerHTML` diretto. Al `b95` il controllo col `b94` vede 11-72 scritture
+diverse su 204 e 9-69 righe del CSV su 131: sono le partite vuote della lega finta, che il `b94` legge come zeri (corner e tiri
+in porta attesi, i loro mercati, le variabili del maestro e quello che ne esce). Rifatto con la lega finta senza partite vuote, il
+`b94` stampa lo stesso del `b95`: 0 scritture diverse su 204, una riga del CSV, il certificato.
 
 **Il controllo del `b70`.** Da qui «In breve» controlla anche il rischio sorpresa: con le quote dell'1X2
 `#sorpresa-box` deve essere identico a quello rifatto nella pagina con `rischioSorpresa(…,
@@ -4625,6 +4799,9 @@ Si mette nello Scanner (`b77`), con quello che la regola diceva di rimisurare.
   - escono K League 1 (49), Serie B brasiliana (32), 1. liga slovacca (45), USL Championship (48) e la Liga de Primera
     cilena (45);
   - entra la Premier Division irlandese (50).
+
+  Dal `b95` sono 37: rientrano K League 1, Liga de Primera cilena e USL Championship, e il 2026 delle leghe a calendario solare
+  è rifatto con le partite fino al 31 ottobre (vedi *Il ristudio del batch del `b94`*).
 - `SORPRESA_TAB`, sulle stesse 23.278 partite. Il maestro ha già messo nelle probabilità il disaccordo fra modello ed
   Elo: residuo dello sfavorito −0.54 ±1.46 col disaccordo, −0.87 ±0.59 con l'accordo (col motore +2.39 e −0.29).
   ALTO resta solo con lo sfavorito al 35% o più e il disaccordo (36.0% su 652 partite, una su 35).
@@ -5733,7 +5910,7 @@ scrittura nuova, il messaggio iniziale). Il banco la verifica a parte, premendo 
 | `ELO_INGRESSO` / `ELO_RITORNO` / `ELO_PENDENZA` | `'uscite'` / 180 / `'netta'` | procedura senza parametri stimati (`b48`); 180 è una definizione | registrata prima del batch `b47`; cinque leghe −0.00375, `z = −2.64`, residuo delle neopromosse da −7.3 a −0.5 punti; tre leghe nuove −0.00076, nessuna oltre `z = +1`. 180 sta fra la pausa più lunga dentro una lega (106 giorni) e il ritorno più breve (454). Vedi *Le neopromosse* |
 | `ELO_GAP_THRESHOLD` / `TAU` / `ASY` | 45 / 360 / 0.9 | `τ` scelto dove smette di costare (`b30`) | la logloss cala in modo monotono fino a τ infinito; da 360 in su il guadagno residuo è 0.0005. Non misurato sulla pausa estiva (33 partite) |
 | K dell'Elo | 30 sotto le 15 partite, poi 20 | a mano, verificato `b30` | alzare K porta la pendenza a 1 ma peggiora la logloss oltre 40/28: si tara la conversione, non il rating |
-| clamp dell'HFA | [30, 100], con ≥50 partite | paracadute misurato, inerte (`b41`) | 0 righe su 1134 in copia conforme (`lgN` ≥ 760). Il 27.6% del `b35` erano archivi corti (< 600 partite), che lo Scanner in produzione non ha. Alternativa esposta e inutile: `ELO_HFA_MODE = 'shrink'`, `ELO_HFA_PRIOR` 65, `ELO_HFA_K` 200 (−0.00027, `z = −1.25`). Nella Série A brasiliana 2026 (`batch/disaccordo`) morde su 269 partite su 269, col grezzo a 116–118: senza il tetto −2.0‰ ±4.8 su 1 contro 2, dentro il rumore |
+| clamp dell'HFA | [30, 100], con ≥50 partite | paracadute misurato, inerte (`b41`) | 0 righe su 1134 in copia conforme (`lgN` ≥ 760). Il 27.6% del `b35` erano archivi corti (< 600 partite), che lo Scanner in produzione non ha. Alternativa esposta e inutile: `ELO_HFA_MODE = 'shrink'`, `ELO_HFA_PRIOR` 65, `ELO_HFA_K` 200 (−0.00027, `z = −1.25`). Nella Série A brasiliana 2026 (`batch/disaccordo`) morde su 269 partite su 269, col grezzo a 116–118: senza il tetto −2.0‰ ±4.8 su 1 contro 2, dentro il rumore. Sul batch del `b94`, fuori dai cinque campionati, morde su 4.276 partite su 31.444 (21 file di 17 leghe: 2.997 tenute a 100, 1.279 a 30); col grezzo al suo posto +1.06‰ ±1.21 su 3.113 partite senza pari, meglio in 4 leghe su 17: non è inerte, ma non costa (vedi *Il ristudio del batch del `b94`*) |
 | `ELO_TILT_MAX` | 0.60 | paracadute misurato | mai toccato; inclinazione massima osservata 0.215 fino al `b35`, 0.49 in copia conforme (`b41`, storico 30), 0.49 stimata anche col candidato |
 | `SHRINK_K` | 4 | misurata `b35`–`b37`, riconfermata `b41` | 12 e 28 peggiori a 5σ; sotto 4 migliora l'1X2 (−0.0016, `z = −3.03`) ma i gol pagano +0.0056. `b41`, copia conforme e zero clamp: a 2 l'1X2 −0.00069 (`z = −3.30`), la somma +0.00155; Premier −0.00079 (`z = −3.42`) e +0.00136; LaLiga −0.00052 e +0.00025; Bundesliga −0.00052 e +0.00321 (`z = 3.40`); Ligue 1 +0.00001 e +0.00087 |
 | `SHRINK_LAM_K` | 3 | a mano, misurata `b37` e `b41` | `b37`: ottimo del Brier Over fra 5 e 8, `z = −1.82`, segno ribaltato nel 2022/23. `b41`: in Serie A monotono fino a 20, miglior `z = −1.99` a 5, 3 stagioni su 3; in Premier il 2023/24 si ribalta (+0.00131 a 5, +0.0081 a 20); in LaLiga piatta a 5 e peggio da 8 in su; in Bundesliga meglio a 5 (`z = −2.69`, 3 stagioni su 3); in Ligue 1 meglio a 5 (`z = −1.26`). Tre leghe sì, una no, una ribaltata: resta 3 |
@@ -5768,7 +5945,7 @@ scrittura nuova, il messaggio iniziale). Il banco la verifica a parte, premendo 
 | `QUOTE_OU_RESA` | 11.222 partite, 11 leghe · lato più probabile: motore 55.6 (dal `b77`, col maestro, 57.6), mercato 58.9, con le quote 58.9% · giocando dove il motore si discosta −7.5 / −9.9% · sempre −3.7% | misurata `b57` | la card e il blocco gol del mega-prompt la leggono da qui |
 | `QUOTE_COLONNE_OU` | chiusura `AvgC`, `PC`, `B365C`, poi `Avg`, `P`, `B365` (`>2.5` / `<2.5`) | tabella `b57` | le colonne dell'Over/Under nei file principali di football-data (Pinnacle è `PC`, non `PSC` come nell'1X2); ci sono su ogni riga delle 18 leghe provate e dei file della settimana, mai nei file `new` |
 | `QUOTE_RESA` | tutte 53.0 · soglie ≥70 / 65 / 60 / 55 / 50: 78.6 / 74.7 / 71.1 / 67.5 / 64.0% su 14 / 20 / 27 / 37 / 49% del calendario · disaccordo 1321 partite, motore 26.3%, mercato 43.1% (dal `b77` col maestro: motore 51.7%, disaccordo 1046 partite, maestro 28.3%, mercato 42.1%) | misurata `b54` | combinazione stimata su undici leghe e misurata sulla dodicesima, 11.902 partite; soglie uguali nei cinque campionati e nelle altre sette (≥55: 67.9 e 67.1%). La card delle quote e il mega-prompt la leggono da qui |
-| `PICK_RESA` | dal `b77`, col maestro: tutte 53.3 · casa 43.0 · soglie ≥70 / 65 / 60 / 55 / 50: 79.1 / 76.0 / 72.2 / 67.4 / 62.8% su 9 / 16 / 24 / 35 / 49% del calendario; `fuori` 34 leghe. Fino al `b76`: tutte 52.7 · soglie 77.1 / 73.2 / 69.3 / 66.0 / 61.7% su 9 / 16 / 26 / 38 / 52% | misurata `b49`, rimisurata `b77` (fuori lega); il `b82` l'aveva rimisurata col maestro con la pressione, il `b83` torna a questa | cinque leghe col motore `b48`, 5230 partite (tabella in *Stato attuale*). Dal `b51` una sola copia: la card delle soglie e il mega-prompt la leggono da qui. Si rifà con le tabelle, a ogni motore che sposta l'1X2. Dal `b52` porta `leghe` (le cinque, per id) e `fuori` (Championship 46.3 e 64.8% su 17%, Eredivisie 53.7 e 68.7% su 47%, Liga Portugal 55.0 e 72.4% su 43%: pick su tutte e a ≥55, 3495 partite col `b48`), perché sulle tre leghe nuove le soglie ≥55 / 60 / 65 / 70 escono dai 2se (vedi *Le tre leghe nuove col `b48`: la regola*). Dal `b53` `fuori` ha anche 2. Bundesliga (45.4 e 62.8% su 16%), First Division A (50.2 e 65.5% su 35%), Premiership scozzese (53.3 e 68.9% su 41%) e Super League svizzera (47.1 e 66.1% su 26%), 3202 partite col motore `b52`. Dal `b56` porta anche `cinque`, le cinque leghe una per una nella stessa forma (tabella in *Stato attuale*): con `fuori` scrive la nota di lega in cima all'analisi. Dal `b74` `fuori` ha 38 leghe (le 31 nuove dai batch del `b61`, del `b62` e del `b73`, quelle con almeno 50 partite col pick sopra il 55%; tabella in *Le leghe mai viste*), e ogni lega porta anche le stagioni e le partite sopra il 55%, da cui la nota di lega e il prompt calcolano il ±2se |
+| `PICK_RESA` | dal `b77`, col maestro: tutte 53.3 · casa 43.0 · soglie ≥70 / 65 / 60 / 55 / 50: 79.1 / 76.0 / 72.2 / 67.4 / 62.8% su 9 / 16 / 24 / 35 / 49% del calendario; `fuori` 34 leghe. Fino al `b76`: tutte 52.7 · soglie 77.1 / 73.2 / 69.3 / 66.0 / 61.7% su 9 / 16 / 26 / 38 / 52% | misurata `b49`, rimisurata `b77` (fuori lega); il `b82` l'aveva rimisurata col maestro con la pressione, il `b83` torna a questa | cinque leghe col motore `b48`, 5230 partite (tabella in *Stato attuale*). Dal `b51` una sola copia: la card delle soglie e il mega-prompt la leggono da qui. Si rifà con le tabelle, a ogni motore che sposta l'1X2. Dal `b52` porta `leghe` (le cinque, per id) e `fuori` (Championship 46.3 e 64.8% su 17%, Eredivisie 53.7 e 68.7% su 47%, Liga Portugal 55.0 e 72.4% su 43%: pick su tutte e a ≥55, 3495 partite col `b48`), perché sulle tre leghe nuove le soglie ≥55 / 60 / 65 / 70 escono dai 2se (vedi *Le tre leghe nuove col `b48`: la regola*). Dal `b53` `fuori` ha anche 2. Bundesliga (45.4 e 62.8% su 16%), First Division A (50.2 e 65.5% su 35%), Premiership scozzese (53.3 e 68.9% su 41%) e Super League svizzera (47.1 e 66.1% su 26%), 3202 partite col motore `b52`. Dal `b56` porta anche `cinque`, le cinque leghe una per una nella stessa forma (tabella in *Stato attuale*): con `fuori` scrive la nota di lega in cima all'analisi. Dal `b74` `fuori` ha 38 leghe (le 31 nuove dai batch del `b61`, del `b62` e del `b73`, quelle con almeno 50 partite col pick sopra il 55%; tabella in *Le leghe mai viste*), e ogni lega porta anche le stagioni e le partite sopra il 55%, da cui la nota di lega e il prompt calcolano il ±2se Dal `b95` `fuori` ha 37 leghe: rientrano K League 1, Liga de Primera cilena e USL Championship, e il 2026 delle leghe a calendario solare è rifatto con le partite fino al 31 ottobre |
 | retta dei mercati binari | −5.06 + 1.091·p | stimata, riconfermata `b38` e `b41` | 22.584 proposte, errore massimo 2.4 punti; `b41` 7938 proposte, 2.5 |
 | `EDGE_BANDS` | ≥20 / ≥10 / ≥5, guadagno per famiglia (`b50`) | stimata `b38`, riconfermata `b41` e `b49`, per famiglia dal `b50` | 28.230 proposte: +24.6 / +14.8 / +6.3 punti, monotono, segno concorde in 5 stagioni su 5. `b41` (copia conforme): +25.6 / +15.6 / +4.8 sulle 13.148 proposte con base del `b40`, +25.0 / +14.9 / +5.7 sulle 14.742 del `b41`, monotono in 3 stagioni su 3; Premier (≥20 / 10–20 / 5–10) +27.4 / +10.7 / +6.0, LaLiga +25.0 / +13.7 / +7.3, Bundesliga +28.7 / +14.0 / +5.5, Ligue 1 +26.4 / +13.4 / +5.0. `b49` (motore `b48`, cinque leghe): +25.8 / +12.2 / +6.1, monotono in 5 leghe su 5; per famiglia 1X2 +27.5 / +15.5 / +8.0, gol +1.0 / +7.2 / +3.5, numeri +7.2 / +10.2 / +8.2. Dal `b50` l'etichetta mostra questi, per famiglia, con ±2se: 1X2 ±1.6 / ±1.6 / ±1.9 (2891 / 3573 / 2680 proposte), gol ±10.4 / ±2.3 / ±1.7 (92 / 1881 / 3457), numeri ±8.0 / ±2.9 / ±2.4 (133 / 1058 / 1628). Dal `b63` i gol, rifatti col livello dei gol: +2.3 ±12.8 (61) / +6.8 ±2.6 (1445) / +4.4 ±1.7 (3279). Dal `b77`, col maestro (fuori lega): 1X2 +29.5 ±1.6 (2463) / +17.1 ±1.4 (3692) / +9.0 ±1.7 (2912), gol +24.3 ±11.6 (55) / +13.2 ±3.5 (744) / +6.8 ±1.9 (2801); i numeri restano del `b49`. Il `b82`, col maestro con la pressione, aveva 1X2 +29.5 / +16.9 / +9.2 e gol +24.0 / +12.4 / +6.6; il `b83` torna a quelle del `b77`. Dal `b84` la famiglia `corner` (chi fa più corner, quattro proposte), sulle 24 leghe fuori lega e sul `b74` coi numeri della regola: +26.6 ±0.9 (9448) / +13.7 ±0.7 (17482) / +6.6 ±0.8 (14810). Ordinare per guadagno atteso invece che per scarto: no (vedi *Il tabellone per famiglia di mercato: la regola*) |
 | minimo di `leagueBaseRates` | 200 partite | paracadute misurato `b38` | guadagno piatto fra 50 e 500; in produzione arrivano 900+ partite |
@@ -5798,7 +5975,8 @@ prima di scriverla nel codice.
 - **Tipo 3, il paracadute, legittimo finché è inerte.** Un cap non è un parametro finché non
   morde; quando morde **diventa** il modello, in silenzio. Va misurato quanto morde e
   mostrato il grezzo accanto al valore usato (controllo P). Il clamp sull'HFA mordeva sul
-  27.6% dei vecchi backtest, ma solo su archivi che lo Scanner non ha: in copia conforme 0%.
+  27.6% dei vecchi backtest, ma solo su archivi che lo Scanner non ha: in copia conforme 0% nei cinque campionati. Fuori morde
+  sul 13.6% delle partite del batch del `b94`, e lì il grezzo non fa meglio (vedi *Il ristudio del batch del `b94`*).
 
 **Fuori classifica**, trovati nel motore e tolti: `Math.max(2, ...)` in `negBinK`; la media
 geometrica in `calcAdv`, cioè shrinkage zero deciso non scrivendolo (pendenza 0.47); e
@@ -6689,7 +6867,8 @@ tutte le 23.278 partite. Il pareggio resta quello del motore; `1` e `2` si divid
 batch, col motore in uso (se nel frattempo l'1X2 del motore cambia, la regola si riscrive prima di
 guardare). Si guarda **una volta sola**, al primo batch in cui le partite senza pari sono almeno 4.000
 (circa 5.400 partite: verso marzo 2027); se la stagione europea finisce prima, alla fine, con quelle che ci
-sono. `python3 strumenti/dc-residui.py --prova <cartelle>` (il `--dal` di default è il 3 ottobre 2026).
+sono. `python3 strumenti/dc-residui.py --prova <cartelle>` (il `--dal` di default è il 3 ottobre 2026). Dal `b77` l'1X2
+del motore è cambiato: vedi *Da fare*, la regola va riscritta prima di guardare.
 
 **Il metro.** La logloss 1 contro 2 sulle partite senza pari, B contro il motore (`σ(lgTarget)`), appaiata
 partita per partita. **Passa** se sull'insieme migliora con `z ≤ −2`, se B fa meglio di A (i tocchi
@@ -7214,7 +7393,9 @@ motore i numeri della regola e li confronta con quelli scritti a schermo. Sul ba
 e 5, capocannoniere, «Un gol» e modulo stanno tutti entro l'arrotondamento dello schermo. Sullo stesso batch col motore
 `b75` (controllo di potenza) 3.924 numeri escono. Le righe KNN del CSV `b75` ricalibrate coi coefficienti della regola
 danno quelle del `b76` entro 0.11 punti, e il Goal e l'Over del KNN a schermo entro 0.06. Sulla PitchAPI vera,
-Juventus – Lazio dell'8 febbraio 2026 (241 chiamate, `schermate.js --vera`): nessun errore, 0 px in ogni scheda.
+Juventus – Lazio dell'8 febbraio 2026 (241 chiamate, `schermate.js --vera`): nessun errore, 0 px in ogni scheda. Sul batch
+vero del `b94` (31.969 partite di 49 leghe, circa 1,4 milioni di numeri): tutti entro l'arrotondamento, dopo che il `b95` ha
+corretto lo strumento (vedi *Il ristudio del batch del `b94`*).
 
 **Trovato dopo, verificando.**
 - *Il rosso.* La prima versione del `b76` prendeva i rossi del campione di ogni colonna, quindi nella colonna di ruolo
@@ -7899,9 +8080,22 @@ dal `b53` sono la probabilità arrotondata; nei file fino al `b52` sono `CONF_1X
 alla probabilità. Chi confronta file di build diverse le ricalcola dalla probabilità.
 
 Dal `b77` le righe `1`, `X`, `2`, `Ambito: lambda casa/trasf. (ruolo)` e tutti i mercati gol (Over/Under, GG, multigol,
-handicap, tabellone) sono del maestro. L'1X2 e i lambda di ruolo del motore prima del maestro stanno nelle righe
+handicap, tabellone) sono del maestro. Non le righe Goal, NoGoal, Over 2.5 e Under 2.5 della sezione MERCATI 1X2, che fino al
+`b94` sono rimaste della matrice di ruolo del motore (dal `b95` del maestro): nei file dal `b77` al `b94` il Goal e l'Over del
+maestro si leggono da `GG (da matrice)` e dalla seconda `Over 2.5`, quella della sezione multi-linea. Dal `b95` il reale delle
+statistiche di squadra (corner, tiri, gialli, falli…) è N/D quando `/stats` è arrivata vuota (vedi *Politica sui valori
+mancanti*); nei file fino al `b94` lì c'è 0, e corner e tiri in porta entrambi a 0 lo riconoscono. `controlla-csv.py` dice su
+quante partite il reale dei corner è N/D. L'1X2 e i lambda di ruolo del motore prima del maestro stanno nelle righe
 `Maestro: 1/X/2 del motore` e `Maestro: lambda casa/trasf. del motore (ruolo)`, con `Maestro: attivo`. Chi misura il
-motore di prima, o riallena il maestro, legge quelle: `strumenti/maestro.py` lo fa da solo. Il capocannoniere di
+motore di prima, o riallena il maestro, legge quelle: `strumenti/maestro.py` lo fa da solo. Gli strumenti del motore di
+prima del maestro leggono invece `1`, `X`, `2` e i lambda di ruolo come se fossero del motore: `livello-gol.py`,
+`motore-mercato.py`, `sorpresa-quote.py`, `dc-residui.py`, `markov-dc.py`, `rating-xg.py` e i `quote-*.py` del `b54`–`b62`
+(`bookmaker`, `gol`, `matrice`, `tabellone`, `valore`, `debolezze`, `handicap`, `kappa`, `goal`). Dal 10 novembre 2026 si
+fermano su un CSV col maestro acceso (`solo_motore` in `quote-bookmaker.py`). Prima no, e la loro prova di coincidenza non
+bastava: sui CSV dal `b77` al `b94` diceva 21 punti e il test usciva lo stesso («PASSA»), su quelli dal `b95`, dove anche le
+righe MERCATI sono del maestro, coincideva. `sorpresa-quote.py` legge `SORPRESA_TAB` dallo Scanner, che dal `b77` è del
+maestro: sui CSV fino al `b76` il rischio sorpresa del motore va rifatto con la tabella del `b76` (`git show
+8ec97dd:scanner.html`). Il capocannoniere di
 Numeri usa i lambda di ruolo del motore, non quelli del maestro: `strumenti/numeri-schermo.py` li legge da quelle righe
 (fino al 17 ottobre 2026 leggeva i lambda del maestro, e su un CSV dal `b77` dava 167 numeri diversi su 178).
 
@@ -8191,3 +8385,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b92` | la voce da stadio, chiesta dall'utente guardando Toto-Amici («voglio idee belle»): Barlow Condensed maiuscolo per titoli e numeri, le squadre nei loro colori, titoli a due toni, il fondo verde notte a strisce del prato col cerchio di centrocampo, il risultato in alto come in TV, il tabellone come classifica di barre (tacca alla base di lega, tratto verde lo scarto), riquadri con la riga colorata; le animazioni di Toto-Amici rifatte senza librerie (numeri che contano, righe a scaletta con la barra che si stende, la scheda che scivola, indicatori a molla). Home e Comparatore negli stessi colori. Col `b91` 1 scrittura diversa su 204 (il tabellone), una riga del CSV (il certificato) |
 | `b93` | la bolletta del Toto-Amici, chiesta dall'utente per il gioco coi colleghi: nella scheda Tabellone una card con le 24 giocate (fisse, doppie chance, variabili, combo), ognuna con la probabilità dalla matrice dei gol (allineata con le quote, del maestro senza), la quota vera o stimata col margine misurato su 1.120 giocate delle bollette (fisse e doppie 6.5%, Goal 9.5%, combo 12.5%) e i punti attesi, doppi con la quota da 3,50; nella giornata la bolletta ottima (1 combo, 2 doppie, 3 variabili, 4 fisse) da copiare. Con le quote di chiusura, su 47.662 partite di 18 leghe, ogni giocata esce quanto dice entro 1,4 punti; su 234 giornate di Serie A la bolletta ottima vale 18.4 punti attesi a giornata contro 17.3 di una a occhio (fatti 19.0 e 18.3, +0.7 ±0.9). `strumenti/bolletta.py`. Col `b92` 0 scritture diverse su 204, una riga del CSV (il certificato); il banco controlla le giocate e la bolletta a forza bruta, e il controllo di potenza fallisce dove deve |
 | `b94` | tutte le giocate, chieste dall'utente senza il gioco («dobbiamo solo calcolare quelle quote»): la card della bolletta diventa «Tutte le giocate», 22 giocate (1X2, doppie chance, Over/Under 2.5, Goal/NoGoal, 12 combo segno + gol) con probabilità, quota del bookmaker o stimata col margine medio (misurato su 1.118 quote reali: 1X2 e doppie 6.5%, Over/Under 6%, Goal/NoGoal 9.5%, combo 12.5%) e quota equa, dalla più probabile. Tolti punti, punti doppi, pari e dispari e la bolletta della giornata. `strumenti/giocate.py` al posto di `bolletta.py`. La grafica passata dalle skill: rilevatore di impeccable a 0 difetti nei due temi, contrasti dei testi piccoli 6.1:1 o più. Col `b93` 0 scritture diverse su 204, una riga del CSV (il certificato); il controllo di potenza fallisce dove deve |
+| `b95` | il ristudio del batch del `b94`, chiesto dall'utente («controlla tutto quello che vuoi»): le misure registrate reggono su leghe e partite mai viste, e tre difetti sono corretti. Il Comparatore scriveva Goal, NoGoal, Over 2.5 e Under 2.5 della sezione MERCATI del CSV, e della sua tabella a schermo, dal motore invece che dal maestro (dal `b77`, 3-4 punti in media). Una risposta di `/stats` con ogni voce a zero tranne i gialli, come quelle della K League 2 dal 9 ottobre 2026, ora è come una risposta mancante (`statsVuote`), nel motore e nel reale del CSV: prima entrava come zeri veri (rifatta la K League 2 col `b95`: dal 16 ottobre, 20 partite, tiri in porta attesi da 7.99 a 8.52 e Over del maestro da 44.1 a 45.1%). `PICK_RESA.fuori` da 34 a 37 leghe. `numeri-schermo.py` prende lo storico della lega della partita (sul batch vero da 46.641 numeri diversi a 0), `controlla-csv.py` dice le partite senza statistiche. Il banco ha le statistiche vuote e confronta le righe dei gol col maestro; col `b94` 11-72 scritture diverse su 204, tutte dalle partite vuote, e senza quelle 0 |

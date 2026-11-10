@@ -143,6 +143,7 @@ def main():
     if '--quote' in a: i = a.index('--quote'); cq = a[i + 1]; del a[i:i + 2]
     i = a.index('--allena'); j = a.index('--prova') if '--prova' in a else len(a)
     allena, prova = a[i + 1:j], a[j + 1:]
+    qb.solo_motore(allena + prova)
     W, b, OU = costanti()
     print(f'dallo Scanner: QUOTE_COMB W {W.tolist()} b {b.tolist()} · QUOTE_OU {OU}')
     M, Q = carica(allena, cq); C = calcola(Q, W, b, OU)

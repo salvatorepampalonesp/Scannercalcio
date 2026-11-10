@@ -32,6 +32,7 @@ def ha_fattore(path):
     return _HA_F[path]
 
 def carica(dirs):
+    qb.solo_motore(dirs)
     W, b, OU = qm.costanti()
     M, Q = qm.carica(dirs, 'batch/quote')
     # prova di coincidenza sulla matrice del CSV, poi il livello dei gol di oggi

@@ -147,6 +147,9 @@ def prova(dirs, coef):
 
 if __name__ == '__main__':
     a = sys.argv[1:]
+    import importlib.util
+    _s = importlib.util.spec_from_file_location('qb', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'quote-bookmaker.py'))
+    _qb = importlib.util.module_from_spec(_s); _s.loader.exec_module(_qb); _qb.solo_motore(a[1:])
     if a and a[0] == '--allena': allena(a[1:])
     elif a and a[0] == '--prova':
         if COEF is None: sys.exit('COEF non scritti: prima --allena')

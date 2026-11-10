@@ -67,6 +67,9 @@ SEASONS.forEach((s, si) => {
     MATCHES[id] = m; BY_SEASON[s].push(m);
   }));
 });
+// le statistiche vuote della PitchAPI (b95): come la K League 2 dal 9 ottobre 2026, la giornata prima di quella
+// analizzata risponde con tutti i conteggi a zero, tranne i gialli
+const VUOTE = new Set(Object.values(MATCHES).filter(m => m._si === 2 && m._ri === ROUND_TARGET - 1).map(m => m.id));
 
 // coppe europee finte: le squadre 0 e 1 giocano 3 giorni prima e 4 dopo ogni giornata, la 2 solo dopo
 const UEFA = { l_0bfbkO: {}, l_38d9HA: {}, l_2WZ2tt: {} };
@@ -87,6 +90,11 @@ const pub = m => PEND.has(m.id) ? ({ id: m.id, home_team: { ...m.home_team }, aw
 const r2 = v => Math.round(v * 100) / 100;
 
 function statsOf(m) {
+  if (VUOTE.has(m.id)) {
+    const z = k => ({ key: k, title: k, home: '0', away: '0' });
+    return { data: { periods: [{ period: 'All', groups: [{ group_name: 'General', items: ['totalshots', 'ShotsOnTarget', 'bigchances', 'BallPossesion', 'corners', 'fouls',
+      'touches_opp_box', 'passes', 'clearances', 'interceptions', 'Offsides'].map(z).concat([{ key: 'yellow_cards', title: 'Yellow cards', home: '2', away: '1' }]) }] }] } };
+  }
   const r = rng(m.id + 'stats'); const [lH, lA] = m._lam; const H = str(+m.home_team.id.slice(2)), A = str(+m.away_team.id.slice(2));
   const side = (lam, st, gf) => {
     const xg = r2(Math.max(0.05, lam * (0.75 + 0.5 * r()))); const pen = r() < 0.2 ? 0.76 : 0;
@@ -397,6 +405,15 @@ async function runScanner(browser, base, matches, limit) {
     }, { h: m.home_team.id, a: m.away_team.id, d: m.time_utc.slice(0, 10), limit, SNAP, INBREVE, GQ_CK });
     out[m.id] = snap;
   }
+  // le statistiche vuote (b95): nello storico del motore quelle partite non hanno corner ne' tiri in porta (null), le altre si'
+  const m0 = matches[0];
+  const vuote = await page.evaluate(async ({ h, d, ids }) => {
+    if (typeof statsVuote !== 'function') return { errore: 'statsVuote assente' };
+    const t = await aggregaTeam(d + 'T00:00:00Z', h, 'x', 30, true), I = t.overall.matchInfo.map(x => x.id), v = t.overall.vals;
+    const r = I.map((id, i) => ({ id, vuota: ids.includes(id), cor: v.cor[i], sot: v.sot[i] }));
+    return { vuote: r.filter(x => x.vuota).length, vuoteNulle: r.filter(x => x.vuota && x.cor === null && x.sot === null).length,
+             piene: r.filter(x => !x.vuota).length, pieneNumeri: r.filter(x => !x.vuota && typeof x.cor === 'number' && typeof x.sot === 'number').length };
+  }, { h: m0.home_team.id, d: m0.time_utc.slice(0, 10), ids: [...VUOTE] });
   // le statistiche dei giocatori (bottone, fuori dal giro del motore): tabelle piene, niente NaN
   const giocatori = await page.evaluate(async () => {
     if (typeof caricaGiocatori !== 'function') return null;
@@ -507,7 +524,7 @@ async function runScanner(browser, base, matches, limit) {
     const vuoti = ['quota-1', 'quota-x', 'quota-2', 'quota-ov', 'quota-un'].every(id => document.getElementById(id).value === '');
     return { nome: 'cambia partita', svuotate: vuoti && window.__QUOTE_CTX === null && document.getElementById('quote-box').innerHTML === '--' }; }));
   await page.context().close();
-  return { runs: out, log, scroll, compatte, giocatori, quote, arbitro, indisp, chiuse, schede };
+  return { runs: out, log, scroll, compatte, giocatori, quote, arbitro, indisp, chiuse, schede, vuote };
 }
 
 // la giornata (b65): trova le partite del turno, le analizza tutte, e ognuna deve stampare
@@ -662,7 +679,7 @@ async function runComparatore(browser, base, mode, date) {
   await page.waitForTimeout(300);
   // l'archivio in fondo al CSV (b47) deve bastare a rifare l'Elo del motore identico:
   // lo si rilegge dal TESTO esportato e si fa girare buildGlobalElo del motore su quello
-  const archivio = (mode === 'batch' || mode === 'sweep') ? await page.evaluate(() => {
+  const archivio = (mode === 'batch' || mode === 'sweep') ? await page.evaluate((VUOTE) => {
     const txt = (window.__CSVS || []).slice(-1)[0] || '';
     const L = txt.replace(/^\uFEFF/, '').split(/\r?\n/).map(l => l.split(';'));
     const head = L.find(c => /^ARCHIVIO \S+ \S+$/.test(c[0]));
@@ -691,8 +708,11 @@ async function runComparatore(browser, base, mode, date) {
       const i0 = arch.findIndex(m => m.status === 'finished');
       P = giro(arch.filter((m, i) => i !== i0));
     } finally { window.__ENGINE_CACHE = salva; }
-    return { righe: arch.length, database: cmpAllMatches.length, partite: G.n, diversi: G.d.length, esempi: G.d.slice(0, 3), potenza: P.d.length };
-  }) : null;
+    const cr = riga('Corner tot (atteso)'), vu = { n: 0, nd: 0, piene: 0, pieneNd: 0 };
+    for (let i = 1; i < ids.length; i += 4) { if (!ids[i]) continue; const nd = cr[i + 2] === 'N/D';
+      if (VUOTE.includes(ids[i])) { vu.n++; if (nd) vu.nd++; } else { vu.piene++; if (nd) vu.pieneNd++; } }
+    return { righe: arch.length, database: cmpAllMatches.length, partite: G.n, diversi: G.d.length, esempi: G.d.slice(0, 3), potenza: P.d.length, vuote: vu };
+  }, [...VUOTE]) : null;
   const res = await page.evaluate(() => ({ runs: window.__RUNS, csvs: window.__CSVS, dl: window.__DL || [],
     saved: (cmpSavedMatches || []).map(m => ({ id: m.ids && m.ids.matchId, conf: m.conf, R: { m1: m.R.m1, confidence: m.R.confidence } })),
     consoleTxt: (document.getElementById('console') || {}).innerText || '',
@@ -739,8 +759,8 @@ function csvChecks(S, csv, col) {
   cmp('confidence globale', R['master-conf'], cell('Confidence Globale', 0, MOD));
   for (const [sid, lbl] of [['dc', 'DC'], ['knn', 'KNN'], ['ol', 'OL'], ['mk', 'Markov'], ['dco', 'DCover'], ['mko', 'MKover']])
     for (const [s, l] of [['1', '1'], ['x', 'X'], ['2', '2']]) cmp(`${lbl} ${l}`, R[`mdl-${sid}-${s}`], cell(`${lbl} ${l}`, 0, MOD));
-  cmp('Goal', R['mdl-dc-gg'], cell('Goal', 0, M1)); cmp('NoGoal', R['mdl-dc-ng'], cell('NoGoal', 0, M1));
-  cmp('Over 2.5', R['mdl-dc-ov'], cell('Over 2.5', 0, M1)); cmp('Under 2.5', R['mdl-dc-un'], cell('Under 2.5', 0, M1));
+  cmp('Goal', R['mdl-ver-gg'], cell('Goal', 0, M1)); cmp('NoGoal', R['mdl-ver-ng'], cell('NoGoal', 0, M1));
+  cmp('Over 2.5', R['mdl-ver-ov'], cell('Over 2.5', 0, M1)); cmp('Under 2.5', R['mdl-ver-un'], cell('Under 2.5', 0, M1));
   for (const [id, lbl] of [['conf-1x', '1X'], ['conf-x2', 'X2'], ['conf-12', '12'], ['conf-gg', 'Goal'], ['conf-ng', 'NoGoal'], ['conf-ov', 'Over 2.5'], ['conf-un', 'Under 2.5']])
     cmp('confidence ' + lbl, R[id], cell(lbl, 1, M1));
   cmp('corner attesi', R['cor-tot-role'], cell('Corner tot (atteso)', 0), 0.051);
@@ -923,7 +943,10 @@ if (require.main === module) (async () => {
   }
   console.log('   indisponibili: ' + (ID && !ID.errore ? `${ID.n} caselle, segnati ${ID.nomi.join(' e ')}` + (ID.cerca ? `, cercato "${ID.cerca.scritto}": ${ID.cerca.viste} righe su ${ID.cerca.di}, ${ID.cerca.nome} fra queste` : '') : '')
     + (idRotti.length ? ' · ROTTO: ' + idRotti.join('; ') : ' · barrati, nel prompt, restano dopo una nuova analisi, probabilita\' ferme, tolti il prompt torna quello di prima; la ricerca lascia solo chi ha quelle lettere, dice quando non c\'e\' nessuno, resta ridisegnando, la x pulisce'));
-  let fail = (sLog.length || (process.env.MOBILE && (scanner.scroll > 0 || scanner.compatte.length)) || !G || gRotti.length || pRotti.length || ibRotti.length || !Q || qRotte.length || qaRotte.length || arRotti.length || idRotti.length || ttRotti.length) ? 1 : 0;
+  const VU = scanner.vuote, vuOk = !!VU && !VU.errore && VU.vuote > 0 && VU.vuoteNulle === VU.vuote && VU.piene > 0 && VU.pieneNumeri === VU.piene;
+  console.log('   statistiche vuote: ' + (VU && !VU.errore ? `${VU.vuote} partite vuote nello storico, ${VU.vuoteNulle} senza corner ne' tiri; ${VU.pieneNumeri} piene su ${VU.piene} coi numeri` : (VU ? VU.errore : 'assente'))
+    + (vuOk ? '' : ' · ROTTO'));
+  let fail = (sLog.length || (process.env.MOBILE && (scanner.scroll > 0 || scanner.compatte.length)) || !G || gRotti.length || pRotti.length || ibRotti.length || !Q || qRotte.length || qaRotte.length || arRotti.length || idRotti.length || ttRotti.length || !vuOk) ? 1 : 0;
   const GI = await runGiornata(browser, base, cur, scanner.runs);
   const giOk = GI && GI.lista.length === cur.length && GI.lista.every((x, k) => x.id === cur[k].id && x.stato === 'fatta')
     && !GI.diversi.length && Object.keys(GI.giri).length === day.length && GI.righe === cur.length && !GI.rotto && !GI.promptRotto && !GI.log.length
@@ -987,7 +1010,8 @@ if (require.main === module) (async () => {
         && (!process.env.MOBILE || R.scroll <= 0)
         && (mode !== 'sconfina' || /le salto/.test(logTxt))
         && (!R.archivio || (R.archivio.righe > 0 && R.archivio.righe === R.archivio.database
-                            && R.archivio.partite === cc.tot && R.archivio.diversi === 0 && R.archivio.potenza > 0));
+                            && R.archivio.partite === cc.tot && R.archivio.diversi === 0 && R.archivio.potenza > 0
+                            && R.archivio.vuote.n > 0 && R.archivio.vuote.nd === R.archivio.vuote.n && R.archivio.vuote.pieneNd === 0));
     }
     if (!mr.ok) fail++;
     report.modes[mode] = mr;
@@ -1000,6 +1024,7 @@ if (require.main === module) (async () => {
     console.log(`   scritture a schermo del motore diverse dallo Scanner: ${eng.join(' / ')} su ${pms[0] && pms[0].scrittureMotore}`);
     console.log(`   righe del CSV diverse dallo Scanner: ${cs.join(' / ')} su ${pms[0] && pms[0].csvControlli}`);
     if (R.archivio) { const A = R.archivio; mr.archivio = A;
+      console.log(`   statistiche vuote nel CSV: reale dei corner N/D su ${A.vuote.nd} partite vuote su ${A.vuote.n}, e su ${A.vuote.pieneNd} piene su ${A.vuote.piene}`);
       console.log(`   archivio in fondo al CSV: ${A.righe} partite su ${A.database} del database · Elo rifatto dall'archivio su ${A.partite} partite: ${A.diversi} diverse${A.esempi.length ? ' ' + JSON.stringify(A.esempi) : ''} · senza una partita: ${A.potenza} diverse (potenza)`); }
     const ex = pms.find(p => p.esempi && p.esempi.length); if (ex) console.log('   es. motore:', JSON.stringify(ex.esempi.slice(0, 3)));
     const ec = pms.find(p => p.csvEsempi && p.csvEsempi.length); if (ec) console.log('   es. CSV:', JSON.stringify(ec.csvEsempi.slice(0, 6)));

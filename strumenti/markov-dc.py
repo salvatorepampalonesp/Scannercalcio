@@ -13,6 +13,7 @@ from sklearn.metrics import roc_auc_score
 DIR = os.path.dirname(os.path.abspath(__file__))
 s = importlib.util.spec_from_file_location('qg', os.path.join(DIR, 'quote-gol.py')); qg = importlib.util.module_from_spec(s); s.loader.exec_module(qg); qb = qg.qb
 DIRS = sys.argv[1:] or ['batch48', 'batch4', 'batch/2627', 'batch/nuove', 'batch/livello']
+qb.solo_motore(DIRS)
 KEYS = ['DCover 1', 'DCover X', 'DCover 2', 'MKover 1', 'MKover X', 'MKover 2', '1', 'X', '2', 'Ambito: lambda casa (completo)',
         'Ambito: lambda trasf. (completo)', 'Unita: rho stimato', 'Elo: log-odds modello [completo → 1X2]', 'Elo: log-odds Elo [completo → 1X2]',
         'Elo: log-odds bersaglio [completo → 1X2]', 'COPIA CONFORME DELLO SCANNER', 'SCORE', 'LEGA']

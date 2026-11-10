@@ -56,6 +56,7 @@ def gd_dist(P):
 
 def main():
     dirs = sys.argv[1:] or ['batch48', 'batch4']
+    qb.solo_motore(dirs)
     W, b, OU = qm.costanti()
     M, Q = qm.carica(dirs, 'batch/quote'); C = qm.calcola(Q, W, b, OU)
     rows = []

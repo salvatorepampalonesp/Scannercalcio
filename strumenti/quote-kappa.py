@@ -120,5 +120,6 @@ def prova(dirs):
 
 if __name__ == '__main__':
     a = sys.argv[1:]
+    qm.qb.solo_motore(a[1:] if a and a[0] == '--prova' else a or ['batch48', 'batch4'])
     if a and a[0] == '--prova': prova(a[1:] or ['batch/nuove', 'batch/2627'])
     else: esplora(a or ['batch48', 'batch4'])

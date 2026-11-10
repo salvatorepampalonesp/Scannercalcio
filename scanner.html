@@ -961,7 +961,7 @@ body.in-analisi.bug-on .ab-back{width:44px;padding:0;justify-content:center}
     <span class="ab-tit" id="ab-tit"><b></b><small></small></span>
     <span class="ab-bug" id="ab-bug" aria-hidden="true"></span>
     <span class="ab-spazio"></span>
-    <span class="tag" id="build-ver">build 0905-b94</span>
+    <span class="tag" id="build-ver">build 0905-b95</span>
   </div>
 </header>
 
@@ -2682,6 +2682,13 @@ async function caricaSquadreLega() {
   } catch(e) { alert("Errore caricamento database: " + e.message); document.getElementById("btn-carica").disabled = false; }
 }
 
+function statsVuote(d) {
+  const all = d && Array.isArray(d.periods) && d.periods.find(p => p && p.period === 'All');
+  if (!all || !Array.isArray(all.groups)) return false;
+  const it = all.groups.flatMap(g => (g && g.items) || []).filter(x => x && !/card/i.test(x.key || ''));
+  return it.length >= 10 && it.every(x => [x.home, x.away].every(v => !(parseFloat(String(v).replace(',', '.').split(' ')[0]) > 0)));
+}
+
 function extractSafeStat(data, keys, isHome) {
 
   if(!Array.isArray(keys)) keys = [keys];
@@ -3101,7 +3108,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
     logConsole(`[${teamName}] Fetch Dati (Adv & Eventi): ${i+1}/${fetchSet.length}...`);
     const [statsRes, lineupsRes, advRes, eventsRes] = await fetchMatchRaw(m.id);
 
-    const d = statsRes ? (statsRes.data || statsRes) : null;
+    const d = statsRes && !statsVuote(statsRes.data || statsRes) ? (statsRes.data || statsRes) : null;
     const gf = isH ? (m.score_home||0) : (m.score_away||0); const ga = isH ? (m.score_away||0) : (m.score_home||0);
     const avv = isH ? m.away_team.name : m.home_team.name; const dateStrUtc = m.time_utc; const dateShort = m.time_utc ? m.time_utc.substring(5,10) : '-';
 
@@ -3429,25 +3436,28 @@ const PICK_RESA = { tutte: 53.3, casa: 43.0, partite: 5230,
            l_1LMdEO: ['Premiership scozzese', 683, 53.3, 72.4, 38, '2023/24-2025/26', 257],
            l_4d6Bwl: ['Super League svizzera', 680, 47.5, 66.7, 22, '2023/24-2025/26', 150],
            l_3v84VE: ['Liga MX', 667, 50.8, 63.1, 25, '2023/24-2025/26', 168],
+           l_2EKrnc: ['K League 1', 643, 42.5, 51.9, 8, '2024-2026', 52],
            l_0Lpz1f: ['Saudi Pro League', 604, 57.5, 73.2, 43, '2024/25-2025/26', 257],
            l_3zsMpo: ['Bundesliga austriaca', 582, 49.1, 64.3, 26, '2023/24-2025/26', 154],
            l_49Zmno: ['Superligaen', 574, 50.2, 57.1, 27, '2023/24-2025/26', 156],
            l_45VZuL: ['Liga Profesional argentina', 508, 40.7, 54.9, 10, '2025', 51],
            l_4MPd7x: ['A-League', 507, 43.6, 46.7, 21, '2023/24-2025/26', 105],
            l_1qpFVw: ['Indian Super League', 384, 50.5, 68.9, 19, '2023/24-2025/26', 74],
+           l_3yVUAO: ['USL Championship', 378, 47.1, 66.7, 15, '2026', 57],
            l_49KZaB: ['Eerste Divisie', 377, 48.0, 57.7, 29, '2025/26', 111],
            l_47077Y: ['3. Liga', 375, 51.2, 59.7, 18, '2025/26', 67],
            l_1D8Xrl: ['Serie A brasiliana', 374, 52.4, 70.2, 22, '2025', 84],
-           l_1xXulJ: ['Primera A colombiana', 324, 48.5, 64.1, 24, '2026', 78],
+           l_1xXulJ: ['Primera A colombiana', 364, 48.4, 62.6, 25, '2026', 91],
            l_0kSJLz: ['Liga I romena', 314, 51.0, 59.7, 23, '2025/26', 72],
            l_2xBPKk: ['Super Liga serba', 294, 51.4, 67.9, 27, '2025/26', 78],
+           l_3uNwVX: ['Liga 1 peruviana', 276, 50.0, 67.5, 30, '2026', 83],
            l_0F4I4F: ['1. Liga ceca', 274, 50.7, 64.8, 32, '2025/26', 88],
-           l_1dmt9H: ['Serie A ecuadoriana', 247, 50.6, 69.4, 25, '2026', 62],
-           l_3uNwVX: ['Liga 1 peruviana', 244, 48.4, 64.8, 29, '2026', 71],
+           l_1dmt9H: ['Serie A ecuadoriana', 269, 50.6, 68.8, 24, '2026', 64],
            l_16Sq13: ["Ligat ha'Al", 237, 51.9, 68.0, 32, '2025/26', 75],
-           l_20pNSc: ['Super League cinese', 211, 48.3, 55.6, 30, '2026', 63],
-           l_2tFk9k: ['HNL croata', 179, 53.6, 74.5, 28, '2025/26', 51],
-           l_1eJSA7: ['Premier Division irlandese', 162, 46.3, 56.0, 31, '2026', 50] } };
+           l_20pNSc: ['Super League cinese', 230, 48.7, 54.5, 29, '2026', 66],
+           l_3qNjzC: ['Liga de Primera cilena', 198, 46.0, 62.0, 25, '2026', 50],
+           l_1eJSA7: ['Premier Division irlandese', 180, 45.6, 55.6, 30, '2026', 54],
+           l_2tFk9k: ['HNL croata', 179, 53.6, 74.5, 28, '2025/26', 51] } };
 const _seResa = M => 200 * Math.sqrt(M[3] / 100 * (1 - M[3] / 100) / M[6]);
 (function () {
   const el = typeof document !== 'undefined' && document.getElementById('pick-soglie');
@@ -4535,7 +4545,7 @@ function _tabTesto(V) {
     + (sotto.length ? '\n- Sotto la base di lega di 5 punti o piu\' (qui questi esiti sono meno probabili del solito; non sono proposte): ' + lista(sotto) : '');
 }
 
-window.__SCANNER_BUILD = '0905-b94';
+window.__SCANNER_BUILD = '0905-b95';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
