@@ -324,7 +324,8 @@ def schermo(cartelle):
                 if m['v'] is not None: M.append(m)
     if not M: print('nessuna partita col maestro nei CSV'); sys.exit(1)
     T = applica(M, reg); P = soft(T[:, 0], T[:, 1])
-    C = np.array([[m['x']['1#0'], m['x']['X#0'], m['x']['2#0']] for m in M]) / 100
+    # dal b96 il maestro prima del rating dalle quote passate sta nelle righe Quote passate: (le 1, X, 2 sono il verdetto)
+    C = np.array([[m['x'].get(f'Quote passate: {k} del maestro#0', m['x'][f'{k}#0']) for k in ('1', 'X', '2')] for m in M]) / 100
     L = np.array([[m['x']['Ambito: lambda casa (ruolo)#0'], m['x']['Ambito: lambda trasf. (ruolo)#0']] for m in M])
     e1, e2 = 100 * np.abs(P - C).max(), np.abs(np.exp(T[:, 2:]) - L).max()
     print(f'{len(M)} partite col maestro: 1X2 entro {e1:.3f} punti, lambda entro {e2:.4f}')

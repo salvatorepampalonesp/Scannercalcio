@@ -203,15 +203,56 @@ const QUOTE_GIORNATA = () => { const c = BY_SEASON['2025/2026'].filter(m => m._r
 const QUOTE_FINTE = k => [2.10 + 0.25 * k, 3.40, 3.60 - 0.25 * k];
 const QUOTE_FINTE_OU = k => [1.80 + 0.15 * k, 2.05 - 0.10 * k];
 const dataFd = t => t.slice(8, 10) + '/' + t.slice(5, 7) + '/' + t.slice(0, 4);
+// Dal b96 i file di stagione hanno tutte le partite, coi nomi di football-data un po' diversi da quelli della lega (sempre
+// gli stessi per squadra) e le quote di chiusura dai lambda veri con un po' di rumore: servono al rating dalle quote passate.
+const NOMI_FD = ['AC Aquile', 'Bisonti 1908', 'FC Cervi', 'Delfin', 'Falchi', 'US Grifoni', 'Lupi', 'SS Orsi', 'Pantere', 'Tori', 'Volpi'];
+const fdNome = t => NOMI_FD[+t.id.slice(2)];
+function chiusuraFinta(m) {
+  const r = rng(m.id + 'chiusura'), lh = m._lam[0] * Math.exp(0.3 * (r() - 0.5)), la = m._lam[1] * Math.exp(0.3 * (r() - 0.5));
+  const pm = (l, k) => { let p = Math.exp(-l); for (let i = 1; i <= k; i++) p *= l / i; return p; };
+  let p1 = 0, pX = 0, p2 = 0, pU = 0;
+  for (let i = 0; i <= 10; i++) for (let j = 0; j <= 10; j++) { const p = pm(lh, i) * pm(la, j); if (i > j) p1 += p; else if (i === j) pX += p; else p2 += p; if (i + j < 3) pU += p; }
+  const z = p1 + pX + p2; return [p1 / z, pX / z, p2 / z].map(x => 1 / (1.05 * x)).concat([1 / (1.05 * (1 - pU / z)), 1 / (1.05 * pU / z)]);
+}
+// le righe di una stagione: [data, casa, trasferta, gol casa, gol trasf, quote]. Nel 2025/26 le tre partite della giornata
+// delle quote automatiche come prima: le prime due coi loro valori, la terza a squadre invertite.
+function righeFd(si) {
+  const G = si === 2 ? QUOTE_GIORNATA() : [];
+  return BY_SEASON[SEASONS[si]].map(m => { const k = G.findIndex(g => g.id === m.id);
+    if (k === 2) return [dataFd(m.time_utc), fdNome(m.away_team), fdNome(m.home_team), m.score_away, m.score_home, [...QUOTE_FINTE(2), ...QUOTE_FINTE_OU(2)]];
+    return [dataFd(m.time_utc), fdNome(m.home_team), fdNome(m.away_team), m.score_home, m.score_away, k >= 0 ? [...QUOTE_FINTE(k), ...QUOTE_FINTE_OU(k)] : chiusuraFinta(m)]; });
+}
 function quoteFinte(p) {
   const G = QUOTE_GIORNATA(), riga = (div, m, h, a, q) => [div, dataFd(m.time_utc), '15:00', h, a, ...q.map(x => x.toFixed(2))].join(',');
-  if (p === '/quote/mmz4281/2526/I1.csv') return ['Div,Date,Time,HomeTeam,AwayTeam,AvgCH,AvgCD,AvgCA,AvgC>2.5,AvgC<2.5',
-    riga('I1', G[0], 'AC ' + G[0].home_team.name, G[0].away_team.name.slice(0, 5), [...QUOTE_FINTE(0), ...QUOTE_FINTE_OU(0)]),
-    riga('I1', G[1], G[1].home_team.name + ' 1908', 'FC ' + G[1].away_team.name, [...QUOTE_FINTE(1), ...QUOTE_FINTE_OU(1)]),
-    riga('I1', G[2], G[2].away_team.name, G[2].home_team.name, [...QUOTE_FINTE(2), ...QUOTE_FINTE_OU(2)])].join('\r\n') + '\r\n';
+  const st = { '/quote/mmz4281/2324/I1.csv': 0, '/quote/mmz4281/2425/I1.csv': 1, '/quote/mmz4281/2526/I1.csv': 2 }[p];
+  if (st != null) return ['Div,Date,Time,HomeTeam,AwayTeam,FTHG,FTAG,AvgCH,AvgCD,AvgCA,AvgC>2.5,AvgC<2.5',
+    ...righeFd(st).map(([d, h, a, gh, ga, q]) => ['I1', d, '15:00', h, a, gh, ga, ...q.map(x => x.toFixed(2))].join(','))].join('\r\n') + '\r\n';
   if (p === '/quote/fixtures.csv') return ['Div,Date,Time,HomeTeam,AwayTeam,AvgH,AvgD,AvgA,Avg>2.5,Avg<2.5',
     riga('E0', G[2], G[2].home_team.name, G[2].away_team.name, [...QUOTE_FINTE(3), ...QUOTE_FINTE_OU(3)])].join('\n');
   return null;
+}
+
+// il rating dalle quote passate rifatto qui da capo, dalle righe finte, come rating_quote di strumenti/rating-quote.py:
+// la finestra sono le tre stagioni, il taglio il giorno della partita
+function ratingAtteso(m) {
+  const K = 0.35, KH = 0.01, REG = 0.85, d0 = m.time_utc.slice(0, 10), iso = d => d.slice(6, 10) + '-' + d.slice(3, 5) + '-' + d.slice(0, 2);
+  const righe = [0, 1, 2].flatMap(si => righeFd(si).map(r => ({ d: iso(r[0]), H: r[1], A: r[2], q: r[5].slice(0, 3).map(x => +x.toFixed(2)), s: si })));
+  righe.sort((x, y) => x.d < y.d ? -1 : x.d > y.d ? 1 : 0);
+  const st = [0, 1, 2].map(si => new Set(righe.filter(r => r.s === si).flatMap(r => [r.H, r.A])));
+  const R = {}, gi = {}, mean = a => a.reduce((p, x) => p + x, 0) / a.length; let H = 0.35, cur = null;
+  const cambio = s => { if (cur !== null) { const usc = [...st[cur]].filter(t => !st[s].has(t) && t in R).map(t => R[t]);
+      const lev = usc.length ? mean(usc) : Math.min(...Object.values(R)); st[s].forEach(t => { if (!(t in R)) R[t] = lev; });
+      const mu = mean([...st[s]].map(t => R[t])); st[s].forEach(t => { R[t] = mu + REG * (R[t] - mu); }); } cur = s; };
+  const giorni = []; righe.filter(r => r.d < d0).forEach(r => { const u = giorni[giorni.length - 1]; if (u && u[0].d === r.d) u.push(r); else giorni.push([r]); });
+  for (const day of giorni) {
+    if (day[0].s !== cur) cambio(day[0].s);
+    day.forEach(r => { for (const t of [r.H, r.A]) if (!(t in R)) R[t] = 0; r.y = R[r.H] - R[r.A] + H; });
+    day.forEach(r => { const inv = r.q.map(x => 1 / x), z = inv[0] + inv[1] + inv[2], e = Math.log((inv[0] / z) / (inv[2] / z)) - r.y;
+      R[r.H] += K * e; R[r.A] -= K * e; H += KH * e; gi[r.H] = (gi[r.H] || 0) + 1; gi[r.A] = (gi[r.A] || 0) + 1; });
+  }
+  if (cur !== m._si) cambio(m._si);
+  const h = fdNome(m.home_team), a = fdNome(m.away_team);
+  return { yq: (R[h] || 0) - (R[a] || 0) + H, nq: [gi[h] || 0, gi[a] || 0], nomi: [h, a] };
 }
 
 let API_CALLS = 0;
@@ -294,7 +335,8 @@ const SNAP = `(() => ({ rec: window.__REC_CUR || [], verd: JSON.parse(JSON.strin
   verdTxt: window.__VERDETTI_TXT || null, master: JSON.parse(JSON.stringify(window.__MASTER || null)),
   confMk: JSON.parse(JSON.stringify(window.__CONF_MK || null)), lineup: JSON.parse(JSON.stringify(window.__LINEUP_DEBUG || null)),
   fatigue: JSON.parse(JSON.stringify(window.__FATIGUE_DEBUG || null)),
-  trend: JSON.parse(JSON.stringify(window.__ELO_TREND || null)) }))()`;
+  trend: JSON.parse(JSON.stringify(window.__ELO_TREND || null)), qp: JSON.parse(JSON.stringify(window.__QP_DEBUG || null)),
+  esito: window.__ESITO ? window.__ESITO.p.slice() : null }))()`;
 
 // «In breve» (b66): il pick e' quello delle probabilita' mostrate (con le quote se ci sono), le proposte
 // le prime tre con un verdetto del tabellone a schermo, il rischio sorpresa quello del motore. Dal b69 il
@@ -711,13 +753,27 @@ async function runComparatore(browser, base, mode, date) {
     const cr = riga('Corner tot (atteso)'), vu = { n: 0, nd: 0, piene: 0, pieneNd: 0 };
     for (let i = 1; i < ids.length; i += 4) { if (!ids[i]) continue; const nd = cr[i + 2] === 'N/D';
       if (VUOTE.includes(ids[i])) { vu.n++; if (nd) vu.nd++; } else { vu.piene++; if (nd) vu.pieneNd++; } }
-    return { righe: arch.length, database: cmpAllMatches.length, partite: G.n, diversi: G.d.length, esempi: G.d.slice(0, 3), potenza: P.d.length, vuote: vu };
+    const qa = riga('Quote passate: attivo'), qy = riga('Quote passate: rating (log p1/p2)'), qh = riga('Quote passate: partite con le quote casa'),
+      qt = riga('Quote passate: partite con le quote trasferta'), qp = [];
+    for (let i = 1; i < ids.length; i += 4) if (ids[i]) qp.push([ids[i], qa[i], qy[i], qh[i], qt[i]]);
+    return { righe: arch.length, database: cmpAllMatches.length, partite: G.n, diversi: G.d.length, esempi: G.d.slice(0, 3), potenza: P.d.length, vuote: vu, qp };
   }, [...VUOTE]) : null;
   const res = await page.evaluate(() => ({ runs: window.__RUNS, csvs: window.__CSVS, dl: window.__DL || [],
     saved: (cmpSavedMatches || []).map(m => ({ id: m.ids && m.ids.matchId, conf: m.conf, R: { m1: m.R.m1, confidence: m.R.confidence } })),
     consoleTxt: (document.getElementById('console') || {}).innerText || '',
     scroll: document.documentElement.scrollWidth - window.innerWidth }));
   res.log = page.__log.slice(); res.sec = Math.round((Date.now() - t0) / 1000); res.archivio = archivio;
+  // il rating dalle quote passate del CSV (b96) contro quello rifatto qui da capo: dove entra (6 partite con le quote a testa)
+  // deve coincidere al quarto decimale, e dove non entra deve mancare davvero
+  if (archivio && archivio.qp) {
+    const q = archivio.qp, d = []; let si = 0;
+    for (const [id, att, y, nh, na] of q) {
+      const A = ratingAtteso(MATCHES[id]), entra = Math.min(...A.nq) >= 6;
+      if (att === 'si') si++;
+      if ((att === 'si') !== entra || (entra && (Math.abs(+y - A.yq) > 0.00006 || +nh !== A.nq[0] || +na !== A.nq[1]))) d.push(`${id}: ${att} ${y} ${nh}/${na} contro ${entra ? 'si' : 'no'} ${A.yq.toFixed(4)} ${A.nq.join('/')}`);
+    }
+    Object.assign(archivio, { qpSi: si, qpTot: q.length, qpDiversi: d.length, qpEsempi: d.slice(0, 3), qpOk: si > 0 && d.length === 0 });
+  }
   await page.context().close();
   return res;
 }
@@ -757,6 +813,11 @@ function csvChecks(S, csv, col) {
   cmp('1 (ensemble)', R['master-1'], cell('1', 0, M1)); cmp('X (ensemble)', R['master-x'], cell('X', 0, M1)); cmp('2 (ensemble)', R['master-2'], cell('2', 0, M1));
   cmp('confidence 1', R['conf-p1'], cell('1', 1, M1)); cmp('confidence X', R['conf-px'], cell('X', 1, M1)); cmp('confidence 2', R['conf-p2'], cell('2', 1, M1));
   cmp('confidence globale', R['master-conf'], cell('Confidence Globale', 0, MOD));
+  // il rating dalle quote passate (b96): quello dello Scanner nelle righe del CSV
+  const QPs = S.qp || {};
+  out.push({ what: 'quote passate: attivo', scanner: QPs.on ? 'si' : 'no', csv: cell('Quote passate: attivo', 0), ok: (QPs.on ? 'si' : 'no') === cell('Quote passate: attivo', 0) });
+  if (QPs.yq != null) cmp('quote passate: rating', QPs.yq.toFixed(4), cell('Quote passate: rating (log p1/p2)', 0), 0.00006);
+  if (QPs.ma) cmp('quote passate: 1 del maestro', (100 * QPs.ma[0]).toFixed(1), cell('Quote passate: 1 del maestro', 0), 0.05);
   for (const [sid, lbl] of [['dc', 'DC'], ['knn', 'KNN'], ['ol', 'OL'], ['mk', 'Markov'], ['dco', 'DCover'], ['mko', 'MKover']])
     for (const [s, l] of [['1', '1'], ['x', 'X'], ['2', '2']]) cmp(`${lbl} ${l}`, R[`mdl-${sid}-${s}`], cell(`${lbl} ${l}`, 0, MOD));
   cmp('Goal', R['mdl-ver-gg'], cell('Goal', 0, M1)); cmp('NoGoal', R['mdl-ver-ng'], cell('NoGoal', 0, M1));
@@ -946,7 +1007,18 @@ if (require.main === module) (async () => {
   const VU = scanner.vuote, vuOk = !!VU && !VU.errore && VU.vuote > 0 && VU.vuoteNulle === VU.vuote && VU.piene > 0 && VU.pieneNumeri === VU.piene;
   console.log('   statistiche vuote: ' + (VU && !VU.errore ? `${VU.vuote} partite vuote nello storico, ${VU.vuoteNulle} senza corner ne' tiri; ${VU.pieneNumeri} piene su ${VU.piene} coi numeri` : (VU ? VU.errore : 'assente'))
     + (vuOk ? '' : ' · ROTTO'));
-  let fail = (sLog.length || (process.env.MOBILE && (scanner.scroll > 0 || scanner.compatte.length)) || !G || gRotti.length || pRotti.length || ibRotti.length || !Q || qRotte.length || qaRotte.length || arRotti.length || idRotti.length || ttRotti.length || !vuOk) ? 1 : 0;
+  // il rating dalle quote passate (b96): nello Scanner identico a quello rifatto qui da capo dai file finti (nomi agganciati,
+  // finestra di tre stagioni, taglio al giorno), e il verdetto e' il maestro corretto dal rating coi numeri della regola
+  const QP = day.map(m => { const S = scanner.runs[m.id], q = S.qp, A = ratingAtteso(m);
+    if (!q) return { id: m.id, ok: false, perche: '__QP_DEBUG assente' };
+    const ok1 = q.stato === 'ok' && q.on && Math.abs(q.yq - A.yq) < 1e-9 && q.nq[0] === A.nq[0] && q.nq[1] === A.nq[1] && q.nomi[0] === A.nomi[0] && q.nomi[1] === A.nomi[1];
+    const lg = -0.0147 + 0.3599 * Math.log(q.ma[0] / q.ma[2]) + 0.6533 * q.yq, p1 = (1 - q.ma[1]) / (1 + Math.exp(-lg));
+    const ok2 = !!S.esito && Math.abs(S.esito[0] - p1) < 1e-12 && Math.abs(S.esito[1] - q.ma[1]) < 1e-12;
+    return { id: m.id, ok: ok1 && ok2, stato: q.stato, yq: q.yq, atteso: A.yq, nq: q.nq, nqAtteso: A.nq, nomi: q.nomi, verdetto: ok2 }; });
+  const qpRotti = QP.filter(x => !x.ok);
+  console.log('   quote passate: ' + QP.map(x => `${x.nomi ? x.nomi.join('-') : x.id} rating ${x.yq != null ? x.yq.toFixed(3) : '-'} (${x.nq ? x.nq.join('/') : '-'} partite)`).join(' · ')
+    + (qpRotti.length ? ' · ROTTO: ' + JSON.stringify(qpRotti) : ' · uguale a quello rifatto da capo dai file finti, nomi agganciati, verdetto = maestro corretto dal rating'));
+  let fail = (sLog.length || (process.env.MOBILE && (scanner.scroll > 0 || scanner.compatte.length)) || !G || gRotti.length || pRotti.length || ibRotti.length || !Q || qRotte.length || qaRotte.length || arRotti.length || idRotti.length || ttRotti.length || !vuOk || qpRotti.length) ? 1 : 0;
   const GI = await runGiornata(browser, base, cur, scanner.runs);
   const giOk = GI && GI.lista.length === cur.length && GI.lista.every((x, k) => x.id === cur[k].id && x.stato === 'fatta')
     && !GI.diversi.length && Object.keys(GI.giri).length === day.length && GI.righe === cur.length && !GI.rotto && !GI.promptRotto && !GI.log.length
@@ -1011,7 +1083,8 @@ if (require.main === module) (async () => {
         && (mode !== 'sconfina' || /le salto/.test(logTxt))
         && (!R.archivio || (R.archivio.righe > 0 && R.archivio.righe === R.archivio.database
                             && R.archivio.partite === cc.tot && R.archivio.diversi === 0 && R.archivio.potenza > 0
-                            && R.archivio.vuote.n > 0 && R.archivio.vuote.nd === R.archivio.vuote.n && R.archivio.vuote.pieneNd === 0));
+                            && R.archivio.vuote.n > 0 && R.archivio.vuote.nd === R.archivio.vuote.n && R.archivio.vuote.pieneNd === 0
+                            && R.archivio.qpOk));
     }
     if (!mr.ok) fail++;
     report.modes[mode] = mr;
@@ -1025,7 +1098,8 @@ if (require.main === module) (async () => {
     console.log(`   righe del CSV diverse dallo Scanner: ${cs.join(' / ')} su ${pms[0] && pms[0].csvControlli}`);
     if (R.archivio) { const A = R.archivio; mr.archivio = A;
       console.log(`   statistiche vuote nel CSV: reale dei corner N/D su ${A.vuote.nd} partite vuote su ${A.vuote.n}, e su ${A.vuote.pieneNd} piene su ${A.vuote.piene}`);
-      console.log(`   archivio in fondo al CSV: ${A.righe} partite su ${A.database} del database · Elo rifatto dall'archivio su ${A.partite} partite: ${A.diversi} diverse${A.esempi.length ? ' ' + JSON.stringify(A.esempi) : ''} · senza una partita: ${A.potenza} diverse (potenza)`); }
+      console.log(`   archivio in fondo al CSV: ${A.righe} partite su ${A.database} del database · Elo rifatto dall'archivio su ${A.partite} partite: ${A.diversi} diverse${A.esempi.length ? ' ' + JSON.stringify(A.esempi) : ''} · senza una partita: ${A.potenza} diverse (potenza)`);
+      console.log(`   quote passate nel CSV: il rating entra in ${A.qpSi} partite su ${A.qpTot}; rifatto qui da capo dai file finti, diverse ${A.qpDiversi}${A.qpEsempi.length ? ' ' + JSON.stringify(A.qpEsempi) : ''}`); }
     const ex = pms.find(p => p.esempi && p.esempi.length); if (ex) console.log('   es. motore:', JSON.stringify(ex.esempi.slice(0, 3)));
     const ec = pms.find(p => p.csvEsempi && p.csvEsempi.length); if (ec) console.log('   es. CSV:', JSON.stringify(ec.csvEsempi.slice(0, 6)));
     const note = pms.find(p => p.engine || p.csv); if (note) console.log('   nota:', note.engine || note.csv);

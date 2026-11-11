@@ -73,7 +73,7 @@ async function pitch(url) {
   conta.chiamate++;
   if (FINTO) {
     const b = finta.api(url);
-    return b ? { status: 200, body: JSON.stringify(b) } : { status: 404, body: '{"error":"not found"}' };
+    return b ? { status: 200, body: typeof b === 'string' ? b : JSON.stringify(b) } : { status: 404, body: '{"error":"not found"}' };
   }
   for (let t = 0; ; t++) {
     try {

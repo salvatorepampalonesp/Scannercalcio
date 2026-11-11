@@ -63,7 +63,11 @@ def leggi_csv(f):
                     'gol': {k: num(v(k)) for k in ('Over 1.5', 'Over 2.5', 'Over 3.5', 'GG (da matrice)')},
                     'file': os.path.basename(f), 'tab': tabellone(g, c),
                     'lgModel': num(v('Elo: log-odds modello [completo \u2192 1X2]')), 'lgElo': num(v('Elo: log-odds Elo [completo \u2192 1X2]')),
-                    'origine': v('Origine metriche avanzate'), 'ora': v('DATA ISO (UTC)')})
+                    'origine': v('Origine metriche avanzate'), 'ora': v('DATA ISO (UTC)'),
+                    # dal b96 le righe 1, X, 2 sono il maestro corretto dalle quote passate: il maestro da solo sta qui
+                    'pMa': [num(v(f'Quote passate: {k} del maestro')) / 100 for k in ('1', 'X', '2')] if num(v('Quote passate: 1 del maestro')) is not None else None,
+                    'yq': num(v('Quote passate: rating (log p1/p2)')), 'qp': v('Quote passate: attivo'),
+                    'qpNomi': (v('Quote passate: nomi su football-data') or '').split(' | ')})
     return out
 
 TAB_CHIAVI = {'1 (Casa)': 'p1', 'X (Pari)': 'pX', '2 (Trasf.)': 'p2', '1X': 'p1X', 'X2': 'pX2', '12': 'p12', 'Over 2.5': 'pOv', 'Under 2.5': 'pUn',

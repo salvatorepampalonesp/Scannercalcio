@@ -4,6 +4,8 @@
 #   python3 strumenti/quote-passate.py                     # l'esplorazione: la combinazione stimata sul mercato
 #   python3 strumenti/quote-passate.py --scarica-prova     # i file delle leghe del test (dopo aver registrato la regola)
 #   python3 strumenti/quote-passate.py --prova batch/b94/livello   # il test registrato, coi numeri di REGOLA
+#   python3 strumenti/quote-passate.py --rimisura          # b96: le tabelle senza quote sulle probabilita' col rating
+#   python3 strumenti/quote-passate.py --schermo <cartelle>   # b96: lo Scanner calcola il rating come lo strumento?
 #
 # Nessuna chiamata alla PitchAPI. Il rating e' quello di strumenti/rating-quote.py (K 0.35, KH 0.01, REG 0.85, H0 0.35),
 # fatto come lo farebbe lo Scanner: per una partita della stagione s, dalle quote di chiusura delle stagioni s-2, s-1 e s
@@ -110,7 +112,7 @@ def partite(cartelle, codici_nuovi):
                 x = rq.aggancia(m, cache[div])
                 if not x or not x['pc']: conta[(div, 'senza quote')] += 1; continue
                 if 'nq' not in x or min(x['nq']) < MIN_Q: conta[(div, 'senza rating')] += 1; continue
-                p = np.array(m['p'], float); p /= p.sum()
+                p = np.array(m['pMa'] or m['p'], float); p /= p.sum()   # il maestro, anche sui CSV dal b96
                 out.append(dict(div=div, lab=lab, st=st, data=m['data'], out=m['out'], pm=p, lgM=math.log(p[0] / p[2]),
                                 yq=x['yq'], yc=rq.lo(x['pc']), pc=np.array(x['pc'])))
     return out, conta
@@ -198,9 +200,228 @@ def prova(cartelle):
     confronto(P, np.array([r['pc'] for r in P]), 'la chiusura stessa')
     c, r2 = ols(P); print(f'  a, b, c stimati sul test (solo descrittivo): {c[0]:+.4f}, {c[1]:.4f}, {c[2]:.4f}, R2 {r2:.3f}')
 
+# --- la rimisura del b96: le tabelle senza quote sulle probabilita' col rating dalle quote passate --------------------
+# Dai CSV del batch del b94 (batch/b94) e dai file di football-data (batch/fd, batch/fd-nov), nessuna chiamata. Il maestro
+# e' rifatto fuori lega sulle 14 leghe del suo allenamento (le partite fino al taglio del 3 ottobre 2026, come nel b77),
+# con le registrate altrove; il rating e il candidato sono quelli di REGOLA. Si stampano maestro e candidato sulle stesse
+# partite: PICK_RESA (soglie, cinque, fuori), SORPRESA_TAB, EDGE_BANDS dell'1X2 e QUOTE_RESA.
+B94 = 'batch/b94'
+CINQUE5 = ('ITA_Serie_A', 'ENG_Premier_League', 'ESP_LaLiga', 'GER_Bundesliga', 'FRA_Ligue_1')
+STAG_ESTESE = {'2023/24': '2023-2024', '2024/25': '2024-2025', '2025/26': '2025-2026', '2026/27': '2026-2027'}
+
+def _stagioni(txt):
+    # '2023/24-2025/26' -> {'2023-2024', '2024-2025', '2025-2026'}; '2023-2025' -> {'2023', '2024', '2025'}; '2026' -> {'2026'}
+    a, _, b = txt.partition('-') if '/' in txt else (txt.split('-')[0], '-', txt.split('-')[-1])
+    if '/' in a:
+        y0, y1 = int(a[:4]), int((b or a)[:4]); return {f'{y}-{y + 1}' for y in range(y0, y1 + 1)}
+    return {str(y) for y in range(int(a), int(b or a) + 1)}
+
+def _pick_resa():
+    # le voci di PICK_RESA (cinque e fuori) lette da scanner.html: id -> [nome, partite, tutte, >=55, quota, stagioni, n55]
+    import json as _j, re as _re
+    src = io.open(os.path.join(RADICE, 'scanner.html'), encoding='utf-8').read()
+    blocco = src[src.index('const PICK_RESA'):src.index('const _seResa')]
+    out = {}
+    for parte in ('cinque', 'fuori'):
+        b = blocco[blocco.index(parte + ':'):]
+        b = b[:b.index('}') + 1]
+        for lid, corpo in _re.findall(r"(l_\w+): \[(.*?)\]", b):
+            v = __import__('ast').literal_eval('[' + corpo + ']')
+            out[lid] = (parte, v)
+    return out
+
+def _etichette():
+    import json as _j
+    L = _j.load(open(os.path.join(RADICE, 'leghe.json')))['data']['leagues']
+    return {l['id']: l['country_code'] + '_' + l['name'].replace(' ', '_') for l in L}
+
+def rimisura():
+    import json as _j, contextlib
+    mm = _mod('mm', 'maestro.py'); qm = _mod('qm', 'quote-matrice.py'); qg = mm.qg
+    os.chdir(RADICE)
+    cart = sorted(d for d in glob.glob(os.path.join(B94, '*')) if os.path.isdir(d))
+    ALL = [os.path.join(B94, c) for c in ('cinque', 'sette', 'inglesi-turchia')]
+    # 1. il maestro fuori lega: la ridge rifatta senza ogni lega dell'allenamento (14 leghe coi file principali)
+    with contextlib.redirect_stdout(io.StringIO()): _, Q = qm.carica(ALL, 'batch/fd')
+    def allena(q):
+        lab, st = chiave(q['file']); return st != '2026-2027' or (lab not in TUTTO_2627 and q['data'] < TAGLIO)
+    MV = {m['id']: m for m in mm.carica(ALL)}
+    Q = [q for q in Q if q['id'] in MV and allena(q) and qg.ou(q['riga'], ['AvgC', 'PC', 'B365C'])[0]]
+    MM = [MV[q['id']] for q in Q]
+    reg = _j.load(open(mm.FILE_REGOLA)); nomi = reg['nomi']
+    X, med = mm.matrice(MM, nomi)
+    OU = np.array([qg.ou(q['riga'], ['AvgC', 'PC', 'B365C'])[0] for q in Q])
+    PM = np.array([[1 / v for v in q['qc']] for q in Q]); PM /= PM.sum(1, keepdims=True)
+    pov = (1 / OU[:, 0]) / (1 / OU[:, 0] + 1 / OU[:, 1]); rho = X[:, nomi.index('rho')]
+    mh, ma_ = qg.allinea(pov, np.log(PM[:, 0] / PM[:, 2]), rho)
+    Y = np.c_[np.log(PM[:, 0] / PM[:, 1]), np.log(PM[:, 2] / PM[:, 1]), np.log(mh), np.log(ma_)]
+    lgq = np.array([q['lega'] for q in Q])
+    print(f'allenamento del maestro rifatto dal b94: {len(Q)} partite di {len(set(lgq))} leghe (b77: 16.071 di 14)')
+    fold = {l: mm._stima(X[lgq != l], med, Y[lgq != l], nomi) for l in sorted(set(lgq))}
+    # 2. tutte le partite del b94, col maestro (fuori lega dove serve) e col rating
+    tutte, cache, conta = [], {}, collections.Counter()
+    for c in cart:
+        for f in sorted(glob.glob(os.path.join(c, '*.csv'))):
+            if any(s_ in f for s_ in mm.FUORI): continue
+            lab, st = chiave(f)
+            V = {m['id']: m for m in mm.leggi(f)}
+            for m in V.values(): m['v'] = mm.variabili(m['x'], 1.0)
+            G = [m for m in qb.leggi_csv(f) if m['id'] in V and V[m['id']]['v'] is not None]
+            if not G: continue
+            leg = G[0]['lega']; r_ = fold.get(leg) if lab in PRINC and PRINC[lab] in qm.COD else None
+            T = mm.applica([V[m['id']] for m in G], r_ or reg); P = mm.soft(T[:, 0], T[:, 1])
+            div = PRINC.get(lab) or NUOVI.get(lab)
+            if div and div not in cache:
+                cache[div] = rating_finestre(leggi_principale(div) if div in PRINC.values() else leggi_nuovo(div))
+            for m, p, t in zip(G, P, T):
+                m.update(lab=lab, st=st, cart=os.path.basename(c), file=f, pma=p, lam=(math.exp(t[2]), math.exp(t[3])), fuori=r_ is not None,
+                         div=div, yq=None, pc=None)
+                if div:
+                    x = rq.aggancia(m, cache[div])
+                    if x:
+                        m['pc'] = np.array(x['pc']) if x['pc'] else None
+                        if 'nq' in x and min(x['nq']) >= MIN_Q: m['yq'] = x['yq']
+                a, b, cc = REGOLA
+                if m['yq'] is not None:
+                    lg = a + b * math.log(p[0] / p[2]) + cc * m['yq']; pX = p[1]; p1 = (1 - pX) / (1 + math.exp(-lg))
+                    m['pqp'] = np.array([p1, pX, 1 - pX - p1]); conta['col rating'] += 1
+                else:
+                    m['pqp'] = p; conta['senza rating'] += 1
+                tutte.append(m)
+    print(f'{len(tutte)} partite del b94: ' + ', '.join(f'{k} {v}' for k, v in conta.items()))
+    def stats(G, k):
+        P = np.array([m[k] for m in G]); y = np.array([m['out'] for m in G]); pk = P.max(1); hit = P.argmax(1) == y
+        return P, y, pk, hit
+    C5 = [m for m in tutte if m['lab'] in CINQUE5 and m['st'] != '2026-2027']
+    # PICK_RESA, soglie sulle cinque leghe
+    print(f'\n=== PICK_RESA, cinque leghe 2023/24-2025/26: {len(C5)} partite, col rating {sum(m["yq"] is not None for m in C5)} ===')
+    for k, nome in (('pma', 'maestro'), ('pqp', 'candidato')):
+        P, y, pk, hit = stats(C5, k); sog = []
+        for t in (70, 65, 60, 55, 50):
+            s_ = pk >= t / 100; q = 100 * s_.mean(); sog.append([t, round(100 * hit[s_].mean(), 1), round(q), round(100 / q, 1)])
+        print(f'  {nome:10s} tutte {100 * hit.mean():.1f}, casa {100 * (y == 0).mean():.1f}, soglie ' + _j.dumps(sog)
+              + '  ±2se ' + ' / '.join(f'{200 * math.sqrt(hit[pk >= t / 100].mean() * (1 - hit[pk >= t / 100].mean()) / (pk >= t / 100).sum()):.1f}' for t in (70, 65, 60, 55, 50)))
+    for k, nome in (('pma', 'maestro'), ('pqp', 'candidato')):
+        print(f'  {nome:10s} >=65% per lega: ' + ', '.join(f'{lab[4:]} {100 * h[pk >= 0.65].mean():.1f}' for lab in CINQUE5
+              for P_, y_, pk, h in [stats([m for m in C5 if m['lab'] == lab], k)]))
+    # PICK_RESA lega per lega, sulle stesse stagioni della tabella
+    PR, ET = _pick_resa(), _etichette()
+    print('\n=== PICK_RESA lega per lega (solo le leghe con le quote passate cambiano): [partite, tutte, >=55, quota, n55] ===')
+    nuove = {}
+    for lid, (parte, v) in PR.items():
+        lab = ET.get(lid); sts = _stagioni(v[5])
+        G = [m for m in tutte if m['lab'] == lab and m['st'] in sts]
+        if not G: print(f'  {v[0]:30s} nessuna partita ({lab}, {sorted(sts)})'); continue
+        riga = {}
+        for k in ('pma', 'pqp'):
+            P, y, pk, hit = stats(G, k); s_ = pk >= 0.55
+            riga[k] = [len(G), round(100 * hit.mean(), 1), round(100 * hit[s_].mean(), 1) if s_.any() else None, round(100 * s_.mean()), int(s_.sum())]
+        nr = sum(m['yq'] is not None for m in G)
+        tab = [v[1], v[2], v[3], v[4], v[6]]
+        print(f'  {parte:6s} {v[0]:30s} tabella {tab}  maestro {riga["pma"]}  candidato {riga["pqp"]}  col rating {nr}/{len(G)}')
+        nuove[lid] = (parte, v, riga['pqp'], nr)
+    print('\n  le righe nuove (dove entra il rating):')
+    for lid, (parte, v, r, nr) in nuove.items():
+        if nr: print(f"           {lid}: ['{v[0]}', {r[0]}, {r[1]}, {r[2]}, {r[3]}, '{v[5]}', {r[4]}],  ({parte})")
+    # SORPRESA_TAB, sulle 24 leghe del b64 (fino al taglio per il 2026/27)
+    VENTIQ = set(CINQUE5) | {'ENG_Championship', 'NED_Eredivisie', 'POR_Liga_Portugal', 'GER_2._Bundesliga', 'BEL_First_Division_A', 'SCO_Premiership',
+                             'SUI_Super_League', 'ENG_League_One', 'ENG_League_Two', 'TUR_Super_Lig'}
+    DIECI = {'ITA_Serie_A', 'ENG_Premier_League', 'ESP_LaLiga', 'FRA_Ligue_1', 'ENG_Championship', 'NED_Eredivisie', 'POR_Liga_Portugal',
+             'BEL_First_Division_A', 'GER_2._Bundesliga', 'SCO_Premiership'}
+    S = [m for m in tutte if m['lgModel'] is not None and m['lgElo'] is not None and (
+         (m['lab'] in VENTIQ and (m['st'] != '2026-2027' or (m['lab'] in DIECI and m['data'] < TAGLIO))) or m['cart'] == 'livello')]
+    print(f'\n=== SORPRESA_TAB: {len(S)} partite di {len({m["lab"] for m in S})} leghe (b77: 23.278 di 24), col rating {sum(m["yq"] is not None for m in S)} ===')
+    for k, nome in (('pma', 'maestro'), ('pqp', 'candidato')):
+        P, y, pk, hit = stats(S, k); fav = np.where(P[:, 0] >= P[:, 2], 0, 2); und = 2 - fav; pU = P[np.arange(len(S)), und]
+        dis = np.array([(m['lgModel'] > 0) != (m['lgElo'] > 0) for m in S])
+        cella = lambda s_: [int(s_.sum())] + [round(float(100 * v), 1) for v in ((y[s_] == und[s_]).mean(), (y[s_] == 1).mean(), (y[s_] == fav[s_]).mean())] if s_.any() else None
+        js = lambda c: 'null' if c is None else '[' + ', '.join(str(x) for x in c) + ']'
+        FAS = [0, 15, 20, 25, 30, 35]; righe = []
+        for i, lo_ in enumerate(FAS):
+            hi = FAS[i + 1] if i + 1 < len(FAS) else 101; b_ = (pU * 100 >= lo_) & (pU * 100 < hi)
+            righe.append(f'  {{ da: {lo_}, tutte: {js(cella(b_))}, accordo: {js(cella(b_ & ~dis))}, disaccordo: {js(cella(b_ & dis))} }}')
+        r_ = (y == und).astype(float) - pU
+        print(f'  {nome}: residuo dello sfavorito col disaccordo {100 * r_[dis].mean():+.2f} (2se {200 * r_[dis].std() / math.sqrt(dis.sum()):.2f}),'
+              f' con l\'accordo {100 * r_[~dis].mean():+.2f} (2se {200 * r_[~dis].std() / math.sqrt((~dis).sum()):.2f})')
+        print('const SORPRESA_TAB = { partite: %d, leghe: %d, fasce: [\n%s ] };' % (len(S), len({m['lab'] for m in S}), ',\n'.join(righe)))
+    # EDGE_BANDS dell'1X2, cinque leghe: il tabellone del CSV con le probabilita' 1X2 e gol rifatte
+    FAM = {k: 'gol' for k in ('pOv', 'pUn', 'pGG', 'pNG')} | {k: 'numeri' for k in ('cor9.5', 'sot8.5', 'yel3.5')} | {k: 'corner' for k in ('cdH', 'cdA', 'chH', 'chA')}
+    ORD = ['p1', 'pX', 'p2', 'p1X', 'pX2', 'p12', 'pOv', 'pUn', 'pGG', 'pNG', 'cor9.5', 'sot8.5', 'yel3.5', 'cdH', 'cdA', 'chH', 'chA']
+    cieca = collections.defaultdict(list)
+    for m in C5:
+        for v in m['tab']:
+            if v['hit'] is not None: cieca[(m['file'], v['key'])].append(v['hit'])
+    cieca = {k: sum(v) / len(v) for k, v in cieca.items()}
+    acc = {'pma': collections.defaultdict(list), 'pqp': collections.defaultdict(list)}; prima = {'pma': [], 'pqp': []}
+    for m in C5:
+        mk = qg.mercati(qg.matrici([m['lam'][0]], [m['lam'][1]], [m['rho']]))
+        for chi in ('pma', 'pqp'):
+            P_ = m[chi]
+            q = {'p1': P_[0], 'pX': P_[1], 'p2': P_[2], 'p1X': P_[0] + P_[1], 'pX2': P_[1] + P_[2], 'p12': P_[0] + P_[2],
+                 'pOv': mk['o25'][0], 'pUn': 1 - mk['o25'][0], 'pGG': mk['gg'][0], 'pNG': 1 - mk['gg'][0]}
+            voci = [dict(v, p=q.get(v['key'], v['p'])) for v in m['tab']]
+            for v in voci: v['e'] = None if v['b'] is None else 100 * (v['p'] - v['b'])
+            voci = sorted(voci, key=lambda v: (-(v['e'] if v['e'] is not None else -1e9), ORD.index(v['key'])))
+            g = lambda v: None if v['hit'] is None else 100 * (v['hit'] - cieca[(m['file'], v['key'])])
+            if voci and g(voci[0]) is not None: prima[chi].append(g(voci[0]))
+            for v in voci:
+                if v['e'] is None: continue
+                for s_, nome in ((20, 'FORTE'), (10, 'GIOCABILE'), (5, 'MARGINALE')):
+                    if v['e'] >= s_:
+                        if g(v) is not None: acc[chi][(nome, FAM.get(v['key'], '1x2'))].append(g(v))
+                        break
+    print(f'\n=== EDGE_BANDS, cinque leghe: prima proposta maestro {np.mean(prima["pma"]):+.2f}, candidato {np.mean(prima["pqp"]):+.2f} ===')
+    for chi in ('pma', 'pqp'):
+        EB = {}
+        for fam in ('1x2', 'gol'):
+            EB[fam] = [[round(float(np.mean(acc[chi][(n_, fam)])), 1), round(float(2 * np.std(acc[chi][(n_, fam)], ddof=1) / math.sqrt(len(acc[chi][(n_, fam)]))), 1), len(acc[chi][(n_, fam)])]
+                       if len(acc[chi].get((n_, fam), [])) > 1 else None for n_ in ('FORTE', 'GIOCABILE', 'MARGINALE')]
+        print(f'  {chi}: ' + _j.dumps(EB))
+    # QUOTE_RESA: le 12 leghe con la chiusura, 2023/24-2025/26
+    DODICI = set(CINQUE5) | {'ENG_Championship', 'NED_Eredivisie', 'POR_Liga_Portugal', 'GER_2._Bundesliga', 'BEL_First_Division_A', 'SCO_Premiership', 'SUI_Super_League'}
+    D = [m for m in tutte if m['lab'] in DODICI and m['st'] != '2026-2027' and m['pc'] is not None]
+    print(f'\n=== QUOTE_RESA: {len(D)} partite di {len({m["lab"] for m in D})} leghe con la chiusura (b54: 11.902) ===')
+    y = np.array([m['out'] for m in D]); pc = np.array([m['pc'] for m in D]); hm = pc.argmax(1) == y
+    print(f'  mercato: pick {100 * hm.mean():.1f}%')
+    for k, nome in (('pma', 'maestro'), ('pqp', 'candidato')):
+        P = np.array([m[k] for m in D]); h = P.argmax(1) == y; dis = P.argmax(1) != pc.argmax(1)
+        print(f'  {nome:10s} pick senza quote {100 * h.mean():.1f}%; disaccordo col mercato {dis.sum()} partite ({100 * dis.mean():.1f}%), lì {nome} {100 * h[dis].mean():.1f}%, mercato {100 * hm[dis].mean():.1f}%')
+
+def schermo(cartelle):
+    # lo Scanner calcola il rating come lo strumento? Dai CSV di un batch del b96: per ogni partita il rating di football-data
+    # rifatto qui (aggancio per data, punteggio e nomi; batch/fd e batch/fd-nov) contro la riga del CSV, e l'1X2 del CSV contro
+    # la formula della regola sul maestro del CSV. Esce con 1 se qualcosa sta fuori dall'arrotondamento del CSV.
+    a, b, c = REGOLA; cache, n, dy, dp, att, diversi = {}, 0, 0.0, 0.0, collections.Counter(), []
+    for cart in cartelle:
+        for f in sorted(glob.glob(os.path.join(cart, '*.csv'))):
+            lab, st = chiave(f); div = PRINC.get(lab) or NUOVI.get(lab)
+            for m in qb.leggi_csv(f):
+                if m['qp'] is None: continue
+                att[m['qp']] += 1
+                if m['qp'] != 'si' or not div: continue
+                if div not in cache: cache[div] = rating_finestre(leggi_principale(div) if div in PRINC.values() else leggi_nuovo(div))
+                x = rq.aggancia(m, cache[div])
+                if not x and len(m['qpNomi']) == 2:
+                    # gli alias dello Scanner (QUOTE_ALIAS) lo strumento non li ha: la riga coi nomi che lo Scanner ha agganciato
+                    d = dt.date.fromisoformat(m['data'])
+                    cc = [r for r in cache[div] if (r['H'], r['A']) == tuple(m['qpNomi']) and abs((r['d'] - d).days) <= 1]
+                    x = cc[0] if len(cc) == 1 and (cc[0]['hg'], cc[0]['ag']) == (m['hg'], m['ag']) else None
+                    if x: att['coi nomi dello Scanner'] += 1
+                if not x or 'nq' not in x: att['non agganciata qui'] += 1; continue
+                n += 1; e = abs(x['yq'] - m['yq']); dy = max(dy, e)
+                lg = a + b * math.log(m['pMa'][0] / m['pMa'][2]) + c * m['yq']; pX = m['pMa'][1]; p1 = (1 - pX) / (1 + math.exp(-lg))
+                ep = 100 * max(abs(p1 - m['p'][0]), abs(1 - pX - p1 - m['p'][2]), abs(pX - m['p'][1])); dp = max(dp, ep)
+                if e > 0.0002 or ep > 0.15: diversi.append((m['id'], m['data'], m['H'], m['A'], round(x['yq'], 4), m['yq'], round(ep, 2)))
+    print(f'righe Quote passate: {dict(att)}; rifatte qui {n}: rating entro {dy:.5f}, 1X2 entro {dp:.3f} punti')
+    for d in diversi[:8]: print('   DIVERSA', d)
+    ok = n > 0 and not diversi
+    print('tutto entro l arrotondamento del CSV' if ok else 'DIVERSI'); sys.exit(0 if ok else 1)
+
 if __name__ == '__main__':
     a = sys.argv[1:]
     if '--scarica' in a: scarica(ESPLORA_NUOVI)
     elif '--scarica-prova' in a: scarica(PROVA_NUOVI, principali=False)
     elif '--prova' in a: prova([x for x in a if not x.startswith('--')])
+    elif '--rimisura' in a: rimisura()
+    elif '--schermo' in a: schermo([x for x in a if not x.startswith('--')])
     else: esplora()
