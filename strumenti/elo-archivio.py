@@ -14,10 +14,12 @@ import csv, io, math, sys, datetime as dt
 # ingresso 'uscite' (dal b48): chi entra nella lega parte dalla media dei rating finali delle
 # squadre uscite la stagione prima, e chi torna dopo piu' di `ritorno` giorni regredisce verso
 # quel livello; '1500' e' la regola fino al b47. pendenza 'netta' toglie dalla serie i salti
-# della regressione; 'grezza' e' quella fino al b47.
+# della regressione; 'grezza' e' quella fino al b47. nulli 'salta' (dal b97): una partita conclusa
+# senza punteggio non entra nell'Elo ne' nell'HFA; 'pari' e' la regola fino al b96, che la contava 0-0.
 DEFAULT = dict(soglia=45, tau=360, asintoto=0.9, ingresso='uscite', ritorno=180, pendenza='netta',
-               k_basso=30, k_alto=20, k_soglia=15)
-B47 = dict(DEFAULT, ingresso='1500', pendenza='grezza')
+               k_basso=30, k_alto=20, k_soglia=15, nulli='salta')
+B96 = dict(DEFAULT, nulli='pari')
+B47 = dict(B96, ingresso='1500', pendenza='grezza')
 jsr = lambda x: math.floor(x + 0.5)
 
 
@@ -49,7 +51,8 @@ def elo(archivio, orario_bersaglio, P=DEFAULT):
             if t and m['stagione']: squadre.setdefault(m['stagione'], set()).add(t)
     con = P['ingresso'] == 'uscite' and len(stag) > 1 and all(m['stagione'] for m in archivio)
     passate = [m for m in archivio if m['stato'] == 'finished' and m['t'] and m['h'] and m['a']
-               and m['t'][:10] < giorno and _ms(m['t']) < tms]
+               and m['t'][:10] < giorno and _ms(m['t']) < tms
+               and (P.get('nulli', 'salta') == 'pari' or (m['gh'] is not None and m['ga'] is not None))]
     visti, vc, vf, n = set(), 0, 0, 0
     for m in passate:
         if m['id'] in visti:
@@ -118,21 +121,32 @@ def coincidenza(path):
     eh, ea, hf = col('ELO Casa'), col('ELO Trasferta'), col('HFA Lega')
     trH = col('Elo: pendenza casa (media ultime 5 meno 6-15, punti)')
     trA = col('Elo: pendenza trasferta (media ultime 5 meno 6-15, punti)')
-    Pm = DEFAULT if 'Elo: ingresso delle neopromosse (livello della stagione)' in P else B47
-    n = diversi = diversa_pend = 0
-    for i in range(1, len(ids), 4):
-        if not ids[i]:
-            continue
-        tab, serie, hfa, ingr = elo(archivio, t[i], Pm)
-        n += 1
-        d = 1500 if ingr is None else ingr
-        v = (str(jsr(tab.get(hid[i], d))), str(jsr(tab.get(aid[i], d))), str(hfa))
-        diversi += v != (eh[i], ea[i], hf[i])
-        for sq, tr in ((hid[i], trH[i] if trH else ''), (aid[i], trA[i] if trA else '')):
-            if tr and tr != 'N/D':
-                diversa_pend += abs(pendenza(serie.get(sq, [])) - float(tr.replace(',', '.'))) > 0.0051
+    nuova = 'Elo: ingresso delle neopromosse (livello della stagione)' in P
+    senza = sum(1 for m in archivio if m['stato'] == 'finished' and (m['gh'] is None or m['ga'] is None))
+    def giro(Pm):
+        n = diversi = diversa_pend = 0
+        for i in range(1, len(ids), 4):
+            if not ids[i]:
+                continue
+            tab, serie, hfa, ingr = elo(archivio, t[i], Pm)
+            n += 1
+            d = 1500 if ingr is None else ingr
+            v = (str(jsr(tab.get(hid[i], d))), str(jsr(tab.get(aid[i], d))), str(hfa))
+            diversi += v != (eh[i], ea[i], hf[i])
+            for sq, tr in ((hid[i], trH[i] if trH else ''), (aid[i], trA[i] if trA else '')):
+                if tr and tr != 'N/D':
+                    diversa_pend += abs(pendenza(serie.get(sq, [])) - float(tr.replace(',', '.'))) > 0.0051
+        return n, diversi, diversa_pend
+    # il CSV non dice la build: senza partite concluse prive di punteggio le due regole coincidono; se ce ne sono si
+    # prova prima quella del b97 (saltate), poi quella fino al b96 (contate 0-0), e si dice quale torna
+    Pm, regola = (DEFAULT, 'b48') if nuova else (B47, 'b47')
+    n, diversi, diversa_pend = giro(Pm)
+    if nuova and senza and (diversi or diversa_pend):
+        n2, d2, p2 = giro(B96)
+        if not d2 and not p2:
+            n, diversi, diversa_pend, regola = n2, d2, p2, 'b48, punteggi nulli come 0-0 (fino al b96)'
     return dict(archivio=len(archivio), partite=n, elo_diversi=diversi, pendenza_diversa=diversa_pend,
-                regola='b48' if Pm is DEFAULT else 'b47')
+                regola=regola, senza_punteggio=senza)
 
 
 if __name__ == '__main__':
@@ -140,4 +154,5 @@ if __name__ == '__main__':
         r = coincidenza(f)
         esito = 'COINCIDE' if r['archivio'] and r['partite'] and not r['elo_diversi'] and not r['pendenza_diversa'] else 'NON COINCIDE'
         print(f"{f}: regola {r['regola']} · archivio {r['archivio']} partite · {r['partite']} partite nel file · "
-              f"Elo/HFA diversi {r['elo_diversi']} · pendenza diversa {r['pendenza_diversa']} · {esito}")
+              + (f"{r['senza_punteggio']} concluse senza punteggio · " if r['senza_punteggio'] else '')
+              + f"Elo/HFA diversi {r['elo_diversi']} · pendenza diversa {r['pendenza_diversa']} · {esito}")

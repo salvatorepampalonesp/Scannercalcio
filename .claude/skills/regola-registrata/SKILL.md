@@ -34,6 +34,10 @@ cosa ci sarebbe di nuovo, se c'è qualcosa.
 - **Fuori lega**: si stima su N−1 leghe e si misura sulla N-esima, a turno. La differenza si
   calcola appaiata partita per partita, e `z` è la media divisa per l'errore standard. Si dice in
   quante leghe migliora.
+- **Due `z`**: accanto a quello per partita, quello con l'errore fra leghe (`qb.zeta_leghe(d, leghe)` in
+  `strumenti/quote-bookmaker.py`). Se l'effetto cambia da lega a lega il secondo scende, ed è quello
+  che dice cosa aspettarsi su una lega nuova: il livello dei gol del `b63` passava con −2.99 per
+  partita e fa −1.49 fra leghe (AGENTS.md, *Disciplina di calibrazione*, punto 8).
 - **Le trappole note**:
   - L'AUC dei mercati gol non si aggrega mai fra leghe.
   - Il CSV ha una cifra decimale.
@@ -44,6 +48,8 @@ cosa ci sarebbe di nuovo, se c'è qualcosa.
   - Un effetto che c'è in una metà sola non è un effetto.
 - **Strumenti già fatti**, da riusare: in `strumenti/` ci sono `dc-residui.py`, `markov-dc.py`,
   `livello-gol.py`, `rating-xg.py`, `sorpresa.py`, `sorpresa-quote.py` e i `quote-*.py`. Senza i CSV del motore:
+  `coerenza.py` misura dai soli CSV il pareggio col rating e la matrice dei gol contro il verdetto; `formule.js` rifà
+  invarianti e conti su casi tipo, senza partite.
   `rating-quote.py` lavora sui soli file di football-data (`--scarica`, nessuna chiamata alla PitchAPI), e
   `undici.py` scarica formazioni e voti dei giocatori (due chiamate a partita). `simili.py` scarica `/stats` e
   `/advanced` di tutte le partite di lega e misura stili e squadre simili contro il mercato; `simili-card.py` rifà da lì la
@@ -64,7 +70,7 @@ del test**: il commit è la prova della data. Deve dire:
   appaiato;
 - **quando passa**, fissato adesso. Di solito: `z ≤ −2` sull'insieme; meglio in almeno metà o due
   terzi delle leghe; nessuna lega con `z > +1`; le prese del pick che non calano oltre −2 errori
-  standard;
+  standard. Si scrive anche quale dei due `z` decide, quello per partita o quello fra leghe;
 - **se passa**: cosa entra nel motore e cosa va rimisurato (`PICK_RESA`, `EDGE_BANDS`,
   `SORPRESA_TAB`, la confidence...). **Se non passa**: tutto resta com'è, e la sezione dice
   perché;

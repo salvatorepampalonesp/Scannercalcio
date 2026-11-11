@@ -23,6 +23,11 @@ AGENTS.md, *Il batch automatico* e *Leggere un CSV del Comparatore*.
   una variabile d'ambiente. Non chiedere mai all'utente di scriverla in chat. Lo script prova una
   chiamata prima di aprire il browser e dice cosa manca. Se manca, leggi la documentazione
   dell'ambiente sui segreti e passa all'utente i passi giusti.
+- **Se il proxy risponde 403** (`CONNECT tunnel failed, response 403`), l'ambiente della sessione non
+  ha la PitchAPI fra i domini permessi. L'11 novembre 2026 c'erano due ambienti con lo stesso nome,
+  uno con la credenziale e football-data e uno senza: dal secondo non parte niente. Dillo all'utente
+  (aprire la sessione nell'altro, o dare ai due nomi diversi) e fai quello che non vuole dati
+  (AGENTS.md, *Il batch automatico*).
 - **Il conto delle chiamate.** Passano dal worker dello Scanner: nel piano gratuito di Cloudflare
   100.000 al giorno, azzerate a mezzanotte UTC, e servono anche all'utente al telefono. Prima di
   lanciare stima le chiamate (circa 6 per partita, più la prima volta lo storico delle squadre);

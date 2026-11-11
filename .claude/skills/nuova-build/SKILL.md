@@ -103,6 +103,13 @@ Ci mette 3–5 minuti: lancialo in background. Deve uscire con 0. Il dettaglio �
   CSV si ferma (AGENTS.md, contratto, punto 7).
 - Se tocchi i corner (`NUMERI_REG`, `CORNER_*`, `MARKET_PER_GOAL.cor`), sullo stesso batch finto con `--scritture`
   `python3 strumenti/rese-numeri.py --verifica <cartella>` deve dire COINCIDE.
+- Se tocchi una funzione pura del motore (matrice dei gol, binomiale negativa, handicap, inclinazione dell'Elo, matrice
+  allineata, corner, giocate), `node strumenti/formule.js --breve` deve uscire con 0: sono gli invarianti (somme a 1,
+  identità fra mercati, bisezioni che arrivano al bersaglio). Senza `--breve` rifà anche i conti del controllo del `b97`
+  (AGENTS.md, *Gli audit*, «Le formule contro la loro definizione»).
+- Se tocchi un filtro sulle partite dell'archivio (Elo, storico di squadra, media di lega), `node
+  strumenti/punteggi-nulli.js <scanner di prima>` deve uscire con 0: una partita conclusa senza punteggio vale come una
+  partita tolta (AGENTS.md, *Politica sui valori mancanti*).
 
 ## 4. AGENTS.md
 

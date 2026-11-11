@@ -134,7 +134,7 @@ def confronto(P, Q, nome):
     h0 = (pm.argmax(1) == yv).astype(float); h1 = (Q.argmax(1) == yv).astype(float); dh = h1 - h0
     se = dh.std(ddof=1) / math.sqrt(len(dh))
     divs = sorted(set(r['div'] for r in P)); meglio = [dv for dv in divs if dl[[r['div'] == dv for r in P]].mean() < 0]
-    print(f'  {nome}: {len(P)} partite, contro il maestro {1000 * dl.mean():+.2f} per mille (z {zeta(dl):+.2f}), meglio in {len(meglio)} su {len(divs)}; '
+    print(f'  {nome}: {len(P)} partite, contro il maestro {1000 * dl.mean():+.2f} per mille (z {zeta(dl):+.2f}, fra leghe {qb.zeta_leghe(dl, [r["div"] for r in P]):+.2f}), meglio in {len(meglio)} su {len(divs)}; '
           f'prese {100 * h0.mean():.2f} -> {100 * h1.mean():.2f}% ({100 * dh.mean():+.2f} ±{200 * se:.2f})')
     return dl, dh, divs
 

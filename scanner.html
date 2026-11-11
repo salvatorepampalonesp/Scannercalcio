@@ -961,7 +961,7 @@ body.in-analisi.bug-on .ab-back{width:44px;padding:0;justify-content:center}
     <span class="ab-tit" id="ab-tit"><b></b><small></small></span>
     <span class="ab-bug" id="ab-bug" aria-hidden="true"></span>
     <span class="ab-spazio"></span>
-    <span class="tag" id="build-ver">build 0905-b96</span>
+    <span class="tag" id="build-ver">build 0905-b97</span>
   </div>
 </header>
 
@@ -2340,7 +2340,8 @@ function buildGlobalElo(targetTimeMs) {
     if (_chosenLeagueId && m.league_id !== _chosenLeagueId) continue;
     if (!_isPast(m.time_utc, targetTimeMs, _tDay)) continue;
     if (_seenHFA.has(m.id)) continue; _seenHFA.add(m.id);
-    const gh = m.score_home ?? 0, ga = m.score_away ?? 0;
+    if (m.score_home == null || m.score_away == null) continue;
+    const gh = m.score_home, ga = m.score_away;
     if (gh > ga) _h_w++; else if (gh < ga) _a_w++;
     _n_hfa++;
   }
@@ -2419,6 +2420,7 @@ function buildGlobalElo(targetTimeMs) {
   const seen = new Set();
   const ms = globalLeagueMatchesCache
     .filter(m => m.status === 'finished' && m.time_utc && m.home_team && m.away_team
+                 && m.score_home != null && m.score_away != null
                  && (!_chosenLeagueId || m.league_id === _chosenLeagueId)
                  && _isPast(m.time_utc, targetTimeMs, _tDay))
     .sort((a, b) => new Date(a.time_utc) - new Date(b.time_utc));
@@ -2450,7 +2452,7 @@ function buildGlobalElo(targetTimeMs) {
     }
 
     pre[m.id] = [table[h], table[a]];
-    const gh = m.score_home ?? 0, ga = m.score_away ?? 0;
+    const gh = m.score_home, ga = m.score_away;
     const act = gh > ga ? 1 : (gh < ga ? 0 : 0.5);
     const diff = Math.abs(gh - ga);
     const mov = diff <= 1 ? 1.0 : (diff === 2 ? 1.5 : (11 + diff) / 8);
@@ -3087,6 +3089,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
 
   let past = globalLeagueMatchesCache.filter(m => {
     if(m.status !== 'finished') return false; if(m.home_team.id !== teamId && m.away_team.id !== teamId) return false;
+    if(m.score_home == null || m.score_away == null) return false;
     if(_chosenLeagueId && m.league_id !== _chosenLeagueId) return false;
     if(!m.time_utc) return false; const t = new Date(m.time_utc).getTime();
     return _isPast(m.time_utc, targetTimeMs, _tDay) && t > minTimeMs;
@@ -3111,7 +3114,7 @@ async function aggregaTeam(matchTimeStr, teamId, teamName, limit, isHomeTeamUI) 
     const [statsRes, lineupsRes, advRes, eventsRes] = await fetchMatchRaw(m.id);
 
     const d = statsRes && !statsVuote(statsRes.data || statsRes) ? (statsRes.data || statsRes) : null;
-    const gf = isH ? (m.score_home||0) : (m.score_away||0); const ga = isH ? (m.score_away||0) : (m.score_home||0);
+    const gf = isH ? m.score_home : m.score_away; const ga = isH ? m.score_away : m.score_home;
     const avv = isH ? m.away_team.name : m.home_team.name; const dateStrUtc = m.time_utc; const dateShort = m.time_utc ? m.time_utc.substring(5,10) : '-';
 
     let modulo = 'N/D', oppModulo = 'N/D';
@@ -4693,7 +4696,7 @@ function _tabTesto(V) {
     + (sotto.length ? '\n- Sotto la base di lega di 5 punti o piu\' (qui questi esiti sono meno probabili del solito; non sono proposte): ' + lista(sotto) : '');
 }
 
-window.__SCANNER_BUILD = '0905-b96';
+window.__SCANNER_BUILD = '0905-b97';
 
 const STAT_SHRINK_DEFAULT = 0.50;
 
@@ -4890,13 +4893,12 @@ function meanPairEloGap(table) {
 }
 
 window.ELO_1X2_W = (typeof window.ELO_1X2_W === 'number') ? window.ELO_1X2_W : 0.75;
-// LA SCALA. 173.7178 = 400/ln(10) e' la definizione della scala Elo, ma il nostro
-// rating NON vive su quella scala: e' una stima online con K limitato (30/20), che
-// SOTTO-disperde. Misurato nel b30 su tre leghe: la pendenza di calibrazione della
-// differenza Elo e' 1.235 (se 0.075, z=3.13 contro 1), cioe' le differenze sono un
-// quarto piu' piccole del vero. La scelta fuori campione prende 1.20-1.35 in SETTE
-// fold su sette. L'HFA NON va scalato: viene da 400*log10(wr_casa/wr_fuori), che e'
-// gia' un log-odds misurato, non un rating. Vedi AGENTS.md, 'La scala dell'Elo'.
+// LA SCALA. L'aggiornamento dell'Elo stima il PUNTEGGIO ATTESO (pareggio = mezzo), qui la
+// differenza serve come log-odds 1 CONTRO 2: fra i due c'e' per definizione un fattore
+// 1.36-1.40 (b97). Misurato 1.235 nel b30 (se 0.075), scelto fuori campione 1.20-1.35 in
+// sette fold su sette: il rating non sotto-disperde, semmai il contrario. L'HFA NON va
+// scalato: 400*log10(wr_casa/wr_fuori) e' gia' in unita' 1 contro 2.
+// Vedi AGENTS.md, 'La scala dell'Elo'.
 window.ELO_SCALE = (typeof window.ELO_SCALE === 'number') ? window.ELO_SCALE : 1.25;
 const ELO_TILT_MAX = 0.60;
 

@@ -23,6 +23,15 @@ def num(s):
     try: return float(str(s).strip().replace('%', '').replace(',', '.'))
     except (TypeError, ValueError): return None
 
+def zeta_leghe(d, gruppi):
+    # z con l'errore FRA LEGHE (o fra file): le partite di una lega non sono indipendenti, e un effetto che cambia da
+    # lega a lega deve pesare nell'errore. E' la media divisa per sqrt(G/(G-1) * somma_g S_g^2) / N, con S_g la somma
+    # degli scarti dalla media dentro la lega g. Accanto allo z per partita (AGENTS.md, Disciplina di calibrazione).
+    d = np.asarray(d, float); g = np.asarray(gruppi); m = d.mean(); G = sorted(set(g.tolist()))
+    if len(G) < 2: return float('nan')
+    s2 = sum(float((d[g == x] - m).sum()) ** 2 for x in G) * len(G) / (len(G) - 1)
+    return m * len(d) / math.sqrt(s2) if s2 > 0 else float('nan')
+
 def col_maestro(percorsi):
     # i CSV col maestro acceso (dal b77): li' i lambda di ruolo, 1, X, 2 e i mercati gol sono del maestro, non del motore
     out = []

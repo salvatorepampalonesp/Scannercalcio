@@ -57,7 +57,7 @@ vedi *Le quote automatiche*); se non ci sono, le scrive l'utente. Per misurarle 
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b96`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b97`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -357,6 +357,39 @@ Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export rec
   `κ = 0.03` valeva −2.02‰ sull'handicap nell'esplorazione (`z = −5.31`, 11 leghe su 11). Sulle partite del test
   vale −0.74‰ (`z = −1.59`, 3 blocchi su 4). Il difetto resta. Vedi *L'handicap della matrice allineata: la
   regola*.
+- [ ] **Il verdetto e la matrice dei gol non descrivono la stessa partita.** Trovato nel controllo delle formule del `b97`,
+  su casi tipo: nessuna partita vera guardata. Due candidati, tutti e due senza parametri.
+  - *Il pareggio col rating dalle quote passate.* Dal `b96` lo Scanner corregge `log(p1/p2)` del maestro col rating e tiene
+    fermo il pareggio del maestro. Nessun modello dei gol lo fa: a totale fisso, se lo squilibrio sale il pareggio scende.
+    Il candidato tiene fermo il parametro di Davidson della partita, `ν = pX·2cosh(lg/2)/(1 − pX)` dal maestro, e ricava
+    `pX' = ν/(2cosh(lg'/2) + ν)`. Sui casi tipo coincide entro 0.1 punti col pareggio della matrice Dixon-Coles a totale
+    fisso. Quanto pesa: 0.6 punti di pareggio per uno spostamento di 0.3 in log-odds, 2.2 per uno di 0.5 su una partita
+    sbilanciata. Lo spostamento tipico è circa 0.2 (stima dai R² del test delle quote passate, non misurato).
+  - *La matrice.* Risultati esatti, handicap e multigol escono dai lambda del maestro. L'1X2 a schermo no: viene dal softmax
+    del maestro e, dal `b96`, dal rating. Quindi l'handicap −0.5 non è l'`1` del verdetto. Due forme: A, la matrice
+    riallineata (`matriceAllineata` con l'Over 2.5 del maestro e il `log(p1/p2)` del verdetto); B, la matrice del maestro
+    riscalata finché 1, X e 2 sono quelli del verdetto e l'Over 2.5 resta il suo. L'1X2 ricavato dai lambda vale meno di
+    quello diretto (−3.33 contro −4.54‰, `b77`): qui un effetto dovrebbe vedersi.
+  - *Lo strumento*: `python3 strumenti/coerenza.py <cartelle>` fa l'esplorazione dai soli CSV (dal `b77` per la matrice, dal
+    `b96` per il pareggio), con la prova di coincidenza. Provato sulla lega finta: coincide entro 0.07 punti, e con un `rho` o
+    un rating sbagliati dice NON COINCIDE. I numeri della lega finta non contano.
+  - *Per la regola.* Sul pareggio l'effetto atteso è circa 0.1‰ di logloss: con 6.000 partite `z` starebbe attorno a −0.7
+    anche se la correzione è giusta. Una soglia `z ≤ −2` non può passare. È coerenza, non un segnale nuovo: la regola chieda
+    che non peggiori, e si provi insieme alla matrice, dove l'effetto si misura.
+  - Il Davidson come pareggio al posto della `pX` del motore è già stato provato e non va (vedi *Cosa è già stato provato*).
+    Qui è un'altra cosa: non stima un `ν` per tutte le partite, tiene fermo quello della partita.
+- [ ] **`rho` stimato sui lambda medi è distorto e rumoroso.** `estimateRho` confronta le frequenze di 0-0, 1-0, 0-1 e 1-1
+  della lega con la matrice ai lambda **medi** di lega. Dal controllo del `b97` (`node strumenti/formule.js`, punto 4):
+  - *distorto*: con squadre diverse fra loro (deviazione di attacco e difesa 0.25) un `rho` vero di −0.10 esce −0.08, uno di
+    −0.05 esce −0.035. La stima va verso zero;
+  - *rumoroso*: la deviazione della stima è 0.035 con 1.140 partite e 0.058 con 380. I valori visti, fra −0.001 e −0.043,
+    sono quasi tutti rumore;
+  - *cosa muove*: mai l'Over 2.5 (vedi *Cosa è già stato provato*). Da 0 a −0.05, a lambda fermi, il pareggio sale di 1.2
+    punti e il Goal di 0.6: proprio dove la matrice sta sotto il vero.
+
+  Candidato: un `rho` solo, a massima verosimiglianza sui lambda per partita dei CSV (su 30.000 partite l'errore è circa
+  0.007), o quello di lega ristretto verso quel valore. `rho` è una delle 65 variabili del maestro: cambiarlo vuol dire
+  riallenarlo e riprovarlo. Col maestro la diagonale gonfiata valeva già poco (−0.42‰): aspettarsi poco anche qui.
 
 ### 2. Aspettano una sesta lega
 
@@ -402,6 +435,20 @@ qui ha bisogno di dati nuovi, non di rifare questi.
 - [ ] **`vaep` e `pv`**: rapporto previsto/reale 0.87/0.88 senza spiegazione. Sono le due
   metriche `additivo` non coordinate. Anche qui il concesso a 0 del `b67` tirava la previsione
   verso il basso: da rimisurare col `b68` prima di cercare altro.
+- [ ] **Possesso e field tilt previsti non sommano a 100.** `predictStat` li prevede squadra per squadra. La somma delle due
+  vale in media 100.0 e 100.1, ma con una deviazione di 1.8 e 3.7 punti (medie e deviazioni di `s_Possesso %` e `s_Field Tilt
+  %` in `MAESTRO_REG`, 16.071 partite). Riportarli a somma 100 è una riga. Prima va misurato con `stat-previste.py`, perché
+  il `k` di `poss` (0.76) è tarato sulla previsione di oggi. E la loro differenza e la loro somma sono variabili del maestro,
+  che deve continuare a leggere i valori di oggi o essere riallenato.
+- [ ] **`negBinK` vede dispersione dove non c'è.** Tiene solo gli eccessi positivi, e mette insieme i totali delle partite
+  delle due squadre. Su campioni di Poisson pura (`node strumenti/formule.js`, punto 7) dà una `k` finita nel 48% dei casi, e
+  nel 69% se le due squadre hanno medie diverse (corner 8.6 e 10.6); le linee alte si spostano in media di 0.3–0.8 punti. I
+  corner hanno una `k` fissa dal `b76`. Candidato: lo stesso per tiri in porta e gialli, una `k` per mercato stimata sui
+  batch.
+- [ ] **I pesi `n/(n+k)` contano le partite, la media le pesa col tempo.** `SHRINK_K` e `SHRINK_LAM_K` usano il numero di
+  partite, ma `decay` ha un'emivita di 106 giorni: 30 partite su 300 giorni ne valgono 22.7, su 420 giorni 18.8; 15 partite
+  9–11. Il `k` è tarato così e in media lo assorbe; a inizio stagione, quando lo storico attraversa l'estate, restringe meno
+  di quanto dovrebbe. Candidato: le partite efficaci, `(Σw)²/Σw²`, al posto di `n`.
 
 ### 4. Lavori nuovi (costano chiamate o sviluppo)
 
@@ -416,6 +463,11 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   gialli (che da sole valgono poco: vedi *Il riferimento di lega vero: misurato*). Costa
   circa N chiamate la prima volta per lega (in cache come il database), e va scelto in modo
   deterministico (ultime N con `_isPast`) perché Scanner e Comparatore restino uguali.
+  **Dal controllo del `b97`**: lo shrinkage porta attacco e difesa verso 1, ma la media vera di NPxG/gol è circa 0.89.
+  Quindi il livello dipende da quante partite ha la squadra: attacco × difesa di due squadre medie vale 0.882 con 5 partite,
+  0.834 con 15 e 0.815 con 30. `GOALS_LEVEL` corregge solo la media. Una variante senza chiamate, mai provata: restringere
+  verso `m ≈ 0.90` e dividere per `m`, cioè `GOALS_UNIT_FIX` con la base `m × LG.avg` (che è di lega) al posto di `_baseN`
+  (che è di coppia). Resta lo sbaglio lega per lega, perché i gol per NPxG vanno da 1.055 a 1.156.
 - [ ] **Cartellini**: posizione in classifica (costo zero, i punteggi sono già in cache) e
   arbitro. Cosa dà la PitchAPI, guardato il 4 ottobre 2026: il **nome** dell'arbitro (nessun id) e
   lo stadio, solo in `/matches/{id}`. Non c'è nell'archivio di lega né in `/date`, e non c'è un
@@ -489,7 +541,10 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   chi è dietro accelera a 1.12): scritti a mano, mai stimati. Sull'1 contro 2 il Markov è il Dixon-Coles
   (correlazione 0.9998); il pareggio lo dà 1.5 punti più alto del Dixon-Coles, e sopra il vero in ogni
   fascia (vedi *Markov,
-  Dixon-Coles ed Elo*). Nell'1X2 pesa 0.30 e il peso è piatto: stimarli varrebbe poco.
+  Dixon-Coles ed Elo*). Nell'1X2 pesa 0.30 e il peso è piatto: stimarli varrebbe poco. Dal controllo del `b97` (`node
+  strumenti/formule.js`, punto 1): la catena non conserva i lambda che riceve (+1.5% di gol a 1.5 / 1.2, perché chi è dietro
+  accelera più di quanto chi è avanti rallenti) e dà 1.6 punti di pareggio più del Dixon-Coles con gli stessi lambda.
+  Nell'ensemble fa da correzione del pareggio: un parametro solo sul pareggio direbbe la stessa cosa.
 - [x] ~~**Le quote dei bookmaker.**~~ — **passato, nello Scanner dal `b54`.** Su 11.902 partite
   di dodici leghe, stimata su undici e misurata sulla dodicesima, la combinazione motore + mercato
   prende il 52.99% contro il 51.04% del motore (+1.95, `z = +7.00`), logloss meglio in 12 leghe su
@@ -632,6 +687,24 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   - le correzioni dei corner del `b76` (`_corOk`) saltano quando una delle quattro medie dei corner della coppia è 0, anche vera: la
     squadra con una sola partita nello storico e 0 corner fatti o subiti, alla seconda giornata. Allora il motore usa la formula
     di prima e dice corner attesi da 3.2 a 13.0: 11 partite su 31.969.
+- [ ] **Il KNN conta il vantaggio campo due volte.** Trovato nel controllo delle formule del `b97`. In `_knnCombine` gli xG
+  concessi dalla trasferta (nelle sue partite fuori) sono divisi per `LG.avgA`, la media che una trasferta **segna**. Ma una
+  squadra in trasferta **subisce** in media `LG.avgH`. Per il lambda della trasferta succede il contrario. Il lambda di casa
+  esce moltiplicato per `avgH/avgA`, quello di trasferta diviso.
+  - Per due squadre medie (1.50 / 1.20) il codice dà 1X all'80.0% e Over al 44.2%; con la media giusta 70.1% e 41.4%; la lega
+    70.0% (`node strumenti/formule.js`, punto 3). È il KNN misurato l'11 ottobre: 1X al 75.7% contro il 69.4% reale, Over al
+    44.3%.
+  - La ricalibrazione del `b76` lo compensa con l'intercetta (+0.33 al `2`), una sola per tutte le leghe, mentre il difetto
+    cresce col vantaggio campo della lega.
+  - La correzione è una riga (la stessa media per attacco e difesa: `LG.avgH, LG.avgH` e `LG.avgA, LG.avgA`), ma poi
+    `KNN_1X2_W/B`, `KNN_GG` e `KNN_OV` vanno ristimati, con una regola registrata. Si rifà dai CSV: le righe KNN si riportano
+    al grezzo invertendo la ricalibrazione, e dal grezzo ai lambda. Il verdetto non cambia: il KNN ha peso 0.
+- [ ] **La retta dei binari non è simmetrica.** `−5.06 + 1.091·p` dà a un esito e al suo contrario confidence che sommano 99
+  (Over al 50% e Under al 50%: 49.5 e 49.5). Mezzo punto a testa, dentro l'errore misurato (2.4): non si tocca senza misura.
+  Alla prossima rimisura, stimarla nella forma `50 + b·(p − 50)`.
+- [ ] **Lo «Z-score» della card non è uno z.** `(attacco − difesa)/√(sA² + sD²)` divide per la deviazione di una partita,
+  non per l'errore della media: è uno scarto standardizzato, e vale 0.2–0.5. Il numero e la soglia restano. Nome e nota
+  vanno corretti quando si tocca la card.
 
 ### Mai verificato
 
@@ -644,7 +717,21 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b96`)
+## Stato attuale (`b97`)
+
+**Il controllo delle formule** (`b97`). Chiesto dall'utente: «controlla la rigorosità matematica delle formule», poi «sistema
+tutto il sistemabile». Ogni formula di `scanner.html` è stata riletta contro la sua definizione, coi conti rifatti a parte
+(`node strumenti/formule.js`). Il nucleo torna: 227 invarianti su 227.
+- *Nel motore* cambia una cosa sola: una partita conclusa senza punteggio non entra più nell'Elo né nello storico di squadra.
+  Fino al `b96` contava 0-0. Sulla lega finta, senza partite così, il `b96` e il `b97` stampano gli stessi numeri.
+- *In questo file* sono corrette due spiegazioni: la scala dell'Elo (non è sotto-dispersione, è una conversione di unità) e
+  `rho` «scagionato» sull'Over 2.5 (è un'identità, non una misura).
+- *Il resto vuole partite vere*, e da quella sessione PitchAPI e football-data non si raggiungevano. Sono voci di *Da fare*:
+  il pareggio col rating e la matrice dei gol che non segue il verdetto (`strumenti/coerenza.py` fa l'esplorazione dai soli
+  CSV), `rho`, il KNN che conta il vantaggio campo due volte, e le minori.
+- *Nel metodo*: accanto allo `z` per partita va lo `z` con l'errore fra leghe (`qb.zeta_leghe`).
+
+Vedi *Gli audit*, «Le formule contro la loro definizione».
 
 **Il rating dalle quote passate** (dal `b96`). Senza le quote della partita, nelle 34 leghe di football-data, l'1X2 del verdetto
 è il maestro corretto da un rating delle squadre fatto con le quote di chiusura delle partite già giocate. Il test registrato è
@@ -2635,6 +2722,15 @@ allora. Una lega con una stagione sola (2025/26, 2026) va rimisurata quando ne a
   partite della K League 2 dal 9 ottobre 2026: tiri, corner, passaggi e possesso a «0», i gialli giusti. Fino al `b94` lo zero
   entrava nelle medie. Si perdono anche i gialli di quelle partite: il prezzo della regola semplice. I valori si leggono come
   in `extractSafeStat`, con la virgola come decimale: uno «0,45» non è zero.
+- **Una partita conclusa senza punteggio è una partita che non c'è** (dal `b97`). Non entra nell'Elo, nel conteggio
+  dell'HFA né nello storico di squadra. Già non entrava nella media gol di lega, in `rho`, nelle basi del tabellone e fra le
+  partite che il Comparatore elabora. Fino al `b96` `buildGlobalElo` e `aggregaTeam` la contavano 0-0 (`?? 0`, `|| 0`).
+  - Sulla lega finta, con una partita dello storico della casa senza punteggio (era un 3-0): il `b96` dava 1X2 68.45 / 19.98 /
+    11.57, il `b97` dà 69.28 / 19.33 / 11.39, cioè i numeri dell'archivio senza quella partita. `node
+    strumenti/punteggi-nulli.js <scanner di prima>` lo rifà, e col motore di prima deve dire NO.
+  - Quante ce ne siano nei batch veri non è misurato. `strumenti/elo-archivio.py` ora lo dice («N concluse senza
+    punteggio»), e sui CSV fino al `b96` prova anche la regola di prima.
+  - Per il riposo resta una partita giocata: la stanchezza guarda date e stato, non i punteggi.
 
 ## Convenzioni del motore
 
@@ -2845,7 +2941,7 @@ Scanner il rating e i nomi agganciati siano quelli, e che il verdetto sia il mae
 batch e dello sweep il rating deve entrare dove deve e coincidere al quarto decimale. Controllo di potenza: su una copia con `REG`
 a 0.80 invece di 0.85 il banco fallisce nello Scanner e su 82 partite del CSV.
 
-Esito al `b96` (storico 30), a 390px con tutte le 30 card aperte, scheda per scheda e in tutte e quattro le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, il prompt della giornata con note e istruzioni una volta sola e un blocco per partita, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, il caso dell'arbitro col rapporto rifatto da `arbitri.json`, gli indisponibili segnati, nel prompt e tolti, la loro ricerca, l'elenco della giornata con le quote, tutte le giocate in ogni partita e nei dieci casi delle quote, le statistiche vuote nel motore e nel CSV, il rating dalle quote passate nello Scanner e nel CSV, 0 px):
+Esito al `b97` (storico 30), a 390px con tutte le 30 card aperte, scheda per scheda e in tutte e quattro le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, il prompt della giornata con note e istruzioni una volta sola e un blocco per partita, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, il caso dell'arbitro col rapporto rifatto da `arbitri.json`, gli indisponibili segnati, nel prompt e tolti, la loro ricerca, l'elenco della giornata con le quote, tutte le giocate in ogni partita e nei dieci casi delle quote, le statistiche vuote nel motore e nel CSV, il rating dalle quote passate nello Scanner e nel CSV, 0 px):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
@@ -2853,7 +2949,7 @@ Esito al `b96` (storico 30), a 390px con tutte le 30 card aperte, scheda per sch
 | batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse); reale dei corner N/D sulle 5 partite vuote e su nessun'altra; rating dalle quote passate in 84 partite su 89, uguale a quello rifatto da capo | 0 su 209 | 0 su 134 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
 | `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 147-165 | 79-88 | 0 |
-| `vecchio`: motore `b95` caricato (controllo) | 0/3, «motore caricato diverso ...» | 20 su 209 (5 id nuovi della card dei modelli; il verdetto 1X2 corretto dal rating e quello che ne discende) | 19-24 su 134 | 0 |
+| `vecchio`: motore `b96` caricato (controllo) | 0/3, «motore caricato diverso ...» | 0 su 209 | 1 su 134 (il certificato) | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -2981,7 +3077,9 @@ in porta attesi, i loro mercati, le variabili del maestro e quello che ne esce).
 `b94` stampa lo stesso del `b95`: 0 scritture diverse su 204, una riga del CSV, il certificato. Al `b96` il controllo col `b95` vede 20
 scritture diverse su 209 e 19-24 righe del CSV su 134. Cinque scritture sono gli id nuovi della card dei modelli (la riga del maestro,
 il nome del verdetto, la nota del rating). Le altre sono il verdetto 1X2 corretto dal rating e quello che ne discende: confidence,
-doppie chance, quote eque, rischio sorpresa e tabellone.
+doppie chance, quote eque, rischio sorpresa e tabellone. Al `b97` il controllo col `b96` non vede nessuna scrittura diversa su 209 e
+una riga del CSV, il certificato: la lega finta non ha partite concluse senza punteggio, e lì i due motori stampano lo stesso. Il
+caso è provato a parte, con `strumenti/punteggi-nulli.js` (vedi *Politica sui valori mancanti*).
 
 **Il controllo del `b70`.** Da qui «In breve» controlla anche il rischio sorpresa: con le quote dell'1X2
 `#sorpresa-box` deve essere identico a quello rifatto nella pagina con `rischioSorpresa(…,
@@ -6121,10 +6219,10 @@ scrittura nuova, il messaggio iniziale). Il banco la verifica a parte, premendo 
 | `ENS_W` dc / mk / ol | 0.70 / 0.30 / 0.00 | stimata `b20` | griglia leave-one-league-out su 1743 partite, OL a 0 in 4 fold su 5. Vale −0.0013 di logloss, `z = −2.03`: pulizia più che guadagno. Sulle 24 leghe (23.278 partite, dopo il `b67`) il peso del Markov è piatto fra 0.3 e 0.6 (logloss 1.00957 a 0.30, 1.00952 a 0.50), scelto fuori lega 0.5 ma contro 0.30 +0.05‰ (`z = +0.73`): resta |
 | `ENS_SCOPE_W` | 1 | stimata `b21` | 1133 partite, logloss 1.0113 → 1.0071, monotono in 3 leghe su 3, `z = −3.96`, fuori campione 1.0 in 3 fold su 3. Solo 1X2 |
 | `ELO_1X2_W` | 0.75 | stimata `b14`, riconfermata `b35` e `b41` a `S` fisso | 5 leghe, 1743 partite: w 0 → 0.50 a +5.02σ, ottimo a 0.75. `b35` (Serie A 1882, ramo giusto): ottimo interno piatto fra 0.50 e 0.75, estremi peggiori a 2σ. `b41` (1134 in copia conforme): idem. Spazzata **insieme a `ELO_SCALE`** su Serie A e Premier la coppia 0.40 / 2.00 vale −0.0063 (`z = −3.53`), 6 stagioni su 6, ma nel test registrato Ligue 1 non migliora (+0.0004): non passa. Vedi *Peso e scala dell'Elo insieme* |
-| `ELO_SCALE` | 1.25 | stimata `b30`, confermata `b35` e `b41` a `w` fisso; la coppia con `w` non ha passato il test (`b41`) | pendenza di calibrazione dell'Elo 1.235 (`z = 3.13`); fuori campione 1.20–1.35 in 7 fold su 7; `b35`: 1.25 batte 1.00 a `z = 3.92`; `b41`: a `z = 3.55`, Elo a 1.119 ±0.089. Applicata alla sola differenza di rating, non all'HFA |
+| `ELO_SCALE` | 1.25 | stimata `b30`, confermata `b35` e `b41` a `w` fisso; la coppia con `w` non ha passato il test (`b41`) | pendenza di calibrazione dell'Elo 1.235 (`z = 3.13`); fuori campione 1.20–1.35 in 7 fold su 7; `b35`: 1.25 batte 1.00 a `z = 3.92`; `b41`: a `z = 3.55`, Elo a 1.119 ±0.089. Applicata alla sola differenza di rating, non all'HFA. Dal `b97` si sa perché serve: l'Elo stima il punteggio atteso e qui serve l'1 contro 2, e fra i due c'è per definizione un fattore 1.36–1.40. Non è sotto-dispersione (vedi *La scala dell'Elo*) |
 | `ELO_INGRESSO` / `ELO_RITORNO` / `ELO_PENDENZA` | `'uscite'` / 180 / `'netta'` | procedura senza parametri stimati (`b48`); 180 è una definizione | registrata prima del batch `b47`; cinque leghe −0.00375, `z = −2.64`, residuo delle neopromosse da −7.3 a −0.5 punti; tre leghe nuove −0.00076, nessuna oltre `z = +1`. 180 sta fra la pausa più lunga dentro una lega (106 giorni) e il ritorno più breve (454). Vedi *Le neopromosse* |
 | `ELO_GAP_THRESHOLD` / `TAU` / `ASY` | 45 / 360 / 0.9 | `τ` scelto dove smette di costare (`b30`) | la logloss cala in modo monotono fino a τ infinito; da 360 in su il guadagno residuo è 0.0005. Non misurato sulla pausa estiva (33 partite) |
-| K dell'Elo | 30 sotto le 15 partite, poi 20 | a mano, verificato `b30` | alzare K porta la pendenza a 1 ma peggiora la logloss oltre 40/28: si tara la conversione, non il rating |
+| K dell'Elo | 30 sotto le 15 partite, poi 20 | a mano, verificato `b30` | alzare K porta la pendenza a 1 ma peggiora la logloss oltre 40/28: si tara la conversione, non il rating. Torna col `b97`: la pendenza sopra 1 non diceva che il rating è stretto |
 | clamp dell'HFA | [30, 100], con ≥50 partite | paracadute misurato, inerte (`b41`) | 0 righe su 1134 in copia conforme (`lgN` ≥ 760). Il 27.6% del `b35` erano archivi corti (< 600 partite), che lo Scanner in produzione non ha. Alternativa esposta e inutile: `ELO_HFA_MODE = 'shrink'`, `ELO_HFA_PRIOR` 65, `ELO_HFA_K` 200 (−0.00027, `z = −1.25`). Nella Série A brasiliana 2026 (`batch/disaccordo`) morde su 269 partite su 269, col grezzo a 116–118: senza il tetto −2.0‰ ±4.8 su 1 contro 2, dentro il rumore. Sul batch del `b94`, fuori dai cinque campionati, morde su 4.276 partite su 31.444 (21 file di 17 leghe: 2.997 tenute a 100, 1.279 a 30); col grezzo al suo posto +1.06‰ ±1.21 su 3.113 partite senza pari, meglio in 4 leghe su 17: non è inerte, ma non costa (vedi *Il ristudio del batch del `b94`*) |
 | `ELO_TILT_MAX` | 0.60 | paracadute misurato | mai toccato; inclinazione massima osservata 0.215 fino al `b35`, 0.49 in copia conforme (`b41`, storico 30), 0.49 stimata anche col candidato |
 | `SHRINK_K` | 4 | misurata `b35`–`b37`, riconfermata `b41` | 12 e 28 peggiori a 5σ; sotto 4 migliora l'1X2 (−0.0016, `z = −3.03`) ma i gol pagano +0.0056. `b41`, copia conforme e zero clamp: a 2 l'1X2 −0.00069 (`z = −3.30`), la somma +0.00155; Premier −0.00079 (`z = −3.42`) e +0.00136; LaLiga −0.00052 e +0.00025; Bundesliga −0.00052 e +0.00321 (`z = 3.40`); Ligue 1 +0.00001 e +0.00087 |
@@ -6224,7 +6322,10 @@ di questo elenco è stata a lungo falsa proprio perché nessuno sapeva dove cont
 **Nel modello**
 
 - **Il vantaggio campo contato due volte**: dati di sola casa più un moltiplicatore 1.10
-  (v9.4), poi di nuovo nell'Ordered Logit (`b20`). Vedi *Convenzioni del motore*.
+  (v9.4), poi di nuovo nell'Ordered Logit (`b20`). Vedi *Convenzioni del motore*. E una terza
+  volta nel KNN, trovato nel `b97`: la difesa della trasferta divisa per la media che la
+  trasferta segna invece di quella che subisce. Non ancora corretto (vedi *Da fare*). Quando un
+  numero di ruolo si divide per una media di lega, chiedersi di quale sede è la media.
 - **Elo calcolato a ritroso**: il trend usciva col segno invertito. Ora è cronologico, di
   lega, a somma zero (controllo M: media 1500 senza pause e senza squadre entrate).
 - **1X2 in Poisson senza `rho`** mentre i risultati esatti usavano Dixon-Coles: ora una
@@ -6257,6 +6358,19 @@ di questo elenco è stata a lungo falsa proprio perché nessuno sapeva dove cont
   la `k` infinita, che per `negBinPMF` è Poisson e non un errore: i gialli restavano senza
   base sul 73% delle partite. «BASE DI LEGA ASSENTE» sembrava un caso raro; contare quante
   righe lo dicono costa una riga di Python.
+- **Un rating che stima il punteggio atteso non è un log-odds 1 contro 2.** L'Elo si aggiorna
+  sul risultato contato 1, ½, 0; il motore usa la sua differenza come `log(p1/p2)`. Fra i due
+  c'è per definizione un fattore 1.36–1.40. Dal `b30` al `b96` questo file ha chiamato quel
+  fattore «sotto-dispersione del rating». Prima di spiegare una pendenza diversa da 1, controllare che
+  le due quantità siano la stessa. Vedi *La scala dell'Elo*.
+- **Una misura che non può dare un altro esito non è una misura.** «Spegnere `rho` sposta
+  l'Over 2.5 di +0.0 punti» era scritto come una falsificazione, ed è un'identità: le celle che
+  `rho` corregge stanno tutte sotto 2.5 e la loro somma non cambia. Prima di misurare un
+  effetto, chiedersi se la formula gli lascia la possibilità di esistere.
+- **Spostare un pezzo di una distribuzione e tenerne fermo un altro la rende incoerente.** Dal
+  `b96` il rating sposta `log(p1/p2)` e il pareggio resta quello di prima; la matrice dei gol
+  resta quella del maestro mentre l'1X2 cambia. Ogni pezzo è misurato, l'insieme non descrive
+  più una partita sola. Vedi *Da fare*, «Il verdetto e la matrice dei gol».
 
 **Nei dati**
 
@@ -6268,7 +6382,9 @@ di questo elenco è stata a lungo falsa proprio perché nessuno sapeva dove cont
 - **Una metrica condivisa fra le due squadre non è di squadra.** Vedi *Le metriche che non
   erano di squadra*.
 - **Punteggi nulli contati come 0-0** in `computeLeagueParams` ed `estimateRho` (`?? 0`): ora
-  quelle partite si saltano.
+  quelle partite si saltano. La stessa riga era rimasta in `buildGlobalElo` e in `aggregaTeam`
+  fino al `b96`: la prima correzione ne aveva sistemate due su quattro. Un difetto trovato in
+  una funzione si cerca per testo in tutto il file (`grep '?? 0'`, `'|| 0'`), non a memoria.
 - **`RAW_CACHE` che memorizzava anche le risposte vuote**: un buco di rete diventava «nessun
   dato» per sempre. Il Comparatore patcha la riga; nello Scanner il rischio resta.
 - **Un taglio temporale dedotto da un orario è forte quanto il formato dell'orario.** Vedi
@@ -6381,6 +6497,12 @@ di questo elenco è stata a lungo falsa proprio perché nessuno sapeva dove cont
   esce il 51.0%), eppure dato il mercato il suo peso è negativo in 12 leghe su 12: dove si discosta
   dalle quote sbaglia più delle quote. Una differenza fra motore e mercato non è un valore da
   giocare (−11 / −16% della posta).
+- **Uno `z` per partita non dice se l'effetto regge in una lega nuova.** Tratta le partite come
+  indipendenti e l'effetto come uguale dappertutto. Il livello dei gol (`b63`) è passato con
+  `z = −2.99` su 6.472 partite; coi suoi nove effetti per lega, da −10.0‰ a +15.7‰, lo stesso
+  conto con l'errore fra leghe dà `z = −1.49`. La regola chiedeva anche due terzi delle leghe
+  ed è passata al limite, 6 su 9: i due numeri dicevano la stessa cosa. Dal `b97` si stampano
+  tutti e due (`qb.zeta_leghe`).
 
 ## Disciplina di calibrazione
 
@@ -6398,6 +6520,12 @@ Prima di cambiare una costante:
 6. **Controlla la collinearità prima di aggiungere una feature «residuale»**: il segnale utile
    sta nelle metriche che il motore non usa già per i lambda.
 7. **Guarda bias e AUC insieme, per lega**: il Brier mescola livello e ordinamento.
+8. **Accanto allo `z` per partita, lo `z` con l'errore fra leghe.** `qb.zeta_leghe(d, leghe)` in
+   `strumenti/quote-bookmaker.py`: la media divisa per `√(G/(G−1) · Σ S_g²)/N`, con `S_g` la
+   somma degli scarti dalla media dentro la lega `g`. Se l'effetto è uguale in tutte le leghe i
+   due `z` coincidono; se cambia da lega a lega il secondo scende, ed è quello che dice cosa
+   aspettarsi su una lega mai vista. Una regola nuova li riporta tutti e due, e dice prima quale
+   decide.
 
 I suggerimenti presi da fuori vanno verificati sul CSV prima di essere incollati: più di una
 volta erano tarati sulla convenzione sbagliata di `k`.
@@ -6416,7 +6544,7 @@ misurate.
 | Altezza difensiva (`sum_defx`) sull'Over | **debole** | 0.9σ, e la metrica ha pendenza 0.06 |
 | Ritoccare i pesi dell'ensemble | **quasi niente** | −0.0013, `z = −2.03`, una lega discorde. Adottato per pulizia |
 | Correggere le soglie dell'Ordered Logit | **sul modello sì, sull'ensemble no** | bias sull'`1` da +6.8 a −0.1, ma l'ensemble si muove di 0.0001: l'OL mangia lo stesso NPxG del Dixon-Coles |
-| `rho` come causa del bias dell'Over | **falsificata** | spegnerlo sposta l'Over 2.5 di +0.0 punti; `rho` vale fra −0.001 e −0.043 |
+| `rho` come causa del bias dell'Over | **non può esserlo, per costruzione** (`b97`) | le quattro celle che `rho` corregge (0-0, 1-0, 0-1, 1-1) stanno tutte sotto 2.5 e la loro somma non cambia: l'Over 2.5 e le linee sopra non dipendono da `rho` (50.6375% con `rho` 0, −0.05 e −0.15). Il «+0.0 punti» del `b22` era un'identità, non una misura. `rho` muove pareggio, Goal, Over 1.5 e risultati esatti. Stimato vale fra −0.001 e −0.043, ma la stima è distorta e rumorosa: vedi *Da fare* |
 | Distribuzione dei gol a coda più grassa | **falsificata, di segno sbagliato** | il totale gol è sottodisperso: var/media 0.849 / 0.895 / 0.975 |
 | La forma della distribuzione come causa del livello | **no** | col lambda riscalato ai gol veri il residuo non è distinguibile da zero (z = 1.3 e 0.85) |
 | `GOALS_UNIT_FIX` | **diagnosi giusta, cura sbagliata** | vedi *Il disallineamento di unita nel lambda* |
@@ -7685,10 +7813,42 @@ due i rami, etichettati `[ruolo → mercati gol]` e `[completo → 1X2]`, e rico
 
 ## La scala dell'Elo, e la curva dello stacco
 
-**La scala.** La conversione `400/ln(10) = 173.72` è la definizione della scala Elo, ma il
-nostro rating è una stima online con `K` limitato e sotto-disperde: la pendenza di
-calibrazione è **1.235** (`z = 3.13`), e non cala con l'età del rating (1.250 a zero giorni,
-1.243 a sei mesi). Si tara la conversione, non il rating: `ELO_SCALE = 1.25`.
+**La scala.** La conversione `400/ln(10) = 173.72` è la definizione della scala Elo. Usata
+come log-odds di `1` contro `2`, la differenza di rating ha una pendenza di calibrazione di
+**1.235** (`z = 3.13`), che non cala con l'età del rating (1.250 a zero giorni, 1.243 a sei
+mesi). Si tara la conversione, non il rating: `ELO_SCALE = 1.25`.
+
+**Perché serve una scala** (corretto nel `b97`: fino al `b96` qui c'era scritto che il rating
+«sotto-disperde»). L'aggiornamento dell'Elo confronta il rating col risultato contato 1, ½, 0.
+Quello che il rating impara a prevedere è quindi il **punteggio atteso**, `E = p1 + pX/2`. Il
+motore invece usa la differenza come log-odds di `1` contro `2`, cioè di `q = p1/(p1 + p2)`.
+Sono due quantità diverse, legate da `q = (E − pX/2)/(1 − pX)`. Fra i loro log-odds c'è un
+fattore che non dipende dal rating (matrice Dixon-Coles, `rho` −0.03; `node
+strumenti/formule.js`, punto 2):
+
+| gol della partita | gol alla casa | pareggio | `logit(q) / logit(E)` |
+|---|---|---|---|
+| 2.7 | 52% | 26.5% | 1.362 |
+| 2.7 | 60% | 25.4% | 1.365 |
+| 2.7 | 70% | 22.3% | 1.376 |
+| 2.7 | 80% | 17.6% | 1.403 |
+| 2.3 | 60% | 28.2% | 1.416 |
+| 3.2 | 60% | 22.8% | 1.319 |
+
+Vicino alla parità il fattore è `1/(1 − pX)`. Ne viene:
+- *il rating non sotto-disperde.* La scala giusta per definizione è circa 1.36, più alta dove
+  si pareggia di più. Nei cinque campionati la scala che calibra sta fra 1.20 e 1.40
+  (`1.25 ×` le pendenze 0.96–1.12 del `b41`): attorno a quel valore. Sulle 24 leghe sta a 1.09
+  (`1.25 × 0.87`): lì le differenze di rating sono troppo larghe, del 20%. Torna con «alzare K
+  porta la pendenza a 1 ma peggiora la logloss»;
+- *l'HFA non va scalato*, perché `400·log10(vittorie in casa / vittorie fuori)` è già in unità
+  1 contro 2. Dentro l'aggiornamento, che lavora sul punteggio atteso, lo stesso numero è
+  troppo grande del 36%: con 43 / 26 / 31 vale 56.8 contro 41.9. Il punteggio atteso della
+  casa esce 0.02 sopra il vero, e ogni partita sposta circa mezzo punto di rating dalla casa
+  alla trasferta. Si annulla fra andata e ritorno: non si tocca;
+- *nel motore non cambia niente.* Dal `b77` il maestro ripesa `lgElo`, e una scala diversa la
+  assorbirebbe. Una scala che segue i pareggi della lega (`c/(1 − pX di lega)`, ±4% fra le
+  leghe) è un candidato piccolo, mai provato.
 
 Il `b35` l'ha confermata sui dati veri e ha localizzato il resto della timidezza. Sulla
 sezione A/B del peso, `w = 0` è il solo modello e `w = 1` il solo Elo:
@@ -8204,6 +8364,50 @@ anche otto variabili riempite dal payload e mai usate e una funzione mai chiamat
 Prima di cancellare qualcosa segnalato come inutilizzato, cercarlo nell'hook e negli `onclick`
 dei due `.html`. Controlli J e K.
 
+### Le formule contro la loro definizione
+
+Chiesto dall'utente l'11 novembre 2026: «controlla la rigorosità matematica delle formule e suggerisci eventuali correzioni»,
+poi «sistema tutto il sistemabile». Ogni formula di `scanner.html` è stata riletta contro la sua definizione, e i punti dubbi
+rifatti con conti a parte. `node strumenti/formule.js` li rifà tutti in un minuto, leggendo le funzioni da `scanner.html`:
+prima gli invarianti (esce con 1 se uno non torna), poi i conti su casi tipo. Sono conti, non misure su partite vere: i
+batch non erano nella sessione, e da lì PitchAPI e football-data non si raggiungevano.
+
+**Cosa torna** (227 invarianti su 227; su una copia col tau dell'1-1 a `1 + rho` ne falliscono 15):
+- la binomiale negativa e la matrice Dixon-Coles sommano a 1, la matrice non ha celle negative e `rho` non sposta i gol
+  attesi (il taglio a 10 gol toglie 0.004 a lambda 3.2);
+- l'Over 2.5 e le linee sopra non dipendono da `rho`;
+- l'handicap asiatico somma a 1 su ogni linea, è monotono, −0.5 è l'`1` e +0.5 è l'`1X` della stessa matrice;
+- l'inclinazione dell'Elo tiene il totale dei lambda al bit e arriva al bersaglio; la matrice allineata dà l'Over e il
+  `log(p1/p2)` chiesti;
+- la beta-binomiale dei corner somma a 1, e casa −0.5 è «più corner casa»;
+- le combo di un tipo sommano al segno, i contrari a 1.
+
+Letti e giusti anche: i tau del Dixon-Coles, l'Ordered Logit, il softmax del maestro, `QUOTE_COMB`, il rapporto
+dell'arbitro (Gamma-Poisson), Shin, le doppie chance dalle fisse, le quote stimate.
+
+**Cosa non torna**, per peso:
+
+| cosa | dove | quanto | dove sta ora |
+|---|---|---|---|
+| una partita conclusa senza punteggio contata 0-0 | `buildGlobalElo`, `aggregaTeam` | sulla lega finta 0.8 punti di 1X2 | **corretta nel `b97`** (*Politica sui valori mancanti*) |
+| il KNN conta il vantaggio campo due volte | `_knnCombine` | 1X all'80.0% dove la lega fa 70.0% | *Da fare*, 5: vuole la ricalibrazione rifatta |
+| il pareggio fermo mentre il rating sposta `log(p1/p2)` | `_QPr` | 0.6–2.2 punti di pareggio | *Da fare*, 1: vuole una regola |
+| la matrice dei gol che non segue il verdetto | `dcMat` col maestro | l'handicap −0.5 non è l'`1` | *Da fare*, 1: vuole una regola |
+| `rho` stimato ai lambda medi | `estimateRho` | −0.10 esce −0.08; deviazione 0.035–0.058 | *Da fare*, 1 |
+| la scala dell'Elo spiegata come sotto-dispersione | questo file, commento del JS | nessun numero cambia | **corretta nel `b97`** (*La scala dell'Elo*) |
+| `rho` «scagionato» sull'Over | questo file | era un'identità | **corretta nel `b97`** (*Cosa è già stato provato*) |
+| Markov non conserva i lambda | `markovFlow` | +1.5% di gol, +1.6 punti di pareggio | *Da fare*, 4 |
+| shrinkage verso 1 con media vera 0.89 | `shrink` | attacco × difesa 0.88 a 5 partite, 0.82 a 30 | *Da fare*, 4 |
+| `negBinK`, partite efficaci, possesso che non somma a 100 | | 0.3–0.8 punti; 30 partite ne valgono 19–23; ±1.8 punti | *Da fare*, 3 |
+| retta dei binari non simmetrica, «Z-score» che non è uno z | | un punto su 100; solo il nome | *Da fare*, 5 |
+
+**Perché quasi tutto resta in *Da fare*.** Le correzioni che spostano una probabilità toccano numeri misurati con una
+regola registrata (il rating, il maestro, la ricalibrazione del KNN), e vogliono una misura su partite vere prima di
+entrare. Nel `b97` è entrato solo quello che non stima niente: il punteggio mancante, e le due spiegazioni.
+
+**Il metodo.** Uno `z` per partita non basta quando l'effetto cambia da lega a lega: vedi *Disciplina di calibrazione*,
+punto 8.
+
 ## Il batch automatico
 
 `strumenti/batch-auto.js` fa i batch senza telefono: apre `comparatore.html` in Chromium senza
@@ -8243,6 +8447,11 @@ node strumenti/batch-auto.js --leghe "ITA:Serie A,Eredivisie,ENG:Championship" -
   L'11 ottobre 2026 i batch di Numeri (33.124 chiamate) e lo scarico dei tiri e della pressione (circa
   120.000) le hanno finite. Un giro grosso si divide su più giorni: `strumenti/tiri.py` si ferma da solo a
   `--tetto` chiamate (di default 25.000), e un batch automatico si stima prima, dal numero delle partite.
+- **Se la prova iniziale dice 403 dal proxy** (`CONNECT tunnel failed, response 403`), la sessione gira in un
+  ambiente che non ha la PitchAPI fra i domini permessi. L'11 novembre 2026 c'erano due ambienti con lo stesso
+  nome, «Default»: uno con la credenziale della PitchAPI, football-data e Footiqo, uno senza. Da quello senza non
+  partono batch né scarichi. Si fa quello che non vuole dati, e si dice all'utente di aprire la sessione
+  nell'altro (o di dare ai due nomi diversi: con lo stesso nome non ci si può spostare dall'uno all'altro).
 - Il batch vive nel computer della sessione: se la sessione resta inattiva il computer può
   essere spento, e con lui `batch/`. Ogni file finito va mandato all'utente appena salvato. Il 30
   ottobre 2026 è successo davvero: il controllo era scaduto, la sessione è rimasta ferma, e dieci minuti
@@ -8349,7 +8558,10 @@ i titolari; `N/D` dappertutto che il motore caricato è precedente al `b43`.
 
 La sezione `ARCHIVIO DI LEGA` (dal `b47`) sta **in fondo** al file e ha un'altra forma: una
 riga per partita del database (tre stagioni, anche le non concluse, col punteggio vuoto), con
-id, stagione, orario UTC, stato, squadre e gol. Serve a rifare l'Elo fuori dal motore con
+id, stagione, orario UTC, stato, squadre e gol. Dal `b97` una partita conclusa col punteggio
+vuoto non entra nell'Elo; fino al `b96` contava 0-0. Il CSV non dice la build:
+`strumenti/elo-archivio.py` dice quante ce ne sono e, se ce ne sono, prova prima la regola
+del `b97` e poi quella di prima. Serve a rifare l'Elo fuori dal motore con
 `strumenti/elo-archivio.py` (`buildGlobalElo` tiene le partite concluse prima del giorno
 bersaglio, nell'ordine dell'archivio a parità di orario). Un lettore che scorre le colonne
 delle partite si ferma alla riga che comincia con `=== ARCHIVIO`. Le righe `Elo: pendenza …`
@@ -8456,6 +8668,8 @@ trovato un bug vero.
 | Q | `__UNIT_DEBUG.lgN > 0` a ogni partita | nuovo percorso che chiama `avviaScanner()` |
 | R | il debug si legge dall'oggetto risultato, non da `window` (che è dell'ultimo `k` di `CMP_K_LIST`) | confronti Comparatore/Scanner |
 | S | `strumenti/banco-parita.js`: ogni scrittura a schermo del motore e ogni riga del CSV identiche allo Scanner, in tutte le modalita', e il certificato che dice NO nei controlli di potenza | si tocca il motore o il Comparatore |
+| T | `node strumenti/formule.js --breve`: gli invarianti delle funzioni pure (somme a 1, handicap, Over 2.5 che non dipende da `rho`, bisezioni che arrivano al bersaglio, combo che sommano al segno) | si tocca la matrice, la binomiale negativa, l'inclinazione, la matrice allineata, i corner o le giocate |
+| U | `node strumenti/punteggi-nulli.js <scanner di prima>`: una partita conclusa senza punteggio vale come tolta | si tocca un filtro sulle partite dell'archivio |
 
 **Il giro completo senza rete.** Il motore gira per intero su dati finti, in Chromium, senza
 PitchAPI:
@@ -8506,7 +8720,9 @@ nelle stringhe, e i regex letterali del Comparatore verrebbero massacrati.
   su ogni linea ed è monotono (AH −0.5 = `p1`, AH +0.5 = `p1 + pX`; **AH −0.75 sta fra −1 e
   −0.5**); le fasce multigol disgiunte sommano a 1; le probabilità Over decrescono con la
   linea; `negBinK` restituisce `Infinity` sui campioni non sovradispersi. Quando un invariante
-  fallisce, sospetta prima del test;
+  fallisce, sospetta prima del test. Dal `b97` li fa `node strumenti/formule.js --breve`
+  (controllo T). `p1` e `p1 + pX` sono quelli **della matrice**: dal `b77` il verdetto a schermo
+  viene da un'altra strada, e l'handicap −0.5 non è il suo `1` (vedi *Da fare*);
 - riprodurre la matrice fuori dal motore (`calcDCMatrix` + `probsFromMatrix` in una ventina di
   righe di Python, alimentate coi lambda del CSV) per provare varianti offline, dopo la prova
   di coincidenza;
@@ -8612,3 +8828,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b94` | tutte le giocate, chieste dall'utente senza il gioco («dobbiamo solo calcolare quelle quote»): la card della bolletta diventa «Tutte le giocate», 22 giocate (1X2, doppie chance, Over/Under 2.5, Goal/NoGoal, 12 combo segno + gol) con probabilità, quota del bookmaker o stimata col margine medio (misurato su 1.118 quote reali: 1X2 e doppie 6.5%, Over/Under 6%, Goal/NoGoal 9.5%, combo 12.5%) e quota equa, dalla più probabile. Tolti punti, punti doppi, pari e dispari e la bolletta della giornata. `strumenti/giocate.py` al posto di `bolletta.py`. La grafica passata dalle skill: rilevatore di impeccable a 0 difetti nei due temi, contrasti dei testi piccoli 6.1:1 o più. Col `b93` 0 scritture diverse su 204, una riga del CSV (il certificato); il controllo di potenza fallisce dove deve |
 | `b95` | il ristudio del batch del `b94`, chiesto dall'utente («controlla tutto quello che vuoi»): le misure registrate reggono su leghe e partite mai viste, e tre difetti sono corretti. Il Comparatore scriveva Goal, NoGoal, Over 2.5 e Under 2.5 della sezione MERCATI del CSV, e della sua tabella a schermo, dal motore invece che dal maestro (dal `b77`, 3-4 punti in media). Una risposta di `/stats` con ogni voce a zero tranne i gialli, come quelle della K League 2 dal 9 ottobre 2026, ora è come una risposta mancante (`statsVuote`), nel motore e nel reale del CSV: prima entrava come zeri veri (rifatta la K League 2 col `b95`: dal 16 ottobre, 20 partite, tiri in porta attesi da 7.99 a 8.52 e Over del maestro da 44.1 a 45.1%). `PICK_RESA.fuori` da 34 a 37 leghe. `numeri-schermo.py` prende lo storico della lega della partita (sul batch vero da 46.641 numeri diversi a 0), `controlla-csv.py` dice le partite senza statistiche. Il banco ha le statistiche vuote e confronta le righe dei gol col maestro; col `b94` 11-72 scritture diverse su 204, tutte dalle partite vuote, e senza quelle 0 |
 | `b96` | il rating dalle quote passate nello Scanner, scelto dall'utente («Si») dopo il test registrato del 10 novembre 2026 (sulle 6.296 partite di `batch/b94/livello` −4.26‰ di logloss 1X2 contro il maestro, `z = −4.54`, 7 leghe su 9). Senza le quote della partita, nelle 34 leghe di football-data, l'1X2 del verdetto è `−0.0147 + 0.3599·log(p1/p2) del maestro + 0.6533·rating`, col rating dalle quote di chiusura delle partite già giocate (i file di stagione dal worker, nessuna chiamata alla PitchAPI; nomi agganciati per data e punteggio), se le due squadre hanno almeno 6 partite con le quote; la matrice dei gol resta del maestro. Manopola `QUOTE_PASSATE` (`'no'` torna al `b95`). Rimisurate `PICK_RESA` (pick 53.3 → 53.7%, 27 rese per lega rifatte), `SORPRESA_TAB`, le rese dell'1X2 di `EDGE_BANDS` (prima proposta +16.1 → +17.6) e `QUOTE_RESA`. Il Comparatore chiama `/quote/` e il CSV ha le righe `Quote passate:`; `strumenti/quote-passate.py --rimisura` e `--schermo`. Le funzioni dello Scanner rifanno il rating di `rating_finestre` al quindicesimo decimale. Il banco ha i file di football-data finti e rifà il rating da capo; col `b95` 20 scritture diverse su 209 (5 sono id nuovi) e 19-24 righe del CSV su 134 |
+| `b97` | il controllo delle formule, chiesto dall'utente («controlla la rigorosità matematica», poi «sistema tutto il sistemabile»): ogni formula del motore riletta contro la sua definizione, coi conti in `strumenti/formule.js` (227 invarianti su 227). Nel motore una correzione sola: una partita conclusa senza punteggio non entra più nell'Elo né nello storico di squadra (contava 0-0; sulla lega finta 0.8 punti di 1X2, `strumenti/punteggi-nulli.js`). Corrette due spiegazioni: la scala dell'Elo è una conversione fra punteggio atteso e 1 contro 2 (1.36–1.40 per definizione), non sotto-dispersione; `rho` non può muovere l'Over 2.5. In *Da fare*, perché vogliono partite vere: il pareggio fermo col rating e la matrice che non segue il verdetto (`strumenti/coerenza.py` per l'esplorazione), `rho` distorto e rumoroso, il KNN che conta il vantaggio campo due volte. Nel metodo, lo `z` con l'errore fra leghe (`qb.zeta_leghe`). Col `b96` 0 scritture diverse su 209, una riga del CSV (il certificato) |
