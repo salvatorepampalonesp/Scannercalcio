@@ -57,7 +57,7 @@ vedi *Le quote automatiche*); se non ci sono, le scrive l'utente. Per misurarle 
   della misura che giustifica il cambiamento quando c'è. Il «N commit behind» di GitHub
   conta i merge commit delle PR: se `git rev-list --left-right --count origin/main...<branch>`
   dà `N 0`, il branch non ha niente che `main` non abbia.
-- **Build corrente: `0905-b95`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
+- **Build corrente: `0905-b96`.** `window.__SCANNER_BUILD` (Scanner), `_bComp`
   (Comparatore) e i due badge `#build-ver` si alzano **insieme, a ogni modifica del
   motore**; se divergono il Comparatore mostra un avviso arancione. Il badge è l'unico modo
   per sapere cosa il browser sta mostrando: non c'è nessuna difesa contro la cache.
@@ -465,26 +465,12 @@ qui ha bisogno di dati nuovi, non di rifare questi.
   prese non cambiano (−0.33 punti, `z = −1.36`) e la logloss quasi (−1.1‰, `z = −1.20`). Vedi *Il rating dalle quote
   passate*, «La qualità dell'undici». Costa due chiamate per ogni partita dello storico. Ha senso solo come variabile del
   maestro, per le probabilità, se gli indisponibili segnati dall'utente (`b87`) devono spostarle.
-- [ ] **Il rating dalle quote passate nello Scanner, da decidere con l'utente.** Il test registrato è **passato** il 10
-  novembre 2026: sulle 6.296 partite di `batch/b94/livello` −4.26‰ di logloss 1X2 contro il maestro (`z = −4.54`), meglio in 7
-  leghe su 9, prese +0.14 ±0.59. Vedi *Il rating dalle quote passate: la regola*, «Esito». Non costa chiamate alla PitchAPI. Nello Scanner
-  vuol dire:
-  - i file di football-data della finestra, presi dal worker;
-  - l'aggancio dei nomi delle squadre;
-  - il rating in JS, e lo stesso nel Comparatore per la copia conforme;
-  - le tabelle senza quote da rimisurare.
-
-  Il racconto sotto resta per la storia. Nelle 34 leghe di football-data, quando le quote della
-  partita non ci sono ancora (di solito fino al venerdì per il weekend), un rating delle squadre dalle quote di chiusura
-  delle partite già giocate vale quasi quanto le quote della settimana. Su 46.177 partite di 18 leghe +1.24 punti di prese
-  sull'Elo (`z = +8.6`, 18 leghe su 18), R² 0.928 sulla chiusura. Sul 2026/27 dei cinque campionati R² 0.900 contro 0.888
-  del maestro, e 0.927 insieme. Nessuna chiamata alla PitchAPI: un file di football-data in più per lega. Per un test:
-  - pesi della combinazione col maestro stimati sul mercato, su un campione di esplorazione col maestro: per esempio il
-    2025/26 dei cinque campionati, circa 14.600 chiamate;
-  - test sui risultati delle leghe dei file `new` (Austria, Danimarca, Svezia, Norvegia, Messico, MLS, Giappone), coi
-    batch del motore: circa 20.000 chiamate.
-
-  Vale solo se l'utente analizza le partite prima che escano le quote. Vedi *Il rating dalle quote passate*.
+- [x] ~~**Il rating dalle quote passate nello Scanner.**~~ — **nello Scanner dal `b96`**, scelto dall'utente dopo il test
+  registrato passato il 10 novembre 2026 (sulle 6.296 partite di `batch/b94/livello` −4.26‰ di logloss 1X2 contro il maestro,
+  `z = −4.54`, 7 leghe su 9, prese +0.14 ±0.59). Senza le quote della partita, nelle 34 leghe di football-data, l'1X2 del verdetto è
+  il maestro corretto dal rating; nessuna chiamata alla PitchAPI, tre file di football-data al massimo per lega. Rimisurate le
+  tabelle senza quote: sui cinque campionati il pick passa dal 53.3 al 53.7%, la proposta in cima al tabellone da +16.1 a +17.6.
+  Vedi *Il rating dalle quote passate: la regola*, «Nello Scanner (`b96`)».
 - [ ] **Le coppe nazionali nel riposo.** Dal `b44` il riposo conta lega e coppe europee
   (vedi *La stanchezza*). Coppa Italia, FA Cup, Pokal, Copa del Rey e Coupe de France non sono
   in `leghe.json`, anche se la documentazione dell'API parla di coppe: va verificato con
@@ -658,14 +644,30 @@ finora lo vedrebbe.
   con meno di 30 partite in archivio.
 - Il comportamento quando `/advanced` c'è solo su parte delle partite di una squadra.
 
-## Stato attuale (`b95`)
+## Stato attuale (`b96`)
 
-**Il rating dalle quote passate: il test passa** (10 novembre 2026, non ancora nello Scanner). Senza le quote della partita, un rating
-delle squadre dalle quote di chiusura delle partite già giocate, combinato col maestro coi pesi stimati sul mercato. Regola
-registrata e unita su main prima di aprire il test (PR #111). Sulle 6.296 partite di nove leghe mai guardate contro le quote
-(`batch/b94/livello`) la logloss 1X2 scende di 4.26‰ (`z = −4.54`, 7 leghe su 9); le prese non cambiano (+0.14 ±0.59). Chiude
-quasi un terzo della distanza fra il maestro e il mercato. Metterlo nello Scanner lo decide l'utente: vedi *Il rating dalle quote
-passate: la regola*, «Esito».
+**Il rating dalle quote passate** (dal `b96`). Senza le quote della partita, nelle 34 leghe di football-data, l'1X2 del verdetto
+è il maestro corretto da un rating delle squadre fatto con le quote di chiusura delle partite già giocate. Il test registrato è
+passato il 10 novembre 2026 (regola unita su main prima del test, PR #111): sulle 6.296 partite di nove leghe mai guardate contro
+le quote (`batch/b94/livello`) la logloss 1X2 scende di 4.26‰ (`z = −4.54`, 7 leghe su 9), le prese non cambiano (+0.14 ±0.59).
+Chiude quasi un terzo della distanza fra il maestro e il mercato. L'utente l'ha voluto nello Scanner («Si»).
+- *Come*: lo Scanner prende dal worker i file di stagione di football-data (gli stessi delle quote automatiche, tre al massimo per
+  lega, nessuna chiamata alla PitchAPI), aggancia i nomi delle squadre dalle partite già giocate e rifà il rating come
+  `strumenti/rating-quote.py`. Entra se le due squadre hanno almeno 6 partite con le quote. La matrice dei gol resta del maestro;
+  con le quote della partita vale il mercato, come prima.
+- *Dove si vede*: verdetto, pick, rischio sorpresa, tabellone senza quote, giocate, «In breve» e la giornata. La card dei modelli
+  ha la riga del maestro prima del rating e una nota col rating; il mega-prompt lo dice.
+- *Rimisurato*, col maestro fuori lega sulle leghe dell'allenamento e il rating dove c'è (sui cinque campionati 5.112 partite su
+  5.230):
+  - `PICK_RESA`: il pick passa dal 53.3 al 53.7%, le soglie ≥50 / 55 / 60 / 65 / 70 dicono 64.2 / 67.7 / 72.4 / 76.4 / 79.8% su
+    50 / 36 / 25 / 16 / 9% del calendario. Rifatte 27 rese per lega (5 dei cinque campionati, 22 di `fuori`);
+  - le rese dell'1X2 nel tabellone: FORTE / GIOCABILE / MARGINALE +30.4 / +16.9 / +8.6, e la proposta in cima da +16.1 a +17.6;
+  - `SORPRESA_TAB`: ALTO resta lo sfavorito al 35% o più col disaccordo (518 partite, vince il 37.3%);
+  - `QUOTE_RESA`: il pick senza quote esce il 52.3%; dove non è d'accordo col mercato (785 partite) il 30.1% contro il 39.9% del
+    mercato.
+- *Il Comparatore* fa lo stesso giro (dal `b96` chiama la strada `/quote/`), e il CSV ha le righe `Quote passate:`.
+
+Vedi *Il rating dalle quote passate: la regola*, «Nello Scanner (`b96`)».
 
 **Il ristudio del batch del `b94`** (`b95`). Chiesto dall'utente dopo il batch completo: «controlla tutto quello che vuoi». Sulle
 31.969 partite non c'è niente di nuovo da mettere nel motore: le misure registrate reggono su leghe e partite mai viste (maestro
@@ -2167,7 +2169,7 @@ Come è fatto:
 Verificato:
 - *il prompt della singola partita è identico al `b87`*, carattere per carattere: sulla lega finta 5 partite, coi casi delle quote
   e con gli indisponibili;
-- *il banco*: 5 partite, 43.823 caratteri (i cinque prompt insieme circa 80.000). Controlla che note e istruzioni ci siano una
+- *il banco*: 5 partite, 43.823 caratteri (i cinque prompt insieme circa 80.000; al `b96`, con le note cresciute, 48.897). Controlla che note e istruzioni ci siano una
   volta sola, che ogni blocco abbia l'1X2 della sua partita e le quote se la partita le ha, che non ci siano NaN né segnaposto e
   che il bottone si veda. Controllo di potenza: senza la versione corta delle quote fallisce;
 - *a 390px* il bottone sta nel riquadro della giornata e nella scheda Prompt, senza uscire di lato.
@@ -2691,7 +2693,7 @@ testo, lo modifica con delle regex e lo esegue con `new Function`. Dipende quind
    `/(const\s+confidence\s*=\s*Math\.round\([^;]*;)/`. Non riscriverla e non citarla
    testualmente altrove nel file. Tutto ciò che l'hook legge va prodotto **prima**:
    `__PRED_STATS`, `__PRED_DEBUG`, `__RESID_DEBUG`, `__GOALS_DEBUG`, `__ELO_DEBUG`,
-   `__ELO_DEBUG_OVER`, `__ELO_TREND`, `__UNIT_DEBUG`, `__ENS_DEBUG`, `__SCOPE_DEBUG`, `__LINEUP_DEBUG`, `__FATIGUE_DEBUG`, `__MAESTRO_DEBUG`, `m1/mX/m2`, `probsRole`,
+   `__ELO_DEBUG_OVER`, `__ELO_TREND`, `__UNIT_DEBUG`, `__ENS_DEBUG`, `__SCOPE_DEBUG`, `__LINEUP_DEBUG`, `__FATIGUE_DEBUG`, `__MAESTRO_DEBUG`, dal `b96` `__QP_DEBUG`, `m1/mX/m2`, `probsRole`,
    `probsOver`, `probsOL`, `mk_ro`, `mk_ov`, `dcMat`, `lamH_mix/lamA_mix`,
    `lamH_over/lamA_over`. Una variabile dichiarata dopo finisce a `null` senza errori (una
    colonna di `N/D` nel CSV). Aggancio di riserva: le tre righe `const m1 = …; const mX = …;
@@ -2722,8 +2724,12 @@ testo, lo modifica con delle regex e lo esegue con `new Function`. Dipende quind
 10. **`safeTxt` e `safeHtml`** restano scritte come sono: il banco di prova le strumenta per
     testo, e se cambiano forma si ferma dicendolo.
 11. **Le quote automatiche** (`b55`) lo Scanner le chiede a `PITCH_BASE + '/quote/<file>'`: il worker
-    deve avere la strada di `strumenti/worker-quote.js`, prima di tutto il resto. Il Comparatore non la
-    chiama (non ha i campi delle quote), quindi CSV e copia conforme non ne dipendono.
+    deve avere la strada di `strumenti/worker-quote.js`, prima di tutto il resto. Fino al `b95` il
+    Comparatore non la chiamava. Dal `b96` la chiama dentro il giro del motore, per il rating dalle quote
+    passate (`quotePassate`, i file di stagione di football-data): CSV e copia conforme ne dipendono. Senza
+    la strada, o se i file non arrivano entro 12 secondi, il rating non entra e il verdetto resta del maestro,
+    nello Scanner e nel Comparatore allo stesso modo. Il batch automatico la passa al worker come le altre
+    chiamate; il banco serve i file finti.
 12. **Nel Comparatore `document.getElementById` non torna mai `null`**: per un id che non ha torna
     un fantasma (un `Proxy` che accetta tutto e non fa niente), così il motore scrive nel vuoto
     senza errori. Quindi `if (!el) return` lì non protegge niente. Codice dello Scanner che deve
@@ -2769,7 +2775,7 @@ niente. Controlla:
   testo; all'apertura il Comparatore ripristina la copia salvata in localStorage, che puo'
   essere vecchia) e che le build coincidano;
 - **ogni** manopola del motore contro il suo default letto dal sorgente
-  (`cmpEngineDefaults`, 30 manopole dal `b48`, 31 dal `b63` con `GOALS_LEVEL`, 32 dal `b75` con `PRIMO_GOL_QUOTA`, 33 dal `b76` con `NUMERI_CORREZIONI`, 34 dal `b77` con `MAESTRO`, 35 dal `b85` con `ARBITRO`), piu' `CMP_K_LIST[0]` contro `SHRINK_K`;
+  (`cmpEngineDefaults`, 30 manopole dal `b48`, 31 dal `b63` con `GOALS_LEVEL`, 32 dal `b75` con `PRIMO_GOL_QUOTA`, 33 dal `b76` con `NUMERI_CORREZIONI`, 34 dal `b77` con `MAESTRO`, 35 dal `b85` con `ARBITRO`, 36 dal `b96` con `QUOTE_PASSATE`), piu' `CMP_K_LIST[0]` contro `SHRINK_K`;
 - lo storico per squadra contro quello dello Scanner (`window.__ENGINE_LIMIT`);
 - che la partita sia della stagione per cui e' caricato il database.
 
@@ -2832,17 +2838,22 @@ in porta e le altre sì, e che nel CSV del batch e dello sweep il reale dei corn
 righe Goal, NoGoal, Over 2.5 e Under 2.5 della sezione MERCATI si confrontano con la riga «Verdetto (maestro)» della card dei
 modelli: fino al `b94` portavano il motore, e il banco le confrontava con la colonna del Dixon-Coles di ruolo, cioè confermava il
 difetto. Controllo di potenza: su una copia con `statsVuote` spenta il banco fallisce nel motore (1 partita vuota nello storico, 0
-senza corner) e nel CSV del batch e dello sweep.
+senza corner) e nel CSV del batch e dello sweep. Dal `b96` la lega finta ha anche i file di football-data di tre stagioni
+(`I1`, coi nomi un po' cambiati, sempre gli stessi per squadra, e le quote di chiusura dai lambda veri con un po' di rumore), e il
+banco rifà il rating dalle quote passate da capo in Node (`ratingAtteso`, scritto senza guardare lo Scanner). Controlla che nello
+Scanner il rating e i nomi agganciati siano quelli, e che il verdetto sia il maestro corretto coi numeri della regola. Nel CSV del
+batch e dello sweep il rating deve entrare dove deve e coincidere al quarto decimale. Controllo di potenza: su una copia con `REG`
+a 0.80 invece di 0.85 il banco fallisce nello Scanner e su 82 partite del CSV.
 
-Esito al `b95` (storico 30), a 390px con tutte le 30 card aperte, scheda per scheda e in tutte e quattro le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, il prompt della giornata con note e istruzioni una volta sola e un blocco per partita, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, il caso dell'arbitro col rapporto rifatto da `arbitri.json`, gli indisponibili segnati, nel prompt e tolti, la loro ricerca, l'elenco della giornata con le quote, tutte le giocate in ogni partita e nei dieci casi delle quote, le statistiche vuote nel motore e nel CSV, 0 px):
+Esito al `b96` (storico 30), a 390px con tutte le 30 card aperte, scheda per scheda e in tutte e quattro le sotto-schede di Squadre (anche nessuna tabella compatta né riquadro che esce dal suo spazio, il mega-prompt dello Scanner mai vuoto né rotto, il prompt della giornata con note e istruzioni una volta sola e un blocco per partita, «In breve» giusto su 3 partite su 3 e nei dieci casi delle quote, la matrice allineata, la card dei risultati esatti con le quote, le quote automatiche a posto, e la giornata: 5 partite su 5 del turno, le 3 analizzate a parte identiche riaperte coi bottoni, la scheda che resta, il caso dell'arbitro col rapporto rifatto da `arbitri.json`, gli indisponibili segnati, nel prompt e tolti, la loro ricerca, l'elenco della giornata con le quote, tutte le giocate in ogni partita e nei dieci casi delle quote, le statistiche vuote nel motore e nel CSV, il rating dalle quote passate nello Scanner e nel CSV, 0 px):
 
 | modalita' | copia conforme | scritture del motore diverse | righe CSV diverse | scorrimento laterale |
 |---|---|---|---|---|
-| una partita, tutte del giorno, intervallo | 3/3 | 0 su 204 | 0 su 131 | 0 |
-| batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse); reale dei corner N/D sulle 5 partite vuote e su nessun'altra | 0 su 204 | 0 su 131 | 0 |
+| una partita, tutte del giorno, intervallo | 3/3 | 0 su 209 | 0 su 134 | 0 |
+| batch per stagioni, sweep | 89/89, solo la stagione caricata; archivio 270 partite su 270, Elo rifatto identico su 89 su 89 (senza una partita: 87 diverse); reale dei corner N/D sulle 5 partite vuote e su nessun'altra; rating dalle quote passate in 84 partite su 89, uguale a quello rifatto da capo | 0 su 209 | 0 su 134 | 0 |
 | intervallo che sconfina nella stagione prima | 57/57, 20 partite saltate con avviso | 0 | 0 | 0 |
-| `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 145-168 | 81-91 | 0 |
-| `vecchio`: motore `b94` caricato (controllo) | 0/3, «motore caricato diverso ...» | 11-72 su 204 (le partite vuote nello storico: corner, tiri e quello che ne discende); senza partite vuote 0 su 204 | 9-69; senza partite vuote 1 | 0 |
+| `ab`: scala Elo 1.00 e uno storico diverso da quello dello Scanner (controllo) | 0/3, «ELO_SCALE ... / storico di 15 partite invece delle 30 ...» | 147-165 | 79-88 | 0 |
+| `vecchio`: motore `b95` caricato (controllo) | 0/3, «motore caricato diverso ...» | 20 su 209 (5 id nuovi della card dei modelli; il verdetto 1X2 corretto dal rating e quello che ne discende) | 19-24 su 134 | 0 |
 
 Al `b39` lo stesso controllo col motore `b38` aveva dato 0 scritture diverse su 188: il
 motore `b39` stampava esattamente quello del `b38`, e le differenze erano tutte nel
@@ -2967,7 +2978,10 @@ diversa, solo il certificato: la bolletta sta fuori dal motore e scrive con `inn
 la card delle giocate sta fuori dal motore e scrive con `innerHTML` diretto. Al `b95` il controllo col `b94` vede 11-72 scritture
 diverse su 204 e 9-69 righe del CSV su 131: sono le partite vuote della lega finta, che il `b94` legge come zeri (corner e tiri
 in porta attesi, i loro mercati, le variabili del maestro e quello che ne esce). Rifatto con la lega finta senza partite vuote, il
-`b94` stampa lo stesso del `b95`: 0 scritture diverse su 204, una riga del CSV, il certificato.
+`b94` stampa lo stesso del `b95`: 0 scritture diverse su 204, una riga del CSV, il certificato. Al `b96` il controllo col `b95` vede 20
+scritture diverse su 209 e 19-24 righe del CSV su 134. Cinque scritture sono gli id nuovi della card dei modelli (la riga del maestro,
+il nome del verdetto, la nota del rating). Le altre sono il verdetto 1X2 corretto dal rating e quello che ne discende: confidence,
+doppie chance, quote eque, rischio sorpresa e tabellone.
 
 **Il controllo del `b70`.** Da qui «In breve» controlla anche il rischio sorpresa: con le quote dell'1X2
 `#sorpresa-box` deve essere identico a quello rifatto nella pagina con `rischioSorpresa(…,
@@ -3043,8 +3057,8 @@ Over.
   scritte con `innerHTML` diretto (la card dell'Elo, la nota di lega, la card delle quote e, con
   le quote, quella dei risultati esatti e il rischio sorpresa) e il mega-prompt non sono nel confronto; del mega-prompt, dal `b51`, il banco controlla solo che non
   sia vuoto o rotto, e dal `b54` il blocco delle quote nei casi del banco (dieci dal `b57`).
-- **Le quote il Comparatore non le ha** (né 1X2 né Over/Under): niente campi, niente combinazione nel
-  CSV, e non chiama la strada `/quote/`. Lo stesso per l'arbitro (`b85`): niente campo, quindi i gialli del CSV sono sempre quelli
+- **Le quote della partita il Comparatore non le ha** (né 1X2 né Over/Under): niente campi, niente combinazione nel
+  CSV. Dal `b96` chiama la strada `/quote/` solo per il rating dalle quote passate (i file di stagione), come lo Scanner. Lo stesso per l'arbitro (`b85`): niente campo, quindi i gialli del CSV sono sempre quelli
   senza arbitro, e il Comparatore non carica `arbitri.json`. Le rese con le quote sono misurate fuori dal motore, da
   `strumenti/quote-bookmaker.py` e `strumenti/quote-gol.py` sui CSV e le quote di football-data.co.uk.
 
@@ -4605,7 +4619,69 @@ Descrittivi:
 
 Cosa vuol dire. Senza le quote della partita, il candidato porta le probabilità più vicino a quelle del mercato e al vero, e
 indovina quanto il maestro. Serve a chi analizza le partite prima che escano le quote. Con le quote della partita non aggiunge
-niente (vedi *Il rating dalle quote passate*). Nello Scanner non c'è ancora: vedi *Da fare*.
+niente (vedi *Il rating dalle quote passate*). Nello Scanner dal `b96`: vedi qui sotto.
+
+**Nello Scanner (`b96`).** Scelto dall'utente dopo il test («Si»). Come diceva la regola, «Se passa».
+- *Quando entra*: senza le quote dell'1X2 della partita (con le quote vale il mercato, e `QUOTE_COMB` riceve l'1X2 del motore
+  come prima), nelle 34 leghe di `QUOTE_FD`, col maestro acceso, e se le due squadre hanno almeno 6 partite con le quote di
+  chiusura nella finestra. Altrimenti il verdetto è il maestro, e la card dei modelli e il mega-prompt dicono perché.
+- *Da dove* (`quotePassate`, dentro `avviaScanner`, prima del maestro): i file di stagione di football-data dal worker (strada
+  `/quote/`, gli stessi delle quote automatiche, in memoria per la sessione), tre per le leghe dei file principali (s−2, s−1 e s,
+  la stagione dalla data come per le quote automatiche: da luglio) e il file `new` per le altre. Un file che non arriva entro 12
+  secondi non c'è. Nessuna chiamata alla PitchAPI.
+- *I nomi* (`_nomeFdQuotePassate`): per le due squadre, le partite già giocate dell'archivio di lega prima del giorno; per ognuna
+  le righe di football-data col punteggio uguale entro un giorno, e fra più righe così quella coi nomi più simili (`_simNomi`
+  delle quote automatiche, staccata di 0.3). Vince il nome delle ultime 12 partite, con almeno due voti e i due terzi.
+- *Il rating* (`quotePassate`) è `rating_quote` di `strumenti/rating-quote.py` sulla finestra s−2..s: le righe in ordine di data
+  come lo strumento, i giorni prima del taglio, il cambio di stagione con la regressione e il livello delle squadre uscite.
+  - Se nel file c'è la riga della partita stessa (partita già giocata: il backtest, o un'analisi a posteriori), il taglio è il
+    suo giorno e la stagione la sua, come nel test.
+  - Se non c'è (la partita da giocare), il taglio è il giorno della partita e la stagione l'ultima con righe prima. Alla prima
+    giornata di una stagione che il file non ha ancora, il rating resta quello di fine stagione, senza la regressione d'estate:
+    le squadre nuove non hanno 6 partite e restano fuori, le altre restano un po' più lontane dalla media.
+  - Le righe della stessa coppia entro tre giorni dalla data non entrano mai, per non leggere la partita stessa.
+- *L'1X2* (`_QPr`): `lg' = −0.0147 + 0.3599·log(p1/p2) del maestro + 0.6533·rating`, pareggio del maestro, `1` e `2` secondo
+  `σ(lg')`. Sono `m1`, `mX`, `m2`: verdetto, doppie chance, confidence, pick, rischio sorpresa, tabellone senza quote, giocate,
+  «In breve» e la giornata. La matrice dei gol resta del maestro. `window.QUOTE_PASSATE = 'no'` torna al `b95`.
+- *A schermo*: nella card dei modelli la riga «Maestro» (prima del rating), «Verdetto (maestro e quote passate)» e una nota
+  (`mdl-qp`) col rating, le partite con le quote delle due squadre e quanto darebbe da solo su 1 contro 2. Nel mega-prompt, sezione
+  1, l'1X2 del maestro prima del rating e la stessa nota; il prompt della giornata lo dice una volta nelle note. La card delle
+  quote chiama «Senza quote» la riga che fino al `b95` diceva «Motore».
+- *Il CSV*: le righe `Quote passate:` (vedi *Leggere un CSV del Comparatore*). Il Comparatore fa lo stesso giro: dal `b96` chiama
+  `/quote/` (contratto, punto 11).
+
+**Verificato.**
+- *Il codice dello Scanner contro lo strumento del test*: le funzioni dello Scanner fatte girare in Node sui file di football-data
+  di `batch/fd` e `batch/fd-nov`, con l'archivio di lega dei CSV del `b94` al posto della PitchAPI, contro `aggancia` e
+  `rating_finestre` di `strumenti/quote-passate.py`. Sono 86 file del batch del `b94`, le leghe che hanno le quote di
+  football-data: cinque campionati, sette leghe, inglesi e Turchia, le nove del livello, il 2026/27, Cina, Finlandia, Irlanda e
+  Romania.
+  - Su 23.999 partite il rating c'è da tutti e due, identico entro 9·10⁻¹⁶; su 820 non c'è per nessuno dei due (una squadra
+    sotto le 6 partite).
+  - Su 106 solo lo Scanner lo dà:
+    - gli spareggi e i playoff di fine stagione che football-data non ha (Championship, League One e Two, Eredivisie, Austria,
+      Belgio): la riga della partita non c'è, e lo Scanner taglia al giorno della partita;
+    - le finali coi supplementari (MLS, Liga MX), dove il punteggio della PitchAPI non è quello di football-data e lo strumento,
+      che aggancia per punteggio, non trova la riga;
+    - i nomi di `QUOTE_ALIAS` (AGF, OB, FC København), che lo strumento non conosce.
+  - Su 2 solo lo strumento: una squadra alla sua prima partita nell'archivio di lega (Forest Green, Rizespor), il cui nome lo
+    Scanner non ha da dove agganciare.
+  - Su 16 i due prendono strade diverse perché football-data cambia nome a una squadra a metà stagione (Dinamo Bucureşti nella
+    Liga I 2025/26, HamKam nell'Eliteserien 2023). Lo Scanner tiene il nome della maggioranza delle ultime 12 partite.
+- *Il banco*: la lega finta ha i file di football-data di tre stagioni (nomi un po' diversi, sempre gli stessi per squadra; quote
+  di chiusura dai lambda veri con un po' di rumore). Il banco rifà il rating da capo in Node (`ratingAtteso`) e controlla che
+  nello Scanner sia identico (nomi agganciati compresi), che il verdetto sia il maestro corretto coi numeri della regola, e che
+  nel CSV del batch e dello sweep il rating entri dove deve e coincida al quarto decimale. Al `b96`: copia conforme in tutte le modalità, 0 scritture diverse su 209 e 0 righe del CSV su 134,
+  il rating nel CSV in 84 partite su 89 e uguale a quello rifatto da capo. Controllo di potenza: su una copia con `REG` a 0.80 il
+  banco fallisce nello Scanner e su 82 partite del CSV.
+- *Il batch vero*: Superligaen e Serie A 2026/27, batch automatico del `b96` sulla PitchAPI vera (`batch/b96-prova`):
+  - 192 partite su 192 in copia conforme, Elo rifatto identico in tutti e due i file;
+  - il rating entra su 182 partite. Nelle altre 10 una squadra ha meno di 6 partite con le quote (8: le neopromosse alle prime
+    giornate), o il suo nome non si aggancia (2: una neopromossa alla prima partita);
+  - `python3 strumenti/quote-passate.py --schermo batch/b96-prova` rifà le 182 dai file di football-data: rating entro 0.00005,
+    1X2 entro 0.08 punti, cioè l'arrotondamento del CSV. Su 7 (AGF, OB, FC København) lo strumento prende la riga coi nomi che ha
+    scritto lo Scanner, perché quei nomi passano da `QUOTE_ALIAS`;
+  - `maestro.py --schermo` e `corner-differenza.py --schermo` coincidono anche loro.
 
 ### Il confronto contro squadre simili
 
@@ -6054,13 +6130,14 @@ scrittura nuova, il messaggio iniziale). Il banco la verifica a parte, premendo 
 | `SHRINK_K` | 4 | misurata `b35`–`b37`, riconfermata `b41` | 12 e 28 peggiori a 5σ; sotto 4 migliora l'1X2 (−0.0016, `z = −3.03`) ma i gol pagano +0.0056. `b41`, copia conforme e zero clamp: a 2 l'1X2 −0.00069 (`z = −3.30`), la somma +0.00155; Premier −0.00079 (`z = −3.42`) e +0.00136; LaLiga −0.00052 e +0.00025; Bundesliga −0.00052 e +0.00321 (`z = 3.40`); Ligue 1 +0.00001 e +0.00087 |
 | `SHRINK_LAM_K` | 3 | a mano, misurata `b37` e `b41` | `b37`: ottimo del Brier Over fra 5 e 8, `z = −1.82`, segno ribaltato nel 2022/23. `b41`: in Serie A monotono fino a 20, miglior `z = −1.99` a 5, 3 stagioni su 3; in Premier il 2023/24 si ribalta (+0.00131 a 5, +0.0081 a 20); in LaLiga piatta a 5 e peggio da 8 in su; in Bundesliga meglio a 5 (`z = −2.69`, 3 stagioni su 3); in Ligue 1 meglio a 5 (`z = −1.26`). Tre leghe sì, una no, una ribaltata: resta 3 |
 | `GOALS_SOT_W` | 0.50 | stimata `b12`, confermata `b14` e `b41` | AUC Over 2.5 da 0.554/0.495/0.501 a 0.572/0.514/0.521; cinque leghe +2.18σ. `b41` in copia conforme: la Serie A punisce 0 (+0.0066, `z = 2.03`), la Premier punisce 1 (+0.0062, `z = 2.30`), LaLiga e Ligue 1 hanno l'ottimo a 0.50, la Bundesliga fra 0.25 e 0.50 |
-| `SORPRESA_TAB` | 6 fasce dello sfavorito × accordo / disaccordo fra modello ed Elo: partite, vince lo sfavorito, pareggio, vince il favorito | misurata `b64`, rimisurata `b77` sulle probabilità del maestro (fuori lega): col maestro il disaccordo non aggiunge più niente (residuo −0.54 ±1.46); il `b82` l'aveva rimisurata col maestro con la pressione, il `b83` torna a questa | 23.278 partite in copia conforme di 24 leghe (batch `b48`–`b62`, 2023–2026), `strumenti/sorpresa.py`; col disaccordo lo sfavorito vince +2.39 ±1.49 punti oltre il previsto, uguale nelle due metà delle leghe. Non tocca le probabilità: è la frequenza detta dall'avviso. Vedi *L'avviso di sorpresa* |
+| `SORPRESA_TAB` | 6 fasce dello sfavorito × accordo / disaccordo fra modello ed Elo: partite, vince lo sfavorito, pareggio, vince il favorito | misurata `b64`, rimisurata `b77` sulle probabilità del maestro (fuori lega): col maestro il disaccordo non aggiunge più niente (residuo −0.54 ±1.46); il `b82` l'aveva rimisurata col maestro con la pressione, il `b83` torna a questa; rimisurata `b96` col maestro fuori lega e il rating dalle quote passate dove c'è (22.463 partite su 23.278: residuo col disaccordo −0.85 ±1.45, ALTO 518 partite, lo sfavorito vince il 37.3%) | 23.278 partite in copia conforme di 24 leghe (batch `b48`–`b62`, 2023–2026), `strumenti/sorpresa.py`; col disaccordo lo sfavorito vince +2.39 ±1.49 punti oltre il previsto, uguale nelle due metà delle leghe. Non tocca le probabilità: è la frequenza detta dall'avviso. Vedi *L'avviso di sorpresa* |
 | `SORPRESA_QUOTE_TAB` | 5 fasce dello sfavorito con le quote × tutte / accordo / disaccordo fra modello ed Elo: partite, vince lo sfavorito, pareggio, vince il favorito | misurata `b70`, accordo e disaccordo dal `b71` | 11.902 partite di 12 leghe con le quote di chiusura, probabilità con `QUOTE_COMB`; fuori lega la stessa entro 0.3 punti. Il disaccordo modello/Elo pesa poco (30% o più: 30.7 contro 31.5%). Con le soglie di sempre il rischio con le quote non arriva ad ALTO. `strumenti/sorpresa-quote.py`, sezione 5. Vedi *L'avviso di sorpresa*, «Con le quote» |
 | `GOALS_LEVEL` | 1.051 | stimata e registrata `b62`, nel motore `b63` | gol/lambda di ruolo su 16.254 partite di quindici leghe (2023/24–2025/26), stabile per stagione (1.044–1.061) e per fonte degli xG; fuori lega Over 2.5 −2.74‰ (`z = −4.80`) e Goal −2.69‰ (`z = −6.27`), 13 leghe su 15. Test registrato su nove leghe mai aperte, 6.472 partite: −3.80‰ (`z = −2.99`), 6 su 9. Vedi *Il livello dei gol: la regola* |
 | `PRIMO_GOL_QUOTA` / `PRIMO_GOL_FISSA` | `'fissa'` / 0.268, 0.446 | misurata, test registrato `b75` | la quota media dei gol nei primi 30 e 45 minuti su 4.496 partite di dodici leghe dal 2025/26 (`QUOTA_FISSA` di `strumenti/primo-gol.py`); test su 11.633 partite di 36 leghe mai aperte per questa domanda: −7.30‰ (`z = −4.93`), 29 leghe su 36. `'squadre'` torna alla quota dei minuti dei gol delle due squadre. Vedi *La card del primo gol: la regola* |
 | `MAESTRO` / `MAESTRO_REG` | `'si'` / 65 variabili, medie, deviazioni, mediane e i 66×4 coefficienti di `strumenti/maestro_regola.json` | stimati `b77` sul mercato, test registrato | ridge (`α` 10) dalle variabili del motore all'1X2 e ai lambda del mercato di chiusura, 16.071 partite di 14 leghe coi file principali di football-data; test sui risultati di 33 leghe mai usate (13.592 partite): 1X2 −4.37‰ (`z = −5.30`, 25 su 33), risultato esatto −13.41‰ (`z = −8.88`, 31 su 33). `'no'` torna al `b76`. Vedi *Il maestro mercato: la regola* |
 | `NUMERI_CORREZIONI` / `NUMERI_REG` | `'si'` / 21 parametri, uguali a `REGOLA` di `strumenti/numeri-correzioni.py` | stimati sull'esplorazione, test registrato `b76` | stimati sulle 1.743 partite del 2025/26 dei cinque campionati (`batch/numeri`), fuori lega dove serve; test su 3.976 partite mai aperte per Numeri (`batch/numeri-prova1`, `-prova2`): passano tutti e 17, da `z` −2.7 a −17.1, e il KNN 1X2 su 25.168 partite di 42 leghe (−21.9‰, `z` −14.9). `'no'` torna al `b75`. Vedi *Le card di Numeri: la regola* |
 | `CORNER_DIFF` / `CORNER_DIFF_REG` | `'si'` / `c` 5.3693, `b` 0.4597, `kT` 63.97, `a` 0.112, `b1` 0.5231, `b2` 0.1781, `φ` 13.843, corner previsti sotto 0.5 a 0.5; basi fisse casa / pari / trasferta 54.1 / 9.36 / 36.55%, casa −1.5 44.45%, +1.5 72.16% | stimati sull'esplorazione, test registrato `b84` | massima verosimiglianza su 23.278 partite di 24 leghe; test sui batch del `b74` (7.120 partite di 24 leghe): corner 1X2 −48.7‰ contro la frequenza fissa (`z = −14.79`, 23 su 24), handicap ±1.5 −80.8‰. Uguali a `REGOLA` di `strumenti/corner-differenza.py`; `'no'` torna al `b83`. Vedi *Chi fa più corner: la regola* |
+| `QUOTE_PASSATE` / `QUOTE_PASSATE_REG` | `'si'` / `a` −0.0147, `b` 0.3599, `c` 0.6533; rating `K` 0.35, `KH` 0.01, `REG` 0.85, `H0` 0.35, finestra s−2..s, almeno 6 partite con le quote a squadra; 12 secondi per i file | `a`, `b`, `c` stimati sul mercato (esplorazione), il rating fissato il 24 ottobre 2026 sulle 18 leghe dei file principali; test registrato; nel motore `b96` | il test sulle 6.296 partite di `batch/b94/livello`: −4.26‰ di logloss 1X2 contro il maestro (`z = −4.54`), 7 leghe su 9, prese +0.14 ±0.59. Uguali a `REGOLA` di `strumenti/quote-passate.py` e a `rating_quote` di `strumenti/rating-quote.py`. `'no'` torna al `b95`. Vedi *Il rating dalle quote passate: la regola* |
 | `ARBITRO` / `ARBITRO_REG` | `'si'` / `b` 0.96 in Serie A e 0.72 in LaLiga, `K` 10, ultime 80 partite dell'arbitro, media della lega nei 365 giorni prima con almeno 50 partite | `b` stimati sul 2023/24–2024/25 (Footiqo), test registrato; nel motore `b85` | il test sul 2025/26 e il 2026/27 (850 partite): conteggio dei gialli −18.9‰ (`z = −3.37`), meglio in tutte e due. Col rapporto dalla tabella della PitchAPI (`arbitri.json`, 3.940 partite dal 2021/22) sulle stesse partite −18.5‰ (`z = −2.97`). `'no'` torna al `b84`. Vedi *Gli arbitri e i gialli: la regola* |
 | `SOT_PER_GOAL` | 3.25 | misurata | LaLiga 3.19, Premier 3.04, Serie A 3.33. Tocca solo il livello |
 | `GOALS_SOT_CAP` | 0.20 | paracadute misurato | morde nello 0.18% |
@@ -6083,10 +6160,10 @@ scrittura nuova, il messaggio iniziale). Il banco la verifica a parte, premendo 
 | `MATRICE_QUOTE_RESA` | 4.849 partite, 4 blocchi, `z` risultati esatti −8.60 · multigol −8.93 · handicap −4.80 | misurata `b62` | il test registrato dei mercati della matrice con le quote (vedi *I mercati della matrice con le quote: la regola*); la nota della card «Risultati esatti, handicap e multigol» la legge da qui |
 | `QUOTE_OU_RESA` | 11.222 partite, 11 leghe · lato più probabile: motore 55.6 (dal `b77`, col maestro, 57.6), mercato 58.9, con le quote 58.9% · giocando dove il motore si discosta −7.5 / −9.9% · sempre −3.7% | misurata `b57` | la card e il blocco gol del mega-prompt la leggono da qui |
 | `QUOTE_COLONNE_OU` | chiusura `AvgC`, `PC`, `B365C`, poi `Avg`, `P`, `B365` (`>2.5` / `<2.5`) | tabella `b57` | le colonne dell'Over/Under nei file principali di football-data (Pinnacle è `PC`, non `PSC` come nell'1X2); ci sono su ogni riga delle 18 leghe provate e dei file della settimana, mai nei file `new` |
-| `QUOTE_RESA` | tutte 53.0 · soglie ≥70 / 65 / 60 / 55 / 50: 78.6 / 74.7 / 71.1 / 67.5 / 64.0% su 14 / 20 / 27 / 37 / 49% del calendario · disaccordo 1321 partite, motore 26.3%, mercato 43.1% (dal `b77` col maestro: motore 51.7%, disaccordo 1046 partite, maestro 28.3%, mercato 42.1%) | misurata `b54` | combinazione stimata su undici leghe e misurata sulla dodicesima, 11.902 partite; soglie uguali nei cinque campionati e nelle altre sette (≥55: 67.9 e 67.1%). La card delle quote e il mega-prompt la leggono da qui |
-| `PICK_RESA` | dal `b77`, col maestro: tutte 53.3 · casa 43.0 · soglie ≥70 / 65 / 60 / 55 / 50: 79.1 / 76.0 / 72.2 / 67.4 / 62.8% su 9 / 16 / 24 / 35 / 49% del calendario; `fuori` 34 leghe. Fino al `b76`: tutte 52.7 · soglie 77.1 / 73.2 / 69.3 / 66.0 / 61.7% su 9 / 16 / 26 / 38 / 52% | misurata `b49`, rimisurata `b77` (fuori lega); il `b82` l'aveva rimisurata col maestro con la pressione, il `b83` torna a questa | cinque leghe col motore `b48`, 5230 partite (tabella in *Stato attuale*). Dal `b51` una sola copia: la card delle soglie e il mega-prompt la leggono da qui. Si rifà con le tabelle, a ogni motore che sposta l'1X2. Dal `b52` porta `leghe` (le cinque, per id) e `fuori` (Championship 46.3 e 64.8% su 17%, Eredivisie 53.7 e 68.7% su 47%, Liga Portugal 55.0 e 72.4% su 43%: pick su tutte e a ≥55, 3495 partite col `b48`), perché sulle tre leghe nuove le soglie ≥55 / 60 / 65 / 70 escono dai 2se (vedi *Le tre leghe nuove col `b48`: la regola*). Dal `b53` `fuori` ha anche 2. Bundesliga (45.4 e 62.8% su 16%), First Division A (50.2 e 65.5% su 35%), Premiership scozzese (53.3 e 68.9% su 41%) e Super League svizzera (47.1 e 66.1% su 26%), 3202 partite col motore `b52`. Dal `b56` porta anche `cinque`, le cinque leghe una per una nella stessa forma (tabella in *Stato attuale*): con `fuori` scrive la nota di lega in cima all'analisi. Dal `b74` `fuori` ha 38 leghe (le 31 nuove dai batch del `b61`, del `b62` e del `b73`, quelle con almeno 50 partite col pick sopra il 55%; tabella in *Le leghe mai viste*), e ogni lega porta anche le stagioni e le partite sopra il 55%, da cui la nota di lega e il prompt calcolano il ±2se Dal `b95` `fuori` ha 37 leghe: rientrano K League 1, Liga de Primera cilena e USL Championship, e il 2026 delle leghe a calendario solare è rifatto con le partite fino al 31 ottobre |
+| `QUOTE_RESA` | tutte 53.0 · soglie ≥70 / 65 / 60 / 55 / 50: 78.6 / 74.7 / 71.1 / 67.5 / 64.0% su 14 / 20 / 27 / 37 / 49% del calendario · disaccordo 1321 partite, motore 26.3%, mercato 43.1% (dal `b77` col maestro: motore 51.7%, disaccordo 1046 partite, maestro 28.3%, mercato 42.1%; dal `b96` col maestro e le quote passate: 52.3%, disaccordo 785 partite, 30.1% contro 39.9% del mercato) | misurata `b54`, il pick senza quote rimisurato `b77` e `b96` | combinazione stimata su undici leghe e misurata sulla dodicesima, 11.902 partite; soglie uguali nei cinque campionati e nelle altre sette (≥55: 67.9 e 67.1%). La card delle quote e il mega-prompt la leggono da qui |
+| `PICK_RESA` | dal `b96`, col maestro (fuori lega) e le quote passate: tutte 53.7 · casa 43.0 · soglie ≥70 / 65 / 60 / 55 / 50: 79.8 / 76.4 / 72.4 / 67.7 / 64.2% su 9 / 16 / 25 / 36 / 50% del calendario; nelle leghe di `fuori` con le quote passate (22 su 37) rifatte le stesse stagioni. Dal `b77`, col maestro: tutte 53.3 · casa 43.0 · soglie ≥70 / 65 / 60 / 55 / 50: 79.1 / 76.0 / 72.2 / 67.4 / 62.8% su 9 / 16 / 24 / 35 / 49% del calendario; `fuori` 34 leghe. Fino al `b76`: tutte 52.7 · soglie 77.1 / 73.2 / 69.3 / 66.0 / 61.7% su 9 / 16 / 26 / 38 / 52% | misurata `b49`, rimisurata `b77` (fuori lega); il `b82` l'aveva rimisurata col maestro con la pressione, il `b83` torna a questa | cinque leghe col motore `b48`, 5230 partite (tabella in *Stato attuale*). Dal `b51` una sola copia: la card delle soglie e il mega-prompt la leggono da qui. Si rifà con le tabelle, a ogni motore che sposta l'1X2. Dal `b52` porta `leghe` (le cinque, per id) e `fuori` (Championship 46.3 e 64.8% su 17%, Eredivisie 53.7 e 68.7% su 47%, Liga Portugal 55.0 e 72.4% su 43%: pick su tutte e a ≥55, 3495 partite col `b48`), perché sulle tre leghe nuove le soglie ≥55 / 60 / 65 / 70 escono dai 2se (vedi *Le tre leghe nuove col `b48`: la regola*). Dal `b53` `fuori` ha anche 2. Bundesliga (45.4 e 62.8% su 16%), First Division A (50.2 e 65.5% su 35%), Premiership scozzese (53.3 e 68.9% su 41%) e Super League svizzera (47.1 e 66.1% su 26%), 3202 partite col motore `b52`. Dal `b56` porta anche `cinque`, le cinque leghe una per una nella stessa forma (tabella in *Stato attuale*): con `fuori` scrive la nota di lega in cima all'analisi. Dal `b74` `fuori` ha 38 leghe (le 31 nuove dai batch del `b61`, del `b62` e del `b73`, quelle con almeno 50 partite col pick sopra il 55%; tabella in *Le leghe mai viste*), e ogni lega porta anche le stagioni e le partite sopra il 55%, da cui la nota di lega e il prompt calcolano il ±2se Dal `b95` `fuori` ha 37 leghe: rientrano K League 1, Liga de Primera cilena e USL Championship, e il 2026 delle leghe a calendario solare è rifatto con le partite fino al 31 ottobre |
 | retta dei mercati binari | −5.06 + 1.091·p | stimata, riconfermata `b38` e `b41` | 22.584 proposte, errore massimo 2.4 punti; `b41` 7938 proposte, 2.5 |
-| `EDGE_BANDS` | ≥20 / ≥10 / ≥5, guadagno per famiglia (`b50`) | stimata `b38`, riconfermata `b41` e `b49`, per famiglia dal `b50` | 28.230 proposte: +24.6 / +14.8 / +6.3 punti, monotono, segno concorde in 5 stagioni su 5. `b41` (copia conforme): +25.6 / +15.6 / +4.8 sulle 13.148 proposte con base del `b40`, +25.0 / +14.9 / +5.7 sulle 14.742 del `b41`, monotono in 3 stagioni su 3; Premier (≥20 / 10–20 / 5–10) +27.4 / +10.7 / +6.0, LaLiga +25.0 / +13.7 / +7.3, Bundesliga +28.7 / +14.0 / +5.5, Ligue 1 +26.4 / +13.4 / +5.0. `b49` (motore `b48`, cinque leghe): +25.8 / +12.2 / +6.1, monotono in 5 leghe su 5; per famiglia 1X2 +27.5 / +15.5 / +8.0, gol +1.0 / +7.2 / +3.5, numeri +7.2 / +10.2 / +8.2. Dal `b50` l'etichetta mostra questi, per famiglia, con ±2se: 1X2 ±1.6 / ±1.6 / ±1.9 (2891 / 3573 / 2680 proposte), gol ±10.4 / ±2.3 / ±1.7 (92 / 1881 / 3457), numeri ±8.0 / ±2.9 / ±2.4 (133 / 1058 / 1628). Dal `b63` i gol, rifatti col livello dei gol: +2.3 ±12.8 (61) / +6.8 ±2.6 (1445) / +4.4 ±1.7 (3279). Dal `b77`, col maestro (fuori lega): 1X2 +29.5 ±1.6 (2463) / +17.1 ±1.4 (3692) / +9.0 ±1.7 (2912), gol +24.3 ±11.6 (55) / +13.2 ±3.5 (744) / +6.8 ±1.9 (2801); i numeri restano del `b49`. Il `b82`, col maestro con la pressione, aveva 1X2 +29.5 / +16.9 / +9.2 e gol +24.0 / +12.4 / +6.6; il `b83` torna a quelle del `b77`. Dal `b84` la famiglia `corner` (chi fa più corner, quattro proposte), sulle 24 leghe fuori lega e sul `b74` coi numeri della regola: +26.6 ±0.9 (9448) / +13.7 ±0.7 (17482) / +6.6 ±0.8 (14810). Ordinare per guadagno atteso invece che per scarto: no (vedi *Il tabellone per famiglia di mercato: la regola*) |
+| `EDGE_BANDS` | ≥20 / ≥10 / ≥5, guadagno per famiglia (`b50`) | stimata `b38`, riconfermata `b41` e `b49`, per famiglia dal `b50` | 28.230 proposte: +24.6 / +14.8 / +6.3 punti, monotono, segno concorde in 5 stagioni su 5. `b41` (copia conforme): +25.6 / +15.6 / +4.8 sulle 13.148 proposte con base del `b40`, +25.0 / +14.9 / +5.7 sulle 14.742 del `b41`, monotono in 3 stagioni su 3; Premier (≥20 / 10–20 / 5–10) +27.4 / +10.7 / +6.0, LaLiga +25.0 / +13.7 / +7.3, Bundesliga +28.7 / +14.0 / +5.5, Ligue 1 +26.4 / +13.4 / +5.0. `b49` (motore `b48`, cinque leghe): +25.8 / +12.2 / +6.1, monotono in 5 leghe su 5; per famiglia 1X2 +27.5 / +15.5 / +8.0, gol +1.0 / +7.2 / +3.5, numeri +7.2 / +10.2 / +8.2. Dal `b50` l'etichetta mostra questi, per famiglia, con ±2se: 1X2 ±1.6 / ±1.6 / ±1.9 (2891 / 3573 / 2680 proposte), gol ±10.4 / ±2.3 / ±1.7 (92 / 1881 / 3457), numeri ±8.0 / ±2.9 / ±2.4 (133 / 1058 / 1628). Dal `b63` i gol, rifatti col livello dei gol: +2.3 ±12.8 (61) / +6.8 ±2.6 (1445) / +4.4 ±1.7 (3279). Dal `b96` l'1X2 col maestro (fuori lega) e le quote passate: +30.4 ±1.6 (2574) / +16.9 ±1.4 (3644) / +8.6 ±1.7 (2832); sulle stesse partite il maestro da solo +29.7 / +17.1 / +8.6, la proposta in cima +16.1 → +17.6. Dal `b77`, col maestro (fuori lega): 1X2 +29.5 ±1.6 (2463) / +17.1 ±1.4 (3692) / +9.0 ±1.7 (2912), gol +24.3 ±11.6 (55) / +13.2 ±3.5 (744) / +6.8 ±1.9 (2801); i numeri restano del `b49`. Il `b82`, col maestro con la pressione, aveva 1X2 +29.5 / +16.9 / +9.2 e gol +24.0 / +12.4 / +6.6; il `b83` torna a quelle del `b77`. Dal `b84` la famiglia `corner` (chi fa più corner, quattro proposte), sulle 24 leghe fuori lega e sul `b74` coi numeri della regola: +26.6 ±0.9 (9448) / +13.7 ±0.7 (17482) / +6.6 ±0.8 (14810). Ordinare per guadagno atteso invece che per scarto: no (vedi *Il tabellone per famiglia di mercato: la regola*) |
 | minimo di `leagueBaseRates` | 200 partite | paracadute misurato `b38` | guadagno piatto fra 50 e 500; in produzione arrivano 900+ partite |
 | emivita | 106 giorni | a mano | uguale nei due file |
 | storico per squadra (`history-limit`) | 30 | scelta dell'utente (`b40`) | il batch base dell'utente e lo storico delle tarature `b24`–`b38`; fino al `b39` lo Scanner stampava a 15. Il Comparatore lo legge dallo Scanner in tutte le modalita' |
@@ -6434,7 +6511,7 @@ misurate.
 | **La quota fissa del primo gol** (`b75`) | registrata prima, 11.633 partite di 36 leghe mai aperte per questa domanda: somma delle logloss del gol prima del 30' e dell'Over 0.5 nel primo tempo −7.30‰ (`z = −4.93`), 29 leghe su 36; la card diventa calibrata |
 | **Il rating di pressione nel maestro** (nello Scanner nel `b82`, tolto nel `b83`: costava troppe chiamate) | registrato prima, 13.592 partite di 33 leghe, pressione su 7.648: 1X2 −0.54‰ (`z = −2.56`), risultato esatto −0.65‰ (`z = −2.66`), meglio in 10 leghe su 13 |
 | **L'arbitro nei gialli, Serie A e LaLiga** (nello Scanner dal `b85`) | registrato prima, 850 partite del 2025/26 e del 2026/27: conteggio dei gialli −18.88‰ (`z = −3.37`), Over 3.5 −13.44‰ (`z = −2.85`), meglio in 2 leghe su 2 |
-| **Il rating dalle quote passate insieme al maestro** (test registrato del 10 novembre 2026; non ancora nello Scanner) | senza le quote della partita, combinazione stimata sul mercato (0.36 al maestro, 0.65 al rating): sulle 6.296 partite di `batch/b94/livello` −4.26‰ di logloss 1X2 contro il maestro (`z = −4.54`), 7 leghe su 9, prese +0.14 ±0.59 |
+| **Il rating dalle quote passate insieme al maestro** (test registrato del 10 novembre 2026; nello Scanner dal `b96`) | senza le quote della partita, combinazione stimata sul mercato (0.36 al maestro, 0.65 al rating): sulle 6.296 partite di `batch/b94/livello` −4.26‰ di logloss 1X2 contro il maestro (`z = −4.54`), 7 leghe su 9, prese +0.14 ±0.59 |
 | **Chi fa più corner** (test registrato del 16 ottobre 2026; nello Scanner dal `b84`) | il totale dei corner diviso fra le due squadre con una beta-binomiale (corner previsti ed Elo): sui batch del `b74`, 7.120 partite, corner 1X2 −48.7‰ contro una frequenza fissa (`z = −14.79`), 23 leghe su 24; handicap ±1.5 −80.8‰ |
 | **Lo squilibrio sui tiri in porta** (`b42`) | registrato prima di vedere due leghe e passato su tutte e due; cinque leghe −0.0029 di logloss dell'Over 8.5, `z = −3.10`, positivo in 14 stagioni su 15 |
 
@@ -8239,6 +8316,14 @@ maestro: sui CSV fino al `b76` il rischio sorpresa del motore va rifatto con la 
 Numeri usa i lambda di ruolo del motore, non quelli del maestro: `strumenti/numeri-schermo.py` li legge da quelle righe
 (fino al 17 ottobre 2026 leggeva i lambda del maestro, e su un CSV dal `b77` dava 167 numeri diversi su 178).
 
+Dal `b96` le righe `1`, `X`, `2` (e le doppie chance e le confidence dell'1X2) sono il maestro corretto dal rating dalle
+quote passate, dove entra (vedi *Il rating dalle quote passate: la regola*, «Nello Scanner (`b96`)»); la matrice dei gol resta
+del maestro. Le righe `Quote passate:` dicono se è entrato (`attivo`), perché no (`stato`), il rating (`log p1/p2`), le partite con
+le quote delle due squadre, i nomi su football-data e l'1X2 del maestro prima del rating (`1/X/2 del maestro`). `qb.leggi_csv`
+le legge in `pMa`, `yq` e `qp`; `strumenti/maestro.py --schermo` confronta il maestro con `1/X/2 del maestro`, e
+`strumenti/quote-passate.py` usa `pMa` come maestro. `python3 strumenti/quote-passate.py --schermo <cartelle>` rifà rating e
+1X2 dai file di football-data.
+
 I file del `b82` hanno in più le righe `Pressione:` (lega attiva, rating, partite con la curva, maestro con la pressione) e,
 nell'archivio in fondo, la colonna `PRESSIONE MEDIA`; dove `Pressione: maestro con la pressione` dice `si`, 1X2 e lambda
 vengono dal maestro con la pressione. `python3 strumenti/pressione.py --schermo` li rifà. Dal `b83` non ci sono più.
@@ -8526,3 +8611,4 @@ invece di dichiarare verificato quello che non lo è.
 | `b93` | la bolletta del Toto-Amici, chiesta dall'utente per il gioco coi colleghi: nella scheda Tabellone una card con le 24 giocate (fisse, doppie chance, variabili, combo), ognuna con la probabilità dalla matrice dei gol (allineata con le quote, del maestro senza), la quota vera o stimata col margine misurato su 1.120 giocate delle bollette (fisse e doppie 6.5%, Goal 9.5%, combo 12.5%) e i punti attesi, doppi con la quota da 3,50; nella giornata la bolletta ottima (1 combo, 2 doppie, 3 variabili, 4 fisse) da copiare. Con le quote di chiusura, su 47.662 partite di 18 leghe, ogni giocata esce quanto dice entro 1,4 punti; su 234 giornate di Serie A la bolletta ottima vale 18.4 punti attesi a giornata contro 17.3 di una a occhio (fatti 19.0 e 18.3, +0.7 ±0.9). `strumenti/bolletta.py`. Col `b92` 0 scritture diverse su 204, una riga del CSV (il certificato); il banco controlla le giocate e la bolletta a forza bruta, e il controllo di potenza fallisce dove deve |
 | `b94` | tutte le giocate, chieste dall'utente senza il gioco («dobbiamo solo calcolare quelle quote»): la card della bolletta diventa «Tutte le giocate», 22 giocate (1X2, doppie chance, Over/Under 2.5, Goal/NoGoal, 12 combo segno + gol) con probabilità, quota del bookmaker o stimata col margine medio (misurato su 1.118 quote reali: 1X2 e doppie 6.5%, Over/Under 6%, Goal/NoGoal 9.5%, combo 12.5%) e quota equa, dalla più probabile. Tolti punti, punti doppi, pari e dispari e la bolletta della giornata. `strumenti/giocate.py` al posto di `bolletta.py`. La grafica passata dalle skill: rilevatore di impeccable a 0 difetti nei due temi, contrasti dei testi piccoli 6.1:1 o più. Col `b93` 0 scritture diverse su 204, una riga del CSV (il certificato); il controllo di potenza fallisce dove deve |
 | `b95` | il ristudio del batch del `b94`, chiesto dall'utente («controlla tutto quello che vuoi»): le misure registrate reggono su leghe e partite mai viste, e tre difetti sono corretti. Il Comparatore scriveva Goal, NoGoal, Over 2.5 e Under 2.5 della sezione MERCATI del CSV, e della sua tabella a schermo, dal motore invece che dal maestro (dal `b77`, 3-4 punti in media). Una risposta di `/stats` con ogni voce a zero tranne i gialli, come quelle della K League 2 dal 9 ottobre 2026, ora è come una risposta mancante (`statsVuote`), nel motore e nel reale del CSV: prima entrava come zeri veri (rifatta la K League 2 col `b95`: dal 16 ottobre, 20 partite, tiri in porta attesi da 7.99 a 8.52 e Over del maestro da 44.1 a 45.1%). `PICK_RESA.fuori` da 34 a 37 leghe. `numeri-schermo.py` prende lo storico della lega della partita (sul batch vero da 46.641 numeri diversi a 0), `controlla-csv.py` dice le partite senza statistiche. Il banco ha le statistiche vuote e confronta le righe dei gol col maestro; col `b94` 11-72 scritture diverse su 204, tutte dalle partite vuote, e senza quelle 0 |
+| `b96` | il rating dalle quote passate nello Scanner, scelto dall'utente («Si») dopo il test registrato del 10 novembre 2026 (sulle 6.296 partite di `batch/b94/livello` −4.26‰ di logloss 1X2 contro il maestro, `z = −4.54`, 7 leghe su 9). Senza le quote della partita, nelle 34 leghe di football-data, l'1X2 del verdetto è `−0.0147 + 0.3599·log(p1/p2) del maestro + 0.6533·rating`, col rating dalle quote di chiusura delle partite già giocate (i file di stagione dal worker, nessuna chiamata alla PitchAPI; nomi agganciati per data e punteggio), se le due squadre hanno almeno 6 partite con le quote; la matrice dei gol resta del maestro. Manopola `QUOTE_PASSATE` (`'no'` torna al `b95`). Rimisurate `PICK_RESA` (pick 53.3 → 53.7%, 27 rese per lega rifatte), `SORPRESA_TAB`, le rese dell'1X2 di `EDGE_BANDS` (prima proposta +16.1 → +17.6) e `QUOTE_RESA`. Il Comparatore chiama `/quote/` e il CSV ha le righe `Quote passate:`; `strumenti/quote-passate.py --rimisura` e `--schermo`. Le funzioni dello Scanner rifanno il rating di `rating_finestre` al quindicesimo decimale. Il banco ha i file di football-data finti e rifà il rating da capo; col `b95` 20 scritture diverse su 209 (5 sono id nuovi) e 19-24 righe del CSV su 134 |

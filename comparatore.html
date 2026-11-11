@@ -293,7 +293,7 @@ select{appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:36px
 
   <div class="topbar">
     <div class="brand"><svg class="ic" aria-hidden="true"><use href="#i-chart-bar"/></svg><h1>Comparatore V9.7</h1></div>
-    <div class="tb-tag"><span class="badge" id="build-ver">build 0905-b95</span><span class="badge" id="engine-badge">motore non caricato</span></div>
+    <div class="tb-tag"><span class="badge" id="build-ver">build 0905-b96</span><span class="badge" id="engine-badge">motore non caricato</span></div>
   </div>
 
   <!-- indicatore di flusso -->
@@ -834,6 +834,8 @@ async function loadEngineFromText(text, fileName) {
         eloTrend: (typeof window.__ELO_TREND !== 'undefined') ? window.__ELO_TREND : null,
         /* il maestro (b77): 1X2 e lambda di ruolo del motore PRIMA del maestro, per riallenarlo dai CSV */
         maestroDebug: (typeof window.__MAESTRO_DEBUG !== 'undefined') ? window.__MAESTRO_DEBUG : null,
+        /* il rating dalle quote passate (b96): rating, partite con le quote, nomi, e l'1X2 del maestro prima del rating */
+        qpDebug: (typeof window.__QP_DEBUG !== 'undefined') ? window.__QP_DEBUG : null,
         m1: (typeof m1!=='undefined')?m1:null, mX: (typeof mX!=='undefined')?mX:null, m2: (typeof m2!=='undefined')?m2:null,
         confidence:  (typeof confidence  !== 'undefined') ? confidence  : null,
         sampleFactor:(typeof sampleFactor!== 'undefined') ? sampleFactor: null,
@@ -981,7 +983,7 @@ async function loadEngineFromText(text, fileName) {
     <p><code>${fileName}</code>: clicca per sostituirlo dopo un aggiornamento<br><span id="engine-build" style="font-size:11px;font-weight:600"></span></p>`;
 
   const _bScan = (typeof window.__SCANNER_BUILD === 'string') ? window.__SCANNER_BUILD : null;
-  const _bComp = '0905-b95';
+  const _bComp = '0905-b96';
   window.__CMP_BUILD = _bComp;
   const _el = document.getElementById('engine-build');
   if (_el) {
@@ -2815,7 +2817,16 @@ function cmpExportCSV() {
     ['Maestro: X del motore', m=>[m.R.maestroDebug ? fmt(m.R.maestroDebug.p[1]) : 'N/D','','','']],
     ['Maestro: 2 del motore', m=>[m.R.maestroDebug ? fmt(m.R.maestroDebug.p[2]) : 'N/D','','','']],
     ['Maestro: lambda casa del motore (ruolo)', m=>[m.R.maestroDebug ? (+m.R.maestroDebug.lam[0]).toFixed(3) : 'N/D','','','']],
-    ['Maestro: lambda trasf. del motore (ruolo)', m=>[m.R.maestroDebug ? (+m.R.maestroDebug.lam[1]).toFixed(3) : 'N/D','','','']]
+    ['Maestro: lambda trasf. del motore (ruolo)', m=>[m.R.maestroDebug ? (+m.R.maestroDebug.lam[1]).toFixed(3) : 'N/D','','','']],
+    ['Quote passate: attivo', m=>[m.R.qpDebug ? (m.R.qpDebug.on ? 'si' : 'no') : 'N/D','','','']],
+    ['Quote passate: stato', m=>[m.R.qpDebug && m.R.qpDebug.stato ? String(m.R.qpDebug.stato + (m.R.qpDebug.motivo ? ' - ' + m.R.qpDebug.motivo : '')).replace(/;/g, ',') : 'N/D','','','']],
+    ['Quote passate: rating (log p1/p2)', m=>[m.R.qpDebug && m.R.qpDebug.yq != null && isFinite(m.R.qpDebug.yq) ? (+m.R.qpDebug.yq).toFixed(4) : 'N/D','','','']],
+    ['Quote passate: partite con le quote casa', m=>[m.R.qpDebug && m.R.qpDebug.nq ? m.R.qpDebug.nq[0] : 'N/D','','','']],
+    ['Quote passate: partite con le quote trasferta', m=>[m.R.qpDebug && m.R.qpDebug.nq ? m.R.qpDebug.nq[1] : 'N/D','','','']],
+    ['Quote passate: nomi su football-data', m=>[m.R.qpDebug && m.R.qpDebug.nomi ? m.R.qpDebug.nomi.map(x => x || '-').join(' | ').replace(/;/g, ',') : 'N/D','','','']],
+    ['Quote passate: 1 del maestro', m=>[m.R.qpDebug && m.R.qpDebug.ma ? fmt(m.R.qpDebug.ma[0]) : 'N/D','','','']],
+    ['Quote passate: X del maestro', m=>[m.R.qpDebug && m.R.qpDebug.ma ? fmt(m.R.qpDebug.ma[1]) : 'N/D','','','']],
+    ['Quote passate: 2 del maestro', m=>[m.R.qpDebug && m.R.qpDebug.ma ? fmt(m.R.qpDebug.ma[2]) : 'N/D','','','']]
   ];
   mdl.forEach(([lbl, fn]) => { const r=[lbl]; M.forEach(m=>r.push(...fn(m))); rows.push(r.join(';')); });
 
