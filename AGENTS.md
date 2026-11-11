@@ -357,6 +357,11 @@ Il CSV esporta già i pezzi da cui si ricompone ogni valore: basta un export rec
   `κ = 0.03` valeva −2.02‰ sull'handicap nell'esplorazione (`z = −5.31`, 11 leghe su 11). Sulle partite del test
   vale −0.74‰ (`z = −1.59`, 3 blocchi su 4). Il difetto resta. Vedi *L'handicap della matrice allineata: la
   regola*.
+- [ ] **La matrice con le quote e il pareggio: il test.** Con le quote la matrice allineata ha il pareggio 2.9 punti sotto
+  quello a schermo (22.8% contro 25.7%, usciti 25.7%), e la differenza reti troppo larga. Il candidato KR stringe la
+  differenza reti (`κ` 0.02) e poi riscala la matrice sui quattro numeri con le quote: nell'esplorazione −6.00‰ sul
+  risultato esatto (`z = −5.62`, 10 leghe su 11). Regola registrata l'11 novembre 2026; il test è sui soli file di
+  football-data, circa 29.000 partite. Vedi *La matrice con le quote e il pareggio: la regola*.
 - [ ] **Il verdetto e la matrice dei gol non descrivono la stessa partita.** Trovato nel controllo delle formule del `b97`,
   su casi tipo: nessuna partita vera guardata. Due candidati, tutti e due senza parametri.
   - *Il pareggio col rating dalle quote passate.* Dal `b96` lo Scanner corregge `log(p1/p2)` del maestro col rating e tiene
@@ -5941,6 +5946,117 @@ Descrittivi:
 - pareggi 24.0 → 25.5%, reali 25.4%; Over 1.5 e 3.5 fermi (75.5 e 29.8%, reali 75.1 e 29.0%);
 - le linee si spostano come nell'esplorazione: a −1.0 da 53.7 a 51.3% (ne esce il 49.5%), a +0.75 da 45.8 a 47.4%
   (ne esce il 49.1%).
+
+### La matrice con le quote e il pareggio: la regola
+
+Scritta l'11 novembre 2026, prima di aprire i dati del test: delle partite del test, per questa domanda, si sono letti solo
+i punteggi delle stagioni che fanno da archivio al `rho` dell'esplorazione. Viene dal controllo delle formule del `b97`
+(«il verdetto e la matrice dei gol non descrivono la stessa partita»), dopo «Sistema tutto il sistemabile» dell'utente.
+
+**Oggi.** Con le quote dell'1X2 e dell'Over 2.5 lo Scanner mostra l'1X2 di `QUOTE_COMB`. Goal, Over 1.5 e 3.5, risultati
+esatti, multigol e handicap escono dalla matrice allineata (`b57`, `b62`): un Dixon-Coles col `rho` del motore e i due
+lambda scelti perché dia l'Over 2.5 e il `log(p1/p2)` con le quote. Il pareggio con le quote non è un vincolo: la matrice ha
+il suo, e quindi anche il suo `1` e il suo `2`. L'handicap −0.5 non è l'`1` a schermo.
+
+**Lo strumento** (`python3 strumenti/quote-coerenza.py`, due minuti) lavora sui soli file di football-data, senza CSV del
+Comparatore e senza PitchAPI. Due cose dello Scanner lì mancano, e hanno un sostituto:
+- *l'1X2 e l'Over del motore dentro `QUOTE_COMB` e `QUOTE_OU`*: al loro posto sta il mercato stesso, coi pesi del motore
+  sommati a quelli del mercato. Dato il mercato il motore pesa poco (`b54`, `b57`);
+- *il `rho` del motore*: rifatto dai punteggi di football-data come `estimateRho`, sulle stagioni s−2, s−1 e s prima del
+  giorno, con le medie gol piatte di `computeLeagueParams`.
+
+Il sostituto regge: il `κ` 0.03 del 7 ottobre, rifatto così sulle stesse 11 leghe, dà handicap alla linea −1.95‰ (coi CSV
+−2.02), differenza reti −4.23 (−4.36), risultato esatto −4.05 (−4.21), multigol −3.73 (−3.86).
+
+**L'esplorazione**, sulle 11 leghe coi file principali, 2023/24–2025/26: 11.285 partite con le quote di chiusura di 1X2 e
+Over 2.5, 10.546 anche con quelle dell'handicap.
+
+*Quanto distano oggi*:
+
+| | con le quote | matrice allineata | uscito |
+|---|---|---|---|
+| pareggio | 25.65% | 22.76% | 25.68% |
+| `1` | 43.46% | 45.09% | 43.46% |
+| `2` | 30.89% | 32.15% | 30.86% |
+| pareggio, favorita sotto il 45% | 29.89% | 26.40% | 29.57% |
+| pareggio, favorita al 60% o più | 18.34% | 16.37% | 18.44% |
+
+- Il pareggio della matrice sta sotto quello con le quote nel 99% delle partite, in media di 2.90 punti; l'`1` dista in
+  media 1.64 punti.
+- L'1X2 con le quote batte l'1X2 della matrice di 2.61‰ (`z = −3.70`, fra leghe −3.58, 10 leghe su 11).
+- *Dove sbaglia la matrice*: la differenza reti è troppo larga. Previsto contro uscito: scarto di 1 gol 36.33 e 37.84%, di
+  2 gol 22.18 e 20.66%, di 3 o più 18.73 e 15.83%; 1-1 10.56 e 11.96%, 2-2 4.67 e 6.12%, 0-0 6.38 e 6.17%.
+
+*I candidati*, contro la matrice di oggi, in per mille (`z` per partita):
+
+| | risultato esatto | multigol | differenza reti | handicap alla linea | Goal |
+|---|---|---|---|---|---|
+| R, raking: 1, X, 2 e Over/Under riscalati fino ai quattro numeri con le quote | −3.01 (−4.06) | −0.16 | −2.19 (−3.07) | −1.11 (−3.13) | −1.36 |
+| `κ` da solo, scelto fuori lega (0.02 in 11 fold su 11) | −4.41 (−5.51) | −3.18 | −3.71 (−6.58) | −1.46 (−5.77) | −1.37 |
+| **KR: `κ` e poi il raking**, `κ` scelto fuori lega (0.02 in 11 su 11) | **−6.00 (−5.62)** | −3.10 (−4.77) | −5.01 (−5.90) | −1.89 (−4.18) | −1.71 (−2.83) |
+| il `κ` della partita che dà il pareggio con le quote (in media 0.063) | +7.83 | −2.35 | +1.07 | −1.92 | +0.18 |
+| il `rho` della partita che dà il pareggio con le quote (in media −0.142) | +0.99 | +2.97 | −0.93 | −1.23 | −1.60 |
+
+- *KR*: fra leghe `z` −3.81 sul risultato esatto e −6.49 sulla differenza reti; meglio in 10, 10, 11, 11 e 8 leghe su 11.
+  Over 1.5 −0.11‰, Over 3.5 +0.03‰.
+- *KR contro i suoi pezzi*: contro il `κ` da solo −1.59‰ sul risultato esatto (`z = −2.98`); contro il raking da solo
+  −2.99‰ (`z = −3.92`).
+- *Il `κ` col raking, in campione*, sul risultato esatto: 0.01 −5.34, 0.02 −6.00, 0.03 −5.16, 0.045 −1.41, 0.06 +4.97.
+  L'ottimo è interno. Gli altri metri lo vogliono più alto: differenza reti 0.03, multigol 0.03–0.045, handicap alla linea
+  0.045–0.06. Si sceglie sul risultato esatto, che è la matrice intera.
+- *Per stagione* (2023/24, 2024/25, 2025/26), risultato esatto: −4.72 / −6.18 / −7.09‰.
+- *Previsto con KR*, e uscito: pareggi 25.65 e 25.68%; scarto di 1 gol 36.45 e 37.84, di 2 gol 21.49 e 20.66, di 3 o più
+  16.40 e 15.83; Goal 55.09 e 54.67 (oggi 52.00); Over 3.5 32.63 e 31.30 (oggi 32.40).
+- *Alla linea dell'handicap*: a −1.5 il mercato dice 49.9%, la matrice di oggi 54.5%, KR 52.0% (esce il 46.0%); a +0.75
+  50.0, 46.2 e 48.6% (esce il 50.2%).
+- *Perché non il `κ` o il `rho` della partita*: da soli devono chiudere tutti e 2.9 i punti di pareggio, e deformano il
+  resto. Il `κ` porta gli scarti da 3 gol al 13.2% (usciti 15.8), il `rho` lo 0-0 al 7.8% (uscito 6.2).
+
+**Il candidato, con tutto fissato** (`kr` in `strumenti/quote-coerenza.py`). Con le quote dell'1X2 e dell'Over 2.5:
+1. `P`, l'1X2 con le quote, e `ov`, l'Over 2.5 con le quote, restano quelli di oggi.
+2. `M(x, y) ∝ DC(λH, λA, rho del motore)(x, y) · exp(−0.02·(x − y)²)`, 11×11, coi due lambda della bisezione annidata di
+   `matriceAllineata` scelti perché `M` dia `ov` e `log(P1/P2)`.
+3. Raking, 60 giri: le tre regioni (casa, pari, trasferta) riscalate a `P`, poi le due fasce (sopra e sotto 2.5 gol)
+   riscalate a `ov`.
+
+Un solo parametro, `κ = 0.02`. Dopo il raking la matrice dà `1`, `X`, `2` e Over 2.5 con le quote entro 10⁻⁷.
+
+**I dati del test**, dai file di football-data (già in `batch/fd`):
+- le 18 leghe dei file principali, stagioni 2019/20–2022/23;
+- Grecia, Serie B, LaLiga2 e Ligue 2, 2023/24–2025/26.
+
+Circa 29.000 partite con le quote di chiusura di 1X2 e Over 2.5. Di queste partite si sono guardati l'1X2 delle quote
+(`rating-quote.py`) e, tutte insieme, la calibrazione delle 22 giocate dalla matrice allineata con `rho` −0.05
+(`giocate.py`). Mai la matrice risultato per risultato, né un candidato. Restano fuori, solo descrittivi:
+- le 11 leghe 2023/24–2025/26, che sono l'esplorazione;
+- League One, League Two e Süper Lig 2023/24–2025/26 e il 2026/27, aperti per il `κ` nel test del 7 ottobre.
+
+**Il metro e quando passa.** La logloss del risultato esatto (matrice 11×11), KR contro la matrice allineata di oggi,
+appaiata partita per partita. Decidono tutti e due gli `z`. Passa se:
+- `z ≤ −2` per partita e `z ≤ −2` con l'errore fra leghe;
+- migliora in più di metà delle leghe;
+- differenza reti e handicap alla linea del mercato migliorano sull'insieme;
+- nessuno fra multigol, differenza reti, handicap alla linea, Goal, Over 1.5 e Over 3.5 peggiora con `z ≥ +2`.
+
+Con l'effetto dell'esplorazione ci si aspetta `z` intorno a −9; con un terzo dell'effetto, come successe al `κ`, intorno a
+−3.
+
+**Se passa.** Nello Scanner, con le quote dell'1X2 e dell'Over, la matrice è KR:
+- Goal/NoGoal, Over 1.5 e 3.5 della card delle quote e del tabellone con le quote;
+- risultati esatti, multigol e handicap della card, e le combo delle giocate;
+- con le quote l'handicap −0.5 diventa l'`1` a schermo.
+
+Una manopola torna alla matrice di oggi. Si rimisurano le rese dei gol di `EDGE_BANDS_QUOTE` e `MATRICE_QUOTE_RESA`, e il
+banco rifà la matrice nuova. Senza quote, e nel Comparatore, niente cambia: il verdetto senza quote contro la matrice del
+maestro resta in *Da fare*, e vuole i CSV. Quando ci saranno batch nuovi, lo stesso confronto si rifà come lo calcola lo
+Scanner, col motore dentro: solo descrittivo.
+
+**Se non passa**, resta la matrice di oggi, e questa sezione dice perché.
+
+**Descrittivi**, che non decidono: ogni lega e ogni stagione; il `κ` da solo e il raking da solo; KR contro i suoi pezzi;
+previsto e uscito per pareggi, scarti e Goal; le linee dell'handicap; le partite già aperte per il `κ`.
+`python3 strumenti/quote-coerenza.py --prova` rifà il test; senza argomenti rifà l'esplorazione, con `--terzo` anche il `κ`
+e il `rho` della partita.
 
 ## Formazioni e assenze
 
